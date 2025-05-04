@@ -29,7 +29,7 @@ export default function AuctionsSpecialPage() {
     },
     { 
       name: 'مزادات VIP الخاصة', 
-      slug: 'exective', 
+      slug: 'executive', 
       description: 'مزادات خاصة تنفيذية لشخصيات هامة وإدارات ومؤسسات محددة', 
       icon: BadgeCheck, 
       color: 'text-indigo-700', 
@@ -56,7 +56,7 @@ export default function AuctionsSpecialPage() {
     },
     { 
       name: 'اللوحات الفنية الأصلية', 
-      slug: 'artwork', 
+      slug: 'artworks', 
       description: 'لوحات فنية أصلية ومميزة لفنانين معروفين عالمياً ومحلياً', 
       icon: Brush, 
       color: 'text-pink-600', 

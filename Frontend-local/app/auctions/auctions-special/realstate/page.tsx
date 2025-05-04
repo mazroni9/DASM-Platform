@@ -117,7 +117,7 @@ export default function RealEstateAuctionsPage() {
               سجل عقارك الآن في منصتنا ليتم عرضه في المزادات القادمة. فريقنا سيتواصل معك لتقييم العقار وإتمام إجراءات البيع.
             </p>
             <Link 
-              href="/add"
+              href="/forms/real-estate-auction-request"
               className="inline-block px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
             >
               تسجيل عقار للمزاد

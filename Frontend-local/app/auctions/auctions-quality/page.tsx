@@ -1,22 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { Stethoscope, Printer, Server, Leaf, BadgeCheck } from 'lucide-react';
+import { Stethoscope, Printer, Server, BadgeCheck } from 'lucide-react';
 
-export default function AuctionsImprovePage() {
-  // مزادات المجلد الثالث: auctions-improve
-  const auctionsImprove = [
+export default function AuctionsQualityPage() {
+  // مزادات المجلد الثالث: auctions-quality
+  const auctionsQuality = [
     { name: 'المزادات الخاصة', slug: 'private', description: 'مزادات خاصة متاحة بدعوة للعملاء المميزين', icon: BadgeCheck, color: 'text-gray-700', bgColor: 'bg-gray-50' },
     { name: 'الأجهزة الطبية المستعملة', slug: 'medical', description: 'أجهزة ومعدات طبية مستعملة بحالة جيدة', icon: Stethoscope, color: 'text-teal-500', bgColor: 'bg-teal-50' },
     { name: 'الآلات المكتبية المستعملة', slug: 'office-equipment', description: 'معدات مكتبية مثل آلات تصوير متوسطة وكبيرة الحجم وأجهزة إلكترونية بأسعار تنافسية', icon: Printer, color: 'text-sky-500', bgColor: 'bg-sky-50' },
-    { name: 'السيرفرات المستعملة', slug: 'used-servers', description: 'سيرفرات وأجهزة تخزين وشبكات بمواصفات جيدة', icon: Server, color: 'text-slate-500', bgColor: 'bg-slate-50' },
-    { name: 'المزاد الأخضر', slug: 'green', description: 'مزادات المنتجات والتقنيات الصديقة للبيئة', icon: Leaf, color: 'text-green-500', bgColor: 'bg-green-50' },
+    { name: 'السيرفرات المستعملة', slug: 'used-servers', description: 'سيرفرات وأجهزة تخزين وشبكات بمواصفات جيدة', icon: Server, color: 'text-slate-500', bgColor: 'bg-slate-50' }
   ];
 
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">المزادات الخاصة</h1>
+        <h1 className="text-3xl font-bold text-gray-800">السوق النوعي</h1>
         <Link 
           href="/auctions"
           className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
@@ -26,16 +25,16 @@ export default function AuctionsImprovePage() {
       </div>
       
       <div className="mb-8">
-        <p className="text-gray-600">استكشف المزادات الخاصة والمتخصصة في مجالات متعددة مثل الأجهزة الطبية والمعدات المكتبية والسيرفرات والتقنيات الصديقة للبيئة.</p>
+        <p className="text-gray-600">استكشف المزادات الخاصة والمتخصصة في مجالات متعددة مثل الأجهزة الطبية والمعدات المكتبية والسيرفرات.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {auctionsImprove.map((auction) => {
+        {auctionsQuality.map((auction) => {
           const Icon = auction.icon;
           return (
             <Link
               key={auction.slug}
-              href={`/auctions/${auction.slug}`}
+              href={`/auctions/auctions-quality/${auction.slug}`}
               className={`group flex flex-col items-center border rounded-xl shadow hover:shadow-lg p-8 ${auction.bgColor} hover:bg-white transition-all duration-300 h-full`}
             >
               <div className={`p-4 rounded-full ${auction.color} bg-white mb-4`}>

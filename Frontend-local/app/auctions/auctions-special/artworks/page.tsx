@@ -24,7 +24,7 @@ export default function ArtworksPage() {
       currentBid: '27,500',
       bids: 8,
       endDate: '2025-07-15',
-      image: '/artwork1.jpg',
+      image: '/auctionsPIC/special-artworksPIC/artwork1.jpg',
     },
     {
       id: 'a2',
@@ -39,7 +39,7 @@ export default function ArtworksPage() {
       currentBid: '45,000',
       bids: 12,
       endDate: '2025-07-10',
-      image: '/artwork2.jpg',
+      image: '/auctionsPIC/special-artworksPIC/artwork2.jpg',
     },
     {
       id: 'a3',
@@ -54,7 +54,7 @@ export default function ArtworksPage() {
       currentBid: '28,000',
       bids: 15,
       endDate: '2025-07-20',
-      image: '/artwork3.jpg',
+      image: '/auctionsPIC/special-artworksPIC/artwork3.jpg',
     },
     {
       id: 'a4',
@@ -69,7 +69,7 @@ export default function ArtworksPage() {
       currentBid: '75,000',
       bids: 9,
       endDate: '2025-07-05',
-      image: '/artwork4.jpg',
+      image: '/auctionsPIC/special-artworksPIC/artwork4.webp',
     },
     {
       id: 'a5',
@@ -84,7 +84,7 @@ export default function ArtworksPage() {
       currentBid: '130,000',
       bids: 18,
       endDate: '2025-07-08',
-      image: '/artwork5.jpg',
+      image: '/auctionsPIC/special-artworksPIC/artwork5.jpg',
     },
     {
       id: 'a6',
@@ -99,7 +99,7 @@ export default function ArtworksPage() {
       currentBid: '210,000',
       bids: 7,
       endDate: '2025-07-12',
-      image: '/artwork6.jpg',
+      image: '/auctionsPIC/special-artworksPIC/artwork6.webp',
     },
   ];
 

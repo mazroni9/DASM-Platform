@@ -2,14 +2,33 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Wrench, Hammer, Shovel, Tool, Ruler, Scissors } from 'lucide-react';
+import { ChevronRight, Wrench, Hammer, Shovel, Cog, Ruler, Scissors } from 'lucide-react';
 import Image from 'next/image';
+import CategoryIcon from './components/CategoryIcon';
+
+// Definición de tipos
+interface ProductAdditionalInfo {
+  equipmentType?: string;
+  brand?: string;
+  powerSource?: string;
+  year?: string;
+}
+
+interface Product {
+  id: string | number;
+  title: string;
+  description: string;
+  current_price: string | number;
+  condition: string;
+  images?: string[];
+  additional_info?: string | ProductAdditionalInfo;
+}
 
 export default function EquipmentMarketPage() {
   // حالات للتحكم بتحميل البيانات وعرضها
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   
   // تحميل المنتجات عند فتح الصفحة
   useEffect(() => {
@@ -25,7 +44,7 @@ export default function EquipmentMarketPage() {
         }
         
         const data = await response.json();
-        setFeaturedProducts(data || []);
+        setFeaturedProducts(data.items || []);
       } catch (err: any) {
         console.error('Error fetching equipment products:', err);
         setError(err.message || 'An error occurred');
@@ -39,7 +58,7 @@ export default function EquipmentMarketPage() {
 
   const categories = [
     { title: "أدوات يدوية", icon: Wrench, count: 56 },
-    { title: "معدات كهربائية", icon: Tool, count: 42 },
+    { title: "معدات كهربائية", icon: Cog, count: 42 },
     { title: "معدات البناء", icon: Hammer, count: 28 },
     { title: "معدات حدائق", icon: Scissors, count: 35 },
     { title: "أدوات قياس", icon: Ruler, count: 22 },
@@ -63,7 +82,7 @@ export default function EquipmentMarketPage() {
   ];
 
   // دالة لاستخراج معلومات إضافية من JSON
-  const extractAdditionalInfo = (product) => {
+  const extractAdditionalInfo = (product: Product): ProductAdditionalInfo => {
     try {
       const additionalInfo = product.additional_info 
         ? (typeof product.additional_info === 'string' 
@@ -84,7 +103,7 @@ export default function EquipmentMarketPage() {
   };
 
   // دالة لتنسيق عرض الصورة
-  const getItemImage = (product) => {
+  const getItemImage = (product: Product): string => {
     if (product.images && product.images.length > 0) {
       return `/uploads/${product.images[0]}`;
     }
@@ -136,7 +155,7 @@ export default function EquipmentMarketPage() {
             className="bg-white rounded-lg shadow-md hover:shadow-lg p-5 text-center transition-all hover:-translate-y-1 border border-gray-100"
           >
             <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 mb-3">
-              <category.icon size={24} />
+              <CategoryIcon icon={category.icon} size={24} />
             </div>
             <h3 className="font-medium text-gray-800">{category.title}</h3>
             <p className="text-gray-500 text-sm">{category.count} منتج</p>

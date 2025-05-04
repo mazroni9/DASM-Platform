@@ -191,7 +191,7 @@ export default function PreciousItemAuctionRequestPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-12 px-4">
       {/* رأس الصفحة */}
-      <div className="bg-gradient-to-r from-amber-700 to-yellow-600 py-6 rounded-t-lg">
+      <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
           <Link 
             href="/auctions/auctions-special/precious" 
@@ -223,7 +223,7 @@ export default function PreciousItemAuctionRequestPage() {
                 onChange={handleChange}
                 required
                 placeholder="الاسم الكامل"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
 
@@ -237,7 +237,7 @@ export default function PreciousItemAuctionRequestPage() {
                 onChange={handleChange}
                 required
                 placeholder="رقم هاتف للتواصل"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
           </div>
@@ -253,7 +253,7 @@ export default function PreciousItemAuctionRequestPage() {
               onChange={handleChange}
               required
               placeholder="وصف مختصر للقطعة"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
             />
           </div>
 
@@ -266,7 +266,7 @@ export default function PreciousItemAuctionRequestPage() {
                 value={formValues.itemType}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               >
                 <option value="">-- اختر نوع القطعة --</option>
                 {itemTypes.map(type => (
@@ -283,7 +283,7 @@ export default function PreciousItemAuctionRequestPage() {
                 value={formValues.era}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               >
                 <option value="">-- اختر العصر/الفترة --</option>
                 {eras.map(era => (
@@ -302,7 +302,7 @@ export default function PreciousItemAuctionRequestPage() {
                 value={formValues.origin}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               >
                 <option value="">-- اختر بلد/منطقة المنشأ --</option>
                 {origins.map(origin => (
@@ -321,7 +321,7 @@ export default function PreciousItemAuctionRequestPage() {
                 onChange={handleChange}
                 required
                 placeholder="مثال: خشب، معدن، حجر، سيراميك..."
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
           </div>
@@ -337,7 +337,7 @@ export default function PreciousItemAuctionRequestPage() {
                 onChange={handleChange}
                 required
                 placeholder="مثال: 30×20×15 سم"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
 
@@ -349,7 +349,7 @@ export default function PreciousItemAuctionRequestPage() {
                 value={formValues.condition}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               >
                 <option value="">-- اختر الحالة --</option>
                 {conditions.map(condition => (
@@ -368,7 +368,7 @@ export default function PreciousItemAuctionRequestPage() {
               value={formValues.provenance}
               onChange={handleChange}
               placeholder="معلومات عن مصدر القطعة وتاريخ اقتنائها"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
             />
           </div>
 
@@ -382,7 +382,7 @@ export default function PreciousItemAuctionRequestPage() {
               required
               rows={4}
               placeholder="وصف تفصيلي للقطعة، تاريخها، أهميتها، ميزاتها الخاصة..."
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
             />
           </div>
 
@@ -399,7 +399,7 @@ export default function PreciousItemAuctionRequestPage() {
                 required
                 min="1"
                 placeholder="السعر الأدنى المقبول للبيع"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
               <p className="text-xs text-gray-500 mt-1">سيكون هذا السعر مخفيًا عن المشترين</p>
             </div>
@@ -415,7 +415,7 @@ export default function PreciousItemAuctionRequestPage() {
                 required
                 min="1"
                 placeholder="السعر المتوقع/المرغوب به"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
               <p className="text-xs text-gray-500 mt-1">سيكون هذا السعر مخفيًا عن المشترين</p>
             </div>
@@ -469,7 +469,7 @@ export default function PreciousItemAuctionRequestPage() {
           {/* القسم الخامس: الرسوم والأحكام */}
           <div className="bg-amber-50 p-4 rounded-lg">
             <h3 className="text-lg font-bold mb-2 flex items-center">
-              <Info size={18} className="ml-2 text-amber-600" />
+              <Info size={18} className="ml-2 text-amber-500" />
               الرسوم والعمولات
             </h3>
             <ul className="space-y-2 text-gray-700">
@@ -494,10 +494,10 @@ export default function PreciousItemAuctionRequestPage() {
               type="checkbox"
               id="terms"
               required
-              className="w-5 h-5 text-amber-600 rounded focus:ring-2 focus:ring-amber-500 mt-1"
+              className="w-5 h-5 text-amber-500 rounded focus:ring-2 focus:ring-amber-500 mt-1"
             />
             <label htmlFor="terms" className="mr-2 text-gray-700">
-              أؤكد أن المعلومات المقدمة صحيحة وأن لدي حق ملكية هذه القطعة، وأوافق على <Link href="/terms" className="text-amber-600 hover:underline">شروط وأحكام</Link> المنصة.
+              أؤكد أن المعلومات المقدمة صحيحة وأن لدي حق ملكية هذه القطعة، وأوافق على <Link href="/terms" className="text-amber-500 hover:underline">شروط وأحكام</Link> المنصة.
             </label>
           </div>
 
@@ -506,7 +506,7 @@ export default function PreciousItemAuctionRequestPage() {
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50"
+              className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50"
             >
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>

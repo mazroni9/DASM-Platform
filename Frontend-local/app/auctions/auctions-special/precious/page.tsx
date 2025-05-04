@@ -127,8 +127,8 @@ export default function PreciousItemsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* بانر علوي */}
-      <div className="relative h-96 bg-gradient-to-r from-amber-800 via-amber-700 to-amber-600 overflow-hidden">
-        <div className="absolute inset-0 bg-black/40"></div>
+      <div className="relative h-96 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 overflow-hidden">
+        <div className="absolute inset-0 bg-black/30"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10 py-16">
           <Link href="/auctions/auctions-special" className="flex items-center text-white/80 hover:text-white mb-6 transition group">
             <ChevronRight className="ml-2 transform group-hover:-translate-x-1 transition-transform" size={20} />
@@ -141,7 +141,7 @@ export default function PreciousItemsPage() {
           <div className="flex items-center gap-4 mt-4">
             <Link 
               href="/forms/precious-auction-request" 
-              className="px-6 py-3 bg-white text-amber-700 hover:bg-gray-100 font-bold rounded-full shadow-md hover:shadow-lg transition-all"
+              className="px-6 py-3 bg-white text-amber-500 hover:bg-gray-100 font-bold rounded-full shadow-md hover:shadow-lg transition-all"
             >
               عرض قطعة للبيع
             </Link>
@@ -160,7 +160,7 @@ export default function PreciousItemsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-              <Award className="text-amber-600" size={32} />
+              <Award className="text-amber-500" size={32} />
             </div>
             <h3 className="text-xl font-bold mb-2">توثيق وأصالة</h3>
             <p className="text-gray-600">جميع القطع تخضع للفحص والتوثيق من خبراء متخصصين للتأكد من أصالتها وقيمتها التاريخية</p>
@@ -168,7 +168,7 @@ export default function PreciousItemsPage() {
           
           <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-              <Shield className="text-amber-600" size={32} />
+              <Shield className="text-amber-500" size={32} />
             </div>
             <h3 className="text-xl font-bold mb-2">حماية المتعاملين</h3>
             <p className="text-gray-600">نظام متكامل لضمان حقوق البائع والمشتري مع إمكانية المعاينة والتحقق قبل إتمام البيع</p>
@@ -176,7 +176,7 @@ export default function PreciousItemsPage() {
           
           <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all">
             <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-              <Clock className="text-amber-600" size={32} />
+              <Clock className="text-amber-500" size={32} />
             </div>
             <h3 className="text-xl font-bold mb-2">تاريخ موثق</h3>
             <p className="text-gray-600">معلومات تفصيلية عن تاريخ كل قطعة ومنشأها وأهميتها، مع شهادات توثيق معتمدة عند توفرها</p>
@@ -197,7 +197,7 @@ export default function PreciousItemsPage() {
                 className="flex flex-col items-center text-center p-5 bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 hover:border-amber-200 transition-all"
               >
                 <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-3">
-                  <Icon className="text-amber-600" size={28} />
+                  <Icon className="text-amber-500" size={28} />
                 </div>
                 <h3 className="text-lg font-bold mb-2">{category.name}</h3>
                 <p className="text-sm text-gray-500">{category.description}</p>
@@ -259,8 +259,8 @@ export default function PreciousItemsPage() {
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-bold group-hover:text-amber-600 transition line-clamp-1">{item.title}</h3>
-                  <div className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full">
+                  <h3 className="text-lg font-bold group-hover:text-amber-500 transition line-clamp-1">{item.title}</h3>
+                  <div className="text-xs bg-amber-50 text-amber-500 px-2 py-1 rounded-full">
                     {getCategoryName(item.category)}
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export default function PreciousItemsPage() {
                 <div className="flex justify-between items-center border-t pt-3">
                   <div>
                     <div className="text-xs text-gray-500 mb-1">المزايدة الحالية</div>
-                    <div className="text-lg font-bold text-amber-600">{formatPrice(item.currentBid)} ريال</div>
+                    <div className="text-lg font-bold text-amber-500">{formatPrice(item.currentBid)} ريال</div>
                   </div>
                   <div className="flex items-center gap-1 text-sm">
                     <span className="text-gray-500">{item.bidCount} مزايدة</span>
@@ -297,7 +297,7 @@ export default function PreciousItemsPage() {
         </div>
         
         <div className="flex justify-center mt-12">
-          <button className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition">
+          <button className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition">
             عرض المزيد من القطع النادرة
           </button>
         </div>
@@ -342,7 +342,7 @@ export default function PreciousItemsPage() {
             </p>
             <Link 
               href="/forms/precious-auction-request"
-              className="inline-block px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition"
+              className="inline-block px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition"
             >
               تسجيل قطعة للبيع
             </Link>

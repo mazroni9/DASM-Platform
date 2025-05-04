@@ -2,14 +2,33 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Sofa, Bed, Chair, Home, Coffee, LampCeiling } from 'lucide-react';
+import { ChevronRight, Sofa, Bed, Armchair, Building, Coffee, Lamp } from 'lucide-react';
 import Image from 'next/image';
+import CategoryIcon from './components/CategoryIcon';
+
+// Definición de tipos
+interface ProductAdditionalInfo {
+  roomType?: string;
+  materials?: string;
+  dimensions?: string;
+  productionYear?: string;
+}
+
+interface Product {
+  id: string | number;
+  title: string;
+  description: string;
+  current_price: string | number;
+  condition: string;
+  images?: string[];
+  additional_info?: string | ProductAdditionalInfo;
+}
 
 export default function FurnitureMarketPage() {
   // حالات للتحكم بتحميل البيانات وعرضها
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [error, setError] = useState<string | null>(null);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   
   // تحميل المنتجات عند فتح الصفحة
   useEffect(() => {
@@ -26,7 +45,7 @@ export default function FurnitureMarketPage() {
         
         const data = await response.json();
         setFeaturedProducts(data.items || []);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching furniture products:', err);
         setError(err.message);
       } finally {
@@ -41,10 +60,10 @@ export default function FurnitureMarketPage() {
   const categories = [
     { title: "غرف المعيشة", icon: Sofa, count: 42 },
     { title: "غرف النوم", icon: Bed, count: 35 },
-    { title: "غرف الطعام", icon: Chair, count: 28 },
-    { title: "المكاتب", icon: Home, count: 24 },
+    { title: "غرف الطعام", icon: Armchair, count: 28 },
+    { title: "المكاتب", icon: Building, count: 24 },
     { title: "طاولات وكراسي", icon: Coffee, count: 31 },
-    { title: "إضاءة وديكور", icon: LampCeiling, count: 19 }
+    { title: "إضاءة وديكور", icon: Lamp, count: 19 }
   ];
 
   // المميزات الخاصة بسوق الأثاث
@@ -64,7 +83,7 @@ export default function FurnitureMarketPage() {
   ];
 
   // دالة لاستخراج معلومات إضافية من JSON
-  const extractAdditionalInfo = (product) => {
+  const extractAdditionalInfo = (product: Product): ProductAdditionalInfo => {
     try {
       const additionalInfo = product.additional_info 
         ? (typeof product.additional_info === 'string' 
@@ -85,7 +104,7 @@ export default function FurnitureMarketPage() {
   };
 
   // دالة لتنسيق عرض الصورة
-  const getItemImage = (product) => {
+  const getItemImage = (product: Product) => {
     if (product.images && product.images.length > 0) {
       return `/uploads/${product.images[0]}`;
     }
@@ -137,7 +156,7 @@ export default function FurnitureMarketPage() {
             className="bg-white rounded-lg shadow-md hover:shadow-lg p-5 text-center transition-all hover:-translate-y-1 border border-gray-100"
           >
             <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-amber-100 text-amber-600 mb-3">
-              <category.icon size={24} />
+              <CategoryIcon icon={category.icon} size={24} />
             </div>
             <h3 className="font-medium text-gray-800">{category.title}</h3>
             <p className="text-gray-500 text-sm">{category.count} قطعة</p>

@@ -19,7 +19,7 @@ export default function WatchAuctionRequestPage() {
     maxPrice: '',
     acceptDirectOffers: true,
     deliveryMethod: 'platform',
-    images: [],
+    images: [] as File[],
   });
 
   // الماركات المعتمدة
@@ -67,7 +67,7 @@ export default function WatchAuctionRequestPage() {
       if (formData.images.length + newImages.length <= 10) { // الحد الأقصى 10 صور
         setFormData(prev => ({
           ...prev,
-          images: [...prev.images, ...newImages] as any[]
+          images: [...prev.images, ...newImages]
         }));
       } else {
         alert('لا يمكن رفع أكثر من 10 صور');
@@ -96,7 +96,7 @@ export default function WatchAuctionRequestPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* رأس الصفحة */}
-      <div className="bg-gradient-to-r from-yellow-700 to-amber-600 py-6">
+      <div className="bg-gradient-to-r from-blue-700 to-indigo-600 py-6">
         <div className="container mx-auto px-4">
           <Link 
             href="/auctions/auctions-special/watches" 
@@ -127,7 +127,7 @@ export default function WatchAuctionRequestPage() {
                   value={formData.brand}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   aria-label="اختر ماركة الساعة"
                 >
                   <option value="">-- اختر الماركة --</option>
@@ -147,7 +147,7 @@ export default function WatchAuctionRequestPage() {
                   onChange={handleChange}
                   required
                   placeholder="مثال: Daytona / Submariner / Royal Oak"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
@@ -161,7 +161,7 @@ export default function WatchAuctionRequestPage() {
                   onChange={handleChange}
                   required
                   placeholder="مثال: 116500LN"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
@@ -174,7 +174,7 @@ export default function WatchAuctionRequestPage() {
                   value={formData.year}
                   onChange={handleChange}
                   placeholder="مثال: 2020"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -188,7 +188,7 @@ export default function WatchAuctionRequestPage() {
                 value={formData.condition}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 aria-label="اختر حالة الساعة"
               >
                 <option value="">-- اختر الحالة --</option>
@@ -206,7 +206,7 @@ export default function WatchAuctionRequestPage() {
                   name="hasBox"
                   checked={formData.hasBox}
                   onChange={handleChange}
-                  className="w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500"
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <label htmlFor="hasBox" className="mr-2 text-gray-700">مع العلبة الأصلية</label>
               </div>
@@ -217,7 +217,7 @@ export default function WatchAuctionRequestPage() {
                   name="hasWarranty"
                   checked={formData.hasWarranty}
                   onChange={handleChange}
-                  className="w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500"
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <label htmlFor="hasWarranty" className="mr-2 text-gray-700">مع بطاقة الضمان</label>
               </div>
@@ -228,7 +228,7 @@ export default function WatchAuctionRequestPage() {
                   name="hasPapers"
                   checked={formData.hasPapers}
                   onChange={handleChange}
-                  className="w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500"
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <label htmlFor="hasPapers" className="mr-2 text-gray-700">مع الأوراق الرسمية</label>
               </div>
@@ -245,7 +245,7 @@ export default function WatchAuctionRequestPage() {
                 required
                 rows={4}
                 placeholder="يرجى تقديم وصف دقيق للساعة، بما في ذلك الحالة، والمميزات الخاصة، وأي علامات استخدام أو خدوش..."
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -261,7 +261,7 @@ export default function WatchAuctionRequestPage() {
                   required
                   min="1000"
                   placeholder="أدخل الحد الأدنى المقبول"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-sm text-gray-500 mt-1">سيكون مخفياً عن المشترين</p>
               </div>
@@ -277,7 +277,7 @@ export default function WatchAuctionRequestPage() {
                   required
                   min="1000"
                   placeholder="أدخل الحد الأعلى المرغوب فيه"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-sm text-gray-500 mt-1">سيكون مخفياً عن المشترين</p>
               </div>
@@ -343,7 +343,7 @@ export default function WatchAuctionRequestPage() {
                       value={method.value}
                       checked={formData.deliveryMethod === method.value}
                       onChange={handleChange}
-                      className="w-5 h-5 text-yellow-600 focus:ring-2 focus:ring-yellow-500"
+                      className="w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     />
                     <label htmlFor={`delivery-${method.value}`} className="mr-2 font-medium">{method.label}</label>
                   </div>
@@ -354,7 +354,7 @@ export default function WatchAuctionRequestPage() {
             {/* قسم الرسوم والأحكام */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-lg font-bold mb-2 flex items-center">
-                <Info size={18} className="ml-2 text-yellow-600" />
+                <Info size={18} className="ml-2 text-blue-600" />
                 الرسوم والعمولات
               </h3>
               <ul className="space-y-2 text-gray-700">
@@ -379,10 +379,10 @@ export default function WatchAuctionRequestPage() {
                 type="checkbox"
                 id="terms"
                 required
-                className="w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500 mt-1"
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 mt-1"
               />
               <label htmlFor="terms" className="mr-2 text-gray-700">
-                أوافق على <Link href="/terms" className="text-yellow-600 hover:underline">شروط وأحكام</Link> المنصة وأتعهد بصحة المعلومات المدخلة.
+                أوافق على <Link href="/terms" className="text-blue-600 hover:underline">شروط وأحكام</Link> المنصة وأتعهد بصحة المعلومات المدخلة.
               </label>
             </div>
 
@@ -390,7 +390,7 @@ export default function WatchAuctionRequestPage() {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button 
                 type="submit"
-                className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 إرسال الطلب
               </button>
