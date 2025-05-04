@@ -1,0 +1,325 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\AuctionStatus;
+use App\Models\Auction;
+use App\Models\Bid;
+use App\Models\Wallet;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
+
+class BidController extends Controller
+{
+    /**
+     * Display a listing of bids for an auction
+     *
+     * @param int $auctionId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index($auctionId)
+    {
+        $auction = Auction::find($auctionId);
+        
+        if (!$auction) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Auction not found'
+            ], 404);
+        }
+        
+        $bids = $auction->bids()
+            ->with('user:id,name')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => $bids,
+            'auction' => [
+                'id' => $auction->id,
+                'current_bid' => $auction->current_bid,
+                'status' => [
+                    'value' => $auction->status->value,
+                    'label' => $auction->status->label(),
+                ],
+                'time_remaining' => $auction->time_remaining
+            ]
+        ]);
+    }
+    
+    /**
+     * Place a bid on an auction
+     *
+     * @param Request $request
+     * @param int $auctionId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request, $auctionId)
+    {
+        $validator = Validator::make($request->all(), [
+            'bid_amount' => 'required|numeric|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $auction = Auction::find($auctionId);
+        
+        if (!$auction) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Auction not found'
+            ], 404);
+        }
+        
+        // Check if auction is active
+        if ($auction->status !== AuctionStatus::ACTIVE) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bids can only be placed on active auctions'
+            ], 400);
+        }
+        
+        // Update auction time status if needed
+        $auction->updateStatusBasedOnTime();
+        
+        // Double check it's still active after potential status update
+        if ($auction->status !== AuctionStatus::ACTIVE) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This auction has already ended'
+            ], 400);
+        }
+        
+        $bidAmount = $request->bid_amount;
+        
+        // Check if bid is higher than current bid
+        if ($bidAmount <= $auction->current_bid) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bid must be higher than the current bid of ' . $auction->current_bid
+            ], 400);
+        }
+        
+        // Check if car owner is trying to bid on their own auction
+        if ($auction->car->dealer_id === Auth::user()->dealer->id ?? null) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You cannot bid on your own auction'
+            ], 400);
+        }
+        
+        // Check if user has enough funds in wallet
+        $wallet = Wallet::where('user_id', Auth::id())->first();
+        
+        if (!$wallet || $wallet->available_balance < $bidAmount) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Insufficient funds in your wallet'
+            ], 400);
+        }
+        
+        try {
+            // Start database transaction
+            DB::beginTransaction();
+            
+            // Create the bid
+            $bid = new Bid();
+            $bid->auction_id = $auctionId;
+            $bid->user_id = Auth::id();
+            $bid->bid_amount = $bidAmount;
+            $bid->save();
+            
+            // Update auction with new current bid
+            $auction->current_bid = $bidAmount;
+            $auction->save();
+            
+            // Reserve the funds in wallet (Move from available to funded)
+            $wallet->available_balance -= $bidAmount;
+            $wallet->funded_balance += $bidAmount;
+            $wallet->save();
+            
+            // If there was a previous highest bid from another user, release their funds
+            $previousHighestBidFromOthers = Bid::where('auction_id', $auctionId)
+                ->where('user_id', '!=', Auth::id())
+                ->where('bid_amount', '<', $bidAmount)
+                ->orderBy('bid_amount', 'desc')
+                ->first();
+                
+            if ($previousHighestBidFromOthers) {
+                $previousUserWallet = Wallet::where('user_id', $previousHighestBidFromOthers->user_id)->first();
+                if ($previousUserWallet) {
+                    $previousUserWallet->funded_balance -= $previousHighestBidFromOthers->bid_amount;
+                    $previousUserWallet->available_balance += $previousHighestBidFromOthers->bid_amount;
+                    $previousUserWallet->save();
+                }
+            }
+            
+            DB::commit();
+            
+            // Notify dealer of new bid (could be done with events)
+            // BidPlaced::dispatch($bid);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Bid placed successfully',
+                'data' => [
+                    'bid' => $bid,
+                    'auction' => [
+                        'id' => $auction->id,
+                        'current_bid' => $auction->current_bid,
+                        'time_remaining' => $auction->time_remaining
+                    ]
+                ]
+            ], 201);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error placing bid: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get a user's bidding history
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function myBidHistory()
+    {
+        $userId = Auth::id();
+        
+        $bids = Bid::with(['auction', 'auction.car'])
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+            
+        // Group bids by auction
+        $auctionsWithBids = [];
+        foreach ($bids as $bid) {
+            $auctionId = $bid->auction_id;
+            if (!isset($auctionsWithBids[$auctionId])) {
+                $auction = $bid->auction;
+                $auctionsWithBids[$auctionId] = [
+                    'auction_id' => $auctionId,
+                    'car' => $auction->car,
+                    'status' => $auction->status->value,
+                    'status_label' => $auction->status->label(),
+                    'current_bid' => $auction->current_bid,
+                    'end_time' => $auction->end_time,
+                    'won' => $auction->status === AuctionStatus::ENDED && 
+                             $auction->highestBidder() && 
+                             $auction->highestBidder()->id === $userId,
+                    'bids' => []
+                ];
+            }
+            
+            $auctionsWithBids[$auctionId]['bids'][] = [
+                'amount' => $bid->bid_amount,
+                'time' => $bid->created_at,
+                'is_winning' => $bid->bid_amount === $bid->auction->current_bid
+            ];
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => array_values($auctionsWithBids),
+            'pagination' => [
+                'total' => $bids->total(),
+                'per_page' => $bids->perPage(),
+                'current_page' => $bids->currentPage(),
+                'last_page' => $bids->lastPage()
+            ]
+        ]);
+    }
+    
+    /**
+     * Get a leaderboard of top bidders for an auction
+     *
+     * @param int $auctionId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function leaderboard($auctionId)
+    {
+        $auction = Auction::find($auctionId);
+        
+        if (!$auction) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Auction not found'
+            ], 404);
+        }
+        
+        $topBidders = $auction->bids()
+            ->select('user_id', DB::raw('MAX(bid_amount) as highest_bid'), DB::raw('COUNT(*) as bid_count'))
+            ->groupBy('user_id')
+            ->orderBy('highest_bid', 'desc')
+            ->with('user:id,name')
+            ->take(10)
+            ->get()
+            ->map(function($bid) use ($auction) {
+                return [
+                    'user_id' => $bid->user_id,
+                    'name' => $bid->user->name,
+                    'highest_bid' => $bid->highest_bid,
+                    'is_highest' => $bid->highest_bid == $auction->current_bid,
+                    'bid_count' => $bid->bid_count
+                ];
+            });
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => $topBidders,
+            'auction' => [
+                'id' => $auction->id,
+                'current_bid' => $auction->current_bid,
+                'status' => $auction->status->value,
+                'time_remaining' => $auction->time_remaining
+            ]
+        ]);
+    }
+    
+    /**
+     * Check if a user's bid is still the highest
+     * 
+     * @param int $bidId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkBidStatus($bidId)
+    {
+        $bid = Bid::with('auction')->find($bidId);
+        
+        if (!$bid || $bid->user_id !== Auth::id()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bid not found'
+            ], 404);
+        }
+        
+        $auction = $bid->auction;
+        $isHighestBid = $bid->bid_amount == $auction->current_bid;
+        $outbidAmount = $isHighestBid ? null : $auction->current_bid;
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'is_highest_bid' => $isHighestBid,
+                'outbid_by' => $outbidAmount ? ($outbidAmount - $bid->bid_amount) : 0,
+                'current_highest' => $auction->current_bid,
+                'auction_status' => $auction->status->value,
+                'time_remaining' => $auction->time_remaining
+            ]
+        ]);
+    }
+}
