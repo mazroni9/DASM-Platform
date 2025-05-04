@@ -174,7 +174,7 @@ export default function GeneralAuctionRequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-4">
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
@@ -183,11 +183,11 @@ export default function GeneralAuctionRequestPage() {
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
-            <span>العودة إلى الأسواق المتنوعة</span>
+            <span>العودة إلى الأسواق العامة</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white">تسجيل منتج للبيع</h1>
+          <h1 className="text-3xl font-bold text-white">طلب مزاد عام</h1>
           <p className="text-white/80 mt-2">
-            سجل منتجك على منصتنا وانضم إلى عالم المزادات الرقمية الآمن والموثوق
+            قم بتسجيل منتجك للبيع من خلال منصتنا واستفد من سوق واسع من المشترين المهتمين
           </p>
         </div>
       </div>

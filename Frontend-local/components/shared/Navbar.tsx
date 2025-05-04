@@ -20,6 +20,7 @@ import {
     BookOpen,
     RefreshCw,
     Star,
+    Store
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -149,9 +150,10 @@ const Navbar = () => {
   {/* <Link href="/how-it-works" className="hover:text-sky-700 transition-colors">
     كيف نعمل
   </Link> */}
-  {/* <Link href="/auctions" className="hover:text-sky-700 transition-colors">
-     الأسواق المتنوعة
-   </Link> */}
+  <Link href="/auctions" className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive('/auctions') ? 'text-blue-700 font-bold' : ''}`}>
+     <Store size={18} />
+     الأسواق العامة
+   </Link>
 </div>
 
 

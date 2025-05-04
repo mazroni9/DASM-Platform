@@ -2,10 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ChevronLeft, Leaf, PencilRuler, Sofa, Smartphone } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, PencilRuler, Sofa, Smartphone } from 'lucide-react';
 
 export default function SelectiveMarketsPage() {
-  // بيانات الأسواق المتنوعة
+  // بيانات الأسواق العامة
   const markets = [
     {
       id: 'electronics',
@@ -57,23 +57,6 @@ export default function SelectiveMarketsPage() {
         'أدوات وأجهزة منزلية',
         'معدات الرياضة واللياقة'
       ]
-    },
-    {
-      id: 'green',
-      title: 'السوق الأخضر',
-      description: 'منتجات وتقنيات صديقة للبيئة ومستدامة',
-      icon: Leaf,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-500',
-      hoverColor: 'hover:bg-green-100',
-      items: [
-        'سيارات كهربائية وهجينة',
-        'ألواح شمسية ومعدات طاقة متجددة',
-        'منتجات معاد تدويرها',
-        'معدات موفرة للطاقة',
-        'منتجات عضوية ومستدامة'
-      ]
     }
   ];
 
@@ -90,7 +73,7 @@ export default function SelectiveMarketsPage() {
               <ArrowLeft size={20} className="ml-2" />
               <span>العودة إلى الأسواق الرئيسية</span>
             </Link>
-            <h1 className="text-xl font-bold">الأسواق المتنوعة</h1>
+            <h1 className="text-xl font-bold">الأسواق العامة</h1>
           </div>
         </div>
       </div>
@@ -98,7 +81,7 @@ export default function SelectiveMarketsPage() {
       {/* بانر علوي */}
       <div className="relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-4">الأسواق المتنوعة</h1>
+          <h1 className="text-4xl font-bold mb-4">الأسواق العامة</h1>
           <p className="text-xl max-w-3xl mx-auto opacity-90">
             مجموعة متنوعة من الأسواق المتخصصة لمختلف المنتجات والمعدات المستعملة بحالة ممتازة وأسعار تنافسية
           </p>
@@ -152,7 +135,7 @@ export default function SelectiveMarketsPage() {
       {/* قسم معلومات إضافية */}
       <div className="container mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-md p-8 border-r-4 border-blue-500">
-          <h2 className="text-2xl font-bold mb-4">مميزات الأسواق المتنوعة</h2>
+          <h2 className="text-2xl font-bold mb-4">مميزات الأسواق العامة</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-bold text-lg mb-2 text-blue-600">جودة عالية مضمونة</h3>

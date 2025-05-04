@@ -178,7 +178,8 @@ export default function Page() {
         <Container sx={{ mb: 4 }} maxWidth="md">
           <div className="mt-16 mb-10 border-t pt-10 relative">
             <div className="absolute -top-3 left-0 right-0 text-center">
-              {/* تم حذف العنوان العلوي */}
+              {/* تغيير العنوان العلوي من الأسواق المتنوعة إلى الأسواق العامة */}
+              <span className="bg-white px-4 py-1 text-xl font-bold text-blue-700">الأسواق العامة</span>
             </div>
             
             <div className="flex flex-col md:flex-row items-center justify-center gap-6 mt-8">

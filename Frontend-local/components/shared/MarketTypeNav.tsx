@@ -43,7 +43,6 @@ const marketItems = [
   { name: 'الأجهزة الإلكترونية', icon: Smartphone, href: '/auctions/auctions-general/electronics', group: 'left' },
   { name: 'الأثاث المنزلي', icon: Home, href: '/auctions/auctions-general/furniture', group: 'left' },
   { name: 'المعدات العامة', icon: Paintbrush, href: '/auctions/auctions-general/equipment', group: 'left' },
-  { name: 'السوق الأخضر', icon: Leaf, href: '/auctions/auctions-general/green', group: 'left' },
 
   // المجموعة الثالثة (أسفل)
 ];

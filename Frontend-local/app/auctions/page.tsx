@@ -42,7 +42,6 @@ export default function AuctionsPage() {
     { name: 'الأثاث المنزلي', slug: 'auctions-general/furniture', description: 'أثاث منزلي ومكتبي متنوع بحالة جيدة', icon: Sofa, color: 'text-brown-600', bgColor: 'bg-amber-50' },
     { name: 'اللوحات الفنية', slug: 'auctions-general/artworks', description: 'لوحات فنية أصلية ومميزة لفنانين معروفين', icon: Brush, color: 'text-pink-600', bgColor: 'bg-pink-50' },
     { name: 'المعدات العامة', slug: 'auctions-general/equipment', description: 'معدات وأدوات متنوعة للاستخدامات العامة', icon: PencilRuler, color: 'text-gray-600', bgColor: 'bg-gray-50' },
-    { name: 'السوق الأخضر', slug: 'auctions-general/green', description: 'مزادات السيارات الكهربائية والصديقة للبيئة', icon: Leaf, color: 'text-green-500', bgColor: 'bg-green-50' },
   ];
 
   const Divider = () => (
