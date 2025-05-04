@@ -152,7 +152,7 @@ const Navbar = () => {
   </Link> */}
   <Link href="/auctions" className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive('/auctions') ? 'text-blue-700 font-bold' : ''}`}>
      <Store size={18} />
-     الأسواق العامة
+     قطاع الأسواق الرقمية
    </Link>
 </div>
 

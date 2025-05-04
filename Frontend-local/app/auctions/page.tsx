@@ -40,8 +40,8 @@ export default function AuctionsPage() {
   const auctionsGeneral = [
     { name: 'الأجهزة الإلكترونية', slug: 'auctions-general/electronics', description: 'أجهزة إلكترونية متنوعة من هواتف وأجهزة لوحية وحواسيب', icon: Smartphone, color: 'text-blue-500', bgColor: 'bg-blue-50' },
     { name: 'الأثاث المنزلي', slug: 'auctions-general/furniture', description: 'أثاث منزلي ومكتبي متنوع بحالة جيدة', icon: Sofa, color: 'text-brown-600', bgColor: 'bg-amber-50' },
-    { name: 'اللوحات الفنية', slug: 'auctions-general/artworks', description: 'لوحات فنية أصلية ومميزة لفنانين معروفين', icon: Brush, color: 'text-pink-600', bgColor: 'bg-pink-50' },
-    { name: 'المعدات العامة', slug: 'auctions-general/equipment', description: 'معدات وأدوات متنوعة للاستخدامات العامة', icon: PencilRuler, color: 'text-gray-600', bgColor: 'bg-gray-50' },
+    { name: 'المعدات العامة', slug: 'auctions-general/equipment', description: 'معدات وأدوات للاستخدامات المتنوعة', icon: PencilRuler, color: 'text-gray-700', bgColor: 'bg-gray-50' },
+    { name: 'السوق الأخضر', slug: 'auctions-general/green', description: 'منتجات صديقة للبيئة وتدعم الاستدامة', icon: Leaf, color: 'text-green-600', bgColor: 'bg-green-50' }
   ];
 
   const Divider = () => (
@@ -125,7 +125,7 @@ export default function AuctionsPage() {
         {auctionsSpecial.map((auction) => <AuctionCard key={auction.slug} auction={auction} isSpecial />)}
         <Divider />
 
-        <SectionTitle title="اسواق العامة" />
+        <SectionTitle title="اسواق عامة" />
         {auctionsGeneral.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
       </div>
     </main>

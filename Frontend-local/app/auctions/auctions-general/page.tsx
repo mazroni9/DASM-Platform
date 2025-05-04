@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ChevronLeft, PencilRuler, Sofa, Smartphone } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, PencilRuler, Sofa, Smartphone, Leaf } from 'lucide-react';
 
 export default function SelectiveMarketsPage() {
   // بيانات الأسواق العامة
@@ -56,6 +56,23 @@ export default function SelectiveMarketsPage() {
         'معدات ورش العمل',
         'أدوات وأجهزة منزلية',
         'معدات الرياضة واللياقة'
+      ]
+    },
+    {
+      id: 'green',
+      title: 'السوق الأخضر',
+      description: 'منتجات صديقة للبيئة تدعم الاستدامة والحفاظ على الموارد الطبيعية',
+      icon: Leaf,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-500',
+      hoverColor: 'hover:bg-green-100',
+      items: [
+        'منتجات الطاقة المتجددة',
+        'أجهزة موفرة للطاقة',
+        'منتجات قابلة لإعادة التدوير',
+        'مستلزمات الزراعة المنزلية',
+        'منتجات عضوية ومستدامة'
       ]
     }
   ];
