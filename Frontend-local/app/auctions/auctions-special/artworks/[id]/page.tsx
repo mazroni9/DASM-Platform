@@ -17,7 +17,7 @@ import {
   Check, 
   ChevronRight, 
   ChevronLeft,
-  Zoom
+  Search as ZoomIcon
 } from 'lucide-react';
 
 // بيانات مؤقتة للقطع الفنية (ستأتي من API في التطبيق الفعلي)
@@ -184,7 +184,7 @@ export default function ArtworkDetailsPage({ params }) {
                   className="absolute bottom-4 left-4 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition"
                   aria-label="تكبير الصورة"
                 >
-                  <Zoom size={20} />
+                  <ZoomIcon size={20} />
                 </button>
               </div>
               

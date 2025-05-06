@@ -8,14 +8,14 @@ import {
   Calendar, 
   Clock, 
   Shield, 
-  Certificate, 
+  FileText as Certificate,
   ChevronRight, 
   ChevronLeft,
   Download,
   MapPin,
   MessageCircle,
   ShoppingBag,
-  HeartIcon,
+  Heart as HeartIcon,
   Share2
 } from 'lucide-react';
 

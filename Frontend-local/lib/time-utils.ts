@@ -54,4 +54,23 @@ export function addDays(date: Date, days: number): Date {
  */
 export function getInputDateFormat(date: Date = new Date()): string {
   return date.toISOString().split('T')[0];
+}
+
+/**
+ * تحديد نوع المزاد الحالي بناءً على الوقت
+ * الحراج المباشر: 4-7 مساءً
+ * السوق الفوري: 7-10 مساءً
+ * السوق المتأخر: 10 مساءً-4 عصراً
+ */
+export function getCurrentAuctionType(): string {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  if (hour >= 16 && hour < 19) {
+    return 'live'; // الحراج المباشر
+  } else if (hour >= 19 && hour < 22) {
+    return 'immediate'; // السوق الفوري
+  } else {
+    return 'late'; // السوق المتأخر
+  }
 } 

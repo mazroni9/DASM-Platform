@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
-  const id = context.params.id;
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const id = params.id;
 
   try {
     // محاكاة للتحقق من المستخدم - سيتم تحسينه لاحقًا مع نظام المصادقة

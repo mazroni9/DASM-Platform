@@ -1,4 +1,3 @@
-
 /**
  * ✅ ملف تجميعي لجميع مكونات الواجهة
  * 📁 المسار: Frontend-local/components/index.ts
@@ -10,3 +9,4 @@
  */
 
 export { default as PlateSearch } from './PlateSearch';
+export { default as AuctionCard } from './AuctionCard';

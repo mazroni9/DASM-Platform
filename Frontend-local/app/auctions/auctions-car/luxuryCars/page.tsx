@@ -10,7 +10,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AuctionCard } from '@/components';
+import AuctionCard from '@/components/AuctionCard';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
