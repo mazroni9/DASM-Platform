@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
+// import Cookies from 'js-cookie';
+import { CookiesWorkaround } from './cookie-workaround';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,8 +31,12 @@ export default function LoginPage() {
       }
 
       // ✅ تخزين التوكن والصلاحية في الكوكيز
-      Cookies.set('token', data.token, { expires: 7 }); // مدة 7 أيام
-      Cookies.set('role', data.user.role || 'user', { expires: 7 });
+      // Cookies.set('token', data.token, { expires: 7 }); // مدة 7 أيام
+      // Cookies.set('role', data.user.role || 'user', { expires: 7 });
+      
+      // 🆕 استخدام الحل البديل
+      CookiesWorkaround.set('token', data.token, { expires: 7 });
+      CookiesWorkaround.set('role', data.user.role || 'user', { expires: 7 });
 
       // ✅ إعادة التوجيه إلى لوحة التحكم
       router.push('/dashboard');
