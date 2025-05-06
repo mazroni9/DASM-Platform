@@ -11,6 +11,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { AuctionCard } from '@/components';
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 
 export default function LuxuryCarsPage() {
   const [cars, setCars] = useState([]);
@@ -25,6 +27,17 @@ export default function LuxuryCarsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black py-12 px-6">
       <div className="max-w-7xl mx-auto">
+        {/* زر العودة */}
+        <div className="flex justify-start mb-6">
+          <Link 
+            href="/auctions/auctions-car"
+            className="inline-flex items-center text-yellow-400 hover:text-yellow-300 transition-colors px-4 py-2 rounded-full border border-yellow-500 hover:border-yellow-400 bg-opacity-20 bg-yellow-900 hover:bg-opacity-30"
+          >
+            <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
+            <span>العودة لسوق السيارات</span>
+          </Link>
+        </div>
+
         <h1 className="text-4xl font-serif text-center text-yellow-400 mb-10">سوق السيارات الفارهة</h1>
 
         {cars.length === 0 ? (

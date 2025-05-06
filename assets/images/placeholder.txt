@@ -1,0 +1,21 @@
+هذا ملف مؤقت فقط، يرجى استبداله بالصور الفعلية للعبة.
+
+الملفات المطلوبة:
+- logo.png (شعار اللعبة)
+- background.png (خلفية اللعبة)
+- button.png (زر قياسي)
+- button_hover.png (زر عند تمرير المؤشر)
+- star.png (نجمة للتقييم)
+- star_empty.png (نجمة غير ممتلئة)
+- wood_texture.png (نسيج الخشب)
+- screw_head.png (رأس المسمار)
+- screw_body.png (جسم المسمار)
+- nut_hexagon.png (صامولة سداسية)
+- nut_square.png (صامولة مربعة)
+- nut_wing.png (صامولة جناحية)
+- highlight_effect.png (تأثير الإضاءة)
+- level_locked.png (مستوى مقفل)
+- level_unlocked.png (مستوى مفتوح)
+- level_completed.png (مستوى مكتمل)
+- settings_icon.png (أيقونة الإعدادات)
+- home_icon.png (أيقونة الرئيسية) 

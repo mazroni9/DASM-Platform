@@ -118,27 +118,31 @@ export default function WatchesMarketPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* بانر علوي */}
-      <div className="relative h-96 bg-gradient-to-r from-indigo-600 via-blue-500 to-sky-400 overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10 py-16">
-          <Link href="/auctions/auctions-special" className="flex items-center text-white/80 hover:text-white mb-6 transition group">
-            <ChevronRight className="ml-2 transform group-hover:-translate-x-1 transition-transform" size={20} />
-            <span>العودة للأسواق المتخصصة</span>
-          </Link>
-          <h1 className="text-5xl font-bold text-white mb-4">سوق الساعات الفاخرة المستعملة</h1>
-          <p className="text-xl text-white/90 max-w-2xl mb-8">
+      <div className="relative h-48 bg-gradient-to-r from-indigo-500/80 to-blue-400/80 overflow-hidden">
+        <div className="absolute inset-0 bg-black/5"></div>
+        <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10 pt-4">
+          <div className="flex justify-between mb-2">
+            <div className="flex-1 text-center">
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">سوق الساعات الفاخرة المستعملة</h1>
+            </div>
+            <Link href="/auctions/auctions-special" className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse">
+              <ChevronRight className="ml-1 rtl:mr-1 rtl:ml-0 transform group-hover:-translate-x-1 transition-transform" size={16} />
+              <span>العودة للأسواق المتخصصة</span>
+            </Link>
+          </div>
+          <p className="text-base text-white/90 max-w-2xl mx-auto mb-4 text-center">
             منصة آمنة وموثوقة لشراء وبيع أفخم الساعات السويسرية المستعملة بضمان أصلي ومعتمد
           </p>
-          <div className="flex items-center gap-4 mt-4">
+          <div className="flex justify-center items-center gap-4">
             <Link 
               href="/forms/watch-auction-request" 
-              className="px-6 py-3 bg-white text-indigo-600 hover:bg-gray-100 font-bold rounded-full shadow-md hover:shadow-lg transition-all"
+              className="px-5 py-2 bg-white text-indigo-600 hover:bg-gray-100 font-medium rounded-full shadow-md hover:shadow-lg transition-all text-sm"
             >
               بيع ساعتك معنا
             </Link>
             <Link 
               href="#featured-watches" 
-              className="px-6 py-3 bg-transparent border-2 border-white text-white hover:bg-white/10 font-bold rounded-full transition-all"
+              className="px-5 py-2 bg-transparent border border-white text-white hover:bg-white/10 font-medium rounded-full transition-all text-sm"
             >
               تصفح الساعات
             </Link>

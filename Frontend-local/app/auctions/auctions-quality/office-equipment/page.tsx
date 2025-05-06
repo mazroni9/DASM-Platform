@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Printer, FilterX, Search, Tag, SortAsc, Monitor } from 'lucide-react';
-import BackToAuctionsButton from '@/components/shared/BackToAuctionsButton';
+import { ArrowLeft, Printer, FilterX, Search, Tag, SortAsc, Monitor, ChevronLeft } from 'lucide-react';
 
 // واجهة نموذج البيانات للآلات المكتبية
 interface OfficeProduct {
@@ -80,15 +79,23 @@ export default function OfficeEquipmentPage() {
       <div className="bg-gradient-to-r from-sky-500 to-blue-600 py-6">
         <div className="container mx-auto px-4">
           <div className="mb-4">
-            <BackToAuctionsButton />
+            <Link 
+              href="/auctions/auctions-quality" 
+              className="inline-flex items-center text-white/90 hover:text-white transition-colors px-4 py-2 rounded-full border border-sky-400 hover:border-sky-300 bg-sky-600/50 hover:bg-sky-600/70 rtl:flex-row-reverse"
+            >
+              <ChevronLeft className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
+              <span>العودة للسوق النوعي</span>
+            </Link>
           </div>
-          <div className="flex items-center">
-            <Printer className="text-white mr-3 h-8 w-8" />
-            <h1 className="text-3xl font-bold text-white">الآلات المكتبية المستعملة</h1>
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Printer className="text-white ml-3 h-8 w-8" />
+              <h1 className="text-3xl font-bold text-white">الآلات المكتبية المستعملة</h1>
+            </div>
+            <p className="text-white/80 mt-2">
+              نقدم مجموعة متنوعة من المعدات المكتبية المستعملة بأسعار تنافسية
+            </p>
           </div>
-          <p className="text-white/80 mt-2">
-            نقدم مجموعة متنوعة من المعدات المكتبية المستعملة بأسعار تنافسية
-          </p>
         </div>
       </div>
 

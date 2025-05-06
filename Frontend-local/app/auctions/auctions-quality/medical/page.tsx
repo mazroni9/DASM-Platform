@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Filter, FilterX, Search, HeartPulse, Stethoscope } from 'lucide-react';
-import BackToAuctionsButton from '@/components/shared/BackToAuctionsButton';
+import { ArrowLeft, Filter, FilterX, Search, HeartPulse, Stethoscope, ChevronLeft } from 'lucide-react';
 
 // واجهة نموذج البيانات للأجهزة الطبية
 interface MedicalProduct {
@@ -80,15 +79,23 @@ export default function MedicalEquipmentPage() {
       <div className="bg-gradient-to-r from-teal-500 to-teal-700 py-6">
         <div className="container mx-auto px-4">
           <div className="mb-4">
-            <BackToAuctionsButton />
+            <Link 
+              href="/auctions/auctions-quality" 
+              className="inline-flex items-center text-white/90 hover:text-white transition-colors px-4 py-2 rounded-full border border-teal-400 hover:border-teal-300 bg-teal-600/50 hover:bg-teal-600/70 rtl:flex-row-reverse"
+            >
+              <ChevronLeft className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
+              <span>العودة للسوق النوعي</span>
+            </Link>
           </div>
-          <div className="flex items-center">
-            <HeartPulse className="text-white mr-3 h-8 w-8" />
-            <h1 className="text-3xl font-bold text-white">الأجهزة الطبية المستعملة</h1>
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-2">
+              <HeartPulse className="text-white ml-3 h-8 w-8" />
+              <h1 className="text-3xl font-bold text-white">الأجهزة الطبية المستعملة</h1>
+            </div>
+            <p className="text-white/80 mt-2">
+              نقدم مجموعة متنوعة من الأجهزة والمعدات الطبية بحالة جيدة وبأسعار تنافسية
+            </p>
           </div>
-          <p className="text-white/80 mt-2">
-            نقدم مجموعة متنوعة من الأجهزة والمعدات الطبية بحالة جيدة وبأسعار تنافسية
-          </p>
         </div>
       </div>
 

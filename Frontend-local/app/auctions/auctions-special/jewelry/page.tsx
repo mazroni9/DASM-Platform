@@ -41,11 +41,12 @@ export default function JewelryAuctionsPage() {
       <PageHeader 
         title="مزادات المجوهرات والحلي"
         backUrl="/auctions/auctions-special"
-        backLabel="العودة إلى المزادات المميزة"
+        backLabel="العودة إلى المزادات الخاصة"
         gradient={true}
+        color="purple"
       />
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8">
         {items.length === 0 ? (
           <p className="text-center text-gray-500">لا توجد قطع مجوهرات مضافة حاليًا.</p>
         ) : (

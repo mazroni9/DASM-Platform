@@ -8,32 +8,45 @@ interface PageHeaderProps {
   backUrl: string;
   backLabel?: string;
   gradient?: boolean;
+  color?: string;
 }
 
 export default function PageHeader({ 
   title, 
   backUrl, 
   backLabel = 'العودة',
-  gradient = true
+  gradient = true,
+  color = 'blue'
 }: PageHeaderProps) {
+  // تحديد ألوان الخلفية المناسبة حسب اللون
+  const getGradient = () => {
+    if (!gradient) return `bg-${color}-500/80`;
+    
+    switch(color) {
+      case 'green': return 'bg-gradient-to-r from-green-500/80 to-green-400/80';
+      case 'indigo': return 'bg-gradient-to-r from-indigo-500/80 to-blue-400/80';
+      case 'purple': return 'bg-gradient-to-r from-purple-500/80 to-purple-400/80';
+      default: return 'bg-gradient-to-r from-blue-500/80 to-blue-400/80';
+    }
+  };
+
   return (
-    <div className={`py-6 ${gradient ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-green-500'}`}>
-      <div className="container mx-auto px-4">
-        <div className="flex items-center mb-2">
-          {/* زر الرجوع (على اليمين) */}
+    <div className={`py-4 h-48 ${getGradient()}`}>
+      <div className="container mx-auto px-4 h-full flex flex-col justify-center">
+        <div className="flex justify-between mb-2">
+          {/* زر العودة في الجهة اليمنى */}
           <Link 
             href={backUrl} 
-            className="flex items-center text-white hover:text-white/90 transition"
+            className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse"
           >
-            <ArrowLeft size={20} className="ml-2" />
+            <ArrowLeft size={16} className="ml-1 rtl:mr-1 rtl:ml-0" />
             <span>{backLabel}</span>
           </Link>
           
           {/* العنوان في المنتصف */}
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center flex-1">{title}</h1>
-          
-          {/* عنصر فارغ للحفاظ على المحاذاة */}
-          <div className="w-[100px]"></div>
+          <div className="flex-1 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{title}</h1>
+          </div>
         </div>
       </div>
     </div>

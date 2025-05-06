@@ -12,6 +12,7 @@
 import React, { useEffect, useState } from 'react';
 import AuctionCard from '@/components/AuctionCard';
 import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function BusesTrucksPage() {
   const [vehicles, setVehicles] = useState([]);
@@ -61,15 +62,13 @@ export default function BusesTrucksPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black py-12 px-6">
       <div className="max-w-7xl mx-auto">
         {/* زر العودة إلى سوق السيارات */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-start mb-6">
           <Link 
             href="/auctions/auctions-car" 
-            className="inline-flex items-center text-blue-400 hover:text-blue-300"
+            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-full border border-blue-500 hover:border-blue-400 bg-opacity-20 bg-blue-900 hover:bg-opacity-30"
           >
+            <ArrowLeft className="h-4 w-4 ml-2" />
             <span>العودة إلى سوق السيارات</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
           </Link>
         </div>
 

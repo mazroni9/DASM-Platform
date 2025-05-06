@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 type BackToAuctionsButtonProps = {
   className?: string;
@@ -11,15 +11,15 @@ type BackToAuctionsButtonProps = {
 
 export default function BackToAuctionsButton({ 
   className = '',
-  href = '/auctions/auctions-quality',
-  text = 'العودة إلى السوق النوعي'
+  href = '/auctions/auctions-car',
+  text = 'العودة لقطاع السيارات'
 }: BackToAuctionsButtonProps) {
   return (
     <Link 
       href={href} 
-      className={`inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100 rtl:flex-row-reverse ${className}`}
+      className={`inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 rounded-full border border-blue-200 hover:border-blue-300 bg-white hover:bg-blue-50 rtl:flex-row-reverse ${className}`}
     >
-      <ChevronRight className="h-4 w-4 ltr:mr-1 rtl:ml-1 rtl:rotate-180" />
+      <ChevronLeft className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
       <span>{text}</span>
     </Link>
   );

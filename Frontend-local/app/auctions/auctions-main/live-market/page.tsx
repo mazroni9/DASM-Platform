@@ -17,6 +17,7 @@ import { ChevronRight, Clock } from 'lucide-react';
 import PlateSearch from './component/PlateSearch';
 import BidTimer from '@/components/BidTimer';
 import BidForm from '@/components/BidForm';
+import { formatMoney } from '@/app/lib/format-utils';
 
 // دالة للحصول على نوع المزاد الحالي
 function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive: boolean } {
@@ -111,10 +112,6 @@ export default function LiveMarketPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 py-6">
       <div className="max-w-7xl mx-auto">
-        {/* العنوان الرئيسي للمنصة باللغة الإنجليزية */}
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-medium text-blue-700 tracking-wide max-w-2xl mx-auto pb-1.5 border-b border-gray-200">Digital Auctions Sectors Market</h1>
-        </div>
         {/* زر العودة منفرد في الجهة اليمنى */}
         <div className="flex justify-end mb-4">
           <Link 
@@ -173,11 +170,6 @@ export default function LiveMarketPage() {
                       <div className="col-span-2 mt-1"><span className="font-semibold">ملاحظات:</span> {currentCar.notes || "ملاحظات أولية..."}</div>
                     </div>
                     
-                    <div className="text-base text-gray-600">
-                      <span>مشاهدون: {currentCar.viewers || "127"} | </span>
-                      <span>مزايدون: {currentCar.bidders || "15"} (تقريبًا)</span>
-                    </div>
-                    
                     {currentCar.report_url && (
                       <div>
                         <a 
@@ -191,33 +183,44 @@ export default function LiveMarketPage() {
                       </div>
                     )}
                     
-                    <div className="mt-4">
-                      <h3 className="font-semibold text-lg">آخر سعر أعلنه المحرج</h3>
-                      <div className="text-3xl font-bold text-teal-600 mt-1">
-                        {currentCar.current_price || "55,000"} ريال
+                    {/* قسم تفاصيل المشاهدين والسعر وتقديم العرض - معاد تنسيقه */}
+                    <div className="mt-4 border rounded-lg bg-gray-50 p-4">
+                      {/* معلومات المشاهدين والمزايدين */}
+                      <div className="text-center text-gray-600 mb-3">
+                        <span>مشاهدون: {currentCar.viewers || "127"} | </span>
+                        <span>مزايدون: {currentCar.bidders || "15"} (تقريباً)</span>
                       </div>
+                      
+                      {/* آخر سعر */}
+                      <div className="text-center mb-4">
+                        <h3 className="font-semibold text-lg text-teal-800">آخر سعر</h3>
+                        <div className="text-3xl font-bold text-teal-600 my-3 py-3 rounded-lg border-2 border-teal-200 bg-white">
+                          {formatMoney(currentCar.current_price || "380000")} ريال
+                        </div>
+                      </div>
+                      
+                      {/* زر تقديم العرض */}
+                      {!showBid ? (
+                        <button 
+                          onClick={() => setShowBid(true)}
+                          className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-bold text-3xl border-2 border-teal-700"
+                        >
+                          قدم عرضك
+                        </button>
+                      ) : (
+                        <div>
+                          <BidForm 
+                            itemId={parseInt(currentCar.id) || 1} 
+                            currentPrice={parseInt((currentCar.current_price || "55000").toString().replace(/,/g, ''))} 
+                            onSuccess={() => {
+                              setShowBid(false);
+                              setStatus('✅ تمت المزايدة بنجاح');
+                            }}
+                          />
+                          {status && <p className="text-center text-sm mt-2">{status}</p>}
+                        </div>
+                      )}
                     </div>
-                    
-                    {!showBid ? (
-                      <button 
-                        onClick={() => setShowBid(true)}
-                        className="mt-6 w-full bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 font-bold"
-                      >
-                        تأكيد المزايدة
-                      </button>
-                    ) : (
-                      <div className="mt-6">
-                        <BidForm 
-                          itemId={parseInt(currentCar.id) || 1} 
-                          currentPrice={parseInt((currentCar.current_price || "55000").toString().replace(/,/g, ''))} 
-                          onSuccess={() => {
-                            setShowBid(false);
-                            setStatus('✅ تمت المزايدة بنجاح');
-                          }}
-                        />
-                        {status && <p className="text-center text-sm mt-2">{status}</p>}
-                      </div>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -294,9 +297,9 @@ export default function LiveMarketPage() {
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.meta?.make || "شيفروليه"}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.meta?.model || "سيلفرادو"}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.meta?.year || "2018"}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.min_price || "50,000"} ريال</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.max_price || "60,000"} ريال</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{car.current_price || "55,000"} ريال</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.min_price || "50000")} ريال</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.max_price || "60000")} ريال</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatMoney(car.current_price || "55000")} ريال</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
                         <Link href={`/car/${car.id}`} className="hover:underline">عرض</Link>
                       </td>
@@ -316,9 +319,9 @@ export default function LiveMarketPage() {
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">شيفروليه</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">سيلفرادو</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">2018</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">50,000 ريال</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">60,000 ريال</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">55,000 ريال</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney("50000")} ريال</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney("60000")} ريال</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatMoney("55000")} ريال</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
                       <Link href={`/car/example`} className="hover:underline">عرض</Link>
                     </td>

@@ -1,12 +1,16 @@
 /**
  * 📝 الصفحة: تفاصيل السيرفر المستعمل
- * 📁 المسار: Frontend-local/app/auctions/quality-market/used-servers/[id]/page.tsx
+ * 📁 المسار: Frontend-local/app/auctions/auctions-quality/used-servers/[id]/page.tsx
  * 
  * ✅ الوظيفة:
  * - عرض تفاصيل السيرفر المستعمل المختار
  * - عرض صور متعددة للسيرفر
  * - عرض المواصفات والسعر وبيانات الاتصال
  * - إمكانية تنزيل ملف PDF للتقرير الفني إن وجد
+ * 
+ * 🔄 الارتباطات:
+ * - يتم الوصول إليها من: صفحة قائمة السيرفرات المستعملة (/auctions/auctions-quality/used-servers)
+ * - تعود إلى: صفحة قائمة السيرفرات المستعملة
  */
 
 'use client';
@@ -147,7 +151,7 @@ export default function ServerDetailsPage() {
               قد يكون هذا السيرفر غير موجود أو تم إزالته
             </p>
             <Link 
-              href="/auctions/quality-market/used-servers" 
+              href="/auctions/auctions-quality/used-servers" 
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
             >
               العودة إلى قائمة السيرفرات
@@ -164,7 +168,7 @@ export default function ServerDetailsPage() {
       <div className="bg-gradient-to-r from-blue-700 to-indigo-800 py-6">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/quality-market/used-servers" 
+            href="/auctions/auctions-quality/used-servers" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -343,7 +347,7 @@ export default function ServerDetailsPage() {
         {/* زر العودة للخلف */}
         <div className="mt-8 text-center">
           <Link 
-            href="/auctions/quality-market/used-servers" 
+            href="/auctions/auctions-quality/used-servers" 
             className="inline-flex items-center text-blue-700 hover:text-blue-800"
           >
             <ArrowLeft size={16} className="ml-1" />
@@ -353,4 +357,4 @@ export default function ServerDetailsPage() {
       </div>
     </div>
   );
-}
+} 
