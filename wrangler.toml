@@ -1,0 +1,9 @@
+# Cloudflare Pages configuration file
+name = "mazad-website"
+
+[build]
+command = "cd Frontend-local && npm install js-cookie @types/js-cookie && npm run build"
+output_directory = "Frontend-local/.next"
+
+[build.environment]
+NODE_VERSION = "20" 

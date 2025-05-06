@@ -23,6 +23,7 @@ jobs:
         run: |
           cd Frontend-local
           npm ci
+          npm install js-cookie @types/js-cookie
 
       - name: Build Project
         run: |
