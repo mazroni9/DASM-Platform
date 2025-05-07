@@ -1,0 +1,12 @@
+[build]
+command = "pnpm run build"
+output_directory = ".next"
+
+[site]
+bucket = ".next"
+
+[build.environment]
+NODE_VERSION = "18.18.0"
+
+[experimental]
+pages_build_output_dir = ".next"
