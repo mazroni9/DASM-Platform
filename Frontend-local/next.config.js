@@ -7,7 +7,7 @@ const nextConfig = {
     experimental: {},
     // Configuration for Cloudflare Pages
     output: "standalone",
-    distDir: ".next-cloudflare",
+    distDir: ".next",
     images: {
         unoptimized: true,
     },
