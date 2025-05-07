@@ -5,16 +5,13 @@
  * 🔹 الفائدة: يُستخدم في صفحة تفاصيل المزاد التنفيذي لعرض معلومات السيارة أو الساعة الفاخرة.
  * 🔹 الارتباطات:
  *    - يُستخدم من قبل صفحة: `/executive-auctions/[id]`
- *    - يعتمد على استخراج `id` من `request.url` نظرًا لاختلاف هيكل `params` في Cloudflare Pages.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { NextApiRequest } from 'next'; // ليس ضروري حاليًا ولكن مفيد لتوسعة مستقبلية
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop(); // استخراج id من مسار الرابط
+    const id = params.id;
 
     const data = {
       "1": {
@@ -37,10 +34,12 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    // إذا كان العنصر موجودًا
     if (id && id in data) {
       return NextResponse.json(data[id]);
     }
 
+    // غير موجود
     return NextResponse.json(
       { error: "العنصر غير موجود" },
       { status: 404 }
