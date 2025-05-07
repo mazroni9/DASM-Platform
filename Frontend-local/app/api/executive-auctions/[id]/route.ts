@@ -1,10 +1,21 @@
+/**
+ * المسار: app/api/executive-auctions/[id]/route.ts
+ *
+ * 🔹 الوظيفة: جلب بيانات مزاد تنفيذي محدد حسب معرف `id` ضمن URL.
+ * 🔹 الفائدة: يُستخدم في صفحة تفاصيل المزاد التنفيذي لعرض معلومات السيارة أو الساعة الفاخرة.
+ * 🔹 الارتباطات:
+ *    - يُستخدم من قبل صفحة: `/executive-auctions/[id]`
+ *    - يعتمد على استخراج `id` من `request.url` نظرًا لاختلاف هيكل `params` في Cloudflare Pages.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
+import { NextApiRequest } from 'next'; // ليس ضروري حاليًا ولكن مفيد لتوسعة مستقبلية
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
   try {
-    const { id } = params;
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop(); // استخراج id من مسار الرابط
 
-    // البيانات المزيفة للمزادات التنفيذية
     const data = {
       "1": {
         id: "1",
@@ -26,12 +37,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }
     };
 
-    // إذا كان العنصر موجودًا
-    if (id in data) {
+    if (id && id in data) {
       return NextResponse.json(data[id]);
     }
 
-    // غير موجود
     return NextResponse.json(
       { error: "العنصر غير موجود" },
       { status: 404 }
