@@ -17,9 +17,9 @@ const nextConfig = {
             // Configure smaller chunk sizes to stay under Cloudflare's 25MB limit
             config.optimization.splitChunks = {
                 chunks: "all",
-                maxInitialRequests: 25,
-                minSize: 20000,
-                maxSize: 20 * 1024 * 1024, // 20MB max size to be safe
+                maxInitialRequests: 30,
+                minSize: 10000,
+                maxSize: 15 * 1024 * 1024, // Reduced to 15MB to be extra safe
                 cacheGroups: {
                     default: false,
                     vendors: false,
@@ -39,7 +39,7 @@ const nextConfig = {
                             return `npm.${packageName.replace("@", "")}`;
                         },
                         priority: 20,
-                        minChunks: 2,
+                        minChunks: 1,
                         reuseExistingChunk: true,
                     },
                     commons: {
@@ -49,9 +49,23 @@ const nextConfig = {
                     },
                 },
             };
+
+            // Exclude cache files from build output
+            if (config.output.path) {
+                config.output.path = config.output.path.replace(/\/cache$/, "");
+            }
+
+            // Disable source maps in production to reduce file sizes
+            if (!dev) {
+                config.devtool = false;
+            }
         }
         return config;
     },
+    // Add this to exclude large files from Cloudflare deployment
+    poweredByHeader: false,
+    compress: true,
+    generateEtags: false,
 };
 
 module.exports = nextConfig;

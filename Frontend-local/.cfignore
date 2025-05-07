@@ -1,0 +1,18 @@
+# Exclude Next.js cache files that are too large for Cloudflare
+
+.next/cache/**/\*
+**/.next/cache/\*\*
+**/cache/webpack/**
+
+# Node modules should be installed during build
+
+node_modules/
+
+# Dev files
+
+.git/
+.github/
+.vscode/
+.env\*
+.gitignore
+README.md
