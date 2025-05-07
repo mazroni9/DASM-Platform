@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 import React, { useEffect, useState } from "react";
 import {
   Typography,
@@ -93,7 +93,7 @@ export default function Page() {
     // التعامل مع البيانات بدون استدعاء alert
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/auctions");
+        const res = await fetch("https://api.mazbrothers.com/api/auctions");
         const data = await res.json();
         setAuctions(data);
       } catch (err) {
