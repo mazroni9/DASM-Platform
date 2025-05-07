@@ -1,14 +1,24 @@
-// 📁 المسار: Frontend-local/app/api/executive-auctions/route.ts
-// 📌 الوظيفة: API لإرجاع قائمة المزادات التنفيذية الثابتة (سيارات وساعات).
-// 🔗 يرتبط بصفحة مزادات النخبة وعناصرها، ويكمل API التفاصيل لكل عنصر عبر [id]/route.ts
+/**
+ * مسار الملف: app/api/auctions-exec/[id]/route.ts
+ *
+ * ❖ وظيفة الملف:
+ *   - جلب بيانات مزاد تنفيذي معين (سيارة فاخرة، ساعة نادرة، قطعة استثمارية...) بناءً على المعرّف ID.
+ *   - يُستخدم في صفحة تفاصيل المزاد داخل قسم "المزادات التنفيذية".
+ *
+ * ❖ الارتباطات:
+ *   - يُستدعى من: صفحة `auctions-exec/carDetails/page.tsx` أو ما يعادلها.
+ *   - يعتمد حاليًا على بيانات ثابتة (mocked data)، ويمكن ربطه لاحقًا بقاعدة بيانات فعلية.
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { NextApiRequest } from 'next'; // هذا ليس ضروري ولكن ممكن تحتاجه لو توسعت مستقبلاً
 
 export async function GET(request: NextRequest) {
   try {
-    const data = [
-      {
+    const url = new URL(request.url);
+    const id = url.pathname.split('/').pop(); // استخراج ID من الرابط
+
+    const data = {
+      "1": {
         id: "1",
         title: "مرسيدس SLS AMG",
         category: "سيارات",
@@ -17,7 +27,7 @@ export async function GET(request: NextRequest) {
         currentBid: 1350000,
         image: "/executive/mercedes-sls.jpg"
       },
-      {
+      "2": {
         id: "2",
         title: "ساعة Patek Philippe Nautilus",
         category: "ساعات",
@@ -26,9 +36,16 @@ export async function GET(request: NextRequest) {
         currentBid: 880000,
         image: "/executive/patek-nautilus.jpg"
       }
-    ];
+    };
 
-    return NextResponse.json(data);
+    if (id && id in data) {
+      return NextResponse.json(data[id]);
+    }
+
+    return NextResponse.json(
+      { error: "العنصر غير موجود" },
+      { status: 404 }
+    );
   } catch (error) {
     console.error("خطأ:", error);
     return NextResponse.json(

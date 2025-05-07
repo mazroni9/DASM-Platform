@@ -6,9 +6,7 @@ import Image from 'next/image';
 import { 
   ArrowLeft, 
   Calendar, 
-  Clock, 
-  Shield, 
-  FileText as Certificate,
+  FileText, 
   ChevronRight, 
   ChevronLeft,
   Download,
@@ -16,7 +14,9 @@ import {
   MessageCircle,
   ShoppingBag,
   Heart as HeartIcon,
-  Share2
+  Share2,
+  Shield,
+  Clock
 } from 'lucide-react';
 
 export default function WatchDetailPage({ params }) {
@@ -79,7 +79,7 @@ export default function WatchDetailPage({ params }) {
 
   const calculateTimeLeft = () => {
     const now = new Date();
-    const difference = watchDetails.endDate - now;
+    const difference = watchDetails.endDate.getTime() - now.getTime();
     
     if (difference <= 0) {
       return 'انتهى المزاد';
@@ -221,13 +221,13 @@ export default function WatchDetailPage({ params }) {
                 )}
                 {watchDetails.hasWarranty && (
                   <div className="flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm">
-                    <Certificate size={16} className="ml-1.5" />
+                    <FileText size={16} className="ml-1.5" />
                     <span>مع بطاقة الضمان</span>
                   </div>
                 )}
                 {watchDetails.hasPapers && (
                   <div className="flex items-center px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-full text-sm">
-                    <Certificate size={16} className="ml-1.5" />
+                    <FileText size={16} className="ml-1.5" />
                     <span>مع الأوراق الرسمية</span>
                   </div>
                 )}

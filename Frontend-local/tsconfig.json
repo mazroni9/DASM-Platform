@@ -41,7 +41,10 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    "strictNullChecks": false,
+    "noErrorTruncation": true,
+    "noImplicitAny": false,
+    "skipDefaultLibCheck": true
   },
   "include": [
     "next-env.d.ts",

@@ -8,5 +8,6 @@
  *   تكتب فقط: import { PlateSearch } from '@/components'
  */
 
+// مكونات واجهة المستخدم
 export { default as PlateSearch } from './PlateSearch';
 export { default as AuctionCard } from './AuctionCard';

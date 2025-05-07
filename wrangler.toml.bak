@@ -1,0 +1,23 @@
+# Cloudflare Pages Wrangler Configuration
+
+# اسم المشروع
+name = "dasm-may2025"
+
+# تحديد تاريخ التوافق لوظائف Workers
+compatibility_date = "2023-10-30"
+
+# تكوين مخرجات البناء
+pages_build_output_dir = "Frontend-local/.next"
+
+# تكوين البناء لـ Pages
+[build]
+command = "cd Frontend-local && pnpm install && pnpm run build"
+output_directory = ".next"
+
+# متغيرات البيئة
+[env.production]
+NODE_VERSION = "20"
+
+# إعدادات بيئة البناء
+[build.environment]
+NODE_VERSION = "20" 

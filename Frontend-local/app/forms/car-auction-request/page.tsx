@@ -22,7 +22,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { getCurrentAuctionType } from '@/lib/time-utils';
+
+// تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
+function getCurrentAuctionType(): string {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  if (hour >= 16 && hour < 19) {
+    return 'live'; // الحراج المباشر
+  } else if (hour >= 19 && hour < 22) {
+    return 'immediate'; // السوق الفوري
+  } else {
+    return 'late'; // السوق المتأخر
+  }
+}
 
 export default function CarAuctionRequestPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);

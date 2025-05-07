@@ -15,13 +15,23 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import BidForm from '@/components/BidForm';
 import CarDataEntryButton from '@/components/CarDataEntryButton';
 import Link from 'next/link';
 
-export default function CarDetails() {
+// Loading component to show while the main content is loading
+function CarDetailsLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-xl">جاري تحميل البيانات...</div>
+    </div>
+  );
+}
+
+// Main content component that uses useSearchParams
+function CarDetailsContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   
@@ -304,5 +314,14 @@ export default function CarDetails() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export the main component with Suspense boundary
+export default function CarDetails() {
+  return (
+    <Suspense fallback={<CarDetailsLoading />}>
+      <CarDetailsContent />
+    </Suspense>
   );
 }

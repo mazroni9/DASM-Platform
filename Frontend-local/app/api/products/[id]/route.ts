@@ -10,6 +10,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import { db } from '@/lib/db'; // استيراد اتصال قاعدة البيانات
 
+interface ProductParams {
+  id: string;
+}
+
 // بيانات تجريبية للسيرفرات
 const mockProducts = [
   {
@@ -84,10 +88,10 @@ const mockProducts = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: ProductParams }
 ) {
   try {
-    const id = params.id;
+    const id = context.params.id;
     
     // التحقق من أن المعرف صالح
     if (!id || isNaN(parseInt(id))) {

@@ -62,7 +62,7 @@ export function getInputDateFormat(date: Date = new Date()): string {
  * السوق الفوري: 7-10 مساءً
  * السوق المتأخر: 10 مساءً-4 عصراً
  */
-export function getCurrentAuctionType(): string {
+export function getCurrentAuctionType(): 'live' | 'immediate' | 'late' {
   const now = new Date();
   const hour = now.getHours();
   

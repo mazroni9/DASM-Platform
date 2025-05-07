@@ -17,7 +17,7 @@ import {
   Check, 
   ChevronRight, 
   ChevronLeft,
-  Search as ZoomIcon
+  Search
 } from 'lucide-react';
 
 // بيانات مؤقتة للقطع الفنية (ستأتي من API في التطبيق الفعلي)
@@ -68,7 +68,7 @@ const artworksData = [
 
 export default function ArtworkDetailsPage({ params }) {
   const { id } = params;
-  const [artwork, setArtwork] = useState(null);
+  const [artwork, setArtwork] = useState<typeof artworksData[0] | null>(null);
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState('');
   const [activeImage, setActiveImage] = useState(0);
@@ -184,7 +184,7 @@ export default function ArtworkDetailsPage({ params }) {
                   className="absolute bottom-4 left-4 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition"
                   aria-label="تكبير الصورة"
                 >
-                  <ZoomIcon size={20} />
+                  <Search size={20} />
                 </button>
               </div>
               

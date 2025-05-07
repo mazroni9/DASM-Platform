@@ -1,1 +1,16 @@
-{}
+# تكوين منصة المزادات
+project:
+  name: "dasm-may2025"
+  version: "1.0.0"
+  description: "منصة مزادات عربية"
+
+# إعدادات Cloudflare
+cloudflare:
+  project_name: "dasm-may2025"
+  build_output_dir: "Frontend-local/.next"
+
+# إعدادات متنوعة
+settings:
+  locale: "ar-SA"
+  direction: "rtl"
+  currency: "SAR"

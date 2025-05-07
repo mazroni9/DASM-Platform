@@ -1,14 +1,12 @@
-// 📁 المسار: Frontend-local/app/api/executive-auctions/route.ts
-// 📌 الوظيفة: API لإرجاع قائمة المزادات التنفيذية الثابتة (سيارات وساعات).
-// 🔗 يرتبط بصفحة مزادات النخبة وعناصرها، ويكمل API التفاصيل لكل عنصر عبر [id]/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
-import { NextApiRequest } from 'next'; // هذا ليس ضروري ولكن ممكن تحتاجه لو توسعت مستقبلاً
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const data = [
-      {
+    const { id } = params;
+
+    // البيانات المزيفة للمزادات التنفيذية
+    const data = {
+      "1": {
         id: "1",
         title: "مرسيدس SLS AMG",
         category: "سيارات",
@@ -17,7 +15,7 @@ export async function GET(request: NextRequest) {
         currentBid: 1350000,
         image: "/executive/mercedes-sls.jpg"
       },
-      {
+      "2": {
         id: "2",
         title: "ساعة Patek Philippe Nautilus",
         category: "ساعات",
@@ -26,9 +24,18 @@ export async function GET(request: NextRequest) {
         currentBid: 880000,
         image: "/executive/patek-nautilus.jpg"
       }
-    ];
+    };
 
-    return NextResponse.json(data);
+    // إذا كان العنصر موجودًا
+    if (id in data) {
+      return NextResponse.json(data[id]);
+    }
+
+    // غير موجود
+    return NextResponse.json(
+      { error: "العنصر غير موجود" },
+      { status: 404 }
+    );
   } catch (error) {
     console.error("خطأ:", error);
     return NextResponse.json(
@@ -36,4 +43,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+} 

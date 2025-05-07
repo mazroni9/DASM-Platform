@@ -17,14 +17,22 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getCurrentAuctionType } from '@/lib/time-utils';
 import { ChevronRight, Car } from 'lucide-react';
 import CarDataEntryButton from '@/components/CarDataEntryButton';
 
-// لا نستطيع إستيراد sqlite3 أو أي مكتبات قاعدة بيانات أخرى في جانب العميل!
-// حذف:
-// import sqlite3 from 'sqlite3';
-// import { open } from 'sqlite';
+// تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
+function getCurrentAuctionType(): string {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  if (hour >= 16 && hour < 19) {
+    return 'live'; // الحراج المباشر
+  } else if (hour >= 19 && hour < 22) {
+    return 'immediate'; // السوق الفوري
+  } else {
+    return 'late'; // السوق المتأخر
+  }
+}
 
 interface Car {
   id: string;
@@ -147,9 +155,9 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
               const resultText =
                 type === 'live'
                   ? 'تم البيع في الحراج المباشر'
-                  : type === 'instant'
-                  ? 'تم البيع في المزاد الفوري'
-                  : 'تم البيع في المزاد الصامت';
+                  : type === 'immediate'
+                  ? 'تم البيع في السوق الفوري'
+                  : 'تم البيع في السوق المتأخر';
 
               await fetch('/api/items/confirm-sale', {
                 method: 'POST',

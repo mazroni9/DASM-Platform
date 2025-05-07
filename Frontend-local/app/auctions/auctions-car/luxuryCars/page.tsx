@@ -10,6 +10,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+// استيراد مكون AuctionCard من المسار الصحيح
 import AuctionCard from '@/components/AuctionCard';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
