@@ -17,6 +17,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/pg": "^8.11.14",
     "@types/react": "^19.1.2",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
@@ -40,6 +41,7 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "tailwind-merge": "^2.1.0",
+    "uuid": "^11.1.0",
     "zod": "^3.24.3",
     "zustand": "^5.0.3"
   },
