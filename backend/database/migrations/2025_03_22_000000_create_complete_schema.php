@@ -53,44 +53,10 @@ return new class extends Migration {
             $table->foreign('dealer_id')->references('id')->on('dealers')->onDelete('cascade');
         });
 
-        // 3.1 Caravans Table
-        Schema::create('caravans', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('dealer_id');
-            $table->string('make', 100);
-            $table->string('model', 100);
-            $table->integer('year');
-            $table->string('title', 255);
-            $table->text('description');
-            $table->text('full_description')->nullable();
-            $table->decimal('length', 6, 2); // length in meters
-            $table->decimal('width', 6, 2); // width in meters
-            $table->decimal('height', 6, 2); // height in meters
-            $table->decimal('weight', 8, 2); // weight in kg
-            $table->string('engine', 100)->nullable();
-            $table->string('fuel', 50)->nullable();
-            $table->string('transmission', 50)->nullable();
-            $table->string('drive', 50)->nullable();
-            $table->integer('mileage')->nullable();
-            $table->integer('capacity'); // number of people
-            $table->json('features'); // stored as JSON array
-            $table->json('images'); // stored as JSON array
-            $table->string('location', 100);
-            $table->enum('condition', ['new', 'excellent', 'good', 'fair', 'poor']);
-            $table->decimal('evaluation_price', 12, 2)->nullable();
-            $table->enum('auction_status', ['pending', 'live', 'sold', 'expired'])->default('pending');
-            $table->timestamps();
-
-            $table->foreign('dealer_id')->references('id')->on('dealers')->onDelete('cascade');
-        });
-
         // 4. Auctions Table
         Schema::create('auctions', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('car_id')->nullable();
-            $table->unsignedBigInteger('caravan_id')->nullable();
-            $table->string('auctionable_type')->nullable(); // For polymorphic relations
-            $table->unsignedBigInteger('auctionable_id')->nullable(); // For polymorphic relations
+            $table->unsignedBigInteger('car_id');
             $table->dateTime('start_time');
             $table->dateTime('end_time');
             $table->decimal('starting_bid', 12, 2);
@@ -98,8 +64,7 @@ return new class extends Migration {
             $table->enum('status', ['scheduled', 'live', 'ended', 'cancelled'])->default('scheduled');
             $table->timestamps();
 
-            $table->foreign('car_id')->references('id')->on('cars')->onDelete('set null');
-            $table->foreign('caravan_id')->references('id')->on('caravans')->onDelete('set null');
+            $table->foreign('car_id')->references('id')->on('cars')->onDelete('cascade');
         });
 
         // 5. Bids Table
@@ -144,9 +109,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('auction_id');
             $table->unsignedBigInteger('seller_id'); // References dealers.id
             $table->unsignedBigInteger('buyer_id');  // References users.id
-            $table->unsignedBigInteger('car_id')->nullable();
-            $table->unsignedBigInteger('caravan_id')->nullable();
-            $table->enum('item_type', ['car', 'caravan'])->default('car');
+            $table->unsignedBigInteger('car_id');
             $table->decimal('final_price', 12, 2);
             $table->decimal('platform_fee', 12, 2);
             $table->decimal('tam_fee', 12, 2);
@@ -157,8 +120,7 @@ return new class extends Migration {
             $table->foreign('auction_id')->references('id')->on('auctions')->onDelete('cascade');
             $table->foreign('seller_id')->references('id')->on('dealers')->onDelete('cascade');
             $table->foreign('buyer_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('car_id')->references('id')->on('cars')->onDelete('set null');
-            $table->foreign('caravan_id')->references('id')->on('caravans')->onDelete('set null');
+            $table->foreign('car_id')->references('id')->on('cars')->onDelete('cascade');
         });
 
         // 9. Live Streaming Sessions Table
@@ -186,7 +148,6 @@ return new class extends Migration {
         Schema::dropIfExists('wallets');
         Schema::dropIfExists('bids');
         Schema::dropIfExists('auctions');
-        Schema::dropIfExists('caravans');
         Schema::dropIfExists('cars');
         Schema::dropIfExists('dealers');
         Schema::dropIfExists('users');

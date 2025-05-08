@@ -14,8 +14,6 @@ class Settlement extends Model
         'seller_id', 
         'buyer_id', 
         'car_id', 
-        'caravan_id',
-        'item_type',
         'final_price', 
         'platform_fee', 
         'tam_fee', 
@@ -45,17 +43,5 @@ class Settlement extends Model
     public function car()
     {
         return $this->belongsTo(Car::class);
-    }
-
-    // A Settlement belongs to a Caravan.
-    public function caravan()
-    {
-        return $this->belongsTo(Caravan::class);
-    }
-
-    // Get the auctioned item (car or caravan)
-    public function getItemAttribute()
-    {
-        return $this->item_type === 'caravan' ? $this->caravan : $this->car;
     }
 }

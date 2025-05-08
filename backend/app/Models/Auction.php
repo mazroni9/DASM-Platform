@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Auction extends Model
 {
@@ -18,7 +17,6 @@ class Auction extends Model
 
     protected $fillable = [
         'car_id',
-        'caravan_id',
         'start_time',
         'end_time',
         'minimum_bid',
@@ -32,8 +30,6 @@ class Auction extends Model
         'approved_for_live', // Can enter live auction
         'extended_until', // For auction extensions
         'last_bid_time', // Track when the last bid was placed
-        'auctionable_type', // For polymorphic relation
-        'auctionable_id', // For polymorphic relation
     ];
 
     protected $casts = [
@@ -57,22 +53,6 @@ class Auction extends Model
     public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
-    }
-
-    /**
-     * Get the caravan associated with the auction.
-     */
-    public function caravan(): BelongsTo
-    {
-        return $this->belongsTo(Caravan::class);
-    }
-
-    /**
-     * Polymorphic relation to the item being auctioned (car or caravan)
-     */
-    public function auctionable()
-    {
-        return $this->morphTo();
     }
 
     /**
@@ -241,45 +221,24 @@ class Auction extends Model
         $this->status = AuctionStatus::ENDED;
         $this->save();
         
-        // Update item status
+        // Update car status
         if ($this->car) {
             $this->car->auction_status = 'sold';
             $this->car->save();
-        } elseif ($this->caravan) {
-            $this->caravan->auction_status = 'sold';
-            $this->caravan->save();
         }
         
-        // Create settlement - handle both car and caravan
-        $sellerId = null;
-        $itemId = null;
-        $itemType = null;
-        
-        if ($this->car) {
-            $sellerId = $this->car->dealer_id;
-            $itemId = $this->car_id;
-            $itemType = 'car';
-        } elseif ($this->caravan) {
-            $sellerId = $this->caravan->dealer_id;
-            $itemId = $this->caravan_id;
-            $itemType = 'caravan';
-        }
-        
-        if ($sellerId && $itemId) {
-            Settlement::create([
-                'auction_id' => $this->id,
-                'seller_id' => $sellerId,
-                'buyer_id' => $userId,
-                'car_id' => $itemType === 'car' ? $itemId : null,
-                'caravan_id' => $itemType === 'caravan' ? $itemId : null,
-                'item_type' => $itemType,
-                'final_price' => $amount,
-                'platform_fee' => $this->calculatePlatformFee($amount),
-                'tam_fee' => 0, // Set appropriate value
-                'net_amount' => $amount - $this->calculatePlatformFee($amount),
-                'status' => 'pending'
-            ]);
-        }
+        // Create settlement
+        Settlement::create([
+            'auction_id' => $this->id,
+            'seller_id' => $this->car->dealer_id,
+            'buyer_id' => $userId,
+            'car_id' => $this->car_id,
+            'final_price' => $amount,
+            'platform_fee' => $this->calculatePlatformFee($amount),
+            'tam_fee' => 0, // Set appropriate value
+            'net_amount' => $amount - $this->calculatePlatformFee($amount),
+            'status' => 'pending'
+        ]);
         
         return $this;
     }
@@ -328,13 +287,10 @@ class Auction extends Model
             $this->updateAuctionTypeBasedOnTime(); // Set the proper auction type
             $this->save();
             
-            // Update item status - handle both car and caravan
+            // Update car status
             if ($this->car) {
                 $this->car->auction_status = 'active';
                 $this->car->save();
-            } elseif ($this->caravan) {
-                $this->caravan->auction_status = 'active';
-                $this->caravan->save();
             }
             
             // If this is a live auction type that needs streaming, create session
@@ -358,15 +314,12 @@ class Auction extends Model
             // If current bid meets or exceeds reserve price, consider auction successful
             if ($this->current_bid >= $this->reserve_price) {
                 $this->status = AuctionStatus::ENDED;
-                // Item status should be updated to "sold" when accepted by seller or automatically
+                // Car status should be updated to "sold" when accepted by seller or automatically
             } else {
                 $this->status = AuctionStatus::FAILED;
                 if ($this->car) {
                     $this->car->auction_status = 'failed';
                     $this->car->save();
-                } elseif ($this->caravan) {
-                    $this->caravan->auction_status = 'failed';
-                    $this->caravan->save();
                 }
             }
             

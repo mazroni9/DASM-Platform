@@ -10,7 +10,6 @@ use App\Http\Controllers\DealerController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\API\CaravanController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -22,10 +21,6 @@ Route::post('/resend-verification', [AuthController::class, 'resendVerification'
 // Public auction browsing 
 Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
-
-// Public caravan browsing
-Route::get('/caravans', [CaravanController::class, 'index']);
-Route::get('/caravans/{id}', [CaravanController::class, 'show']);
 
 // Public blog routes
 Route::get('/blog', [BlogController::class, 'index']);
@@ -54,12 +49,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cars/{id}', [CarController::class, 'update']);
     Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/car-statistics', [CarController::class, 'statistics']);
-    
-    // Caravan management for all users
-    Route::post('/caravans', [CaravanController::class, 'store']);
-    Route::put('/caravans/{id}', [CaravanController::class, 'update']);
-    Route::delete('/caravans/{id}', [CaravanController::class, 'destroy']);
-    Route::post('/caravans/{id}/submit-for-auction', [CaravanController::class, 'submitForAuction']);
     
     // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
@@ -96,14 +85,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
     Route::put('/dealer/cars/{id}', [CarController::class, 'update']);
     Route::delete('/dealer/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/dealer/car-statistics', [CarController::class, 'statistics']);
-    
-    // Dealer caravan routes
-    Route::get('/dealer/caravans', [CaravanController::class, 'index']);
-    Route::post('/dealer/caravans', [CaravanController::class, 'store']);
-    Route::get('/dealer/caravans/{id}', [CaravanController::class, 'show']);
-    Route::put('/dealer/caravans/{id}', [CaravanController::class, 'update']);
-    Route::delete('/dealer/caravans/{id}', [CaravanController::class, 'destroy']);
-    Route::post('/dealer/caravans/{id}/submit-for-auction', [CaravanController::class, 'submitForAuction']);
 });
 
 // Admin routes
@@ -130,12 +111,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);
     Route::put('/admin/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
     Route::delete('/admin/cars/{id}', [AdminController::class, 'deleteCar']);
-    
-    // Admin caravan management
-    Route::get('/admin/caravans', [AdminController::class, 'getAllCaravans']);
-    Route::put('/admin/caravans/{id}', [AdminController::class, 'updateCaravan']);
-    Route::put('/admin/caravans/{id}/status', [AdminController::class, 'updateCaravanStatus']);
-    Route::delete('/admin/caravans/{id}', [AdminController::class, 'deleteCaravan']);
     
     // Admin blog management
     Route::get('/admin/blogs', [AdminController::class, 'blogs']);
