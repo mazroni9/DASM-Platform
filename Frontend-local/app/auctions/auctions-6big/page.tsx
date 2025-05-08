@@ -10,7 +10,7 @@ export default function BazarPage() {
   const [fireworksActive, setFireworksActive] = useState(false);
   
   // وقت الافتتاح
-  const launchDate = "2024-12-15T18:00:00";
+  const launchDate = "2024-07-30T18:00:00";
   
   // كلمات الاحتفال التي ستتناثر
   const celebrationWords = [
@@ -175,7 +175,7 @@ export default function BazarPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 1 }}
             >
-              المنصة الوطنية الأولى للمزادات في المملكة العربية السعودية
+              المنصة الوطنية الأولى للأسواق الرقمية المتقدمة لمختلف القطاعات في المملكة العربية السعودية
             </motion.p>
             
             {/* إعلان دعوة التسجيل */}
@@ -218,7 +218,7 @@ export default function BazarPage() {
                 
                 <div className="flex items-center gap-3 text-purple-600 mb-3">
                   <Calendar size={20} />
-                  <span className="font-medium">15 ديسمبر 2024</span>
+                  <span className="font-medium">30 يوليو 2024</span>
                 </div>
                 
                 <div className="flex items-center gap-3 text-purple-600 mb-6">

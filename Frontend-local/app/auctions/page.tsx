@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale } from 'lucide-react';
+import { Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale, Store, ShoppingBag, Gift } from 'lucide-react';
 
 export default function AuctionsPage() {
   const auctionsMain = [
@@ -44,6 +44,13 @@ export default function AuctionsPage() {
     { name: 'الأثاث المنزلي', slug: 'auctions-5general/furniture', description: 'أثاث منزلي ومكتبي متنوع بحالة جيدة', icon: Sofa, color: 'text-green-600', bgColor: 'bg-green-50' },
     { name: 'المعدات العامة', slug: 'auctions-5general/equipment', description: 'معدات وأدوات للاستخدامات المتنوعة', icon: PencilRuler, color: 'text-green-600', bgColor: 'bg-green-50' },
     { name: 'السوق الأخضر', slug: 'auctions-5general/green', description: 'منتجات صديقة للبيئة وتدعم الاستدامة', icon: Leaf, color: 'text-green-600', bgColor: 'bg-green-50' }
+  ];
+
+  // إضافة مجموعة السوق الكبير (البازار سابقًا) بالاسم الجديد
+  const auctionsBig = [
+    { name: 'السوق السعودي الشامل', slug: 'auctions-6big', description: 'المنصة الوطنية الأولى للمزادات في المملكة العربية السعودية', icon: Store, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+    { name: 'عروض وتخفيضات حصرية', slug: 'auctions-6big/offers', description: 'تخفيضات وعروض مميزة على منتجات متنوعة', icon: Gift, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+    { name: 'متاجر تسوق محلية', slug: 'auctions-6big/local-shops', description: 'متاجر محلية ومنتجات متنوعة بأسعار تنافسية', icon: ShoppingBag, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
   ];
 
   const Divider = () => (
@@ -128,6 +135,10 @@ export default function AuctionsPage() {
 
         <SectionTitle title="اسواق عامة" />
         {auctionsGeneral.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
+        <Divider />
+
+        <SectionTitle title="السوق الكبير" />
+        {auctionsBig.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
       </div>
     </main>
   );
