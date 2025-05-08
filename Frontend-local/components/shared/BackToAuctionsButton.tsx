@@ -11,7 +11,7 @@ type BackToAuctionsButtonProps = {
 
 export default function BackToAuctionsButton({ 
   className = '',
-  href = '/auctions/auctions-car',
+  href = '/auctions/auctions-2car',
   text = 'العودة لقطاع السيارات'
 }: BackToAuctionsButtonProps) {
   return (

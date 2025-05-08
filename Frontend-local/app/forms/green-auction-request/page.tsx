@@ -17,7 +17,7 @@
  * 
  * ✅ الفائدة:
  * - يستخدم هذا النموذج لإضافة منتجات صديقة للبيئة إلى المنصة.
- * - يتكامل بشكل مباشر مع صفحة السوق الأخضر: /auctions/auctions-general/green/page.tsx
+ * - يتكامل بشكل مباشر مع صفحة السوق الأخضر: /auctions/auctions-5general/green/page.tsx
  */
 
 'use client';
@@ -199,7 +199,7 @@ export default function GreenAuctionRequestPage() {
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-general/green" 
+            href="/auctions/auctions-5general/green" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -546,7 +546,7 @@ export default function GreenAuctionRequestPage() {
               {isSubmitting ? 'جاري الإرسال...' : 'تسجيل المنتج الأخضر'}
             </button>
             <Link 
-              href="/auctions/auctions-general/green"
+              href="/auctions/auctions-5general/green"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء

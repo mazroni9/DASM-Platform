@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Watch, Car, Home, Paintbrush, Smartphone, Leaf } from 'lucide-react';
+import { Watch, Car, Home, Paintbrush, Smartphone, Leaf, Star, Gem, Store } from 'lucide-react';
 
 // الألوان المستخدمة لمجموعات الأزرار
 const GROUP_COLORS = {
@@ -35,14 +35,14 @@ const GROUP_COLORS = {
 // تعريف أزرار التنقل
 const marketItems = [
   // المجموعة الأولى (اليمين) - البنفسجية - تم إعادة الترتيب
-  { name: 'الحراج المباشر', icon: Car, href: '/auctions/auctions-main/live-market', group: 'right' },
-  { name: 'السوق الفوري', icon: Smartphone, href: '/auctions/auctions-main/instant', group: 'right' },
-  { name: 'السوق المتأخر', icon: Watch, href: '/auctions/auctions-main/silent', group: 'right' },
+  { name: 'السوق الرئيسي', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
+  { name: 'سوق السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
+  { name: 'السوق النوعي', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
 
   // المجموعة الثانية (اليسار) - الزرقاء
-  { name: 'الأجهزة الإلكترونية', icon: Smartphone, href: '/auctions/auctions-general/electronics', group: 'left' },
-  { name: 'الأثاث المنزلي', icon: Home, href: '/auctions/auctions-general/furniture', group: 'left' },
-  { name: 'المعدات العامة', icon: Paintbrush, href: '/auctions/auctions-general/equipment', group: 'left' },
+  { name: 'السوق الفريد', icon: Gem, href: '/auctions/auctions-4special', group: 'left' },
+  { name: 'الأسواق العامة', icon: Home, href: '/auctions/auctions-5general', group: 'left' },
+  { name: 'السوق الكبير', icon: Store, href: '/auctions/auctions-6big', group: 'left' },
 
   // المجموعة الثالثة (أسفل)
 ];

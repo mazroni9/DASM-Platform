@@ -16,7 +16,7 @@
  * 
  * ✅ الفائدة:
  * - يستخدم هذا النموذج لإضافة أي منتج إلى المنصة لعرضه لاحقًا في صفحة العرض الخاصة.
- * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-general/page.tsx
+ * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-5general/page.tsx
  */
 
 'use client';
@@ -179,7 +179,7 @@ export default function GeneralAuctionRequestPage() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-general" 
+            href="/auctions/auctions-5general" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -492,7 +492,7 @@ export default function GeneralAuctionRequestPage() {
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
             <Link 
-              href="/auctions/auctions-general"
+              href="/auctions/auctions-5general"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء

@@ -9,7 +9,7 @@
  * - التحقق من صحة البيانات وإرسالها للتقييم
  * 
  * 🔄 الارتباط:
- * - مرتبط بصفحة مزادات اليخوت /auctions/auctions-special/yachts
+ * - مرتبط بصفحة مزادات اليخوت /auctions/auctions-4special/yachts
  * - يرسل البيانات إلى API لإدارة المزادات
  * 
  * ⚡ تقنيات:
@@ -196,7 +196,7 @@ export default function YachtRegistrationPage() {
       
       // إعادة توجيه المستخدم بعد فترة قصيرة
       setTimeout(() => {
-        router.push('/auctions/auctions-special/yachts');
+        router.push('/auctions/auctions-4special/yachts');
       }, 3000);
       
     } catch (error) {
@@ -216,7 +216,7 @@ export default function YachtRegistrationPage() {
       <div className="bg-gradient-to-r from-cyan-600 to-blue-700 py-6">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-special/yachts" 
+            href="/auctions/auctions-4special/yachts" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />

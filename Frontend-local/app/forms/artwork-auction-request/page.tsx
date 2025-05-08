@@ -16,7 +16,7 @@
  * 
  * ✅ الفائدة:
  * - يستخدم هذا النموذج لإضافة اللوحات الفنية إلى المنصة لعرضها لاحقًا في صفحة العرض الخاصة.
- * - يتكامل بشكل مباشر مع صفحة: /auctions-special/artworks/page.tsx
+ * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-4special/artworks/page.tsx
  */
 
 'use client';
@@ -186,7 +186,7 @@ export default function ArtworkAuctionRequestPage() {
       <div className="bg-gradient-to-r from-purple-700 to-indigo-800 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-special/artworks" 
+            href="/auctions/auctions-4special/artworks" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -464,7 +464,7 @@ export default function ArtworkAuctionRequestPage() {
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
             <Link 
-              href="/auctions/auctions-special/artworks"
+              href="/auctions/auctions-4special/artworks"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء

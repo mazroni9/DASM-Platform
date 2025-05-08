@@ -16,7 +16,7 @@
  * 
  * ✅ الفائدة:
  * - يستخدم هذا النموذج لإضافة المعدات والأدوات إلى المنصة لعرضها لاحقًا في صفحة العرض الخاصة.
- * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-general/equipment/page.tsx
+ * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-5general/equipment/page.tsx
  */
 
 'use client';
@@ -205,7 +205,7 @@ export default function EquipmentAuctionRequestPage() {
       <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-general/equipment" 
+            href="/auctions/auctions-5general/equipment" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -499,7 +499,7 @@ export default function EquipmentAuctionRequestPage() {
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
             <Link 
-              href="/auctions/auctions-general/equipment"
+              href="/auctions/auctions-5general/equipment"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء

@@ -5,45 +5,45 @@ import { Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, BellO
 
 export default function AuctionsPage() {
   const auctionsMain = [
-    { name: 'الحراج المباشر', slug: 'auctions-main/live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصرا الى 7 مساءا', icon: Video, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    { name: 'السوق الفوري المباشر', slug: 'auctions-main/instant', description: 'مزادات بنظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءا الى 10 مساءا', icon: Timer, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    { name: 'السوق المتاخر', slug: 'auctions-main/silent', description: 'مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض\nيبدأ من 10 مساءا الى 4 عصرا اليوم التالي', icon: BellOff, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { name: 'الحراج المباشر', slug: 'auctions-1main/live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصرا الى 7 مساءا', icon: Video, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { name: 'السوق الفوري المباشر', slug: 'auctions-1main/instant', description: 'مزادات بنظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءا الى 10 مساءا', icon: Timer, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { name: 'السوق المتاخر', slug: 'auctions-1main/silent', description: 'مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض\nيبدأ من 10 مساءا الى 4 عصرا اليوم التالي', icon: BellOff, color: 'text-blue-600', bgColor: 'bg-blue-50' },
   ];
 
   const auctionsCar = [
-    { name: 'سوق السيارات الفارهة', slug: 'auctions-car/luxuryCars', description: 'سيارات فارهة مميزة بأسعار منافسة', icon: Car, color: 'text-blue-600', bgColor: 'bg-amber-50' },
-    { name: 'سوق السيارات الكلاسيكية', slug: 'auctions-car/classic', description: 'سيارات كلاسيكية نادرة وقطع مميزة للهواة والمقتنين', icon: Car, color: 'text-blue-600', bgColor: 'bg-amber-50' },
-    { name: 'سوق الكرافانات', slug: 'auctions-car/caravan', description: 'كرافانات ومنازل متنقلة لمحبي السفر والرحلات', icon: Home, color: 'text-blue-600', bgColor: 'bg-amber-50' },
+    { name: 'سوق السيارات الفارهة', slug: 'auctions-2car/luxuryCars', description: 'سيارات فارهة مميزة بأسعار منافسة', icon: Car, color: 'text-blue-600', bgColor: 'bg-amber-50' },
+    { name: 'سوق السيارات الكلاسيكية', slug: 'auctions-2car/classic', description: 'سيارات كلاسيكية نادرة وقطع مميزة للهواة والمقتنين', icon: Car, color: 'text-blue-600', bgColor: 'bg-amber-50' },
+    { name: 'سوق الكرافانات', slug: 'auctions-2car/caravan', description: 'كرافانات ومنازل متنقلة لمحبي السفر والرحلات', icon: Home, color: 'text-blue-600', bgColor: 'bg-amber-50' },
     
-    { name: 'سوق الشاحنات والحافلات', slug: 'auctions-car/busesTrucks', description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة', icon: Truck, color: 'text-blue-600', bgColor: 'bg-amber-50' },
-    { name: 'سوق سيارات الشركات', slug: 'auctions-car/companiesCars', description: 'سيارات شركات بأسعار تصفية مخزون', icon: Building2, color: 'text-blue-600', bgColor: 'bg-amber-50' },
-    { name: 'سوق سيارات الجهات الحكومية', slug: 'auctions-car/government', description: 'سيارات من الجهات الحكومية بحالة جيدة', icon: Building, color: 'text-blue-600', bgColor: 'bg-amber-50' },
+    { name: 'سوق الشاحنات والحافلات', slug: 'auctions-2car/busesTrucks', description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة', icon: Truck, color: 'text-blue-600', bgColor: 'bg-amber-50' },
+    { name: 'سوق سيارات الشركات', slug: 'auctions-2car/companiesCars', description: 'سيارات شركات بأسعار تصفية مخزون', icon: Building2, color: 'text-blue-600', bgColor: 'bg-amber-50' },
+    { name: 'سوق سيارات الجهات الحكومية', slug: 'auctions-2car/government', description: 'سيارات من الجهات الحكومية بحالة جيدة', icon: Building, color: 'text-blue-600', bgColor: 'bg-amber-50' },
   ];
 
   const auctionsQuality = [
-    { name: 'الأجهزة الطبية المستعملة', slug: 'auctions-quality/medical', description: 'أجهزة ومعدات طبية مستعملة بحالة جيدة', icon: Stethoscope, color: 'text-teal-600', bgColor: 'bg-teal-50' },
-    { name: 'الآلات المكتبية المستعملة', slug: 'auctions-quality/office-equipment', description: 'معدات مكتبية مثل آلات تصوير متوسطة وكبيرة الحجم وأجهزة إلكترونية بأسعار تنافسية', icon: Printer, color: 'text-teal-600', bgColor: 'bg-teal-50' },
-    { name: 'السيرفرات المستعملة', slug: 'auctions-quality/used-servers', description: 'سيرفرات وأجهزة تخزين وشبكات بمواصفات جيدة', icon: Server, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+    { name: 'الأجهزة الطبية المستعملة', slug: 'auctions-3quality/medical', description: 'أجهزة ومعدات طبية مستعملة بحالة جيدة', icon: Stethoscope, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+    { name: 'الآلات المكتبية المستعملة', slug: 'auctions-3quality/office-equipment', description: 'معدات مكتبية مثل آلات تصوير متوسطة وكبيرة الحجم وأجهزة إلكترونية بأسعار تنافسية', icon: Printer, color: 'text-teal-600', bgColor: 'bg-teal-50' },
+    { name: 'السيرفرات المستعملة', slug: 'auctions-3quality/used-servers', description: 'سيرفرات وأجهزة تخزين وشبكات بمواصفات جيدة', icon: Server, color: 'text-teal-600', bgColor: 'bg-teal-50' },
   ];
 
   const auctionsSpecial = [
-    { name: 'المجوهرات والحلي الثمينة', slug: 'auctions-special/jewelry', description: 'مجوهرات وحلي ثمينة متنوعة بتشكيلات راقية وجودة عالية', icon: Gem, color: 'text-purple-600', bgColor: 'bg-purple-50' },
-    { name: 'القطع النادرة', slug: 'auctions-special/heritage', description: 'مزاد للتحف النادرة والقطع الثمينة والمجوهرات القديمة', icon: Star, color: 'text-purple-600', bgColor: 'bg-purple-50' },
-    { name: 'مزادات VIP الخاصة', slug: 'auctions-special/executive', description: 'مزادات خاصة تنفيذية لإدارات ومؤسسات محددة', icon: BadgeCheck, color: 'text-purple-600', bgColor: 'bg-purple-50' },
+    { name: 'المجوهرات والحلي الثمينة', slug: 'auctions-4special/jewelry', description: 'مجوهرات وحلي ثمينة متنوعة بتشكيلات راقية وجودة عالية', icon: Gem, color: 'text-purple-600', bgColor: 'bg-purple-50' },
+    { name: 'القطع النادرة', slug: 'auctions-4special/heritage', description: 'مزاد للتحف النادرة والقطع الثمينة والمجوهرات القديمة', icon: Star, color: 'text-purple-600', bgColor: 'bg-purple-50' },
+    { name: 'مزادات VIP الخاصة', slug: 'auctions-4special/executive', description: 'مزادات خاصة تنفيذية لإدارات ومؤسسات محددة', icon: BadgeCheck, color: 'text-purple-600', bgColor: 'bg-purple-50' },
     
-    { name: 'اللوحات الفنية', slug: 'auctions-special/artworks', description: 'لوحات فنية أصلية ومميزة لفنانين معروفين', icon: Brush, color: 'text-blue-600', bgColor: 'bg-purple-50' },
-    { name: 'الساعات الفاخرة', slug: 'auctions-special/watches', description: 'ساعات فاخرة ونادرة من ماركات عالمية', icon: Watch, color: 'text-blue-600', bgColor: 'bg-purple-50' },
-    { name: 'العقارات المميزة', slug: 'auctions-special/realstate', description: 'عقارات ومنازل وفلل فاخرة في مواقع مميزة', icon: Home, color: 'text-blue-600', bgColor: 'bg-purple-50' },
+    { name: 'اللوحات الفنية', slug: 'auctions-4special/artworks', description: 'لوحات فنية أصلية ومميزة لفنانين معروفين', icon: Brush, color: 'text-blue-600', bgColor: 'bg-purple-50' },
+    { name: 'الساعات الفاخرة', slug: 'auctions-4special/watches', description: 'ساعات فاخرة ونادرة من ماركات عالمية', icon: Watch, color: 'text-blue-600', bgColor: 'bg-purple-50' },
+    { name: 'العقارات المميزة', slug: 'auctions-4special/realstate', description: 'عقارات ومنازل وفلل فاخرة في مواقع مميزة', icon: Home, color: 'text-blue-600', bgColor: 'bg-purple-50' },
     
-    { name: 'الطائرات الخاصة', slug: 'auctions-special/jets', description: 'طائرات مستعملة بحالة جيدة ومعدلات جيدة للتنزه والصيد', icon: Plane, color: 'text-green-600', bgColor: 'bg-purple-50' },
-    { name: 'اليخوت والقوارب', slug: 'auctions-special/yachts', description: 'يخوت وقوارب تنزه وصيد بمختلف المواصفات والموديلات', icon: Sailboat, color: 'text-green-600', bgColor: 'bg-purple-50' },
+    { name: 'الطائرات الخاصة', slug: 'auctions-4special/jets', description: 'طائرات مستعملة بحالة جيدة ومعدلات جيدة للتنزه والصيد', icon: Plane, color: 'text-green-600', bgColor: 'bg-purple-50' },
+    { name: 'اليخوت والقوارب', slug: 'auctions-4special/yachts', description: 'يخوت وقوارب تنزه وصيد بمختلف المواصفات والموديلات', icon: Sailboat, color: 'text-green-600', bgColor: 'bg-purple-50' },
   ];
 
   const auctionsGeneral = [
-    { name: 'الأجهزة الإلكترونية', slug: 'auctions-general/electronics', description: 'أجهزة إلكترونية متنوعة من هواتف وأجهزة لوحية وحواسيب', icon: Smartphone, color: 'text-green-600', bgColor: 'bg-green-50' },
-    { name: 'الأثاث المنزلي', slug: 'auctions-general/furniture', description: 'أثاث منزلي ومكتبي متنوع بحالة جيدة', icon: Sofa, color: 'text-green-600', bgColor: 'bg-green-50' },
-    { name: 'المعدات العامة', slug: 'auctions-general/equipment', description: 'معدات وأدوات للاستخدامات المتنوعة', icon: PencilRuler, color: 'text-green-600', bgColor: 'bg-green-50' },
-    { name: 'السوق الأخضر', slug: 'auctions-general/green', description: 'منتجات صديقة للبيئة وتدعم الاستدامة', icon: Leaf, color: 'text-green-600', bgColor: 'bg-green-50' }
+    { name: 'الأجهزة الإلكترونية', slug: 'auctions-5general/electronics', description: 'أجهزة إلكترونية متنوعة من هواتف وأجهزة لوحية وحواسيب', icon: Smartphone, color: 'text-green-600', bgColor: 'bg-green-50' },
+    { name: 'الأثاث المنزلي', slug: 'auctions-5general/furniture', description: 'أثاث منزلي ومكتبي متنوع بحالة جيدة', icon: Sofa, color: 'text-green-600', bgColor: 'bg-green-50' },
+    { name: 'المعدات العامة', slug: 'auctions-5general/equipment', description: 'معدات وأدوات للاستخدامات المتنوعة', icon: PencilRuler, color: 'text-green-600', bgColor: 'bg-green-50' },
+    { name: 'السوق الأخضر', slug: 'auctions-5general/green', description: 'منتجات صديقة للبيئة وتدعم الاستدامة', icon: Leaf, color: 'text-green-600', bgColor: 'bg-green-50' }
   ];
 
   const Divider = () => (

@@ -193,7 +193,7 @@ function CarDetailsContent() {
         {/* زر العودة */}
         <div className="mb-4">
           <Link 
-            href="/auctions/auctions-car/busesTrucks" 
+            href="/auctions/auctions-2car/busesTrucks" 
             className="text-blue-600 hover:underline inline-flex items-center rtl:space-x-reverse"
           >
             <span className="ml-1">←</span>

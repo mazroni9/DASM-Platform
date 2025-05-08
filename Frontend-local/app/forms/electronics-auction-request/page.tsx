@@ -16,7 +16,7 @@
  * 
  * ✅ الفائدة:
  * - يستخدم هذا النموذج لإضافة الأجهزة الإلكترونية إلى المنصة لعرضها لاحقًا في صفحة العرض الخاصة.
- * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-general/electronics/page.tsx
+ * - يتكامل بشكل مباشر مع صفحة: /auctions/auctions-5general/electronics/page.tsx
  */
 
 'use client';
@@ -192,7 +192,7 @@ export default function ElectronicsAuctionRequestPage() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-general/electronics" 
+            href="/auctions/auctions-5general/electronics" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -483,7 +483,7 @@ export default function ElectronicsAuctionRequestPage() {
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
             <Link 
-              href="/auctions/auctions-general/electronics"
+              href="/auctions/auctions-5general/electronics"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء

@@ -9,7 +9,7 @@
  * - التحقق من صحة البيانات وإرسالها للتقييم
  * 
  * 🔄 الارتباط:
- * - مرتبط بصفحة مزادات الطائرات /auctions/auctions-special/jets
+ * - مرتبط بصفحة مزادات الطائرات /auctions/auctions-4special/jets
  * - يرسل البيانات إلى API لإدارة المزادات
  */
 
@@ -192,7 +192,7 @@ export default function AircraftRegistrationPage() {
       
       // إعادة توجيه المستخدم بعد فترة قصيرة
       setTimeout(() => {
-        router.push('/auctions/auctions-special/jets');
+        router.push('/auctions/auctions-4special/jets');
       }, 3000);
       
     } catch (error) {
@@ -212,7 +212,7 @@ export default function AircraftRegistrationPage() {
       <div className="bg-gradient-to-r from-cyan-600 to-blue-700 py-6">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-special/jets" 
+            href="/auctions/auctions-4special/jets" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />

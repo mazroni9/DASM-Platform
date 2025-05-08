@@ -102,7 +102,7 @@ export default function RareItemAuctionRequestPage() {
       <div className="bg-gradient-to-r from-amber-800 to-amber-600 py-6">
         <div className="container mx-auto px-4">
           <Link 
-            href="/auctions/auctions-special/precious" 
+            href="/auctions/auctions-4special/precious" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -466,7 +466,7 @@ export default function RareItemAuctionRequestPage() {
                 إرسال الطلب
               </button>
               <Link 
-                href="/auctions/auctions-special/precious"
+                href="/auctions/auctions-4special/precious"
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
               >
                 إلغاء
