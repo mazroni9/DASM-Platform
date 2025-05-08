@@ -10,7 +10,7 @@ export default function BazarPage() {
   const [fireworksActive, setFireworksActive] = useState(false);
   
   // وقت الافتتاح
-  const launchDate = "2024-07-30T18:00:00";
+  const launchDate = "2025-12-01T18:00:00";
   
   // كلمات الاحتفال التي ستتناثر
   const celebrationWords = [
@@ -218,7 +218,7 @@ export default function BazarPage() {
                 
                 <div className="flex items-center gap-3 text-purple-600 mb-3">
                   <Calendar size={20} />
-                  <span className="font-medium">30 يوليو 2024</span>
+                  <span className="font-medium">1 ديسمبر 2025</span>
                 </div>
                 
                 <div className="flex items-center gap-3 text-purple-600 mb-6">
