@@ -256,7 +256,7 @@ export default function BazarPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="h-2 w-2 bg-pink-300 rounded-full"></span>
-                      <span>خصومات تصل إلى 70%</span>
+                      <span>خصومات تصل إلى 70% لأول 10 مشتركين في السوق السعودي الشامل</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="h-2 w-2 bg-pink-300 rounded-full"></span>
