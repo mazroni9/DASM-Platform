@@ -334,7 +334,7 @@ export default function BazarPage() {
             السوق السعودي الشامل - جزء من منصة أسواق المزادات الرقمية السعودية
           </p>
           <p className="text-sm text-gray-500">
-            جميع الحقوق محفوظة © 2024
+            جميع الحقوق محفوظة © 2025
           </p>
         </div>
       </div>
