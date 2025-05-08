@@ -1,0 +1,154 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AuctionController;
+use App\Http\Controllers\BidController;
+use App\Http\Controllers\DealerController;
+use App\Http\Controllers\CarController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\API\CaravanController;
+
+// Public routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/refresh', [AuthController::class, 'refresh']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
+
+// Public auction browsing 
+Route::get('/auctions', [AuctionController::class, 'index']);
+Route::get('/auctions/{id}', [AuctionController::class, 'show']);
+
+// Public caravan browsing
+Route::get('/caravans', [CaravanController::class, 'index']);
+Route::get('/caravans/{id}', [CaravanController::class, 'show']);
+
+// Public blog routes
+Route::get('/blog', [BlogController::class, 'index']);
+Route::get('/blog/latest/{count?}', [BlogController::class, 'latest']);
+Route::get('/blog/tags', [BlogController::class, 'tags']);
+Route::get('/blog/{slug}', [BlogController::class, 'show']);
+
+
+// Protected routes - for all authenticated users
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::post('/logout', [AuthController::class, 'logout']);
+    
+    // User routes
+    Route::get('/user/profile', [UserController::class, 'profile']);
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
+    Route::post('/logout', [UserController::class, 'logout']);
+    
+    // Dealer registration
+    Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
+    
+    // Car management for all users
+    Route::get('/cars', [CarController::class, 'index']);
+    Route::post('/cars', [CarController::class, 'store']);
+    Route::get('/cars/{id}', [CarController::class, 'show']);
+    Route::put('/cars/{id}', [CarController::class, 'update']);
+    Route::delete('/cars/{id}', [CarController::class, 'destroy']);
+    Route::get('/car-statistics', [CarController::class, 'statistics']);
+    
+    // Caravan management for all users
+    Route::post('/caravans', [CaravanController::class, 'store']);
+    Route::put('/caravans/{id}', [CaravanController::class, 'update']);
+    Route::delete('/caravans/{id}', [CaravanController::class, 'destroy']);
+    Route::post('/caravans/{id}/submit-for-auction', [CaravanController::class, 'submitForAuction']);
+    
+    // Auction management for all users
+    Route::post('/auctions', [AuctionController::class, 'store']);
+    Route::put('/auctions/{id}', [AuctionController::class, 'update']);
+    Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
+    Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
+    
+    // Bid routes for all users
+    Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
+    Route::post('/auctions/{auction}/bids', [BidController::class, 'store']);
+    Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
+    Route::get('/my-bids', [BidController::class, 'myBidHistory']);
+    Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
+    
+    // Wallet routes
+    // Route::get('/wallet', [WalletController::class, 'show']);
+    // Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
+    // Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+});
+
+// Dealer-only routes
+Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])->group(function () {
+    // Dealer dashboard
+    Route::get('/dealer/dashboard', [DealerController::class, 'dashboard']);
+    
+    // Dealer-specific functionality
+    Route::get('/auctions/{id}/analytics', [AuctionController::class, 'analytics']);
+    
+    // Legacy routes - these duplicate the routes above but are kept for backward compatibility
+    // They should be removed in a future update
+    Route::get('/dealer/cars', [CarController::class, 'index']);
+    Route::post('/dealer/cars', [CarController::class, 'store']);
+    Route::get('/dealer/cars/{id}', [CarController::class, 'show']);
+    Route::put('/dealer/cars/{id}', [CarController::class, 'update']);
+    Route::delete('/dealer/cars/{id}', [CarController::class, 'destroy']);
+    Route::get('/dealer/car-statistics', [CarController::class, 'statistics']);
+    
+    // Dealer caravan routes
+    Route::get('/dealer/caravans', [CaravanController::class, 'index']);
+    Route::post('/dealer/caravans', [CaravanController::class, 'store']);
+    Route::get('/dealer/caravans/{id}', [CaravanController::class, 'show']);
+    Route::put('/dealer/caravans/{id}', [CaravanController::class, 'update']);
+    Route::delete('/dealer/caravans/{id}', [CaravanController::class, 'destroy']);
+    Route::post('/dealer/caravans/{id}/submit-for-auction', [CaravanController::class, 'submitForAuction']);
+});
+
+// Admin routes
+Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
+    // Admin dashboard
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    
+    // Admin user management
+    Route::get('/admin/users', [AdminController::class, 'users']);
+    Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
+    Route::post('/admin/users/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
+    Route::post('/admin/users/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
+    
+    // Admin auction management
+    Route::get('/admin/auctions', [AdminController::class, 'auctions']);
+    Route::get('/admin/auctions/{id}', [AdminController::class, 'getAuction']);
+    Route::put('/admin/auctions/{id}', [AdminController::class, 'updateAuction']);
+    Route::post('/admin/auctions/{id}/approve', [AdminController::class, 'approveAuction']);
+    Route::post('/admin/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
+    Route::put('/admin/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
+    
+    // Admin car management
+    Route::get('/admin/cars', [AdminController::class, 'getAllCars']);
+    Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);
+    Route::put('/admin/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
+    Route::delete('/admin/cars/{id}', [AdminController::class, 'deleteCar']);
+    
+    // Admin caravan management
+    Route::get('/admin/caravans', [AdminController::class, 'getAllCaravans']);
+    Route::put('/admin/caravans/{id}', [AdminController::class, 'updateCaravan']);
+    Route::put('/admin/caravans/{id}/status', [AdminController::class, 'updateCaravanStatus']);
+    Route::delete('/admin/caravans/{id}', [AdminController::class, 'deleteCaravan']);
+    
+    // Admin blog management
+    Route::get('/admin/blogs', [AdminController::class, 'blogs']);
+    Route::post('/admin/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);
+    Route::post('/admin/blog-tags', [AdminController::class, 'manageTags']);
+    Route::get('/admin/blogs/tags', [AdminController::class, 'getBlogTags']);
+    
+    // Admin financial management
+    Route::get('/admin/transactions', [AdminController::class, 'getTransactions']);
+    Route::get('/admin/settlements', [AdminController::class, 'getSettlements']);
+    
+    // Blog CRUD operations (admin only)
+    Route::post('/blog', [BlogController::class, 'store']);
+    Route::put('/blog/{id}', [BlogController::class, 'update']);
+    Route::delete('/blog/{id}', [BlogController::class, 'destroy']);
+});
