@@ -1,16 +1,13 @@
+# Configuration for Cloudflare Pages
+name = "dasm-platform"
+compatibility_date = "2023-10-30"
+
 [build]
 command = "pnpm run build"
 
+# This is the key property Cloudflare is looking for
 [site]
-bucket = ".next/standalone"
+bucket = ".next"
 
-[build.environment]
-NODE_VERSION = "18.18.0"
-
-[pages]
-build_output_directory = ".next/static"
-assets_directory = "public"
-
-# Explicitly exclude the large webpack cache files
-[pages.exclude]
-patterns = ["**/.next/cache/**"]
+# The key field that was missing - specifies where the build output is located
+pages_build_output_dir = ".next"
