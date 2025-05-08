@@ -53,33 +53,46 @@ export default function AuctionDropdown() {
         <option value="" disabled hidden style={{ display: 'none', opacity: 0 }}>استكشف الأسواق الرقمية</option>
         
         {/* مزادات متخصصه في المركبات */}
-        <optgroup label="مزادات متخصصه من السيارات">
-          <option value="luxuryCars">السيارات الفارهة</option>
+        <optgroup label="سوق قطاع السيارات المتنوعه">
+                    <option value="luxuryCars">السيارات الفارهة</option>
+                    <option value="classic">السيارات الكلاسيكية</option>
+                    <option value="caravan">سوق الكارفانات</option>
           <option value="government">سيارات الجهات الحكومية</option>
           <option value="companiesCars">سيارات الشركات</option>
           <option value="busesTrucks">الحافلات والشاحنات</option>
         </optgroup>
         
-        {/* المزادات النوعية */}
-        <optgroup label="الاجهزه والالات النوعية">
-          <option value="private">المزادات الخاصة</option>
+        {/* الاجهزه والالات النوعية  */}
+        <optgroup label="السوق النوعي">
           <option value="medical">الأجهزة الطبية المستعملة</option>
           <option value="office-equipment">الآلات المكتبية المستعملة</option>
           <option value="used-servers">السيرفرات المستعملة</option>
-          <option value="green">الأخضر</option>
         </optgroup>
         
         {/* مزادات تخصصية */}
-        <optgroup label="مزادات تخصصية">
-          <option value="special/jewelry">المجوهرات والحلي الثمينة</option>
+           <optgroup label="اسواق تخصصية فريدة ومتنوعه>
+                    <option value="special/jewelry">المجوهرات والحلي الثمينة</option>
           <option value="special/precious">القطع النادرة</option>
           <option value="special/exective">VIP</option>
           <option value="special/premium-real-estate">العقارات المميزة</option>
           <option value="special/watches">الساعات الفاخرة</option>
           <option value="special/artwork">اللوحات الفنية</option>
-          <option value="special/private">بث وادارة مناسبات متخصصه</option>
           <option value="special/jets">الطائرات الخاصة</option>
           <option value="special/yachts-boats">اليخوت والقوارب</option>
+        </optgroup>
+
+        {/* اسواق عامه متنوعه */}
+        <optgroup label="اسواق متنوعة عامة">
+          <option value="electronics">الأجهزة الاكترونية</option>
+          <option value="furniture">الاثاث المستعمل النظيف فقط</option>
+          <option value="equipment">المعدات  المستعملة</option>
+          <option value="bigBazar">البازار الكبير </option>
+          <option value="green">السوق الأخضر</option>
+        </optgroup>
+
+        {/* السوق الشامل */}
+        <optgroup label="السوق السعودي الشامل">
+          <option value="auctions-6big">السوق الكبير  </option>
         </optgroup>
       </select>
     </div>

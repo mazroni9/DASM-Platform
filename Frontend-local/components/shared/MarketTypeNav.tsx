@@ -36,7 +36,7 @@ const GROUP_COLORS = {
 const marketItems = [
   // المجموعة الأولى (اليمين) - البنفسجية - تم إعادة الترتيب
   { name: 'السوق الرئيسي', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
-  { name: 'سوق السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
+  { name: 'قطاع السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
   { name: 'السوق النوعي', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
 
   // المجموعة الثانية (اليسار) - الزرقاء

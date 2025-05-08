@@ -79,7 +79,7 @@ export default function BazarPage() {
     if (difference > 0) {
       timeLeft = {
         أيام: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        ساعات: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        ساعات: Math.floor((difference / (1000 * 60 * 60)) % 25),
         دقائق: Math.floor((difference / 1000 / 60) % 60),
         ثواني: Math.floor((difference / 1000) % 60),
       };
@@ -252,7 +252,7 @@ export default function BazarPage() {
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2">
                       <span className="h-2 w-2 bg-pink-300 rounded-full"></span>
-                      <span>منتجات حصرية ونادرة</span>
+                      <span>منتجات حصرية وممبزة</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="h-2 w-2 bg-pink-300 rounded-full"></span>
@@ -273,7 +273,7 @@ export default function BazarPage() {
             {[
               {
                 title: "تشكيلة واسعة",
-                description: "آلاف المنتجات المتنوعة من مختلف الفئات والماركات العالمية",
+                description: "آلاف المنتجات المتنوعة من مختلف الفئات والماركات ",
                 color: "from-blue-500 to-purple-600"
               },
               {
