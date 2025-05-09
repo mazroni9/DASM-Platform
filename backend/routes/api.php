@@ -11,6 +11,11 @@ use App\Http\Controllers\CarController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AdminController;
 
+// Health check endpoint for Render.com
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
