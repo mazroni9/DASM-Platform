@@ -1,6 +1,6 @@
 /**
  * 📝 الصفحة: الحراج المباشر (Live Market)
- * 📁 المسار: Frontend-local/app/auctions/auctions-main/live-market/page.tsx
+ * 📁 المسار: Frontend/app/auctions/auctions-1main/live-market/page.tsx
  *
  * ✅ الوظيفة:
  * - تعرض البث المباشر للمزاد التفاعلي
@@ -17,6 +17,7 @@ import { ChevronRight, Clock } from 'lucide-react';
 import PlateSearch from './component/PlateSearch';
 import BidTimer from '@/components/BidTimer';
 import BidForm from '@/components/BidForm';
+import LiveBidding from '@/components/LiveBidding';
 import { formatMoney } from '@/app/lib/format-utils';
 
 // دالة للحصول على نوع المزاد الحالي
@@ -76,7 +77,7 @@ export default function LiveMarketPage() {
       const data = await res.json();
       if (res.ok) {
         setStatus('✅ تمت المزايدة بنجاح');
-        setBid('');
+           setBid('');
         setShowBid(false);
       } else {
         setStatus(`❌ خطأ: ${data.error}`);
@@ -116,7 +117,7 @@ export default function LiveMarketPage() {
         <div className="flex justify-end mb-4">
           <Link 
             href="/auctions" 
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 	        hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
           >
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
             <span>العودة</span>
@@ -153,8 +154,9 @@ export default function LiveMarketPage() {
         {/* إعادة تصميم التخطيط الرئيسي */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* مربع معلومات السيارة (يمين) */}
-          <div className="md:col-span-1 flex flex-col">
-            <div className="bg-white p-6 rounded-xl shadow-md h-full">
+          <div className="md:col-span-1 flex flex-col space-y-6">
+            {/* معلومات السيارة */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
               <h2 className="text-xl font-bold mb-4 border-b pb-2 text-center text-teal-800">السيارة الحالية في الحراج</h2>
               
               {currentCar ? (
@@ -252,6 +254,12 @@ export default function LiveMarketPage() {
                 </div>
               </div>
             </div>
+            
+            {/* إضافة مكون المزايدات المباشرة */}
+            <LiveBidding 
+              itemId={parseInt(currentCar?.id) || 1} 
+              currentPrice={parseInt((currentCar?.current_price || "380000").toString().replace(/,/g, ''))} 
+            />
           </div>
 
           {/* مربع البث المباشر (يسار) - متجاوب مع جميع أحجام الشاشات */}
