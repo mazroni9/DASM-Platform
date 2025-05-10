@@ -18,6 +18,7 @@ import PlateSearch from './component/PlateSearch';
 import BidTimer from '@/components/BidTimer';
 import BidForm from '@/components/BidForm';
 import LiveBidding from '@/components/LiveBidding';
+import BidNotifications from '@/components/BidNotifications';
 import { formatMoney } from '@/app/lib/format-utils';
 
 // دالة للحصول على نوع المزاد الحالي
@@ -114,7 +115,10 @@ export default function LiveMarketPage() {
     <div className="min-h-screen bg-gray-50 p-4 py-6">
       <div className="max-w-7xl mx-auto">
         {/* زر العودة منفرد في الجهة اليمنى */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <BidNotifications />
+          </div>
           <Link 
             href="/auctions" 
             className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 	        hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
