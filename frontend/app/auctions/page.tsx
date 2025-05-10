@@ -109,9 +109,10 @@ export default function AuctionsPage() {
             <Scale size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-blue-800">السوق الرئيسي</h1>
+            <h1 className="text-xl font-bold text-blue-800">صفحة جميع الاسواق</h1>
             <p className="text-sm text-gray-700 leading-relaxed">
-              نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي. المنافسة تعتمد على العرض والطلب الطبيعي
+              نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي.
+		 المنافسة تعتمد على العرض والطلب الطبيعي
             </p>
           </div>
         </div>
