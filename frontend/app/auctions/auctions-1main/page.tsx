@@ -33,7 +33,7 @@ export default function AuctionsMainPage() {
           return (
             <Link
               key={auction.slug}
-              href={`/auctions/${auction.slug}`}
+              href={`/auctions/auctions-1main/${auction.slug}`}
               className={`group flex flex-col items-center border rounded-xl shadow hover:shadow-lg p-8 ${auction.bgColor} hover:bg-white transition-all duration-300 h-full`}
             >
               <div className={`p-4 rounded-full ${auction.color} bg-white mb-4`}>
