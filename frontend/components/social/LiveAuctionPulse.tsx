@@ -22,6 +22,7 @@ interface LiveAuctionPulseProps {
   initialInterestLevel?: number; // 0-100
   priceChangeRate?: number; // نسبة مئوية للتغير في الدقيقة
   remainingTime?: number; // بالثواني
+  className?: string; // إضافة خاصية className للسماح بتخصيص المظهر الخارجي
 }
 
 export default function LiveAuctionPulse({ 
@@ -30,7 +31,8 @@ export default function LiveAuctionPulse({
   initialBidders = 8, 
   initialInterestLevel = 65,
   priceChangeRate = 2.5, // 2.5% في الدقيقة
-  remainingTime = 600 // 10 دقائق
+  remainingTime = 600, // 10 دقائق
+  className = ''
 }: LiveAuctionPulseProps) {
   const [viewers, setViewers] = useState(initialViewers);
   const [bidders, setBidders] = useState(initialBidders);
@@ -134,8 +136,8 @@ export default function LiveAuctionPulse({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+    <div className={`bg-white rounded-lg shadow-md overflow-hidden h-full ${className}`}>
+      <div className="p-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
         <div className="flex items-center">
           <HeartPulse className="h-5 w-5 mr-2" />
           <h3 className="font-bold">نبض المزاد</h3>
@@ -146,9 +148,9 @@ export default function LiveAuctionPulse({
         </div>
       </div>
       
-      <div className="p-3">
-        {/* الصف الأول من المؤشرات */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="p-2 flex flex-col h-full justify-between">
+        {/* المؤشرات بتنسيق عمودي */}
+        <div className="space-y-2">
           {/* عدد المشاهدين */}
           <div className="bg-indigo-50 p-2 rounded-lg">
             <div className="flex items-center text-xs text-indigo-700 mb-1">
@@ -172,10 +174,7 @@ export default function LiveAuctionPulse({
               <span className="text-xs text-green-500 mb-1 mr-1">نشط</span>
             </div>
           </div>
-        </div>
-        
-        {/* الصف الثاني من المؤشرات */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
+          
           {/* مستوى الاهتمام */}
           <div className="bg-gray-50 p-2 rounded-lg">
             <div className="flex items-center text-xs text-gray-700 mb-1">
@@ -233,4 +232,4 @@ export default function LiveAuctionPulse({
       </div>
     </div>
   );
-} 
+}

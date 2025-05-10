@@ -124,7 +124,7 @@ export default function LiveMarketPage() {
             <BidNotifications />
           </div>
           <Link 
-            href="/auctions" 
+            href="/auctions/auctions-1main" 
             className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 	        hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
           >
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
@@ -133,9 +133,9 @@ export default function LiveMarketPage() {
         </div>
         
         {/* رأس الصفحة: السوق الصامت - الحراج المباشر - وقت السوق */}
-        <div className="grid grid-cols-3 items-center mb-6 gap-4">
+        <div className="grid grid-cols-12 items-center mb-6 gap-4">
           {/* شريط المزاد في اليسار */}
-          <div className="flex justify-start">
+          <div className="col-span-3 flex justify-start">
             <div className="bg-white border-r-4 border-teal-500 rounded-lg shadow-sm px-3 py-1.5 flex items-center justify-between">
               <div className="text-sm font-medium text-gray-800 ml-2">
                 <div>{auctionType} - جارٍ الآن</div>
@@ -150,19 +150,20 @@ export default function LiveMarketPage() {
           </div>
           
           {/* عنوان الصفحة في الوسط */}
-          <div className="text-center">
+          <div className="col-span-6 text-center">
             <h1 className="text-3xl font-bold text-teal-700">الحراج المباشر</h1>
             <div className="text-sm text-teal-600 mt-1">وقت السوق من 4 عصراً إلى 7 مساءً كل يوم</div>
           </div>
           
           {/* مؤشر نبض المزاد المباشر */}
-          <div className="flex justify-end">
+          <div className="col-span-3 h-full">
             <LiveAuctionPulse 
               auctionId={parseInt(currentCar?.id) || 1}
               initialViewers={87}
               initialBidders={15}
               initialInterestLevel={75}
               priceChangeRate={2.8}
+              className="h-full"
             />
           </div>
         </div>
