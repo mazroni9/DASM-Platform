@@ -12,10 +12,10 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_URL
-        value: https://damas-backend.onrender.com
+        value: https://dasm-platform-backend.onrender.com
       - key: FRONTEND_URL
         fromService:
-          name: damas-frontend
+          name: dasm-platform-frontend
           type: web
           property: url
       - key: LOG_CHANNEL
