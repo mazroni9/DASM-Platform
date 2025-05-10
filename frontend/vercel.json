@@ -7,7 +7,16 @@
     "deploymentEnabled": {
       "development": true,
       "main": true,
-      "master": false
+      "master": true,
+      "production": true,
+      "preview": true
     }
-  }
+  },
+  "ignoreCommand": "echo \"Not ignored\"",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ]
 } 
