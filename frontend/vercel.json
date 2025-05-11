@@ -1,23 +1,23 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "framework": "nextjs",
-  "installCommand": "npm install",
-  "git": {
-    "deploymentEnabled": {
-      "development": true,
-      "main": true,
-      "master": true,
-      "production": true,
-      "preview": true
-    }
-  },
-  "ignoreCommand": "echo \"Not ignored\"",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ]
-} 
+    "version": 2,
+    "buildCommand": "pnpm run build",
+    "devCommand": "pnpm run dev",
+    "framework": "nextjs",
+    "installCommand": "pnpm install --no-frozen-lockfile",
+    "git": {
+        "deploymentEnabled": {
+            "development": true,
+            "main": true,
+            "master": true,
+            "production": true,
+            "preview": true
+        }
+    },
+    "ignoreCommand": "echo \"Not ignored\"",
+    "builds": [
+        {
+            "src": "package.json",
+            "use": "@vercel/next"
+        }
+    ]
+}
