@@ -11,22 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First create users table if it doesn't exist yet
-        if (!Schema::hasTable('users')) {
-            Schema::create('users', function (Blueprint $table) {
-                $table->bigIncrements('id');
-                $table->string('first_name', 100);
-                $table->string('last_name', 100);
-                $table->string('email')->unique();
-                $table->string('phone', 20)->unique();
-                $table->string('password_hash');
-                $table->enum('role', ['buyer', 'seller', 'admin'])->default('buyer');
-                $table->enum('kyc_status', ['pending', 'verified', 'rejected'])->default('pending');
-                $table->timestamps();
-            });
-        }
-
-        // Then create dealers table
         Schema::create('dealers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -45,6 +29,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('dealers');
-        // Don't drop users table in down() as it's used by other tables
     }
 };
