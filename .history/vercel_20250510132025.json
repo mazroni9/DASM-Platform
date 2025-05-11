@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "public": false,
+  "github": {
+    "enabled": true,
+    "silent": false,
+    "autoAlias": true
+  },
+  "git": {
+    "deploymentEnabled": {
+      "development": true,
+      "master": false
+    }
+  },
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
+    }
+  ]
+} 

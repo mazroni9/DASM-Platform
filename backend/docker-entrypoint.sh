@@ -13,6 +13,7 @@ php artisan view:cache
 
 # Run migrations if needed (only in production with --force)
 if [ "$APP_ENV" = "production" ]; then
+    # Then run all other migrations
     php artisan migrate --force
 fi
 
