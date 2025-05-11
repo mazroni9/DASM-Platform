@@ -1,3 +1,14 @@
+/**
+ * ==================================================
+ * ملف: frontend/app/auctions/page.tsx
+ * الغرض: صفحة عرض جميع أسواق المزادات
+ * الارتباطات: 
+ *  - يعرض كافة أقسام المزادات المتوفرة
+ *  - يوفر روابط للصفحات الفرعية للمزادات المختلفة
+ *  - يستخدم مكونات فرعية لعرض بطاقات المزادات
+ * ==================================================
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -61,7 +72,7 @@ export default function AuctionsPage() {
 
   const SectionTitle = ({ title, link = null, linkText = null }) => (
     <div className="col-span-full mb-6 mt-8 flex flex-col justify-center items-center">
-      <h2 className="text-2xl font-bold text-blue-600 border-b-4 border-blue-500 py-2 px-8 bg-blue-50 shadow-sm rounded-md text-center">
+      <h2 className="text-2xl font-bold text-blue-600 py-2 px-8 bg-blue-50 shadow-sm rounded-md text-center">
         {title}
       </h2>
       {link && linkText && (

@@ -148,9 +148,9 @@ export default function LiveAuctionPulse({
         </div>
       </div>
       
-      <div className="p-2 flex flex-col h-full justify-between">
-        {/* المؤشرات بتنسيق عمودي */}
-        <div className="space-y-2">
+      <div className="p-2 h-full flex flex-col justify-between">
+        {/* المؤشرات بتنسيق أفقي */}
+        <div className="grid grid-cols-4 gap-2">
           {/* عدد المشاهدين */}
           <div className="bg-indigo-50 p-2 rounded-lg">
             <div className="flex items-center text-xs text-indigo-700 mb-1">
