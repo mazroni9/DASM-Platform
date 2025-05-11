@@ -13,6 +13,10 @@ php artisan view:cache
 
 # Run migrations if needed (only in production with --force)
 if [ "$APP_ENV" = "production" ]; then
+    # First run the complete schema migration which creates all necessary tables
+    php artisan migrate --path=database/migrations/2025_03_22_000000_create_complete_schema.php --force
+    
+    # Then run all other migrations
     php artisan migrate --force
 fi
 
