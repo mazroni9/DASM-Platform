@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Wrench, Hammer, Shovel, Cog, Ruler, Scissors } from 'lucide-react';
 import Image from 'next/image';
-import CategoryIcon from './components/CategoryIcon';
+import CategoryIcon from '@/components/ui/CategoryIcon';
 
 // Definición de tipos
 interface ProductAdditionalInfo {
@@ -155,7 +155,7 @@ export default function EquipmentMarketPage() {
             className="bg-white rounded-lg shadow-md hover:shadow-lg p-5 text-center transition-all hover:-translate-y-1 border border-gray-100"
           >
             <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 mb-3">
-              <CategoryIcon icon={category.icon} size={24} />
+              <CategoryIcon category='equipment' size={24} />
             </div>
             <h3 className="font-medium text-gray-800">{category.title}</h3>
             <p className="text-gray-500 text-sm">{category.count} منتج</p>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Timer, BellOff, Video, Tv, ArrowUpDown, Eye, Settings, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import OtherVenuesGrid from '@/components/broadcast/OtherVenuesGrid';
 
 export default function AuctionsMainPage() {
   const [showPresenterPanel, setShowPresenterPanel] = useState(false);
@@ -11,8 +12,8 @@ export default function AuctionsMainPage() {
   // مزادات المجلد الأول: auctions-main
   const auctionsMain = [
     { name: 'الحراج المباشر', slug: 'live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة', icon: Video, color: 'text-red-600', bgColor: 'bg-red-50' },
-    { name: 'السوق الفوري المباشر', slug: 'instant', description: 'مزادات بنظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته', icon: Timer, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-    { name: 'المزاد الصامت', slug: 'silent', description: 'مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض', icon: BellOff, color: 'text-purple-500', bgColor: 'bg-purple-50' },
+    { name: 'السوق الفوري المباشر', slug: 'instant', description: 'نظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته', icon: Timer, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+    { name: 'السوق الصامت', slug: 'silent', description: ' مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين على عروض بعض', icon: BellOff, color: 'text-purple-500', bgColor: 'bg-purple-50' },
   ];
 
   return (
@@ -41,7 +42,7 @@ export default function AuctionsMainPage() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">شاشة المعلق - لوحة التحكم</h2>
             <div className="flex gap-2">
-              <button onClick={() => setShowPresenterPanel(false)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded">
+              <button onClick={() => setShowPresenterPanel(false)} className="p-2 bg-gray-700 hover:bg-gray-600 rounded" title="إغلاق لوحة التحكم">
                 <Settings className="h-5 w-5" />
               </button>
             </div>
@@ -54,6 +55,7 @@ export default function AuctionsMainPage() {
                 value={currentAuction}
                 onChange={(e) => setCurrentAuction(e.target.value)}
                 className="w-full p-2 bg-gray-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                title="اختيار المزاد الحالي"
               >
                 <option value="">اختر المزاد</option>
                 {auctionsMain.map(auction => (
@@ -114,25 +116,61 @@ export default function AuctionsMainPage() {
       )}
       
       <div className="mb-8">
-        <p className="text-gray-600">تشمل هذه المزادات الأنواع الرئيسية الثلاثة التي تقدمها منصتنا، بما فيها الحراج المباشر والمزاد الفوري والمزاد الصامت.</p>
+        <h3 className="text-xl font-normal mb-4">نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي</h3>
+        <p className="text-gray-600">المنافسة تعتمد على العرض والطلب الطبيعي، مع تدخلنا كوسيط لموازنة التوقعات وضمان بيئة موثوقة لكل الأطراف.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {auctionsMain.map((auction) => {
           const Icon = auction.icon;
           return (
             <Link
               key={auction.slug}
               href={`/auctions/auctions-1main/${auction.slug}`}
-              className={`group flex flex-col items-center border rounded-xl shadow hover:shadow-lg p-8 ${auction.bgColor} hover:bg-white transition-all duration-300 h-full`}
+              className={`group flex flex-col border rounded-xl shadow hover:shadow-lg p-4 ${auction.bgColor} hover:bg-white transition-all duration-300 h-auto relative overflow-hidden`}
             >
-              <div className={`p-4 rounded-full ${auction.color} bg-white mb-4`}>
-                <Icon size={32} />
+              {/* إضافة صورة الخلفية حسب نوع المزاد */}
+              {auction.slug === 'live-market' && (
+                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/showroom.jpg')` }}></div>
+              )}
+              {auction.slug === 'instant' && (
+                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/grok auctioneer.jpg')` }}></div>
+              )}
+              {auction.slug === 'silent' && (
+                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/showroom.jpg')` }}></div>
+              )}
+              
+              {/* العنوان والأيقونة بجانب بعضهما */}
+              <div className="flex justify-center items-center mb-3 relative z-10">
+                <h3 className={`text-xl font-bold ${auction.color} text-center ml-2`}>{auction.name}</h3>
+                <div className={`p-2 rounded-full ${auction.color} bg-white`}>
+                  <Icon size={20} />
+                </div>
               </div>
-              <h3 className={`text-2xl font-bold ${auction.color} mb-3 text-center`}>{auction.name}</h3>
-              <p className="text-gray-600 text-center mb-6 flex-grow">{auction.description}</p>
-              <div className="mt-auto">
-                <span className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-full bg-white group-hover:bg-blue-500 text-gray-700 group-hover:text-white transition-colors duration-300">
+              
+              <p className="text-gray-600 text-sm text-center mb-4 flex-grow relative z-10">{auction.description}</p>
+              
+              {/* إضافة الفيديو للحراج المباشر - تصغير الحجم */}
+              {auction.slug === 'live-market' && (
+                <div className="w-full max-w-[200px] mb-3 relative z-10 mx-auto">
+                  <video 
+                    className="w-full rounded shadow-md" 
+                    poster="/showroom.jpg" 
+                    controls={false} 
+                    muted 
+                    loop
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                  >
+                    <source src="/live-auction.mp4" type="video/mp4" />
+                    متصفحك لا يدعم عنصر الفيديو.
+                  </video>
+                </div>
+              )}
+              
+              <div className="mt-auto relative z-10 text-center">
+                <span className="inline-flex items-center justify-center px-3 py-1 text-xs font-medium rounded-full bg-white group-hover:bg-blue-500 text-gray-700 group-hover:text-white transition-colors duration-300">
                   اضغط للدخول إلى السوق
                 </span>
               </div>
@@ -142,8 +180,11 @@ export default function AuctionsMainPage() {
       </div>
 
       <div className="mt-12 bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <h3 className="text-xl font-semibold mb-4">نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي</h3>
-        <p className="text-gray-600">المنافسة تعتمد على العرض والطلب الطبيعي، مع تدخلنا كوسيط لموازنة التوقعات وضمان بيئة موثوقة لكل الأطراف</p>
+      </div>
+      
+      {/* إضافة قسم المعارض الأخرى */}
+      <div className="mt-12">
+        <OtherVenuesGrid />
       </div>
     </main>
   );

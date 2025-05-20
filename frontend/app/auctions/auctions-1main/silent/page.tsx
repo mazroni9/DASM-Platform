@@ -5,10 +5,10 @@
 
 import React, { useEffect, useState, Fragment } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Clock, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronRight, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import BidTimer from '@/components/BidTimer';
 import PriceInfoDashboard from '@/components/PriceInfoDashboard';
-import { formatMoney } from '@/app/lib/format-utils';
+import { formatMoney } from '@/lib/utils';
 
 // لا نستطيع إستيراد sqlite3 أو أي مكتبات قاعدة بيانات أخرى في جانب العميل!
 // حذف:
@@ -53,14 +53,9 @@ interface Car {
 
 export default function SilentAuctionPage() {
   const [cars, setCars] = useState<Car[]>([]);
-  const [filteredCars, setFilteredCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
   
   const { label: auctionType } = getCurrentAuctionType(currentTime);
@@ -74,8 +69,10 @@ export default function SilentAuctionPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // جلب بيانات السيارات من API
   useEffect(() => {
     setLoading(true);
+    
     fetch('/api/auctions?type=silent_instant')
       .then(res => {
         if (!res.ok) {
@@ -84,47 +81,18 @@ export default function SilentAuctionPage() {
         return res.json();
       })
       .then(data => {
-        // تعامل مع هيكل البيانات الجديد الذي قمنا بتحديثه في API
+        // تعامل مع هيكل البيانات من API
         const carsData = Array.isArray(data.data) ? data.data : [];
         setCars(carsData);
-        setFilteredCars(carsData);
         setLoading(false);
       })
       .catch(err => {
         console.error('فشل تحميل بيانات المزاد الصامت', err);
-        setError(err.message);
+        setCars([]); // مصفوفة فارغة في حالة الفشل
+        setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
         setLoading(false);
       });
   }, []);
-
-  // تصفية السيارات بناءً على معايير البحث
-  useEffect(() => {
-    let result = [...cars];
-    
-    // تصفية بالبحث النصي (الماركة، الموديل، رقم اللوحة)
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      result = result.filter(car => 
-        (car.الماركة?.toLowerCase()?.includes(searchLower)) ||
-        (car.الموديل?.toLowerCase()?.includes(searchLower)) ||
-        (car["رقم اللوحة"]?.toLowerCase()?.includes(searchLower))
-      );
-    }
-    
-    // تصفية بالسعر الأدنى
-    if (minPrice) {
-      const min = parseFloat(minPrice);
-      result = result.filter(car => (car["آخر سعر"] || 0) >= min);
-    }
-    
-    // تصفية بالسعر الأعلى
-    if (maxPrice) {
-      const max = parseFloat(maxPrice);
-      result = result.filter(car => (car["آخر سعر"] || 0) <= max);
-    }
-    
-    setFilteredCars(result);
-  }, [cars, searchTerm, minPrice, maxPrice]);
 
   // تبديل حالة التوسيع للصف
   const toggleRowExpansion = (id: number) => {
@@ -164,10 +132,13 @@ export default function SilentAuctionPage() {
         </div>
         
         {/* عنوان الصفحة في الوسط */}
-        <div className="col-span-6 text-center">
-          <h1 className="text-2xl font-bold">السوق المتأخر</h1>
-          <div className="text-sm text-purple-600 mt-1">وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي</div>
-          <p className="text-gray-600 mt-1 text-sm">مكمل للسوق الفوري المباشر في تركيبته ويختلف أنه ليس به بث مباشر وصاحب العرض يستطيع أن يغير سعر بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري</p>
+        <div className="col-span-6 text-center relative">
+          {/* إضافة صورة خلفية */}
+          <div className="absolute inset-0 bg-contain bg-center bg-no-repeat opacity-20" style={{ backgroundImage: `url('/placeholder-icon.svg')` }}></div>
+          
+          <h1 className="text-2xl font-bold relative z-10">السوق المتأخر</h1>
+          <div className="text-sm text-purple-600 mt-1 relative z-10">وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي</div>
+          <p className="text-gray-600 mt-1 text-sm relative z-10">مكمل للسوق الفوري المباشر في تركيبته ويختلف أنه ليس به بث مباشر وصاحب العرض يستطيع أن يغير سعر بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري</p>
         </div>
         
         {/* لوحة معلومات السعر المباشرة */}
@@ -180,60 +151,6 @@ export default function SilentAuctionPage() {
             />
           )}
         </div>
-      </div>
-      
-      {/* قسم البحث والتصفية */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div className="flex flex-wrap items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-800">البحث والتصفية</h2>
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center text-purple-600 text-sm font-medium"
-          >
-            <Filter className="h-4 w-4 ml-1" />
-            {showFilters ? 'إخفاء خيارات التصفية' : 'إظهار خيارات التصفية'}
-          </button>
-        </div>
-        
-        {/* حقل البحث */}
-        <div className="relative">
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-            <Search className="h-5 w-5" />
-          </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="البحث عن ماركة، موديل، أو رقم لوحة..."
-            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          />
-        </div>
-        
-        {/* خيارات التصفية الإضافية */}
-        {showFilters && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">السعر الأدنى</label>
-              <input
-                type="number"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="أدخل السعر الأدنى"
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">السعر الأعلى</label>
-              <input
-                type="number"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="أدخل السعر الأعلى"
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-          </div>
-        )}
       </div>
       
       {/* عرض الحالة */}
@@ -255,18 +172,18 @@ export default function SilentAuctionPage() {
         </div>
       )}
       
-      {!loading && !error && filteredCars.length === 0 && (
+      {!loading && !error && cars.length === 0 && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-          <p>لا توجد سيارات متاحة في السوق الصامت تطابق معايير البحث</p>
+          <p>لا توجد سيارات متاحة في السوق الصامت حالياً</p>
         </div>
       )}
       
-      {!loading && !error && filteredCars.length > 0 && (
+      {!loading && !error && cars.length > 0 && (
         <div className="bg-white p-4 rounded-lg shadow-sm">
           {/* عنوان قسم النتائج */}
           <div className="flex justify-between items-center mb-4">
             <div className="text-lg font-bold text-gray-800">المزاد الصامت - السيارات المتاحة</div>
-            <div className="text-sm text-gray-600">عدد السيارات: {filteredCars.length}</div>
+            <div className="text-sm text-gray-600">عدد السيارات: {cars.length}</div>
           </div>
           
           {/* خط فاصل بين المزاد الفوري والصامت */}
@@ -288,7 +205,7 @@ export default function SilentAuctionPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCars.map((car, idx) => (
+                {cars.map((car, idx) => (
                   <Fragment key={idx}>
                     <tr className="hover:bg-gray-50 cursor-pointer">
                       <td className="px-2 whitespace-nowrap">
@@ -302,13 +219,13 @@ export default function SilentAuctionPage() {
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.الماركة}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.الموديل}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car["سنة الصنع"]}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["سعر_افتتاح_الصامت"] || 0)} ر.س</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["سعر الإفتتاح"] || 0)} ر.س</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-purple-600">
                         {formatMoney(car["آخر سعر"] || 0)} ر.س
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${car["التغير"] > 0 ? 'bg-green-100 text-green-800' : car["التغير"] < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {car["التغير"] > 0 ? '+' : ''}{formatMoney(car["التغير"] || 0)} ({car["نسبة_التغير"] || '0%'})
+                          {car["التغير"] > 0 ? '+' : ''}{formatMoney(car["التغير"] || 0)} ({car["نسبة التغير"] || '0%'})
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-purple-600 underline">

@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/contexts/AuthContext";
 import { ChevronDown, LogOut, User, Settings } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function UserMenu() {
     const { user, logout } = useAuth();

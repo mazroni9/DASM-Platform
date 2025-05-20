@@ -18,9 +18,6 @@ class UserController extends Controller
     public function register(Request $request)
     {
         try {
-            // Optional: Remove dd($request->all()) once you're done debugging.
-            // dd($request->all());
-
             // Validate incoming request
             $data = $request->validate([
                 'first_name' => 'required|string|max:255',
@@ -41,16 +38,37 @@ class UserController extends Controller
             ]);
 
             return response()->json(['user' => $user], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors specifically
+            $errors = $e->validator->errors()->getMessages();
+            
+            // Create user-friendly messages for common errors
+            $userFriendlyMessages = [];
+            foreach ($errors as $field => $messages) {
+                if ($field === 'email' && strpos(implode(' ', $messages), 'unique') !== false) {
+                    $userFriendlyMessages[] = 'البريد الإلكتروني مستخدم بالفعل';
+                } else if ($field === 'phone' && strpos(implode(' ', $messages), 'unique') !== false) {
+                    $userFriendlyMessages[] = 'رقم الهاتف مستخدم بالفعل';
+                } else {
+                    $userFriendlyMessages[] = $messages[0]; // Add the first error message
+                }
+            }
+            
+            // Return the user-friendly error message
+            return response()->json([
+                'message' => count($userFriendlyMessages) > 0 ? implode(', ', $userFriendlyMessages) : 'بيانات التسجيل غير صالحة'
+            ], 422);
+            
         } catch (\Exception $e) {
-            // Log the error with a detailed message and context
+            // Log the detailed error for debugging
             Log::error('Error during user registration: ' . $e->getMessage(), [
                 'exception' => $e,
-                'request_data' => $request->all(),
+                'request_data' => $request->except(['password', 'password_confirmation']),
             ]);
 
+            // Return a generic message without exposing internal details
             return response()->json([
-                'message' => 'Registration failed. Please try again later.',
-                'error' => $e->getMessage()
+                'message' => 'فشل التسجيل. يرجى المحاولة مرة أخرى لاحقاً.'
             ], 500);
         }
     }
@@ -63,29 +81,39 @@ class UserController extends Controller
      */
     public function login(Request $request)
     {
-        // Validate incoming request
-        $data = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string'
-        ]);
+        try {
+            // Validate incoming request
+            $data = $request->validate([
+                'email'    => 'required|email',
+                'password' => 'required|string'
+            ]);
 
-        // Find user by email
-        $user = User::where('email', $data['email'])->first();
+            // Find user by email
+            $user = User::where('email', $data['email'])->first();
 
-        // Check if user exists and password is valid
-        if (!$user || !Hash::check($data['password'], $user->password_hash)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            // Check if user exists and password is valid
+            if (!$user || !Hash::check($data['password'], $user->password_hash)) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+
+            // Using Sanctum, generate an API token:
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json(['user' => $user, 'token' => $token], 200);
+        } catch (\Exception $e) {
+            // Log the detailed error for debugging purposes, but don't expose it to users
+            Log::error('Error during user login: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request_data' => ['email' => $request->email], // Only include email for security
+            ]);
+
+            // Return a generic error message to the user
+            return response()->json([
+                'message' => 'Login failed. Please try again later.',
+            ], 500);
         }
-
-        // Using Sanctum, generate an API token:
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        return response()->json(['user' => $user, 'token' => $token], 200);
     }
-
     /**
-     * Logout the authenticated user.
-     *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
@@ -287,5 +315,48 @@ class UserController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get the current user's permissions
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPermissions()
+    {
+        $user = auth()->user();
+        $permissions = [];
+        
+        // Add default permissions for all users
+        $permissions[] = 'view_auctions';
+        $permissions[] = 'place_bids';
+        
+        // Add role-specific permissions
+        if ($user->role === 'admin') {
+            $permissions = array_merge($permissions, [
+                'manage_users',
+                'manage_auctions',
+                'manage_cars',
+                'manage_blog',
+                'broadcast',
+                'manage_venues',
+                'view_analytics',
+                'approve_auctions',
+                'manage_settings'
+            ]);
+        } elseif ($user->role === 'dealer') {
+            $permissions = array_merge($permissions, [
+                'create_auctions',
+                'manage_own_auctions',
+                'manage_own_cars',
+                'broadcast',
+                'view_own_analytics'
+            ]);
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'permissions' => $permissions
+        ]);
     }
 }

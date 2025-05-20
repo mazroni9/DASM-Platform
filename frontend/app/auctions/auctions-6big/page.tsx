@@ -44,12 +44,12 @@ export default function BazarPage() {
           confettiNumber: 200,
         });
         
-        // جدولة إطلاق المزيد من الألعاب النارية كل 5 ثوانٍ
+        // جدولة إطلاق الألعاب النارية مره واحده فقط ثم تتوقف 
         const interval = setInterval(() => {
           jsConfetti.addConfetti({
             emojis: ['🎁', '🎉', '🎊', '💰', '💎', '🏆', '✨', '⭐'],
-            emojiSize: 50,
-            confettiNumber: 30,
+            emojiSize: 25,
+            confettiNumber: 15,
           });
           
           // إطلاق الكلمات الاحتفالية
@@ -57,9 +57,15 @@ export default function BazarPage() {
             confettiColors: [
               '#FFD700', '#FFA500', '#FF8C00', '#FF4500', '#DA70D6'
             ],
-            confettiNumber: 50,
-            confettiRadius: 8,
+            confettiNumber: 40,
+            confettiRadius: 3,
           });
+        }, 500);
+        
+        // إيقاف الاحتفال بعد 5 ثوان
+        setTimeout(() => {
+          clearInterval(interval);
+          console.log("تم إيقاف الاحتفال بعد 5 ثوان");
         }, 5000);
         
         return () => clearInterval(interval);

@@ -22,6 +22,8 @@ class User extends Authenticatable
         'kyc_status',
         'email_verified_at',
         'email_verification_token',
+        'password_reset_token',
+        'password_reset_expires_at',
         'is_active'
     ];
 
@@ -29,6 +31,7 @@ class User extends Authenticatable
     protected $casts = [
         'is_active' => 'boolean',
         'email_verified_at' => 'datetime',
+        'password_reset_expires_at' => 'datetime',
     ];
 
     // Relationships

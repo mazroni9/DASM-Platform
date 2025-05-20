@@ -10,6 +10,9 @@ use App\Http\Controllers\DealerController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\VenueController;
+use App\Http\Controllers\AutoBidController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -22,6 +25,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Public auction browsing 
 Route::get('/auctions', [AuctionController::class, 'index']);
@@ -43,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::post('/logout', [UserController::class, 'logout']);
+    Route::get('/user/permissions', [UserController::class, 'getPermissions']);
     
     // Dealer registration
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
@@ -67,6 +73,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
+    
+    // New standardized bid API for the unified frontend
+    Route::post('/auctions/bid', [BidController::class, 'placeBid']);
+    
+    // Auto-bid routes
+    Route::post('/auctions/auto-bid', [AutoBidController::class, 'store']);
+    Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus']);
+    Route::delete('/auctions/auto-bid/{itemId}', [AutoBidController::class, 'destroy']);
+    
+    // Public broadcast information (read-only)
+    Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
+    Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
+    
+    // Venue routes - read only for all authenticated users
+    Route::get('/venues', [VenueController::class, 'index']);
+    Route::get('/venues/{id}', [VenueController::class, 'show']);
     
     // Wallet routes
     // Route::get('/wallet', [WalletController::class, 'show']);
@@ -131,4 +153,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/blog', [BlogController::class, 'store']);
     Route::put('/blog/{id}', [BlogController::class, 'update']);
     Route::delete('/blog/{id}', [BlogController::class, 'destroy']);
+    
+    // Admin venue management
+    Route::post('/venues', [VenueController::class, 'store']);
+    Route::put('/venues/{id}', [VenueController::class, 'update']);
+    Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
+    
+    // Admin broadcast management
+    Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
+    Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
+    Route::put('/admin/broadcast', [BroadcastController::class, 'update']);
+    Route::put('/admin/broadcast/status', [BroadcastController::class, 'updateStatus']);
 });

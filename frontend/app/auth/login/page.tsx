@@ -1,19 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const returnUrl = searchParams?.get("returnUrl") || "/dashboard";
     const { login, verifyCode } = useAuthStore();
 
     // Form states
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState<string>("");
     const [showPassword, setShowPassword] = useState(false);
 
     // Form submission states
@@ -27,11 +28,22 @@ export default function LoginPage() {
 
     // Check if user is already logged in
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            router.push("/dashboard");
+        const { isLoggedIn, user } = useAuthStore.getState();
+
+        if (isLoggedIn && user) {
+            // Redirect based on user role or to the return URL
+            if (returnUrl.startsWith("/auth")) {
+                // Don't redirect to auth pages
+                if (user.role === "admin") {
+                    router.push("/admin/dashboard");
+                } else {
+                    router.push("/dashboard");
+                }
+            } else {
+                router.push(returnUrl);
+            }
         }
-    }, [router]);
+    }, [router, returnUrl]);
 
     // Handle login
     const handleLogin = async (e: React.FormEvent) => {
@@ -60,17 +72,22 @@ export default function LoginPage() {
                 // Get user data from the store
                 const user = useAuthStore.getState().user;
 
-                // Redirect based on user role
-                if (user?.role === "admin") {
-                    router.push("/admin/dashboard");
-                } else if (user?.role === "dealer") {
-                    router.push("/dealer/dashboard");
-                } else if (user?.role === "auctioneer") {
-                    router.push("/dashboard/auctioneer");
-                } else if (user?.role === "control") {
-                    router.push("/dashboard/control");
+                // Redirect based on user role or to the return URL
+                if (returnUrl.startsWith("/auth")) {
+                    // Don't redirect to auth pages
+                    if (user?.role === "admin") {
+                        router.push("/admin/dashboard");
+                    } else if (user?.role === "dealer") {
+                        router.push("/dealer/dashboard");
+                    } else if (user?.role === "auctioneer") {
+                        router.push("/dashboard/auctioneer");
+                    } else if (user?.role === "control") {
+                        router.push("/dashboard/control");
+                    } else {
+                        router.push("/dashboard");
+                    }
                 } else {
-                    router.push("/dashboard");
+                    router.push(returnUrl);
                 }
             } else {
                 if (result.needsVerification) {
@@ -79,18 +96,23 @@ export default function LoginPage() {
                     );
                     setShowVerification(true);
                 } else {
+                    // Display a user-friendly error message instead of the raw server error
                     setError(
-                        result.error ||
-                            "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+                        "فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور."
                     );
                 }
             }
         } catch (err: any) {
             console.error("خطأ في تسجيل الدخول:", err);
+            // Provide a generic error message to the user
             setError(
-                err.message ||
-                    "حدث خطأ أثناء تسجيل الدخول، يرجى المحاولة مرة أخرى"
+                "حدث خطأ أثناء تسجيل الدخول، يرجى المحاولة مرة أخرى لاحقاً"
             );
+
+            // Log the detailed error to the console for debugging
+            if (process.env.NODE_ENV !== "production") {
+                console.error("Detailed login error:", err);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -120,11 +142,11 @@ export default function LoginPage() {
             if (result.success) {
                 setSuccess("تم التحقق بنجاح وتسجيل الدخول");
 
-                // Redirect to the appropriate page
-                if (result.redirectTo) {
+                // Redirect to the appropriate page or return URL
+                if (result.redirectTo && returnUrl === "/dashboard") {
                     router.push(result.redirectTo);
                 } else {
-                    router.push("/dashboard");
+                    router.push(returnUrl);
                 }
             } else {
                 setError(result.error || "رمز التحقق غير صحيح");
@@ -195,6 +217,7 @@ export default function LoginPage() {
                                         }
                                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
                                         placeholder="example@dasm-platform.com"
+                                        dir="ltr"
                                     />
                                 </div>
                             </div>
@@ -220,6 +243,7 @@ export default function LoginPage() {
                                             setPassword(e.target.value)
                                         }
                                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+                                        dir="ltr"
                                     />
                                     <button
                                         type="button"
@@ -242,6 +266,14 @@ export default function LoginPage() {
                                         className="font-medium text-teal-600 hover:text-teal-500"
                                     >
                                         نسيت كلمة المرور؟
+                                    </Link>
+                                </div>
+                                <div className="text-sm">
+                                    <Link
+                                        href="/auth/register"
+                                        className="font-medium text-teal-600 hover:text-teal-500"
+                                    >
+                                        إنشاء حساب جديد
                                     </Link>
                                 </div>
                             </div>
@@ -284,6 +316,7 @@ export default function LoginPage() {
                                         }
                                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
                                         placeholder="أدخل رمز التحقق"
+                                        dir="ltr"
                                     />
                                 </div>
                             </div>

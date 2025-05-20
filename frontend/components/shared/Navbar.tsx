@@ -1,43 +1,26 @@
 "use client";
 
-import AuctionDropdown from "@/components/shared/AuctionDropdown";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import {
-    Menu,
-    X,
-    Heart,
-    Tag,
-    Award,
-    Settings,
-    LogOut,
-    User,
-    Car,
-    Home,
-    DollarSign,
-    BookOpen,
-    RefreshCw,
-    Star,
-    Store,
-    Archive,
-    Clock
-} from "lucide-react";
+import { RefreshCw, Store, Archive, Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/app/contexts/AuthContext";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isRestarting, setIsRestarting] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
     const { user, logout } = useAuth();
 
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === "admin";
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
@@ -53,10 +36,24 @@ const Navbar = () => {
                 toast.error(result.message);
             }
         } catch (error) {
-            console.error('Error restarting servers:', error);
-            toast.error('حدث خطأ أثناء إعادة تشغيل الخوادم');
+            console.error("Error restarting servers:", error);
+            toast.error("حدث خطأ أثناء إعادة تشغيل الخوادم");
         } finally {
             setIsRestarting(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            setIsLoggingOut(true);
+            await logout();
+            toast.success("تم تسجيل الخروج بنجاح");
+            router.push("/");
+        } catch (error) {
+            console.error("Error logging out:", error);
+            toast.error("حدث خطأ أثناء تسجيل الخروج");
+        } finally {
+            setIsLoggingOut(false);
         }
     };
 
@@ -82,21 +79,48 @@ const Navbar = () => {
                                 height={40}
                                 className="rounded-full"
                             />
-                            <span className="font-bold text-base whitespace-nowrap">سوق المزادات الرقمية <span className="text-blue-700">DASM</span></span>
+                            <span className="font-bold text-base whitespace-nowrap">
+                                سوق المزادات الرقمية{" "}
+                                <span className="text-blue-700">DASM</span>
+                            </span>
                         </Link>
                     </div>
 
                     {/* Main Navigation */}
-                    <div className="hidden md:flex items-center gap-6 flex-row-reverse" dir="rtl">
-                        <Link href="/auctions" className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive('/auctions') ? 'text-blue-700 font-bold' : ''}`}>
+                    <div
+                        className="hidden md:flex items-center gap-6 flex-row-reverse"
+                        dir="rtl"
+                    >
+                        <Link
+                            href="/auctions"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
+                                isActive("/auctions")
+                                    ? "text-blue-700 font-bold"
+                                    : ""
+                            }`}
+                        >
                             <Store size={18} />
                             قطاع الأسواق المتعددة
                         </Link>
-                        <Link href="/broadcasts" className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive('/broadcasts') ? 'text-blue-700 font-bold' : ''}`}>
+                        <Link
+                            href="/broadcasts"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
+                                isActive("/broadcasts")
+                                    ? "text-blue-700 font-bold"
+                                    : ""
+                            }`}
+                        >
                             <Clock size={18} />
                             البث المباشر
                         </Link>
-                        <Link href="/auction-archive" className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive('/auction-archive') ? 'text-blue-700 font-bold' : ''}`}>
+                        <Link
+                            href="/auction-archive"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
+                                isActive("/auction-archive")
+                                    ? "text-blue-700 font-bold"
+                                    : ""
+                            }`}
+                        >
                             <Archive size={18} />
                             أرشيف المزادات
                         </Link>
@@ -105,23 +129,32 @@ const Navbar = () => {
                     {/* Auth Buttons */}
                     <div className="flex items-center space-x-4 space-x-reverse">
                         {isAdmin && (
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="icon"
                                 className="mr-2 text-emerald-600 border-emerald-600 hover:bg-emerald-600 hover:text-white"
                                 onClick={handleRestartServers}
                                 disabled={isRestarting}
                                 title="إعادة تشغيل الخوادم"
                             >
-                                <RefreshCw className={`h-4 w-4 ${isRestarting ? 'animate-spin' : ''}`} />
+                                <RefreshCw
+                                    className={`h-4 w-4 ${
+                                        isRestarting ? "animate-spin" : ""
+                                    }`}
+                                />
                             </Button>
                         )}
-                        
+
                         {user ? (
-                            <UserMenu />
+                            <>
+                                <UserMenu />
+                            </>
                         ) : (
                             <Link href="/auth/login">
-                                <Button variant="outline" className="text-sky-800 border-sky-800 hover:bg-sky-800 hover:text-sky-100">
+                                <Button
+                                    variant="outline"
+                                    className="text-sky-800 border-sky-800 hover:bg-sky-800 hover:text-sky-100"
+                                >
                                     تسجيل الدخول
                                 </Button>
                             </Link>

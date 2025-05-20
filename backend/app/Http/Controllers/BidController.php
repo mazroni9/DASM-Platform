@@ -322,4 +322,88 @@ class BidController extends Controller
             ]
         ]);
     }
+    
+    /**
+     * Place a bid using the simplified endpoint
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function placeBid(Request $request)
+    {
+        try {
+            // Validate incoming request
+            $data = $request->validate([
+                'itemId' => 'required|integer|exists:auctions,id',
+                'amount' => 'required|numeric|min:1'
+            ]);
+            
+            $auction = \App\Models\Auction::findOrFail($data['itemId']);
+            $user = auth()->user();
+            
+            // Check if auction is active
+            if ($auction->status !== 'active') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'المزاد غير نشط حالياً'
+                ], 400);
+            }
+            
+            // Check if auction has ended
+            if ($auction->end_date && now() > $auction->end_date) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'انتهى وقت المزاد'
+                ], 400);
+            }
+            
+            // Check if the bid amount is higher than the current price
+            if ($data['amount'] <= $auction->current_price) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'يجب أن يكون مبلغ المزايدة أعلى من السعر الحالي'
+                ], 400);
+            }
+            
+            // Create the bid
+            $bid = new \App\Models\Bid();
+            $bid->user_id = $user->id;
+            $bid->auction_id = $auction->id;
+            $bid->amount = $data['amount'];
+            $bid->status = 'active';
+            $bid->save();
+            
+            // Update the auction's current price
+            $auction->current_price = $data['amount'];
+            $auction->save();
+            
+            // Trigger event for real-time updates (if using broadcasting)
+            // event(new \App\Events\NewBidPlaced($bid));
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تم تقديم العرض بنجاح',
+                'data' => [
+                    'bid_id' => $bid->id,
+                    'amount' => $bid->amount,
+                    'created_at' => $bid->created_at,
+                    'auction_id' => $auction->id,
+                    'current_price' => $auction->current_price
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'بيانات غير صالحة',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error placing bid: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء تقديم العرض'
+            ], 500);
+        }
+    }
 }
