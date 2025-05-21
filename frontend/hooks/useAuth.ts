@@ -1,33 +1,30 @@
-import { create } from 'zustand';
+import { useAuthStore as useStoreAuth } from "@/store/authStore";
 
-interface AuthState {
-  user: any;
-  isAdmin: boolean;
-  isLoading: boolean;
-  login: (userData: any) => void;
-  logout: () => void;
-}
-
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAdmin: false,
-  isLoading: false,
-  login: (userData) => set({ user: userData, isAdmin: userData?.isAdmin || false }),
-  logout: () => set({ user: null, isAdmin: false }),
-}));
-
+// This is a wrapper around the authStore to maintain compatibility with existing code
 export function useAuth() {
-  const {
-    user,
-    isAdmin,
-    isLoading,
-    login,
-  } = useAuthStore();
+    const {
+        user,
+        token,
+        isLoggedIn,
+        loading,
+        error,
+        login,
+        logout,
+        refreshToken,
+    } = useStoreAuth();
 
-  return {
-    user,
-    isAdmin,
-    isLoading,
-    login,
-  };
+    return {
+        user,
+        isAdmin: user?.role === "admin",
+        isLoading: loading,
+        login,
+        logout,
+        refreshToken,
+        token,
+        isLoggedIn,
+        error,
+    };
 }
+
+// Re-export the store for direct access if needed
+export { useStoreAuth as useAuthStore };

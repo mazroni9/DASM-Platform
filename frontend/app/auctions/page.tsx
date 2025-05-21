@@ -59,7 +59,7 @@ export default function AuctionsPage() {
 
   // إضافة مجموعة السوق الكبير (البازار سابقًا) بالاسم الجديد
   const auctionsBig = [
-    { name: 'السوق السعودي الشامل', slug: 'auctions-6big', description: 'المنصة الوطنية الأولى للمزادات في المملكة العربية السعودية', icon: Store, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+    { name: 'السوق الشامل', slug: 'auctions-6big', description: 'المنصة الوطنية الأولى للمزادات في المملكة العربية السعودية', icon: Store, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
     { name: 'عروض وتخفيضات حصرية', slug: 'auctions-6big/offers', description: 'تخفيضات وعروض مميزة على منتجات متنوعة', icon: Gift, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
     { name: 'متاجر تسوق محلية', slug: 'auctions-6big/local-shops', description: 'متاجر محلية ومنتجات متنوعة بأسعار تنافسية', icon: ShoppingBag, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
   ];
@@ -133,7 +133,7 @@ export default function AuctionsPage() {
         {auctionsMain.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
         <Divider />
 
-        <SectionTitle title="قطاع السيارات المختلفة" />
+        <SectionTitle title="قطاع السيارات المتنوعة" />
         {auctionsCar.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
         <Divider />
 
@@ -141,7 +141,7 @@ export default function AuctionsPage() {
         {auctionsQuality.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
         <Divider />
 
-        <SectionTitle title="اسواق متخصصة" />
+        <SectionTitle title="اسواق تخصصية" />
         {auctionsSpecial.map((auction) => <AuctionCard key={auction.slug} auction={auction} isSpecial />)}
         <Divider />
 

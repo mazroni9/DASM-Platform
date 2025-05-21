@@ -124,6 +124,11 @@ export default function RegisterForm() {
                 setError(response.data.message || "حدث خطأ أثناء التسجيل");
             }
         } catch (error: any) {
+            // Log detailed error in development only
+            if (process.env.NODE_ENV !== "production") {
+                console.error("Registration error details:", error);
+            }
+
             // Check if the error response contains a success message
             if (
                 error.response?.data?.message &&
@@ -137,9 +142,35 @@ export default function RegisterForm() {
                     router.push("/verify-email");
                 }, 1500);
             } else {
-                setError(
-                    error.response?.data?.message || "حدث خطأ أثناء التسجيل"
-                );
+                // Get a user-friendly error message
+                let errorMessage =
+                    "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
+
+                if (error.response?.data?.message) {
+                    const serverMessage = error.response.data.message;
+
+                    // Check for common errors and provide specific messages
+                    if (
+                        serverMessage.includes("email") &&
+                        serverMessage.includes("taken")
+                    ) {
+                        errorMessage = "البريد الإلكتروني مستخدم بالفعل";
+                    } else if (
+                        serverMessage.includes("phone") &&
+                        serverMessage.includes("taken")
+                    ) {
+                        errorMessage = "رقم الهاتف مستخدم بالفعل";
+                    } else if (
+                        !serverMessage.includes("SQLSTATE") &&
+                        !serverMessage.includes("relation") &&
+                        serverMessage.length < 100
+                    ) {
+                        // Only use server message if it's not a detailed tech error
+                        errorMessage = serverMessage;
+                    }
+                }
+
+                setError(errorMessage);
             }
         } finally {
             setIsLoading(false);
@@ -344,7 +375,7 @@ export default function RegisterForm() {
                         <SelectTrigger className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
                             <SelectValue placeholder="اختر نوع الحساب" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-50 bg-white">
                             <SelectItem value="user">مستخدم</SelectItem>
                             <SelectItem value="dealer">تاجر</SelectItem>
                         </SelectContent>

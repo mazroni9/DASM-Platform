@@ -322,5 +322,110 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Logged out successfully']);
     }
+
+    /**
+     * Send a reset password link to the user's email.
+     */
+    public function forgotPassword(Request $request)
+    {
+        Log::info('Password reset process started', ['email' => $request->email]);
+        
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
+        }
+        
+        $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            // For security, don't reveal that the user doesn't exist
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني إذا كان الحساب موجودًا.'
+            ]);
+        }
+        
+        // Generate a random token
+        $token = Str::random(60);
+        
+        // Store the token and expiration time in the user record
+        $user->update([
+            'password_reset_token' => $token,
+            'password_reset_expires_at' => now()->addMinutes(60) // Token expires after 60 minutes
+        ]);
+        
+        // Create the reset URL for the frontend
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+        $resetUrl = $frontendUrl . '/auth/reset-password?token=' . $token;
+        
+        try {
+            // Send the password reset email
+            $user->notify(new \App\Notifications\ResetPasswordNotification($resetUrl));
+            
+            Log::info('Password reset email sent', ['email' => $user->email]);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset email', [
+                'error' => $e->getMessage(),
+                'email' => $user->email
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء إرسال بريد إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى.'
+            ], 500);
+        }
+    }
+    
+    /**
+     * Reset the user's password using the token.
+     */
+    public function resetPassword(Request $request)
+    {
+        Log::info('Password reset verification started');
+        
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|same:password'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
+        }
+        
+        // Find the user with this token
+        $user = User::where('password_reset_token', $request->token)
+                    ->where('password_reset_expires_at', '>', now()) // Token must not be expired
+                    ->first();
+        
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'رمز إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية.'
+            ], 400);
+        }
+        
+        // Update the password and clear the reset token
+        $user->update([
+            'password_hash' => Hash::make($request->password),
+            'password_reset_token' => null,
+            'password_reset_expires_at' => null
+        ]);
+        
+        Log::info('Password reset successful', ['user_id' => $user->id, 'email' => $user->email]);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.'
+        ]);
+    }
 }
 

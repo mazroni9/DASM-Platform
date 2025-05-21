@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/contexts/AuthContext';
 import ForgotPasswordForm from './Form';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
