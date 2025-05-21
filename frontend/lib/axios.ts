@@ -46,7 +46,8 @@ api.interceptors.response.use(
         // Don't try to refresh token for refresh endpoint itself
         if (
             originalRequest.url &&
-            originalRequest.url.includes("/api/refresh")
+            (originalRequest.url.includes("/api/refresh") ||
+                originalRequest.url.includes("/api/logout"))
         ) {
             return Promise.reject(error);
         }
@@ -86,30 +87,53 @@ api.interceptors.response.use(
                     ] = `Bearer ${newToken}`;
                     return api(originalRequest);
                 } else {
-                    // If refresh failed, simply reject; ProtectedRoute will handle redirect
+                    // If refresh failed, clear auth state
                     console.log("Token refresh failed, rejecting request");
+
+                    // Redirect to login page only if we're not already redirecting
+                    // and we're not on login page already
+                    if (typeof window !== "undefined") {
+                        const currentPath = window.location.pathname;
+                        const isAlreadyOnLoginPage =
+                            currentPath.includes("/auth/login");
+
+                        if (!isAlreadyOnLoginPage) {
+                            // Store a flag to prevent multiple redirects
+                            const isRedirecting = sessionStorage.getItem(
+                                "redirecting_to_login"
+                            );
+
+                            if (!isRedirecting) {
+                                sessionStorage.setItem(
+                                    "redirecting_to_login",
+                                    "true"
+                                );
+                                console.log(
+                                    "Auth refresh failed - redirecting to login"
+                                );
+
+                                // Use timeout to allow other requests to complete
+                                setTimeout(() => {
+                                    window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
+                                        currentPath
+                                    )}`;
+                                    // Clear flag after redirection
+                                    setTimeout(() => {
+                                        sessionStorage.removeItem(
+                                            "redirecting_to_login"
+                                        );
+                                    }, 1000);
+                                }, 100);
+                            }
+                        }
+                    }
+
                     return Promise.reject(error);
                 }
             } catch (refreshError) {
                 isRefreshing = false;
                 refreshPromise = null;
-
-                // If refresh throws an error, redirect to login
-                if (
-                    typeof window !== "undefined" &&
-                    !originalRequest.url.includes("/api/logout")
-                ) {
-                    const currentPath = window.location.pathname;
-                    // Don't redirect if we're on login page already
-                    if (!currentPath.includes("/auth/login")) {
-                        console.log(
-                            "Auth refresh failed - redirecting to login"
-                        );
-                        window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
-                            currentPath
-                        )}`;
-                    }
-                }
+                console.error("Error during token refresh:", refreshError);
                 return Promise.reject(refreshError);
             }
         }

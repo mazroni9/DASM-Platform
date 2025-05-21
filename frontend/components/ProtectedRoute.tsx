@@ -13,6 +13,15 @@ const publicPaths = [
     "/verify-email",
 ];
 
+// List of routes that require admin role
+const adminPaths = [
+    "/admin",
+    "/admin/users",
+    "/admin/youtube-channels",
+    "/admin/obs-control",
+    "/admin/live-stream",
+];
+
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -39,6 +48,39 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
                 return;
             }
 
+            // Check if the current path is an admin path
+            const isAdminPath = adminPaths.some(
+                (path) => pathname === path || pathname.startsWith(`${path}/`)
+            );
+
+            // If it's an admin path but user isn't an admin, redirect to dashboard
+            if (isAdminPath && user?.role !== "admin") {
+                console.log(
+                    "Unauthorized access to admin route. User role:",
+                    user?.role
+                );
+                router.push("/dashboard");
+                return;
+            }
+
+            // Handle initial login redirection only
+            if (isLoggedIn && pathname === "/") {
+                const hasInitialRedirect =
+                    sessionStorage.getItem("initialRedirect");
+                if (!hasInitialRedirect) {
+                    sessionStorage.setItem("initialRedirect", "true");
+                    // Redirect based on role only on initial login
+                    if (user?.role === "admin") {
+                        router.push("/admin");
+                    } else if (user?.role === "dealer") {
+                        router.push("/dealer/dashboard");
+                    } else {
+                        router.push("/dashboard");
+                    }
+                    return;
+                }
+            }
+
             // Auth check is complete
             setIsLoading(false);
         }
@@ -54,7 +96,7 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
         }, 3000);
 
         return () => clearTimeout(timer);
-    }, [isLoggedIn, pathname, router, initialized, isLoading]);
+    }, [isLoggedIn, pathname, router, initialized, isLoading, user]);
 
     // Show loading state while checking authentication (with timeout)
     if (isLoading) {

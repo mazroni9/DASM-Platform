@@ -24,8 +24,25 @@ export function LoginForm() {
     // Check if user is already logged in
     useEffect(() => {
         const token = localStorage.getItem("token");
+        // Don't automatically redirect if token exists, let the role-based redirection handle it
         if (token) {
-            router.push("/dashboard");
+            const authState = useAuthStore.getState();
+            // Only redirect if not already logged in (to avoid overriding role-based redirects)
+            if (!authState.isLoggedIn) {
+                authState.initializeFromStorage().then((success) => {
+                    if (success) {
+                        const user = authState.user;
+                        console.log("User role from storage:", user?.role);
+                        if (user?.role === "admin") {
+                            router.push("/admin");
+                        } else if (user?.role === "dealer") {
+                            router.push("/dealer/dashboard");
+                        } else {
+                            router.push("/dashboard");
+                        }
+                    }
+                });
+            }
         }
     }, [router]);
 
@@ -41,18 +58,12 @@ export function LoginForm() {
 
         try {
             const result = await login(email, password);
+            console.log(result);
 
             if (result.success) {
                 toast.success("تم تسجيل الدخول بنجاح");
-                // Redirect based on user role
-                const user = useAuthStore.getState().user;
-                if (user?.role === "admin") {
-                    router.push("/admin/dashboard");
-                } else if (user?.role === "dealer") {
-                    router.push("/dealer/dashboard");
-                } else {
-                    router.push("/dashboard");
-                }
+                // Get the user role and redirect accordingly
+                router.push(result.redirectTo);
             } else {
                 if (result.needsVerification) {
                     toast.success(
@@ -80,8 +91,15 @@ export function LoginForm() {
 
             if (result.success) {
                 toast.success("تم التحقق بنجاح وتسجيل الدخول");
-                if (result.redirectTo) {
-                    router.push(result.redirectTo);
+
+                // Get the user role and redirect accordingly
+                const user = useAuthStore.getState().user;
+                console.log("User role after verification:", user?.role);
+
+                if (user?.role === "admin") {
+                    router.push("/admin");
+                } else if (user?.role === "dealer") {
+                    router.push("/dealer/dashboard");
                 } else {
                     router.push("/dashboard");
                 }

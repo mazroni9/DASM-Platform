@@ -39,15 +39,46 @@ const registerSchema = z
     .object({
         first_name: z
             .string()
-            .min(2, { message: "الاسم الأول يجب أن يكون على الأقل حرفين" }),
+            .min(2, { message: "الاسم الأول يجب أن يكون على الأقل حرفين" })
+            .max(50, { message: "الاسم الأول يجب ألا يتجاوز 50 حرفًا" })
+            .refine((value) => /^[\u0600-\u06FFa-zA-Z\s]+$/.test(value), {
+                message: "الاسم الأول يجب أن يحتوي على أحرف فقط",
+            }),
         last_name: z
             .string()
-            .min(2, { message: "الاسم الأخير يجب أن يكون على الأقل حرفين" }),
-        email: z.string().email({ message: "يرجى إدخال بريد إلكتروني صالح" }),
-        phone: z.string().min(10, { message: "يرجى إدخال رقم هاتف صالح" }),
+            .min(2, { message: "الاسم الأخير يجب أن يكون على الأقل حرفين" })
+            .max(50, { message: "الاسم الأخير يجب ألا يتجاوز 50 حرفًا" })
+            .refine((value) => /^[\u0600-\u06FFa-zA-Z\s]+$/.test(value), {
+                message: "الاسم الأخير يجب أن يحتوي على أحرف فقط",
+            }),
+        email: z
+            .string()
+            .email({ message: "يرجى إدخال بريد إلكتروني صالح" })
+            .refine((value) => value.includes("@") && value.includes("."), {
+                message: "يرجى إدخال بريد إلكتروني صالح مع وجود @ ونقطة",
+            }),
+        phone: z
+            .string()
+            .min(10, {
+                message: "يرجى إدخال رقم هاتف صالح (10 أرقام على الأقل)",
+            })
+            .max(15, { message: "رقم الهاتف لا يجب أن يتجاوز 15 رقم" })
+            .refine((value) => /^[0-9+\s]+$/.test(value), {
+                message: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
+            }),
         password: z
             .string()
-            .min(8, { message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف" }),
+            .min(8, { message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف" })
+            .max(72, { message: "كلمة المرور يجب ألا تتجاوز 72 حرفًا" })
+            .refine((value) => /[A-Z]/.test(value), {
+                message: "كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل",
+            })
+            .refine((value) => /[0-9]/.test(value), {
+                message: "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل",
+            })
+            .refine((value) => /[^A-Za-z0-9]/.test(value), {
+                message: "كلمة المرور يجب أن تحتوي على رمز خاص واحد على الأقل",
+            }),
         password_confirmation: z.string(),
         account_type: z.enum(["user", "dealer"]),
         company_name: z.string().optional(),
@@ -57,13 +88,28 @@ const registerSchema = z
     .refine(
         (data) => {
             if (data.account_type === "dealer") {
-                return !!data.company_name && !!data.commercial_registry;
+                return !!data.company_name && data.company_name.length >= 3;
             }
             return true;
         },
         {
-            message: "يرجى إدخال معلومات الشركة",
+            message: "اسم الشركة مطلوب ويجب أن يكون 3 أحرف على الأقل",
             path: ["company_name"],
+        }
+    )
+    .refine(
+        (data) => {
+            if (data.account_type === "dealer") {
+                return (
+                    !!data.commercial_registry &&
+                    data.commercial_registry.length >= 5
+                );
+            }
+            return true;
+        },
+        {
+            message: "رقم السجل التجاري مطلوب ويجب أن يكون 5 أحرف على الأقل",
+            path: ["commercial_registry"],
         }
     )
     .refine((data) => data.password === data.password_confirmation, {

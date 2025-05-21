@@ -24,8 +24,10 @@ interface AuthState {
         password: string
     ) => Promise<{
         success: boolean;
+        redirectTo?: string;
         error?: string;
         needsVerification?: boolean;
+        pendingApproval?: boolean;
     }>;
     verifyCode: (
         email: string,
@@ -120,7 +122,6 @@ export const useAuthStore = create<AuthState>()(
             login: async (email, password) => {
                 set({ loading: true, error: null });
                 try {
-                    console.log("Attempting login");
                     const response = await api.post(`/api/login`, {
                         email,
                         password,
@@ -165,7 +166,15 @@ export const useAuthStore = create<AuthState>()(
                         ] = `Bearer ${data.access_token}`;
                     }
 
-                    return { success: true };
+                    // redirect based on user role
+                    const redirectPath =
+                        userData.role === "admin"
+                            ? "/admin"
+                            : userData.role === "dealer"
+                            ? "/dealer"
+                            : "/dashboard";
+
+                    return { success: true, redirectTo: redirectPath };
                 } catch (err: any) {
                     // Log detailed error in development mode only
                     console.error("Login error details:", err);
@@ -178,6 +187,22 @@ export const useAuthStore = create<AuthState>()(
                         if (err.response.status === 401) {
                             errorMessage =
                                 "البريد الإلكتروني أو كلمة المرور غير صحيحة";
+                        } else if (err.response.status === 403) {
+                            // Check for pending admin approval
+                            if (
+                                err.response.data?.message?.includes(
+                                    "pending approval"
+                                )
+                            ) {
+                                set({ loading: false });
+                                return {
+                                    success: false,
+                                    pendingApproval: true,
+                                    error: "حسابك في انتظار موافقة المسؤول. سيتم إشعارك عندما يتم تفعيل حسابك.",
+                                };
+                            } else {
+                                errorMessage = "غير مصرح لك بالدخول";
+                            }
                         } else if (
                             err.response.data &&
                             err.response.data.message
@@ -264,53 +289,100 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: async () => {
                 try {
                     console.log("Attempting to refresh token");
-                    const response = await api.post(`/api/refresh`);
 
-                    const { access_token } = response.data;
-                    console.log("Token refreshed successfully");
+                    // Get the current token in case we need it
+                    const currentToken =
+                        get().token || localStorage.getItem("token");
 
-                    // Update localStorage and axios headers
-                    localStorage.setItem("token", access_token);
-                    axios.defaults.headers.common[
-                        "Authorization"
-                    ] = `Bearer ${access_token}`;
-                    if (api.defaults) {
-                        api.defaults.headers.common[
+                    // Ensure we're sending cookies with the request
+                    const response = await api.post(
+                        `/api/refresh`,
+                        {},
+                        {
+                            withCredentials: true,
+                            headers: {
+                                // Include current token in the Authorization header
+                                ...(currentToken
+                                    ? {
+                                          Authorization: `Bearer ${currentToken}`,
+                                      }
+                                    : {}),
+                            },
+                        }
+                    );
+
+                    // Handle successful response
+                    if (response.data && response.data.access_token) {
+                        const { access_token } = response.data;
+                        console.log("Token refreshed successfully");
+
+                        // Update localStorage and axios headers
+                        localStorage.setItem("token", access_token);
+                        axios.defaults.headers.common[
                             "Authorization"
                         ] = `Bearer ${access_token}`;
-                    }
+                        if (api.defaults) {
+                            api.defaults.headers.common[
+                                "Authorization"
+                            ] = `Bearer ${access_token}`;
+                        }
 
-                    // Attempt to get user data
-                    try {
-                        const userResponse = await api.get(`/api/user/profile`);
+                        // Attempt to get user data with the new token
+                        try {
+                            const userResponse = await api.get(
+                                `/api/user/profile`
+                            );
+                            const userData =
+                                userResponse.data.data || userResponse.data;
 
-                        // Check if the response has a data property and extract it
-                        const userData =
-                            userResponse.data.data || userResponse.data;
-
-                        set({
-                            token: access_token,
-                            user: userData,
-                            isLoggedIn: true,
-                        });
-
-                        return true;
-                    } catch (userError) {
+                            set({
+                                token: access_token,
+                                user: userData,
+                                isLoggedIn: true,
+                            });
+                            return true;
+                        } catch (userError) {
+                            console.error(
+                                "Failed to get user data after token refresh:",
+                                userError
+                            );
+                            // Even if user data fetch fails, we still have a valid token
+                            set({
+                                token: access_token,
+                                isLoggedIn: true,
+                            });
+                            return true;
+                        }
+                    } else {
+                        // If response doesn't contain access_token
                         console.error(
-                            "Failed to get user data after token refresh:",
-                            userError
+                            "Token refresh response missing access_token:",
+                            response.data
                         );
-                        // Even if user data fetch fails, we still have a valid token
-                        set({
-                            token: access_token,
-                            isLoggedIn: true,
-                        });
-                        return true;
+                        return false;
                     }
                 } catch (error) {
                     console.error("Token refresh failed:", error);
-                    // If refresh fails, return false but don't automatically log out
-                    // This prevents infinite redirection loops
+
+                    // Check if error is due to an expired refresh token
+                    if (error.response?.status === 401) {
+                        // Clear auth state since refresh token is invalid
+                        localStorage.removeItem("token");
+                        delete axios.defaults.headers.common["Authorization"];
+                        if (api.defaults) {
+                            delete api.defaults.headers.common["Authorization"];
+                        }
+
+                        set({
+                            user: null,
+                            token: null,
+                            isLoggedIn: false,
+                        });
+
+                        // Don't redirect here to prevent redirect loops
+                        // The calling code will handle redirection if needed
+                    }
+
                     return false;
                 }
             },
