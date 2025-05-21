@@ -12,6 +12,7 @@ import {
     Lock,
     Eye,
     EyeOff,
+    AlertTriangle,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
     const [verificationCode, setVerificationCode] = useState("");
+    const [pendingApproval, setPendingApproval] = useState(false);
 
     const {
         register,
@@ -58,6 +60,7 @@ export default function LoginForm() {
         setIsLoading(true);
         setError("");
         setSuccess("");
+        setPendingApproval(false);
 
         try {
             const result = await login(data.email, data.password);
@@ -68,7 +71,7 @@ export default function LoginForm() {
                 // Redirect based on user role
                 const user = useAuthStore.getState().user;
                 if (user?.role === "admin") {
-                    router.push("/admin/dashboard");
+                    router.push("/admin");
                 } else if (user?.role === "dealer") {
                     router.push("/dealer/dashboard");
                 } else {
@@ -80,6 +83,9 @@ export default function LoginForm() {
                         "يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني"
                     );
                     setShowVerification(true);
+                } else if (result.pendingApproval) {
+                    setPendingApproval(true);
+                    setError(result.error || "حسابك في انتظار موافقة المسؤول");
                 } else {
                     setError(
                         result.error ||
@@ -107,8 +113,14 @@ export default function LoginForm() {
 
             if (result.success) {
                 setSuccess("تم التحقق بنجاح وتسجيل الدخول");
-                if (result.redirectTo) {
-                    router.push(result.redirectTo);
+
+                // Get the user's role for redirection
+                const user = useAuthStore.getState().user;
+
+                if (user?.role === "admin") {
+                    router.push("/admin");
+                } else if (user?.role === "dealer") {
+                    router.push("/dealer/dashboard");
                 } else {
                     router.push("/dashboard");
                 }
@@ -199,13 +211,28 @@ export default function LoginForm() {
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid gap-4">
-                {error && (
+                {error && !pendingApproval && (
                     <Alert
                         variant="destructive"
                         className="bg-red-50 text-red-700 border border-red-200"
                     >
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+
+                {pendingApproval && (
+                    <Alert className="bg-amber-50 text-amber-700 border border-amber-200">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                            {error}
+                            <div className="mt-2 text-sm">
+                                <p>
+                                    يمكنك التواصل مع الدعم الفني للاستفسار عن
+                                    حالة حسابك.
+                                </p>
+                            </div>
+                        </AlertDescription>
                     </Alert>
                 )}
 
@@ -322,6 +349,16 @@ export default function LoginForm() {
                         "تسجيل الدخول"
                     )}
                 </Button>
+            </div>
+
+            <div className="text-center text-sm">
+                <span>ليس لديك حساب؟</span>
+                <Link
+                    href="/auth/register"
+                    className="text-indigo-600 hover:text-indigo-500 font-medium mr-2"
+                >
+                    إنشاء حساب جديد
+                </Link>
             </div>
         </form>
     );

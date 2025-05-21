@@ -74,7 +74,9 @@ export default function UserMenu() {
                     {user.first_name || user.email || "مستخدم"}
                 </span>
                 <ChevronDown
-                    className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 transition-transform ${
+                        isOpen ? "rotate-180" : ""
+                    }`}
                 />
             </button>
 
@@ -93,6 +95,28 @@ export default function UserMenu() {
                             <User className="w-4 h-4 mr-2" />
                             لوحة التحكم
                         </button>
+
+                        {user.role === "admin" && (
+                            <button
+                                onClick={() => navigateTo("/admin")}
+                                className="flex items-center w-full px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50"
+                                role="menuitem"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-4 h-4 mr-2"
+                                >
+                                    <path d="M12 2v4M19 5l-3 3M22 12h-4M19 19l-3-3M12 22v-4M5 19l3-3M2 12h4M5 5l3 3"></path>
+                                </svg>
+                                لوحة المسؤول
+                            </button>
+                        )}
 
                         <button
                             onClick={() => navigateTo("/profile")}

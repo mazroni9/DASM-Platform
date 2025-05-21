@@ -54,8 +54,20 @@ export default function LoginPage() {
         setSuccess(null);
 
         // Validate form
-        if (!email || !password) {
-            setError("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+        if (!email) {
+            setError("يرجى إدخال البريد الإلكتروني");
+            return;
+        }
+
+        if (!password) {
+            setError("يرجى إدخال كلمة المرور");
+            return;
+        }
+
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError("يرجى إدخال بريد إلكتروني صحيح");
             return;
         }
 
@@ -89,6 +101,12 @@ export default function LoginPage() {
                 } else {
                     router.push(returnUrl);
                 }
+            } else if (result.pendingApproval) {
+                // Special handling for accounts pending admin approval
+                setError(
+                    result.error ||
+                        "حسابك في انتظار موافقة المسؤول. سيتم إشعارك عندما يتم تفعيل حسابك."
+                );
             } else {
                 if (result.needsVerification) {
                     setSuccess(
@@ -98,7 +116,8 @@ export default function LoginPage() {
                 } else {
                     // Display a user-friendly error message instead of the raw server error
                     setError(
-                        "فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور."
+                        result.error ||
+                            "فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور."
                     );
                 }
             }

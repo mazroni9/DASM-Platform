@@ -66,7 +66,7 @@ class User extends Authenticatable
         return $this->forceFill([
             'email_verified_at' => now(),
             'email_verification_token' => null,
-            'is_active' => true,
+            'is_active' => false,
         ])->save();
     }
 }

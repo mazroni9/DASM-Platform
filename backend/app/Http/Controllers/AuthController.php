@@ -84,7 +84,7 @@ class AuthController extends Controller
                     'company_name' => $request->company_name,
                     'commercial_registry' => $request->commercial_registry,
                     'description' => $request->description ?? null,
-                    'verification_status' => 'pending', // Default status is pending until admin approves
+                    'is_active' => 'false', // Default status is pending until admin approves
                     'rating' => 0, // Default rating for new dealers
                 ]);
                 Log::info('Dealer record created', ['user_id' => $user->id]);
@@ -252,6 +252,15 @@ class AuthController extends Controller
                 'message' => 'Email not verified',
                 'email' => $user->email
             ], 401);
+        }
+        
+        // Check if user is approved by admin
+        if (!$user->is_active) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Your account is pending approval by admin',
+                'email' => $user->email
+            ], 403);
         }
         
         // Create a new token for the user

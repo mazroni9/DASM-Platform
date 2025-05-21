@@ -121,9 +121,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
+    Route::post('/admin/users/{userId}/activate', [AdminController::class, 'approveUser']);
+    Route::post('/admin/users/{userId}/deactivate', [AdminController::class, 'rejectUser']);
     Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
-    Route::post('/admin/users/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
-    Route::post('/admin/users/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
+    Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
+    Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
     
     // Admin auction management
     Route::get('/admin/auctions', [AdminController::class, 'auctions']);

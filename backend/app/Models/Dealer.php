@@ -13,7 +13,7 @@ class Dealer extends Model
         'user_id',
         'company_name',
         'commercial_registry',
-        'verification_status',
+        'is_active',
         'rating',
         'description'
     ];

@@ -85,129 +85,48 @@ export default function DashboardTabs() {
 
             setLoading(true);
             try {
-                // Fetch wallet info
-                const walletResponse = await api.get("/api/wallet");
+                // Get user profile data - using correct API path with /api prefix
+                const profileResponse = await api.get("/api/user/profile");
 
                 if (
-                    walletResponse.data &&
-                    walletResponse.data.status === "success"
+                    profileResponse.data &&
+                    profileResponse.data.status === "success"
                 ) {
-                    const walletData = walletResponse.data.data;
-                    const totalBalance =
-                        walletData.available_balance +
-                        walletData.funded_balance;
+                    const profileData = profileResponse.data.data;
 
-                    // Update wallet balance in stats
-                    setStats((prev) => ({
-                        ...prev,
-                        walletBalance: totalBalance,
-                    }));
-                } else {
-                    // If wallet doesn't exist yet, it's ok - just use zero
-                    console.log("Wallet may not be initialized yet");
-                }
+                    // Set stats based on profile data (adjust if your backend structure is different)
+                    setStats({
+                        purchases: profileData.purchases_count || 0,
+                        sales: profileData.sales_count || 0,
+                        walletBalance: profileData.wallet_balance || 0,
+                        activeOrders: profileData.active_orders_count || 0,
+                    });
 
-                // Fetch purchases count (we'll create this endpoint later)
-                try {
-                    const purchasesResponse = await api.get(
-                        "/api/user/purchases/count"
-                    );
+                    // If activities exist in the profile data
                     if (
-                        purchasesResponse.data &&
-                        purchasesResponse.data.status === "success"
+                        profileData.activities &&
+                        Array.isArray(profileData.activities)
                     ) {
-                        setStats((prev) => ({
-                            ...prev,
-                            purchases: purchasesResponse.data.count || 0,
-                        }));
+                        setActivities(profileData.activities);
+                    } else {
+                        // Use empty activities array
+                        setActivities([]);
                     }
-                } catch (error) {
-                    console.log("Purchases endpoint not available yet:", error);
-                    // Fallback to demo data
-                    setStats((prev) => ({ ...prev, purchases: 3 }));
-                }
-
-                // Fetch sales count (we'll create this endpoint later)
-                try {
-                    const salesResponse = await api.get(
-                        "/api/user/sales/count"
-                    );
-                    if (
-                        salesResponse.data &&
-                        salesResponse.data.status === "success"
-                    ) {
-                        setStats((prev) => ({
-                            ...prev,
-                            sales: salesResponse.data.count || 0,
-                        }));
-                    }
-                } catch (error) {
-                    console.log("Sales endpoint not available yet:", error);
-                    // Fallback to demo data
-                    setStats((prev) => ({ ...prev, sales: 5 }));
-                }
-
-                // Fetch active orders (we'll create this endpoint later)
-                try {
-                    const ordersResponse = await api.get(
-                        "/api/user/orders/active/count"
-                    );
-                    if (
-                        ordersResponse.data &&
-                        ordersResponse.data.status === "success"
-                    ) {
-                        setStats((prev) => ({
-                            ...prev,
-                            activeOrders: ordersResponse.data.count || 0,
-                        }));
-                    }
-                } catch (error) {
-                    console.log("Orders endpoint not available yet:", error);
-                    // Fallback to demo data
-                    setStats((prev) => ({ ...prev, activeOrders: 2 }));
-                }
-
-                // Fetch recent activities (we'll create this endpoint later)
-                try {
-                    const activitiesResponse = await api.get(
-                        "/api/user/activities"
-                    );
-                    if (
-                        activitiesResponse.data &&
-                        activitiesResponse.data.status === "success"
-                    ) {
-                        setActivities(activitiesResponse.data.activities || []);
-                    }
-                } catch (error) {
-                    console.log(
-                        "Activities endpoint not available yet:",
-                        error
-                    );
-                    // Fallback to demo activities
-                    setActivities([
-                        {
-                            id: 1,
-                            type: "purchase",
-                            title: "تم شراء طابعة HP M404dn",
-                            date: "26 أكتوبر 2024",
-                        },
-                        {
-                            id: 2,
-                            type: "sale",
-                            title: "تم بيع سيرفر Dell",
-                            date: "25 أكتوبر 2024",
-                        },
-                        {
-                            id: 3,
-                            type: "deposit",
-                            title: "إيداع 5,000 ريال في المحفظة",
-                            date: "27 أكتوبر 2024",
-                        },
-                    ]);
                 }
             } catch (error) {
-                console.error("Error fetching user dashboard data:", error);
-                toast.error("حدث خطأ أثناء تحميل البيانات");
+                console.error("Error fetching dashboard data:", error);
+                toast.error(
+                    "تعذر تحميل بيانات لوحة التحكم. يرجى المحاولة لاحقًا."
+                );
+
+                // Initialize with empty data
+                setStats({
+                    purchases: 0,
+                    sales: 0,
+                    walletBalance: 0,
+                    activeOrders: 0,
+                });
+                setActivities([]);
             } finally {
                 setLoading(false);
             }

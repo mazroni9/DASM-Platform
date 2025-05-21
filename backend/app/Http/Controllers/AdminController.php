@@ -162,8 +162,8 @@ class AdminController extends Controller
             ], 400);
         }
         
-        // Update dealer verification status
-        $dealer->verification_status = 'approved';
+        // Update dealer is_active status
+        $dealer->is_active = true;
         $dealer->save();
         
         // Update user role if needed
@@ -206,8 +206,8 @@ class AdminController extends Controller
             $dealer->rejection_reason = $request->reason;
         }
         
-        // Update verification status
-        $dealer->verification_status = 'rejected';
+        // Update dealer is_active status
+        $dealer->is_active = false;
         $dealer->save();
         
         return response()->json([
@@ -227,7 +227,7 @@ class AdminController extends Controller
      */
     public function getPendingVerifications()
     {
-        $pendingDealers = Dealer::where('verification_status', 'pending')
+        $pendingDealers = Dealer::where('is_active', false)
             ->with('user')
             ->get();
             
@@ -373,8 +373,8 @@ class AdminController extends Controller
         $completedAuctions = Auction::where('status', AuctionStatus::ENDED)->count();
         $pendingAuctions = Auction::where('status', AuctionStatus::SCHEDULED)->count();
         
-        // Count verification requests
-        $pendingVerifications = Dealer::where('verification_status', 'pending')->count();
+        // Count verification requests - using is_active now instead of verification_status
+        $pendingVerifications = Dealer::where('is_active', false)->count();
             
         // Count blogs
         $totalBlogs = BlogPost::count();
@@ -804,6 +804,54 @@ class AdminController extends Controller
             'status' => 'success',
             'message' => 'Car updated successfully',
             'data' => $car
+        ]);
+    }
+    
+    /**
+     * Approve a user account
+     *
+     * @param int $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function approveUser($userId)
+    {
+        $user = User::findOrFail($userId);
+        
+        // Update user is_active status
+        $user->is_active = true;
+        $user->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User approved successfully',
+            'data' => $user
+        ]);
+    }
+    
+    /**
+     * Reject a user account
+     *
+     * @param int $userId
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function rejectUser($userId, Request $request)
+    {
+        $user = User::findOrFail($userId);
+        
+        // Optionally, you could add a reason for rejection
+        // if ($request->has('reason')) {
+        //     $user->rejection_reason = $request->reason;
+        // }
+        
+        // Keep the user in the system but marked as not active
+        $user->is_active = false;
+        $user->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User rejection processed successfully',
+            'data' => $user
         ]);
     }
 }
