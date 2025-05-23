@@ -80,7 +80,7 @@ const Navbar = () => {
                                 className="rounded-full"
                             />
                             <span className="font-bold text-base whitespace-nowrap">
-                                سوق المزادات الرقمية{" "}
+                                منصة داسم{" "}
                                 <span className="text-blue-700">DASM</span>
                             </span>
                         </Link>
