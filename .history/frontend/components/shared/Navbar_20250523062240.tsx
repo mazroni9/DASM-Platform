@@ -81,7 +81,7 @@ const Navbar = () => {
                             />
                             <span className="font-bold text-base whitespace-nowrap">
                                 سوق المزادات الرقمية{" "}
-                                <span className="text-blue-700">DASM-e</span>
+                                <span className="text-blue-700">DASM</span>
                             </span>
                         </Link>
                     </div>
@@ -112,6 +112,17 @@ const Navbar = () => {
                         >
                             <Clock size={18} />
                             البث المباشر
+                        </Link>
+                        <Link
+                            href="/auction-archive"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
+                                isActive("/auction-archive")
+                                    ? "text-blue-700 font-bold"
+                                    : ""
+                            }`}
+                        >
+                            <Archive size={18} />
+                            أرشيف المزادات
                         </Link>
                     </div>
 

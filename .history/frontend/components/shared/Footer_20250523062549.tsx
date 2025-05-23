@@ -29,7 +29,7 @@ const Footer = () => {
                         </Link>
                     </div>
                     <div className="w-1/3 text-center text-sky-700">
-                        © {currentYear} منصة قلب. جميع الحقوق محفوظة.
+                        © {currentYear} منصة داسم. جميع الحقوق محفوظة.
                     </div>
                     <div className="w-1/3 flex justify-end">
                         <div className="flex items-center gap-2">

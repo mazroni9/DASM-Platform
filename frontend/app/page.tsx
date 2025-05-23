@@ -208,7 +208,7 @@ export default function Page() {
                                 textShadow: "0 2px 4px rgba(0,0,0,0.2)",
                             }}
                         >
-                            Digital Auctions Sectors Market
+                            Digital Auctions specialists Markets & e-Commerce
                         </Typography>
 
                         <Typography
