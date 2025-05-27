@@ -61,15 +61,24 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         try {
             // Fetch user details from backend
             const response = await api.get(`/api/admin/users/${params.id}`);
-
             if (response.data && response.data.status === "success") {
+                let user =response.data.data.user;
+                //check if user role 
+                if(user.role == "admin"){
+                     response.data.data.user.role= 'user';
+                }
+                if(user.role == "dealer"){
+                    //check rating if it is null or assign default value
+                    let rating =response.data.data.dealer.rating || 4.5;
+                    response.data.data.dealer.rating= rating;
+                }
                 setUser(response.data.data.user);
             }
         } catch (error) {
             console.error("Error fetching user details:", error);
             toast.error("فشل في تحميل بيانات المستخدم");
-
             // Set demo data for development
+            /*
             setUser({
                 id: parseInt(params.id),
                 first_name: "خالد",
@@ -92,6 +101,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     rating: 4.5,
                 },
             });
+            */
         } finally {
             setLoading(false);
         }
@@ -504,6 +514,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 </div>
                                 <div className="flex items-center">
                                     <div className="flex text-yellow-400">
+                                        
                                         {[...Array(5)].map((_, i) => (
                                             <svg
                                                 key={i}
@@ -511,7 +522,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                                 fill={
                                                     i <
                                                     Math.floor(
-                                                        user.dealer.rating
+                                                        user.dealer.rating || 4.5
                                                     )
                                                         ? "currentColor"
                                                         : "none"
@@ -529,7 +540,8 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                             </svg>
                                         ))}
                                         <span className="mr-2 text-gray-800">
-                                            {user.dealer.rating.toFixed(1)}
+                                            {/* remove toFixd(1) */}
+                                            {user.dealer.rating}
                                         </span>
                                     </div>
                                 </div>

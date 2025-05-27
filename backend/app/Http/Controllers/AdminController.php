@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
+use function Psy\debug;
+
 class AdminController extends Controller
 {
     /**
@@ -182,6 +184,26 @@ class AdminController extends Controller
         ]);
     }
     
+    /**
+     * Find User details a dealer verification request
+     *
+     * @param int $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserDetails($userId)
+    {
+        $user = User::findOrFail($userId);
+        $dealer = $user->dealer;
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User Details retrieved successfully',
+            'data' => [
+                'user' => $user,
+                'dealer' => $dealer
+            ]
+        ]);
+    }
+
     /**
      * Reject a dealer verification request
      *
@@ -364,6 +386,7 @@ class AdminController extends Controller
     {
         // Count users
         $totalUsers = User::count();
+        $pendingUsers=User::where('is_active',false) ->count();
         $dealerCount = Dealer::count();
         $regularUserCount = $totalUsers - $dealerCount;
         
@@ -395,7 +418,7 @@ class AdminController extends Controller
         // Recent users
         $recentUsers = User::orderBy('created_at', 'desc')
             ->take(5)
-            ->get(['id', 'first_name', 'last_name', 'email', 'created_at']);
+            ->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active']);
             
         return response()->json([
             'status' => 'success',
@@ -408,6 +431,7 @@ class AdminController extends Controller
                 'completed_auctions' => $completedAuctions,
                 'pending_auctions' => $pendingAuctions,
                 'pending_verifications' => $pendingVerifications,
+                'pending_users'=> $pendingUsers,
                 'total_blogs' => $totalBlogs,
                 'published_blogs' => $publishedBlogs,
                 'draft_blogs' => $draftBlogs,

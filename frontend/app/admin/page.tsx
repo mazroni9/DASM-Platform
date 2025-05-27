@@ -42,7 +42,7 @@ export default function AdminDashboard() {
             try {
                 // Fetch dashboard stats from backend
                 const response = await api.get("/api/admin/dashboard");
-
+                console.log(response)
                 if (response.data && response.data.status === "success") {
                     setStats({
                         totalUsers: response.data.data.total_users || 0,
@@ -288,6 +288,7 @@ export default function AdminDashboard() {
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                {user.is_active}
                                                 <Clock className="w-3 h-3 mr-1" />{" "}
                                                 في الانتظار
                                             </span>
