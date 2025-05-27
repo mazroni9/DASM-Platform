@@ -244,6 +244,16 @@ export default function Page() {
                 {/* إبقاء قسم مزادات متخصصة بالتنسيق المطلوب */}
                 <Container sx={{ mb: 4 }} maxWidth="md">
                     <div className="mt-16 mb-10 border-t pt-10 relative">
+                        <div>
+                            <iframe
+                            width="100%"
+                            height="500"
+                            src="https://www.youtube.com/embed/Y9_J9gw-lIc?autoplay=1"
+                            frameborder="0"
+                            allow="autoplay; encrypted-media"
+                            allowfullscreen>
+                            </iframe>
+                        </div>
                         <div className="absolute -top-3 left-0 right-0 text-center">
                             {/* تغيير العنوان العلوي من الأسواق المتنوعة إلى الأسواق العامة */}
                             <span className="bg-white px-4 py-1 text-xl font-bold text-blue-700"></span>
