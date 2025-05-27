@@ -191,7 +191,7 @@ export default function DashboardTabs() {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h2 className="text-xl font-semibold text-gray-800">
-                                مرحباً بك {userName} في لوحة التحكم
+                                مرحباً بك {userName} في DASM-e
                             </h2>
                             <p className="text-gray-500 mt-1">
                                 يمكنك إدارة حسابك ومشترياتك ومبيعاتك من هنا
