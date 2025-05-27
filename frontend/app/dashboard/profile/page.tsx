@@ -115,9 +115,9 @@ export default function ProfilePage() {
             setIsLoading(true);
             try {
                 const response = await api.get("/api/user/profile");
-
                 if (response.data && (response.data.data || response.data)) {
                     const profileData = response.data.data || response.data;
+                    console.log(profileData);
                     setProfile(profileData);
 
                     // Initialize form data with profile data
