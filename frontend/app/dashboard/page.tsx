@@ -87,7 +87,6 @@ export default function DashboardTabs() {
             try {
                 // Get user profile data - using correct API path with /api prefix
                 const profileResponse = await api.get("/api/user/profile");
-
                 if (
                     profileResponse.data &&
                     profileResponse.data.status === "success"
