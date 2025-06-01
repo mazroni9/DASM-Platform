@@ -103,7 +103,7 @@ export default function Page() {
     const [auctions, setAuctions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-    const targetDate = "June 1, 2025 07:00:00";
+    const targetDate = "July 1, 2025 01:00:00";
 
     useEffect(() => {
         const fetchData = async () => {
