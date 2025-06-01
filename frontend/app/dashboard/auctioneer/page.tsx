@@ -10,7 +10,8 @@
 //  * - عرض إحصائيات المزاد المباشرة
 //  */
 
-// 'use client';
+'use client';
+export const dynamic = 'force-dynamic';
 
 // import React, { useState, useEffect } from 'react';
 // import { Eye, Users, Clock, AlertCircle, ThumbsUp, ThumbsDown, ChevronRight, ChevronLeft, LogOut } from 'lucide-react';
