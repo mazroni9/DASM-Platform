@@ -61,7 +61,7 @@ const getSellerStatusInfo = (status: string) => {
 };
 
 export default function MySalesPage() {
-  const [sales, setSales] = useState(mockSales);
+  const [sales, setSales] = useState([]);
 
   const handleArrangeDelivery = (saleId: string) => {
     alert('يمكنك الآن التواصل مع المشتري (محاكاة).');

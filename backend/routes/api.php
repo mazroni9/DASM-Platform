@@ -13,6 +13,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\AutoBidController;
+use Inertia\Inertia;
+use App\Models\Car;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -54,7 +56,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
     
     // Car management for all users
+    
     Route::get('/cars', [CarController::class, 'index']);
+    Route::get('/cars?page={id}', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
     Route::put('/cars/{id}', [CarController::class, 'update']);

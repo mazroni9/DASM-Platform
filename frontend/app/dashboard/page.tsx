@@ -34,6 +34,12 @@ export default function DashboardTabs() {
 
     // Tabs configuration
     const tabs = [
+        
+        {
+            name: "سيارتي",
+            href: "/dashboard/mycars",
+            icon: <User className="w-4 h-4 ml-1.5" />,
+        },
         {
             name: "مشترياتي",
             href: "/dashboard/my-purchases",
