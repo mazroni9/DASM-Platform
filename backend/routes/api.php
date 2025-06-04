@@ -70,7 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    
+    Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
+    //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
+
     // Bid routes for all users
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
     Route::post('/auctions/{auction}/bids', [BidController::class, 'store']);

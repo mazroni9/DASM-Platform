@@ -9,6 +9,11 @@ import { ChevronRight, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import BidTimer from '@/components/BidTimer';
 import PriceInfoDashboard from '@/components/PriceInfoDashboard';
 import { formatMoney } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import api from '@/lib/axios';
+import { useRouter } from 'next/navigation';
+
+
 
 // لا نستطيع إستيراد sqlite3 أو أي مكتبات قاعدة بيانات أخرى في جانب العميل!
 // حذف:
@@ -57,8 +62,18 @@ export default function SilentAuctionPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
+  const { user, isLoggedIn } = useAuth();
+  const router = useRouter();
   
   const { label: auctionType } = getCurrentAuctionType(currentTime);
+
+
+     // Verify user is authenticated
+      useEffect(() => {
+          if (!isLoggedIn) {
+              router.push("/auth/login?returnUrl=/dashboard/profile");
+          }
+        }, [isLoggedIn, router]);
 
   // تحديث الوقت كل ثانية
   useEffect(() => {
@@ -69,30 +84,33 @@ export default function SilentAuctionPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // جلب بيانات السيارات من API
+     // Fetch user profile data
   useEffect(() => {
-    setLoading(true);
-    
-    fetch('/api/auctions?type=silent_instant')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`فشل في الإتصال بالخادم: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        // تعامل مع هيكل البيانات من API
-        const carsData = Array.isArray(data.data) ? data.data : [];
-        setCars(carsData);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('فشل تحميل بيانات المزاد الصامت', err);
-        setCars([]); // مصفوفة فارغة في حالة الفشل
-        setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
-        setLoading(false);
-      });
+      async function fetchAuctions() {
+           if (!isLoggedIn) return;
+          try {
+            
+              const response = await api.get('/api/auctions');
+              if (response.data.data || response.data.data) {
+                  const carsData = response.data.data.data || response.data.data;
+                    // تعامل مع هيكل البيانات من API
+                  setCars(carsData);
+              }
+                  
+          } catch (error) {
+               console.error('فشل تحميل بيانات المزاد الصامت', error);
+              setCars([]); // مصفوفة فارغة في حالة الفشل
+              setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
+              setLoading(false);
+          } finally {
+              setLoading(false);
+          }
+      }
+
+      fetchAuctions();
+      
   }, []);
+  
 
   // تبديل حالة التوسيع للصف
   const toggleRowExpansion = (id: number) => {
