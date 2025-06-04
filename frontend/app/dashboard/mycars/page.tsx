@@ -97,7 +97,7 @@ const getAuctionStatusTextAndIcon = (status: string) => {
       {/* زر العودة إلى لوحة التحكم */}
       <BackToDashboard />
 
-      <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">سيارتي</h1>
+      <h1 className="text-3xl font-bold mb-4 text-center text-gray-800"> سيارتي ({cars.length}) </h1>
 
                    {cars.length === 0 ? (
   <p className="text-center text-gray-500">لم تقم بإضافة أي عناصر بعد.</p>
