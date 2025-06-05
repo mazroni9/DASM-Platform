@@ -21,11 +21,14 @@ export default function YouTubeBroadcastPlayer({
         youtube_chat_embed_url: string | null;
         is_live: boolean;
     } | null>(null);
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchBroadcastData();
+        if (typeof window !== "undefined") {
+            fetchBroadcastData();
+        }
     }, []);
 
     const fetchBroadcastData = async () => {
@@ -48,25 +51,19 @@ export default function YouTubeBroadcastPlayer({
         }
     };
 
-    // Calculate aspect ratio styles
     const getAspectRatioStyles = () => {
-        if (aspectRatio === "16:9") {
-            return { paddingTop: "56.25%" }; // 9/16 = 0.5625 (56.25%)
-        } else if (aspectRatio === "4:3") {
-            return { paddingTop: "75%" }; // 3/4 = 0.75 (75%)
-        } else if (aspectRatio === "1:1") {
-            return { paddingTop: "100%" }; // Square
-        } else {
-            return { paddingTop: "56.25%" }; // Default to 16:9
-        }
+        if (aspectRatio === "16:9") return { paddingTop: "56.25%" };
+        if (aspectRatio === "4:3") return { paddingTop: "75%" };
+        if (aspectRatio === "1:1") return { paddingTop: "100%" };
+        return { paddingTop: "56.25%" };
     };
 
-    // If loading, show a loading state
+    const formatYouTubeUrl = (url: string) =>
+        `${url}${url.includes("?") ? "&" : "?"}autoplay=${autoplay ? "1" : "0"}&rel=0&modestbranding=1`;
+
     if (isLoading) {
         return (
-            <div
-                className={`rounded-md overflow-hidden bg-gray-100 ${className}`}
-            >
+            <div className={`rounded-md overflow-hidden bg-gray-100 ${className}`}>
                 <div style={getAspectRatioStyles()} className="relative">
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
@@ -76,12 +73,9 @@ export default function YouTubeBroadcastPlayer({
         );
     }
 
-    // If error or no broadcast data, show an error message
     if (error || !broadcastData) {
         return (
-            <div
-                className={`rounded-md overflow-hidden bg-gray-100 ${className}`}
-            >
+            <div className={`rounded-md overflow-hidden bg-gray-100 ${className}`}>
                 <div style={getAspectRatioStyles()} className="relative">
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                         <svg
@@ -107,45 +101,13 @@ export default function YouTubeBroadcastPlayer({
         );
     }
 
-    // Format the URL to ensure autoplay and other settings
-    const formatYouTubeUrl = (url: string) => {
-        // Parse URL
-        let formattedUrl = url;
-
-        // Add params if not already exists
-        if (!formattedUrl.includes("?")) {
-            formattedUrl += "?";
-        } else {
-            formattedUrl += "&";
-        }
-
-        // Add autoplay if enabled
-        if (autoplay) {
-            formattedUrl += "autoplay=1&";
-        }
-
-        // Add other standard params
-        formattedUrl += "rel=0&modestbranding=1";
-
-        return formattedUrl;
-    };
-
     return (
         <div className={`${className}`}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Main stream */}
-                <div
-                    className={`md:col-span-${
-                        showChat && broadcastData.youtube_chat_embed_url
-                            ? "2"
-                            : "3"
-                    }`}
-                >
+                <div className={`md:col-span-${showChat && broadcastData.youtube_chat_embed_url ? "2" : "3"}`}>
                     <div className="relative" style={getAspectRatioStyles()}>
                         <iframe
-                            src={formatYouTubeUrl(
-                                broadcastData.youtube_embed_url
-                            )}
+                            src={formatYouTubeUrl(broadcastData.youtube_embed_url)}
                             className="absolute inset-0 w-full h-full border-0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowFullScreen
@@ -153,7 +115,6 @@ export default function YouTubeBroadcastPlayer({
                         ></iframe>
                     </div>
 
-                    {/* Status indicator */}
                     {broadcastData.is_live && (
                         <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             <span className="relative flex h-2 w-2 mr-2">
@@ -165,13 +126,9 @@ export default function YouTubeBroadcastPlayer({
                     )}
                 </div>
 
-                {/* Live chat */}
                 {showChat && broadcastData.youtube_chat_embed_url && (
                     <div className="md:col-span-1">
-                        <div
-                            className="relative h-full"
-                            style={{ minHeight: "300px" }}
-                        >
+                        <div className="relative h-full" style={{ minHeight: "300px" }}>
                             <iframe
                                 src={broadcastData.youtube_chat_embed_url}
                                 className="absolute inset-0 w-full h-full border-0"
