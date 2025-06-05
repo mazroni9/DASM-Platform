@@ -148,7 +148,6 @@ class UserController extends Controller
     {
         try {
             $user = $request->user();
-            
             if (!$user) {
                 return response()->json([
                     'message' => 'User not found'
@@ -170,6 +169,7 @@ class UserController extends Controller
                 'kyc_status' => $user->kyc_status,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
+                'is_active' =>$user->is_active
             ];
             
             // Add dealer fields if user is a dealer

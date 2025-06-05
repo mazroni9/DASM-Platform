@@ -193,6 +193,30 @@ class AuctionController extends Controller
         ]);
     }
 
+
+      public function getAllAuctions()
+    {
+        // Update to include both dealer and user relationship
+        $auction = Auction::all();
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'auction' => $auction
+            ]
+        ]);
+    }
+    public function getAuctionsByType($type)
+    {
+        // Update to include both dealer and user relationship
+        $auction = Auction::where('type',$type);
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'auction' => $auction
+            ]
+        ]);
+    }
+
     /**
      * Update an existing auction
      *

@@ -8,9 +8,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+
+use Inertia\Response;
+ 
 // Add direct Cloudinary SDK import
 use Cloudinary\Cloudinary as CloudinarySDK;
 use Cloudinary\Configuration\Configuration;
+use Inertia\Inertia;
+
+    // Helper function
 
 class CarController extends Controller
 {
@@ -58,15 +64,38 @@ class CarController extends Controller
         }
         
         // Sort options
-        $sortField = $request->input('sort_by', 'created_at');
+        $sortField = $request->input('sort_by', 'id');
         $sortDirection = $request->input('sort_dir', 'desc');
-        $allowedSortFields = ['created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
+        $allowedSortFields = ['id','created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
         
         if (in_array($sortField, $allowedSortFields)) {
             $query->orderBy($sortField, $sortDirection);
         }
-        
+        $cars= $query->paginate(10);
+
+    
+        return response()->json([
+            'status' => 'success',
+            'data' => $cars
+        ]);
+   
+ 
+    
+      
+    }
+
+
+
+    public function getAddedCars(Request $request)
+    {
+         $user = Auth::user();
+         // Handle both user types: dealer or regular user
+        if ($user->role === 'dealer' && $user->dealer) {
+            $query = Car::where('dealer_id', $user->dealer->id);
+        } 
+
         $cars = $query->paginate(10);
+
         
         return response()->json([
             'status' => 'success',

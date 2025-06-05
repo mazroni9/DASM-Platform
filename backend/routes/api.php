@@ -13,6 +13,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\AutoBidController;
+use Inertia\Inertia;
+use App\Models\Car;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -54,7 +56,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
     
     // Car management for all users
+    
     Route::get('/cars', [CarController::class, 'index']);
+    Route::get('/cars?page={id}', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
     Route::put('/cars/{id}', [CarController::class, 'update']);
@@ -66,7 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    
+    Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
+    //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
+
     // Bid routes for all users
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
     Route::post('/auctions/{auction}/bids', [BidController::class, 'store']);
@@ -121,6 +127,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
+    Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);
     Route::post('/admin/users/{userId}/activate', [AdminController::class, 'approveUser']);
     Route::post('/admin/users/{userId}/deactivate', [AdminController::class, 'rejectUser']);
     Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);

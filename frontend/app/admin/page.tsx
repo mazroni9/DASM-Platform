@@ -36,13 +36,13 @@ export default function AdminDashboard() {
     });
     const [loading, setLoading] = useState(true);
     const [recentUsers, setRecentUsers] = useState([]);
+    const [recentUsersNotActivated, setNotActiviatedUsers] = useState([]);
 
     useEffect(() => {
         async function fetchDashboardData() {
             try {
                 // Fetch dashboard stats from backend
                 const response = await api.get("/api/admin/dashboard");
-
                 if (response.data && response.data.status === "success") {
                     setStats({
                         totalUsers: response.data.data.total_users || 0,
@@ -56,7 +56,15 @@ export default function AdminDashboard() {
                     });
 
                     if (response.data.data.recent_users) {
+                        let notActiviated=response.data.data.recent_users.filter((elm)=>{
+                            if(!elm.is_active){
+                                return elm;
+                            }
+                        });
+                            
+                        
                         setRecentUsers(response.data.data.recent_users);
+                        setNotActiviatedUsers(notActiviated);
                     }
                 }
             } catch (error) {
@@ -288,6 +296,7 @@ export default function AdminDashboard() {
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                {user.is_active}
                                                 <Clock className="w-3 h-3 mr-1" />{" "}
                                                 في الانتظار
                                             </span>
@@ -308,6 +317,74 @@ export default function AdminDashboard() {
                                             </button>
                                         )}
                                     </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                       {/*  مستخدمين بحاجة للتفعيل*/}
+            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800">
+                       مستخدمين بإنتظار التفعيل
+                    </h2>
+                    <a
+                        href="/admin/users"
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                        عرض الكل
+                    </a>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white">
+                        <thead>
+                            <tr className="bg-gray-50 border-b">
+                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500">
+                                    الاسم
+                                </th>
+                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500">
+                                    البريد الإلكتروني
+                                </th>
+                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500">
+                                    تاريخ التسجيل
+                                </th>
+                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500">
+                                    الحالة
+                                </th>
+                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500">
+                                    الإجراءات
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            
+                            {recentUsersNotActivated.map((user) => ( 
+                                <tr key={user.id} className="hover:bg-gray-50">
+                                             <td className="py-3 px-4 text-sm">{user.first_name} {user.last_name}</td>
+                                             <td className="py-3 px-4 text-sm">{user.email}</td><td className="py-3 px-4 text-sm">
+                                            {formatDate(user.created_at)}
+                                        </td><td className="py-3 px-4 text-sm">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                    {user.is_active}
+                                                    <Clock className="w-3 h-3 mr-1" />{" "}
+                                                    في الانتظار
+                                                </span>
+                                            </td><td className="py-3 px-4 text-sm">
+                                                <a
+                                                    href={`/admin/users/${user.id}`}
+                                                    className="text-blue-600 hover:text-blue-800 mx-1"
+                                                >
+                                                    عرض
+                                                </a>
+                                                <button className="inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-green-600 hover:bg-green-700 text-white"
+                                                    onClick={() => handleUserActivation(user.id)}
+                                                >
+                                                    
+                                                    تفعيل
+                                                </button>
+                                            </td>
                                 </tr>
                             ))}
                         </tbody>

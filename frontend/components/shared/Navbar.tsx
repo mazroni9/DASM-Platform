@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { RefreshCw, Store, Archive, Clock, LogOut } from "lucide-react";
+import { RefreshCw, Store, Archive, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
 
 const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -74,44 +73,39 @@ const Navbar = () => {
                         <Link href="/" className="flex items-center gap-4">
                             <Image
                                 src="/logo.jpg"
-                                alt="منصة داسم DASM-e - Digital Auctions Specilaiests Markets"
+                                alt="منصة DASM-e - Digital Auctions Specialists Markets"
                                 width={40}
                                 height={40}
                                 className="rounded-full"
                             />
                             <span className="font-bold text-base whitespace-nowrap">
-                                اسواق المزادات الرقمية المتخصصة{" "}
-                                <span className="text-blue-700">DASM-e</span>
+                                المزادات الرقمية <span className="text-blue-700">DASM-e</span>
                             </span>
                         </Link>
                     </div>
 
                     {/* Main Navigation */}
-                    <div
-                        className="hidden md:flex items-center gap-6 flex-row-reverse"
-                        dir="rtl"
-                    >
+                    <div className="hidden md:flex items-center gap-6 flex-row-reverse" dir="rtl">
                         <Link
                             href="/auctions"
-                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
-                                isActive("/auctions")
-                                    ? "text-blue-700 font-bold"
-                                    : ""
-                            }`}
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/auctions") ? "text-blue-700 font-bold" : ""}`}
                         >
                             <Store size={18} />
                             الأسواق المتخصصة
                         </Link>
                         <Link
                             href="/broadcasts"
-                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
-                                isActive("/broadcasts")
-                                    ? "text-blue-700 font-bold"
-                                    : ""
-                            }`}
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/broadcasts") ? "text-blue-700 font-bold" : ""}`}
                         >
                             <Clock size={18} />
                             البث المباشر
+                        </Link>
+                        <Link
+                            href="/auction-archive"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/auction-archive") ? "text-blue-700 font-bold" : ""}`}
+                        >
+                            <Archive size={18} />
+                            أرشيف المزادات
                         </Link>
                     </div>
 
@@ -126,18 +120,12 @@ const Navbar = () => {
                                 disabled={isRestarting}
                                 title="إعادة تشغيل الخوادم"
                             >
-                                <RefreshCw
-                                    className={`h-4 w-4 ${
-                                        isRestarting ? "animate-spin" : ""
-                                    }`}
-                                />
+                                <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
                             </Button>
                         )}
 
                         {user ? (
-                            <>
-                                <UserMenu />
-                            </>
+                            <UserMenu />
                         ) : (
                             <Link href="/auth/login">
                                 <Button

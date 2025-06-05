@@ -34,6 +34,12 @@ export default function DashboardTabs() {
 
     // Tabs configuration
     const tabs = [
+        
+        {
+            name: "سيارتي",
+            href: "/dashboard/mycars",
+            icon: <User className="w-4 h-4 ml-1.5" />,
+        },
         {
             name: "مشترياتي",
             href: "/dashboard/my-purchases",
@@ -87,7 +93,6 @@ export default function DashboardTabs() {
             try {
                 // Get user profile data - using correct API path with /api prefix
                 const profileResponse = await api.get("/api/user/profile");
-
                 if (
                     profileResponse.data &&
                     profileResponse.data.status === "success"
@@ -191,7 +196,7 @@ export default function DashboardTabs() {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h2 className="text-xl font-semibold text-gray-800">
-                                مرحباً بك {userName} في لوحة التحكم
+                                مرحباً بك {userName} في DASM-e
                             </h2>
                             <p className="text-gray-500 mt-1">
                                 يمكنك إدارة حسابك ومشترياتك ومبيعاتك من هنا
