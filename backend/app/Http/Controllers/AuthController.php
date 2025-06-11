@@ -23,19 +23,46 @@ class AuthController extends Controller
     {
         Log::info('Registration process started', ['email' => $request->email]);
         
-        // Base validation for all users
+        // Base validation for all users with custom Arabic messages
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:15',
+            'phone' => 'required|string|max:15|unique:users|regex:/^[\+]?[0-9\s\-\(\)]{10,15}$/',
             'password' => 'required|string|min:8',
-            'account_type' => 'nullable|string|in:user,dealer', // Added account_type field
+            'account_type' => 'nullable|string|in:user,dealer',
+        ], [
+            'first_name.required' => 'الاسم الأول مطلوب',
+            'first_name.string' => 'الاسم الأول يجب أن يكون نصًا',
+            'first_name.max' => 'الاسم الأول يجب ألا يتجاوز 255 حرفًا',
+            'last_name.required' => 'الاسم الأخير مطلوب',
+            'last_name.string' => 'الاسم الأخير يجب أن يكون نصًا',
+            'last_name.max' => 'الاسم الأخير يجب ألا يتجاوز 255 حرفًا',
+            'email.required' => 'البريد الإلكتروني مطلوب',
+            'email.email' => 'يرجى إدخال بريد إلكتروني صالح',
+            'email.unique' => 'هذا البريد الإلكتروني مستخدم بالفعل',
+            'email.max' => 'البريد الإلكتروني يجب ألا يتجاوز 255 حرفًا',
+            'phone.required' => 'رقم الهاتف مطلوب',
+            'phone.string' => 'رقم الهاتف يجب أن يكون نصًا',
+            'phone.max' => 'رقم الهاتف يجب ألا يتجاوز 15 رقمًا',
+            'phone.unique' => 'رقم الهاتف هذا مستخدم بالفعل',
+            'phone.regex' => 'رقم الهاتف غير صالح. يجب أن يحتوي على 10-15 رقمًا',
+            'password.required' => 'كلمة المرور مطلوبة',
+            'password.string' => 'كلمة المرور يجب أن تكون نصًا',
+            'password.min' => 'كلمة المرور يجب أن تكون على الأقل 8 أحرف',
+            'account_type.in' => 'نوع الحساب غير صالح',
         ]);
 
         if ($validator->fails()) {
             Log::warning('Registration validation failed', ['errors' => $validator->errors()->toArray()]);
-            return response()->json(['error' => $validator->errors()->first()], 422);
+            
+            // Return detailed validation errors
+            return response()->json([
+                'status' => 'error',
+                'message' => 'بيانات التسجيل غير صالحة',
+                'errors' => $validator->errors()->toArray(),
+                'first_error' => $validator->errors()->first()
+            ], 422);
         }
 
         // Additional validation for dealer registration
@@ -46,11 +73,25 @@ class AuthController extends Controller
                 'company_name' => 'required|string|max:255',
                 'commercial_registry' => 'required|string|max:255',
                 'description' => 'nullable|string',
+            ], [
+                'company_name.required' => 'اسم الشركة مطلوب للتجار',
+                'company_name.string' => 'اسم الشركة يجب أن يكون نصًا',
+                'company_name.max' => 'اسم الشركة يجب ألا يتجاوز 255 حرفًا',
+                'commercial_registry.required' => 'رقم السجل التجاري مطلوب للتجار',
+                'commercial_registry.string' => 'رقم السجل التجاري يجب أن يكون نصًا',
+                'commercial_registry.max' => 'رقم السجل التجاري يجب ألا يتجاوز 255 حرفًا',
+                'description.string' => 'وصف الشركة يجب أن يكون نصًا',
             ]);
 
             if ($dealerValidator->fails()) {
                 Log::warning('Dealer validation failed', ['errors' => $dealerValidator->errors()->toArray()]);
-                return response()->json(['error' => $dealerValidator->errors()->first()], 422);
+                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'بيانات التاجر غير صالحة',
+                    'errors' => $dealerValidator->errors()->toArray(),
+                    'first_error' => $dealerValidator->errors()->first()
+                ], 422);
             }
         }
 
@@ -66,7 +107,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password_hash' => Hash::make($request->password),
-                'role' => $isDealer ? 'dealer' : 'user', // Set role based on account type
+                'role' => $isDealer ? 'dealer' : 'user',
                 'email_verification_token' => $verificationToken,
                 'is_active' => false
             ]);
@@ -84,8 +125,8 @@ class AuthController extends Controller
                     'company_name' => $request->company_name,
                     'commercial_registry' => $request->commercial_registry,
                     'description' => $request->description ?? null,
-                    'is_active' => 'false', // Default status is pending until admin approves
-                    'rating' => 0, // Default rating for new dealers
+                    'is_active' => 'false',
+                    'rating' => 0,
                 ]);
                 Log::info('Dealer record created', ['user_id' => $user->id]);
             }
@@ -95,9 +136,44 @@ class AuthController extends Controller
             $this->sendVerificationEmail($user);
             
             return response()->json([
-                'message' => $isDealer ? 'Dealer account registered successfully and is pending verification' : 'User registered successfully',
-                'user' => $user
+                'status' => 'success',
+                'message' => $isDealer ? 'تم إنشاء حساب التاجر بنجاح وهو في انتظار التحقق' : 'تم إنشاء الحساب بنجاح',
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'role' => $user->role
+                ]
             ], 201);
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Database error during registration', [
+                'error' => $e->getMessage(),
+                'email' => $request->email
+            ]);
+            
+            // Handle specific database constraint violations
+            if (strpos($e->getMessage(), 'users_email_unique') !== false) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'البريد الإلكتروني مستخدم بالفعل',
+                    'errors' => ['email' => ['البريد الإلكتروني مستخدم بالفعل']]
+                ], 422);
+            }
+            
+            if (strpos($e->getMessage(), 'users_phone_unique') !== false) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'رقم الهاتف مستخدم بالفعل',
+                    'errors' => ['phone' => ['رقم الهاتف مستخدم بالفعل']]
+                ], 422);
+            }
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.'
+            ], 500);
             
         } catch (\Exception $e) {
             Log::error('Error during user registration process', [
@@ -107,7 +183,8 @@ class AuthController extends Controller
             ]);
             
             return response()->json([
-                'error' => 'An error occurred during registration. Please try again.',
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.',
                 'details' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
@@ -241,7 +318,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
         if (!$user || !Hash::check($request->password, $user->password_hash)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
             ]);
         }
         
@@ -258,7 +335,7 @@ class AuthController extends Controller
         if (!$user->is_active) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Your account is pending approval by admin',
+                'message' => 'حسابك غير مفعل من قبل الإدارة.',
                 'email' => $user->email
             ], 403);
         }
