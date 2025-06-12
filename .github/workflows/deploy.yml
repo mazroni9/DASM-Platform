@@ -1,39 +1,39 @@
-name: Deploy to Cloudflare Pages
+# name: Deploy to Cloudflare Pages
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - main
+#   workflow_dispatch:
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       deployments: write
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: 'Frontend-local/package-lock.json'
+#       - name: Setup Node
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'npm'
+#           cache-dependency-path: 'Frontend-local/package-lock.json'
 
-      - name: Install Dependencies
-        run: cd Frontend-local && npm ci
+#       - name: Install Dependencies
+#         run: cd Frontend-local && npm ci
 
-      - name: Build
-        run: cd Frontend-local && npm run build
+#       - name: Build
+#         run: cd Frontend-local && npm run build
 
-      - name: Publish to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: mazbrothers
-          directory: Frontend-local/.next
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }} 
+#       - name: Publish to Cloudflare Pages
+#         uses: cloudflare/pages-action@v1
+#         with:
+#           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+#           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+#           projectName: mazbrothers
+#           directory: Frontend-local/.next
+#           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
