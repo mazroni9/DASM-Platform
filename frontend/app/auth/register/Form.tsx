@@ -150,14 +150,8 @@ export default function RegisterForm() {
                 data
             );
 
-            // Check if the response contains a message that indicates success
-            // This handles cases where the API returns status "error" but with a success message
-            if (
-                response.data.status === "success" ||
-                (response.data.message &&
-                    response.data.message.toLowerCase().includes("success"))
-            ) {
-                // Show success message
+            // Check if the response indicates success
+            if (response.data.status === "success") {
                 setSuccess(
                     "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
                 );
@@ -167,6 +161,7 @@ export default function RegisterForm() {
                     router.push("/verify-email");
                 }, 1500);
             } else {
+                // Handle unexpected response format
                 setError(response.data.message || "حدث خطأ أثناء التسجيل");
             }
         } catch (error: any) {
@@ -175,49 +170,89 @@ export default function RegisterForm() {
                 console.error("Registration error details:", error);
             }
 
-            // Check if the error response contains a success message
-            if (
-                error.response?.data?.message &&
-                error.response.data.message.toLowerCase().includes("success")
-            ) {
-                setSuccess(
-                    "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
-                );
+            let errorMessage = "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
 
-                setTimeout(() => {
-                    router.push("/verify-email");
-                }, 1500);
-            } else {
-                // Get a user-friendly error message
-                let errorMessage =
-                    "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
+            if (error.response?.data) {
+                const errorData = error.response.data;
 
-                if (error.response?.data?.message) {
-                    const serverMessage = error.response.data.message;
-
-                    // Check for common errors and provide specific messages
-                    if (
-                        serverMessage.includes("email") &&
-                        serverMessage.includes("taken")
-                    ) {
-                        errorMessage = "البريد الإلكتروني مستخدم بالفعل";
-                    } else if (
-                        serverMessage.includes("phone") &&
-                        serverMessage.includes("taken")
-                    ) {
-                        errorMessage = "رقم الهاتف مستخدم بالفعل";
-                    } else if (
-                        !serverMessage.includes("SQLSTATE") &&
-                        !serverMessage.includes("relation") &&
-                        serverMessage.length < 100
-                    ) {
-                        // Only use server message if it's not a detailed tech error
-                        errorMessage = serverMessage;
-                    }
+                // Check if this is a successful registration despite the error response
+                if (
+                    errorData.status === "success" ||
+                    (errorData.message && errorData.message.includes("بنجاح"))
+                ) {
+                    setSuccess(
+                        "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
+                    );
+                    setTimeout(() => {
+                        router.push("/verify-email");
+                    }, 1500);
+                    return;
                 }
 
-                setError(errorMessage);
+                // Handle validation errors with specific field messages
+                if (error.response?.status === 422 && errorData.errors) {
+                    const errors = errorData.errors;
+
+                    // Priority order for displaying errors
+                    const errorPriority = [
+                        "email",
+                        "phone",
+                        "first_name",
+                        "last_name",
+                        "password",
+                        "company_name",
+                        "commercial_registry",
+                    ];
+
+                    for (const field of errorPriority) {
+                        if (errors[field] && errors[field].length > 0) {
+                            errorMessage = errors[field][0]; // Get the first error for this field
+                            break;
+                        }
+                    }
+
+                    // If no priority field has errors, use the first available error
+                    if (
+                        errorMessage ===
+                        "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى"
+                    ) {
+                        const firstField = Object.keys(errors)[0];
+                        if (firstField && errors[firstField].length > 0) {
+                            errorMessage = errors[firstField][0];
+                        }
+                    }
+                }
+                // Handle direct message errors
+                else if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+                // Handle first_error field if available
+                else if (errorData.first_error) {
+                    errorMessage = errorData.first_error;
+                }
+                // Handle legacy error format
+                else if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+
+                // Network-related error handling
+                if (error.response?.status === 500) {
+                    errorMessage =
+                        "خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقًا.";
+                } else if (error.response?.status === 429) {
+                    errorMessage =
+                        "تم تجاوز حد المحاولات. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.";
+                }
+            } else if (error.request) {
+                // Network error - no response received
+                errorMessage =
+                    "لا يمكن الوصول إلى الخادم. يرجى التحقق من اتصالك بالإنترنت.";
+            } else if (error.code === "ECONNABORTED") {
+                // Request timeout
+                errorMessage = "انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.";
             }
+
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -237,10 +272,7 @@ export default function RegisterForm() {
                 )}
 
                 {success && (
-                    <Alert
-                        variant="success"
-                        className="bg-green-50 text-green-700 border border-green-200"
-                    >
+                    <Alert className="bg-green-50 text-green-700 border border-green-200">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>{success}</AlertDescription>
                     </Alert>

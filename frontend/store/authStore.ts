@@ -18,6 +18,7 @@ interface AuthState {
     loading: boolean;
     error: string | null;
     initialized: boolean;
+    lastProfileFetch: number; // Add timestamp for caching
 
     login: (
         email: string,
@@ -41,6 +42,9 @@ interface AuthState {
 // Create a proper base URL with full URL including http/https
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Cache duration for profile data (5 minutes)
+const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
+
 export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
@@ -50,6 +54,7 @@ export const useAuthStore = create<AuthState>()(
             loading: false,
             error: null,
             initialized: false,
+            lastProfileFetch: 0,
 
             initializeFromStorage: async () => {
                 // Prevent multiple initializations
@@ -76,9 +81,28 @@ export const useAuthStore = create<AuthState>()(
                 }
 
                 try {
-                    console.log("Attempting to initialize from storage");
+                    // Check if we have cached user data that's still valid
+                    const state = get();
+                    const now = Date.now();
+                    const cacheValid =
+                        state.user &&
+                        state.lastProfileFetch &&
+                        now - state.lastProfileFetch < PROFILE_CACHE_DURATION;
+
+                    if (cacheValid) {
+                        // Use cached data
+                        set({
+                            token,
+                            isLoggedIn: true,
+                            loading: false,
+                            initialized: true,
+                        });
+                        console.log("Using cached user data");
+                        return true;
+                    }
+
+                    console.log("Fetching fresh user data");
                     // Try to get the current user with the token
-                    // Use the correct endpoint as defined in the backend routes
                     const response = await api.get(`/api/user/profile`);
 
                     // Check if the response has a data property and extract it
@@ -90,6 +114,7 @@ export const useAuthStore = create<AuthState>()(
                         isLoggedIn: true,
                         loading: false,
                         initialized: true,
+                        lastProfileFetch: now,
                     });
                     console.log("Successfully initialized from storage");
                     return true;
@@ -103,10 +128,14 @@ export const useAuthStore = create<AuthState>()(
                         if (api.defaults) {
                             delete api.defaults.headers.common["Authorization"];
                         }
-                        // Optionally redirect to login
-                        if (typeof window !== "undefined") {
-                            window.location.href = "/auth/login";
-                        }
+                        // Don't redirect here to prevent redirect loops
+                        set({
+                            user: null,
+                            token: null,
+                            isLoggedIn: false,
+                            loading: false,
+                            initialized: true,
+                        });
                         return false;
                     }
                     // For other errors, just mark initialized without logging in
@@ -154,6 +183,7 @@ export const useAuthStore = create<AuthState>()(
                         isLoggedIn: true,
                         loading: false,
                         error: null,
+                        lastProfileFetch: Date.now(),
                     });
 
                     // Set default auth header for future requests
@@ -180,17 +210,19 @@ export const useAuthStore = create<AuthState>()(
                     console.error("Login error details:", err);
 
                     // Extract user-friendly error message if available, or use generic message
-                    let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
+                    let errorMessage =
+                        "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.";
 
                     if (err.response) {
                         // The request was made and the server responded with an error status
                         if (err.response.status === 401) {
-                            errorMessage =
-                                "البريد الإلكتروني أو كلمة المرور غير صحيحة";
-                        } else if (err.response.status === 403) {
-                            // Check for pending admin approval
+                            errorMessage = "بيانات الاعتماد غير صحيحة";
+                        } else if (err.response.status === 422) {
+                            // Special handling for account pending approval
                             if (
-                                err.response.data?.message?.includes(
+                                err.response.data &&
+                                err.response.data.message &&
+                                err.response.data.message.includes(
                                     "pending approval"
                                 )
                             ) {
@@ -198,11 +230,11 @@ export const useAuthStore = create<AuthState>()(
                                 return {
                                     success: false,
                                     pendingApproval: true,
-                                    error: "حسابك في انتظار موافقة المسؤول. سيتم إشعارك عندما يتم تفعيل حسابك.",
+                                    error: "حسابك في انتظار موافقة المدير. سيتم إشعارك عندما يتم تفعيل حسابك.",
                                 };
-                            } else {
-                                errorMessage = "غير مصرح لك بالدخول";
                             }
+                            errorMessage =
+                                "بيانات غير صحيحة. يرجى التحقق من المعلومات المدخلة.";
                         } else if (
                             err.response.data &&
                             err.response.data.message
@@ -277,7 +309,12 @@ export const useAuthStore = create<AuthState>()(
                     if (api.defaults) {
                         delete api.defaults.headers.common["Authorization"];
                     }
-                    set({ user: null, token: null, isLoggedIn: false });
+                    set({
+                        user: null,
+                        token: null,
+                        isLoggedIn: false,
+                        lastProfileFetch: 0,
+                    });
 
                     // Force a page redirect to login to ensure complete logout
                     if (typeof window !== "undefined") {
@@ -327,32 +364,47 @@ export const useAuthStore = create<AuthState>()(
                             ] = `Bearer ${access_token}`;
                         }
 
-                        // Attempt to get user data with the new token
-                        try {
-                            const userResponse = await api.get(
-                                `/api/user/profile`
-                            );
-                            const userData =
-                                userResponse.data.data || userResponse.data;
+                        // Only fetch user data if we don't have it or cache is old
+                        const state = get();
+                        const now = Date.now();
+                        const needsUserData =
+                            !state.user ||
+                            now - state.lastProfileFetch >
+                                PROFILE_CACHE_DURATION;
 
+                        if (needsUserData) {
+                            try {
+                                const userResponse = await api.get(
+                                    `/api/user/profile`
+                                );
+                                const userData =
+                                    userResponse.data.data || userResponse.data;
+
+                                set({
+                                    token: access_token,
+                                    user: userData,
+                                    isLoggedIn: true,
+                                    lastProfileFetch: now,
+                                });
+                            } catch (userError) {
+                                console.error(
+                                    "Failed to get user data after token refresh:",
+                                    userError
+                                );
+                                // Even if user data fetch fails, we still have a valid token
+                                set({
+                                    token: access_token,
+                                    isLoggedIn: true,
+                                });
+                            }
+                        } else {
+                            // Just update the token
                             set({
                                 token: access_token,
-                                user: userData,
                                 isLoggedIn: true,
                             });
-                            return true;
-                        } catch (userError) {
-                            console.error(
-                                "Failed to get user data after token refresh:",
-                                userError
-                            );
-                            // Even if user data fetch fails, we still have a valid token
-                            set({
-                                token: access_token,
-                                isLoggedIn: true,
-                            });
-                            return true;
                         }
+                        return true;
                     } else {
                         // If response doesn't contain access_token
                         console.error(
@@ -377,6 +429,7 @@ export const useAuthStore = create<AuthState>()(
                             user: null,
                             token: null,
                             isLoggedIn: false,
+                            lastProfileFetch: 0,
                         });
 
                         // Don't redirect here to prevent redirect loops
@@ -394,6 +447,7 @@ export const useAuthStore = create<AuthState>()(
                 token: state.token,
                 user: state.user,
                 isLoggedIn: state.isLoggedIn,
+                lastProfileFetch: state.lastProfileFetch,
             }),
         }
     )

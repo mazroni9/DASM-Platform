@@ -45,134 +45,22 @@ export default function RecommendationsPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        // محاكاة جلب بيانات التوصيات
+        // جلب بيانات التوصيات من API
         async function fetchRecommendations() {
             try {
                 setLoading(true);
 
-                // محاكاة تأخير الشبكة
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-
-                // بيانات تجريبية للتوصيات
-                const mockRecommendations: RecommendedCar[] = [
-                    {
-                        id: 1001,
-                        title: "لكزس ES350",
-                        make: "لكزس",
-                        model: "ES350",
-                        year: 2020,
-                        image: "https://example.com/images/lexus-es350.jpg",
-                        price: 195000,
-                        isLiveNow: true,
-                        timeLeft: "35 دقيقة",
-                        match: 95,
-                        isWatched: true,
-                        category: "similar",
-                    },
-                    {
-                        id: 1002,
-                        title: "تويوتا أفالون",
-                        make: "تويوتا",
-                        model: "أفالون",
-                        year: 2021,
-                        image: "https://example.com/images/toyota-avalon.jpg",
-                        price: 185000,
-                        match: 88,
-                        isWatched: false,
-                        category: "similar",
-                    },
-                    {
-                        id: 1003,
-                        title: "نيسان ماكسيما",
-                        make: "نيسان",
-                        model: "ماكسيما",
-                        year: 2019,
-                        image: "https://example.com/images/nissan-maxima.jpg",
-                        price: 150000,
-                        match: 82,
-                        isWatched: false,
-                        category: "similar",
-                    },
-                    {
-                        id: 2001,
-                        title: "مرسيدس E200",
-                        make: "مرسيدس",
-                        model: "E200",
-                        year: 2020,
-                        image: "https://example.com/images/mercedes-e200.jpg",
-                        price: 220000,
-                        auctionDate: "2023-10-25T14:00:00",
-                        match: 92,
-                        isWatched: true,
-                        category: "upcoming",
-                    },
-                    {
-                        id: 2002,
-                        title: "بي إم دبليو 520i",
-                        make: "بي إم دبليو",
-                        model: "520i",
-                        year: 2019,
-                        image: "https://example.com/images/bmw-520i.jpg",
-                        price: 210000,
-                        auctionDate: "2023-10-26T16:00:00",
-                        match: 85,
-                        isWatched: false,
-                        category: "upcoming",
-                    },
-                    {
-                        id: 3001,
-                        title: "هيونداي سوناتا",
-                        make: "هيونداي",
-                        model: "سوناتا",
-                        year: 2020,
-                        image: "https://example.com/images/hyundai-sonata.jpg",
-                        price: 120000,
-                        valueScore: 92,
-                        isLiveNow: true,
-                        timeLeft: "50 دقيقة",
-                        isWatched: false,
-                        category: "value",
-                    },
-                    {
-                        id: 3002,
-                        title: "تويوتا كامري",
-                        make: "تويوتا",
-                        model: "كامري",
-                        year: 2019,
-                        image: "https://example.com/images/toyota-camry.jpg",
-                        price: 110000,
-                        valueScore: 89,
-                        auctionDate: "2023-10-25T15:30:00",
-                        isWatched: true,
-                        category: "value",
-                    },
-                    {
-                        id: 4001,
-                        title: "هوندا سيفيك",
-                        make: "هوندا",
-                        model: "سيفيك",
-                        year: 2022,
-                        image: "https://example.com/images/honda-civic.jpg",
-                        price: 105000,
-                        match: 79,
-                        valueScore: 82,
-                        category: "trending",
-                    },
-                    {
-                        id: 4002,
-                        title: "كيا K5",
-                        make: "كيا",
-                        model: "K5",
-                        year: 2022,
-                        image: "https://example.com/images/kia-k5.jpg",
-                        price: 120000,
-                        match: 81,
-                        valueScore: 84,
-                        category: "trending",
-                    },
-                ];
-
-                setRecommendations(mockRecommendations);
+                try {
+                    // محاولة استدعاء API الحقيقي
+                    const response = await fetch("/api/recommendations");
+                    if (!response.ok) throw new Error("فشل الاتصال بالخادم");
+                    const data = await response.json();
+                    setRecommendations(data);
+                } catch (apiError) {
+                    // في حالة الخطأ مع الاتصال بالـ API، نضع قائمة فارغة
+                    console.error("خطأ في استدعاء API التوصيات:", apiError);
+                    setRecommendations([]);
+                }
             } catch (err) {
                 console.error("فشل في جلب التوصيات:", err);
                 setError(
