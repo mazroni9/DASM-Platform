@@ -56,57 +56,37 @@ export default function AdminDashboard() {
                     });
 
                     if (response.data.data.recent_users) {
-                        let notActiviated=response.data.data.recent_users.filter((elm)=>{
-                            if(!elm.is_active){
-                                return elm;
-                            }
-                        });
-                            
-                        
+                        let notActiviated =
+                            response.data.data.recent_users.filter((elm) => {
+                                if (!elm.is_active) {
+                                    return elm;
+                                }
+                            });
+
                         setRecentUsers(response.data.data.recent_users);
                         setNotActiviatedUsers(notActiviated);
+                    } else {
+                        setRecentUsers([]);
+                        setNotActiviatedUsers([]);
                     }
                 }
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
                 toast.error("فشل في تحميل بيانات لوحة المعلومات");
 
-                // Set demo data for development
+                // Initialize with zeros instead of mock data
                 setStats({
-                    totalUsers: 120,
-                    pendingUsers: 15,
-                    totalAuctions: 67,
-                    activeAuctions: 12,
-                    completedAuctions: 55,
-                    pendingVerifications: 8,
+                    totalUsers: 0,
+                    pendingUsers: 0,
+                    totalAuctions: 0,
+                    activeAuctions: 0,
+                    completedAuctions: 0,
+                    pendingVerifications: 0,
                 });
 
-                setRecentUsers([
-                    {
-                        id: 1,
-                        first_name: "محمد",
-                        last_name: "أحمد",
-                        email: "mohammed@example.com",
-                        created_at: "2025-05-20T10:30:00",
-                        is_active: false,
-                    },
-                    {
-                        id: 2,
-                        first_name: "فاطمة",
-                        last_name: "الزهراء",
-                        email: "fatima@example.com",
-                        created_at: "2025-05-19T14:15:00",
-                        is_active: false,
-                    },
-                    {
-                        id: 3,
-                        first_name: "خالد",
-                        last_name: "المنصور",
-                        email: "khalid@example.com",
-                        created_at: "2025-05-18T09:45:00",
-                        is_active: false,
-                    },
-                ]);
+                // Empty arrays instead of fake users
+                setRecentUsers([]);
+                setNotActiviatedUsers([]);
             } finally {
                 setLoading(false);
             }
@@ -311,7 +291,11 @@ export default function AdminDashboard() {
                                         </a>
                                         {!user.is_active && (
                                             <button
-                                                onClick={() => handleUserActivation(user.id)}
+                                                onClick={() =>
+                                                    handleUserActivation(
+                                                        user.id
+                                                    )
+                                                }
                                             >
                                                 تفعيل
                                             </button>
@@ -323,11 +307,11 @@ export default function AdminDashboard() {
                     </table>
                 </div>
             </div>
-                       {/*  مستخدمين بحاجة للتفعيل*/}
+            {/*  مستخدمين بحاجة للتفعيل*/}
             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800">
-                       مستخدمين بإنتظار التفعيل
+                        مستخدمين بإنتظار التفعيل
                     </h2>
                     <a
                         href="/admin/users"
@@ -359,32 +343,40 @@ export default function AdminDashboard() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            
-                            {recentUsersNotActivated.map((user) => ( 
+                            {recentUsersNotActivated.map((user) => (
                                 <tr key={user.id} className="hover:bg-gray-50">
-                                             <td className="py-3 px-4 text-sm">{user.first_name} {user.last_name}</td>
-                                             <td className="py-3 px-4 text-sm">{user.email}</td><td className="py-3 px-4 text-sm">
-                                            {formatDate(user.created_at)}
-                                        </td><td className="py-3 px-4 text-sm">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                                    {user.is_active}
-                                                    <Clock className="w-3 h-3 mr-1" />{" "}
-                                                    في الانتظار
-                                                </span>
-                                            </td><td className="py-3 px-4 text-sm">
-                                                <a
-                                                    href={`/admin/users/${user.id}`}
-                                                    className="text-blue-600 hover:text-blue-800 mx-1"
-                                                >
-                                                    عرض
-                                                </a>
-                                                <button className="inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-green-600 hover:bg-green-700 text-white"
-                                                    onClick={() => handleUserActivation(user.id)}
-                                                >
-                                                    
-                                                    تفعيل
-                                                </button>
-                                            </td>
+                                    <td className="py-3 px-4 text-sm">
+                                        {user.first_name} {user.last_name}
+                                    </td>
+                                    <td className="py-3 px-4 text-sm">
+                                        {user.email}
+                                    </td>
+                                    <td className="py-3 px-4 text-sm">
+                                        {formatDate(user.created_at)}
+                                    </td>
+                                    <td className="py-3 px-4 text-sm">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                            {user.is_active}
+                                            <Clock className="w-3 h-3 mr-1" />{" "}
+                                            في الانتظار
+                                        </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-sm">
+                                        <a
+                                            href={`/admin/users/${user.id}`}
+                                            className="text-blue-600 hover:text-blue-800 mx-1"
+                                        >
+                                            عرض
+                                        </a>
+                                        <button
+                                            className="inline-flex items-center justify-center text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 rounded-md px-3 bg-green-600 hover:bg-green-700 text-white"
+                                            onClick={() =>
+                                                handleUserActivation(user.id)
+                                            }
+                                        >
+                                            تفعيل
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

@@ -73,7 +73,7 @@ const Navbar = () => {
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center gap-4">
                             <Image
-                                src="/logo.jpg"
+                                src="/logo.jpeg"
                                 alt="منصة داسم DASM - Digital Auctions Sectors Market"
                                 width={40}
                                 height={40}
@@ -100,7 +100,7 @@ const Navbar = () => {
                             }`}
                         >
                             <Store size={18} />
-                            قطاع الأسواق المتعددة
+                            الأسواق الرقمية المتخصصة
                         </Link>
                         <Link
                             href="/broadcasts"
@@ -112,17 +112,6 @@ const Navbar = () => {
                         >
                             <Clock size={18} />
                             البث المباشر
-                        </Link>
-                        <Link
-                            href="/auction-archive"
-                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
-                                isActive("/auction-archive")
-                                    ? "text-blue-700 font-bold"
-                                    : ""
-                            }`}
-                        >
-                            <Archive size={18} />
-                            أرشيف المزادات
                         </Link>
                     </div>
 

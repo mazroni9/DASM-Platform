@@ -81,37 +81,26 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
                 }
             }
 
-            // Auth check is complete
+            // Auth check is complete - no timeout needed
             setIsLoading(false);
         }
 
         checkAuth();
+    }, [isLoggedIn, pathname, router, initialized, user]);
 
-        // Add a timeout to ensure we're not stuck in a loading state
-        const timer = setTimeout(() => {
-            if (isLoading) {
-                console.log("Forcing loading state to complete after timeout");
-                setIsLoading(false);
-            }
-        }, 3000);
-
-        return () => clearTimeout(timer);
-    }, [isLoggedIn, pathname, router, initialized, isLoading, user]);
-
-    // Show loading state while checking authentication (with timeout)
-    if (isLoading) {
+    // Show loading state only while authentication is being initialized
+    if (isLoading || !initialized) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">جاري التحقق من الدخول...</p>
+                    <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+                    <p className="text-sm text-gray-600">
+                        التحقق من الصلاحيات...
+                    </p>
                 </div>
             </div>
         );
     }
 
-    // If we're still here, it means either:
-    // 1. The user is authenticated and can access protected routes
-    // 2. The route is public and doesn't need authentication
     return <>{children}</>;
 }

@@ -16,11 +16,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
             } catch (error) {
                 console.error("Auth initialization error:", error);
             } finally {
-                // Always set initialized to true after a timeout
-                // This prevents infinite loading screen
-                setTimeout(() => {
-                    setInitialized(true);
-                }, 1500);
+                setInitialized(true);
             }
         };
 
