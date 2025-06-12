@@ -17,37 +17,46 @@
 
 import { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { Upload, FileX, Car, CheckCircle2, AlertCircle } from 'lucide-react';
+import api from "@/lib/axios";
+import toast from 'react-hot-toast';
+
 
 interface CarFormData {
-  الماركة: string;
-  الموديل: string;
-  سنة_الصنع: string;
-  رقم_اللوحة: string;
-  نوع_الوقود: string;
-  رقم_العداد: string;
-  لون_السيارة: string;
-  نوع_ناقل_الحركة: string;
-  حالة_السيارة: string;
-  الموقع: string;
-  الحد_الأدنى_المقبول: string;
-  الحد_الأعلى_المرغوب: string;
+  make: string;
+  model: string;
+  year: string;
+  vin: string;
+  engine: string;
+  odometer: string;
+  color: string;
+  transmission: string;
+  condition: string;
+  location: string;
+  min_price: string;
+  max_price: string;
+  description:string;
+  plate:string;
 }
 
+let carOjbect={
+              make: '',
+              model:'',
+              year:'',
+              vin:'',
+              engine: '',
+              odometer:  '',
+              color:  '',
+              transmission:  '',
+              condition:  '',
+              location:  '',
+              min_price:  '',
+              max_price:  '',
+              description: '',
+              plate:''
+            }
 export default function CarDataEntryForm() {
-  const [formData, setFormData] = useState<CarFormData>({
-    الماركة: '',
-    الموديل: '',
-    سنة_الصنع: '',
-    رقم_اللوحة: '',
-    نوع_الوقود: '',
-    رقم_العداد: '',
-    لون_السيارة: '',
-    نوع_ناقل_الحركة: '',
-    حالة_السيارة: '',
-    الموقع: '',
-    الحد_الأدنى_المقبول: '',
-    الحد_الأعلى_المرغوب: '',
-  });
+  const [formData, setFormData] = useState<CarFormData>(carOjbect);
+
 
   const [images, setImages] = useState<File[]>([]);
   const [reports, setReports] = useState<File[]>([]);
@@ -109,16 +118,16 @@ export default function CarDataEntryForm() {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitResult(null);
-    
+
     try {
       // التحقق من البيانات المدخلة
-      const requiredFields = ['الماركة', 'الموديل', 'سنة_الصنع', 'رقم_اللوحة'];
+      const requiredFields = ['make', 'model', 'year', 'vin'];
       for (const field of requiredFields) {
         if (!formData[field as keyof CarFormData]) {
           throw new Error(`حقل ${field.replace('_', ' ')} مطلوب`);
         }
       }
-
+      /*
       if (images.length === 0) {
         throw new Error('يجب إضافة صورة واحدة على الأقل للسيارة');
       }
@@ -164,51 +173,67 @@ export default function CarDataEntryForm() {
         reportUrls = reportData.urls;
       }
 
+
       // إرسال بيانات السيارة مع روابط الصور والتقارير
-      const response = await fetch('/api/cars/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          صور: imageUrls,
-          تقارير_الفحص: reportUrls,
-          تاريخ_الإضافة: new Date().toISOString(),
-        }),
-      });
+         try {
+            if (images.length === 0) {
+                    throw new Error('يجب إضافة صورة واحدة على الأقل للسيارة');
+                  }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'فشل في حفظ بيانات السيارة');
-      }
+                // رفع الصور أولاً
+                const formDataImages = new FormData();
+                images.forEach(image => {
+                  formDataImages.append('files', image);
+                });
+                formDataImages.append('type', 'car-images');
+            const imageUploadResponse = await api.post('/api/upload', formDataImages, {
+                          headers: {
+                            'Content-Type': 'application/json'
+                          }
+                        })
 
-      const data = await response.json();
-      
-      // تم الحفظ بنجاح
-      setSubmitResult({
-        success: true,
-        message: 'تم إضافة السيارة بنجاح'
-      });
+                        console.log(imageUploadResponse);
+            if (imageUploadResponse.data.status === "success") {
+                toast.success("نجح رفع الصور");
+                 // تم الحفظ بنجاح
+            } else {
+                toast.error("فشل رفع الصور");
+            }
+        } catch (error) {
+            console.error("Error in adding car user:", error);
+        }
+            */
+      // إرسال بيانات السيارة مع روابط الصور والتقارير
+         try {
+          formData['evaluation_price']=formData['min_price'];
+          const response = await api.post('/api/cars', formData, {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            })
 
-      // إعادة تعيين النموذج
-      setFormData({
-        الماركة: '',
-        الموديل: '',
-        سنة_الصنع: '',
-        رقم_اللوحة: '',
-        نوع_الوقود: '',
-        رقم_العداد: '',
-        لون_السيارة: '',
-        نوع_ناقل_الحركة: '',
-        حالة_السيارة: '',
-        الموقع: '',
-        الحد_الأدنى_المقبول: '',
-        الحد_الأعلى_المرغوب: '',
-      });
-      setImages([]);
-      setReports([]);
-      setPreviewUrls([]);
+            if (response.data.status === "success") {
+                toast.success("تم إضافة السيارة بنجاح");
+                 // تم الحفظ بنجاح
+              setSubmitResult({
+                success: true,
+                message: 'تم إضافة السيارة بنجاح'
+              });
+            // إعادة تعيين النموذج
+            setFormData(carOjbect);
+            setImages([]);
+            setReports([]);
+            setPreviewUrls([]);
+            } else {
+                toast.error("فشل في إضافة السيارة");
+            }
+        } catch (error) {
+            console.error("Error in adding car user:", error);
+             toast.error("فشل في إضافة السيارة");
+        }
+
+  
+     
 
     } catch (error: any) {
       console.error('خطأ في حفظ البيانات:', error);
@@ -234,9 +259,9 @@ export default function CarDataEntryForm() {
           <div>
             <label htmlFor="الماركة" className="block text-sm font-medium text-gray-700 mb-1">الماركة *</label>
             <select
-              id="الماركة"
-              name="الماركة"
-              value={formData.الماركة}
+              id="make"
+              name="make"
+              value={formData.make}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
@@ -257,12 +282,12 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="الموديل" className="block text-sm font-medium text-gray-700 mb-1">الموديل *</label>
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">الموديل *</label>
             <input
               type="text"
-              id="الموديل"
-              name="الموديل"
-              value={formData.الموديل}
+              id="model"
+              name="model"
+              value={formData.model}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
@@ -270,11 +295,11 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="سنة_الصنع" className="block text-sm font-medium text-gray-700 mb-1">سنة الصنع *</label>
+            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">سنة الصنع *</label>
             <select
-              id="سنة_الصنع"
-              name="سنة_الصنع"
-              value={formData.سنة_الصنع}
+              id="year"
+              name="year"
+              value={formData.year}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
@@ -287,25 +312,38 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="رقم_اللوحة" className="block text-sm font-medium text-gray-700 mb-1">رقم اللوحة *</label>
+            <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">رقم التسجيل*</label>
             <input
               type="text"
-              id="رقم_اللوحة"
-              name="رقم_اللوحة"
-              value={formData.رقم_اللوحة}
+              id="vin"
+              name="vin"
+              value={formData.vin}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="مثال: ح د د ١٢٣٤"
+              placeholder="رقم الهيكل"
               required
             />
           </div>
-
+                  <div>
+            <label htmlFor="plate" className="block text-sm font-medium text-gray-700 mb-1">لوحة السيارة</label>
+            <input
+              type="text"
+              id="plate"
+              name="plate"
+              value={formData.plate}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="لوحة السيارة"
+              required
+            />
+          </div>
+     
           <div>
-            <label htmlFor="نوع_الوقود" className="block text-sm font-medium text-gray-700 mb-1">نوع الوقود</label>
+            <label htmlFor="engine" className="block text-sm font-medium text-gray-700 mb-1">نوع الوقود</label>
             <select
-              id="نوع_الوقود"
-              name="نوع_الوقود"
-              value={formData.نوع_الوقود}
+              id="engine"
+              name="engine"
+              value={formData.engine}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -318,36 +356,37 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="رقم_العداد" className="block text-sm font-medium text-gray-700 mb-1">رقم العداد (كم)</label>
+            <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 mb-1">رقم العداد (كم)</label>
             <input
               type="number"
-              id="رقم_العداد"
-              name="رقم_العداد"
-              value={formData.رقم_العداد}
+              id="odometer"
+              name="odometer"
+              value={formData.odometer}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               min="0"
+              placeholder='10000'
             />
           </div>
 
           <div>
-            <label htmlFor="لون_السيارة" className="block text-sm font-medium text-gray-700 mb-1">لون السيارة</label>
+            <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">لون السيارة</label>
             <input
               type="text"
-              id="لون_السيارة"
-              name="لون_السيارة"
-              value={formData.لون_السيارة}
+              id="color"
+              name="color"
+              value={formData.color}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label htmlFor="نوع_ناقل_الحركة" className="block text-sm font-medium text-gray-700 mb-1">نوع ناقل الحركة</label>
+            <label htmlFor="transmission" className="block text-sm font-medium text-gray-700 mb-1">نوع ناقل الحركة</label>
             <select
-              id="نوع_ناقل_الحركة"
-              name="نوع_ناقل_الحركة"
-              value={formData.نوع_ناقل_الحركة}
+              id="transmission"
+              name="transmission"
+              value={formData.transmission}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -359,13 +398,14 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="حالة_السيارة" className="block text-sm font-medium text-gray-700 mb-1">حالة السيارة</label>
+            <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-1">حالة السيارة</label>
             <select
-              id="حالة_السيارة"
-              name="حالة_السيارة"
-              value={formData.حالة_السيارة}
+              id="condition"
+              name="condition"
+              value={formData.condition}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
             >
               <option value="">-- اختر حالة السيارة --</option>
               <option value="جديدة">جديدة</option>
@@ -378,12 +418,12 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="الموقع" className="block text-sm font-medium text-gray-700 mb-1">الموقع</label>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">الموقع</label>
             <input
               type="text"
-              id="الموقع"
-              name="الموقع"
-              value={formData.الموقع}
+              id="location"
+              name="location"
+              value={formData.location}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="المدينة / المنطقة"
@@ -391,12 +431,12 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="الحد_الأدنى_المقبول" className="block text-sm font-medium text-gray-700 mb-1">الحد الأدنى المقبول (ريال)</label>
+            <label htmlFor="min_price" className="block text-sm font-medium text-gray-700 mb-1">الحد الأدنى المقبول (ريال)</label>
             <input
               type="number"
-              id="الحد_الأدنى_المقبول"
-              name="الحد_الأدنى_المقبول"
-              value={formData.الحد_الأدنى_المقبول}
+              id="min_price"
+              name="min_price"
+              value={formData.min_price}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               min="0"
@@ -405,12 +445,12 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="الحد_الأعلى_المرغوب" className="block text-sm font-medium text-gray-700 mb-1">الحد الأعلى المرغوب (ريال)</label>
+            <label htmlFor="max_price" className="block text-sm font-medium text-gray-700 mb-1">الحد الأعلى المرغوب (ريال)</label>
             <input
               type="number"
-              id="الحد_الأعلى_المرغوب"
-              name="الحد_الأعلى_المرغوب"
-              value={formData.الحد_الأعلى_المرغوب}
+              id="max_price"
+              name="max_price"
+              value={formData.max_price}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               min="0"
@@ -418,7 +458,19 @@ export default function CarDataEntryForm() {
             />
           </div>
         </div>
-
+  <div className="border-t pt-6">
+            <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">وصف السيارة</label>
+            <input
+              type="text"
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="w-full p-6 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="وصف السيارة"
+              required
+            />
+          </div>
         {/* قسم رفع الصور */}
         <div className="border-t pt-6">
           <h3 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
@@ -600,20 +652,7 @@ export default function CarDataEntryForm() {
           <button
             type="button"
             onClick={() => {
-              setFormData({
-                الماركة: '',
-                الموديل: '',
-                سنة_الصنع: '',
-                رقم_اللوحة: '',
-                نوع_الوقود: '',
-                رقم_العداد: '',
-                لون_السيارة: '',
-                نوع_ناقل_الحركة: '',
-                حالة_السيارة: '',
-                الموقع: '',
-                الحد_الأدنى_المقبول: '',
-                الحد_الأعلى_المرغوب: '',
-              });
+              setFormData(carOjbect);
               setImages([]);
               setReports([]);
               setPreviewUrls([]);

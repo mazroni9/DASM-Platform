@@ -77,7 +77,7 @@ class AuctionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'car_id' => 'required|exists:cars,id',
+            'car_id' => 'required',
             'starting_bid' => 'required|numeric|min:0',
             'reserve_price' => 'nullable|numeric|min:0',
             'start_time' => 'required|date|after_or_equal:today',
@@ -148,6 +148,70 @@ class AuctionController extends Controller
             'data' => $auction
         ], 201);
     }
+
+    /**
+     * add to acution
+     */
+    public function addToAuction(Request $request){
+        $user = Auth::user();
+        $car = Car::find($request->car_id);
+        console.log($car);
+        $isOwner = false;
+        if ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id) {
+            $isOwner = true;
+        } elseif ($car->user_id === $user->id) {
+            $isOwner = true;
+        }
+        
+        if (!$isOwner) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You can only create auctions for your own cars'
+            ], 403);
+        }
+
+        // Check if car is available for auction
+        if ($car->auction_status !== 'available') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This car is not available for auction'
+            ], 400);
+        }
+
+        
+        // Create the auction
+        $auction = new Auction();
+        $auction->car_id = $car->car_id;
+        $auction->starting_bid = $car->starting_bid;
+        $auction->current_bid = $car->starting_bid;
+        $auction->reserve_price = $car->reserve_price ?? 0;
+        $auction->start_time = $car->start_time;
+        $auction->end_time = $car->end_time;
+        $auction->description = $car->description;
+        
+        // Set initial status based on start time
+        $now = Carbon::now();
+        if (Carbon::parse($request->start_time) <= $now) {
+            $auction->status = AuctionStatus::ACTIVE;
+        } else {
+            $auction->status = AuctionStatus::SCHEDULED;
+        }
+        
+        $auction->save();
+        
+        // Update car status
+        $car->auction_status = 'in_auction';
+        $car->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auction created successfully',
+            'data' => $auction
+        ], 201);
+    }
+
+
+    
 
     /**
      * Display the specified auction

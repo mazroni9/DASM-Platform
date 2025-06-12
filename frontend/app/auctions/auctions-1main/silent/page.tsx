@@ -33,31 +33,9 @@ function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive
   }
 }
 
-interface Car {
-  id: string;
-  الماركة: string;
-  الموديل: string;
-  "سنة الصنع": number;
-  "رقم اللوحة": string;
-  "رقم العداد": number;
-  "حالة السيارة": string;
-  "الحالة في المزاد": string;
-  "لون السيارة": string;
-  "نوع الوقود": string;
-  "المزايدات المقدمة": number;
-  "سعر الإفتتاح": number;
-  "أقل سعر": number;
-  "أعلى سعر": number;
-  "آخر سعر": number;
-  "التغير": number;
-  "نسبة التغير": string;
-  "نتيجة المزايدة": string;
-  "آخر سعر في الصامت"?: number;
-  "نسبة التغير.1"?: string;
-}
 
 export default function SilentAuctionPage() {
-  const [cars, setCars] = useState<Car[]>([]);
+  const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -90,7 +68,7 @@ export default function SilentAuctionPage() {
            if (!isLoggedIn) return;
           try {
             
-              const response = await api.get('/api/auctions');
+              const response = await api.get('/api/my-auctions');
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
                     // تعامل مع هيكل البيانات من API
@@ -106,9 +84,7 @@ export default function SilentAuctionPage() {
               setLoading(false);
           }
       }
-
       fetchAuctions();
-      
   }, []);
   
 
@@ -234,9 +210,9 @@ export default function SilentAuctionPage() {
                           {expandedRows[idx] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                         </button>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.الماركة}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.الموديل}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car["سنة الصنع"]}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].year}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["سعر الإفتتاح"] || 0)} ر.س</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-purple-600">
                         {formatMoney(car["آخر سعر"] || 0)} ر.س
@@ -247,7 +223,7 @@ export default function SilentAuctionPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-purple-600 underline">
-                        <a href={`/car/${car.id}`} target="_blank">عرض</a>
+                        <a href={`../../carDetails/${car.car_id}`} target="_blank">عرض</a>
                       </td>
                     </tr>
                     
@@ -259,11 +235,10 @@ export default function SilentAuctionPage() {
                             <div>
                               <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
                               <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">رقم اللوحة:</span> {car["رقم اللوحة"]}</li>
-                                <li><span className="font-medium">العداد:</span> {car["رقم العداد"]} كم</li>
-                                <li><span className="font-medium">حالة السيارة:</span> {car["حالة السيارة"] || 'جيدة'}</li>
-                                <li><span className="font-medium">اللون:</span> {car["لون السيارة"]}</li>
-                                <li><span className="font-medium">نوع الوقود:</span> {car["نوع الوقود"]}</li>
+                                <li><span className="font-medium">العداد:</span> {car['car'].odmeter} كم</li>
+                                <li><span className="font-medium">حالة السيارة:</span> {car['car'].condition || 'جيدة'}</li>
+                                <li><span className="font-medium">اللون:</span> {car['car'].color}</li>
+                                <li><span className="font-medium">نوع الوقود:</span> {car['car'].engine}</li>
                               </ul>
                             </div>
                             

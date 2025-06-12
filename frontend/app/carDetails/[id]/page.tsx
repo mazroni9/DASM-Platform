@@ -19,6 +19,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Car } from 'lucide-react';
 import CarDataEntryButton from '@/components/CarDataEntryButton';
+import { useAuth } from '@/hooks/useAuth';
+import api from '@/lib/axios';
+import { useParams, useRouter } from 'next/navigation';
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getCurrentAuctionType(): string {
@@ -34,62 +37,51 @@ function getCurrentAuctionType(): string {
   }
 }
 
-interface Car {
-  id: string;
-  الماركة: string;
-  الموديل: string;
-  "سنة الصنع": number;
-  "رقم اللوحة": string;
-  "رقم العداد": number;
-  "حالة السيارة": string;
-  "الحالة في المزاد": string;
-  "لون السيارة": string;
-  "نوع الوقود": string;
-  "المزايدات المقدمة": number;
-  "سعر الإفتتاح": number;
-  "أقل سعر": number;
-  "أعلى سعر": number;
-  "آخر سعر": number;
-  "التغير": number;
-  "نسبة التغير": string;
-  "نتيجة المزايدة": string;
-  "آخر سعر في الصامت"?: number;
-  "نسبة التغير.1"?: string;
-}
 
-export default function CarDetailPage({ params }: { params: { id: string } }) {
-  const [item, setItem] = useState<Car | null>(null);
+export default function CarDetailPage() {
+  
+  const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!params.id) {
-      setError('معرف المركبة غير موجود');
-      setLoading(false);
-      return;
+  const { user, isLoggedIn } = useAuth();
+  const router = useRouter();
+ const params = useParams<{ tag: string; item: string }>()
+  let carId= params['id'];
+// Verify user is authenticated
+useEffect(() => {
+    if (!isLoggedIn) {
+        router.push("/auth/login?returnUrl=/dashboard/profile");
     }
-
-    setLoading(true);
-    fetch(`/api/cars/${params.id}`)
-      .then(res => {
-        if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error('لم يتم العثور على السيارة');
+  }, [isLoggedIn, router]);
+ 
+     // Fetch user profile data
+  useEffect(() => {
+       setLoading(true);
+      async function fetchAuctions() {
+           if (!isLoggedIn) return;
+          try {
+            
+              const response = await api.get(`/api/car/${carId}`);
+              console.log(response);
+              if (response.data.data || response.data.data) {
+                  const carsData = response.data.data.data || response.data.data;
+                    // تعامل مع هيكل البيانات من API
+                  setItem(carsData);
+              }
+                  
+          } catch (error) {
+               console.error('فشل تحميل بيانات المزاد الصامت', error);
+              setItem([]); // مصفوفة فارغة في حالة الفشل
+              setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
+              setLoading(false);
+          } finally {
+              setLoading(false);
           }
-          throw new Error(`فشل في الإتصال بالخادم: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        setItem(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('فشل تحميل بيانات السيارة', err);
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [params.id]);
+      }
+      fetchAuctions();
+  }, []);
+
+
 
   // صفحة التحميل
   if (loading) {
@@ -180,7 +172,7 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-            {item.الماركة} {item.الموديل} - {item["سنة الصنع"]}
+            {item.make} {item.model} - {item.year}
           </h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -193,10 +185,10 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
             <div>
               <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
                 <p className="text-2xl font-bold text-blue-600">
-                  آخر سعر: {item["آخر سعر"]?.toLocaleString() || '-'} ريال
+                  آخر سعر: {item['active_auction'].current_bid?.toLocaleString() || '-'} ريال
                 </p>
-                {item["نتيجة المزايدة"] && (
-                  <p className="text-lg text-green-600 mt-2">{item["نتيجة المزايدة"]}</p>
+                {item['active_auction'].current_bid && (
+                  <p className="text-lg text-green-600 mt-2">{item['active_auction'].current_bid}</p>
                 )}
               </div>
               
@@ -204,35 +196,35 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-500 text-sm">الماركة</p>
-                    <p className="font-semibold">{item.الماركة}</p>
+                    <p className="font-semibold">{item['car'].make}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">الموديل</p>
-                    <p className="font-semibold">{item.الموديل}</p>
+                    <p className="font-semibold">{item['car'].model}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">سنة الصنع</p>
-                    <p className="font-semibold">{item["سنة الصنع"]}</p>
+                    <p className="font-semibold">{item['car'].year}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">رقم اللوحة</p>
-                    <p className="font-semibold">{item["رقم اللوحة"]}</p>
+                    <p className="font-semibold">{}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">رقم العداد</p>
-                    <p className="font-semibold">{item["رقم العداد"]?.toLocaleString() || '-'} كم</p>
+                    <p className="font-semibold">{item['car'].odometer ?.toLocaleString() || '-'} كم</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">نوع الوقود</p>
-                    <p className="font-semibold">{item["نوع الوقود"] || '-'}</p>
+                    <p className="font-semibold">{item.engine || '-'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">حالة السيارة</p>
-                    <p className="font-semibold">{item["حالة السيارة"] || '-'}</p>
+                    <p className="font-semibold">{item['car'].condition || '-'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">لون السيارة</p>
-                    <p className="font-semibold">{item["لون السيارة"] || '-'}</p>
+                    <p className="font-semibold">{item['car'].color || '-'}</p>
                   </div>
                 </div>
                 
@@ -241,19 +233,19 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-500 text-sm">سعر الإفتتاح</p>
-                      <p className="font-semibold">{item["سعر الإفتتاح"]?.toLocaleString() || '-'} ريال</p>
+                      <p className="font-semibold">{item['active_auction'].opening_price ?.toLocaleString() || '-'} ريال</p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">أقل سعر</p>
-                      <p className="font-semibold">{item["أقل سعر"]?.toLocaleString() || '-'} ريال</p>
+                      <p className="font-semibold">{ item['active_auction'].min_price ?.toLocaleString() || '-'} ريال</p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">أعلى سعر</p>
-                      <p className="font-semibold">{item["أعلى سعر"]?.toLocaleString() || '-'} ريال</p>
+                      <p className="font-semibold">{item['active_auction'].max_price ?.toLocaleString() || '-'} ريال</p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">المزايدات المقدمة</p>
-                      <p className="font-semibold">{item["المزايدات المقدمة"] || '0'}</p>
+                      <p className="font-semibold">{item['active_auction'].lsat_bid_time || '0'}</p>
                     </div>
                   </div>
                 </div>

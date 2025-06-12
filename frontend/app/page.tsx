@@ -193,7 +193,7 @@ export default function Page() {
                                 </div>
                             </div>
                             <a href="/add/Car" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition text-center whitespace-nowrap w-64 md:w-					auto">
-                                ادخل بيانات سيارتك
+                                ادخل بيانات سيارتك 
                             </a>
                         </div>
                     </div>

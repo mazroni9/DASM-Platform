@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cars?page={id}', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
+    Route::get('/car/{id}', [CarController::class, 'showOnly']);
     Route::put('/cars/{id}', [CarController::class, 'update']);
     Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/car-statistics', [CarController::class, 'statistics']);
@@ -72,6 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
     //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
+    Route::get('/auction', [AuctionController::class, 'addToAuction']);
+    Route::post('/auction', [AuctionController::class, 'addToAuction']);
 
     // Bid routes for all users
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
@@ -100,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/wallet', [WalletController::class, 'show']);
     // Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
     // Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+
 });
 
 // Dealer-only routes
