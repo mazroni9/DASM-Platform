@@ -138,7 +138,13 @@ const getAuctionStatusTextAndIcon = (status: string) => {
         <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
         <p className="text-gray-500">هل تمت الموافقة ؟
           
-        { car.auctions.length == 0 ? <span className="text-red-600"> يرجى إضافتها إلى المزاد</span> : car.auctions.map(el=> el.control_room_approved)  ? <span className="text-green-600">تمت الموافقه</span>:<span className="text-red">تحت المعالجة</span> }
+        {car.auctions.map(el=>{
+            if(el.control_room_approved){
+              return <span className="text-green-600">تمت الموافقة للمزاد </span>
+            }else{
+               return <span className="text-red-600">تحت المعالجة </span>
+            }
+        })}
         </p> 
         <p className="text-sm text-gray-500 mb-1">حالة المزاد: {getAuctionStatusTextAndIcon(car.auction_status).text}</p>
         <p className="text-sm text-gray-500 mb-1">الوصف: {car.description}</p>
