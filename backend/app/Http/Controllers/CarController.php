@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
+use App\Models\Dealer;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,9 @@ class CarController extends Controller
         } else {
             $query = Car::where('user_id', $user->id);
         }
+        
+
+        $query->with('auctions');
         
         // Filter by condition
         if ($request->has('condition')) {
@@ -294,7 +298,8 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $car = Car::find($id);
-        
+        $car->load('dealer');
+
         if (!$car) {
             return response()->json([
                 'status' => 'error',
@@ -309,12 +314,14 @@ class CarController extends Controller
                 AuctionStatus::SCHEDULED->value,
                 AuctionStatus::ACTIVE->value
             ])->first();
-        
+              
+         $activeAuction->load('bids');    
         return response()->json([
             'status' => 'success',
             'data' => [
                 'car' => $car,
-                'active_auction' => $activeAuction
+                'active_auction' => $activeAuction,
+                'total_bids' => $activeAuction->bids->count()
             ]
         ]);
     }

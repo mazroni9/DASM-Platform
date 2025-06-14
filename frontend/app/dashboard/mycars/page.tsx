@@ -43,11 +43,10 @@ const getAuctionStatusTextAndIcon = (status: string) => {
     prevButtonText: "السابق"
 }
          const getData=(PaginationData)=>{
-           axios.get('http://localhost:8000/api/cars?page=' + PaginationData.page).then(response => {
+           axios.get('/api/cars?page=' + PaginationData.page).then(response => {
              const carsData = response.data.data.data || response.data.data;
                   setPagination(response.data.data)
                   setCars(carsData);
-
         });
         }
 
@@ -70,7 +69,7 @@ const getAuctionStatusTextAndIcon = (status: string) => {
                   const carsData = response.data.data.data || response.data.data;
                   setPagination(response.data.data)
                   setCars(carsData);
-
+                  console.log(carsData);
               }
                   
           } catch (error) {
@@ -132,11 +131,15 @@ const getAuctionStatusTextAndIcon = (status: string) => {
 
         {/* بيانات السيارة */}
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
-          {car.make} - {car.year}
+          {car.make} - {car.year} 
         </h2>
         <p className="text-sm text-gray-500 mb-1">العداد: {car.odometer}</p>
         <p className="text-sm text-gray-500 mb-1">المحرك: {car.engine}</p>
         <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
+        <p className="text-gray-500">هل تمت الموافقة ؟
+          
+        { car.auctions.length == 0 ? <span className="text-red-600"> يرجى إضافتها إلى المزاد</span> : car.auctions.map(el=> el.control_room_approved)  ? <span className="text-green-600">تمت الموافقه</span>:<span className="text-red">تحت المعالجة</span> }
+        </p> 
         <p className="text-sm text-gray-500 mb-1">حالة المزاد: {getAuctionStatusTextAndIcon(car.auction_status).text}</p>
         <p className="text-sm text-gray-500 mb-1">الوصف: {car.description}</p>
         <p className="text-sm font-medium mt-2">
