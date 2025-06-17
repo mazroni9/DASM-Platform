@@ -6,6 +6,7 @@ use App\Enums\AuctionStatus;
 use App\Models\Auction;
 use App\Models\Car;
 use App\Models\Bid;
+use App\Models\Dealer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -77,7 +78,7 @@ class AuctionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'car_id' => 'required|exists:cars,id',
+            'car_id' => 'required',
             'starting_bid' => 'required|numeric|min:0',
             'reserve_price' => 'nullable|numeric|min:0',
             'start_time' => 'required|date|after_or_equal:today',
@@ -148,6 +149,87 @@ class AuctionController extends Controller
             'data' => $auction
         ], 201);
     }
+
+    /**
+     * add to acution
+     */
+    public function addToAuction(Request $request){
+
+
+            $validator = Validator::make($request->all(), [
+            'car_id' => 'required',
+            'starting_bid' => 'required|numeric|min:0',
+            'reserve_price' => 'nullable|numeric|min:0',
+            'min_price' => 'required|numeric|min:0',
+            'max_price' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $car = Car::find($request->car_id);
+
+        $isOwner = false;
+        if ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id) {
+            $isOwner = true;
+        } elseif ($car->user_id === $user->id) {
+            $isOwner = true;
+        }
+        
+        if (!$isOwner) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You can only create auctions for your own cars'
+            ], 403);
+        }
+
+        // Check if car is available for auction
+        if ($car->auction_status !== 'available') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This car is not available for auction'
+            ], 400);
+        }
+
+        
+        // Create the auction
+        $auction = new Auction();
+        $auction->car_id = $request->car_id;
+        $auction->starting_bid = $request->starting_bid;
+        $auction->current_bid = $request->starting_bid;
+        $auction->reserve_price = $request->reserve_price ?? 0;
+        $auction->min_price = $request->min_price;
+        $auction->max_price = $request->max_price;
+        $auction->start_time =Carbon::now();
+        $auction->end_time = Carbon::parse($request->start_time)->addMinutes(60);
+        // Set initial status based on start time
+        $now = Carbon::now();
+        if (Carbon::parse($request->start_time) <= $now) {
+            $auction->status = AuctionStatus::ACTIVE;
+        } else {
+            $auction->status = AuctionStatus::SCHEDULED;
+        }
+        
+        $auction->save();
+        
+        // Update car status
+        $car->auction_status = 'in_auction';
+        $car->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auction created successfully',
+            'data' => $auction
+        ], 201);
+    }
+
+
+    
 
     /**
      * Display the specified auction
@@ -378,6 +460,35 @@ class AuctionController extends Controller
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
+        
+        // Sort options
+        $sortField = $request->input('sort_by', 'created_at');
+        $sortDirection = $request->input('sort_dir', 'desc');
+        $allowedSortFields = ['created_at', 'start_time', 'end_time', 'current_bid'];
+        
+        if (in_array($sortField, $allowedSortFields)) {
+            $query->orderBy($sortField, $sortDirection);
+        }
+        
+        $auctions = $query->paginate(10);
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $auctions
+        ]);
+    }
+
+
+
+    public function approvedAuctions(Request $request)
+    {
+        $user = Auth::user();
+        $query = null;
+        $dealer=Dealer::where('user_id', $user->id)->first();
+        $query = Auction::where('control_room_approved', true);
+        
+        $query->with(['car', 'bids',$dealer]);
+        
         
         // Sort options
         $sortField = $request->input('sort_by', 'created_at');

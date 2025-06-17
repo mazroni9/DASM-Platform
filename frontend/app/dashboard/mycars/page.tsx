@@ -2,15 +2,16 @@
 
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useMemo, useState } from 'react';
-import { Package, DollarSign, Truck, CheckCircle, MessageSquare, Loader2 } from 'lucide-react';
+import { Package, DollarSign, Truck, CheckCircle, MessageSquare, Loader2, Route } from 'lucide-react';
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter  } from "next/navigation";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import {Pagination} from 'react-laravel-paginex'
 import axios from "axios";
 import { PagesOutlined } from "@mui/icons-material";
-
+import { Button } from "@/components/ui/button";
+import Link from 'next/link';
 
 
 
@@ -20,6 +21,8 @@ const getAuctionStatusTextAndIcon = (status: string) => {
   switch (status) {
     case 'available':
       return { text: 'متوفر', color: 'text-orange-600', icon: <DollarSign size={16} /> };
+    case 'in_auction':
+  return { text: 'في المزاد', color: 'text-orange-600', icon: <DollarSign size={16} /> };
     default:
       return { text: status, color: 'text-gray-500', icon: null };
   }
@@ -29,6 +32,9 @@ const getAuctionStatusTextAndIcon = (status: string) => {
     const [PaginationData,setPagination]=useState([])
     const [cars, setCars] = useState([]);
     const { user, isLoggedIn } = useAuth();
+    const [processingCarId, setProcessingCarId] = useState<number | null>(
+        null
+    );
     const router = useRouter();
     let options={
     containerClass: "pagination-container",
@@ -37,11 +43,10 @@ const getAuctionStatusTextAndIcon = (status: string) => {
     prevButtonText: "السابق"
 }
          const getData=(PaginationData)=>{
-           axios.get('http://localhost:8000/api/cars?page=' + PaginationData.page).then(response => {
+           axios.get('/api/cars?page=' + PaginationData.page).then(response => {
              const carsData = response.data.data.data || response.data.data;
                   setPagination(response.data.data)
                   setCars(carsData);
-
         });
         }
 
@@ -60,12 +65,11 @@ const getAuctionStatusTextAndIcon = (status: string) => {
           if (!isLoggedIn) return;
           try {
               const response = await api.get("/api/cars");
-
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
                   setPagination(response.data.data)
                   setCars(carsData);
-
+                  console.log(carsData);
               }
                   
           } catch (error) {
@@ -127,16 +131,36 @@ const getAuctionStatusTextAndIcon = (status: string) => {
 
         {/* بيانات السيارة */}
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
-          {car.make} - {car.year}
+          {car.make} - {car.year} 
         </h2>
         <p className="text-sm text-gray-500 mb-1">العداد: {car.odometer}</p>
         <p className="text-sm text-gray-500 mb-1">المحرك: {car.engine}</p>
         <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
+        <p className="text-gray-500">هل تمت الموافقة ؟
+          
+        {car.auctions.map(el=>{
+            if(el.control_room_approved){
+              return <span className="text-green-600">تمت الموافقة للمزاد </span>
+            }else{
+               return <span className="text-red-600">تحت المعالجة </span>
+            }
+        })}
+        </p> 
         <p className="text-sm text-gray-500 mb-1">حالة المزاد: {getAuctionStatusTextAndIcon(car.auction_status).text}</p>
         <p className="text-sm text-gray-500 mb-1">الوصف: {car.description}</p>
         <p className="text-sm font-medium mt-2">
           سعر التقييم: <span className="text-blue-600">{car.evaluation_price.toLocaleString('ar-EG')} ريال</span>
         </p>
+        <br/>
+        {
+          car.auction_status == "available" &&
+           <Link  className=" hover:bg-green-700 text-red-600  border-sky-800 hover:bg-sky-800 hover:text-sky-100" href={`/add/auction/${car.id}`}
+            id={car.id}
+            key={car.id}>
+            <label htmlFor="">إضافة للمزاد</label>
+          </Link>
+        }
+       
       </div>
     ))}
   </div>

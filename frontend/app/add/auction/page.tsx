@@ -6,6 +6,7 @@ import { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { Upload, FileX, Car, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from "@/lib/axios";
 import toast from 'react-hot-toast';
+import { useParams } from 'next/navigation';
 
 /*
         $auction->car_id = $car->car_id;
@@ -29,7 +30,7 @@ interface AuctionData {
   open_price:number
 }
 
-export default function AuctionDataEntryForm() {
+export default async function AuctionDataEntryForm() {
   const [formData, setFormData] = useState<AuctionData>({
   starting_bid: 0,
   reserve_price: 0,
@@ -42,6 +43,11 @@ export default function AuctionDataEntryForm() {
   end_time:"",
   });
 
+  const [car, setCarDetails] = useState([]);
+  const params = useParams<{ tag: string; item: string }>()
+  console.log(params);
+  //let carDetails= await api.get('/cars');
+  
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{

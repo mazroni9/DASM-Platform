@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
+use App\Models\Dealer;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,9 @@ class CarController extends Controller
         } else {
             $query = Car::where('user_id', $user->id);
         }
+        
+
+        $query->with('auctions');
         
         // Filter by condition
         if ($request->has('condition')) {
@@ -111,17 +115,19 @@ class CarController extends Controller
      */
     public function store(Request $request)
     {
+
+
         $validator = Validator::make($request->all(), [
             'make' => 'required|string|max:50',
             'model' => 'required|string|max:50',
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'vin' => 'required|string|unique:cars,vin|max:17',
             'odometer' => 'required|integer|min:0',
-            'condition' => 'required|string|in:excellent,good,fair,poor',
+            'condition' => 'required|string',
             'evaluation_price' => 'required|numeric|min:0',
             'color' => 'nullable|string|max:30',
             'engine' => 'nullable|string|max:50',
-            'transmission' => 'nullable|string|in:automatic,manual,cvt',
+            'transmission' => 'nullable|string',
             'description' => 'nullable|string'
         ]);
 
@@ -133,7 +139,6 @@ class CarController extends Controller
         }
         
         $user = Auth::user();
-        
         $car = new Car();
         
         // Associate car with dealer if user is dealer, otherwise with user directly
@@ -278,6 +283,45 @@ class CarController extends Controller
             'data' => [
                 'car' => $car,
                 'active_auction' => $activeAuction
+            ]
+        ]);
+    }
+
+
+    /**
+     * Display the specified car
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function showOnly($id)
+    {
+        $user = Auth::user();
+        $car = Car::find($id);
+        $car->load('dealer');
+
+        if (!$car) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Car not found or you do not have permission to view it',
+                'data'=>$car
+            ], 404);
+        }
+        
+        // Get active auction if exists
+        $activeAuction = $car->auctions()
+            ->whereIn('status', [
+                AuctionStatus::SCHEDULED->value,
+                AuctionStatus::ACTIVE->value
+            ])->first();
+              
+         $activeAuction->load('bids');    
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'car' => $car,
+                'active_auction' => $activeAuction,
+                'total_bids' => $activeAuction->bids->count()
             ]
         ]);
     }

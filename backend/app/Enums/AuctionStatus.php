@@ -5,7 +5,7 @@ namespace App\Enums;
 enum AuctionStatus: string
 {
     case SCHEDULED = 'scheduled';
-    case ACTIVE = 'active';
+    case ACTIVE = 'live';
     case ENDED = 'ended';
     case CANCELED = 'canceled';
     case FAILED = 'failed';
@@ -31,7 +31,7 @@ enum AuctionStatus: string
     {
         return match($this) {
             self::SCHEDULED => 'Scheduled',
-            self::ACTIVE => 'Active',
+            self::ACTIVE => 'Live',
             self::ENDED => 'Ended',
             self::CANCELED => 'Canceled',
             self::FAILED => 'Failed',
