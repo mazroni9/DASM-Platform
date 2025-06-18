@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
+    Route::get('/approved-auctions', [AuctionController::class, 'index']);
     //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);

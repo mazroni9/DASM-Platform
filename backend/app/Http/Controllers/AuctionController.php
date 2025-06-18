@@ -6,6 +6,7 @@ use App\Enums\AuctionStatus;
 use App\Models\Auction;
 use App\Models\Car;
 use App\Models\Bid;
+use App\Models\Dealer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -153,9 +154,26 @@ class AuctionController extends Controller
      * add to acution
      */
     public function addToAuction(Request $request){
+
+
+            $validator = Validator::make($request->all(), [
+            'car_id' => 'required',
+            'starting_bid' => 'required|numeric|min:0',
+            'reserve_price' => 'nullable|numeric|min:0',
+            'min_price' => 'required|numeric|min:0',
+            'max_price' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         $user = Auth::user();
         $car = Car::find($request->car_id);
-        console.log($car);
+
         $isOwner = false;
         if ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id) {
             $isOwner = true;
@@ -181,14 +199,14 @@ class AuctionController extends Controller
         
         // Create the auction
         $auction = new Auction();
-        $auction->car_id = $car->car_id;
-        $auction->starting_bid = $car->starting_bid;
-        $auction->current_bid = $car->starting_bid;
-        $auction->reserve_price = $car->reserve_price ?? 0;
-        $auction->start_time = $car->start_time;
-        $auction->end_time = $car->end_time;
-        $auction->description = $car->description;
-        
+        $auction->car_id = $request->car_id;
+        $auction->starting_bid = $request->starting_bid;
+        $auction->current_bid = $request->starting_bid;
+        $auction->reserve_price = $request->reserve_price ?? 0;
+        $auction->min_price = $request->min_price;
+        $auction->max_price = $request->max_price;
+        $auction->start_time =Carbon::now();
+        $auction->end_time = Carbon::parse($request->start_time)->addMinutes(60);
         // Set initial status based on start time
         $now = Carbon::now();
         if (Carbon::parse($request->start_time) <= $now) {
@@ -442,6 +460,35 @@ class AuctionController extends Controller
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
+        
+        // Sort options
+        $sortField = $request->input('sort_by', 'created_at');
+        $sortDirection = $request->input('sort_dir', 'desc');
+        $allowedSortFields = ['created_at', 'start_time', 'end_time', 'current_bid'];
+        
+        if (in_array($sortField, $allowedSortFields)) {
+            $query->orderBy($sortField, $sortDirection);
+        }
+        
+        $auctions = $query->paginate(10);
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $auctions
+        ]);
+    }
+
+
+
+    public function approvedAuctions(Request $request)
+    {
+        $user = Auth::user();
+        $query = null;
+        $dealer=Dealer::where('user_id', $user->id)->first();
+        $query = Auction::where('control_room_approved', true);
+        
+        $query->with(['car', 'bids',$dealer]);
+        
         
         // Sort options
         $sortField = $request->input('sort_by', 'created_at');

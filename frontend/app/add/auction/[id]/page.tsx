@@ -12,17 +12,18 @@ import { BackToDashboard } from '@/components/dashboard/BackToDashboard';
 interface AuctionData {
   car_id:number;
   starting_bid: number;
-  start_time: string;
-  end_time: string;
+  min_price: number;
+  max_price: number;
 }
+let auctionData={
+  car_id:0,
+  starting_bid: 0,
+  min_price:0,
+  max_price:0,
+  }
 
 export default  function AuctionDataEntryForm() {
-  const [formData, setFormData] = useState<AuctionData>({
-    car_id:0,
-  starting_bid: 0,
-  start_time: "",
-  end_time:"",
-  });
+  const [formData, setFormData] = useState<AuctionData>(auctionData);
   const params = useParams<{ tag: string; item: string }>()
   let carId= params['id'];
 
@@ -54,7 +55,7 @@ export default  function AuctionDataEntryForm() {
       
      
       // التحقق من البيانات المدخلة
-      const requiredFields = ['starting_bid', 'start_time','end_time'];
+      const requiredFields = ['starting_bid', 'min_price','max_price'];
       for (const field of requiredFields) {
         if (!formData[field as keyof FormData]) {
           throw new Error(`حقل ${field.replace('_', ' ')} مطلوب`);
@@ -67,7 +68,7 @@ export default  function AuctionDataEntryForm() {
          try { 
           
           formData['car_id']=carId;
-          const response = await api.post('/api/auctions', formData, {
+          const response = await api.post('/api/auction', formData, {
               headers: {
                 'Content-Type': 'application/json'
               }
@@ -82,12 +83,7 @@ export default  function AuctionDataEntryForm() {
                   message: 'تم إضافة السيارة بنجاح'
                 });
             // إعادة تعيين النموذج
-            setFormData({
-                car_id:0,
-  starting_bid: 0,
-  start_time: "",
-  end_time:"",
-            });
+            setFormData(auctionData);
             
             } else {
                 toast.error("فشل في إضافة السيارة");
@@ -120,7 +116,7 @@ export default  function AuctionDataEntryForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* بيانات السيارة الأساسية */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
+          <div hidden>
             <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">رقم مميز</label>
             <input
               type="text"
@@ -131,7 +127,8 @@ export default  function AuctionDataEntryForm() {
               placeholder="id"
               required
               disabled
-              readOnly />
+              readOnly
+               />
           </div>
           <div>
             <label htmlFor="starting_bid" className="block text-sm font-medium text-gray-700 mb-1">سعر بدأ المزاد</label>
@@ -145,24 +142,24 @@ export default  function AuctionDataEntryForm() {
               required />
           </div>
           <div>
-            <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-1">  وقت بدأالمزاد</label>
+            <label htmlFor="min_price" className="block text-sm font-medium text-gray-700 mb-1"> أقل سعر للسيارة</label>
             <input
-              type="date"
-              id="start_time"
-              name="start_time"
-              value={formData.start_time}
+              type="number"
+              id="min_price"
+              name="min_price"
+              value={formData.min_price}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required />
           </div>
 
           <div>
-            <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-1">  وقت نهاية المزاد</label>
+            <label htmlFor="max_price" className="block text-sm font-medium text-gray-700 mb-1">  أعلى سعر للسيارة</label>
             <input
-              type="date"
-              id="end_time"
-              name="end_time"
-              value={formData.end_time}
+              type="number"
+              id="max_price"
+              name="max_price"
+              value={formData.max_price}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required />
@@ -190,12 +187,7 @@ export default  function AuctionDataEntryForm() {
           <button
             type="button"
             onClick={() => {
-              setFormData({
-                car_id: 0,
-                starting_bid: 0,
-                start_time: "",
-                end_time: "",
-              });
+              setFormData(auctionData);
             } }
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >

@@ -40,7 +40,7 @@ export default  function InstantAuctionPage() {
       async function fetchAuctions() {
            if (!isLoggedIn) return;
           try {
-              const response = await api.get('/api/my-auctions');
+              const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
                     // تعامل مع هيكل البيانات من API
@@ -80,7 +80,7 @@ export default  function InstantAuctionPage() {
           <thead className="bg-gray-100">
             <tr>
               {[
-                'الماركة', 'الموديل', 'سنة الصنع', 'رقم اللوحة', 'العداد', 'حالة السيارة', 'الحالة في المزاد',
+                'الماركة', 'الموديل', 'سنة الصنع', 'رقم اللوحة', 'العداد', 'حالة السيارة', 
                 'لون السيارة', 'نوع الوقود', 'المزايدات المقدمة', 'سعر الافتتاح', 'اقل سعر', 'اعلى سعر',
                 'اخر سعر', 'التغير', 'نسبة التغير', 'نتيجة المزايدة', 'تفاصيل'
               ].map((header, idx) => (
@@ -94,14 +94,13 @@ export default  function InstantAuctionPage() {
                 <td className="p-2 text-sm">{car['car'].make}</td>
                 <td className="p-2 text-sm">{car['car'].model}</td>
                 <td className="p-2 text-sm">{car['car'].year}</td>
-                <td className="p-2 text-sm"></td>
+                <td className="p-2 text-sm">{car['car'].plate}</td>
                 <td className="p-2 text-sm">{car['car'].odmeter}</td>
                 <td className="p-2 text-sm">{car['car'].condition}</td>
-                <td className="p-2 text-sm">{car['car'].auction_status}</td>
                 <td className="p-2 text-sm">{car['car'].color}</td>
                 <td className="p-2 text-sm">{car['car'].engine}</td>
-                <td className="p-2 text-sm">{car["current_bid"]}</td>
-                <td className="p-2 text-sm">{car["opening_price"]}</td>
+                <td className="p-2 text-sm">{car["bids"].length}</td>
+                <td className="p-2 text-sm">{car["minimum_bid"]}</td>
                 <td className="p-2 text-sm">{car["minimum_bid"]}</td>
                 <td className="p-2 text-sm">{car["maximum_bid"]}</td>
                 <td className="p-2 text-sm">{car["current_bid"]}</td>

@@ -15,13 +15,14 @@
 // ✅ صفحة عرض المزاد الصامت مع رابط للتفاصيل السيارة
 // المسار: /pages/silent/page.tsx
 
-import { useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Car } from 'lucide-react';
+import { ChevronRight, Car, AlertCircle, CheckCircle2 } from 'lucide-react';
 import CarDataEntryButton from '@/components/CarDataEntryButton';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { useParams, useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getCurrentAuctionType(): string {
@@ -37,9 +38,24 @@ function getCurrentAuctionType(): string {
   }
 }
 
+interface BidingData {
+  auction_id:number;
+  user_id: number;
+  bid_amount: number;
+}
+let bidingData={
+  auction_id:0,
+  user_id: 0,
+  bid_amount:0
+  }
 
 export default function CarDetailPage() {
-  
+    const [formData, setFormData] = useState<BidingData>(bidingData);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +63,73 @@ export default function CarDetailPage() {
   const router = useRouter();
  const params = useParams<{ tag: string; item: string }>()
   let carId= params['id'];
+  const [isOwner,setIsOwner] = useState(false);
+
+
+   // التعامل مع تغيير قيم حقول النموذج
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    };
+  
+  // تقديم النموذج
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitResult(null);
+    try {
+      
+     
+      // التحقق من البيانات المدخلة
+      const requiredFields = ['bid_amount'];
+      for (const field of requiredFields) {
+        if (!formData[field as keyof BidingData]) {
+          throw new Error(`حقل ${field.replace('_', ' ')} مطلوب`);
+        }
+      }
+
+      // إرسال بيانات السيارة مع روابط الصور والتقارير
+         try { 
+          
+          const response = await api.post('/api/auctions/bid', formData, {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            })
+
+            if (response.data.status === "success") {
+                 // تم الحفظ بنجاح
+                setSubmitResult({
+                  success: true,
+                  message: 'تم إضافة  بنجاح'
+                });
+            // إعادة تعيين النموذج
+                 setFormData(bidingData);
+                 setTimeout(()=>{
+                  window.location.reload();
+                 },2000)
+            } else {
+                toast.error("فشل في إضافة ");
+            }
+        } catch (error) {
+            console.error("Error in adding car user:", error);
+             toast.error("فشل في إضافة ");
+        }
+    
+    } catch (error: any) {
+      console.error('خطأ في حفظ البيانات:', error);
+      setSubmitResult({
+        success: false,
+        message: error.message || 'حدث خطأ أثناء حفظ البيانات'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+    
 // Verify user is authenticated
 useEffect(() => {
     if (!isLoggedIn) {
@@ -62,11 +145,23 @@ useEffect(() => {
           try {
             
               const response = await api.get(`/api/car/${carId}`);
-              console.log(response);
+
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
+                  console.log(carsData);
                     // تعامل مع هيكل البيانات من API
                   setItem(carsData);
+                  formData['auction_id']= carsData.active_auction.id
+                  formData['user_id']=user.id;
+                   let car_user_id = carsData.car.user_id;
+                   let current_user_id=user.id;
+                   let dealer_user_id = carsData.car.dealer.user_id;
+                  if(current_user_id == car_user_id ){
+                    setIsOwner(true);
+                  }else if(dealer_user_id == current_user_id){
+                      setIsOwner(true);
+                  }
+                
               }
                   
           } catch (error) {
@@ -127,6 +222,7 @@ useEffect(() => {
     );
   }
 
+
   // عرض بيانات السيارة إذا تم العثور عليها
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -140,7 +236,7 @@ useEffect(() => {
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
             <span>العودة إلى المزادات</span>
           </Link>
-          
+            { isOwner && (
           <button
             onClick={async () => {
               const type = getCurrentAuctionType();
@@ -168,17 +264,56 @@ useEffect(() => {
           >
             تأكيد البيع
           </button>
+          )}
         </div>
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-            {item.make} {item.model} - {item.year}
-          </h1>
+            {/* رسائل النظام */}
+        {submitResult && (
+          <div className={`p-4 rounded-md ${submitResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="flex items-start">
+              {submitResult.success ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-500 ml-2" />
+              )}
+              <p className={submitResult.success ? 'text-green-700' : 'text-red-700'}>
+                {submitResult.message}
+              </p>
+            </div>
+          </div>
+        )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* قسم الصور (يمكن إضافته لاحقاً) */}
-            <div className="bg-gray-100 rounded-lg h-80 flex items-center justify-center">
-              <div className="text-gray-500">صورة السيارة</div>
+            <div className="rounded-lg flex-direction-column items-center">
+              <div className="text-gray-500">
+                <img src="https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg" alt="Car Image" className="w-full h-60" />
+              </div>
+            {!isOwner && (
+              <div className="max-w-md mx-auto bg-white p-6 rounded-3xl shadow-lg border" dir="rtl">
+      <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">تقديم عرض على السيارة</h2>
+      <form onSubmit={handleSubmit}>
+        <label className="block mb-2 font-semibold text-gray-700">قيمة العرض (ريال سعودي):</label>
+        <input
+          type="number"
+           id="bid_amount"
+          name="bid_amount"
+          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          placeholder='مبلغ العرض'
+          value={formData.bid_amount}
+          onChange={handleInputChange}
+          required
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
+        >
+          إرسال العرض
+        </button>
+      </form>
+    </div>
+    )}
             </div>
             
             {/* بيانات السيارة */}
@@ -208,7 +343,7 @@ useEffect(() => {
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">رقم اللوحة</p>
-                    <p className="font-semibold">{}</p>
+                    <p className="font-semibold">{item['car'].plate}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">رقم العداد</p>
@@ -216,7 +351,7 @@ useEffect(() => {
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">نوع الوقود</p>
-                    <p className="font-semibold">{item.engine || '-'}</p>
+                    <p className="font-semibold">{item['car'].engine || '-'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">حالة السيارة</p>
@@ -233,19 +368,19 @@ useEffect(() => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-500 text-sm">سعر الإفتتاح</p>
-                      <p className="font-semibold">{item['active_auction'].opening_price ?.toLocaleString() || '-'} ريال</p>
+                      <p className="font-semibold">{item['active_auction'].minimum_bid ?.toLocaleString() || '-'} ريال</p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">أقل سعر</p>
-                      <p className="font-semibold">{ item['active_auction'].min_price ?.toLocaleString() || '-'} ريال</p>
+                      <p className="font-semibold">{ item['active_auction'].minimum_bid ?.toLocaleString() || '-'} ريال</p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">أعلى سعر</p>
-                      <p className="font-semibold">{item['active_auction'].max_price ?.toLocaleString() || '-'} ريال</p>
+                      <p className="font-semibold">{item['active_auction'].maximum_bid ?.toLocaleString() || '-'} ريال</p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">المزايدات المقدمة</p>
-                      <p className="font-semibold">{item['active_auction'].lsat_bid_time || '0'}</p>
+                      <p className="font-semibold">{ item['total_bids'] || '0'}</p>
                     </div>
                   </div>
                 </div>
