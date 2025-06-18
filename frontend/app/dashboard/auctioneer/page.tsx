@@ -14,7 +14,6 @@ import { WebSocketProvider, useWebSocket } from '@/app/lib/websocket-provider';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
-export const revalidate = 0;
 
 interface User {
   id: number;
