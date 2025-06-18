@@ -31,10 +31,7 @@ Route::post('/resend-verification', [AuthController::class, 'resendVerification'
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-// Cloudinary test endpoints (remove in production)
-use App\Http\Controllers\CloudinaryTestController;
-Route::get('/cloudinary/test-config', [CloudinaryTestController::class, 'testConfig']);
-Route::get('/cloudinary/test-upload', [CloudinaryTestController::class, 'testUpload']);
+// Cloudinary test endpoints removed for security
 
 // Public auction browsing 
 Route::get('/auctions', [AuctionController::class, 'index']);

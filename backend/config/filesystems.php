@@ -60,9 +60,9 @@ return [
 
         'cloudinary' => [
             'driver' => 'cloudinary',
-            'cloud' => env('CLOUDINARY_CLOUD_NAME', 'djwcvewmf'),
-            'key' => env('CLOUDINARY_API_KEY', '238883787975283'),
-            'secret' => env('CLOUDINARY_API_SECRET', '_5B112A1vNqzO8TOfU1z1Y_djGU'),
+            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
+            'key' => env('CLOUDINARY_API_KEY'),
+            'secret' => env('CLOUDINARY_API_SECRET'),
             'secure' => true,
         ],
     ],

@@ -7,38 +7,31 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
 
 class CloudinaryServiceProvider extends ServiceProvider
-{
-    /**
+{    /**
      * Register services.
      */
     public function register(): void
     {
         $this->app->singleton(Cloudinary::class, function ($app) {
             try {
-                // Get configuration from multiple sources with fallbacks
-                $cloudName = config('cloudinary.cloud_name') 
-                    ?? config('filesystems.disks.cloudinary.cloud') 
-                    ?? env('CLOUDINARY_CLOUD_NAME') 
-                    ?? 'djwcvewmf';
-                    
-                $apiKey = config('cloudinary.api_key') 
-                    ?? config('filesystems.disks.cloudinary.key') 
-                    ?? env('CLOUDINARY_API_KEY') 
-                    ?? '238883787975283';
-                    
-                $apiSecret = config('cloudinary.api_secret') 
-                    ?? config('filesystems.disks.cloudinary.secret') 
-                    ?? env('CLOUDINARY_API_SECRET') 
-                    ?? '_5B112A1vNqzO8TOfU1z1Y_djGU';
+                // Get configuration from environment variables only
+                $cloudName = env('CLOUDINARY_CLOUD_NAME');
+                $apiKey = env('CLOUDINARY_API_KEY');
+                $apiSecret = env('CLOUDINARY_API_SECRET');
                 
-                // Log config values (without revealing secrets)
+                // Ensure all required config is available
+                if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
+                    throw new \Exception('Cloudinary configuration missing. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file.');
+                }
+                
+                // Log config status (without revealing secrets)
                 Log::debug('Cloudinary configuration loaded', [
-                    'cloud_name' => $cloudName,
+                    'cloud_name' => !empty($cloudName) ? 'set' : 'not set',
                     'api_key' => !empty($apiKey) ? 'set' : 'not set',
                     'api_secret' => !empty($apiSecret) ? 'set' : 'not set',
                 ]);
                 
-                // Return the configured Cloudinary instance with SSL handling
+                // Return the configured Cloudinary instance
                 return new Cloudinary([
                     'cloud' => [
                         'cloud_name' => $cloudName,
@@ -62,22 +55,8 @@ class CloudinaryServiceProvider extends ServiceProvider
                     'line' => $e->getLine()
                 ]);
                 
-                // Return a default instance as fallback
-                return new Cloudinary([
-                    'cloud' => [
-                        'cloud_name' => 'djwcvewmf',
-                        'api_key' => '238883787975283',
-                        'api_secret' => '_5B112A1vNqzO8TOfU1z1Y_djGU',
-                    ],
-                    'url' => [
-                        'secure' => true,
-                    ],
-                    'http' => [
-                        'verify' => false,
-                        'timeout' => 30,
-                        'connect_timeout' => 10
-                    ]
-                ]);
+                // Don't return a fallback with hardcoded credentials
+                throw $e;
             }
         });
     }
