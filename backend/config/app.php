@@ -160,7 +160,8 @@ return [
         Illuminate\View\ViewServiceProvider::class,
 
         // Package Service Providers...
-        CloudinaryLabs\CloudinaryLaravel\CloudinaryServiceProvider::class,
+        // Use our custom CloudinaryServiceProvider instead of the package one
+        App\Providers\CloudinaryServiceProvider::class,
 
         // Application Service Providers...
         App\Providers\AppServiceProvider::class,

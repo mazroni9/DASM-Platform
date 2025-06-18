@@ -30,17 +30,10 @@ interface AuthState {
         needsVerification?: boolean;
         pendingApproval?: boolean;
     }>;
-    verifyCode: (
-        email: string,
-        code: string
-    ) => Promise<{ success: boolean; error?: string; redirectTo?: string }>;
     logout: () => Promise<void>;
     refreshToken: () => Promise<boolean>;
     initializeFromStorage: () => Promise<boolean>;
 }
-
-// Create a proper base URL with full URL including http/https
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // Cache duration for profile data (5 minutes)
 const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
@@ -196,100 +189,64 @@ export const useAuthStore = create<AuthState>()(
                         ] = `Bearer ${data.access_token}`;
                     }
 
-                    // redirect based on user role
-                    const redirectPath =
-                        userData.role === "admin"
-                            ? "/admin"
-                            : userData.role === "dealer"
-                            ? "/dealer"
-                            : "/dashboard";
-
-                    return { success: true, redirectTo: redirectPath };
+                    return { success: true };
                 } catch (err: any) {
-                    // Log detailed error in development mode only
                     console.error("Login error details:", err);
 
-                    // Extract user-friendly error message if available, or use generic message
                     let errorMessage =
                         "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.";
 
-                    if (err.response) {
-                        // The request was made and the server responded with an error status
-                        if (err.response.status === 401) {
-                            errorMessage = "بيانات الاعتماد غير صحيحة";
-                        } else if (err.response.status === 422) {
-                            // Special handling for account pending approval
-                            if (
-                                err.response.data &&
-                                err.response.data.message &&
-                                err.response.data.message.includes(
-                                    "pending approval"
-                                )
-                            ) {
-                                set({ loading: false });
-                                return {
-                                    success: false,
-                                    pendingApproval: true,
-                                    error: "حسابك في انتظار موافقة المدير. سيتم إشعارك عندما يتم تفعيل حسابك.",
-                                };
-                            }
-                            errorMessage =
-                                "بيانات غير صحيحة. يرجى التحقق من المعلومات المدخلة.";
-                        } else if (
-                            err.response.data &&
-                            err.response.data.message
+                    if (err.response?.data) {
+                        const responseData = err.response.data;
+
+                        // Check for account not active (status 403)
+                        if (
+                            err.response.status === 403 &&
+                            responseData.message
                         ) {
-                            // Use server message only if it's not a detailed error
-                            const serverMessage = err.response.data.message;
-                            if (
-                                !serverMessage.includes("SQLSTATE") &&
-                                !serverMessage.includes("relation") &&
-                                serverMessage.length < 100
-                            ) {
-                                errorMessage = serverMessage;
+                            set({ loading: false });
+                            return {
+                                success: false,
+                                pendingApproval: true,
+                                error: responseData.message, // Use backend message directly
+                            };
+                        }
+
+                        // Check for email not verified (status 401)
+                        if (
+                            err.response.status === 401 &&
+                            responseData.message === "Email not verified"
+                        ) {
+                            set({ loading: false });
+                            return { success: false, needsVerification: true };
+                        }
+
+                        // For validation errors, use the message or first error
+                        if (err.response.status === 422) {
+                            if (responseData.error) {
+                                errorMessage = responseData.error; // Laravel validation errors
+                            } else if (responseData.message) {
+                                errorMessage = responseData.message;
+                            } else if (responseData.first_error) {
+                                errorMessage = responseData.first_error;
                             }
                         }
+
+                        // For other errors, prefer the message field from backend
+                        else if (responseData.message) {
+                            errorMessage = responseData.message;
+                        }
+
+                        // Fallback to error field if message doesn't exist
+                        else if (responseData.error) {
+                            errorMessage = responseData.error;
+                        }
                     } else if (err.request) {
-                        // The request was made but no response was received
+                        // Network error
                         errorMessage =
                             "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
                     }
 
-                    set({ loading: false, error: errorMessage });
-                    return { success: false, error: errorMessage };
-                }
-            },
-
-            verifyCode: async (email, code) => {
-                set({ loading: true, error: null });
-                try {
-                    const response = await api.post(`/api/verify-email`, {
-                        token: code,
-                    });
-
-                    if (response.data.status === "success") {
-                        // After verification, try to login again
-                        const loginResult = await get().login(email, "");
-                        if (loginResult.success) {
-                            // Determine redirect path based on user role
-                            const user = get().user;
-                            const redirectPath =
-                                user?.role === "admin"
-                                    ? "/admin/dashboard"
-                                    : "/dashboard";
-                            return { success: true, redirectTo: redirectPath };
-                        } else {
-                            return {
-                                success: false,
-                                error: "تم التحقق بنجاح، يرجى تسجيل الدخول",
-                            };
-                        }
-                    }
-
-                    return { success: false, error: "فشل التحقق من الرمز" };
-                } catch (err: any) {
-                    const errorMessage =
-                        err.response?.data?.message || "فشل التحقق من الكود";
                     set({ loading: false, error: errorMessage });
                     return { success: false, error: errorMessage };
                 }

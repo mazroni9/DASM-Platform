@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -24,7 +25,8 @@ class User extends Authenticatable
         'email_verification_token',
         'password_reset_token',
         'password_reset_expires_at',
-        'is_active'
+        'is_active',
+        'status'
     ];
 
     // Casts for automatic type conversion
@@ -32,6 +34,7 @@ class User extends Authenticatable
         'is_active' => 'boolean',
         'email_verified_at' => 'datetime',
         'password_reset_expires_at' => 'datetime',
+        'status' => UserStatus::class,
     ];
 
     // Relationships
@@ -67,6 +70,7 @@ class User extends Authenticatable
             'email_verified_at' => now(),
             'email_verification_token' => null,
             'is_active' => false,
+            'status' => UserStatus::PENDING,
         ])->save();
     }
 }

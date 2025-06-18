@@ -15,11 +15,9 @@ export function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [verificationCode, setVerificationCode] = useState("");
-    const [showVerification, setShowVerification] = useState(false);
 
-    // Get login and verifyCode functions from the auth store
-    const { login, verifyCode } = useAuthStore();
+    // Get login function from the auth store
+    const { login } = useAuthStore();
 
     // Check if user is already logged in
     useEffect(() => {
@@ -37,6 +35,8 @@ export function LoginForm() {
                             router.push("/admin");
                         } else if (user?.role === "dealer") {
                             router.push("/dealer/dashboard");
+                        } else if (user?.role === "moderator") {
+                            router.push("/moderator");
                         } else {
                             router.push("/dashboard");
                         }
@@ -59,17 +59,17 @@ export function LoginForm() {
         try {
             const result = await login(email, password);
             console.log(result);
-
             if (result.success) {
                 toast.success("تم تسجيل الدخول بنجاح");
                 // Get the user role and redirect accordingly
                 router.push(result.redirectTo);
             } else {
                 if (result.needsVerification) {
-                    toast.success(
-                        "يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني"
+                    toast.error(
+                        "يرجى التحقق من بريدك الإلكتروني أولاً لتفعيل حسابك"
                     );
-                    setShowVerification(true);
+                    // Redirect to verification page where user can resend verification email
+                    router.push("/verify-email");
                 } else {
                     toast.error(result.error || "حدث خطأ أثناء تسجيل الدخول");
                 }
@@ -82,115 +82,47 @@ export function LoginForm() {
         }
     }
 
-    async function handleVerifyCode(e: React.FormEvent) {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const result = await verifyCode(email, verificationCode);
-
-            if (result.success) {
-                toast.success("تم التحقق بنجاح وتسجيل الدخول");
-
-                // Get the user role and redirect accordingly
-                const user = useAuthStore.getState().user;
-                console.log("User role after verification:", user?.role);
-
-                if (user?.role === "admin") {
-                    router.push("/admin");
-                } else if (user?.role === "dealer") {
-                    router.push("/dealer/dashboard");
-                } else {
-                    router.push("/dashboard");
-                }
-            } else {
-                toast.error(result.error || "فشل التحقق من الكود");
-            }
-        } catch (error) {
-            console.error("خطأ في التحقق من الكود:", error);
-            toast.error("حدث خطأ أثناء التحقق من الكود");
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
     return (
         <div className="grid gap-6">
-            {!showVerification ? (
-                <form onSubmit={onSubmit}>
-                    <div className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">البريد الإلكتروني</Label>
-                            <Input
-                                id="email"
-                                placeholder="name@example.com"
-                                type="email"
-                                autoCapitalize="none"
-                                autoComplete="email"
-                                autoCorrect="off"
-                                disabled={isLoading}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">كلمة المرور</Label>
-                            <Input
-                                id="password"
-                                placeholder="********"
-                                type="password"
-                                autoCapitalize="none"
-                                autoComplete="current-password"
-                                disabled={isLoading}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-
-                        <Button disabled={isLoading}>
-                            {isLoading && (
-                                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            تسجيل الدخول
-                        </Button>
-                    </div>
-                </form>
-            ) : (
-                <form onSubmit={handleVerifyCode}>
-                    <div className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="verificationCode">رمز التحقق</Label>
-                            <Input
-                                id="verificationCode"
-                                placeholder="أدخل الرمز المرسل"
-                                type="text"
-                                disabled={isLoading}
-                                value={verificationCode}
-                                onChange={(e) =>
-                                    setVerificationCode(e.target.value)
-                                }
-                            />
-                        </div>
-
-                        <Button disabled={isLoading}>
-                            {isLoading && (
-                                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            تحقق
-                        </Button>
-
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setShowVerification(false)}
+            <form onSubmit={onSubmit}>
+                <div className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">البريد الإلكتروني</Label>
+                        <Input
+                            id="email"
+                            placeholder="name@example.com"
+                            type="email"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            autoCorrect="off"
                             disabled={isLoading}
-                        >
-                            العودة
-                        </Button>
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
                     </div>
-                </form>
-            )}
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="password">كلمة المرور</Label>
+                        <Input
+                            id="password"
+                            placeholder="********"
+                            type="password"
+                            autoCapitalize="none"
+                            autoComplete="current-password"
+                            disabled={isLoading}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+
+                    <Button disabled={isLoading}>
+                        {isLoading && (
+                            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        تسجيل الدخول
+                    </Button>
+                </div>
+            </form>
 
             <div className="relative">
                 <div className="absolute inset-0 flex items-center">

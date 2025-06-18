@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Broadcast;
-use App\Models\Venue;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +17,8 @@ class BroadcastController extends Controller
     public function getCurrentBroadcast()
     {
         try {
-            $broadcast = Broadcast::with('venue')->first();
+            // Get the current active broadcast (where is_live is true)
+            $broadcast = Broadcast::where('is_live', true)->first();
             
             if (!$broadcast) {
                 return response()->json([
@@ -38,12 +38,7 @@ class BroadcastController extends Controller
                     'is_live' => $broadcast->is_live,
                     'youtube_embed_url' => $broadcast->formatted_embed_url,
                     'youtube_chat_embed_url' => $broadcast->youtube_chat_embed_url,
-                    'scheduled_start_time' => $broadcast->scheduled_start_time,
-                    'venue' => $broadcast->venue ? [
-                        'id' => $broadcast->venue->id,
-                        'name' => $broadcast->venue->name,
-                        'location' => $broadcast->venue->location
-                    ] : null
+                    'scheduled_start_time' => $broadcast->scheduled_start_time
                 ]
             ]);
         } catch (\Exception $e) {
@@ -56,24 +51,29 @@ class BroadcastController extends Controller
     }
 
     /**
-     * Get the broadcast status (whether it's active)
-     *
+     * Get simple status of current broadcast (if any)
+     * 
      * @return \Illuminate\Http\JsonResponse
      */
     public function getStatus()
     {
         try {
-            $broadcast = Broadcast::first();
+            $broadcast = Broadcast::where('is_live', true)->first();
             
             return response()->json([
                 'status' => 'success',
-                'is_active' => $broadcast ? $broadcast->is_live : false
+                'data' => [
+                    'is_live' => $broadcast ? true : false,
+                    'broadcast_id' => $broadcast ? $broadcast->id : null,
+                    'youtube_embed_url' => $broadcast ? $broadcast->formatted_embed_url : null
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching broadcast status: ' . $e->getMessage());
+            
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء التحقق من حالة البث'
+                'message' => 'Error fetching broadcast status'
             ], 500);
         }
     }

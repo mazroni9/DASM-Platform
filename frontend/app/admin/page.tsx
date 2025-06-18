@@ -58,7 +58,7 @@ export default function AdminDashboard() {
                     if (response.data.data.recent_users) {
                         let notActiviated =
                             response.data.data.recent_users.filter((elm) => {
-                                if (!elm.is_active) {
+                                if (elm.status === "pending") {
                                     return elm;
                                 }
                             });
@@ -105,7 +105,9 @@ export default function AdminDashboard() {
                 toast.success("تم تفعيل المستخدم بنجاح");
                 setRecentUsers((prevUsers) =>
                     prevUsers.map((user) =>
-                        user.id === userId ? { ...user, is_active: true } : user
+                        user.id === userId
+                            ? { ...user, is_active: true, status: "active" }
+                            : user
                     )
                 );
             } else {
@@ -136,6 +138,8 @@ export default function AdminDashboard() {
             </div>
         );
     }
+
+    console.log("recentUsers", recentUsers);
 
     return (
         <div className="space-y-8">
@@ -269,14 +273,18 @@ export default function AdminDashboard() {
                                         {formatDate(user.created_at)}
                                     </td>
                                     <td className="py-3 px-4 text-sm">
-                                        {user.is_active ? (
+                                        {user.status === "active" ? (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                 <CheckCircle className="w-3 h-3 mr-1" />{" "}
                                                 مفعل
                                             </span>
+                                        ) : user.status === "rejected" ? (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                <AlertTriangle className="w-3 h-3 mr-1" />{" "}
+                                                مرفوض
+                                            </span>
                                         ) : (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                                {user.is_active}
                                                 <Clock className="w-3 h-3 mr-1" />{" "}
                                                 في الانتظار
                                             </span>
@@ -289,7 +297,8 @@ export default function AdminDashboard() {
                                         >
                                             عرض
                                         </a>
-                                        {!user.is_active && (
+                                        {(user.status === "pending" ||
+                                            user.status === "rejected") && (
                                             <button
                                                 onClick={() =>
                                                     handleUserActivation(
@@ -356,7 +365,6 @@ export default function AdminDashboard() {
                                     </td>
                                     <td className="py-3 px-4 text-sm">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                            {user.is_active}
                                             <Clock className="w-3 h-3 mr-1" />{" "}
                                             في الانتظار
                                         </span>

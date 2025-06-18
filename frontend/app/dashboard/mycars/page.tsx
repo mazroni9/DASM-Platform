@@ -12,6 +12,7 @@ import axios from "axios";
 import { PagesOutlined } from "@mui/icons-material";
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
+import { Car } from "@/types/types";
 
 
 
@@ -22,15 +23,17 @@ const getAuctionStatusTextAndIcon = (status: string) => {
     case 'available':
       return { text: 'متوفر', color: 'text-orange-600', icon: <DollarSign size={16} /> };
     case 'in_auction':
-  return { text: 'في المزاد', color: 'text-orange-600', icon: <DollarSign size={16} /> };
+      return { text: 'في المزاد', color: 'text-orange-600', icon: <DollarSign size={16} /> };
     default:
       return { text: status, color: 'text-gray-500', icon: null };
   }
 }
 
+export default function MyCarsPage() {
+
     const [loading, setLoading] = useState(true);
     const [PaginationData,setPagination]=useState([])
-    const [cars, setCars] = useState([]);
+    const [cars, setCars] = useState<Car[]>([]);
     const { user, isLoggedIn } = useAuth();
     const [processingCarId, setProcessingCarId] = useState<number | null>(
         null
@@ -108,17 +111,15 @@ const getAuctionStatusTextAndIcon = (status: string) => {
   <p className="text-center text-gray-500">لم تقم بإضافة أي عناصر بعد.</p>
 ) : (
   
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-    {cars.map((car) => (
-      <div key={car.id} className="bg-white rounded-lg shadow border border-gray-200 p-4 flex flex-col">
-        
-        {/* صورة السيارة */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">    {cars.map((car) => (
+      <div key={car.id} className="bg-white rounded-lg shadow border border-gray-200 p-4 flex flex-col cursor-pointer hover:shadow-lg transition-shadow"
+           onClick={() => router.push(`/dashboard/mycars/${car.id}`)}>
+          {/* صورة السيارة */}
         <div className="h-40 bg-gray-100 rounded mb-4 flex items-center justify-center overflow-hidden">
           
           <img
             src={
-              car.imageUrl ||
+              (car.images && car.images.length > 0) ? car.images[0] :
               "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg"
             }
             alt={`${car.make} ${car.year}`}
@@ -135,8 +136,7 @@ const getAuctionStatusTextAndIcon = (status: string) => {
           {car.make} - {car.year}
         </h2>
         <p className="text-sm text-gray-500 mb-1">العداد: {car.odometer}</p>
-        <p className="text-sm text-gray-500 mb-1">المحرك: {car.engine}</p>
-        <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
+        <p className="text-sm text-gray-500 mb-1">المحرك: {car.engine}</p>        <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
         <p className="text-sm text-gray-500 mb-1">حالة المزاد: {getAuctionStatusTextAndIcon(car.auction_status).text}</p>
         <p className="text-sm text-gray-500 mb-1">الوصف: {car.description}</p>
         <p className="text-sm font-medium mt-2">
@@ -145,9 +145,10 @@ const getAuctionStatusTextAndIcon = (status: string) => {
         <br/>
         {
           car.auction_status == "available" &&
-           <Link  className=" hover:bg-green-700 text-red-600  border-sky-800 hover:bg-sky-800 hover:text-sky-100" href={`/add/auction/${car.id}`}
-            id={car.id}
-            key={car.id}>
+           <Link  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-center inline-block" 
+                  href={`/add/auction/${car.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  key={`link-${car.id}`}>
             <label htmlFor="">إضافة للمزاد</label>
           </Link>
         }

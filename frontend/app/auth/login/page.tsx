@@ -36,6 +36,10 @@ export default function LoginPage() {
                 // Don't redirect to auth pages
                 if (user.role === "admin") {
                     router.push("/admin/dashboard");
+                } else if (user.role === "dealer") {
+                    router.push("/dealer/dashboard");
+                } else if (user.role === "moderator") {
+                    router.push("/moderator");
                 } else {
                     router.push("/dashboard");
                 }
@@ -91,10 +95,8 @@ export default function LoginPage() {
                         router.push("/admin/dashboard");
                     } else if (user?.role === "dealer") {
                         router.push("/dealer/dashboard");
-                    } else if (user?.role === "auctioneer") {
-                        router.push("/dashboard/auctioneer");
-                    } else if (user?.role === "control") {
-                        router.push("/dashboard/control");
+                    } else if (user.role === "moderator") {
+                        router.push("/moderator");
                     } else {
                         router.push("/dashboard");
                     }

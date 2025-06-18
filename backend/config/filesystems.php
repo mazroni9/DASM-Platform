@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk
@@ -29,7 +28,6 @@ return [
     */
 
     'disks' => [
-
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
@@ -60,6 +58,13 @@ return [
             'report' => false,
         ],
 
+        'cloudinary' => [
+            'driver' => 'cloudinary',
+            'cloud' => env('CLOUDINARY_CLOUD_NAME', 'djwcvewmf'),
+            'key' => env('CLOUDINARY_API_KEY', '238883787975283'),
+            'secret' => env('CLOUDINARY_API_SECRET', '_5B112A1vNqzO8TOfU1z1Y_djGU'),
+            'secure' => true,
+        ],
     ],
 
     /*
@@ -76,5 +81,4 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
-
 ];

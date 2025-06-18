@@ -17,8 +17,10 @@ class Broadcast extends Model
     protected $fillable = [
         'title',
         'description',
-        'venue_id',
         'is_live',
+        'auction_id',
+        'stream_url',
+        'status',
         'youtube_stream_id',
         'youtube_embed_url',
         'youtube_chat_embed_url',
@@ -27,6 +29,10 @@ class Broadcast extends Model
         'end_time',
         'created_by',
         'updated_by',
+        'current_car_id',
+        'moderator_id',
+        'started_at',
+        'ended_at',
     ];
 
     /**
@@ -42,12 +48,8 @@ class Broadcast extends Model
     ];
 
     /**
-     * Get the venue associated with the broadcast.
+     * Removed venue relationship as YouTube is now the only streaming platform
      */
-    public function venue()
-    {
-        return $this->belongsTo(Venue::class);
-    }
 
     /**
      * Get the user who created the broadcast.
@@ -58,12 +60,51 @@ class Broadcast extends Model
     }
 
     /**
+     * Get the moderator that manages the broadcast.
+     */
+    public function moderator()
+    {
+        return $this->belongsTo(User::class, 'moderator_id');
+    }
+
+    /**
+     * Get the current car being displayed.
+     */
+    public function currentCar()
+    {
+        return $this->belongsTo(Car::class, 'current_car_id');
+    }
+
+    /**
+     * Get the current auction for the displayed car.
+     */
+    public function currentAuction()
+    {
+        return $this->hasOneThrough(
+            Auction::class,
+            Car::class,
+            'id', // Foreign key on cars table
+            'car_id', // Foreign key on auctions table
+            'current_car_id', // Local key on broadcasts table
+            'id' // Local key on cars table
+        )->where('status', 'active');
+    }
+
+    /**
      * Get the active auction associated with this broadcast.
      */
     public function activeAuction()
     {
         return $this->hasOne(Auction::class, 'broadcast_id')
             ->where('status', 'active');
+    }
+
+    /**
+     * Get the auction associated with this broadcast.
+     */
+    public function auction()
+    {
+        return $this->belongsTo(Auction::class);
     }
 
     /**
