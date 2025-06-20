@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
-    timeout: 10000, // Add 10 second timeout to prevent hanging requests
+    timeout: 30000, // Increase timeout to 30 seconds for deployment
 });
 
 // We need a flag to prevent infinite refresh loops
@@ -18,6 +18,7 @@ let refreshPromise: Promise<boolean> | null = null;
 
 // Add debug logs for development
 console.log("API Base URL:", API_BASE_URL);
+console.log("Environment:", process.env.NODE_ENV);
 
 // Load token from localStorage on startup
 if (typeof window !== "undefined") {

@@ -32,9 +32,11 @@ interface UserData {
     is_active: boolean;
     email_verified_at: string | null;
     created_at: string;
+    status: "pending" | "active" | "rejected";
     dealer?: {
         id: number;
         is_active: boolean;
+        status: "pending" | "active" | "rejected";
         company_name: string;
     } | null;
 }
@@ -49,15 +51,21 @@ export default function UsersManagementPage() {
     const [processingUserId, setProcessingUserId] = useState<number | null>(
         null
     );
+    const [initialLoad, setInitialLoad] = useState(true);
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (initialLoad) {
+            fetchUsers();
+            setInitialLoad(false);
+        }
+    }, [initialLoad]);
 
     useEffect(() => {
         // Apply filters whenever filter settings or search term changes
-        filterUsers();
-    }, [users, searchTerm, statusFilter, roleFilter]);
+        if (!initialLoad) {
+            filterUsers();
+        }
+    }, [users, searchTerm, statusFilter, roleFilter, initialLoad]);
 
     const fetchUsers = async () => {
         try {
@@ -80,68 +88,8 @@ export default function UsersManagementPage() {
             console.error("Error fetching users:", error);
             toast.error("فشل في تحميل بيانات المستخدمين");
 
-            // Set demo data for development
-            const demoUsers = [
-                {
-                    id: 1,
-                    first_name: "محمد",
-                    last_name: "أحمد",
-                    email: "mohammed@example.com",
-                    phone: "0512345678",
-                    role: "user",
-                    is_active: false,
-                    email_verified_at: "2025-05-20T10:30:00",
-                    created_at: "2025-05-20T10:30:00",
-                    dealer: null,
-                },
-                {
-                    id: 2,
-                    first_name: "فاطمة",
-                    last_name: "الزهراء",
-                    email: "fatima@example.com",
-                    phone: "0523456789",
-                    role: "user",
-                    is_active: true,
-                    email_verified_at: "2025-05-19T14:15:00",
-                    created_at: "2025-05-19T14:15:00",
-                    dealer: null,
-                },
-                {
-                    id: 3,
-                    first_name: "خالد",
-                    last_name: "المنصور",
-                    email: "khalid@example.com",
-                    phone: "0534567890",
-                    role: "dealer",
-                    is_active: false,
-                    email_verified_at: "2025-05-18T09:45:00",
-                    created_at: "2025-05-18T09:45:00",
-                    dealer: {
-                        id: 1,
-                        is_active: false,
-                        company_name: "شركة المنصور للسيارات",
-                    },
-                },
-                {
-                    id: 4,
-                    first_name: "سارة",
-                    last_name: "العتيبي",
-                    email: "sarah@example.com",
-                    phone: "0545678901",
-                    role: "dealer",
-                    is_active: true,
-                    email_verified_at: "2025-05-17T11:20:00",
-                    created_at: "2025-05-17T11:20:00",
-                    dealer: {
-                        id: 2,
-                        is_active: true,
-                        company_name: "معرض العتيبي",
-                    },
-                },
-            ];
-
-            setUsers(demoUsers);
-            setFilteredUsers(demoUsers);
+            setUsers([]);
+            setFilteredUsers([]);
         } finally {
             setLoading(false);
         }
@@ -172,17 +120,27 @@ export default function UsersManagementPage() {
             );
         }
 
+        // Apply role filter
+        if (roleFilter !== "all") {
+            result = result.filter((user) => user.role === roleFilter);
+        }
+
         // Apply status filter
         if (statusFilter !== "all") {
-            // Filter by status
             if (statusFilter === "pending") {
-                result = result.filter((user) => user.status === 'pending');
+                result = result.filter((user) => user.status === "pending");
             } else if (statusFilter === "active") {
-                result = result.filter((user) => user.status === 'active');
+                result = result.filter((user) => user.status === "active");
             } else if (statusFilter === "rejected") {
-                result = result.filter((user) => user.status === 'rejected');
+                result = result.filter((user) => user.status === "rejected");
+            } else if (statusFilter === "dealer_pending") {
+                result = result.filter(
+                    (user) =>
+                        user.role === "dealer" &&
+                        user.dealer &&
+                        user.dealer.status === "pending"
+                );
             }
-            result = result.filter((user) => user.role === roleFilter);
         }
 
         setFilteredUsers(result);
@@ -202,7 +160,9 @@ export default function UsersManagementPage() {
                 // Update user in the local state
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
-                        user.id === userId ? { ...user, is_active: true, status: 'active' } : user
+                        user.id === userId
+                            ? { ...user, is_active: true, status: "active" }
+                            : user
                     )
                 );
             }
@@ -213,7 +173,9 @@ export default function UsersManagementPage() {
             // For development, update the state anyway
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
-                    user.id === userId ? { ...user, is_active: true, status: 'active' } : user
+                    user.id === userId
+                        ? { ...user, is_active: true, status: "active" }
+                        : user
                 )
             );
         } finally {
@@ -235,18 +197,22 @@ export default function UsersManagementPage() {
                 // Update user in the local state with rejected status
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
-                        user.id === userId ? { ...user, is_active: false, status: 'rejected' } : user
+                        user.id === userId
+                            ? { ...user, is_active: false, status: "rejected" }
+                            : user
                     )
                 );
             }
         } catch (error) {
             console.error("Error rejecting user:", error);
             toast.error("فشل في رفض المستخدم");
-            
+
             // For development, update the state anyway
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
-                    user.id === userId ? { ...user, is_active: false, status: 'rejected' } : user
+                    user.id === userId
+                        ? { ...user, is_active: false, status: "rejected" }
+                        : user
                 )
             );
         } finally {
@@ -272,11 +238,11 @@ export default function UsersManagementPage() {
                             ? {
                                   ...user,
                                   is_active: true,
-                                  status: 'active',
+                                  status: "active",
                                   dealer: {
                                       ...user.dealer,
                                       is_active: true,
-                                      status: 'active',
+                                      status: "active",
                                   },
                               }
                             : user
@@ -294,11 +260,11 @@ export default function UsersManagementPage() {
                         ? {
                               ...user,
                               is_active: true,
-                              status: 'active',
+                              status: "active",
                               dealer: {
                                   ...user.dealer,
                                   is_active: true,
-                                  status: 'active',
+                                  status: "active",
                               },
                           }
                         : user
@@ -381,6 +347,7 @@ export default function UsersManagementPage() {
                         <option value="all">جميع الأدوار</option>
                         <option value="user">مستخدم</option>
                         <option value="dealer">تاجر</option>
+                        <option value="moderator">مشرف</option>
                         <option value="admin">مدير</option>
                     </select>
                 </div>
@@ -481,6 +448,11 @@ export default function UsersManagementPage() {
                                                     <Users className="w-3 h-3 ml-1" />
                                                     مدير
                                                 </span>
+                                            ) : user.role === "moderator" ? (
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                                    <Filter className="w-3 h-3 ml-1" />
+                                                    مشرف
+                                                </span>
                                             ) : (
                                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                                     <User className="w-3 h-3 ml-1" />
@@ -489,12 +461,12 @@ export default function UsersManagementPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {user.status === 'active' ? (
+                                            {user.status === "active" ? (
                                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                     <CheckCircle className="w-3 h-3 ml-1" />
                                                     مفعل
                                                 </span>
-                                            ) : user.status === 'rejected' ? (
+                                            ) : user.status === "rejected" ? (
                                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                                                     <XCircle className="w-3 h-3 ml-1" />
                                                     مرفوض
@@ -529,7 +501,7 @@ export default function UsersManagementPage() {
                                             {formatDate(user.created_at)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {user.status === 'pending' && (
+                                            {user.status === "pending" && (
                                                 <div className="flex space-x-2 space-x-reverse">
                                                     <Button
                                                         onClick={() =>
@@ -573,7 +545,7 @@ export default function UsersManagementPage() {
                                                 </div>
                                             )}
 
-                                            {user.status === 'active' && (
+                                            {user.status === "active" && (
                                                 <Button
                                                     onClick={() =>
                                                         handleRejectUser(
@@ -599,8 +571,8 @@ export default function UsersManagementPage() {
                                                     )}
                                                 </Button>
                                             )}
-                                            
-                                            {user.status === 'rejected' && (
+
+                                            {user.status === "rejected" && (
                                                 <Button
                                                     onClick={() =>
                                                         handleApproveUser(
@@ -628,7 +600,8 @@ export default function UsersManagementPage() {
 
                                             {user.role === "dealer" &&
                                                 user.dealer &&
-                                                user.dealer.status === "pending" && (
+                                                user.dealer.status ===
+                                                    "pending" && (
                                                     <Button
                                                         onClick={() =>
                                                             handleApproveDealerVerification(

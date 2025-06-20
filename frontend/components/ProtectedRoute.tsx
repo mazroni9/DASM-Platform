@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { handleRoleBasedRedirection } from "@/lib/roleNavigation";
 
 // List of routes that are public and don't require authentication
 const publicPaths = [
@@ -13,19 +14,10 @@ const publicPaths = [
     "/verify-email",
 ];
 
-// List of routes that require admin role
-const adminPaths = [
-    "/admin",
-    "/admin/users",
-    "/admin/youtube-channels",
-    "/admin/obs-control",
-    "/admin/live-stream",
-];
-
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-    const router = useRouter();
     const pathname = usePathname();
-    const { isLoggedIn, user, token, initialized } = useAuthStore();
+    const router = useRouter();
+    const { isLoggedIn, user, initialized } = useAuthStore();
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -48,58 +40,23 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
                 return;
             }
 
-            // Check if the current path is an admin path
-            const isAdminPath = adminPaths.some(
-                (path) => pathname === path || pathname.startsWith(`${path}/`)
-            );
-
-            // If it's an admin path but user isn't an admin, redirect to dashboard
-            if (isAdminPath && user?.role !== "admin") {
-                console.log(
-                    "Unauthorized access to admin route. User role:",
-                    user?.role
-                );
-                router.push("/dashboard");
-                return;
+            // ONLY role-based redirection logic - centralized here
+            if (isLoggedIn && user) {
+                handleRoleBasedRedirection(user.role, pathname, router);
             }
 
-            // Handle initial login redirection only
-            if (isLoggedIn && pathname === "/") {
-                const hasInitialRedirect =
-                    sessionStorage.getItem("initialRedirect");
-                if (!hasInitialRedirect) {
-                    sessionStorage.setItem("initialRedirect", "true");
-                    // Redirect based on role only on initial login
-                    if (user?.role === "admin") {
-                        router.push("/admin");
-                    } else if (user?.role === "dealer") {
-                        router.push("/dealer/dashboard");
-                    } else if (user.role === "moderator") {
-                        router.push("/moderator");
-                    } else {
-                        router.push("/dashboard");
-                    }
-                    return;
-                }
-            }
-
-            // Auth check is complete - no timeout needed
+            // Auth check is complete
             setIsLoading(false);
         }
 
         checkAuth();
     }, [isLoggedIn, pathname, router, initialized, user]);
 
-    // Show loading state only while authentication is being initialized
-    if (isLoading || !initialized) {
+    // Show loading while checking authentication
+    if (!initialized || isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-                    <p className="text-sm text-gray-600">
-                        التحقق من الصلاحيات...
-                    </p>
-                </div>
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
         );
     }

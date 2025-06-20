@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -27,42 +27,9 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const pathname = usePathname();
-    const { user, isAdmin, logout, isLoading, isLoggedIn } = useAuth();
+    const { user, isAdmin, logout } = useAuth();
     const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Admin route protection
-    useEffect(() => {
-        if (!isLoading) {
-            // If not logged in, redirect to login
-            if (!isLoggedIn) {
-                router.push(
-                    `/auth/login?returnUrl=${encodeURIComponent(
-                        pathname || "/admin"
-                    )}`
-                );
-                return;
-            }
-
-            // If logged in but not admin, redirect to dashboard
-            if (isLoggedIn && !isAdmin) {
-                router.push("/dashboard");
-                return;
-            }
-        }
-    }, [isLoading, isLoggedIn, isAdmin, router, pathname]);
-
-    // Show loading state while checking authentication
-    if (isLoading || !isLoggedIn || !isAdmin) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <div className="text-center">
-                    <Loader className="h-10 w-10 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">جاري التحقق من الصلاحيات...</p>
-                </div>
-            </div>
-        );
-    }
 
     const handleLogout = async () => {
         await logout();

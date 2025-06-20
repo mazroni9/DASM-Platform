@@ -11,23 +11,20 @@ export default function ModeratorDashboardPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState("broadcast");
 
+    // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {
-        // Redirect if not logged in or not a moderator
         if (!isLoading && (!isLoggedIn || !isModerator)) {
-            router.push("/auth/login");
+            // This will be handled by ProtectedRoute
+            return;
         }
-    }, [isLoading, isLoggedIn, isModerator, router]);
+    }, [isLoading, isLoggedIn, isModerator]);
 
-    if (isLoading) {
+    if (isLoading || !isLoggedIn || !isModerator) {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
         );
-    }
-
-    if (!isModerator) {
-        return null; // Will redirect in useEffect
     }
 
     return (

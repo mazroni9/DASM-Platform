@@ -19,32 +19,17 @@ export function LoginForm() {
     // Get login function from the auth store
     const { login } = useAuthStore();
 
-    // Check if user is already logged in
+    // Check if user is already logged in - but don't redirect here
     useEffect(() => {
         const token = localStorage.getItem("token");
-        // Don't automatically redirect if token exists, let the role-based redirection handle it
+        // Let ProtectedRoute handle all role-based redirections
         if (token) {
             const authState = useAuthStore.getState();
-            // Only redirect if not already logged in (to avoid overriding role-based redirects)
             if (!authState.isLoggedIn) {
-                authState.initializeFromStorage().then((success) => {
-                    if (success) {
-                        const user = authState.user;
-                        console.log("User role from storage:", user?.role);
-                        if (user?.role === "admin") {
-                            router.push("/admin");
-                        } else if (user?.role === "dealer") {
-                            router.push("/dealer/dashboard");
-                        } else if (user?.role === "moderator") {
-                            router.push("/moderator");
-                        } else {
-                            router.push("/dashboard");
-                        }
-                    }
-                });
+                authState.initializeFromStorage();
             }
         }
-    }, [router]);
+    }, []);
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -61,22 +46,24 @@ export function LoginForm() {
             console.log(result);
             if (result.success) {
                 toast.success("تم تسجيل الدخول بنجاح");
-                // Get the user role and redirect accordingly
-                router.push(result.redirectTo);
+                // Simply redirect to dashboard - ProtectedRoute will handle role-based routing
+                router.push("/dashboard");
             } else {
                 if (result.needsVerification) {
                     toast.error(
                         "يرجى التحقق من بريدك الإلكتروني أولاً لتفعيل حسابك"
                     );
-                    // Redirect to verification page where user can resend verification email
                     router.push("/verify-email");
                 } else {
-                    toast.error(result.error || "حدث خطأ أثناء تسجيل الدخول");
+                    toast.error(
+                        result.error ||
+                            "فشل تسجيل الدخول. يرجى التحقق من بيانات الاعتماد."
+                    );
                 }
             }
-        } catch (error) {
-            console.error("خطأ في تسجيل الدخول:", error);
-            toast.error("حدث خطأ أثناء تسجيل الدخول");
+        } catch (error: any) {
+            console.error("Login error:", error);
+            toast.error(error.message || "حدث خطأ أثناء تسجيل الدخول");
         } finally {
             setIsLoading(false);
         }

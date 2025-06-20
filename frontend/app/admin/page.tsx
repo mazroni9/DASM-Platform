@@ -44,26 +44,25 @@ export default function AdminDashboard() {
                 // Fetch dashboard stats from backend
                 const response = await api.get("/api/admin/dashboard");
                 if (response.data && response.data.status === "success") {
+                    const data = response.data.data;
+
                     setStats({
-                        totalUsers: response.data.data.total_users || 0,
-                        pendingUsers: response.data.data.pending_users || 0,
-                        totalAuctions: response.data.data.total_auctions || 0,
-                        activeAuctions: response.data.data.active_auctions || 0,
-                        completedAuctions:
-                            response.data.data.completed_auctions || 0,
-                        pendingVerifications:
-                            response.data.data.pending_verifications || 0,
+                        totalUsers: data.total_users || 0,
+                        pendingUsers: data.pending_users || 0,
+                        totalAuctions: data.total_auctions || 0,
+                        activeAuctions: data.active_auctions || 0,
+                        completedAuctions: data.completed_auctions || 0,
+                        pendingVerifications: data.pending_verifications || 0,
                     });
 
-                    if (response.data.data.recent_users) {
-                        let notActiviated =
-                            response.data.data.recent_users.filter((elm) => {
-                                if (elm.status === "pending") {
-                                    return elm;
-                                }
-                            });
+                    if (data.recent_users) {
+                        let notActiviated = data.recent_users.filter((elm) => {
+                            if (elm.status === "pending") {
+                                return elm;
+                            }
+                        });
 
-                        setRecentUsers(response.data.data.recent_users);
+                        setRecentUsers(data.recent_users);
                         setNotActiviatedUsers(notActiviated);
                     } else {
                         setRecentUsers([]);
@@ -71,10 +70,11 @@ export default function AdminDashboard() {
                     }
                 }
             } catch (error) {
-                console.error("Error fetching dashboard data:", error);
+                console.error("❌ Dashboard API error:", error);
+
                 toast.error("فشل في تحميل بيانات لوحة المعلومات");
 
-                // Initialize with zeros instead of mock data
+                // Initialize with zeros
                 setStats({
                     totalUsers: 0,
                     pendingUsers: 0,
@@ -84,7 +84,6 @@ export default function AdminDashboard() {
                     pendingVerifications: 0,
                 });
 
-                // Empty arrays instead of fake users
                 setRecentUsers([]);
                 setNotActiviatedUsers([]);
             } finally {
