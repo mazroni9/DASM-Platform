@@ -45,7 +45,7 @@ export default function AdminDashboard() {
                 const response = await api.get("/api/admin/dashboard");
                 if (response.data && response.data.status === "success") {
                     const data = response.data.data;
-                    
+
                     setStats({
                         totalUsers: data.total_users || 0,
                         pendingUsers: data.pending_users || 0,
@@ -68,48 +68,9 @@ export default function AdminDashboard() {
                         setRecentUsers([]);
                         setNotActiviatedUsers([]);
                     }
-
-                    // Display diagnostics information
-                    if (data.diagnostics) {
-                        console.log("🔍 Backend Diagnostics:", data.diagnostics);
-                        
-                        // If there's an issue detected, show detailed info
-                        if (data.diagnostics.issue_detected) {
-                            console.log("⚠️ Issue detected:", data.diagnostics.issue_detected);
-                            console.log("📋 Issue type:", data.diagnostics.issue_type);
-                            
-                            if (data.diagnostics.sample_users) {
-                                console.log("👥 Sample users found:", data.diagnostics.sample_users);
-                            }
-                            
-                            if (data.diagnostics.raw_user_count !== undefined) {
-                                console.log(`📊 Raw query count: ${data.diagnostics.raw_user_count}`);
-                                console.log(`🔧 Eloquent count: ${data.total_users}`);
-                                
-                                if (data.diagnostics.raw_user_count > 0 && data.total_users === 0) {
-                                    toast.error(`قاعدة البيانات تحتوي على ${data.diagnostics.raw_user_count} مستخدم لكن Eloquent يُرجع 0`);
-                                }
-                            }
-                            
-                            if (data.diagnostics.users_table_columns) {
-                                console.log("📋 Users table columns:", data.diagnostics.users_table_columns);
-                            }
-                        }
-                    }
                 }
             } catch (error) {
                 console.error("❌ Dashboard API error:", error);
-                
-                // Check if error response has diagnostics
-                if (error.response?.data?.diagnostics) {
-                    console.log("🔍 Error diagnostics:", error.response.data.diagnostics);
-                    
-                    if (error.response.data.diagnostics.exception_occurred) {
-                        console.log("💥 Exception details:");
-                        console.log("Message:", error.response.data.diagnostics.exception_message);
-                        console.log("Trace:", error.response.data.diagnostics.exception_trace);
-                    }
-                }
 
                 toast.error("فشل في تحميل بيانات لوحة المعلومات");
 

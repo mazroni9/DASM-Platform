@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-    Car, 
-    Clock, 
-    DollarSign, 
-    Eye, 
-    CheckCircle, 
-    XCircle, 
+import {
+    Car,
+    Clock,
+    DollarSign,
+    Eye,
+    CheckCircle,
+    XCircle,
     AlertTriangle,
     Loader2,
-    Filter
+    Filter,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
@@ -60,9 +60,12 @@ export default function AdminAuctionsPage() {
 
     const updateAuctionStatus = async (auctionId: number, status: string) => {
         try {
-            const response = await api.put(`/api/admin/auctions/${auctionId}/status`, {
-                status,
-            });
+            const response = await api.put(
+                `/api/admin/auctions/${auctionId}/status`,
+                {
+                    status,
+                }
+            );
 
             if (response.data.status === "success") {
                 toast.success("تم تحديث حالة المزاد بنجاح");
@@ -76,7 +79,9 @@ export default function AdminAuctionsPage() {
 
     const approveAuction = async (auctionId: number) => {
         try {
-            const response = await api.post(`/api/admin/auctions/${auctionId}/approve`);
+            const response = await api.post(
+                `/api/admin/auctions/${auctionId}/approve`
+            );
             if (response.data.status === "success") {
                 toast.success("تم الموافقة على المزاد");
                 fetchAuctions();
@@ -89,7 +94,9 @@ export default function AdminAuctionsPage() {
 
     const rejectAuction = async (auctionId: number) => {
         try {
-            const response = await api.post(`/api/admin/auctions/${auctionId}/reject`);
+            const response = await api.post(
+                `/api/admin/auctions/${auctionId}/reject`
+            );
             if (response.data.status === "success") {
                 toast.success("تم رفض المزاد");
                 fetchAuctions();
@@ -142,7 +149,7 @@ export default function AdminAuctionsPage() {
         });
     };
 
-    const filteredAuctions = auctions.filter(auction => {
+    const filteredAuctions = auctions.filter((auction) => {
         if (filter === "all") return true;
         return auction.status === filter;
     });
@@ -159,14 +166,18 @@ export default function AdminAuctionsPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800">إدارة المزادات</h1>
+                <h1 className="text-3xl font-bold text-gray-800">
+                    إدارة المزادات
+                </h1>
             </div>
 
             {/* Filter Controls */}
             <div className="bg-white p-4 rounded-lg shadow-sm border">
                 <div className="flex items-center gap-4">
                     <Filter className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">فلترة حسب الحالة:</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        فلترة حسب الحالة:
+                    </span>
                     <select
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
@@ -209,13 +220,17 @@ export default function AdminAuctionsPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {filteredAuctions.map((auction) => (
-                                <tr key={auction.id} className="hover:bg-gray-50">
+                                <tr
+                                    key={auction.id}
+                                    className="hover:bg-gray-50"
+                                >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <Car className="w-5 h-5 text-gray-400 ml-3" />
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">
-                                                    {auction.car?.make} {auction.car?.model}
+                                                    {auction.car?.make}{" "}
+                                                    {auction.car?.model}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     {auction.car?.year}
@@ -227,12 +242,18 @@ export default function AdminAuctionsPage() {
                                         <div className="flex items-center">
                                             <DollarSign className="w-4 h-4 text-green-500 ml-1" />
                                             <span className="text-sm font-medium text-gray-900">
-                                                {auction.current_bid?.toLocaleString() || 0} ريال
+                                                {auction.current_bid?.toLocaleString() ||
+                                                    0}{" "}
+                                                ريال
                                             </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(auction.status)}`}>
+                                        <span
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                                auction.status
+                                            )}`}
+                                        >
                                             {getStatusText(auction.status)}
                                         </span>
                                     </td>
@@ -251,7 +272,11 @@ export default function AdminAuctionsPage() {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => router.push(`/admin/auctions/${auction.id}`)}
+                                                onClick={() =>
+                                                    router.push(
+                                                        `/admin/auctions/${auction.id}`
+                                                    )
+                                                }
                                                 className="text-blue-600 hover:text-blue-900"
                                                 title="عرض"
                                             >
@@ -261,14 +286,22 @@ export default function AdminAuctionsPage() {
                                             {auction.status === "scheduled" && (
                                                 <>
                                                     <button
-                                                        onClick={() => approveAuction(auction.id)}
+                                                        onClick={() =>
+                                                            approveAuction(
+                                                                auction.id
+                                                            )
+                                                        }
                                                         className="text-green-600 hover:text-green-900"
                                                         title="موافقة"
                                                     >
                                                         <CheckCircle className="h-4 w-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => rejectAuction(auction.id)}
+                                                        onClick={() =>
+                                                            rejectAuction(
+                                                                auction.id
+                                                            )
+                                                        }
                                                         className="text-red-600 hover:text-red-900"
                                                         title="رفض"
                                                     >
@@ -279,7 +312,12 @@ export default function AdminAuctionsPage() {
 
                                             {auction.status === "active" && (
                                                 <button
-                                                    onClick={() => updateAuctionStatus(auction.id, "ended")}
+                                                    onClick={() =>
+                                                        updateAuctionStatus(
+                                                            auction.id,
+                                                            "ended"
+                                                        )
+                                                    }
                                                     className="text-yellow-600 hover:text-yellow-900"
                                                     title="إنهاء المزاد"
                                                 >
