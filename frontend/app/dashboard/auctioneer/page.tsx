@@ -49,6 +49,7 @@ function AuctioneerDashboard() {
     } = useWebSocket();
 
     useEffect(() => {
+        // Simplified auth check - let ProtectedRoute handle the main logic
         const token = localStorage.getItem("auth_token");
         const userData = localStorage.getItem("user");
 
@@ -63,7 +64,7 @@ function AuctioneerDashboard() {
                 parsedUser.role !== "auctioneer" &&
                 parsedUser.role !== "admin"
             ) {
-                router.push(`/dashboard/${parsedUser.role}`);
+                // Let ProtectedRoute handle this redirection
                 return;
             }
 

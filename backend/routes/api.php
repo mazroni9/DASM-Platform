@@ -151,6 +151,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);
+    Route::put('/admin/users/{userId}', [AdminController::class, 'updateUser']);
     Route::post('/admin/users/{userId}/activate', [AdminController::class, 'approveUser']);
     Route::post('/admin/users/{userId}/reject', [AdminController::class, 'rejectUser']);
     Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);

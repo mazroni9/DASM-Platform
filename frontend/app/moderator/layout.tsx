@@ -26,26 +26,13 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
     const router = useRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    // Moderator route protection
+    // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {
-        if (!isLoading) {
-            // If not logged in, redirect to login
-            if (!isLoggedIn) {
-                router.push(
-                    `/auth/login?returnUrl=${encodeURIComponent(
-                        pathname || "/moderator"
-                    )}`
-                );
-                return;
-            }
-
-            // If logged in but not moderator, redirect to dashboard
-            if (isLoggedIn && !isModerator) {
-                router.push("/dashboard");
-                return;
-            }
+        if (!isLoading && (!isLoggedIn || !isModerator)) {
+            // This will be handled by ProtectedRoute
+            return;
         }
-    }, [isLoading, isLoggedIn, isModerator, router, pathname]);
+    }, [isLoading, isLoggedIn, isModerator]);
 
     // Show loading state while checking authentication
     if (isLoading || !isLoggedIn || !isModerator) {
@@ -109,64 +96,83 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
                     </h2>
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="p-2 rounded-lg hover:bg-gray-100"
                     >
-                        {isCollapsed ? "→" : "←"}
+                        <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 6h16M4 12h16M4 18h16"
+                            />
+                        </svg>
                     </button>
                 </div>
-                <nav className="mt-6 px-4">
+
+                <nav className="mt-6 px-6">
                     <ul className="space-y-2">
-                        {navigation.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <li key={item.name}>
-                                    <Link
-                                        href={item.href}
-                                        className={`flex items-center p-3 rounded-lg transition-colors ${
-                                            isActive(item.href)
-                                                ? "bg-green-50 text-green-600"
-                                                : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        <Icon
-                                            className={`h-5 w-5 ${
-                                                isCollapsed ? "mx-auto" : "ml-3"
-                                            }`}
-                                        />
-                                        <span
-                                            className={`${
-                                                isCollapsed ? "hidden" : "block"
-                                            }`}
-                                        >
+                        {navigation.map((item) => (
+                            <li key={item.name}>
+                                <Link
+                                    href={item.href}
+                                    className={`flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors ${
+                                        isActive(item.href)
+                                            ? "bg-green-100 text-green-700 border-l-4 border-green-500"
+                                            : ""
+                                    }`}
+                                >
+                                    <item.icon className="w-5 h-5" />
+                                    {!isCollapsed && (
+                                        <span className="mr-3">
                                             {item.name}
                                         </span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
+                                    )}
+                                </Link>
+                            </li>
+                        ))}
                     </ul>
-                    <div className="border-t my-6"></div>
+                </nav>
+
+                <div className="absolute bottom-6 left-6 right-6">
                     <button
                         onClick={handleLogout}
-                        className={`flex items-center p-3 rounded-lg text-red-600 hover:bg-red-50 w-full transition-colors ${
-                            isCollapsed ? "justify-center" : ""
-                        }`}
+                        className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
-                        <LogOut
-                            className={`h-5 w-5 ${
-                                isCollapsed ? "mx-auto" : "ml-3"
-                            }`}
-                        />
-                        <span className={`${isCollapsed ? "hidden" : "block"}`}>
-                            تسجيل الخروج
-                        </span>
+                        <LogOut className="w-5 h-5" />
+                        {!isCollapsed && (
+                            <span className="mr-3">تسجيل الخروج</span>
+                        )}
                     </button>
-                </nav>
+                </div>
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 overflow-x-auto">
-                <div className="container mx-auto py-6 px-4">{children}</div>
+            <main className="flex-1 overflow-auto">
+                <header className="bg-white shadow-sm border-b px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-2xl font-semibold text-gray-800">
+                            {navigation.find((item) => isActive(item.href))
+                                ?.name || "لوحة المشرف"}
+                        </h1>
+                        <div className="flex items-center space-x-4 space-x-reverse">
+                            <span className="text-sm text-gray-600">
+                                مرحباً، {user?.first_name || "المشرف"}
+                            </span>
+                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <span className="text-green-600 font-semibold text-sm">
+                                    {user?.first_name?.charAt(0) || "م"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="p-6">{children}</div>
             </main>
         </div>
     );

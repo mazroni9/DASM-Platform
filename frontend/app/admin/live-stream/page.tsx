@@ -10,25 +10,13 @@ export default function LiveStreamManagementPage() {
     const { isAdmin, isLoading, isLoggedIn } = useAuth();
     const router = useRouter();
 
+    // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {
-        if (!isLoading) {
-            // If not logged in, redirect to login
-            if (!isLoggedIn) {
-                router.push(
-                    `/auth/login?returnUrl=${encodeURIComponent(
-                        "/admin/live-stream"
-                    )}`
-                );
-                return;
-            }
-
-            // If logged in but not admin, redirect to dashboard
-            if (isLoggedIn && !isAdmin) {
-                router.push("/dashboard");
-                return;
-            }
+        if (!isLoading && (!isLoggedIn || !isAdmin)) {
+            // This will be handled by ProtectedRoute, but we can show loading
+            return;
         }
-    }, [isLoading, isLoggedIn, isAdmin, router]);
+    }, [isLoading, isLoggedIn, isAdmin]);
 
     // Show loading state while checking authentication
     if (isLoading || !isLoggedIn || !isAdmin) {
