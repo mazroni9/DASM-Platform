@@ -148,6 +148,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     // Admin dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
     
+    // Database test endpoint for debugging
+    Route::get('/admin/test-database', [AdminController::class, 'testDatabase']);
+    
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);

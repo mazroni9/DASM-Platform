@@ -327,6 +327,13 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
+            ]);
+        }
+
         if (!Hash::check($request->password, $user->password_hash)) {
             throw ValidationException::withMessages([
                 'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],

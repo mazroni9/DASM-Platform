@@ -386,45 +386,85 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
-        // Count users
-        $totalUsers = User::count();
-        $pendingUsers = User::where('status', 'pending')->count();
-        $dealerCount = Dealer::count();
-        $regularUserCount = $totalUsers - $dealerCount;
-        
-        // Count auctions
-        $totalAuctions = Auction::count();
-        $activeAuctions = Auction::where('status', AuctionStatus::ACTIVE)->count();
-        $completedAuctions = Auction::where('status', AuctionStatus::ENDED)->count();
-        $pendingAuctions = Auction::where('status', AuctionStatus::SCHEDULED)->count();
-        
-        // Count verification requests - using status field
-        $pendingVerifications = Dealer::where('status', 'pending')->count();
+        try {
+            $diagnostics = [];
             
-        // Count blogs
-        $totalBlogs = BlogPost::count();
-        $publishedBlogs = BlogPost::where('status', 'published')->count();
-        $draftBlogs = BlogPost::where('status', 'draft')->count();
-        
-        // Most viewed blogs
-        $popularBlogs = BlogPost::orderBy('views', 'desc')
-            ->take(5)
-            ->get(['id', 'title', 'slug', 'views']);
+            // Count users with explicit error handling
+            $totalUsers = User::count();
+            $diagnostics['total_users_query'] = 'User::count() executed successfully';
             
-        // Recent auctions
-        $recentAuctions = Auction::with(['car:id,make,model,year'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+            $pendingUsers = User::where('status', 'pending')->count();
+            $diagnostics['pending_users_query'] = 'User::where("status", "pending")->count() executed successfully';
             
-        // Recent users
-        $recentUsers = User::orderBy('created_at', 'desc')
-            ->take(5)
-            ->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active', 'status']);
+            $dealerCount = Dealer::count();
+            $diagnostics['dealer_count_query'] = 'Dealer::count() executed successfully';
             
-        return response()->json([
-            'status' => 'success',
-            'data' => [
+            $regularUserCount = $totalUsers - $dealerCount;
+            
+            // Count auctions
+            $totalAuctions = Auction::count();
+            $activeAuctions = Auction::where('status', AuctionStatus::ACTIVE)->count();
+            $completedAuctions = Auction::where('status', AuctionStatus::ENDED)->count();
+            $pendingAuctions = Auction::where('status', AuctionStatus::SCHEDULED)->count();
+            
+            // Count verification requests - using status field
+            $pendingVerifications = Dealer::where('status', 'pending')->count();
+                
+            // Count blogs
+            $totalBlogs = BlogPost::count();
+            $publishedBlogs = BlogPost::where('status', 'published')->count();
+            $draftBlogs = BlogPost::where('status', 'draft')->count();
+            
+            // Most viewed blogs
+            $popularBlogs = BlogPost::orderBy('views', 'desc')
+                ->take(5)
+                ->get(['id', 'title', 'slug', 'views']);
+                
+            // Recent auctions
+            $recentAuctions = Auction::with(['car:id,make,model,year'])
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+                
+            // Recent users with better error handling
+            $recentUsers = User::orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active', 'status']);
+            
+            $diagnostics['recent_users_count'] = $recentUsers->count();
+            
+            // If no users found, run additional diagnostics
+            if ($totalUsers === 0) {
+                $diagnostics['issue_detected'] = 'No users found - running additional checks';
+                
+                // Test raw database queries
+                try {
+                    $rawUserCount = \DB::table('users')->count();
+                    $diagnostics['raw_user_count'] = $rawUserCount;
+                    
+                    if ($rawUserCount > 0) {
+                        $diagnostics['issue_type'] = 'Eloquent vs Raw query mismatch';
+                        $sampleUsers = \DB::table('users')->take(3)->get();
+                        $diagnostics['sample_users'] = $sampleUsers;
+                    } else {
+                        $diagnostics['issue_type'] = 'Database actually empty';
+                    }
+                    
+                    // Check table structure
+                    $tableExists = \Schema::hasTable('users');
+                    $diagnostics['users_table_exists'] = $tableExists;
+                    
+                    if ($tableExists) {
+                        $columns = \Schema::getColumnListing('users');
+                        $diagnostics['users_table_columns'] = $columns;
+                    }
+                    
+                } catch (\Exception $dbError) {
+                    $diagnostics['database_error'] = $dbError->getMessage();
+                }
+            }
+            
+            $responseData = [
                 'total_users' => $totalUsers,
                 'dealers_count' => $dealerCount,
                 'regular_users_count' => $regularUserCount,
@@ -439,9 +479,30 @@ class AdminController extends Controller
                 'draft_blogs' => $draftBlogs,
                 'popular_blogs' => $popularBlogs,
                 'recent_auctions' => $recentAuctions,
-                'recent_users' => $recentUsers
-            ]
-        ]);
+                'recent_users' => $recentUsers,
+                'diagnostics' => $diagnostics
+            ];
+                
+            return response()->json([
+                'status' => 'success',
+                'data' => $responseData
+            ]);
+            
+        } catch (\Exception $e) {
+            // Return detailed error information instead of just logging
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch dashboard data',
+                'error' => $e->getMessage(),
+                'error_line' => $e->getLine(),
+                'error_file' => $e->getFile(),
+                'diagnostics' => [
+                    'exception_occurred' => true,
+                    'exception_message' => $e->getMessage(),
+                    'exception_trace' => $e->getTraceAsString()
+                ]
+            ], 500);
+        }
     }
 
     /**
@@ -881,5 +942,83 @@ class AdminController extends Controller
             'message' => 'User rejection processed successfully',
             'data' => $user
         ]);
+    }
+
+    /**
+     * Test database connectivity and basic queries
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testDatabase()
+    {
+        try {
+            \Log::info('Database test endpoint called');
+            
+            // Test basic database connection
+            $dbConnection = \DB::connection()->getPdo();
+            \Log::info('Database connection successful');
+            
+            // Test if users table exists and has data
+            $tableExists = \Schema::hasTable('users');
+            \Log::info('Users table exists: ' . ($tableExists ? 'yes' : 'no'));
+            
+            if ($tableExists) {
+                // Get table columns
+                $columns = \Schema::getColumnListing('users');
+                \Log::info('Users table columns: ' . implode(', ', $columns));
+                
+                // Test raw query
+                $userCountRaw = \DB::table('users')->count();
+                \Log::info('Raw user count: ' . $userCountRaw);
+                
+                // Test Eloquent query
+                $userCountEloquent = User::count();
+                \Log::info('Eloquent user count: ' . $userCountEloquent);
+                
+                // Get first few users
+                $sampleUsers = \DB::table('users')->take(3)->get();
+                \Log::info('Sample users: ' . json_encode($sampleUsers));
+                
+                // Test dealer table
+                $dealerTableExists = \Schema::hasTable('dealers');
+                \Log::info('Dealers table exists: ' . ($dealerTableExists ? 'yes' : 'no'));
+                
+                $dealerCount = $dealerTableExists ? \DB::table('dealers')->count() : 0;
+                \Log::info('Dealer count: ' . $dealerCount);
+                
+                return response()->json([
+                    'status' => 'success',
+                    'data' => [
+                        'database_connected' => true,
+                        'users_table_exists' => $tableExists,
+                        'users_table_columns' => $columns,
+                        'user_count_raw' => $userCountRaw,
+                        'user_count_eloquent' => $userCountEloquent,
+                        'sample_users' => $sampleUsers,
+                        'dealers_table_exists' => $dealerTableExists,
+                        'dealer_count' => $dealerCount,
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Users table does not exist',
+                    'data' => [
+                        'database_connected' => true,
+                        'users_table_exists' => false,
+                    ]
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error('Database test error: ' . $e->getMessage());
+            \Log::error('Database test trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Database connection failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
