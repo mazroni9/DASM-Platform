@@ -174,22 +174,14 @@ export default function UsersManagementPage() {
 
         // Apply status filter
         if (statusFilter !== "all") {
+            // Filter by status
             if (statusFilter === "pending") {
-                result = result.filter((user) => !user.is_active);
+                result = result.filter((user) => user.status === 'pending');
             } else if (statusFilter === "active") {
-                result = result.filter((user) => user.is_active);
-            } else if (statusFilter === "dealer_pending") {
-                result = result.filter(
-                    (user) =>
-                        user.role === "dealer" &&
-                        user.dealer &&
-                        user.dealer.is_active === false
-                );
+                result = result.filter((user) => user.status === 'active');
+            } else if (statusFilter === "rejected") {
+                result = result.filter((user) => user.status === 'rejected');
             }
-        }
-
-        // Apply role filter
-        if (roleFilter !== "all") {
             result = result.filter((user) => user.role === roleFilter);
         }
 
@@ -210,7 +202,7 @@ export default function UsersManagementPage() {
                 // Update user in the local state
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
-                        user.id === userId ? { ...user, is_active: true } : user
+                        user.id === userId ? { ...user, is_active: true, status: 'active' } : user
                     )
                 );
             }
@@ -221,7 +213,7 @@ export default function UsersManagementPage() {
             // For development, update the state anyway
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
-                    user.id === userId ? { ...user, is_active: true } : user
+                    user.id === userId ? { ...user, is_active: true, status: 'active' } : user
                 )
             );
         } finally {
@@ -240,12 +232,23 @@ export default function UsersManagementPage() {
             if (response.data && response.data.status === "success") {
                 toast.success("تم رفض المستخدم بنجاح");
 
-                // Update user in the local state (in a real app, you might want to remove them or mark as rejected)
-                // For this example, we'll just keep them with is_active=false
+                // Update user in the local state with rejected status
+                setUsers((prevUsers) =>
+                    prevUsers.map((user) =>
+                        user.id === userId ? { ...user, is_active: false, status: 'rejected' } : user
+                    )
+                );
             }
         } catch (error) {
             console.error("Error rejecting user:", error);
             toast.error("فشل في رفض المستخدم");
+            
+            // For development, update the state anyway
+            setUsers((prevUsers) =>
+                prevUsers.map((user) =>
+                    user.id === userId ? { ...user, is_active: false, status: 'rejected' } : user
+                )
+            );
         } finally {
             setProcessingUserId(null);
         }
@@ -262,15 +265,18 @@ export default function UsersManagementPage() {
             if (response.data && response.data.status === "success") {
                 toast.success("تمت الموافقة على طلب التحقق بنجاح");
 
-                // Update dealer status in the local state using the new is_active field
+                // Update dealer status in the local state
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
                         user.id === userId && user.dealer
                             ? {
                                   ...user,
+                                  is_active: true,
+                                  status: 'active',
                                   dealer: {
                                       ...user.dealer,
                                       is_active: true,
+                                      status: 'active',
                                   },
                               }
                             : user
@@ -287,9 +293,12 @@ export default function UsersManagementPage() {
                     user.id === userId && user.dealer
                         ? {
                               ...user,
+                              is_active: true,
+                              status: 'active',
                               dealer: {
                                   ...user.dealer,
                                   is_active: true,
+                                  status: 'active',
                               },
                           }
                         : user
@@ -480,10 +489,15 @@ export default function UsersManagementPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {user.is_active ? (
+                                            {user.status === 'active' ? (
                                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                     <CheckCircle className="w-3 h-3 ml-1" />
                                                     مفعل
+                                                </span>
+                                            ) : user.status === 'rejected' ? (
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                    <XCircle className="w-3 h-3 ml-1" />
+                                                    مرفوض
                                                 </span>
                                             ) : (
                                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
@@ -515,7 +529,7 @@ export default function UsersManagementPage() {
                                             {formatDate(user.created_at)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            {!user.is_active && (
+                                            {user.status === 'pending' && (
                                                 <div className="flex space-x-2 space-x-reverse">
                                                     <Button
                                                         onClick={() =>
@@ -559,7 +573,7 @@ export default function UsersManagementPage() {
                                                 </div>
                                             )}
 
-                                            {user.is_active && (
+                                            {user.status === 'active' && (
                                                 <Button
                                                     onClick={() =>
                                                         handleRejectUser(
@@ -585,10 +599,36 @@ export default function UsersManagementPage() {
                                                     )}
                                                 </Button>
                                             )}
+                                            
+                                            {user.status === 'rejected' && (
+                                                <Button
+                                                    onClick={() =>
+                                                        handleApproveUser(
+                                                            user.id
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        processingUserId ===
+                                                        user.id
+                                                    }
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    {processingUserId ===
+                                                    user.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Check className="w-4 h-4 ml-1" />
+                                                            تفعيل
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            )}
 
                                             {user.role === "dealer" &&
                                                 user.dealer &&
-                                                !user.dealer.is_active && (
+                                                user.dealer.status === "pending" && (
                                                     <Button
                                                         onClick={() =>
                                                             handleApproveDealerVerification(

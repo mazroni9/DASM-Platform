@@ -13,6 +13,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\AutoBidController;
+use App\Http\Controllers\ModeratorController;
 use Inertia\Inertia;
 use App\Models\Car;
 
@@ -30,6 +31,8 @@ Route::post('/resend-verification', [AuthController::class, 'resendVerification'
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+// Cloudinary test endpoints removed for security
+
 // Public auction browsing 
 Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
@@ -40,6 +43,11 @@ Route::get('/blog/latest/{count?}', [BlogController::class, 'latest']);
 Route::get('/blog/tags', [BlogController::class, 'tags']);
 Route::get('/blog/{slug}', [BlogController::class, 'show']);
 
+
+// Public broadcast routes (no authentication required)
+Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
+
+// Removed venue routes as YouTube is the only streaming platform
 
 // Protected routes - for all authenticated users
 Route::middleware('auth:sanctum')->group(function () {
@@ -96,10 +104,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
     Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
     
-    // Venue routes - read only for all authenticated users
-    Route::get('/venues', [VenueController::class, 'index']);
-    Route::get('/venues/{id}', [VenueController::class, 'show']);
-    
     // Wallet routes
     // Route::get('/wallet', [WalletController::class, 'show']);
     // Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
@@ -125,6 +129,20 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
     Route::get('/dealer/car-statistics', [CarController::class, 'statistics']);
 });
 
+// Moderator routes
+Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::class])->group(function () {
+    // Moderator dashboard
+    Route::get('/moderator/dashboard', [ModeratorController::class, 'dashboard']);
+    
+    // Broadcast management
+    Route::post('/moderator/broadcast/start', [ModeratorController::class, 'startBroadcast']);
+    Route::post('/moderator/broadcast/stop/{broadcastId}', [ModeratorController::class, 'stopBroadcast']);
+    Route::put('/moderator/broadcast/{broadcastId}/current-car', [ModeratorController::class, 'switchCar']);
+    
+    // Offline bid management
+    Route::post('/moderator/bids/offline', [ModeratorController::class, 'addOfflineBid']);
+});
+
 // Admin routes
 Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
     // Admin dashboard
@@ -134,7 +152,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);
     Route::post('/admin/users/{userId}/activate', [AdminController::class, 'approveUser']);
-    Route::post('/admin/users/{userId}/deactivate', [AdminController::class, 'rejectUser']);
+    Route::post('/admin/users/{userId}/reject', [AdminController::class, 'rejectUser']);
     Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
     Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
     Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);

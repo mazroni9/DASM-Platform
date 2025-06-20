@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Dealer;
+use App\Enums\UserStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -235,7 +236,10 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 422);
         }
 
         $user = User::where('email_verification_token', $request->token)->first();
@@ -266,7 +270,10 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 422);
         }
         
         $user = User::where('email', $request->email)->first();
@@ -312,11 +319,15 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()->toArray()
+            ], 422);
         }
 
         $user = User::where('email', $request->email)->first();
-        if (!$user || !Hash::check($request->password, $user->password_hash)) {
+        if (!Hash::check($request->password, $user->password_hash)) {
             throw ValidationException::withMessages([
                 'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
             ]);
@@ -332,11 +343,12 @@ class AuthController extends Controller
         }
         
         // Check if user is approved by admin
-        if (!$user->is_active) {
+        // Using enum comparison for better reliability
+        if ($user->status !== UserStatus::ACTIVE) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'حسابك غير مفعل من قبل الإدارة.',
-                'email' => $user->email
+                'email' => $user->email,
             ], 403);
         }
         
@@ -369,7 +381,10 @@ class AuthController extends Controller
         $user = $request->user();
         
         if (!$user) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthenticated'
+            ], 401);
         }
         
         // Revoke the current token

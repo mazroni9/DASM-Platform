@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DealerStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,8 +15,13 @@ class Dealer extends Model
         'company_name',
         'commercial_registry',
         'is_active',
+        'status',
         'rating',
         'description'
+    ];
+    
+    protected $casts = [
+        'status' => DealerStatus::class,
     ];
 
     /**

@@ -31,6 +31,7 @@ interface UserDetail {
     phone: string;
     role: string;
     is_active: boolean;
+    status: string; // 'active', 'pending', 'rejected'
     kyc_status: string;
     email_verified_at: string | null;
     created_at: string;
@@ -38,6 +39,7 @@ interface UserDetail {
     dealer?: {
         id: number;
         is_active: string;
+        status: string; // 'active', 'pending', 'rejected'
         company_name: string;
         commercial_registry: string;
         description: string;
@@ -62,15 +64,15 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
             // Fetch user details from backend
             const response = await api.get(`/api/admin/users/${params.id}`);
             if (response.data && response.data.status === "success") {
-                let user =response.data.data.user;
-                //check if user role 
-                if(user.role == "admin"){
-                     response.data.data.user.role= 'user';
+                let user = response.data.data.user;
+                //check if user role
+                if (user.role == "admin") {
+                    response.data.data.user.role = "user";
                 }
-                if(user.role == "dealer"){
+                if (user.role == "dealer") {
                     //check rating if it is null or assign default value
-                    let rating =response.data.data.dealer.rating || 4.5;
-                    response.data.data.dealer.rating= rating;
+                    let rating = response.data.data.dealer.rating || 4.5;
+                    response.data.data.dealer.rating = rating;
                 }
                 setUser(response.data.data.user);
             }
@@ -119,14 +121,18 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 toast.success("تم تفعيل المستخدم بنجاح");
 
                 // Update user in the local state
-                setUser((prev) => (prev ? { ...prev, is_active: true } : null));
+                setUser((prev) =>
+                    prev ? { ...prev, is_active: true, status: "active" } : null
+                );
             }
         } catch (error) {
             console.error("Error approving user:", error);
             toast.error("فشل في تفعيل المستخدم");
 
             // For development, update the state anyway
-            setUser((prev) => (prev ? { ...prev, is_active: true } : null));
+            setUser((prev) =>
+                prev ? { ...prev, is_active: true, status: "active" } : null
+            );
         } finally {
             setProcessingAction(null);
         }
@@ -142,10 +148,22 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
             if (response.data && response.data.status === "success") {
                 toast.success("تم رفض المستخدم بنجاح");
+
+                // Update user in the local state
+                setUser((prev) =>
+                    prev
+                        ? { ...prev, is_active: false, status: "rejected" }
+                        : null
+                );
             }
         } catch (error) {
             console.error("Error rejecting user:", error);
             toast.error("فشل في رفض المستخدم");
+
+            // For development, update the state anyway
+            setUser((prev) =>
+                prev ? { ...prev, is_active: false, status: "rejected" } : null
+            );
         } finally {
             setProcessingAction(null);
         }
@@ -169,9 +187,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     if (!prev || !prev.dealer) return prev;
                     return {
                         ...prev,
+                        is_active: true,
+                        status: "active",
                         dealer: {
                             ...prev.dealer,
                             is_active: true,
+                            status: "active",
                         },
                     };
                 });
@@ -185,9 +206,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 if (!prev || !prev.dealer) return prev;
                 return {
                     ...prev,
+                    is_active: true,
+                    status: "active",
                     dealer: {
                         ...prev.dealer,
                         is_active: true,
+                        status: "active",
                     },
                 };
             });
@@ -287,10 +311,15 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                     </span>
                                 )}
 
-                                {user.is_active ? (
+                                {user.status === "active" ? (
                                     <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-green-100 text-green-800">
                                         <CheckCircle className="w-3 h-3 ml-1" />
                                         مفعل
+                                    </span>
+                                ) : user.status === "rejected" ? (
+                                    <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                        <XCircle className="w-3 h-3 ml-1" />
+                                        مرفوض
                                     </span>
                                 ) : (
                                     <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-amber-100 text-amber-800">
@@ -313,14 +342,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                                 {user.role === "dealer" && user.dealer && (
                                     <>
-                                        {user.dealer.is_active ===
-                                        "approved" ? (
+                                        {user.dealer.status === "active" ? (
                                             <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-green-100 text-green-800">
                                                 <CheckCircle className="w-3 h-3 ml-1" />
                                                 تاجر مُصدّق
                                             </span>
-                                        ) : user.dealer.verification_status ===
-                                          "pending" ? (
+                                        ) : user.dealer.status === "pending" ? (
                                             <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-amber-100 text-amber-800">
                                                 <Clock className="w-3 h-3 ml-1" />
                                                 تحقق التاجر معلق
@@ -338,7 +365,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        {!user.is_active && (
+                        {user.status === "pending" && (
                             <>
                                 <Button
                                     onClick={handleApproveUser}
@@ -368,9 +395,41 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             </>
                         )}
 
+                        {user.status === "rejected" && (
+                            <Button
+                                onClick={handleApproveUser}
+                                disabled={!!processingAction}
+                                variant="default"
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                {processingAction === "approve" ? (
+                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                ) : (
+                                    <CheckCircle className="w-4 h-4 ml-2" />
+                                )}
+                                تفعيل المستخدم
+                            </Button>
+                        )}
+
+                        {user.status === "active" && (
+                            <Button
+                                onClick={handleRejectUser}
+                                disabled={!!processingAction}
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50"
+                            >
+                                {processingAction === "reject" ? (
+                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                ) : (
+                                    <XCircle className="w-4 h-4 ml-2" />
+                                )}
+                                إلغاء التفعيل
+                            </Button>
+                        )}
+
                         {user.role === "dealer" &&
                             user.dealer &&
-                            user.dealer.verification_status === "pending" && (
+                            user.dealer.status === "pending" && (
                                 <Button
                                     onClick={handleApproveDealerVerification}
                                     disabled={!!processingAction}
@@ -514,7 +573,6 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 </div>
                                 <div className="flex items-center">
                                     <div className="flex text-yellow-400">
-                                        
                                         {[...Array(5)].map((_, i) => (
                                             <svg
                                                 key={i}
@@ -522,7 +580,8 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                                 fill={
                                                     i <
                                                     Math.floor(
-                                                        user.dealer.rating || 4.5
+                                                        user.dealer.rating ||
+                                                            4.5
                                                     )
                                                         ? "currentColor"
                                                         : "none"

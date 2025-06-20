@@ -164,8 +164,9 @@ class AdminController extends Controller
             ], 400);
         }
         
-        // Update dealer is_active status
+        // Update dealer status
         $dealer->is_active = true;
+        $dealer->status = 'active';
         $dealer->save();
         
         // Update user role if needed
@@ -228,8 +229,9 @@ class AdminController extends Controller
             $dealer->rejection_reason = $request->reason;
         }
         
-        // Update dealer is_active status
+        // Update dealer status
         $dealer->is_active = false;
+        $dealer->status = 'rejected';
         $dealer->save();
         
         return response()->json([
@@ -249,7 +251,7 @@ class AdminController extends Controller
      */
     public function getPendingVerifications()
     {
-        $pendingDealers = Dealer::where('is_active', false)
+        $pendingDealers = Dealer::where('status', 'pending')
             ->with('user')
             ->get();
             
@@ -386,7 +388,7 @@ class AdminController extends Controller
     {
         // Count users
         $totalUsers = User::count();
-        $pendingUsers=User::where('is_active',false) ->count();
+        $pendingUsers = User::where('status', 'pending')->count();
         $dealerCount = Dealer::count();
         $regularUserCount = $totalUsers - $dealerCount;
         
@@ -396,8 +398,8 @@ class AdminController extends Controller
         $completedAuctions = Auction::where('status', AuctionStatus::ENDED)->count();
         $pendingAuctions = Auction::where('status', AuctionStatus::SCHEDULED)->count();
         
-        // Count verification requests - using is_active now instead of verification_status
-        $pendingVerifications = Dealer::where('is_active', false)->count();
+        // Count verification requests - using status field
+        $pendingVerifications = Dealer::where('status', 'pending')->count();
             
         // Count blogs
         $totalBlogs = BlogPost::count();
@@ -418,7 +420,7 @@ class AdminController extends Controller
         // Recent users
         $recentUsers = User::orderBy('created_at', 'desc')
             ->take(5)
-            ->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active']);
+            ->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active', 'status']);
             
         return response()->json([
             'status' => 'success',
@@ -841,8 +843,9 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($userId);
         
-        // Update user is_active status
-        $user->is_active = true;
+        // Update user status to active
+        $user->status = 'active';
+        $user->is_active = true; // Keep is_active for backward compatibility
         $user->save();
         
         return response()->json([
@@ -868,8 +871,9 @@ class AdminController extends Controller
         //     $user->rejection_reason = $request->reason;
         // }
         
-        // Keep the user in the system but marked as not active
-        $user->is_active = false;
+        // Update user status to rejected
+        $user->status = 'rejected';
+        $user->is_active = false; // Keep is_active for backward compatibility
         $user->save();
         
         return response()->json([

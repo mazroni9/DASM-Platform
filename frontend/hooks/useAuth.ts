@@ -16,6 +16,7 @@ export function useAuth() {
     return {
         user,
         isAdmin: user?.role === "admin",
+        isModerator: user?.role === "moderator",
         isLoading: loading,
         login,
         logout,
@@ -25,6 +26,9 @@ export function useAuth() {
         error,
     };
 }
+
+// Also export as default for compatibility
+export default useAuth;
 
 // Re-export the store for direct access if needed
 export { useStoreAuth as useAuthStore };

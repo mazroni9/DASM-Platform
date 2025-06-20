@@ -74,6 +74,8 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
                         router.push("/admin");
                     } else if (user?.role === "dealer") {
                         router.push("/dealer/dashboard");
+                    } else if (user.role === "moderator") {
+                        router.push("/moderator");
                     } else {
                         router.push("/dashboard");
                     }

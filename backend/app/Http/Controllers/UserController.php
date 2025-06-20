@@ -169,7 +169,8 @@ class UserController extends Controller
                 'kyc_status' => $user->kyc_status,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
-                'is_active' =>$user->is_active
+                'is_active' =>$user->is_active,
+                'status' => $user->status
             ];
             
             // Add dealer fields if user is a dealer
