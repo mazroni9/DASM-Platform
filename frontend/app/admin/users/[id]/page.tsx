@@ -15,12 +15,16 @@ import {
     Eye,
     Loader2,
     ArrowLeft,
+    Edit,
+    FileText,
+    Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import Link from "next/link";
+import EditUserForm from "@/components/admin/EditUserForm";
 
 // Types
 interface UserDetail {
@@ -31,6 +35,7 @@ interface UserDetail {
     phone: string;
     role: string;
     is_active: boolean;
+    status: string; // 'active', 'pending', 'rejected'
     kyc_status: string;
     email_verified_at: string | null;
     created_at: string;
@@ -38,6 +43,7 @@ interface UserDetail {
     dealer?: {
         id: number;
         is_active: string;
+        status: string; // 'active', 'pending', 'rejected'
         company_name: string;
         commercial_registry: string;
         description: string;
@@ -52,6 +58,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     const [processingAction, setProcessingAction] = useState<string | null>(
         null
     );
+    const [showEditForm, setShowEditForm] = useState(false);
 
     useEffect(() => {
         fetchUserDetails();
@@ -61,15 +68,24 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         try {
             // Fetch user details from backend
             const response = await api.get(`/api/admin/users/${params.id}`);
-
             if (response.data && response.data.status === "success") {
+                let user = response.data.data.user;
+                //check if user role
+                if (user.role == "admin") {
+                    response.data.data.user.role = "user";
+                }
+                if (user.role == "dealer") {
+                    //check rating if it is null or assign default value
+                    let rating = response.data.data.dealer.rating || 4.5;
+                    response.data.data.dealer.rating = rating;
+                }
                 setUser(response.data.data.user);
             }
         } catch (error) {
             console.error("Error fetching user details:", error);
             toast.error("فشل في تحميل بيانات المستخدم");
-
             // Set demo data for development
+            /*
             setUser({
                 id: parseInt(params.id),
                 first_name: "خالد",
@@ -92,6 +108,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     rating: 4.5,
                 },
             });
+            */
         } finally {
             setLoading(false);
         }
@@ -109,14 +126,18 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 toast.success("تم تفعيل المستخدم بنجاح");
 
                 // Update user in the local state
-                setUser((prev) => (prev ? { ...prev, is_active: true } : null));
+                setUser((prev) =>
+                    prev ? { ...prev, is_active: true, status: "active" } : null
+                );
             }
         } catch (error) {
             console.error("Error approving user:", error);
             toast.error("فشل في تفعيل المستخدم");
 
             // For development, update the state anyway
-            setUser((prev) => (prev ? { ...prev, is_active: true } : null));
+            setUser((prev) =>
+                prev ? { ...prev, is_active: true, status: "active" } : null
+            );
         } finally {
             setProcessingAction(null);
         }
@@ -132,10 +153,22 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
             if (response.data && response.data.status === "success") {
                 toast.success("تم رفض المستخدم بنجاح");
+
+                // Update user in the local state
+                setUser((prev) =>
+                    prev
+                        ? { ...prev, is_active: false, status: "rejected" }
+                        : null
+                );
             }
         } catch (error) {
             console.error("Error rejecting user:", error);
             toast.error("فشل في رفض المستخدم");
+
+            // For development, update the state anyway
+            setUser((prev) =>
+                prev ? { ...prev, is_active: false, status: "rejected" } : null
+            );
         } finally {
             setProcessingAction(null);
         }
@@ -159,9 +192,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     if (!prev || !prev.dealer) return prev;
                     return {
                         ...prev,
+                        is_active: true,
+                        status: "active",
                         dealer: {
                             ...prev.dealer,
                             is_active: true,
+                            status: "active",
                         },
                     };
                 });
@@ -175,9 +211,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 if (!prev || !prev.dealer) return prev;
                 return {
                     ...prev,
+                    is_active: true,
+                    status: "active",
                     dealer: {
                         ...prev.dealer,
                         is_active: true,
+                        status: "active",
                     },
                 };
             });
@@ -231,6 +270,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
         );
     }
 
+    const handleUserUpdated = (updatedUser: any) => {
+        setUser(updatedUser);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -270,6 +313,11 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                         <Shield className="w-3 h-3 ml-1" />
                                         مدير
                                     </span>
+                                ) : user.role === "moderator" ? (
+                                    <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                                        <Shield className="w-3 h-3 ml-1" />
+                                        مشرف
+                                    </span>
                                 ) : (
                                     <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-gray-100 text-gray-800">
                                         <UserIcon className="w-3 h-3 ml-1" />
@@ -277,10 +325,15 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                     </span>
                                 )}
 
-                                {user.is_active ? (
+                                {user.status === "active" ? (
                                     <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-green-100 text-green-800">
                                         <CheckCircle className="w-3 h-3 ml-1" />
                                         مفعل
+                                    </span>
+                                ) : user.status === "rejected" ? (
+                                    <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                        <XCircle className="w-3 h-3 ml-1" />
+                                        مرفوض
                                     </span>
                                 ) : (
                                     <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-amber-100 text-amber-800">
@@ -303,14 +356,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                                 {user.role === "dealer" && user.dealer && (
                                     <>
-                                        {user.dealer.is_active ===
-                                        "approved" ? (
+                                        {user.dealer.status === "active" ? (
                                             <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-green-100 text-green-800">
                                                 <CheckCircle className="w-3 h-3 ml-1" />
                                                 تاجر مُصدّق
                                             </span>
-                                        ) : user.dealer.verification_status ===
-                                          "pending" ? (
+                                        ) : user.dealer.status === "pending" ? (
                                             <span className="px-2 py-1 inline-flex items-center text-xs font-medium rounded-full bg-amber-100 text-amber-800">
                                                 <Clock className="w-3 h-3 ml-1" />
                                                 تحقق التاجر معلق
@@ -328,7 +379,17 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        {!user.is_active && (
+                        {/* Edit Button - Always visible for admins */}
+                        <Button
+                            onClick={() => setShowEditForm(true)}
+                            variant="outline"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                        >
+                            <Edit className="w-4 h-4 ml-2" />
+                            تعديل البيانات
+                        </Button>
+
+                        {user.status === "pending" && (
                             <>
                                 <Button
                                     onClick={handleApproveUser}
@@ -358,9 +419,41 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             </>
                         )}
 
+                        {user.status === "rejected" && (
+                            <Button
+                                onClick={handleApproveUser}
+                                disabled={!!processingAction}
+                                variant="default"
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                {processingAction === "approve" ? (
+                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                ) : (
+                                    <CheckCircle className="w-4 h-4 ml-2" />
+                                )}
+                                تفعيل المستخدم
+                            </Button>
+                        )}
+
+                        {user.status === "active" && (
+                            <Button
+                                onClick={handleRejectUser}
+                                disabled={!!processingAction}
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50"
+                            >
+                                {processingAction === "reject" ? (
+                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                ) : (
+                                    <XCircle className="w-4 h-4 ml-2" />
+                                )}
+                                إلغاء التفعيل
+                            </Button>
+                        )}
+
                         {user.role === "dealer" &&
                             user.dealer &&
-                            user.dealer.verification_status === "pending" && (
+                            user.dealer.status === "pending" && (
                                 <Button
                                     onClick={handleApproveDealerVerification}
                                     disabled={!!processingAction}
@@ -435,24 +528,23 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             </div>
                         </div>
 
-                        <div>
-                            <div className="text-sm font-medium text-gray-500 mb-1">
-                                حالة التحقق من الهوية
+                        {user.email_verified_at && (
+                            <div>
+                                <div className="text-sm font-medium text-gray-500 mb-1">
+                                    تاريخ تأكيد البريد الإلكتروني
+                                </div>
+                                <div className="flex items-center">
+                                    <CheckCircle className="w-5 h-5 text-green-500 ml-2" />
+                                    <span className="text-gray-800">
+                                        {formatDate(user.email_verified_at)}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex items-center">
-                                <Eye className="w-5 h-5 text-gray-400 ml-2" />
-                                <span className="text-gray-800 capitalize">
-                                    {user.kyc_status === "verified"
-                                        ? "تم التحقق"
-                                        : user.kyc_status === "pending"
-                                        ? "في الانتظار"
-                                        : "غير متحقق"}
-                                </span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
+                {/* Dealer Information Section */}
                 {user.role === "dealer" && user.dealer && (
                     <div className="bg-white rounded-lg shadow-md border p-6">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -474,7 +566,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                             <div>
                                 <div className="text-sm font-medium text-gray-500 mb-1">
-                                    السجل التجاري
+                                    رقم السجل التجاري
                                 </div>
                                 <div className="flex items-center">
                                     <Shield className="w-5 h-5 text-gray-400 ml-2" />
@@ -484,72 +576,42 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 </div>
                             </div>
 
-                            <div>
-                                <div className="text-sm font-medium text-gray-500 mb-1">
-                                    العنوان
-                                </div>
-                                <div className="flex items-start">
-                                    <div className="flex-shrink-0 mt-1">
-                                        <Building className="w-5 h-5 text-gray-400 ml-2" />
+                            {user.dealer.description && (
+                                <div>
+                                    <div className="text-sm font-medium text-gray-500 mb-1">
+                                        وصف الشركة
                                     </div>
-                                    <span className="text-gray-800">
-                                        {user.dealer.address || "غير محدد"}
-                                    </span>
+                                    <p className="text-gray-800 bg-gray-50 p-3 rounded-md">
+                                        {user.dealer.description}
+                                    </p>
                                 </div>
-                            </div>
+                            )}
 
                             <div>
                                 <div className="text-sm font-medium text-gray-500 mb-1">
-                                    التقييم
+                                    تقييم التاجر
                                 </div>
                                 <div className="flex items-center">
-                                    <div className="flex text-yellow-400">
-                                        {[...Array(5)].map((_, i) => (
-                                            <svg
-                                                key={i}
-                                                className="w-5 h-5"
-                                                fill={
-                                                    i <
-                                                    Math.floor(
-                                                        user.dealer.rating
-                                                    )
-                                                        ? "currentColor"
-                                                        : "none"
-                                                }
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                                                ></path>
-                                            </svg>
-                                        ))}
-                                        <span className="mr-2 text-gray-800">
-                                            {user.dealer.rating.toFixed(1)}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="text-sm font-medium text-gray-500 mb-1">
-                                    وصف الشركة
-                                </div>
-                                <div className="bg-gray-50 p-3 rounded border border-gray-200 mt-1">
-                                    <p className="text-gray-800 whitespace-pre-wrap">
-                                        {user.dealer.description ||
-                                            "لا يوجد وصف متاح"}
-                                    </p>
+                                    <Star className="w-5 h-5 text-yellow-400 ml-2" />
+                                    <span className="text-gray-800">
+                                        {user.dealer.rating || 0} / 5
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Edit User Form Modal */}
+            {user && (
+                <EditUserForm
+                    user={user}
+                    isOpen={showEditForm}
+                    onClose={() => setShowEditForm(false)}
+                    onUserUpdated={handleUserUpdated}
+                />
+            )}
         </div>
     );
 }

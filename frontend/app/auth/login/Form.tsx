@@ -64,19 +64,12 @@ export default function LoginForm() {
 
         try {
             const result = await login(data.email, data.password);
+            console.log(result);;
 
             if (result.success) {
                 setSuccess("تم تسجيل الدخول بنجاح");
-
-                // Redirect based on user role
-                const user = useAuthStore.getState().user;
-                if (user?.role === "admin") {
-                    router.push("/admin");
-                } else if (user?.role === "dealer") {
-                    router.push("/dealer/dashboard");
-                } else {
-                    router.push("/dashboard");
-                }
+                // Simply redirect to dashboard - ProtectedRoute will handle role-based routing
+                router.push("/dashboard");
             } else {
                 if (result.needsVerification) {
                     setSuccess(
@@ -113,17 +106,8 @@ export default function LoginForm() {
 
             if (result.success) {
                 setSuccess("تم التحقق بنجاح وتسجيل الدخول");
-
-                // Get the user's role for redirection
-                const user = useAuthStore.getState().user;
-
-                if (user?.role === "admin") {
-                    router.push("/admin");
-                } else if (user?.role === "dealer") {
-                    router.push("/dealer/dashboard");
-                } else {
-                    router.push("/dashboard");
-                }
+                // Simply redirect to dashboard - ProtectedRoute will handle role-based routing
+                router.push("/dashboard");
             } else {
                 setError(result.error || "فشل التحقق من الكود");
             }

@@ -73,14 +73,14 @@ const Navbar = () => {
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center gap-4">
                             <Image
-                                src="/logo.jpg"
-                                alt="منصة داسم DASM-e - Digital Auctions Specilaiests Markets"
+                                src="/logo.jpeg"
+                                alt="منصة داسم DASM - Digital Auctions Sectors Market"
                                 width={40}
                                 height={40}
                                 className="rounded-full"
                             />
                             <span className="font-bold text-base whitespace-nowrap">
-                                اسواق المزادات الرقمية المتخصصة{" "}
+                                سوق المزادات الرقمية{" "}
                                 <span className="text-blue-700">DASM-e</span>
                             </span>
                         </Link>
@@ -100,7 +100,7 @@ const Navbar = () => {
                             }`}
                         >
                             <Store size={18} />
-                            الأسواق المتخصصة
+                            الأسواق الرقمية المتخصصة
                         </Link>
                         <Link
                             href="/broadcasts"

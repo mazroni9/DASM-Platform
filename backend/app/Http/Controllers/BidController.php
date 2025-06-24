@@ -332,17 +332,19 @@ class BidController extends Controller
     public function placeBid(Request $request)
     {
         try {
+                      
+            $user=Auth::user();
             // Validate incoming request
             $data = $request->validate([
-                'itemId' => 'required|integer|exists:auctions,id',
-                'amount' => 'required|numeric|min:1'
+                'auction_id' => 'required|integer|exists:auctions,id',
+                'bid_amount' => 'required|numeric|min:1',
+                'user_id' => 'required|numeric'
             ]);
             
-            $auction = \App\Models\Auction::findOrFail($data['itemId']);
-            $user = auth()->user();
+            $auction = Auction::find($data['auction_id']);
             
             // Check if auction is active
-            if ($auction->status !== 'active') {
+            if ($auction->status !== AuctionStatus::ACTIVE) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'المزاد غير نشط حالياً'
@@ -358,7 +360,7 @@ class BidController extends Controller
             }
             
             // Check if the bid amount is higher than the current price
-            if ($data['amount'] <= $auction->current_price) {
+            if ($data['bid_amount'] <= $auction->current_bid) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'يجب أن يكون مبلغ المزايدة أعلى من السعر الحالي'
@@ -366,15 +368,17 @@ class BidController extends Controller
             }
             
             // Create the bid
-            $bid = new \App\Models\Bid();
-            $bid->user_id = $user->id;
+            $bid = new Bid();
             $bid->auction_id = $auction->id;
-            $bid->amount = $data['amount'];
-            $bid->status = 'active';
+            $bid->user_id = $user->id;
+            $bid->bid_amount = $data['bid_amount'];
             $bid->save();
             
             // Update the auction's current price
-            $auction->current_price = $data['amount'];
+            $auction->current_bid = $data['bid_amount'];
+            $auction->last_bid_time = Carbon::now()->toDateTimeString();
+            $auction->minimum_bid=Bid::where('auction_id',$data['auction_id'])->min('bid_amount');
+            $auction->maximum_bid=Bid::where('auction_id',$data['auction_id'])->max('bid_amount');
             $auction->save();
             
             // Trigger event for real-time updates (if using broadcasting)
@@ -385,10 +389,10 @@ class BidController extends Controller
                 'message' => 'تم تقديم العرض بنجاح',
                 'data' => [
                     'bid_id' => $bid->id,
-                    'amount' => $bid->amount,
+                    'bid_amount' => $bid->bid_amount,
                     'created_at' => $bid->created_at,
                     'auction_id' => $auction->id,
-                    'current_price' => $auction->current_price
+                    'current_bid' => $auction->current_bid
                 ]
             ]);
             
@@ -402,8 +406,40 @@ class BidController extends Controller
             \Illuminate\Support\Facades\Log::error('Error placing bid: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء تقديم العرض'
+                'message' =>  $e->getMessage()
             ], 500);
         }
+    }
+
+
+    public function latestBids($auctionId)
+    {
+        $auction = Auction::find($auctionId);
+        
+        if (!$auction) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Auction not found'
+            ], 404);
+        }
+        
+        $bids = $auction->bids()
+            ->with('user:id,name')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => $bids,
+            'auction' => [
+                'id' => $auction->id,
+                'current_bid' => $auction->current_bid,
+                'status' => [
+                    'value' => $auction->status->value,
+                    'label' => $auction->status->label(),
+                ],
+                'time_remaining' => $auction->time_remaining
+            ]
+        ]);
     }
 }

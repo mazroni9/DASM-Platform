@@ -9,6 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
+    timeout: 30000, // Increase timeout to 30 seconds for deployment
 });
 
 // We need a flag to prevent infinite refresh loops
@@ -17,6 +18,7 @@ let refreshPromise: Promise<boolean> | null = null;
 
 // Add debug logs for development
 console.log("API Base URL:", API_BASE_URL);
+console.log("Environment:", process.env.NODE_ENV);
 
 // Load token from localStorage on startup
 if (typeof window !== "undefined") {
@@ -32,13 +34,16 @@ if (typeof window !== "undefined") {
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        // Log the error in development
-        if (process.env.NODE_ENV !== "production") {
-            console.log("API Error:", {
-                status: error.response?.status,
-                url: error.config?.url,
-                method: error.config?.method,
-            });
+        // Log the error in development only and less verbosely
+        if (
+            process.env.NODE_ENV !== "production" &&
+            error.response?.status !== 401
+        ) {
+            console.log(
+                "API Error:",
+                error.response?.status,
+                error.config?.url
+            );
         }
 
         const originalRequest = error.config;
@@ -87,18 +92,16 @@ api.interceptors.response.use(
                     ] = `Bearer ${newToken}`;
                     return api(originalRequest);
                 } else {
-                    // If refresh failed, clear auth state
+                    // If refresh failed, clear auth state and redirect
                     console.log("Token refresh failed, rejecting request");
 
                     // Redirect to login page only if we're not already redirecting
-                    // and we're not on login page already
                     if (typeof window !== "undefined") {
                         const currentPath = window.location.pathname;
                         const isAlreadyOnLoginPage =
                             currentPath.includes("/auth/login");
 
                         if (!isAlreadyOnLoginPage) {
-                            // Store a flag to prevent multiple redirects
                             const isRedirecting = sessionStorage.getItem(
                                 "redirecting_to_login"
                             );
@@ -112,18 +115,10 @@ api.interceptors.response.use(
                                     "Auth refresh failed - redirecting to login"
                                 );
 
-                                // Use timeout to allow other requests to complete
-                                setTimeout(() => {
-                                    window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
-                                        currentPath
-                                    )}`;
-                                    // Clear flag after redirection
-                                    setTimeout(() => {
-                                        sessionStorage.removeItem(
-                                            "redirecting_to_login"
-                                        );
-                                    }, 1000);
-                                }, 100);
+                                // Immediate redirect without timeout
+                                window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
+                                    currentPath
+                                )}`;
                             }
                         }
                     }

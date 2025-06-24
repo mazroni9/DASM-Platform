@@ -118,8 +118,32 @@ export default function UserMenu() {
                             </button>
                         )}
 
+                        {user.role === "moderator" && (
+                            <button
+                                onClick={() => navigateTo("/moderator/dashboard")}
+                                className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                                role="menuitem"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-4 h-4 mr-2"
+                                >
+                                    <path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path>
+                                    <path d="M12 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"></path>
+                                    <path d="M20 17.58A10 10 0 0 0 12 2v0a10 10 0 0 0-8 15.58"></path>
+                                </svg>
+                                لوحة المشرف
+                            </button>
+                        )}
+
                         <button
-                            onClick={() => navigateTo("/profile")}
+                            onClick={() => navigateTo("/dashboard/profile")}
                             className="flex items-center w-full px-4 py-2 text-sm text-sky-900 hover:bg-sky-50"
                             role="menuitem"
                         >

@@ -3,38 +3,61 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import api from '@/lib/axios';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
-interface Car {
-  id: number;
-  الماركة: string;
-  الموديل: string;
-  "سنة الصنع": number;
-  "رقم اللوحة": string;
-  "رقم العداد": number;
-  "حالة السيارة": string;
-  "الحالة في المزاد": string;
-  "لون السيارة": string;
-  "نوع الوقود": string;
-  "المزايدات المقدمة": number;
-  "سعر الافتتاح": number;
-  "اقل سعر": number;
-  "اعلى سعر": number;
-  "اخر سعر": number;
-  "التغير": number;
-  "نسبة التغير": string;
-  "نتيجة المزايدة": string;
-}
 
-export default function InstantAuctionPage() {
-  const [cars, setCars] = useState<Car[]>([]);
 
+export default  function InstantAuctionPage() {
+  const [cars, setCars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
+  const { user, isLoggedIn } = useAuth();
+  const router = useRouter();
+
+  // Verify user is authenticated
   useEffect(() => {
-    fetch('/api/instant-auctions')
-      .then(res => res.json())
-      .then(data => setCars(data))
-      .catch(err => console.error('فشل تحميل بيانات السوق الفوري المباشر', err));
+      if (!isLoggedIn) {
+          router.push("/auth/login?returnUrl=/dashboard/profile");
+      }
+    }, [isLoggedIn, router]);
+
+  // تحديث الوقت كل ثانية
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
   }, []);
 
+     // Fetch user profile data
+  useEffect(() => {
+      async function fetchAuctions() {
+           if (!isLoggedIn) return;
+          try {
+              const response = await api.get('/api/approved-auctions');
+              if (response.data.data || response.data.data) {
+                  const carsData = response.data.data.data || response.data.data;
+                    // تعامل مع هيكل البيانات من API
+                  setCars(carsData);
+              }
+                  
+          } catch (error) {
+               console.error('فشل تحميل بيانات المزاد الصامت', error);
+              setCars([]); // مصفوفة فارغة في حالة الفشل
+              setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
+              setLoading(false);
+          } finally {
+              setLoading(false);
+          }
+      }
+      fetchAuctions();
+  }, []);
   return (
     <div className="p-4">
       <div className="flex justify-end mb-4">
@@ -57,7 +80,7 @@ export default function InstantAuctionPage() {
           <thead className="bg-gray-100">
             <tr>
               {[
-                'الماركة', 'الموديل', 'سنة الصنع', 'رقم اللوحة', 'العداد', 'حالة السيارة', 'الحالة في المزاد',
+                'الماركة', 'الموديل', 'سنة الصنع', 'رقم اللوحة', 'العداد', 'حالة السيارة', 
                 'لون السيارة', 'نوع الوقود', 'المزايدات المقدمة', 'سعر الافتتاح', 'اقل سعر', 'اعلى سعر',
                 'اخر سعر', 'التغير', 'نسبة التغير', 'نتيجة المزايدة', 'تفاصيل'
               ].map((header, idx) => (
@@ -68,26 +91,30 @@ export default function InstantAuctionPage() {
           <tbody>
             {cars.map((car, idx) => (
               <tr key={idx} className="border-t hover:bg-gray-50">
-                <td className="p-2 text-sm">{car.الماركة}</td>
-                <td className="p-2 text-sm">{car.الموديل}</td>
-                <td className="p-2 text-sm">{car["سنة الصنع"]}</td>
-                <td className="p-2 text-sm">{car["رقم اللوحة"]}</td>
-                <td className="p-2 text-sm">{car["رقم العداد"]}</td>
-                <td className="p-2 text-sm">{car["حالة السيارة"]}</td>
-                <td className="p-2 text-sm">{car["الحالة في المزاد"]}</td>
-                <td className="p-2 text-sm">{car["لون السيارة"]}</td>
-                <td className="p-2 text-sm">{car["نوع الوقود"]}</td>
-                <td className="p-2 text-sm">{car["المزايدات المقدمة"]}</td>
-                <td className="p-2 text-sm">{car["سعر_الافتتاح_المحسوب"]}</td>
-                <td className="p-2 text-sm">{car["اقل سعر"]}</td>
-                <td className="p-2 text-sm">{car["اعلى سعر"]}</td>
-                <td className="p-2 text-sm">{car["اخر سعر"]}</td>
+                {car.auction_type !="live" && car["car"].auction_status == "in_auction" &&(
+                <>
+                <td className="p-2 text-sm">{car['car'].make}</td>
+                <td className="p-2 text-sm">{car['car'].model}</td>
+                <td className="p-2 text-sm">{car['car'].year}</td>
+                <td className="p-2 text-sm">{car['car'].plate}</td>
+                <td className="p-2 text-sm">{car['car'].odmeter}</td>
+                <td className="p-2 text-sm">{car['car'].condition}</td>
+                <td className="p-2 text-sm">{car['car'].color}</td>
+                <td className="p-2 text-sm">{car['car'].engine}</td>
+                <td className="p-2 text-sm">{car["bids"].length}</td>
+                <td className="p-2 text-sm">{car["minimum_bid"]}</td>
+                <td className="p-2 text-sm">{car["minimum_bid"]}</td>
+                <td className="p-2 text-sm">{car["maximum_bid"]}</td>
+                <td className="p-2 text-sm">{car["current_bid"]}</td>
                 <td className="p-2 text-sm">{car["التغير"]}</td>
                 <td className="p-2 text-sm">{car["نسبة التغير"]}</td>
                 <td className="p-2 text-sm">{car["نتيجة المزايدة"]}</td>
                 <td className="p-2 text-sm text-blue-600 underline">
-                  <a href={`/carDetails/${car.id}`} target="_blank">عرض</a>
+                  <a href={`/carDetails/${car.car_id}`} target="_blank">عرض</a>
                 </td>
+                </>
+                              )}
+
               </tr>
             ))}
           </tbody>

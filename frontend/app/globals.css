@@ -82,3 +82,55 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Container styles */
+.pagination-container {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+/* Individual page items */
+.page-item {
+  margin: 0 5px;
+}
+
+/* Page link styles */
+.page-link {
+  display: block;
+  padding: 8px 14px;
+  color: #007bff;
+  text-decoration: none;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Hover effect */
+.page-link:hover {
+  background-color: #e9ecef;
+  color: #0056b3;
+}
+
+/* Active page styling */
+.page-item.active .page-link {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  cursor: default;
+}
+
+/* Disabled or unclickable state (optional) */
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+html[dir="rtl"] .pagination-container {
+  flex-direction: row-reverse;
+}

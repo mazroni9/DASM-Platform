@@ -3,17 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
+use App\Models\Dealer;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-// Add direct Cloudinary SDK import
-use Cloudinary\Cloudinary as CloudinarySDK;
-use Cloudinary\Configuration\Configuration;
+use App\Services\CloudinaryService;
+use Inertia\Response;
+use Inertia\Inertia;
+
+    // Helper function
 
 class CarController extends Controller
 {
+    /**
+     * CloudinaryService instance
+     *
+     * @var CloudinaryService
+     */
+    protected $cloudinaryService;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @param CloudinaryService $cloudinaryService
+     * @return void
+     */
+    public function __construct(CloudinaryService $cloudinaryService)
+    {
+        $this->cloudinaryService = $cloudinaryService;
+    }
+
     /**
      * Display a listing of the user's cars
      *
@@ -31,6 +51,9 @@ class CarController extends Controller
         } else {
             $query = Car::where('user_id', $user->id);
         }
+        
+
+        $query->with('auctions');
         
         // Filter by condition
         if ($request->has('condition')) {
@@ -58,15 +81,38 @@ class CarController extends Controller
         }
         
         // Sort options
-        $sortField = $request->input('sort_by', 'created_at');
+        $sortField = $request->input('sort_by', 'id');
         $sortDirection = $request->input('sort_dir', 'desc');
-        $allowedSortFields = ['created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
+        $allowedSortFields = ['id','created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
         
         if (in_array($sortField, $allowedSortFields)) {
             $query->orderBy($sortField, $sortDirection);
         }
-        
+        $cars= $query->paginate(10);
+
+    
+        return response()->json([
+            'status' => 'success',
+            'data' => $cars
+        ]);
+   
+ 
+    
+      
+    }
+
+
+
+    public function getAddedCars(Request $request)
+    {
+         $user = Auth::user();
+         // Handle both user types: dealer or regular user
+        if ($user->role === 'dealer' && $user->dealer) {
+            $query = Car::where('dealer_id', $user->dealer->id);
+        } 
+
         $cars = $query->paginate(10);
+
         
         return response()->json([
             'status' => 'success',
@@ -80,20 +126,38 @@ class CarController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+    /**
+     * Store a newly created car
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function store(Request $request)
     {
+        // Debug: Log the incoming request data
+        \Log::info('Car store request data:', [
+            'all_data' => $request->all(),
+            'files' => $request->allFiles(),
+            'images_exists' => $request->has('images'),
+            'images_is_array' => is_array($request->input('images')),
+            'has_file_images' => $request->hasFile('images'),
+            'file_images_count' => $request->hasFile('images') ? count($request->file('images')) : 0,
+        ]);
+
         $validator = Validator::make($request->all(), [
             'make' => 'required|string|max:50',
             'model' => 'required|string|max:50',
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'vin' => 'required|string|unique:cars,vin|max:17',
             'odometer' => 'required|integer|min:0',
-            'condition' => 'required|string|in:excellent,good,fair,poor',
+            'condition' => 'required|string|in:جديدة,ممتازة,جيدة جداً,جيدة,متوسطة,تحتاج إصلاح',
             'evaluation_price' => 'required|numeric|min:0',
             'color' => 'nullable|string|max:30',
             'engine' => 'nullable|string|max:50',
-            'transmission' => 'nullable|string|in:automatic,manual,cvt',
-            'description' => 'nullable|string'
+            'transmission' => 'nullable|string|in:أوتوماتيك,يدوي,نصف أوتوماتيك,cvt',
+            'description' => 'nullable|string',
+            'images' => 'sometimes|array|max:10',
+            'images.*' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -104,7 +168,6 @@ class CarController extends Controller
         }
         
         $user = Auth::user();
-        
         $car = new Car();
         
         // Associate car with dealer if user is dealer, otherwise with user directly
@@ -114,87 +177,63 @@ class CarController extends Controller
             $car->user_id = $user->id;
         }
         
+        // Map Arabic condition values to English database enum values
+        $conditionMap = [
+            'ممتازة' => 'excellent',
+            'جديدة' => 'excellent',
+            'جيدة جداً' => 'good',
+            'جيدة' => 'good',
+            'متوسطة' => 'fair',
+            'تحتاج إصلاح' => 'poor'
+        ];
+        
+        // Map Arabic transmission values to English database enum values
+        $transmissionMap = [
+            'أوتوماتيك' => 'automatic',
+            'يدوي' => 'manual',
+            'نصف أوتوماتيك' => 'cvt', // Map semi-automatic to CVT
+            'cvt' => 'cvt'
+        ];
+        
+        // Use the mapped values or fallback to defaults if no match
         $car->make = $request->make;
         $car->model = $request->model;
         $car->year = $request->year;
         $car->vin = $request->vin;
         $car->odometer = $request->odometer;
-        $car->condition = $request->condition;
+        $car->condition = $conditionMap[$request->condition] ?? 'good';
         $car->evaluation_price = $request->evaluation_price;
         $car->color = $request->color ?? null;
         $car->engine = $request->engine ?? null;
-        $car->transmission = $request->transmission ?? null;
+        $car->transmission = $transmissionMap[$request->transmission] ?? 'automatic';
         $car->description = $request->description ?? null;
         $car->auction_status = 'available';
         $car->save();
         
-        // Handle car images upload if any
-        if ($request->hasFile('images')) {
-            $uploadedImages = [];
-            
-            foreach ($request->file('images') as $image) {
-                try {
-                    // Check if Cloudinary config is properly loaded
-                    $cloudName = config('cloudinary.cloud_name');
-                    $apiKey = config('cloudinary.api_key');
-                    $apiSecret = config('cloudinary.api_secret');
-                    
-                    // If config values are missing, log the issue
-                    if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
-                        \Log::error('Cloudinary configuration is missing: ', [
-                            'cloud_name' => $cloudName,
-                            'api_key' => $apiKey ? 'set' : 'not set',
-                            'api_secret' => $apiSecret ? 'set' : 'not set'
-                        ]);
-                        
-                        // Use a local fallback path for testing
-                        $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
-                        continue;
-                    }
-                    
-                    // Initialize Cloudinary directly without using the Laravel facade
-                    $config = new Configuration();
-                    $config->cloud->cloudName = $cloudName;
-                    $config->cloud->apiKey = $apiKey;
-                    $config->cloud->apiSecret = $apiSecret;
-                    $config->url->secure = true;
-                    
-                    $cloudinary = new CloudinarySDK($config);
-                    
-                    // Upload the image to Cloudinary using the direct SDK
-                    $result = $cloudinary->uploadApi()->upload(
-                        $image->getRealPath(),
-                        [
-                            'folder' => 'cars',
-                            'public_id' => 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999)
-                        ]
-                    );
-                    
-                    // Get the secure URL from Cloudinary
-                    $imageUrl = $result['secure_url'];
-                    
-                    // Add the URL to the uploaded images array
-                    $uploadedImages[] = $imageUrl;
-                    
-                    \Log::info('Successfully uploaded image to Cloudinary', [
-                        'secure_url' => $imageUrl
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Error uploading image to Cloudinary: ' . $e->getMessage(), [
-                        'exception' => $e,
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine()
-                    ]);
-                    
-                    // Use a local fallback path for testing
-                    $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
-                }
-            }
-            
-            // Store the image URLs in the car record
+        // Log debug information about image files
+        $this->logImageDebugInfo($request);
+        
+        // Handle car images upload with our improved method
+        $uploadedImages = $this->handleCarImageUpload($request, $car);
+        
+        // If we have uploaded images, save them to the car
+        if (!empty($uploadedImages)) {
             $car->images = $uploadedImages;
             $car->save();
+            
+            \Log::info('Images saved to car', [
+                'car_id' => $car->id,
+                'image_count' => count($uploadedImages)
+            ]);
         }
+        
+        // Log summary information about the car and images
+        \Log::info('Car created successfully', [
+            'car_id' => $car->id,
+            'make' => $car->make,
+            'model' => $car->model,
+            'images_saved' => !empty($uploadedImages) ? count($uploadedImages) : 0
+        ]);
         
         return response()->json([
             'status' => 'success',
@@ -249,6 +288,45 @@ class CarController extends Controller
             'data' => [
                 'car' => $car,
                 'active_auction' => $activeAuction
+            ]
+        ]);
+    }
+
+
+    /**
+     * Display the specified car
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function showOnly($id)
+    {
+        $user = Auth::user();
+        $car = Car::find($id);
+        $car->load('dealer');
+
+        if (!$car) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Car not found or you do not have permission to view it',
+                'data'=>$car
+            ], 404);
+        }
+        
+        // Get active auction if exists
+        $activeAuction = $car->auctions()
+            ->whereIn('status', [
+                AuctionStatus::SCHEDULED->value,
+                AuctionStatus::ACTIVE->value
+            ])->first();
+              
+         $activeAuction->load('bids');    
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'car' => $car,
+                'active_auction' => $activeAuction,
+                'total_bids' => $activeAuction->bids->count()
             ]
         ]);
     }
@@ -331,54 +409,19 @@ class CarController extends Controller
             
             foreach ($request->file('images') as $image) {
                 try {
-                    // Check if Cloudinary config is properly loaded
-                    $cloudName = config('cloudinary.cloud_name');
-                    $apiKey = config('cloudinary.api_key');
-                    $apiSecret = config('cloudinary.api_secret');
-                    
-                    // If config values are missing, log the issue
-                    if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
-                        \Log::error('Cloudinary configuration is missing: ', [
-                            'cloud_name' => $cloudName,
-                            'api_key' => $apiKey ? 'set' : 'not set',
-                            'api_secret' => $apiSecret ? 'set' : 'not set'
-                        ]);
-                        
-                        // Use a local fallback path for testing
-                        $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
-                        continue;
-                    }
-                    
-                    // Initialize Cloudinary directly without using the Laravel facade
-                    $config = new Configuration();
-                    $config->cloud->cloudName = $cloudName;
-                    $config->cloud->apiKey = $apiKey;
-                    $config->cloud->apiSecret = $apiSecret;
-                    $config->url->secure = true;
-                    
-                    $cloudinary = new CloudinarySDK($config);
-                    
-                    // Upload the image to Cloudinary using the direct SDK
-                    $result = $cloudinary->uploadApi()->upload(
-                        $image->getRealPath(),
-                        [
-                            'folder' => 'cars',
-                            'public_id' => 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999)
-                        ]
-                    );
-                    
-                    // Get the secure URL from Cloudinary
-                    $imageUrl = $result['secure_url'];
+                    // Use our CloudinaryService to handle uploads
+                    $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+                    $imageUrl = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
                     
                     // Add the URL to the uploaded images array
                     $uploadedImages[] = $imageUrl;
                     
-                    \Log::info('Successfully uploaded image to Cloudinary', [
-                        'secure_url' => $imageUrl
+                    \Log::info('Successfully uploaded car image', [
+                        'image_url' => $imageUrl
                     ]);
                 } catch (\Exception $e) {
-                    \Log::error('Error uploading image to Cloudinary: ' . $e->getMessage(), [
-                        'exception' => $e,
+                    \Log::error('Error uploading image: ' . $e->getMessage(), [
+                        'exception' => get_class($e),
                         'file' => $e->getFile(),
                         'line' => $e->getLine()
                     ]);
@@ -511,5 +554,140 @@ class CarController extends Controller
                 'recent_cars' => $recentCars
             ]
         ]);
+    }
+    
+    /**
+     * Helper method to handle image upload debugging
+     * 
+     * @param Request $request
+     * @return void
+     */
+    private function logImageDebugInfo(Request $request)
+    {
+        \Log::info('Image request information:', [
+            'has_images_field' => $request->has('images'),
+            'has_images_file' => $request->hasFile('images'),
+            'has_images_array_field' => $request->has('images[]'),
+            'has_images_array_file' => $request->hasFile('images[]'),
+            'request_has_files' => $request->hasFile('images') || $request->hasFile('images[]'),
+            'files_in_request' => array_keys($request->allFiles()),
+            'request_content_type' => $request->header('Content-Type')
+        ]);
+        
+        if ($request->hasFile('images')) {
+            \Log::info('Images detected', [
+                'count' => is_array($request->file('images')) ? count($request->file('images')) : '1 (not array)'
+            ]);
+        }
+    }
+    
+    /**
+     * Handle upload to Cloudinary
+     *
+     * @param UploadedFile $file
+     * @param int $carId
+     * @return string Image URL
+     */
+    private function uploadToCloudinary($file, $carId)
+    {
+        try {
+            // Get credentials from config (which now has hardcoded defaults)
+            $cloudName = config('cloudinary.cloud_name');
+            $apiKey = config('cloudinary.api_key');
+            $apiSecret = config('cloudinary.api_secret');
+            
+            // Log the Cloudinary configuration for debugging
+            \Log::info('Cloudinary credentials check:', [
+                'cloud_name' => $cloudName ?? 'not set',
+                'api_key_exists' => !empty($apiKey) ? 'yes' : 'no',
+                'api_secret_exists' => !empty($apiSecret) ? 'yes' : 'no',
+            ]);
+            
+            // Check if credentials are available
+            if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
+                \Log::error('Cloudinary credentials missing, using fallback');
+                return '/temp/car_' . $carId . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
+            }
+            
+            // Create Cloudinary configuration
+            $config = new Configuration();
+            $config->cloud->cloudName = $cloudName;
+            $config->cloud->apiKey = $apiKey;
+            $config->cloud->apiSecret = $apiSecret;
+            $config->url->secure = true;
+            
+            // Initialize Cloudinary
+            $cloudinary = new CloudinarySDK($config);
+            
+            // Upload file
+            $result = $cloudinary->uploadApi()->upload(
+                $file->getRealPath(),
+                [
+                    'folder' => 'cars',
+                    'public_id' => 'car_' . $carId . '_' . time() . '_' . rand(1000, 9999)
+                ]
+            );
+            
+            \Log::info('Cloudinary upload successful', [
+                'secure_url' => $result['secure_url'] ?? 'no url returned'
+            ]);
+            
+            return $result['secure_url'];
+            
+        } catch (\Exception $e) {
+            \Log::error('Cloudinary upload failed: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return fallback URL
+            return '/temp/car_' . $carId . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
+        }
+    }
+    
+    /**
+     * Handle image uploads for a car
+     * 
+     * @param Request $request
+     * @param Car $car
+     * @return array
+     */
+    private function handleCarImageUpload(Request $request, Car $car)
+    {
+        $uploadedImages = [];
+        
+        if (!$request->hasFile('images')) {
+            \Log::info('No images to upload for car', ['car_id' => $car->id]);
+            return $uploadedImages;
+        }
+        
+        \Log::info('Processing images for car', [
+            'car_id' => $car->id,
+            'image_count' => count($request->file('images'))
+        ]);
+        
+        foreach ($request->file('images') as $image) {
+            // Generate a unique public ID for this image
+            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+            
+            // Use our CloudinaryService to upload the image
+            $imageUrl = $this->cloudinaryService->uploadImage(
+                $image,
+                'cars', // folder name
+                $publicId // public_id
+            );
+            
+            // Add the URL to our images array
+            $uploadedImages[] = $imageUrl;
+            
+            \Log::info('Image processed for car', [
+                'car_id' => $car->id,
+                'image_url' => $imageUrl,
+                'original_name' => $image->getClientOriginalName()
+            ]);
+        }
+        
+        return $uploadedImages;
     }
 }

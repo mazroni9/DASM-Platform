@@ -1,9 +1,11 @@
+
 import "./globals.css";
 import type { Metadata } from "next";
 import { Tajawal } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Providers from "./providers";
+import { createInertiaApp } from "@inertiajs/react";
 
 const tajawal = Tajawal({
     subsets: ["arabic", "latin"],
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
     title: "DASM - منصة المزادات الرقمية للأسواق",
     description: "منصة رقمية للمزادات المباشرة والفورية والصامتة",
 };
+
 
 export default function RootLayout({
     children,
@@ -48,3 +51,5 @@ export default function RootLayout({
         </html>
     );
 }
+
+

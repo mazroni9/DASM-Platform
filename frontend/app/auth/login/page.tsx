@@ -26,24 +26,7 @@ export default function LoginPage() {
     const [showVerification, setShowVerification] = useState(false);
     const [verificationCode, setVerificationCode] = useState("");
 
-    // Check if user is already logged in
-    useEffect(() => {
-        const { isLoggedIn, user } = useAuthStore.getState();
-
-        if (isLoggedIn && user) {
-            // Redirect based on user role or to the return URL
-            if (returnUrl.startsWith("/auth")) {
-                // Don't redirect to auth pages
-                if (user.role === "admin") {
-                    router.push("/admin/dashboard");
-                } else {
-                    router.push("/dashboard");
-                }
-            } else {
-                router.push(returnUrl);
-            }
-        }
-    }, [router, returnUrl]);
+    // NO role-based redirection logic here - ProtectedRoute handles it all
 
     // Handle login
     const handleLogin = async (e: React.FormEvent) => {
@@ -71,38 +54,18 @@ export default function LoginPage() {
             return;
         }
 
-        // Set submitting state
         setIsSubmitting(true);
 
         try {
-            // Attempt login using our Zustand auth store
             const result = await login(email, password);
 
             if (result.success) {
                 setSuccess("تم تسجيل الدخول بنجاح");
-
-                // Get user data from the store
-                const user = useAuthStore.getState().user;
-
-                // Redirect based on user role or to the return URL
-                if (returnUrl.startsWith("/auth")) {
-                    // Don't redirect to auth pages
-                    if (user?.role === "admin") {
-                        router.push("/admin/dashboard");
-                    } else if (user?.role === "dealer") {
-                        router.push("/dealer/dashboard");
-                    } else if (user?.role === "auctioneer") {
-                        router.push("/dashboard/auctioneer");
-                    } else if (user?.role === "control") {
-                        router.push("/dashboard/control");
-                    } else {
-                        router.push("/dashboard");
-                    }
-                } else {
-                    router.push(returnUrl);
-                }
+                // Simply redirect to returnUrl or dashboard - ProtectedRoute will handle role-based routing
+                router.push(
+                    returnUrl.startsWith("/auth") ? "/dashboard" : returnUrl
+                );
             } else if (result.pendingApproval) {
-                // Special handling for accounts pending admin approval
                 setError(
                     result.error ||
                         "حسابك في انتظار موافقة المسؤول. سيتم إشعارك عندما يتم تفعيل حسابك."
@@ -114,7 +77,6 @@ export default function LoginPage() {
                     );
                     setShowVerification(true);
                 } else {
-                    // Display a user-friendly error message instead of the raw server error
                     setError(
                         result.error ||
                             "فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور."
@@ -123,15 +85,9 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             console.error("خطأ في تسجيل الدخول:", err);
-            // Provide a generic error message to the user
             setError(
                 "حدث خطأ أثناء تسجيل الدخول، يرجى المحاولة مرة أخرى لاحقاً"
             );
-
-            // Log the detailed error to the console for debugging
-            if (process.env.NODE_ENV !== "production") {
-                console.error("Detailed login error:", err);
-            }
         } finally {
             setIsSubmitting(false);
         }
@@ -141,32 +97,23 @@ export default function LoginPage() {
     const handleVerifyCode = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Reset states
         setError(null);
         setSuccess(null);
 
-        // Validate form
         if (!verificationCode) {
             setError("يرجى إدخال رمز التحقق");
             return;
         }
 
-        // Set submitting state
         setIsSubmitting(true);
 
         try {
-            // Attempt verification using our Zustand auth store
             const result = await verifyCode(email, verificationCode);
 
             if (result.success) {
                 setSuccess("تم التحقق بنجاح وتسجيل الدخول");
-
-                // Redirect to the appropriate page or return URL
-                if (result.redirectTo && returnUrl === "/dashboard") {
-                    router.push(result.redirectTo);
-                } else {
-                    router.push(returnUrl);
-                }
+                // Simply redirect - ProtectedRoute will handle role-based routing
+                router.push("/dashboard");
             } else {
                 setError(result.error || "رمز التحقق غير صحيح");
             }

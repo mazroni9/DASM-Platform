@@ -18,6 +18,7 @@ interface AuthState {
     loading: boolean;
     error: string | null;
     initialized: boolean;
+    lastProfileFetch: number; // Add timestamp for caching
 
     login: (
         email: string,
@@ -29,17 +30,13 @@ interface AuthState {
         needsVerification?: boolean;
         pendingApproval?: boolean;
     }>;
-    verifyCode: (
-        email: string,
-        code: string
-    ) => Promise<{ success: boolean; error?: string; redirectTo?: string }>;
     logout: () => Promise<void>;
     refreshToken: () => Promise<boolean>;
     initializeFromStorage: () => Promise<boolean>;
 }
 
-// Create a proper base URL with full URL including http/https
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Cache duration for profile data (5 minutes)
+const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
 
 export const useAuthStore = create<AuthState>()(
     persist(
@@ -50,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
             loading: false,
             error: null,
             initialized: false,
+            lastProfileFetch: 0,
 
             initializeFromStorage: async () => {
                 // Prevent multiple initializations
@@ -76,9 +74,28 @@ export const useAuthStore = create<AuthState>()(
                 }
 
                 try {
-                    console.log("Attempting to initialize from storage");
+                    // Check if we have cached user data that's still valid
+                    const state = get();
+                    const now = Date.now();
+                    const cacheValid =
+                        state.user &&
+                        state.lastProfileFetch &&
+                        now - state.lastProfileFetch < PROFILE_CACHE_DURATION;
+
+                    if (cacheValid) {
+                        // Use cached data
+                        set({
+                            token,
+                            isLoggedIn: true,
+                            loading: false,
+                            initialized: true,
+                        });
+                        console.log("Using cached user data");
+                        return true;
+                    }
+
+                    console.log("Fetching fresh user data");
                     // Try to get the current user with the token
-                    // Use the correct endpoint as defined in the backend routes
                     const response = await api.get(`/api/user/profile`);
 
                     // Check if the response has a data property and extract it
@@ -90,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
                         isLoggedIn: true,
                         loading: false,
                         initialized: true,
+                        lastProfileFetch: now,
                     });
                     console.log("Successfully initialized from storage");
                     return true;
@@ -103,10 +121,14 @@ export const useAuthStore = create<AuthState>()(
                         if (api.defaults) {
                             delete api.defaults.headers.common["Authorization"];
                         }
-                        // Optionally redirect to login
-                        if (typeof window !== "undefined") {
-                            window.location.href = "/auth/login";
-                        }
+                        // Don't redirect here to prevent redirect loops
+                        set({
+                            user: null,
+                            token: null,
+                            isLoggedIn: false,
+                            loading: false,
+                            initialized: true,
+                        });
                         return false;
                     }
                     // For other errors, just mark initialized without logging in
@@ -154,6 +176,7 @@ export const useAuthStore = create<AuthState>()(
                         isLoggedIn: true,
                         loading: false,
                         error: null,
+                        lastProfileFetch: Date.now(),
                     });
 
                     // Set default auth header for future requests
@@ -166,98 +189,64 @@ export const useAuthStore = create<AuthState>()(
                         ] = `Bearer ${data.access_token}`;
                     }
 
-                    // redirect based on user role
-                    const redirectPath =
-                        userData.role === "admin"
-                            ? "/admin"
-                            : userData.role === "dealer"
-                            ? "/dealer"
-                            : "/dashboard";
-
-                    return { success: true, redirectTo: redirectPath };
+                    return { success: true };
                 } catch (err: any) {
-                    // Log detailed error in development mode only
                     console.error("Login error details:", err);
 
-                    // Extract user-friendly error message if available, or use generic message
-                    let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
+                    let errorMessage =
+                        "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.";
 
-                    if (err.response) {
-                        // The request was made and the server responded with an error status
-                        if (err.response.status === 401) {
-                            errorMessage =
-                                "البريد الإلكتروني أو كلمة المرور غير صحيحة";
-                        } else if (err.response.status === 403) {
-                            // Check for pending admin approval
-                            if (
-                                err.response.data?.message?.includes(
-                                    "pending approval"
-                                )
-                            ) {
-                                set({ loading: false });
-                                return {
-                                    success: false,
-                                    pendingApproval: true,
-                                    error: "حسابك في انتظار موافقة المسؤول. سيتم إشعارك عندما يتم تفعيل حسابك.",
-                                };
-                            } else {
-                                errorMessage = "غير مصرح لك بالدخول";
-                            }
-                        } else if (
-                            err.response.data &&
-                            err.response.data.message
+                    if (err.response?.data) {
+                        const responseData = err.response.data;
+
+                        // Check for account not active (status 403)
+                        if (
+                            err.response.status === 403 &&
+                            responseData.message
                         ) {
-                            // Use server message only if it's not a detailed error
-                            const serverMessage = err.response.data.message;
-                            if (
-                                !serverMessage.includes("SQLSTATE") &&
-                                !serverMessage.includes("relation") &&
-                                serverMessage.length < 100
-                            ) {
-                                errorMessage = serverMessage;
+                            set({ loading: false });
+                            return {
+                                success: false,
+                                pendingApproval: true,
+                                error: responseData.message, // Use backend message directly
+                            };
+                        }
+
+                        // Check for email not verified (status 401)
+                        if (
+                            err.response.status === 401 &&
+                            responseData.message === "Email not verified"
+                        ) {
+                            set({ loading: false });
+                            return { success: false, needsVerification: true };
+                        }
+
+                        // For validation errors, use the message or first error
+                        if (err.response.status === 422) {
+                            if (responseData.error) {
+                                errorMessage = responseData.error; // Laravel validation errors
+                            } else if (responseData.message) {
+                                errorMessage = responseData.message;
+                            } else if (responseData.first_error) {
+                                errorMessage = responseData.first_error;
                             }
                         }
+
+                        // For other errors, prefer the message field from backend
+                        else if (responseData.message) {
+                            errorMessage = responseData.message;
+                        }
+
+                        // Fallback to error field if message doesn't exist
+                        else if (responseData.error) {
+                            errorMessage = responseData.error;
+                        }
                     } else if (err.request) {
-                        // The request was made but no response was received
+                        // Network error
                         errorMessage =
                             "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
                     }
 
-                    set({ loading: false, error: errorMessage });
-                    return { success: false, error: errorMessage };
-                }
-            },
-
-            verifyCode: async (email, code) => {
-                set({ loading: true, error: null });
-                try {
-                    const response = await api.post(`/api/verify-email`, {
-                        token: code,
-                    });
-
-                    if (response.data.status === "success") {
-                        // After verification, try to login again
-                        const loginResult = await get().login(email, "");
-                        if (loginResult.success) {
-                            // Determine redirect path based on user role
-                            const user = get().user;
-                            const redirectPath =
-                                user?.role === "admin"
-                                    ? "/admin/dashboard"
-                                    : "/dashboard";
-                            return { success: true, redirectTo: redirectPath };
-                        } else {
-                            return {
-                                success: false,
-                                error: "تم التحقق بنجاح، يرجى تسجيل الدخول",
-                            };
-                        }
-                    }
-
-                    return { success: false, error: "فشل التحقق من الرمز" };
-                } catch (err: any) {
-                    const errorMessage =
-                        err.response?.data?.message || "فشل التحقق من الكود";
                     set({ loading: false, error: errorMessage });
                     return { success: false, error: errorMessage };
                 }
@@ -277,7 +266,12 @@ export const useAuthStore = create<AuthState>()(
                     if (api.defaults) {
                         delete api.defaults.headers.common["Authorization"];
                     }
-                    set({ user: null, token: null, isLoggedIn: false });
+                    set({
+                        user: null,
+                        token: null,
+                        isLoggedIn: false,
+                        lastProfileFetch: 0,
+                    });
 
                     // Force a page redirect to login to ensure complete logout
                     if (typeof window !== "undefined") {
@@ -327,32 +321,47 @@ export const useAuthStore = create<AuthState>()(
                             ] = `Bearer ${access_token}`;
                         }
 
-                        // Attempt to get user data with the new token
-                        try {
-                            const userResponse = await api.get(
-                                `/api/user/profile`
-                            );
-                            const userData =
-                                userResponse.data.data || userResponse.data;
+                        // Only fetch user data if we don't have it or cache is old
+                        const state = get();
+                        const now = Date.now();
+                        const needsUserData =
+                            !state.user ||
+                            now - state.lastProfileFetch >
+                                PROFILE_CACHE_DURATION;
 
+                        if (needsUserData) {
+                            try {
+                                const userResponse = await api.get(
+                                    `/api/user/profile`
+                                );
+                                const userData =
+                                    userResponse.data.data || userResponse.data;
+
+                                set({
+                                    token: access_token,
+                                    user: userData,
+                                    isLoggedIn: true,
+                                    lastProfileFetch: now,
+                                });
+                            } catch (userError) {
+                                console.error(
+                                    "Failed to get user data after token refresh:",
+                                    userError
+                                );
+                                // Even if user data fetch fails, we still have a valid token
+                                set({
+                                    token: access_token,
+                                    isLoggedIn: true,
+                                });
+                            }
+                        } else {
+                            // Just update the token
                             set({
                                 token: access_token,
-                                user: userData,
                                 isLoggedIn: true,
                             });
-                            return true;
-                        } catch (userError) {
-                            console.error(
-                                "Failed to get user data after token refresh:",
-                                userError
-                            );
-                            // Even if user data fetch fails, we still have a valid token
-                            set({
-                                token: access_token,
-                                isLoggedIn: true,
-                            });
-                            return true;
                         }
+                        return true;
                     } else {
                         // If response doesn't contain access_token
                         console.error(
@@ -377,6 +386,7 @@ export const useAuthStore = create<AuthState>()(
                             user: null,
                             token: null,
                             isLoggedIn: false,
+                            lastProfileFetch: 0,
                         });
 
                         // Don't redirect here to prevent redirect loops
@@ -394,6 +404,7 @@ export const useAuthStore = create<AuthState>()(
                 token: state.token,
                 user: state.user,
                 isLoggedIn: state.isLoggedIn,
+                lastProfileFetch: state.lastProfileFetch,
             }),
         }
     )

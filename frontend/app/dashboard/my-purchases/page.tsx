@@ -66,7 +66,7 @@ const getStatusInfo = (status: string) => {
 };
 
 export default function MyPurchasesPage() {
-  const [purchases, setPurchases] = useState(mockPurchases);
+  const [purchases, setPurchases] = useState([]);
 
   const handlePayNow = (purchaseId: string) => {
     alert('سيتم توجيهك لصفحة الدفع قريباً (محاكاة).');

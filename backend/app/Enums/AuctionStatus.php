@@ -5,11 +5,11 @@ namespace App\Enums;
 enum AuctionStatus: string
 {
     case SCHEDULED = 'scheduled';
-    case ACTIVE = 'active';
+    case ACTIVE = 'live';
     case ENDED = 'ended';
     case CANCELED = 'canceled';
     case FAILED = 'failed';
-
+    case COMPLETED = 'completed';
     /**
      * Get Arabic label (default)
      */
@@ -21,6 +21,7 @@ enum AuctionStatus: string
             self::ENDED => 'منتهي',
             self::CANCELED => 'ملغي',
             self::FAILED => 'فاشل',
+            self::COMPLETED => 'مكتمل',
         };
     }
 
@@ -31,10 +32,11 @@ enum AuctionStatus: string
     {
         return match($this) {
             self::SCHEDULED => 'Scheduled',
-            self::ACTIVE => 'Active',
+            self::ACTIVE => 'Live',
             self::ENDED => 'Ended',
             self::CANCELED => 'Canceled',
             self::FAILED => 'Failed',
+            self::COMPLETED => 'Completed',
         };
     }
 
@@ -49,6 +51,7 @@ enum AuctionStatus: string
             self::ENDED => 'gray',
             self::CANCELED => 'red',
             self::FAILED => 'orange',
+            self::COMPLETED => 'green',
         };
     }
 

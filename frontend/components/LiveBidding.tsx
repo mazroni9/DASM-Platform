@@ -9,6 +9,7 @@
  */
 
 "use client";
+import api from '@/lib/axios';
 
 import React, { useEffect, useState } from "react";
 import { formatMoney } from "@/lib/utils";
@@ -24,66 +25,46 @@ interface Bid {
 }
 
 interface LiveBiddingProps {
-    itemId: number;
-    currentPrice: number;
+    data: [];
 }
 
-export default function LiveBidding({
-    itemId,
-    currentPrice,
-}: LiveBiddingProps) {
-    const [bids, setBids] = useState<Bid[]>([]);
+export default function LiveBidding({data}: LiveBiddingProps) {
+    const [bids, setBids] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // بيانات تجريبية للعرض - سيتم استبدالها بالبيانات الفعلية من API
-    useEffect(() => {
-        // محاكاة جلب البيانات من الخادم
-        const mockBids: Bid[] = [
-            {
-                id: "1",
-                amount: currentPrice,
-                timestamp: new Date(Date.now() - 60000).toISOString(),
-                bidder_name: "محمد س.",
-                source: "onsite",
-                is_winning: false,
-            },
-            {
-                id: "2",
-                amount: currentPrice - 5000,
-                timestamp: new Date(Date.now() - 90000).toISOString(),
-                bidder_name: "أحمد م.",
-                source: "online",
-                is_winning: false,
-            },
-            {
-                id: "3",
-                amount: currentPrice - 7000,
-                timestamp: new Date(Date.now() - 120000).toISOString(),
-                bidder_name: "خالد ع.",
-                source: "onsite",
-                is_winning: false,
-            },
-            {
-                id: "4",
-                amount: currentPrice - 10000,
-                timestamp: new Date(Date.now() - 180000).toISOString(),
-                bidder_name: "فهد س.",
-                source: "online",
-                is_winning: false,
-            },
-        ];
-
-        setBids(mockBids);
-        setLoading(false);
-
-        // في المستقبل، سنستخدم WebSockets للاتصال المباشر
-        // const ws = new WebSocket(`wss://api.example.com/bids/${itemId}`);
-        // ws.onmessage = (event) => {
-        //   const newBid = JSON.parse(event.data);
-        //   setBids(prevBids => [newBid, ...prevBids.slice(0, 9)]);
-        // };
-        // return () => ws.close();
-    }, [itemId, currentPrice]);
+         // Fetch user profile data
+  useEffect(() => {
+        function fetchBids() {
+          try {
+    const mockBids = [];
+            if(data.bids.length > 0){
+                    data.bids.filter((bid,index)=>{
+                    mockBids.push(
+                        {
+                            id: index,
+                            amount: bid.bid_amount,
+                            timestamp: new Date(new Date(bid.created_at).getTime()).toISOString(),
+                            bidder_name: bid.bidder_name,
+                            source: "onsite",
+                            is_winning: false,
+                        }
+                    );
+                });
+            }
+            
+               setBids(mockBids.sort((a,b)=> b.id - a.id).slice(0,10));
+          } catch (error) {
+               console.error('فشل تحميل بيانات  ', error);
+              setBids([]); // مصفوفة فارغة في حالة الفشل
+              setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
+              setLoading(false);
+          } finally {
+              setLoading(false);
+          }
+      }
+      fetchBids();
+  }, [data]);
 
     // تنسيق التاريخ ليظهر كم مضى من الوقت
     const formatTimeAgo = (timestamp: string) => {
@@ -102,6 +83,7 @@ export default function LiveBidding({
         }
     };
 
+   
     return (
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="p-4 bg-gradient-to-r from-teal-600 to-teal-500 text-white">
@@ -132,13 +114,16 @@ export default function LiveBidding({
                         <span>آخر 10 مزايدات</span>
                     </div>
                 </div>
-
+                <div>
+                          
                 {loading ? (
                     <div className="flex justify-center items-center p-6">
                         <div className="animate-spin h-6 w-6 border-2 border-teal-500 border-t-transparent rounded-full"></div>
                     </div>
                 ) : (
+                    
                     <div className="space-y-1.5 max-h-64 overflow-y-auto p-1">
+                 
                         {bids.map((bid) => (
                             <div
                                 key={bid.id}
@@ -152,6 +137,7 @@ export default function LiveBidding({
                                         : ""
                                 }`}
                             >
+                                
                                 <div className="flex items-center">
                                     <div
                                         className={`
@@ -194,7 +180,9 @@ export default function LiveBidding({
                                     )}
                                 </div>
                             </div>
+                                
                         ))}
+
                     </div>
                 )}
 
@@ -203,16 +191,15 @@ export default function LiveBidding({
                         <div className="flex items-center text-gray-500 text-sm">
                             <Users size={16} className="mr-1.5" />
                             <span>
-                                المزايدون النشطون:{" "}
-                                <span className="font-medium">18</span>
+                                المزيادات:{" "}
+                                <span className="font-medium">{bids.length}</span>
                             </span>
                         </div>
-                        <button className="text-sm text-blue-600 hover:text-blue-800">
-                            عرض جميع المزايدات
-                        </button>
+
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     );
 }
