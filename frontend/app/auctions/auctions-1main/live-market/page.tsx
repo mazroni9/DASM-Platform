@@ -103,17 +103,21 @@ export default function LiveMarketPage() {
                     return car.status === 'live' && car.auction_type === 'live' && car.approved_for_live;
                    });
              
-                  let car_user_id = current_car[0].car.user_id;
-                  let current_user_id = user.id;
-                  let dealer_user_id = current_car[0].car.dealer.user_id;
-                  console.log(car_user_id,current_user_id,dealer_user_id);
-                  if(current_user_id == car_user_id ){
-                    setIsOwner(true);
-                  }else if(dealer_user_id == current_user_id){
-                    setIsOwner(true);
-                  }else{
-                    setIsOwner(false);
-                  }
+                                     console.log( );
+                   if(current_car.length > 0){
+                     let car_user_id = current_car[0].car.user_id;
+                      let current_user_id = user.id;
+                      let dealer_user_id = current_car[0].car.dealer.user_id;
+                  
+                      if(current_user_id == car_user_id ){
+                        setIsOwner(true);
+                      }else if(dealer_user_id == current_user_id){
+                        setIsOwner(true);
+                      }else{
+                        setIsOwner(false);
+                      }
+                   }
+                 
                     // تعامل مع هيكل البيانات من API
                   setMarketCars(liveAuctions);
                   setCurrentCar(current_car);
@@ -360,7 +364,9 @@ export default function LiveMarketPage() {
               </div>
             </div>
             {/* إضافة مكون المزايدات المباشرة */}
-            <LiveBidding data={currentCar[0] || []} />
+            {currentCar.length > 0&&(
+              <LiveBidding data={currentCar[0] || []} />
+            )}
             
             {/* إضافة مكون الدردشة بين المزايدين 
             <BidderChat 
@@ -372,7 +378,7 @@ export default function LiveMarketPage() {
 
           {/* القسم الأيمن - نبض المزاد والسيارة الحالية */}
           <div className="md:col-span-5 flex flex-col space-y-4">
-            {/* مؤشر نبض المزاد المباشر */}
+            {/* مؤشر نبض المزاد المباشر 
             <div>
               <LiveAuctionPulse 
                 auctionId={parseInt(currentCar?.id) || 1}
@@ -383,7 +389,7 @@ export default function LiveMarketPage() {
                 className="w-full h-[130px]"
               />
             </div>
-            
+            */}
             {/* معلومات السيارة */}
             <div className="bg-white p-4 rounded-xl shadow-md">
               <h2 className="text-lg font-bold mb-3 border-b pb-2 text-center text-teal-800">السيارة الحالية في الحراج</h2>
@@ -416,13 +422,11 @@ export default function LiveMarketPage() {
                           {formatMoney(car.current_bid || "0")} 
                         </div>
                       </div>
-                      {!isOwner &&(
-                        <span>I am not the owner</span>
-                      )}
+      
                       {/* زر تقديم العرض */}
                       { !showBid ? (
                         <button
-                          hidden={!isOwner}
+                          hidden={isOwner}
                           onClick={() => setShowBid(!isOwner)}
                           className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
                           style={{ animation: 'pulse 2.5s infinite' }}

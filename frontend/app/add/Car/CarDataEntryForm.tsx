@@ -256,10 +256,12 @@ export default function CarDataEntryForm() {
                 }
             } catch (error) {
                 console.error("Error in adding car user:", error);
-                toast.error("فشل في إضافة السيارة");
+                console.log(error);
+                toast.error(error.response.data.errors|| "حدث خطأ أثناء إضافة السيارة");
             }
         } catch (error: any) {
             console.error("خطأ في حفظ البيانات:", error);
+            
             setSubmitResult({
                 success: false,
                 message: error.message || "حدث خطأ أثناء حفظ البيانات",
