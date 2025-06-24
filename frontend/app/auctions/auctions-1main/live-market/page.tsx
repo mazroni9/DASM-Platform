@@ -44,6 +44,7 @@ function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive
 }
 
 export default function LiveMarketPage() {
+  const [isOwner,setIsOwner] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isLoggedIn } = useAuth();
   const router = useRouter();
@@ -101,10 +102,24 @@ export default function LiveMarketPage() {
                     let current_car = carsData.filter(car => {
                     return car.status === 'live' && car.auction_type === 'live' && car.approved_for_live;
                    });
+             
+                  let car_user_id = current_car[0].car.user_id;
+                  let current_user_id = user.id;
+                  let dealer_user_id = current_car[0].car.dealer.user_id;
+                  console.log(car_user_id,current_user_id,dealer_user_id);
+                  if(current_user_id == car_user_id ){
+                    setIsOwner(true);
+                  }else if(dealer_user_id == current_user_id){
+                    setIsOwner(true);
+                  }else{
+                    setIsOwner(false);
+                  }
                     // تعامل مع هيكل البيانات من API
                   setMarketCars(liveAuctions);
                   setCurrentCar(current_car);
                   setMarketCarsCompleted(completedAuctions);
+                                     
+       
               } else {
                   setMarketCars([]);
                   setCurrentCar([]);
@@ -401,11 +416,13 @@ export default function LiveMarketPage() {
                           {formatMoney(car.current_bid || "0")} 
                         </div>
                       </div>
-                      
+                      {!isOwner &&(
+                        <span>I am not the owner</span>
+                      )}
                       {/* زر تقديم العرض */}
-                      {!showBid ? (
+                      { !showBid ? (
                         <button 
-                          onClick={() => setShowBid(true)}
+                          onClick={() => setShowBid(!isOwner)}
                           className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
                           style={{ animation: 'pulse 2.5s infinite' }}
                         >
@@ -413,7 +430,7 @@ export default function LiveMarketPage() {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
-                            قدم عرضك
+                            قدم عرضك 
                           </span>
                         </button>
                       ) : (
