@@ -12,19 +12,13 @@ import {
     AlertTriangle,
     Loader2,
     Filter,
-<<<<<<< HEAD
-} from "lucide-react";
-import { toast } from "react-hot-toast";
-import api from "@/lib/axios";
-=======
     CircleCheck,
     ArrowRightLeft,
-    Play,
+    Play
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { Button } from "@mui/material";
->>>>>>> DASMadmin
 
 interface Auction {
     id: number;
@@ -68,20 +62,12 @@ export default function AdminAuctionsPage() {
         }
     };
 
-<<<<<<< HEAD
     const updateAuctionStatus = async (auctionId: number, status: string) => {
-=======
-    const updateAuctionStatus = async (auctionId: number, status: string,approved_for_live:boolean) => {
->>>>>>> DASMadmin
         try {
             const response = await api.put(
                 `/api/admin/auctions/${auctionId}/status`,
                 {
                     status,
-<<<<<<< HEAD
-=======
-                    approved_for_live
->>>>>>> DASMadmin
                 }
             );
 
@@ -95,9 +81,7 @@ export default function AdminAuctionsPage() {
         }
     };
 
-<<<<<<< HEAD
-=======
-        const updateAuctionType = async (auctionId: number, auction_type: string,approved_for_live:boolean) => {
+    const updateAuctionType = async (auctionId: number, auction_type: string,approved_for_live:boolean) => {
         try {
             const response = await api.put(
                 `/api/admin/auctions/${auctionId}/auction-type`,
@@ -117,8 +101,6 @@ export default function AdminAuctionsPage() {
         }
     };
 
-
->>>>>>> DASMadmin
     const approveAuction = async (auctionId: number) => {
         try {
             const response = await api.post(
@@ -159,11 +141,8 @@ export default function AdminAuctionsPage() {
                 return "text-gray-600 bg-gray-100";
             case "cancelled":
                 return "text-red-600 bg-red-100";
-<<<<<<< HEAD
-=======
             case "completed":
                 return "text-green-600 bg-gray-100";
->>>>>>> DASMadmin
             default:
                 return "text-yellow-600 bg-yellow-100";
         }
@@ -171,11 +150,7 @@ export default function AdminAuctionsPage() {
 
     const getStatusText = (status: string) => {
         switch (status) {
-<<<<<<< HEAD
             case "active":
-=======
-            case "live":
->>>>>>> DASMadmin
                 return "نشط";
             case "scheduled":
                 return "مجدول";
@@ -183,11 +158,8 @@ export default function AdminAuctionsPage() {
                 return "منتهي";
             case "cancelled":
                 return "ملغي";
-<<<<<<< HEAD
-=======
             case "completed":
                 return "مكتمل";
->>>>>>> DASMadmin
             default:
                 return status;
         }
@@ -244,11 +216,7 @@ export default function AdminAuctionsPage() {
                         <option value="active">نشطة</option>
                         <option value="ended">منتهية</option>
                         <option value="cancelled">ملغية</option>
-<<<<<<< HEAD
-=======
-                         <option value="completed">مكتملة</option>
-
->>>>>>> DASMadmin
+                        <option value="completed">مكتملة</option>
                     </select>
                 </div>
             </div>
@@ -275,12 +243,9 @@ export default function AdminAuctionsPage() {
                                     وقت النهاية
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-<<<<<<< HEAD
-=======
-                                     نوع الحراج
+                                    نوع الحراج
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
->>>>>>> DASMadmin
                                     الإجراءات
                                 </th>
                             </tr>
@@ -336,24 +301,17 @@ export default function AdminAuctionsPage() {
                                             {formatDate(auction.end_time)}
                                         </div>
                                     </td>
-<<<<<<< HEAD
-=======
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <div className="flex items-center">
                                             {auction.auction_type}
                                         </div>
                                     </td>
->>>>>>> DASMadmin
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() =>
                                                     router.push(
-<<<<<<< HEAD
-                                                        `/admin/auctions/${auction.id}`
-=======
                                                         `/carDetails/${auction.id}`
->>>>>>> DASMadmin
                                                     )
                                                 }
                                                 className="text-blue-600 hover:text-blue-900"
@@ -361,10 +319,7 @@ export default function AdminAuctionsPage() {
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </button>
-
-<<<<<<< HEAD
-=======
-                                               {auction.status === "live" && auction.auction_type === "live" && !auction.approved_for_live &&(
+                                            {auction.status === "live" && auction.auction_type === "live" && !auction.approved_for_live &&(
                                                 <button
                                                     onClick={() =>
                                                         updateAuctionType(
@@ -439,7 +394,6 @@ export default function AdminAuctionsPage() {
                                                     <ArrowRightLeft className="h-4 w-4" />
                                                 </button>
                                             )}
->>>>>>> DASMadmin
                                             {auction.status === "scheduled" && (
                                                 <>
                                                     <button
@@ -466,27 +420,12 @@ export default function AdminAuctionsPage() {
                                                     </button>
                                                 </>
                                             )}
-
-<<<<<<< HEAD
-                                            {auction.status === "active" && (
-=======
                                             {auction.status === "live" && (
                                                 <>
->>>>>>> DASMadmin
                                                 <button
                                                     onClick={() =>
                                                         updateAuctionStatus(
                                                             auction.id,
-<<<<<<< HEAD
-                                                            "ended"
-                                                        )
-                                                    }
-                                                    className="text-yellow-600 hover:text-yellow-900"
-                                                    title="إنهاء المزاد"
-                                                >
-                                                    <AlertTriangle className="h-4 w-4" />
-                                                </button>
-=======
                                                             "completed",
                                                             false
                                                         )
@@ -496,7 +435,6 @@ export default function AdminAuctionsPage() {
                                                 >
                                                     <CircleCheck className="h-4 w-4" />
                                                 </button>
-
                                                 <button
                                                     onClick={() =>
                                                         updateAuctionStatus(
@@ -511,7 +449,6 @@ export default function AdminAuctionsPage() {
                                                     <AlertTriangle className="h-4 w-4" />
                                                 </button>
                                                 </>
->>>>>>> DASMadmin
                                             )}
                                         </div>
                                     </td>
