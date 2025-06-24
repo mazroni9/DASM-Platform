@@ -506,6 +506,13 @@ class AuctionController extends Controller
             'data' => $auctions
         ]);
     }
+<<<<<<< HEAD
+=======
+
+
+
+    
+>>>>>>> DASMadmin
     
     /**
      * Get analytics for a specific auction

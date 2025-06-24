@@ -9,7 +9,7 @@ enum AuctionStatus: string
     case ENDED = 'ended';
     case CANCELED = 'canceled';
     case FAILED = 'failed';
-
+    case COMPLETED = 'completed';
     /**
      * Get Arabic label (default)
      */
@@ -21,6 +21,7 @@ enum AuctionStatus: string
             self::ENDED => 'منتهي',
             self::CANCELED => 'ملغي',
             self::FAILED => 'فاشل',
+            self::COMPLETED => 'مكتمل',
         };
     }
 
@@ -35,6 +36,7 @@ enum AuctionStatus: string
             self::ENDED => 'Ended',
             self::CANCELED => 'Canceled',
             self::FAILED => 'Failed',
+            self::COMPLETED => 'Completed',
         };
     }
 
@@ -49,6 +51,7 @@ enum AuctionStatus: string
             self::ENDED => 'gray',
             self::CANCELED => 'red',
             self::FAILED => 'orange',
+            self::COMPLETED => 'green',
         };
     }
 

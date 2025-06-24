@@ -121,7 +121,6 @@ class BroadcastController extends Controller
             $data = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'venue_id' => 'required|exists:venues,id',
                 'youtube_stream_id' => 'nullable|string|max:255',
                 'youtube_embed_url' => 'required|string|url',
                 'youtube_chat_embed_url' => 'nullable|string|url',
@@ -131,6 +130,7 @@ class BroadcastController extends Controller
             
             // Check if a broadcast already exists
             $existingBroadcast = Broadcast::first();
+            
             
             if ($existingBroadcast) {
                 return response()->json([
@@ -143,7 +143,6 @@ class BroadcastController extends Controller
             $broadcast = new Broadcast();
             $broadcast->title = $data['title'];
             $broadcast->description = $data['description'] ?? null;
-            $broadcast->venue_id = $data['venue_id'];
             $broadcast->youtube_stream_id = $data['youtube_stream_id'] ?? null;
             $broadcast->youtube_embed_url = $data['youtube_embed_url'];
             $broadcast->youtube_chat_embed_url = $data['youtube_chat_embed_url'] ?? null;

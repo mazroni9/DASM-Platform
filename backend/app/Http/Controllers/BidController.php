@@ -410,4 +410,36 @@ class BidController extends Controller
             ], 500);
         }
     }
+
+
+    public function latestBids($auctionId)
+    {
+        $auction = Auction::find($auctionId);
+        
+        if (!$auction) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Auction not found'
+            ], 404);
+        }
+        
+        $bids = $auction->bids()
+            ->with('user:id,name')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => $bids,
+            'auction' => [
+                'id' => $auction->id,
+                'current_bid' => $auction->current_bid,
+                'status' => [
+                    'value' => $auction->status->value,
+                    'label' => $auction->status->label(),
+                ],
+                'time_remaining' => $auction->time_remaining
+            ]
+        ]);
+    }
 }

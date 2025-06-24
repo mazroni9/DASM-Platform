@@ -454,7 +454,7 @@ class AdminController extends Controller
     public function updateAuctionStatus($id, Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:active,ended,completed,cancelled,failed',
+            'status' => 'required|in:live,ended,completed,cancelled,failed',
         ]);
 
         if ($validator->fails()) {
@@ -466,8 +466,9 @@ class AdminController extends Controller
         
         $auction = Auction::findOrFail($id);
         $auction->status = $request->status;
+        $auction->approved_for_live = $request->approved_for_live;
         
-        if ($request->status === 'active' && !$auction->control_room_approved) {
+        if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
         }
         
@@ -475,16 +476,64 @@ class AdminController extends Controller
         
         // Update car status if needed
         if ($auction->car) {
-            if ($request->status === 'active') {
+            if ($request->status === 'live') {
                 $auction->car->auction_status = 'in_auction';
+                $auction->approved_for_live = false;
             } else if ($request->status === 'completed') {
                 $auction->car->auction_status = 'sold';
+                $auction->approved_for_live = false;
             } else if (in_array($request->status, ['ended', 'cancelled', 'failed'])) {
                 $auction->car->auction_status = 'available';
+                $auction->approved_for_live = false;
             }
             
             $auction->car->save();
         }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auction status updated successfully',
+            'data' => $auction
+        ]);
+    }
+
+
+     /**
+     * Update auction status (admin only)
+     *
+     * @param int $id
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateAuctionType($id, Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'auction_type' => 'required|in:silent_instant,live',
+            'approved_for_live' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        $auction = Auction::findOrFail($id);
+        $isApproved=$request->approved_for_live;
+        $count=$auction->where("approved_for_live",true)->count();
+        if($isApproved && $count > 0){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only one auction can be approved for live at a time',
+            ], 422);
+        }
+        
+        // Update auction type (if needed
+        $auction->auction_type = $request->auction_type;
+        $auction->approved_for_live = $request->approved_for_live;
+        $auction->save();
+        
         
         return response()->json([
             'status' => 'success',

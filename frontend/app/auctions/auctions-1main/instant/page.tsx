@@ -91,6 +91,11 @@ export default  function InstantAuctionPage() {
           <tbody>
             {cars.map((car, idx) => (
               <tr key={idx} className="border-t hover:bg-gray-50">
+<<<<<<< HEAD
+=======
+                {car.auction_type !="live" && car["car"].auction_status == "in_auction" &&(
+                <>
+>>>>>>> DASMadmin
                 <td className="p-2 text-sm">{car['car'].make}</td>
                 <td className="p-2 text-sm">{car['car'].model}</td>
                 <td className="p-2 text-sm">{car['car'].year}</td>
@@ -110,6 +115,9 @@ export default  function InstantAuctionPage() {
                 <td className="p-2 text-sm text-blue-600 underline">
                   <a href={`/carDetails/${car.car_id}`} target="_blank">عرض</a>
                 </td>
+                </>
+                              )}
+
               </tr>
             ))}
           </tbody>

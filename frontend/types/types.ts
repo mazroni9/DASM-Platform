@@ -22,6 +22,10 @@ export interface User {
 }
 
 export interface Car {
+<<<<<<< HEAD
+=======
+    auctions: any;
+>>>>>>> DASMadmin
     id: number;
     make: string;
     model: string;
