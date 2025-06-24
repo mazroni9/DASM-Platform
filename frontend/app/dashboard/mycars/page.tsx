@@ -14,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { Car } from "@/types/types";
 
-
-
 export default function MyCarsPage() {
 
 const getAuctionStatusTextAndIcon = (status: string) => {
@@ -28,7 +26,6 @@ const getAuctionStatusTextAndIcon = (status: string) => {
       return { text: status, color: 'text-gray-500', icon: null };
   }
 }
-
     const [loading, setLoading] = useState(true);
     const [PaginationData,setPagination]=useState([])
     const [cars, setCars] = useState<Car[]>([]);
@@ -51,14 +48,12 @@ const getAuctionStatusTextAndIcon = (status: string) => {
         });
         }
 
-
       // Verify user is authenticated
       useEffect(() => {
           if (!isLoggedIn) {
               router.push("/auth/login?returnUrl=/dashboard/profile");
           }
         }, [isLoggedIn, router]);
-
 
       // Fetch user profile data
   useEffect(() => {
@@ -184,8 +179,6 @@ const getAuctionStatusTextAndIcon = (status: string) => {
     ))}
   </div>
 )}
-
-
  <Pagination  data={PaginationData} options={options} page={PaginationData} pageSize={PaginationData} changePage={getData} />
 
     </main>
