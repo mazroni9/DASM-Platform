@@ -137,7 +137,7 @@ const getAuctionStatusTextAndIcon = (status: string) => {
         <p className="text-sm text-gray-500 mb-1">المحرك: {car.engine}</p>
         <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
         <p className="text-gray-500">هل تمت الموافقة ؟
-          {car.auctions[0].control_room_approved ? (
+          {car.auctions[0]?.control_room_approved ? (
             <span className="text-green-600">تمت الموافقة للمزاد </span>
           ) : (
             <span className="text-red-600">تحت المعالجة </span>
@@ -158,12 +158,23 @@ const getAuctionStatusTextAndIcon = (status: string) => {
             <label htmlFor="">إضافة للمزاد</label>
           </Link>
         }
-                 {car.auction_status !== "available" && car.auctions[0].control_room_approved ? (
+                 {car.auction_status == "in_auction" && car.auctions[0].control_room_approved ? (
             <Link target="_blank" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-center inline-block" 
                   href={`/carDetails/${car.id}`}
                   onClick={(e) => e.stopPropagation()}
                   key={`link-${car.id}`}>
             <label htmlFor="">عرض السيارة</label>
+          </Link>
+          ) : (
+            <span className="text-red-600"></span>
+          )}
+
+                        {car.auction_status == "sold" && car.auctions[0].control_room_approved ? (
+            <Link className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-center inline-block" 
+                  href={`#`}
+                  onClick={(e) => e.stopPropagation()}
+                  key={`link-${car.id}`}>
+            <label htmlFor=""> تم بيع السيارة</label>
           </Link>
           ) : (
             <span className="text-red-600"></span>
