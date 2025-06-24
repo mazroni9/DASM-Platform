@@ -421,7 +421,8 @@ export default function LiveMarketPage() {
                       )}
                       {/* زر تقديم العرض */}
                       { !showBid ? (
-                        <button 
+                        <button
+                          hidden={!isOwner}
                           onClick={() => setShowBid(!isOwner)}
                           className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
                           style={{ animation: 'pulse 2.5s infinite' }}
