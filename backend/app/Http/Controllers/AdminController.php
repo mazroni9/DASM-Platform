@@ -466,18 +466,13 @@ class AdminController extends Controller
         
         $auction = Auction::findOrFail($id);
 
-        return response()->json([
-                'status' => 'success',
-                'data' => $auction
-        ], 422);
-        
         
         if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
         }
         
         $auction->save();
-        
+
         // Update car status if needed
         if ($auction->car) {
             if ($request->status === 'live') {
@@ -492,6 +487,7 @@ class AdminController extends Controller
             }
             
             $auction->car->save();
+            
         }
         
         return response()->json([
