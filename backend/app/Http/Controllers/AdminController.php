@@ -465,8 +465,12 @@ class AdminController extends Controller
         }
         
         $auction = Auction::findOrFail($id);
-        $auction->status = $request->status;
-        $auction->approved_for_live = $request->approved_for_live;
+
+        return response()->json([
+                'status' => 'success',
+                'data' => $auction
+        ], 422);
+        
         
         if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
