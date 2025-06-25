@@ -171,11 +171,6 @@ class AuctionController extends Controller
             ], 422);
         }
 
-          return response()->json([
-                'status' => 'error',
-                'message' => 'You can only update your own auctions'
-            ], 403);
-
         $user = Auth::user();
         $car = Car::find($request->car_id);
 
