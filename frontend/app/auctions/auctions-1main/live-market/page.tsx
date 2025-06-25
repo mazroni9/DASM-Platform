@@ -102,8 +102,9 @@ export default function LiveMarketPage() {
                     let current_car = carsData.filter(car => {
                     return car.status === 'live' && car.auction_type === 'live' && car.approved_for_live;
                    });
+
+
              
-                                     console.log( );
                    if(current_car.length > 0){
                      let car_user_id = current_car[0].car.user_id;
                       let current_user_id = user.id;
@@ -443,7 +444,7 @@ export default function LiveMarketPage() {
                           <BidForm 
                             auction_id={parseInt(car.id)} 
                             bid_amount={parseInt((car.current_bid).toString().replace(/,/g, ''))} 
-                            user_id={car.user_id}
+                            user_id={car.user_id || 0}
                             onSuccess={() => {
                               setShowBid(false);
                               setStatus('✅ تمت المزايدة بنجاح');
