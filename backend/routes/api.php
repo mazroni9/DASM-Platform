@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/car-statistics', [CarController::class, 'statistics']);
     
     // Auction management for all users
-     Route::post('/test', [AuctionController::class, 'test']);
+     Route::get('/test', [AuctionController::class, 'test']);
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
