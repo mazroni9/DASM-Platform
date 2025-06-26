@@ -29,6 +29,7 @@ import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { isSet } from 'util/types';
 
 // دالة للحصول على نوع المزاد الحالي
 function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive: boolean } {
@@ -106,9 +107,16 @@ export default function LiveMarketPage() {
                    
              
                    if(current_car.length > 0){
-                     let car_user_id = current_car[0].car.user_id || "";
-                      let current_user_id = user.id;
-                      let dealer_user_id = current_car[0].car.dealer.user_id || "";
+                     let current_user_id = user.id;
+                     let dealer_user_id = 0;
+                     let car_user_id =1;
+                    if(isSet(current_car[0].car.user_id)){
+                        car_user_id = current_car[0].car.user_id
+                    }
+                    
+                     if(isSet(current_car[0].car.dealer.user_id)){
+                        dealer_user_id = current_car[0].car.dealer.user_id;
+                    }
                   
                       if(current_user_id == car_user_id ){
                         setIsOwner(true);
