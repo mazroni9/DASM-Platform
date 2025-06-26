@@ -465,13 +465,11 @@ class AdminController extends Controller
         }
         
         $auction = Auction::findOrFail($id);
-
         
         if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
         }
         
-        $auction->save();
 
         // Update car status if needed
         if ($auction->car) {
@@ -488,6 +486,8 @@ class AdminController extends Controller
             }
             
             $auction->car->save();
+            $auction->save();
+
             
         }
         
