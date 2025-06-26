@@ -115,7 +115,8 @@ export default function LiveMarketPage() {
                     }
                     
                      if(isSet(current_car[0].car.dealer.user_id)){
-                        dealer_user_id = current_car[0].car.dealer.user_id;
+                      console.log(current_car[0].car);
+                        dealer_user_id = current_car[0].car.dealer?.user_id;
                     }
                   
                       if(current_user_id == car_user_id ){
