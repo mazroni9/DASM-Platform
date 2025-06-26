@@ -105,7 +105,7 @@ export default function LiveMarketPage() {
                    });
 
                    
-             
+             /*
                    if(current_car.length > 0){
                      let current_user_id = user.id;
                      let dealer_user_id = 0;
@@ -127,6 +127,7 @@ export default function LiveMarketPage() {
                         setIsOwner(false);
                       }
                    }
+                      */
                  
                     // تعامل مع هيكل البيانات من API
                   setMarketCars(liveAuctions);
