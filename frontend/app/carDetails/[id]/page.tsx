@@ -158,6 +158,7 @@ useEffect(() => {
                   if(dealer_user_id != null){
                      dealer_user_id = carsData.car.dealer.user_id;
                   }
+                  
                   if(current_user_id == car_user_id ){
                     setIsOwner(true);
                   }else if(dealer_user_id == current_user_id){
@@ -288,7 +289,7 @@ useEffect(() => {
             {/* قسم الصور (يمكن إضافته لاحقاً) */}
             <div className="rounded-lg flex-direction-column items-center">
               <div className="text-gray-500">
-                <img src="https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg" alt="Car Image" className="w-full h-60" />
+                <img src={item['car'].images[0]} alt="Car Image" className="w-full h-60" />
               </div>
             {!isOwner && (
               <div className="max-w-md mx-auto bg-white p-6 rounded-3xl shadow-lg border" dir="rtl">
