@@ -64,6 +64,7 @@ export default function LoginForm() {
 
         try {
             const result = await login(data.email, data.password);
+            console.log(result);;
 
             if (result.success) {
                 setSuccess("تم تسجيل الدخول بنجاح");

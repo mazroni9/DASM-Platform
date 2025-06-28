@@ -12,9 +12,13 @@ import {
     AlertTriangle,
     Loader2,
     Filter,
+    CircleCheck,
+    ArrowRightLeft,
+    Play
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
+import { Button } from "@mui/material";
 
 interface Auction {
     id: number;
@@ -77,6 +81,26 @@ export default function AdminAuctionsPage() {
         }
     };
 
+    const updateAuctionType = async (auctionId: number, auction_type: string,approved_for_live:boolean) => {
+        try {
+            const response = await api.put(
+                `/api/admin/auctions/${auctionId}/auction-type`,
+                {
+                    auction_type,
+                    approved_for_live
+                }
+            );
+
+            if (response.data.status === "success") {
+                toast.success(response.data.message);
+                fetchAuctions(); // Refresh the list
+            }
+        } catch (error) {
+            console.error("Error updating auction status:", error);
+            toast.error(error.response.data.message);
+        }
+    };
+
     const approveAuction = async (auctionId: number) => {
         try {
             const response = await api.post(
@@ -117,6 +141,8 @@ export default function AdminAuctionsPage() {
                 return "text-gray-600 bg-gray-100";
             case "cancelled":
                 return "text-red-600 bg-red-100";
+            case "completed":
+                return "text-green-600 bg-gray-100";
             default:
                 return "text-yellow-600 bg-yellow-100";
         }
@@ -124,7 +150,7 @@ export default function AdminAuctionsPage() {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case "active":
+            case "live":
                 return "نشط";
             case "scheduled":
                 return "مجدول";
@@ -132,6 +158,8 @@ export default function AdminAuctionsPage() {
                 return "منتهي";
             case "cancelled":
                 return "ملغي";
+            case "completed":
+                return "مكتمل";
             default:
                 return status;
         }
@@ -188,6 +216,7 @@ export default function AdminAuctionsPage() {
                         <option value="active">نشطة</option>
                         <option value="ended">منتهية</option>
                         <option value="cancelled">ملغية</option>
+                        <option value="completed">مكتملة</option>
                     </select>
                 </div>
             </div>
@@ -212,6 +241,9 @@ export default function AdminAuctionsPage() {
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     وقت النهاية
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    نوع الحراج
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     الإجراءات
@@ -269,12 +301,17 @@ export default function AdminAuctionsPage() {
                                             {formatDate(auction.end_time)}
                                         </div>
                                     </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div className="flex items-center">
+                                            {auction.auction_type}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() =>
                                                     router.push(
-                                                        `/admin/auctions/${auction.id}`
+                                                        `/carDetails/${auction.id}`
                                                     )
                                                 }
                                                 className="text-blue-600 hover:text-blue-900"
@@ -282,7 +319,81 @@ export default function AdminAuctionsPage() {
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </button>
-
+                                            {auction.status === "live" && auction.auction_type === "live" && !auction.approved_for_live &&(
+                                                <button
+                                                    onClick={() =>
+                                                        updateAuctionType(
+                                                            auction.id,
+                                                            "live",
+                                                            true
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-yellow-900"
+                                                    title="الموافقة على البث الأن"
+                                                >
+                                                    <Play  className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            {auction.status == "scheduled" && auction.auction_type == "silent_instant" &&(
+                                                <button
+                                                    onClick={() =>
+                                                        updateAuctionType(
+                                                            auction.id,
+                                                            "live",
+                                                            false
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-yellow-900"
+                                                    title="إلى الحراج المباشر"
+                                                >
+                                                    <ArrowRightLeft className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            {auction.status == "live" && auction.auction_type == "silent_instant" &&(
+                                                <button
+                                                    onClick={() =>
+                                                        updateAuctionType(
+                                                            auction.id,
+                                                            "live",
+                                                            false
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-yellow-900"
+                                                    title="إلى الحراج المباشر"
+                                                >
+                                                    <ArrowRightLeft className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            {auction.status === "scheduled" && auction.auction_type === "live"  &&(
+                                                <button
+                                                    onClick={() =>
+                                                        updateAuctionType(
+                                                            auction.id,
+                                                            "silent_instant",
+                                                            false
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-yellow-900"
+                                                    title="الى الحراج الصامت"
+                                                >
+                                                    <ArrowRightLeft className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                            {auction.status === "live" && auction.auction_type === "live" &&(
+                                                <button
+                                                    onClick={() =>
+                                                        updateAuctionType(
+                                                            auction.id,
+                                                            "silent_instant",
+                                                            false
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-yellow-900"
+                                                    title="الى الحراج الصامت"
+                                                >
+                                                    <ArrowRightLeft className="h-4 w-4" />
+                                                </button>
+                                            )}
                                             {auction.status === "scheduled" && (
                                                 <>
                                                     <button
@@ -309,20 +420,35 @@ export default function AdminAuctionsPage() {
                                                     </button>
                                                 </>
                                             )}
-
-                                            {auction.status === "active" && (
+                                            {auction.status === "live" && (
+                                                <>
                                                 <button
                                                     onClick={() =>
                                                         updateAuctionStatus(
                                                             auction.id,
-                                                            "ended"
+                                                            "completed",
+                                                            false
+                                                        )
+                                                    }
+                                                    className="text-green-600 hover:text-yellow-900"
+                                                    title="انهاء المزاد"
+                                                >
+                                                    <CircleCheck className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        updateAuctionStatus(
+                                                            auction.id,
+                                                            "ended",
+                                                            false
                                                         )
                                                     }
                                                     className="text-yellow-600 hover:text-yellow-900"
-                                                    title="إنهاء المزاد"
+                                                    title="إلغاء المزاد"
                                                 >
                                                     <AlertTriangle className="h-4 w-4" />
                                                 </button>
+                                                </>
                                             )}
                                         </div>
                                     </td>

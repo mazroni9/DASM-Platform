@@ -40,6 +40,11 @@ export interface Car {
     user_id?: number;
     created_at: string;
     updated_at: string;
+    auctions?: Array<{
+        id: number;
+        control_room_approved: boolean;
+        auction_type: string;
+    }>;
 }
 
 export interface Auction {

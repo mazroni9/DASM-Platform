@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/car-statistics', [CarController::class, 'statistics']);
     
     // Auction management for all users
+     Route::get('/test', [AuctionController::class, 'test']);
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
@@ -94,7 +95,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // New standardized bid API for the unified frontend
     Route::post('/auctions/bid', [BidController::class, 'placeBid']);
-    
+    Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids']);
+
     // Auto-bid routes
     Route::post('/auctions/auto-bid', [AutoBidController::class, 'store']);
     Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus']);
@@ -165,7 +167,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/admin/auctions/{id}/approve', [AdminController::class, 'approveAuction']);
     Route::post('/admin/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
     Route::put('/admin/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
-    
+    Route::put('/admin/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
+
     // Admin car management
     Route::get('/admin/cars', [AdminController::class, 'getAllCars']);
     Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);

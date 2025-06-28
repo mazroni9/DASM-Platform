@@ -328,8 +328,7 @@ export default function Page() {
                             <span className="bg-white px-4 py-1 text-xl font-bold text-blue-700"></span>
                         </div>
                         <div className="flex flex-col md:flex-row items-center justify-center gap-6 mt-8">
-                            <div className="w-full md:w-auto flex justify-center">
-                                <div className="relative">
+                            <div className="w-full md:w-auto flex justify-center"><div className="relative">
                                     <AuctionDropdown />
                                 </div>
                             </div>

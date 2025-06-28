@@ -71,8 +71,7 @@ export default function SilentAuctionPage() {
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
-                  console.log(carsData);
-                    // تعامل مع هيكل البيانات من API
+                  // تعامل مع هيكل البيانات من API
                   setCars(carsData);
               }
                   
@@ -201,8 +200,11 @@ export default function SilentAuctionPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {cars.map((car, idx) => (
+
                   <Fragment key={idx}>
-                    <tr className="hover:bg-gray-50 cursor-pointer">
+                                      {car.auction_type !="live" && car["car"].auction_status == "in_auction" && (
+                                        <>
+                                         <tr className="hover:bg-gray-50 cursor-pointer">
                       <td className="px-2 whitespace-nowrap">
                         <button 
                           onClick={() => toggleRowExpansion(idx)}
@@ -266,6 +268,8 @@ export default function SilentAuctionPage() {
                         </td>
                       </tr>
                     )}
+                                        </>
+                  )}
                   </Fragment>
                 ))}
               </tbody>

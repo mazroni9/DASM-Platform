@@ -16,14 +16,6 @@ const Footer = () => {
             <div className="container mx-auto px-4 py-4">
                 <div className="flex justify-between items-center">
                     <div className="w-1/3 flex justify-start gap-4">
-                        <Link href="/about" className="text-sky-800 hover:text-sky-600 transition-colors">
-                            من نحن
-                        </Link>
-                        <span className="text-sky-300">|</span>
-                        <Link href="/how-it-works" className="text-sky-800 hover:text-sky-600 transition-colors">
-                            كيف نعمل
-                        </Link>
-                        <span className="text-sky-300">|</span>
                         <Link href="/privacy" className="text-sky-800 hover:text-sky-600 transition-colors">
                             سياسة الخصوصية
                         </Link>
@@ -31,15 +23,19 @@ const Footer = () => {
                         <Link href="/terms" className="text-sky-800 hover:text-sky-600 transition-colors">
                             الشروط والأحكام
                         </Link>
+                        <span className="text-sky-300">|</span>
+                        <Link href="/how-it-works" className="text-sky-800 hover:text-sky-600 transition-colors">
+                            كيف نعمل
+                        </Link>
                     </div>
                     <div className="w-1/3 text-center text-sky-700">
-                        © {currentYear} منصة DASM-e. جميع الحقوق محفوظة.
+                        © {currentYear} منصة قلب. جميع الحقوق محفوظة.
                     </div>
                     <div className="w-1/3 flex justify-end">
                         <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-sky-700" />
                             <span className="text-sky-800">
-                                zahrma0p@yahoo.com
+                                mazroni@alb-mazz.com
                             </span>
                         </div>
                     </div>
