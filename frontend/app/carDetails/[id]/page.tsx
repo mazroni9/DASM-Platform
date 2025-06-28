@@ -145,7 +145,6 @@ useEffect(() => {
           try {
             
               const response = await api.get(`/api/car/${carId}`);
-
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
                   console.log(carsData);
@@ -155,15 +154,16 @@ useEffect(() => {
                   formData['user_id']=user.id;
                    let car_user_id = carsData.car.user_id;
                    let current_user_id=user.id;
-                   let dealer_user_id = carsData.car.dealer.user_id;
+                   let dealer_user_id = carsData.car.dealer;
+                  if(dealer_user_id != null){
+                     dealer_user_id = carsData.car.dealer.user_id;
+                  }
                   if(current_user_id == car_user_id ){
                     setIsOwner(true);
                   }else if(dealer_user_id == current_user_id){
                       setIsOwner(true);
                   }
-                
               }
-                  
           } catch (error) {
                console.error('فشل تحميل بيانات المزاد الصامت', error);
               setItem([]); // مصفوفة فارغة في حالة الفشل
