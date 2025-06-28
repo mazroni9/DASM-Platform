@@ -103,11 +103,15 @@ export default function LiveMarketPage() {
                     return car.status === 'live' && car.auction_type === 'live' && car.approved_for_live;
                    });
              
-                                     console.log( );
+                                     
                    if(current_car.length > 0){
-                     let car_user_id = current_car[0].car.user_id;
-                      let current_user_id = user.id;
-                      let dealer_user_id = current_car[0].car.dealer.user_id;
+                       let car_user_id = current_car[0].car.user_id;
+                       let current_user_id = user.id;
+                       let dealer_user_id = current_car[0].car.dealer;
+                      if(current_car[0].car.dealer !=null){
+                        dealer_user_id = current_car[0].car.dealer.user_id;
+                      }
+                     
                   
                       if(current_user_id == car_user_id ){
                         setIsOwner(true);

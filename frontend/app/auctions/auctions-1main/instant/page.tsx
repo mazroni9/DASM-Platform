@@ -8,7 +8,9 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
-export default function InstantAuctionPage() {
+
+
+export default  function InstantAuctionPage() {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export default function InstantAuctionPage() {
       if (!isLoggedIn) {
           router.push("/auth/login?returnUrl=/dashboard/profile");
       }
-  }, [isLoggedIn, router]);
+    }, [isLoggedIn, router]);
 
   // تحديث الوقت كل ثانية
   useEffect(() => {
@@ -33,18 +35,20 @@ export default function InstantAuctionPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch user profile data
+     // Fetch user profile data
   useEffect(() => {
       async function fetchAuctions() {
-          if (!isLoggedIn) return;
+           if (!isLoggedIn) return;
           try {
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
+                    // تعامل مع هيكل البيانات من API
                   setCars(carsData);
               }
+                  
           } catch (error) {
-              console.error('فشل تحميل بيانات المزاد الصامت', error);
+               console.error('فشل تحميل بيانات المزاد الصامت', error);
               setCars([]); // مصفوفة فارغة في حالة الفشل
               setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
               setLoading(false);
@@ -54,7 +58,6 @@ export default function InstantAuctionPage() {
       }
       fetchAuctions();
   }, []);
-
   return (
     <div className="p-4">
       <div className="flex justify-end mb-4">
@@ -88,29 +91,30 @@ export default function InstantAuctionPage() {
           <tbody>
             {cars.map((car, idx) => (
               <tr key={idx} className="border-t hover:bg-gray-50">
-                {car.auction_type !== "live" && car["car"].auction_status === "in_auction" && (
-                  <>
-                    <td className="p-2 text-sm">{car['car'].make}</td>
-                    <td className="p-2 text-sm">{car['car'].model}</td>
-                    <td className="p-2 text-sm">{car['car'].year}</td>
-                    <td className="p-2 text-sm">{car['car'].plate}</td>
-                    <td className="p-2 text-sm">{car['car'].odmeter}</td>
-                    <td className="p-2 text-sm">{car['car'].condition}</td>
-                    <td className="p-2 text-sm">{car['car'].color}</td>
-                    <td className="p-2 text-sm">{car['car'].engine}</td>
-                    <td className="p-2 text-sm">{car["bids"].length}</td>
-                    <td className="p-2 text-sm">{car["minimum_bid"]}</td>
-                    <td className="p-2 text-sm">{car["minimum_bid"]}</td>
-                    <td className="p-2 text-sm">{car["maximum_bid"]}</td>
-                    <td className="p-2 text-sm">{car["current_bid"]}</td>
-                    <td className="p-2 text-sm">{car["التغير"]}</td>
-                    <td className="p-2 text-sm">{car["نسبة التغير"]}</td>
-                    <td className="p-2 text-sm">{car["نتيجة المزايدة"]}</td>
-                    <td className="p-2 text-sm text-blue-600 underline">
-                      <a href={`/carDetails/${car.car_id}`} target="_blank">عرض</a>
-                    </td>
-                  </>
-                )}
+                {car.auction_type !="live" && car["car"].auction_status == "in_auction" &&(
+                <>
+                <td className="p-2 text-sm">{car['car'].make}</td>
+                <td className="p-2 text-sm">{car['car'].model}</td>
+                <td className="p-2 text-sm">{car['car'].year}</td>
+                <td className="p-2 text-sm">{car['car'].plate}</td>
+                <td className="p-2 text-sm">{car['car'].odmeter}</td>
+                <td className="p-2 text-sm">{car['car'].condition}</td>
+                <td className="p-2 text-sm">{car['car'].color}</td>
+                <td className="p-2 text-sm">{car['car'].engine}</td>
+                <td className="p-2 text-sm">{car["bids"].length}</td>
+                <td className="p-2 text-sm">{car["minimum_bid"]}</td>
+                <td className="p-2 text-sm">{car["minimum_bid"]}</td>
+                <td className="p-2 text-sm">{car["maximum_bid"]}</td>
+                <td className="p-2 text-sm">{car["current_bid"]}</td>
+                <td className="p-2 text-sm">{car["التغير"]}</td>
+                <td className="p-2 text-sm">{car["نسبة التغير"]}</td>
+                <td className="p-2 text-sm">{car["نتيجة المزايدة"]}</td>
+                <td className="p-2 text-sm text-blue-600 underline">
+                  <a href={`/carDetails/${car.car_id}`} target="_blank">عرض</a>
+                </td>
+                </>
+                              )}
+
               </tr>
             ))}
           </tbody>
