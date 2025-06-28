@@ -29,7 +29,6 @@ import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { isSet } from 'util/types';
 
 // دالة للحصول على نوع المزاد الحالي
 function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive: boolean } {
@@ -103,21 +102,16 @@ export default function LiveMarketPage() {
                     let current_car = carsData.filter(car => {
                     return car.status === 'live' && car.auction_type === 'live' && car.approved_for_live;
                    });
-
-                   
-             /*
+             
+                                     
                    if(current_car.length > 0){
-                     let current_user_id = user.id;
-                     let dealer_user_id = 0;
-                     let car_user_id =1;
-                    if(isSet(current_car[0].car.user_id)){
-                        car_user_id = current_car[0].car.user_id
-                    }
-                    
-                     if(isSet(current_car[0].car.dealer.user_id)){
-                      console.log(current_car[0].car);
-                        dealer_user_id = current_car[0].car.dealer?.user_id;
-                    }
+                       let car_user_id = current_car[0].car.user_id;
+                       let current_user_id = user.id;
+                       let dealer_user_id = current_car[0].car.dealer;
+                      if(current_car[0].car.dealer !=null){
+                        dealer_user_id = current_car[0].car.dealer.user_id;
+                      }
+                     
                   
                       if(current_user_id == car_user_id ){
                         setIsOwner(true);
@@ -127,7 +121,6 @@ export default function LiveMarketPage() {
                         setIsOwner(false);
                       }
                    }
-                      */
                  
                     // تعامل مع هيكل البيانات من API
                   setMarketCars(liveAuctions);
