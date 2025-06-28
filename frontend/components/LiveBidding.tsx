@@ -171,7 +171,7 @@ export default function LiveBidding({data}: LiveBiddingProps) {
                                                 : "text-gray-800"
                                         }`}
                                     >
-                                        {formatMoney(bid.amount)}
+                                        {formatMoney(bid.amount)} 
                                     </div>
                                     {bid.is_winning && (
                                         <div className="text-xs text-yellow-600 font-medium">

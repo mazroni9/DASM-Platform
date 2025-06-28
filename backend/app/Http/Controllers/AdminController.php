@@ -465,12 +465,15 @@ class AdminController extends Controller
         }
         
         $auction = Auction::findOrFail($id);
+        $auction->status = $request->status;
+        $auction->approved_for_live = $request->approved_for_live;
         
         if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
         }
         
-
+        $auction->save();
+        
         // Update car status if needed
         if ($auction->car) {
             if ($request->status === 'live') {
@@ -478,7 +481,6 @@ class AdminController extends Controller
                 $auction->approved_for_live = false;
             } else if ($request->status === 'completed') {
                 $auction->car->auction_status = 'sold';
-                $auction->status = $request->status;
                 $auction->approved_for_live = false;
             } else if (in_array($request->status, ['ended', 'cancelled', 'failed'])) {
                 $auction->car->auction_status = 'available';
@@ -486,9 +488,6 @@ class AdminController extends Controller
             }
             
             $auction->car->save();
-            $auction->save();
-
-            
         }
         
         return response()->json([

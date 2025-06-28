@@ -14,7 +14,7 @@ import {
     Filter,
     CircleCheck,
     ArrowRightLeft,
-    Play
+    Play,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
@@ -62,12 +62,13 @@ export default function AdminAuctionsPage() {
         }
     };
 
-    const updateAuctionStatus = async (auctionId: number, status: string) => {
+    const updateAuctionStatus = async (auctionId: number, status: string,approved_for_live:boolean) => {
         try {
             const response = await api.put(
                 `/api/admin/auctions/${auctionId}/status`,
                 {
                     status,
+                    approved_for_live
                 }
             );
 
@@ -81,7 +82,7 @@ export default function AdminAuctionsPage() {
         }
     };
 
-    const updateAuctionType = async (auctionId: number, auction_type: string,approved_for_live:boolean) => {
+        const updateAuctionType = async (auctionId: number, auction_type: string,approved_for_live:boolean) => {
         try {
             const response = await api.put(
                 `/api/admin/auctions/${auctionId}/auction-type`,
@@ -100,6 +101,7 @@ export default function AdminAuctionsPage() {
             toast.error(error.response.data.message);
         }
     };
+
 
     const approveAuction = async (auctionId: number) => {
         try {
@@ -216,7 +218,8 @@ export default function AdminAuctionsPage() {
                         <option value="active">نشطة</option>
                         <option value="ended">منتهية</option>
                         <option value="cancelled">ملغية</option>
-                        <option value="completed">مكتملة</option>
+                         <option value="completed">مكتملة</option>
+
                     </select>
                 </div>
             </div>
@@ -243,7 +246,7 @@ export default function AdminAuctionsPage() {
                                     وقت النهاية
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    نوع الحراج
+                                     نوع الحراج
                                 </th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     الإجراءات
@@ -319,7 +322,8 @@ export default function AdminAuctionsPage() {
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </button>
-                                            {auction.status === "live" && auction.auction_type === "live" && !auction.approved_for_live &&(
+
+                                               {auction.status === "live" && auction.auction_type === "live" && !auction.approved_for_live &&(
                                                 <button
                                                     onClick={() =>
                                                         updateAuctionType(
@@ -420,6 +424,7 @@ export default function AdminAuctionsPage() {
                                                     </button>
                                                 </>
                                             )}
+
                                             {auction.status === "live" && (
                                                 <>
                                                 <button
@@ -435,6 +440,7 @@ export default function AdminAuctionsPage() {
                                                 >
                                                     <CircleCheck className="h-4 w-4" />
                                                 </button>
+
                                                 <button
                                                     onClick={() =>
                                                         updateAuctionStatus(

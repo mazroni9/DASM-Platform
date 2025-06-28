@@ -507,17 +507,9 @@ class AuctionController extends Controller
         ]);
     }
 
-     public function test()
-    {
-        $user = Auth::user();
-        $query = null;
-        $query = Auction::where('control_room_approved', true);
-        
-        return response()->json([
-            'status' => 'success',
-            'data' => $query
-        ]);
-    }
+
+
+    
     
     /**
      * Get analytics for a specific auction

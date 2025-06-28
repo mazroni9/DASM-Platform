@@ -80,7 +80,7 @@ const Navbar = () => {
                                 className="rounded-full"
                             />
                             <span className="font-bold text-base whitespace-nowrap">
-                                   اسواق المزادات الرقمية المتخصصة{" "}
+                                سوق المزادات الرقمية{" "}
                                 <span className="text-blue-700">DASM-e</span>
                             </span>
                         </Link>
@@ -91,6 +91,17 @@ const Navbar = () => {
                         className="hidden md:flex items-center gap-6 flex-row-reverse"
                         dir="rtl"
                     >
+                        <Link
+                            href="/auctions"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
+                                isActive("/auctions")
+                                    ? "text-blue-700 font-bold"
+                                    : ""
+                            }`}
+                        >
+                            <Store size={18} />
+                            الأسواق الرقمية المتخصصة
+                        </Link>
                         <Link
                             href="/broadcasts"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
@@ -105,7 +116,7 @@ const Navbar = () => {
                     </div>
 
                     {/* Auth Buttons */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center space-x-4 space-x-reverse">
                         {isAdmin && (
                             <Button
                                 variant="outline"

@@ -35,8 +35,8 @@ const GROUP_COLORS = {
 // تعريف أزرار التنقل
 const marketItems = [
   // المجموعة الأولى (اليمين) - البنفسجية - تم إعادة الترتيب
-  { name: 'سوق المعارض', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
-  { name: 'سوق السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
+  { name: 'السوق الرئيسي', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
+  { name: 'قطاع السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
   { name: 'السوق النوعي', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
 
   // المجموعة الثانية (اليسار) - الزرقاء
