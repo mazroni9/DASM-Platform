@@ -150,7 +150,7 @@ export default function AdminAuctionsPage() {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case "active":
+            case "live":
                 return "نشط";
             case "scheduled":
                 return "مجدول";
