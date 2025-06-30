@@ -15,7 +15,7 @@
 // ✅ صفحة عرض المزاد الصامت مع رابط للتفاصيل السيارة
 // المسار: /pages/silent/page.tsx
 
-import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Car, AlertCircle, CheckCircle2 } from 'lucide-react';
 import CarDataEntryButton from '@/components/CarDataEntryButton';
@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import ImageGallery from '@/components/shared/ImageGallery';
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getCurrentAuctionType(): string {
@@ -49,7 +50,11 @@ let bidingData={
   bid_amount:0
   }
 
+  
+
 export default function CarDetailPage() {
+    const containerRef = useRef(null);
+
     const [formData, setFormData] = useState<BidingData>(bidingData);
     const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
@@ -288,9 +293,8 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* قسم الصور (يمكن إضافته لاحقاً) */}
             <div className="rounded-lg flex-direction-column items-center">
-              <div className="text-gray-500">
-                <img src={item['car'].images[0]} alt="Car Image" className="w-full h-60" />
-              </div>
+                            <ImageGallery images={item['car'].images} />
+   
             {!isOwner && (
               <div className="max-w-md mx-auto bg-white p-6 rounded-3xl shadow-lg border" dir="rtl">
       <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">تقديم عرض على السيارة</h2>
