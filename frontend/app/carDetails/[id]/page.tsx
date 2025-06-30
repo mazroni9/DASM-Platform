@@ -53,8 +53,8 @@ let bidingData={
   
 
 export default function CarDetailPage() {
-    const containerRef = useRef(null);
-
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [lastbid,setLastBid]=useState(0);
     const [formData, setFormData] = useState<BidingData>(bidingData);
     const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
@@ -80,9 +80,8 @@ export default function CarDetailPage() {
       }));
     };
   
-  // تقديم النموذج
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+      const confirmSubmit =async () => {
+    setShowConfirm(false);
     setIsSubmitting(true);
     setSubmitResult(null);
     try {
@@ -95,7 +94,7 @@ export default function CarDetailPage() {
           throw new Error(`حقل ${field.replace('_', ' ')} مطلوب`);
         }
       }
-
+      
       // إرسال بيانات السيارة مع روابط الصور والتقارير
          try { 
           
@@ -134,6 +133,19 @@ export default function CarDetailPage() {
       setIsSubmitting(false);
     }
   };
+
+  // تقديم النموذج
+  const handleSubmit =  (e: FormEvent) => {
+    e.preventDefault();
+   
+     setShowConfirm(true);
+    
+  };
+
+                                    
+const roundToNearest5or0 = (number) => {
+  return Math.round(number / 5) * 5;
+};
     
 // Verify user is authenticated
 useEffect(() => {
@@ -152,7 +164,7 @@ useEffect(() => {
               const response = await api.get(`/api/car/${carId}`);
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
-                  console.log(carsData);
+                  setLastBid(roundToNearest5or0(carsData.active_auction.current_bid*1.05));
                     // تعامل مع هيكل البيانات من API
                   setItem(carsData);
                   formData['auction_id']= carsData.active_auction.id
@@ -296,28 +308,67 @@ useEffect(() => {
                             <ImageGallery images={item['car'].images} />
    
             {!isOwner && (
-              <div className="max-w-md mx-auto bg-white p-6 rounded-3xl shadow-lg border" dir="rtl">
-      <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">تقديم عرض على السيارة</h2>
-      <form onSubmit={handleSubmit}>
-        <label className="block mb-2 font-semibold text-gray-700">قيمة العرض (ريال سعودي):</label>
-        <input
-          type="number"
-           id="bid_amount"
-          name="bid_amount"
-          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder='مبلغ العرض'
-          value={formData.bid_amount}
-          onChange={handleInputChange}
-          required
-        />
+             
+             <div className="max-w-md mx-auto bg-gradient-to-br from-white to-gray-50 p-8 rounded-3xl shadow-2xl border border-gray-200" dir="rtl">
+      <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">🚗 قدم عرضك الآن</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="bid_amount" className="block mb-2 text-md font-medium text-gray-700">
+            💰 مبلغ العرض (بالريال):
+            <p>  يجب ان يكون السعر اعلى من اخر عرض ب 5% أو أكثر</p>
+           
+          </label>
+
+          <div className="relative">
+            <input
+              type="number"
+              id="bid_amount"
+              name="bid_amount"
+              min={lastbid}
+              className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 text-lg"
+              placeholder="أدخل المبلغ هنا"
+              value={formData.bid_amount}
+              onChange={handleInputChange}
+              required
+            />
+            <span className="absolute inset-y-0 left-4 flex items-center text-gray-400 text-lg font-bold">﷼</span>
+          </div>
+        </div>
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all duration-300 text-lg font-semibold shadow-md flex items-center justify-center gap-2"
         >
           إرسال العرض
         </button>
       </form>
+
+      {/* نافذة التأكيد */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full text-center">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">تأكيد الإرسال</h3>
+            <p className="text-gray-600 mb-6">هل أنت متأكد من تقديم هذا العرض بقيمة <strong>{formData.bid_amount} ﷼</strong>؟</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-100"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={confirmSubmit}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                تأكيد
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    
     )}
             </div>
             
