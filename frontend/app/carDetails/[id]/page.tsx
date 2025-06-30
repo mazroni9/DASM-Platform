@@ -85,8 +85,7 @@ export default function CarDetailPage() {
     setIsSubmitting(true);
     setSubmitResult(null);
     try {
-      
-     
+    
       // التحقق من البيانات المدخلة
       const requiredFields = ['bid_amount'];
       for (const field of requiredFields) {
@@ -95,6 +94,7 @@ export default function CarDetailPage() {
         }
       }
       
+      formData.bid_amount=roundToNearest5or0(formData.bid_amount);
       // إرسال بيانات السيارة مع روابط الصور والتقارير
          try { 
           
@@ -164,7 +164,7 @@ useEffect(() => {
               const response = await api.get(`/api/car/${carId}`);
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
-                  setLastBid(roundToNearest5or0(carsData.active_auction.current_bid*1.05));
+                  setLastBid(roundToNearest5or0(carsData.active_auction.current_bid)+100);
                     // تعامل مع هيكل البيانات من API
                   setItem(carsData);
                   formData['auction_id']= carsData.active_auction.id
@@ -316,7 +316,7 @@ useEffect(() => {
         <div>
           <label htmlFor="bid_amount" className="block mb-2 text-md font-medium text-gray-700">
             💰 مبلغ العرض (بالريال):
-            <p>  يجب ان يكون السعر اعلى من اخر عرض ب 5% أو أكثر</p>
+            <p>  يجب ان يكون السعر اعلى من اخر عرض أو أكثر</p>
            
           </label>
 
@@ -349,7 +349,7 @@ useEffect(() => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full text-center">
             <h3 className="text-xl font-semibold text-gray-800 mb-4">تأكيد الإرسال</h3>
-            <p className="text-gray-600 mb-6">هل أنت متأكد من تقديم هذا العرض بقيمة <strong>{formData.bid_amount} ﷼</strong>؟</p>
+            <p className="text-gray-600 mb-6">هل أنت متأكد من تقديم هذا العرض بقيمة <strong>{roundToNearest5or0(formData.bid_amount)} ﷼</strong>؟</p>
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => setShowConfirm(false)}

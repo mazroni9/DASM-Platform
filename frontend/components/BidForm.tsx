@@ -49,14 +49,13 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
   return Math.round(number / 5) * 5;
 };
     const quickBidOptions = [
-        { label: roundToNearest5or0(bid_amount * 0.05), value: roundToNearest5or0(bid_amount * 0.05) },
-        { label: roundToNearest5or0(bid_amount * 0.10), value: roundToNearest5or0(bid_amount * 0.10) },
-        { label: roundToNearest5or0(bid_amount * 0.15), value: roundToNearest5or0(bid_amount * 0.15) },
-        { label: roundToNearest5or0(bid_amount * 0.20), value: roundToNearest5or0(bid_amount * 0.20) },
-        { label: roundToNearest5or0(bid_amount * 0.25), value: roundToNearest5or0(bid_amount * 0.25) },
-        { label: roundToNearest5or0(bid_amount * 0.30), value: roundToNearest5or0(bid_amount * 0.30) },
-        { label: roundToNearest5or0(bid_amount * 0.35), value: roundToNearest5or0(bid_amount * 0.35) },
-        { label: roundToNearest5or0(bid_amount * 0.40), value: roundToNearest5or0(bid_amount * 0.40) },
+        { label: roundToNearest5or0(bid_amount + 100), value:100},
+        { label: roundToNearest5or0(bid_amount + 200), value:200},
+        { label: roundToNearest5or0(bid_amount + 300), value:300},
+        { label: roundToNearest5or0(bid_amount + 400), value:400},
+        { label: roundToNearest5or0(bid_amount + 500), value:500},
+        { label: roundToNearest5or0(bid_amount + 1000), value:1000},
+
     ];
 
 
