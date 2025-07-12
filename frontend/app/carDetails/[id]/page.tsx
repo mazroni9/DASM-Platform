@@ -17,8 +17,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Car, AlertCircle, CheckCircle2 } from "lucide-react";
-import CarDataEntryButton from "@/components/CarDataEntryButton";
+import { ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import { useParams, useRouter } from "next/navigation";
@@ -43,14 +42,15 @@ interface BidingData {
     user_id: number;
     bid_amount: number;
 }
-let bidingData = {
-    auction_id: 0,
-    user_id: 0,
-    bid_amount: 0,
-};
 
 export default function CarDetailPage() {
-    const [formData, setFormData] = useState<BidingData>(bidingData);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [lastbid, setLastBid] = useState(0);
+    const [formData, setFormData] = useState<BidingData>({
+        auction_id: 0,
+        user_id: 0,
+        bid_amount: 0,
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitResult, setSubmitResult] = useState<{
         success: boolean;
@@ -78,11 +78,11 @@ export default function CarDetailPage() {
         }));
     };
 
-    // تقديم النموذج
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
+    const confirmSubmit = async () => {
+        setShowConfirm(false);
         setIsSubmitting(true);
         setSubmitResult(null);
+
         try {
             // Check if there's an active auction first
             if (!formData.auction_id || formData.auction_id === 0) {
@@ -97,31 +97,31 @@ export default function CarDetailPage() {
                 }
             }
 
-            // إرسال بيانات السيارة مع روابط الصور والتقارير
-            try {
-                const response = await api.post("/api/auctions/bid", formData, {
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
+            formData.bid_amount = roundToNearest5or0(formData.bid_amount);
 
-                if (response.data.status === "success") {
-                    // تم الحفظ بنجاح
-                    setSubmitResult({
-                        success: true,
-                        message: "تم إضافة  بنجاح",
-                    });
-                    // إعادة تعيين النموذج
-                    setFormData(bidingData);
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    toast.error("فشل في إضافة ");
-                }
-            } catch (error) {
-                console.error("Error in adding car user:", error);
-                toast.error("فشل في إضافة ");
+            // إرسال بيانات المزايدة
+            const response = await api.post("/api/auctions/bid", formData, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (response.data.status === "success") {
+                setSubmitResult({
+                    success: true,
+                    message: "تم تقديم العرض بنجاح",
+                });
+                // إعادة تعيين النموذج
+                setFormData({
+                    auction_id: formData.auction_id,
+                    user_id: formData.user_id,
+                    bid_amount: 0,
+                });
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                toast.error("فشل في تقديم العرض");
             }
         } catch (error: any) {
             console.error("خطأ في حفظ البيانات:", error);
@@ -129,9 +129,21 @@ export default function CarDetailPage() {
                 success: false,
                 message: error.message || "حدث خطأ أثناء حفظ البيانات",
             });
+            toast.error(error.message || "فشل في تقديم العرض");
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // تقديم النموذج
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+
+        setShowConfirm(true);
+    };
+
+    const roundToNearest5or0 = (number: number): number => {
+        return Math.round(number / 5) * 5;
     };
 
     // Verify user is authenticated
@@ -151,15 +163,27 @@ export default function CarDetailPage() {
                 if (response.data.data || response.data.data) {
                     const carsData =
                         response.data.data.data || response.data.data;
-                    console.log(carsData);
+                    setLastBid(
+                        roundToNearest5or0(
+                            carsData.active_auction.current_bid
+                        ) + 100
+                    );
                     // تعامل مع هيكل البيانات من API
                     setItem(carsData);
 
                     // Check if car has an active auction before setting auction_id
                     if (carsData.active_auction && carsData.active_auction.id) {
-                        formData["auction_id"] = carsData.active_auction.id;
+                        setFormData((prev) => ({
+                            ...prev,
+                            auction_id: carsData.active_auction.id,
+                            user_id: user.id,
+                        }));
+                    } else {
+                        setFormData((prev) => ({
+                            ...prev,
+                            user_id: user.id,
+                        }));
                     }
-                    formData["user_id"] = user.id;
 
                     let car_user_id = carsData.car.user_id;
                     let current_user_id = user.id;
@@ -193,52 +217,6 @@ export default function CarDetailPage() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-xl">جاري تحميل البيانات...</div>
-            </div>
-        );
-    }
-
-    // صفحة الخطأ - مع إتاحة خيار إضافة سيارة جديدة
-    if (error || !item) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                <div className="flex items-center text-red-600 mb-4">
-                    <Car className="h-8 w-8 ml-2" />
-                    <span className="text-2xl font-bold">
-                        {error || "معرف المركبة غير موجود"}
-                    </span>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-4 items-center mt-4">
-                    <Link
-                        href="/auctions"
-                        className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 text-base rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
-                    >
-                        <ChevronRight className="h-5 w-5 ml-1 rtl:rotate-180" />
-                        <span>العودة إلى المزادات</span>
-                    </Link>
-                    <div className="my-4 text-gray-500">أو</div>
-                    <CarDataEntryButton
-                        label="إدخال بيانات سيارتك"
-                        variant="primary"
-                    />
-                </div>
-
-                <div className="mt-8 max-w-lg text-center text-gray-600 p-6 bg-white rounded-lg shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4">
-                        هل تريد إضافة سيارتك؟
-                    </h2>
-                    <p className="mb-4">
-                        يمكنك إدخال بيانات سيارتك وإضافة صورها وتقارير فحصها من
-                        خلال النموذج المخصص للإضافة. بعد الإضافة، ستظهر سيارتك
-                        في المزادات المتاحة وفقًا للنظام.
-                    </p>
-                    <div className="mt-4">
-                        <CarDataEntryButton
-                            label="إضافة سيارة جديدة الآن"
-                            variant="secondary"
-                        />
-                    </div>
-                </div>
             </div>
         );
     }
@@ -342,19 +320,70 @@ export default function CarDetailPage() {
                                             type="number"
                                             id="bid_amount"
                                             name="bid_amount"
-                                            className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                            placeholder="مبلغ العرض"
+                                            className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                            placeholder={`الحد الأدنى: ${lastbid} ريال`}
                                             value={formData.bid_amount}
                                             onChange={handleInputChange}
+                                            min={lastbid}
+                                            step="5"
                                             required
                                         />
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            الحد الأدنى للمزايدة:{" "}
+                                            {lastbid.toLocaleString()} ريال
+                                        </p>
                                         <button
                                             type="submit"
-                                            className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
+                                            disabled={isSubmitting}
+                                            className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            إرسال العرض
+                                            {isSubmitting
+                                                ? "جاري الإرسال..."
+                                                : "إرسال العرض"}
                                         </button>
                                     </form>
+
+                                    {/* Confirmation Dialog */}
+                                    {showConfirm && (
+                                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                            <div
+                                                className="bg-white rounded-lg p-6 max-w-md mx-4"
+                                                dir="rtl"
+                                            >
+                                                <h3 className="text-lg font-bold mb-4 text-gray-800">
+                                                    تأكيد المزايدة
+                                                </h3>
+                                                <p className="text-gray-600 mb-6">
+                                                    هل أنت متأكد من تقديم عرض
+                                                    بقيمة{" "}
+                                                    {formData.bid_amount?.toLocaleString()}{" "}
+                                                    ريال على هذه السيارة؟
+                                                </p>
+                                                <div className="flex gap-4">
+                                                    <button
+                                                        onClick={confirmSubmit}
+                                                        disabled={isSubmitting}
+                                                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50"
+                                                    >
+                                                        {isSubmitting
+                                                            ? "جاري الإرسال..."
+                                                            : "تأكيد"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            setShowConfirm(
+                                                                false
+                                                            )
+                                                        }
+                                                        disabled={isSubmitting}
+                                                        className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200 disabled:opacity-50"
+                                                    >
+                                                        إلغاء
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
