@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import ManageYouTubeBroadcast from "@/components/ManageYouTubeBroadcast";
+import UnifiedBroadcastManagement from "@/components/UnifiedBroadcastManagement";
 import { Loader } from "lucide-react";
 
 export default function LiveStreamManagementPage() {
@@ -32,7 +32,7 @@ export default function LiveStreamManagementPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-8 rtl">
-            <ManageYouTubeBroadcast />
+            <UnifiedBroadcastManagement role="admin" />
         </div>
     );
 }

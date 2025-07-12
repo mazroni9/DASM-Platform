@@ -23,12 +23,9 @@ import {
     Info,
     Video,
 } from "lucide-react";
-import YouTubeBroadcastPlayer from "@/components/YouTubeBroadcastPlayer";
 import VenueSelector from "@/components/broadcast/VenueSelector";
 import AuctionInfo from "@/components/broadcast/AuctionInfo";
 import Link from "next/link";
-import { Venue, getVenues } from "@/lib/api/venues";
-import OtherVenuesGrid from "@/components/broadcast/OtherVenuesGrid";
 import { useAuthStore } from "@/store/authStore";
 import BidForm from "@/components/BidForm";
 import BidNotifications from "@/components/BidNotifications";
@@ -570,11 +567,7 @@ export default function BroadcastsPage() {
                 {/* عرض البث المباشر للمزاد النشط */}
                 {activeAuction && (
                     <div className="mt-8">
-                        <YouTubeBroadcastPlayer
-                            showChat={true}
-                            aspectRatio="16:9"
-                            className="shadow-md rounded-lg overflow-hidden"
-                        />
+                        <div> youtube </div>
 
                         <div className="bg-white shadow-md rounded-lg p-6 mt-4">
                             <h2 className="text-2xl font-bold mb-4">
@@ -644,14 +637,17 @@ export default function BroadcastsPage() {
 
                                             {isLoggedIn ? (
                                                 <BidForm
-                                                    auctionId={activeAuction.id}
-                                                    currentPrice={
-                                                        activeAuction.current_price ||
-                                                        activeAuction.starting_price
+                                                    auction_id={
+                                                        activeAuction.id
                                                     }
-                                                    onBidPlaced={
-                                                        fetchActiveAuction
-                                                    }
+                                                    bid_amount={100}
+                                                    // currentPrice={
+                                                    //     activeAuction.current_price ||
+                                                    //     activeAuction.starting_price
+                                                    // }
+                                                    // onBidPlaced={
+                                                    //     fetchActiveAuction
+                                                    // }
                                                 />
                                             ) : (
                                                 <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md">

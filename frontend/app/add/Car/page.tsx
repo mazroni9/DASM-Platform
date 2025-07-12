@@ -14,7 +14,7 @@
 
 import { Car, Home } from 'lucide-react';
 import Link from 'next/link';
-import CarDataEntryForm from './CarDataEntryForm';
+import CarDataEntryForm from '../../../components/dashboard/CarDataEntryForm';
 
 export default function AddCarPage() {
   return (

@@ -59,6 +59,7 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
             icon: LayoutDashboard,
         },
         { name: "المزادات", href: "/moderator/auctions", icon: Car },
+        { name: "السيارات", href: "/moderator/cars", icon: Car },
         { name: "المزايدات", href: "/moderator/bids", icon: DollarSign },
     ];
 

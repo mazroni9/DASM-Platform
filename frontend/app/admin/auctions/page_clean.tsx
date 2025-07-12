@@ -1,31 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import {
+    Car,
+    Clock,
+    DollarSign,
+    Eye,
+    CheckCircle,
+    XCircle,
+    AlertTriangle,
+    Loader2,
+    Filter,
+    CircleCheck,
+    ArrowRightLeft,
+    Play,
+} from "lucide-react";
+import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
-import toast from "react-hot-toast";
-import { Eye, CheckCircle, XCircle, Clock, Filter } from "lucide-react";
+import { Button } from "@mui/material";
 
 interface Auction {
     id: number;
-    title: string;
-    status: string;
-    start_time: string;
-    end_time: string;
-    starting_bid: number;
-    current_bid: number;
-    bid_count: number;
     car: {
         id: number;
         make: string;
         model: string;
         year: number;
     };
+    starting_bid: number;
+    current_bid: number;
+    reserve_price: number;
+    status: string;
+    start_time: string;
+    end_time: string;
+    control_room_approved: boolean;
+    auction_type: string;
+    approved_for_live: boolean;
+    created_at: string;
 }
 
-export default function ModeratorAuctionsPage() {
-    const { isModerator, isLoading, isLoggedIn } = useAuth();
+export default function AdminAuctionsPage() {
     const router = useRouter();
     const [auctions, setAuctions] = useState<Auction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,29 +69,19 @@ export default function ModeratorAuctionsPage() {
     const [rejectionReason, setRejectionReason] = useState("");
 
     useEffect(() => {
-        // Redirect if not logged in or not a moderator
-        if (!isLoading && (!isLoggedIn || !isModerator)) {
-            router.push("/auth/login");
+        if (activeTab === "all") {
+            fetchAuctions();
+        } else if (activeTab === "approvals") {
+            fetchPendingAuctions();
         }
-    }, [isLoading, isLoggedIn, isModerator, router]);
-
-    useEffect(() => {
-        if (isModerator) {
-            if (activeTab === "all") {
-                fetchAuctions();
-            } else if (activeTab === "approvals") {
-                fetchPendingAuctions();
-            }
-        }
-    }, [isModerator, activeTab]);
+    }, [activeTab]);
 
     const fetchAuctions = async () => {
         try {
             setLoading(true);
-            const response = await api.get("/api/moderator/auctions");
-            console.log("auctions: ", response.data.data);
+            const response = await api.get("/api/admin/auctions");
             if (response.data.status === "success") {
-                setAuctions(response.data.data.data);
+                setAuctions(response.data.data.data || response.data.data);
             }
         } catch (error) {
             console.error("Error fetching auctions:", error);
@@ -94,7 +99,7 @@ export default function ModeratorAuctionsPage() {
             if (searchTerm) params.append("search", searchTerm);
 
             const response = await api.get(
-                `/api/moderator/auctions/pending?${params}`
+                `/api/admin/auctions/pending?${params}`
             );
             if (response.data.status === "success") {
                 setPendingAuctions(
@@ -106,25 +111,6 @@ export default function ModeratorAuctionsPage() {
             toast.error("فشل في تحميل المزادات المعلقة");
         } finally {
             setLoading(false);
-        }
-    };
-
-    const updateAuctionStatus = async (auctionId: number, status: string) => {
-        try {
-            const response = await api.patch(
-                `/api/moderator/auctions/${auctionId}/status`,
-                {
-                    status,
-                }
-            );
-
-            if (response.data.status === "success") {
-                toast.success("تم تحديث حالة المزاد بنجاح");
-                fetchAuctions(); // Refresh the list
-            }
-        } catch (error) {
-            console.error("Error updating auction status:", error);
-            toast.error("حدث خطأ أثناء تحديث حالة المزاد");
         }
     };
 
@@ -159,12 +145,14 @@ export default function ModeratorAuctionsPage() {
                 switch (action) {
                     case "approve":
                         return api.patch(
-                            `/api/moderator/auctions/${auctionId}/approve`
+                            `/api/admin/auctions/${auctionId}/approve`
                         );
                     case "reject":
                         return api.patch(
-                            `/api/moderator/auctions/${auctionId}/reject`
+                            `/api/admin/auctions/${auctionId}/reject`
                         );
+                    case "delete":
+                        return api.delete(`/api/admin/auctions/${auctionId}`);
                     default:
                         return Promise.resolve();
                 }
@@ -173,7 +161,11 @@ export default function ModeratorAuctionsPage() {
             await Promise.all(promises);
             toast.success(
                 `تم ${
-                    action === "approve" ? "موافقة" : "رفض"
+                    action === "approve"
+                        ? "موافقة"
+                        : action === "reject"
+                        ? "رفض"
+                        : "حذف"
                 } المزادات المختارة بنجاح`
             );
             setSelectedAuctions([]);
@@ -213,7 +205,7 @@ export default function ModeratorAuctionsPage() {
         try {
             setProcessingId(selectedAuction.id);
             const response = await api.post(
-                `/api/moderator/auctions/${selectedAuction.id}/approve`,
+                `/api/admin/auctions/${selectedAuction.id}/approve`,
                 approvalData
             );
 
@@ -244,7 +236,7 @@ export default function ModeratorAuctionsPage() {
         try {
             setProcessingId(selectedAuction.id);
             const response = await api.post(
-                `/api/moderator/auctions/${selectedAuction.id}/reject`,
+                `/api/admin/auctions/${selectedAuction.id}/reject`,
                 {
                     reason: rejectionReason,
                 }
@@ -271,16 +263,18 @@ export default function ModeratorAuctionsPage() {
         switch (status) {
             case "pending_approval":
                 return "text-yellow-600 bg-yellow-100";
-            case "active":
+            case "scheduled":
+                return "text-blue-600 bg-blue-100";
+            case "live":
                 return "text-green-600 bg-green-100";
-            case "pending":
-                return "text-yellow-600 bg-yellow-100";
-            case "rejected":
+            case "ended":
+                return "text-gray-600 bg-gray-100";
+            case "cancelled":
                 return "text-red-600 bg-red-100";
             case "completed":
-                return "text-blue-600 bg-blue-100";
+                return "text-green-600 bg-gray-100";
             default:
-                return "text-gray-600 bg-gray-100";
+                return "text-yellow-600 bg-yellow-100";
         }
     };
 
@@ -288,12 +282,14 @@ export default function ModeratorAuctionsPage() {
         switch (status) {
             case "pending_approval":
                 return "في انتظار الموافقة";
-            case "active":
+            case "live":
                 return "نشط";
-            case "pending":
-                return "في الانتظار";
-            case "rejected":
-                return "مرفوض";
+            case "scheduled":
+                return "مجدول";
+            case "ended":
+                return "منتهي";
+            case "cancelled":
+                return "ملغي";
             case "completed":
                 return "مكتمل";
             default:
@@ -301,28 +297,38 @@ export default function ModeratorAuctionsPage() {
         }
     };
 
+    const formatDate = (dateString: string) => {
+        if (!dateString) return "غير متوفر";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("ar-SA", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
     const filteredAuctions = auctions.filter((auction) => {
         if (filter === "all") return true;
         return auction.status === filter;
     });
 
-    if (isLoading || loading) {
+    if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                <span className="mr-2">جاري تحميل المزادات...</span>
             </div>
         );
     }
 
-    if (!isModerator) {
-        return null; // Will redirect in useEffect
-    }
-
     return (
-        <div className="container mx-auto py-8 px-4">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">إدارة المزادات</h1>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-800">
+                    إدارة المزادات
+                </h1>
             </div>
 
             {/* Tabs */}
@@ -357,232 +363,228 @@ export default function ModeratorAuctionsPage() {
             {activeTab === "all" ? (
                 // All Auctions Tab
                 <div>
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
+                    {/* Filter Controls */}
+                    <div className="bg-white p-4 rounded-lg shadow-sm border">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Filter className="w-5 h-5 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-700">
+                                    فلترة حسب الحالة:
+                                </span>
+                                <select
+                                    value={filter}
+                                    onChange={(e) => setFilter(e.target.value)}
+                                    className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                                >
+                                    <option value="all">جميع المزادات</option>
+                                    <option value="pending_approval">
+                                        في انتظار الموافقة
+                                    </option>
+                                    <option value="scheduled">مجدولة</option>
+                                    <option value="active">نشطة</option>
+                                    <option value="ended">منتهية</option>
+                                    <option value="cancelled">ملغية</option>
+                                    <option value="completed">مكتملة</option>
+                                </select>
+                            </div>
+
                             {selectedAuctions.length > 0 && (
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-600">
                                         تم اختيار {selectedAuctions.length} مزاد
                                     </span>
-                                    <button
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="success"
                                         onClick={() =>
                                             handleBulkAction("approve")
                                         }
-                                        className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
                                     >
                                         موافقة الكل
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="error"
                                         onClick={() =>
                                             handleBulkAction("reject")
                                         }
-                                        className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
                                     >
                                         رفض الكل
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
-
-                            {/* Filter buttons */}
-                            <div className="flex space-x-2 space-x-reverse">
-                                <button
-                                    onClick={() => setFilter("all")}
-                                    className={`px-4 py-2 rounded-md ${
-                                        filter === "all"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                    }`}
-                                >
-                                    الكل
-                                </button>
-                                <button
-                                    onClick={() =>
-                                        setFilter("pending_approval")
-                                    }
-                                    className={`px-4 py-2 rounded-md ${
-                                        filter === "pending_approval"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                    }`}
-                                >
-                                    في انتظار الموافقة
-                                </button>
-                                <button
-                                    onClick={() => setFilter("pending")}
-                                    className={`px-4 py-2 rounded-md ${
-                                        filter === "pending"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                    }`}
-                                >
-                                    في الانتظار
-                                </button>
-                                <button
-                                    onClick={() => setFilter("active")}
-                                    className={`px-4 py-2 rounded-md ${
-                                        filter === "active"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                    }`}
-                                >
-                                    نشط
-                                </button>
-                            </div>
                         </div>
                     </div>
 
-                    {filteredAuctions.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500 text-lg">
-                                لا توجد مزادات للعرض
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-center">
+                    {/* Auctions Table */}
+                    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    selectedAuctions.length ===
+                                                        filteredAuctions.length &&
+                                                    filteredAuctions.length > 0
+                                                }
+                                                onChange={handleSelectAll}
+                                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            السيارة
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            السعر الحالي
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            الحالة
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            وقت البداية
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            وقت النهاية
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            نوع الحراج
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            الإجراءات
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {filteredAuctions.map((auction) => (
+                                        <tr
+                                            key={auction.id}
+                                            className="hover:bg-gray-50"
+                                        >
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <input
                                                     type="checkbox"
-                                                    checked={
-                                                        selectedAuctions.length ===
-                                                            filteredAuctions.length &&
-                                                        filteredAuctions.length >
-                                                            0
+                                                    checked={selectedAuctions.includes(
+                                                        auction.id
+                                                    )}
+                                                    onChange={() =>
+                                                        handleSelectAuction(
+                                                            auction.id
+                                                        )
                                                     }
-                                                    onChange={handleSelectAll}
                                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                                                 />
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                المزاد
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                السيارة
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                الحالة
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                المزايدة الحالية
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                عدد المزايدات
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                الإجراءات
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredAuctions.map((auction) => (
-                                            <tr
-                                                key={auction.id}
-                                                className="hover:bg-gray-50"
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedAuctions.includes(
-                                                            auction.id
-                                                        )}
-                                                        onChange={() =>
-                                                            handleSelectAuction(
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div
+                                                    className="flex items-center cursor-pointer hover:text-blue-600"
+                                                    onClick={() =>
+                                                        window.open(
+                                                            `/carDetails/${
+                                                                auction.car
+                                                                    ?.id ||
                                                                 auction.id
-                                                            )
-                                                        }
-                                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                            }`,
+                                                            "_blank"
+                                                        )
+                                                    }
+                                                >
+                                                    <Car className="w-5 h-5 text-gray-400 ml-3" />
                                                     <div>
                                                         <div className="text-sm font-medium text-gray-900">
-                                                            {auction.title}
+                                                            {auction.car?.make}{" "}
+                                                            {auction.car?.model}
                                                         </div>
                                                         <div className="text-sm text-gray-500">
-                                                            ID: {auction.id}
+                                                            {auction.car?.year}
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {auction.car.make}{" "}
-                                                        {auction.car.model}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {auction.car.year}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                                            auction.status
-                                                        )}`}
-                                                    >
-                                                        {getStatusText(
-                                                            auction.status
-                                                        )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <DollarSign className="w-4 h-4 text-green-500 ml-1" />
+                                                    <span className="text-sm font-medium text-gray-900">
+                                                        {auction.current_bid?.toLocaleString() ||
+                                                            0}{" "}
+                                                        ريال
                                                     </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {auction.current_bid?.toLocaleString() ||
-                                                        0}{" "}
-                                                    ريال
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {auction.bid_count || 0}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex space-x-2 space-x-reverse">
-                                                        <button
-                                                            onClick={() =>
-                                                                window.open(
-                                                                    `/auctions/${auction.id}`,
-                                                                    "_blank"
-                                                                )
-                                                            }
-                                                            className="text-blue-600 hover:text-blue-900"
-                                                        >
-                                                            <Eye className="w-4 h-4" />
-                                                        </button>
-                                                        {auction.status ===
-                                                            "pending_approval" && (
-                                                            <>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        updateAuctionStatus(
-                                                                            auction.id,
-                                                                            "active"
-                                                                        )
-                                                                    }
-                                                                    className="text-green-600 hover:text-green-900"
-                                                                >
-                                                                    <CheckCircle className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        updateAuctionStatus(
-                                                                            auction.id,
-                                                                            "rejected"
-                                                                        )
-                                                                    }
-                                                                    className="text-red-600 hover:text-red-900"
-                                                                >
-                                                                    <XCircle className="w-4 h-4" />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span
+                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                                        auction.status
+                                                    )}`}
+                                                >
+                                                    {getStatusText(
+                                                        auction.status
+                                                    )}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {formatDate(auction.start_time)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {formatDate(auction.end_time)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {auction.auction_type}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex items-center space-x-2 space-x-reverse">
+                                                    <button
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `/auctions/${auction.id}`,
+                                                                "_blank"
+                                                            )
+                                                        }
+                                                        className="text-blue-600 hover:text-blue-900"
+                                                        title="عرض التفاصيل"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+
+                                                    {auction.status ===
+                                                        "pending_approval" && (
+                                                        <>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleApprove(
+                                                                        auction
+                                                                    )
+                                                                }
+                                                                className="text-green-600 hover:text-green-900"
+                                                                title="موافقة"
+                                                            >
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleReject(
+                                                                        auction
+                                                                    )
+                                                                }
+                                                                className="text-red-600 hover:text-red-900"
+                                                                title="رفض"
+                                                            >
+                                                                <XCircle className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+                    </div>
                 </div>
             ) : (
                 // Approvals Tab
@@ -651,25 +653,12 @@ export default function ModeratorAuctionsPage() {
                                                     ريال
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {new Date(
-                                                        auction.start_time
-                                                    ).toLocaleDateString(
-                                                        "ar-SA"
+                                                    {formatDate(
+                                                        auction.created_at
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <div className="flex space-x-2 space-x-reverse">
-                                                        <button
-                                                            onClick={() =>
-                                                                router.push(
-                                                                    `/moderator/cars/${auction.car.id}/process-auction`
-                                                                )
-                                                            }
-                                                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                                                            title="معالجة طلب المزاد"
-                                                        >
-                                                            معالجة
-                                                        </button>
                                                         <button
                                                             onClick={() =>
                                                                 handleApprove(

@@ -7,48 +7,56 @@ import { z } from "zod";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
+// TypeScript interfaces
+interface Venue {
+    id: number;
+    name: string;
+}
+
+interface BroadcastInfo {
+    id: number;
+    title: string;
+    description?: string;
+    venue_id: number;
+    youtube_embed_url: string;
+    youtube_chat_embed_url?: string;
+    youtube_stream_id?: string;
+    is_live: boolean;
+    scheduled_start_time?: string;
+    venue?: Venue;
+}
+
 // Validation schema
-const broadcastFormSchema = z.object({
-    title: z
-        .string()
-        .min(3, { message: "العنوان مطلوب ويجب أن يكون على الأقل 3 أحرف" }),
+const broadcastSchema = z.object({
+    title: z.string().min(1, { message: "عنوان البث مطلوب" }),
     description: z.string().optional(),
     venue_id: z.string().min(1, { message: "يرجى اختيار معرض" }),
     youtube_embed_url: z
         .string()
-        .url({ message: "يرجى إدخال رابط يوتيوب صالح" }),
-    youtube_chat_embed_url: z
-        .string()
-        .url({ message: "يرجى إدخال رابط دردشة صالح" })
-        .optional()
-        .or(z.literal("")),
+        .min(1, { message: "رابط تضمين البث مطلوب" })
+        .url({ message: "يرجى إدخال رابط صحيح" }),
+    youtube_chat_embed_url: z.string().optional(),
     youtube_stream_id: z.string().optional(),
-    is_live: z.boolean().optional(),
-    scheduled_start_time: z.string().optional().or(z.literal("")),
+    scheduled_start_time: z.string().optional(),
+    is_live: z.boolean().default(false),
 });
 
+type BroadcastFormData = z.infer<typeof broadcastSchema>;
+
 export default function BroadcastManagement() {
+    const [broadcastInfo, setBroadcastInfo] = useState<BroadcastInfo | null>(
+        null
+    );
+    const [venues, setVenues] = useState<Venue[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [broadcastInfo, setBroadcastInfo] = useState(null);
-    const [venues, setVenues] = useState([]);
+
     const {
         register,
         handleSubmit,
-        formState: { errors },
-        reset,
         setValue,
-    } = useForm({
-        resolver: zodResolver(broadcastFormSchema),
-        defaultValues: {
-            title: "",
-            description: "",
-            venue_id: "",
-            youtube_embed_url: "",
-            youtube_chat_embed_url: "",
-            youtube_stream_id: "",
-            is_live: false,
-            scheduled_start_time: "",
-        },
+        formState: { errors },
+    } = useForm<BroadcastFormData>({
+        resolver: zodResolver(broadcastSchema),
     });
 
     // Fetch broadcast information on component mount
@@ -115,7 +123,7 @@ export default function BroadcastManagement() {
     };
 
     // Handle form submission
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: BroadcastFormData) => {
         setIsLoading(true);
 
         try {

@@ -36,9 +36,7 @@ export default function ModeratorAuctionsPage() {
     // Additional state for approvals tab
     const [pendingAuctions, setPendingAuctions] = useState<Auction[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedAuction, setSelectedAuction] = useState<Auction | null>(
-        null
-    );
+    const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [processingId, setProcessingId] = useState<number | null>(null);
@@ -86,7 +84,6 @@ export default function ModeratorAuctionsPage() {
         }
     };
 
-    // Fetch pending auctions for approvals tab
     const fetchPendingAuctions = async () => {
         try {
             setLoading(true);
@@ -97,9 +94,7 @@ export default function ModeratorAuctionsPage() {
                 `/api/moderator/auctions/pending?${params}`
             );
             if (response.data.status === "success") {
-                setPendingAuctions(
-                    response.data.data.data || response.data.data
-                );
+                setPendingAuctions(response.data.data.data || response.data.data);
             }
         } catch (error) {
             console.error("Error fetching pending auctions:", error);
@@ -139,12 +134,10 @@ export default function ModeratorAuctionsPage() {
     };
 
     const handleSelectAll = () => {
-        const currentList =
-            activeTab === "all" ? filteredAuctions : pendingAuctions;
-        if (selectedAuctions.length === currentList.length) {
+        if (selectedAuctions.length === filteredAuctions.length) {
             setSelectedAuctions([]);
         } else {
-            setSelectedAuctions(currentList.map((auction) => auction.id));
+            setSelectedAuctions(filteredAuctions.map((auction) => auction.id));
         }
     };
 
@@ -172,23 +165,16 @@ export default function ModeratorAuctionsPage() {
 
             await Promise.all(promises);
             toast.success(
-                `تم ${
-                    action === "approve" ? "موافقة" : "رفض"
-                } المزادات المختارة بنجاح`
+                `تم ${action === "approve" ? "موافقة" : "رفض"} المزادات المختارة بنجاح`
             );
             setSelectedAuctions([]);
-            if (activeTab === "all") {
-                fetchAuctions();
-            } else {
-                fetchPendingAuctions();
-            }
+            fetchAuctions();
         } catch (error) {
             console.error("Error performing bulk action:", error);
             toast.error("حدث خطأ أثناء تنفيذ العملية");
         }
     };
 
-    // Handle approval modal
     const handleApprove = async (auction: Auction) => {
         setSelectedAuction(auction);
         setApprovalData({
@@ -199,14 +185,12 @@ export default function ModeratorAuctionsPage() {
         setShowApprovalModal(true);
     };
 
-    // Handle rejection modal
     const handleReject = async (auction: Auction) => {
         setSelectedAuction(auction);
         setRejectionReason("");
         setShowRejectionModal(true);
     };
 
-    // Submit approval
     const submitApproval = async () => {
         if (!selectedAuction) return;
 
@@ -234,7 +218,6 @@ export default function ModeratorAuctionsPage() {
         }
     };
 
-    // Submit rejection
     const submitRejection = async () => {
         if (!selectedAuction || !rejectionReason.trim()) {
             toast.error("يرجى إدخال سبب الرفض");
@@ -355,7 +338,7 @@ export default function ModeratorAuctionsPage() {
 
             {/* Tab Content */}
             {activeTab === "all" ? (
-                // All Auctions Tab
+                // All Auctions Tab Content
                 <div>
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-4">
@@ -365,17 +348,13 @@ export default function ModeratorAuctionsPage() {
                                         تم اختيار {selectedAuctions.length} مزاد
                                     </span>
                                     <button
-                                        onClick={() =>
-                                            handleBulkAction("approve")
-                                        }
+                                        onClick={() => handleBulkAction("approve")}
                                         className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
                                     >
                                         موافقة الكل
                                     </button>
                                     <button
-                                        onClick={() =>
-                                            handleBulkAction("reject")
-                                        }
+                                        onClick={() => handleBulkAction("reject")}
                                         className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
                                     >
                                         رفض الكل
@@ -396,9 +375,7 @@ export default function ModeratorAuctionsPage() {
                                     الكل
                                 </button>
                                 <button
-                                    onClick={() =>
-                                        setFilter("pending_approval")
-                                    }
+                                    onClick={() => setFilter("pending_approval")}
                                     className={`px-4 py-2 rounded-md ${
                                         filter === "pending_approval"
                                             ? "bg-blue-600 text-white"
@@ -449,8 +426,7 @@ export default function ModeratorAuctionsPage() {
                                                     checked={
                                                         selectedAuctions.length ===
                                                             filteredAuctions.length &&
-                                                        filteredAuctions.length >
-                                                            0
+                                                        filteredAuctions.length > 0
                                                     }
                                                     onChange={handleSelectAll}
                                                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
@@ -489,9 +465,7 @@ export default function ModeratorAuctionsPage() {
                                                             auction.id
                                                         )}
                                                         onChange={() =>
-                                                            handleSelectAuction(
-                                                                auction.id
-                                                            )
+                                                            handleSelectAuction(auction.id)
                                                         }
                                                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                                                     />
@@ -521,14 +495,11 @@ export default function ModeratorAuctionsPage() {
                                                             auction.status
                                                         )}`}
                                                     >
-                                                        {getStatusText(
-                                                            auction.status
-                                                        )}
+                                                        {getStatusText(auction.status)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {auction.current_bid?.toLocaleString() ||
-                                                        0}{" "}
+                                                    {auction.current_bid?.toLocaleString() || 0}{" "}
                                                     ريال
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -538,17 +509,15 @@ export default function ModeratorAuctionsPage() {
                                                     <div className="flex space-x-2 space-x-reverse">
                                                         <button
                                                             onClick={() =>
-                                                                window.open(
-                                                                    `/auctions/${auction.id}`,
-                                                                    "_blank"
+                                                                router.push(
+                                                                    `/auctions/${auction.id}`
                                                                 )
                                                             }
                                                             className="text-blue-600 hover:text-blue-900"
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </button>
-                                                        {auction.status ===
-                                                            "pending_approval" && (
+                                                        {auction.status === "pending_approval" && (
                                                             <>
                                                                 <button
                                                                     onClick={() =>
@@ -585,16 +554,19 @@ export default function ModeratorAuctionsPage() {
                     )}
                 </div>
             ) : (
-                // Approvals Tab
+                // Approvals Tab Content
                 <div>
-                    <div className="mb-6">
-                        <div className="flex items-center gap-4">
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            بحث
+                        </label>
+                        <div className="flex gap-2">
                             <input
                                 type="text"
-                                placeholder="البحث في المزادات المعلقة..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
+                                placeholder="ابحث عن مزاد..."
                             />
                             <button
                                 onClick={fetchPendingAuctions}
@@ -617,14 +589,32 @@ export default function ModeratorAuctionsPage() {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
+                                            <th className="px-6 py-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={
+                                                        selectedAuctions.length ===
+                                                            pendingAuctions.length &&
+                                                        pendingAuctions.length > 0
+                                                    }
+                                                    onChange={handleSelectAll}
+                                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                            </th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                المزاد
+                                            </th>
                                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 السيارة
                                             </th>
                                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                السعر المطلوب
+                                                الحالة
                                             </th>
                                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                تاريخ الطلب
+                                                المزايدة الحالية
+                                            </th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                عدد المزايدات
                                             </th>
                                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 الإجراءات
@@ -637,6 +627,28 @@ export default function ModeratorAuctionsPage() {
                                                 key={auction.id}
                                                 className="hover:bg-gray-50"
                                             >
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedAuctions.includes(
+                                                            auction.id
+                                                        )}
+                                                        onChange={() =>
+                                                            handleSelectAuction(auction.id)
+                                                        }
+                                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {auction.title}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">
+                                                            ID: {auction.id}
+                                                        </div>
+                                                    </div>
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-900">
                                                         {auction.car.make}{" "}
@@ -646,58 +658,60 @@ export default function ModeratorAuctionsPage() {
                                                         {auction.car.year}
                                                     </div>
                                                 </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                                            auction.status
+                                                        )}`}
+                                                    >
+                                                        {getStatusText(auction.status)}
+                                                    </span>
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {auction.starting_bid?.toLocaleString()}{" "}
+                                                    {auction.current_bid?.toLocaleString() || 0}{" "}
                                                     ريال
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {new Date(
-                                                        auction.start_time
-                                                    ).toLocaleDateString(
-                                                        "ar-SA"
-                                                    )}
+                                                    {auction.bid_count || 0}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <div className="flex space-x-2 space-x-reverse">
                                                         <button
                                                             onClick={() =>
                                                                 router.push(
-                                                                    `/moderator/cars/${auction.car.id}/process-auction`
+                                                                    `/auctions/${auction.id}`
                                                                 )
                                                             }
-                                                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                                                            title="معالجة طلب المزاد"
+                                                            className="text-blue-600 hover:text-blue-900"
                                                         >
-                                                            معالجة
+                                                            <Eye className="w-4 h-4" />
                                                         </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleApprove(
-                                                                    auction
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                processingId ===
-                                                                auction.id
-                                                            }
-                                                            className="text-green-600 hover:text-green-900 disabled:opacity-50"
-                                                        >
-                                                            <CheckCircle className="w-5 h-5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleReject(
-                                                                    auction
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                processingId ===
-                                                                auction.id
-                                                            }
-                                                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                                                        >
-                                                            <XCircle className="w-5 h-5" />
-                                                        </button>
+                                                        {auction.status === "pending_approval" && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        updateAuctionStatus(
+                                                                            auction.id,
+                                                                            "active"
+                                                                        )
+                                                                    }
+                                                                    className="text-green-600 hover:text-green-900"
+                                                                >
+                                                                    <CheckCircle className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        updateAuctionStatus(
+                                                                            auction.id,
+                                                                            "rejected"
+                                                                        )
+                                                                    }
+                                                                    className="text-red-600 hover:text-red-900"
+                                                                >
+                                                                    <XCircle className="w-4 h-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -711,63 +725,81 @@ export default function ModeratorAuctionsPage() {
             )}
 
             {/* Approval Modal */}
-            {showApprovalModal && selectedAuction && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                            موافقة على المزاد
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    سعر الافتتاح
-                                </label>
-                                <input
-                                    type="number"
-                                    value={approvalData.opening_price}
-                                    onChange={(e) =>
-                                        setApprovalData({
-                                            ...approvalData,
-                                            opening_price: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    نوع المزاد
-                                </label>
-                                <select
-                                    value={approvalData.auction_type}
-                                    onChange={(e) =>
-                                        setApprovalData({
-                                            ...approvalData,
-                                            auction_type: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="silent_instant">
-                                        صامت فوري
-                                    </option>
-                                    <option value="live">مباشر</option>
-                                </select>
-                            </div>
+            {showApprovalModal && (
+                <div className="fixed inset-0 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+                        <h2 className="text-lg font-semibold mb-4">
+                            موافقة المزاد
+                        </h2>
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                السعر الافتتاحي
+                            </label>
+                            <input
+                                type="text"
+                                value={approvalData.opening_price}
+                                onChange={(e) =>
+                                    setApprovalData({
+                                        ...approvalData,
+                                        opening_price: e.target.value,
+                                    })
+                                }
+                                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
+                            />
                         </div>
-                        <div className="mt-6 flex space-x-3 space-x-reverse">
-                            <button
-                                onClick={submitApproval}
-                                disabled={processingId === selectedAuction.id}
-                                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50"
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                نوع المزاد
+                            </label>
+                            <select
+                                value={approvalData.auction_type}
+                                onChange={(e) =>
+                                    setApprovalData({
+                                        ...approvalData,
+                                        auction_type: e.target.value,
+                                    })
+                                }
+                                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
                             >
-                                موافقة
-                            </button>
+                                <option value="silent_instant">صامت فوري</option>
+                                <option value="live_auction">مزاد مباشر</option>
+                            </select>
+                        </div>
+                        <div className="mb-4">
+                            <label className="inline-flex items-center">
+                                <input
+                                    type="checkbox"
+                                    checked={approvalData.approved_for_live}
+                                    onChange={(e) =>
+                                        setApprovalData({
+                                            ...approvalData,
+                                            approved_for_live: e.target.checked,
+                                        })
+                                    }
+                                    className="form-checkbox h-4 w-4 text-blue-600"
+                                />
+                                <span className="ml-2 text-sm text-gray-700">
+                                    الموافقة للبث المباشر
+                                </span>
+                            </label>
+                        </div>
+                        <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setShowApprovalModal(false)}
-                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
                             >
                                 إلغاء
+                            </button>
+                            <button
+                                onClick={submitApproval}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                                disabled={processingId !== null}
+                            >
+                                {processingId === selectedAuction?.id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                                ) : (
+                                    "موافقة"
+                                )}
                             </button>
                         </div>
                     </div>
@@ -775,39 +807,40 @@ export default function ModeratorAuctionsPage() {
             )}
 
             {/* Rejection Modal */}
-            {showRejectionModal && selectedAuction && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+            {showRejectionModal && (
+                <div className="fixed inset-0 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+                        <h2 className="text-lg font-semibold mb-4">
                             رفض المزاد
-                        </h3>
-                        <div>
+                        </h2>
+                        <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 سبب الرفض
                             </label>
                             <textarea
                                 value={rejectionReason}
-                                onChange={(e) =>
-                                    setRejectionReason(e.target.value)
-                                }
-                                rows={4}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="اكتب سبب رفض المزاد..."
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
+                                rows={3}
                             />
                         </div>
-                        <div className="mt-6 flex space-x-3 space-x-reverse">
-                            <button
-                                onClick={submitRejection}
-                                disabled={processingId === selectedAuction.id}
-                                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 disabled:opacity-50"
-                            >
-                                رفض
-                            </button>
+                        <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setShowRejectionModal(false)}
-                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
                             >
                                 إلغاء
+                            </button>
+                            <button
+                                onClick={submitRejection}
+                                className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+                                disabled={processingId !== null}
+                            >
+                                {processingId === selectedAuction?.id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                                ) : (
+                                    "رفض"
+                                )}
                             </button>
                         </div>
                     </div>

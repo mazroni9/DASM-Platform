@@ -661,17 +661,6 @@ export default function ModeratorAuctionsPage() {
                                                     <div className="flex space-x-2 space-x-reverse">
                                                         <button
                                                             onClick={() =>
-                                                                router.push(
-                                                                    `/moderator/cars/${auction.car.id}/process-auction`
-                                                                )
-                                                            }
-                                                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                                                            title="معالجة طلب المزاد"
-                                                        >
-                                                            معالجة
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
                                                                 handleApprove(
                                                                     auction
                                                                 )
