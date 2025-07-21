@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Car, Check, X, Plus, Minus, Search, Filter } from "lucide-react";
+import { Car, Check, X, Plus, Minus, Search, Filter, Eye } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
@@ -13,24 +13,28 @@ interface CarForAuction {
     condition: string;
     evaluation_price: number;
     images: string[];
-    selected_for_live_auction: boolean;
+    auction_status: string;
+    is_currently_displayed: boolean; // For tracking which car is currently shown to viewers
     owner: string;
     created_at: string;
 }
 
 interface LiveAuctionCarSelectionProps {
     userRole: "admin" | "moderator";
+    broadcastId?: number; // ID of the current broadcast
 }
 
 export default function LiveAuctionCarSelection({
     userRole,
+    broadcastId,
 }: LiveAuctionCarSelectionProps) {
     const [availableCars, setAvailableCars] = useState<CarForAuction[]>([]);
-    const [selectedCars, setSelectedCars] = useState<CarForAuction[]>([]);
+    const [currentlyDisplayedCar, setCurrentlyDisplayedCar] =
+        useState<CarForAuction | null>(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterCondition, setFilterCondition] = useState("");
-    const [activeTab, setActiveTab] = useState<"available" | "selected">(
+    const [activeTab, setActiveTab] = useState<"available" | "current">(
         "available"
     );
     const [bulkSelection, setBulkSelection] = useState<number[]>([]);
@@ -44,17 +48,26 @@ export default function LiveAuctionCarSelection({
             setLoading(true);
             const rolePrefix = userRole === "admin" ? "/admin" : "/moderator";
 
-            const [availableResponse, selectedResponse] = await Promise.all([
-                api.get(`${rolePrefix}/cars/live-auction-available`),
-                api.get(`${rolePrefix}/cars/live-auction-selected`),
-            ]);
+            // Get approved auctions (cars ready for live auction)
+            const availableResponse = await api.get(
+                `${rolePrefix}/cars/approved-auctions`
+            );
+
+            // Get current broadcast info to see which car is currently displayed
+            const broadcastResponse = await api.get("/api/broadcast");
 
             if (availableResponse.data.status === "success") {
-                setAvailableCars(availableResponse.data.data);
-            }
+                const cars = availableResponse.data.data || [];
+                const currentCar = broadcastResponse.data.data?.current_car;
 
-            if (selectedResponse.data.status === "success") {
-                setSelectedCars(selectedResponse.data.data);
+                // Mark which car is currently displayed
+                const carsWithDisplayStatus = cars.map((car: any) => ({
+                    ...car,
+                    is_currently_displayed: currentCar?.id === car.id,
+                }));
+
+                setAvailableCars(carsWithDisplayStatus);
+                setCurrentlyDisplayedCar(currentCar || null);
             }
         } catch (error) {
             console.error("Error loading cars:", error);
@@ -64,20 +77,21 @@ export default function LiveAuctionCarSelection({
         }
     };
 
-    const toggleCarSelection = async (carId: number) => {
+    const selectCarForDisplay = async (carId: number) => {
         try {
             const rolePrefix = userRole === "admin" ? "/admin" : "/moderator";
             const response = await api.put(
-                `${rolePrefix}/cars/${carId}/toggle-live-auction`
+                `${rolePrefix}/broadcast/current-car`,
+                { car_id: carId }
             );
 
             if (response.data.status === "success") {
-                toast.success(response.data.message);
-                await loadCars(); // Reload data
+                toast.success("تم تحديد السيارة للعرض في البث المباشر");
+                await loadCars(); // Reload data to update display status
             }
         } catch (error) {
-            console.error("Error toggling car selection:", error);
-            toast.error("حدث خطأ أثناء تحديث حالة السيارة");
+            console.error("Error selecting car for display:", error);
+            toast.error("حدث خطأ أثناء تحديد السيارة للعرض");
         }
     };
 
@@ -182,35 +196,25 @@ export default function LiveAuctionCarSelection({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Bulk Selection Checkbox */}
-                            {activeTab === "available" && (
-                                <input
-                                    type="checkbox"
-                                    checked={bulkSelection.includes(car.id)}
-                                    onChange={() => toggleBulkSelection(car.id)}
-                                    className="w-4 h-4 text-blue-600 rounded"
-                                />
-                            )}
-
-                            {/* Toggle Button */}
+                            {/* Display Button */}
                             {showToggle && (
                                 <button
-                                    onClick={() => toggleCarSelection(car.id)}
+                                    onClick={() => selectCarForDisplay(car.id)}
                                     className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                                        car.selected_for_live_auction
-                                            ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                        car.is_currently_displayed
+                                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
                                             : "bg-green-100 text-green-700 hover:bg-green-200"
                                     }`}
                                 >
-                                    {car.selected_for_live_auction ? (
+                                    {car.is_currently_displayed ? (
                                         <>
-                                            <Minus className="h-4 w-4 inline ml-1" />
-                                            إلغاء الاختيار
+                                            <Eye className="h-4 w-4 inline ml-1" />
+                                            معروضة حالياً
                                         </>
                                     ) : (
                                         <>
                                             <Plus className="h-4 w-4 inline ml-1" />
-                                            اختيار للمزاد
+                                            عرض في البث المباشر
                                         </>
                                     )}
                                 </button>
@@ -238,10 +242,10 @@ export default function LiveAuctionCarSelection({
             {/* Header */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                    اختيار السيارات للمزاد المباشر
+                    إدارة السيارات في البث المباشر
                 </h2>
                 <p className="text-gray-600">
-                    اختر السيارات التي ستظهر في المزاد المباشر القادم
+                    اختر السيارة التي ستظهر للمشاهدين في البث المباشر
                 </p>
             </div>
 
@@ -260,14 +264,15 @@ export default function LiveAuctionCarSelection({
                             السيارات المتاحة ({availableCars.length})
                         </button>
                         <button
-                            onClick={() => setActiveTab("selected")}
+                            onClick={() => setActiveTab("current")}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === "selected"
+                                activeTab === "current"
                                     ? "border-blue-500 text-blue-600"
                                     : "border-transparent text-gray-500 hover:text-gray-700"
                             }`}
                         >
-                            السيارات المختارة ({selectedCars.length})
+                            السيارة المعروضة حالياً (
+                            {currentlyDisplayedCar ? 1 : 0})
                         </button>
                     </nav>
                 </div>
@@ -307,25 +312,6 @@ export default function LiveAuctionCarSelection({
                                 <option value="poor">ضعيفة</option>
                             </select>
                         </div>
-
-                        {/* Bulk Actions */}
-                        {activeTab === "available" &&
-                            bulkSelection.length > 0 && (
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => bulkUpdateCars(true)}
-                                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                                    >
-                                        اختيار المحدد ({bulkSelection.length})
-                                    </button>
-                                    <button
-                                        onClick={() => setBulkSelection([])}
-                                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-                                    >
-                                        إلغاء التحديد
-                                    </button>
-                                </div>
-                            )}
                     </div>
                 </div>
 
@@ -348,17 +334,20 @@ export default function LiveAuctionCarSelection({
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {getFilteredCars(selectedCars).length === 0 ? (
+                            {!currentlyDisplayedCar ? (
                                 <div className="text-center py-8">
                                     <Check className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                     <p className="text-gray-600">
-                                        لم يتم اختيار أي سيارات للمزاد المباشر
+                                        لم يتم تحديد أي سيارة للعرض في البث
+                                        المباشر
                                     </p>
                                 </div>
                             ) : (
-                                getFilteredCars(selectedCars).map((car) => (
-                                    <CarCard key={car.id} car={car} />
-                                ))
+                                <CarCard
+                                    key={currentlyDisplayedCar.id}
+                                    car={currentlyDisplayedCar}
+                                    showToggle={false}
+                                />
                             )}
                         </div>
                     )}

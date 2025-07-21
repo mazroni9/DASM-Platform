@@ -16,6 +16,7 @@ interface Auction {
     starting_bid: number;
     current_bid: number;
     bid_count: number;
+    control_room_approved: boolean;
     car: {
         id: number;
         make: string;
@@ -41,6 +42,7 @@ export default function ModeratorAuctionsPage() {
     );
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
+    const [showProcessModal, setShowProcessModal] = useState(false);
     const [processingId, setProcessingId] = useState<number | null>(null);
 
     // Approval form state
@@ -48,6 +50,16 @@ export default function ModeratorAuctionsPage() {
         opening_price: "",
         auction_type: "silent_instant",
         approved_for_live: false,
+    });
+
+    // Process form state (for editing before approval)
+    const [processData, setProcessData] = useState({
+        opening_price: "",
+        auction_type: "silent_instant",
+        approved_for_live: false,
+        category: "",
+        title: "",
+        description: "",
     });
 
     // Rejection form state
@@ -199,6 +211,38 @@ export default function ModeratorAuctionsPage() {
         setShowApprovalModal(true);
     };
 
+    // Handle process modal
+    const handleProcess = async (auction: Auction) => {
+        try {
+            // Fetch detailed auction data
+            const response = await api.get(
+                `/api/moderator/auctions/${auction.id}/details`
+            );
+
+            if (response.data.status === "success") {
+                const auctionDetails = response.data.data;
+                setSelectedAuction(auctionDetails);
+                setProcessData({
+                    opening_price:
+                        auctionDetails.opening_price?.toString() ||
+                        auctionDetails.starting_bid?.toString() ||
+                        "",
+                    auction_type:
+                        auctionDetails.auction_type || "silent_instant",
+                    approved_for_live:
+                        auctionDetails.approved_for_live || false,
+                    category: auctionDetails.car?.category || "",
+                    title: auctionDetails.title || "",
+                    description: auctionDetails.description || "",
+                });
+                setShowProcessModal(true);
+            }
+        } catch (error: any) {
+            console.error("Error fetching auction details:", error);
+            toast.error("فشل في تحميل تفاصيل المزاد");
+        }
+    };
+
     // Handle rejection modal
     const handleReject = async (auction: Auction) => {
         setSelectedAuction(auction);
@@ -220,6 +264,72 @@ export default function ModeratorAuctionsPage() {
             if (response.data.status === "success") {
                 toast.success("تم قبول المزاد بنجاح");
                 setShowApprovalModal(false);
+                if (activeTab === "approvals") {
+                    fetchPendingAuctions();
+                } else {
+                    fetchAuctions();
+                }
+            }
+        } catch (error: any) {
+            console.error("Error approving auction:", error);
+            toast.error(error.response?.data?.message || "فشل في قبول المزاد");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    // Submit process updates
+    const submitProcessUpdates = async () => {
+        if (!selectedAuction) return;
+
+        try {
+            setProcessingId(selectedAuction.id);
+            const response = await api.put(
+                `/api/moderator/auctions/${selectedAuction.id}/update`,
+                processData
+            );
+
+            if (response.data.status === "success") {
+                toast.success("تم تحديث تفاصيل المزاد بنجاح");
+                // Update the selected auction with new data
+                setSelectedAuction(response.data.data);
+                fetchAuctions(); // Refresh the list
+            }
+        } catch (error: any) {
+            console.error("Error updating auction:", error);
+            toast.error(error.response?.data?.message || "فشل في تحديث المزاد");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    // Submit process approval (approve directly from process modal)
+    const submitProcessApproval = async () => {
+        if (!selectedAuction) return;
+
+        try {
+            setProcessingId(selectedAuction.id);
+
+            // First update the auction details
+            await api.put(
+                `/api/moderator/auctions/${selectedAuction.id}/update`,
+                processData
+            );
+
+            // Then approve the auction
+            const response = await api.post(
+                `/api/moderator/auctions/${selectedAuction.id}/approve`,
+                {
+                    opening_price: processData.opening_price,
+                    auction_type: processData.auction_type,
+                    approved_for_live: processData.approved_for_live,
+                    category: processData.category,
+                }
+            );
+
+            if (response.data.status === "success") {
+                toast.success("تم قبول المزاد بنجاح");
+                setShowProcessModal(false);
                 if (activeTab === "approvals") {
                     fetchPendingAuctions();
                 } else {
@@ -303,6 +413,7 @@ export default function ModeratorAuctionsPage() {
 
     const filteredAuctions = auctions.filter((auction) => {
         if (filter === "all") return true;
+        if (filter === "needs_approval") return !auction.control_room_approved;
         return auction.status === filter;
     });
 
@@ -394,6 +505,16 @@ export default function ModeratorAuctionsPage() {
                                     }`}
                                 >
                                     الكل
+                                </button>
+                                <button
+                                    onClick={() => setFilter("needs_approval")}
+                                    className={`px-4 py-2 rounded-md ${
+                                        filter === "needs_approval"
+                                            ? "bg-blue-600 text-white"
+                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    }`}
+                                >
+                                    يحتاج موافقة
                                 </button>
                                 <button
                                     onClick={() =>
@@ -516,15 +637,22 @@ export default function ModeratorAuctionsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span
-                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                                            auction.status
-                                                        )}`}
-                                                    >
-                                                        {getStatusText(
-                                                            auction.status
+                                                    <div className="flex flex-col space-y-1">
+                                                        <span
+                                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                                                                auction.status
+                                                            )}`}
+                                                        >
+                                                            {getStatusText(
+                                                                auction.status
+                                                            )}
+                                                        </span>
+                                                        {!auction.control_room_approved && (
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-orange-600 bg-orange-100">
+                                                                يحتاج موافقة
+                                                            </span>
                                                         )}
-                                                    </span>
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {auction.current_bid?.toLocaleString() ||
@@ -544,9 +672,47 @@ export default function ModeratorAuctionsPage() {
                                                                 )
                                                             }
                                                             className="text-blue-600 hover:text-blue-900"
+                                                            title="عرض"
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </button>
+                                                        {!auction.control_room_approved && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        handleProcess(
+                                                                            auction
+                                                                        )
+                                                                    }
+                                                                    className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                                    title="معالجة وتعديل"
+                                                                >
+                                                                    معالجة
+                                                                </button>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        handleApprove(
+                                                                            auction
+                                                                        )
+                                                                    }
+                                                                    className="text-green-600 hover:text-green-900"
+                                                                    title="موافقة سريعة"
+                                                                >
+                                                                    <CheckCircle className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        handleReject(
+                                                                            auction
+                                                                        )
+                                                                    }
+                                                                    className="text-red-600 hover:text-red-900"
+                                                                    title="رفض"
+                                                                >
+                                                                    <XCircle className="w-4 h-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                         {auction.status ===
                                                             "pending_approval" && (
                                                             <>
@@ -707,6 +873,244 @@ export default function ModeratorAuctionsPage() {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Process Modal */}
+            {showProcessModal && selectedAuction && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                معالجة المزاد - {selectedAuction.car.make}{" "}
+                                {selectedAuction.car.model}{" "}
+                                {selectedAuction.car.year}
+                            </h3>
+
+                            {/* Car Information */}
+                            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                                <h4 className="font-medium text-gray-900 mb-2">
+                                    معلومات السيارة
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-600">
+                                            السيارة:
+                                        </span>{" "}
+                                        <span className="font-medium">
+                                            {selectedAuction.car.make}{" "}
+                                            {selectedAuction.car.model}{" "}
+                                            {selectedAuction.car.year}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600">
+                                            الحالة الحالية:
+                                        </span>{" "}
+                                        <span
+                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(
+                                                selectedAuction.status
+                                            )}`}
+                                        >
+                                            {getStatusText(
+                                                selectedAuction.status
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Editable Fields */}
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            عنوان المزاد
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={processData.title}
+                                            onChange={(e) =>
+                                                setProcessData({
+                                                    ...processData,
+                                                    title: e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="عنوان المزاد"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            سعر الافتتاح
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={processData.opening_price}
+                                            onChange={(e) =>
+                                                setProcessData({
+                                                    ...processData,
+                                                    opening_price:
+                                                        e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="سعر الافتتاح"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            نوع المزاد
+                                        </label>
+                                        <select
+                                            value={processData.auction_type}
+                                            onChange={(e) =>
+                                                setProcessData({
+                                                    ...processData,
+                                                    auction_type:
+                                                        e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="silent_instant">
+                                                صامت فوري
+                                            </option>
+                                            <option value="live_instant">
+                                                مباشر فوري
+                                            </option>
+                                            <option value="live">مباشر</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            تصنيف السيارة
+                                        </label>
+                                        <select
+                                            value={processData.category}
+                                            onChange={(e) =>
+                                                setProcessData({
+                                                    ...processData,
+                                                    category: e.target.value,
+                                                })
+                                            }
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">
+                                                اختر التصنيف
+                                            </option>
+                                            <option value="luxury">
+                                                فاخرة
+                                            </option>
+                                            <option value="truck">شاحنة</option>
+                                            <option value="bus">حافلة</option>
+                                            <option value="caravan">
+                                                كارافان
+                                            </option>
+                                            <option value="government">
+                                                حكومية
+                                            </option>
+                                            <option value="company">
+                                                شركة
+                                            </option>
+                                            <option value="auction">
+                                                مزاد
+                                            </option>
+                                            <option value="classic">
+                                                كلاسيكية
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        وصف المزاد
+                                    </label>
+                                    <textarea
+                                        value={processData.description}
+                                        onChange={(e) =>
+                                            setProcessData({
+                                                ...processData,
+                                                description: e.target.value,
+                                            })
+                                        }
+                                        rows={3}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="وصف المزاد..."
+                                    />
+                                </div>
+
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="process_approved_for_live"
+                                        checked={processData.approved_for_live}
+                                        onChange={(e) =>
+                                            setProcessData({
+                                                ...processData,
+                                                approved_for_live:
+                                                    e.target.checked,
+                                            })
+                                        }
+                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <label
+                                        htmlFor="process_approved_for_live"
+                                        className="mr-2 text-sm text-gray-700"
+                                    >
+                                        موافق للمزاد المباشر
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex space-x-3 space-x-reverse mt-6">
+                                <button
+                                    onClick={submitProcessUpdates}
+                                    disabled={
+                                        processingId === selectedAuction.id
+                                    }
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {processingId === selectedAuction.id
+                                        ? "جاري الحفظ..."
+                                        : "حفظ التعديلات"}
+                                </button>
+                                <button
+                                    onClick={submitProcessApproval}
+                                    disabled={
+                                        processingId === selectedAuction.id
+                                    }
+                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                                >
+                                    {processingId === selectedAuction.id
+                                        ? "جاري الموافقة..."
+                                        : "حفظ وموافقة"}
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        handleReject(selectedAuction)
+                                    }
+                                    disabled={
+                                        processingId === selectedAuction.id
+                                    }
+                                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                                >
+                                    رفض
+                                </button>
+                                <button
+                                    onClick={() => setShowProcessModal(false)}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                                >
+                                    إلغاء
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

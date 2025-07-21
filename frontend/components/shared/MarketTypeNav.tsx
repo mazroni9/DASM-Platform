@@ -35,9 +35,9 @@ const GROUP_COLORS = {
 // تعريف أزرار التنقل
 const marketItems = [
   // المجموعة الأولى (اليمين) - البنفسجية - تم إعادة الترتيب
-  { name: 'السوق الرئيسي', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
-  { name: 'قطاع السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
-  { name: 'السوق النوعي', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
+  { name: 'سوق معارض السيارات بالدمام', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
+  { name: 'سوق السيارات المتخصص', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
+  { name: 'سوق الاجهزة النوعية', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
 
   // المجموعة الثانية (اليسار) - الزرقاء
   { name: 'السوق الفريد', icon: Gem, href: '/auctions/auctions-4special', group: 'left' },
@@ -57,10 +57,10 @@ export default function MarketTypeNav() {
   const orderedItems = [...rightItems, ...leftItems, ...bottomItems];
   
   return (
-    <div className="py-4 mb-6">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="flex justify-center gap-2 mb-2 overflow-x-auto no-scrollbar">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+    <div className="py-4 mb-6 w-full">
+      <div className="w-full px-0">
+        <div className="flex justify-between gap-2 mb-2 w-full">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse w-full">
             {orderedItems.map((item) => {
               const colorScheme = GROUP_COLORS[item.group];
               const Icon = item.icon;

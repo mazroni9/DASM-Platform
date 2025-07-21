@@ -69,6 +69,7 @@ export default function ModeratorAuctionApproval() {
         opening_price: "",
         auction_type: "silent_instant",
         approved_for_live: false,
+        category: "",
     });
 
     // Rejection form state
@@ -117,6 +118,7 @@ export default function ModeratorAuctionApproval() {
             opening_price: auction.starting_bid.toString(),
             auction_type: "silent_instant",
             approved_for_live: false,
+            category: auction.car.category || "",
         });
         setShowApprovalModal(true);
     };
@@ -417,6 +419,39 @@ export default function ModeratorAuctionApproval() {
                                             مزاد فوري مباشر
                                         </option>
                                         <option value="live">مزاد مباشر</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        تصنيف السيارة
+                                    </label>
+                                    <select
+                                        value={approvalData.category}
+                                        onChange={(e) =>
+                                            setApprovalData({
+                                                ...approvalData,
+                                                category: e.target.value,
+                                            })
+                                        }
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        required
+                                    >
+                                        <option value="">
+                                            -- اختر تصنيف السيارة --
+                                        </option>
+                                        <option value="luxury">فاخرة</option>
+                                        <option value="truck">شاحنة</option>
+                                        <option value="bus">حافلة</option>
+                                        <option value="caravan">كارافان</option>
+                                        <option value="government">
+                                            حكومية
+                                        </option>
+                                        <option value="company">شركة</option>
+                                        <option value="auction">مزاد</option>
+                                        <option value="classic">
+                                            كلاسيكية
+                                        </option>
                                     </select>
                                 </div>
 

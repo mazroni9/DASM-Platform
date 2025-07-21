@@ -8,6 +8,8 @@ import React, {
     ReactNode,
 } from "react";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface Car {
     id: number;
     make: string;
@@ -65,46 +67,94 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
-        // Mock WebSocket connection for now
-        setConnected(true);
+        let isActive = true;
+        let timeoutId: NodeJS.Timeout;
 
-        // Mock data
-        setCurrentCar({
-            id: 1,
-            make: "Toyota",
-            model: "Camry",
-            year: 2020,
-            current_price: 50000,
-            images: ["/api/placeholder/400/300"],
-        });
+        const pollLiveStatus = async () => {
+            if (!isActive) return;
 
-        setUpcomingCars([
-            {
-                id: 2,
-                make: "Honda",
-                model: "Civic",
-                year: 2021,
-                current_price: 45000,
-                images: ["/api/placeholder/400/300"],
-            },
-            {
-                id: 3,
-                make: "Nissan",
-                model: "Altima",
-                year: 2019,
-                current_price: 40000,
-                images: ["/api/placeholder/400/300"],
-            },
-        ]);
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/broadcast/live-status`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
 
-        setStats({
-            viewerCount: 150,
-            bidderCount: 25,
-            totalBids: 45,
-        });
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.status === "success" && data.data) {
+                        const {
+                            broadcast,
+                            car,
+                            auction,
+                            stats: liveStats,
+                        } = data.data;
+
+                        // Update current car from broadcast data
+                        if (car) {
+                            setCurrentCar({
+                                id: car.id,
+                                make: car.make,
+                                model: car.model,
+                                year: car.year,
+                                current_price:
+                                    auction?.current_bid ||
+                                    car.starting_price ||
+                                    0,
+                                images: car.images || [],
+                            });
+                        }
+
+                        // Update auction status
+                        if (broadcast?.is_live) {
+                            setAuctionStatus("active");
+                        } else {
+                            setAuctionStatus("ended");
+                        }
+
+                        // Update stats if available
+                        if (liveStats) {
+                            setStats({
+                                viewerCount: liveStats.viewerCount || 0,
+                                bidderCount: liveStats.bidderCount || 0,
+                                totalBids: liveStats.totalBids || 0,
+                            });
+                        }
+
+                        setConnected(true);
+                    }
+                } else {
+                    console.warn(
+                        "Failed to fetch live status:",
+                        response.status
+                    );
+                    setConnected(false);
+                }
+            } catch (error) {
+                console.error("Error polling live status:", error);
+                setConnected(false);
+            }
+
+            // Schedule next poll only if component is still active
+            if (isActive) {
+                timeoutId = setTimeout(pollLiveStatus, 2000); // Poll every 2 seconds
+            }
+        };
+
+        // Start initial poll
+        pollLiveStatus();
 
         // Cleanup function
         return () => {
+            isActive = false;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
             setConnected(false);
         };
     }, []);

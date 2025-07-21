@@ -19,6 +19,7 @@ import {
     Loader2,
     ChevronDown,
     ArrowLeft,
+    X,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
@@ -37,8 +38,6 @@ interface CarData {
     evaluation_price: number | null;
     plate_number: string | null;
     auction_status: string;
-    selected_for_live_auction: boolean;
-    selected_for_auction: boolean;
     dealer?: {
         user: {
             first_name: string;
@@ -99,10 +98,10 @@ export default function ModeratorCarsPage() {
 
             // Use moderator endpoint - we'll need to create this or use the general cars endpoint
             const response = await api.get(`/api/moderator/cars?${params}`);
-            console.log("Fetched cars:", response.data.data);
+            console.log("Fetched cars:", response.data);
             if (response.data.status === "success") {
-                // Extract the actual cars array from the paginated response
-                setCars(response.data.data.data || []);
+                // The backend returns cars directly in data, not nested
+                setCars(response.data.data || []);
             }
         } catch (error) {
             console.error("Error fetching cars:", error);
@@ -153,19 +152,19 @@ export default function ModeratorCarsPage() {
 
         try {
             switch (action) {
-                case "select-live-auction":
-                    await api.put("/api/moderator/cars/bulk-live-auction", {
+                case "approve-auctions":
+                    await api.put("/api/moderator/cars/bulk-approve-auctions", {
                         car_ids: carIds,
-                        selected_for_live_auction: true,
+                        approve: true,
                     });
-                    toast.success("تم اختيار السيارات للمزاد المباشر");
+                    toast.success("تم الموافقة على مزادات السيارات");
                     break;
-                case "deselect-live-auction":
-                    await api.put("/api/moderator/cars/bulk-live-auction", {
+                case "reject-auctions":
+                    await api.put("/api/moderator/cars/bulk-approve-auctions", {
                         car_ids: carIds,
-                        selected_for_live_auction: false,
+                        approve: false,
                     });
-                    toast.success("تم إلغاء اختيار السيارات من المزاد المباشر");
+                    toast.success("تم رفض مزادات السيارات");
                     break;
                 case "move-to-active":
                     // Add bulk status update endpoint if needed
@@ -191,19 +190,19 @@ export default function ModeratorCarsPage() {
         }
     };
 
-    const toggleLiveAuction = async (carId: number, currentStatus: boolean) => {
+    const approveCarAuction = async (carId: number, approve: boolean) => {
         try {
-            await api.put(`/api/moderator/cars/${carId}/toggle-live-auction`);
+            await api.put(`/api/moderator/cars/${carId}/approve-auction`, {
+                approve: approve,
+            });
             toast.success(
-                currentStatus
-                    ? "تم إلغاء اختيار السيارة من المزاد المباشر"
-                    : "تم اختيار السيارة للمزاد المباشر"
+                approve ? "تم الموافقة على مزاد السيارة" : "تم رفض مزاد السيارة"
             );
             fetchCars();
         } catch (error: any) {
-            console.error("Error toggling live auction:", error);
+            console.error("Error approving auction:", error);
             toast.error(
-                error.response?.data?.message || "فشل في تحديث حالة السيارة"
+                error.response?.data?.message || "فشل في معالجة طلب المزاد"
             );
         }
     };
@@ -425,24 +424,24 @@ export default function ModeratorCarsPage() {
                                         <button
                                             onClick={() =>
                                                 handleBulkAction(
-                                                    "select-live-auction"
+                                                    "approve-auctions"
                                                 )
                                             }
                                             className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                                         >
-                                            <Play size={16} />
-                                            اختيار للمزاد المباشر
+                                            <CheckSquare size={16} />
+                                            الموافقة على المزادات
                                         </button>
                                         <button
                                             onClick={() =>
                                                 handleBulkAction(
-                                                    "deselect-live-auction"
+                                                    "reject-auctions"
                                                 )
                                             }
                                             className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                                         >
-                                            <Pause size={16} />
-                                            إلغاء اختيار من المزاد المباشر
+                                            <X size={16} />
+                                            رفض المزادات
                                         </button>
                                         <button
                                             onClick={() =>
@@ -517,10 +516,7 @@ export default function ModeratorCarsPage() {
                                         حالة المزاد
                                     </th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        مختارة للمزاد
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        المزاد المباشر
+                                        حالة الموافقة
                                     </th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                                         السعر المتوقع
@@ -597,48 +593,29 @@ export default function ModeratorCarsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
                                                 className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                    car.selected_for_auction
-                                                        ? "bg-blue-100 text-blue-800"
+                                                    car.auction_status ===
+                                                    "in_auction"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : car.auction_status ===
+                                                          "pending_approval"
+                                                        ? "bg-yellow-100 text-yellow-800"
+                                                        : car.auction_status ===
+                                                          "rejected"
+                                                        ? "bg-red-100 text-red-800"
                                                         : "bg-gray-100 text-gray-800"
                                                 }`}
                                             >
-                                                {car.selected_for_auction
-                                                    ? "مختارة"
-                                                    : "غير مختارة"}
+                                                {car.auction_status ===
+                                                "in_auction"
+                                                    ? "تمت الموافقة"
+                                                    : car.auction_status ===
+                                                      "pending_approval"
+                                                    ? "في انتظار الموافقة"
+                                                    : car.auction_status ===
+                                                      "rejected"
+                                                    ? "مرفوضة"
+                                                    : "متاحة"}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                onClick={() =>
-                                                    toggleLiveAuction(
-                                                        car.id,
-                                                        car.selected_for_live_auction
-                                                    )
-                                                }
-                                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                    car.selected_for_live_auction
-                                                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                                                }`}
-                                            >
-                                                {car.selected_for_live_auction ? (
-                                                    <>
-                                                        <Play
-                                                            size={12}
-                                                            className="ml-1"
-                                                        />
-                                                        مختار
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Pause
-                                                            size={12}
-                                                            className="ml-1"
-                                                        />
-                                                        غير مختار
-                                                    </>
-                                                )}
-                                            </button>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {car.evaluation_price

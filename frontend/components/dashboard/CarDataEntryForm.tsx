@@ -37,7 +37,6 @@ interface CarFormData {
     plate: string;
     agency_number: string;
     agency_issue_date: string;
-    category: string;
     registration_card_image: string;
 }
 
@@ -58,7 +57,6 @@ let carOjbect = {
     plate: "",
     agency_number: "",
     agency_issue_date: "",
-    category: "",
     registration_card_image: "",
 };
 export default function CarDataEntryForm() {
@@ -66,11 +64,9 @@ export default function CarDataEntryForm() {
     const [enumOptions, setEnumOptions] = useState<{
         conditions: Record<string, string>;
         transmissions: Record<string, string>;
-        categories: Record<string, string>;
     }>({
         conditions: {},
         transmissions: {},
-        categories: {},
     });
 
     const [images, setImages] = useState<File[]>([]);
@@ -111,16 +107,6 @@ export default function CarDataEntryForm() {
                         automatic: "أوتوماتيك",
                         manual: "يدوي",
                         cvt: "نصف أوتوماتيك",
-                    },
-                    categories: {
-                        luxury: "فاخرة",
-                        truck: "شاحنة",
-                        bus: "حافلة",
-                        caravan: "كارافان",
-                        government: "حكومية",
-                        company: "شركة",
-                        auction: "مزاد",
-                        classic: "كلاسيكية",
                     },
                 });
             }
@@ -335,10 +321,13 @@ export default function CarDataEntryForm() {
                 console.log("API Response:", response.data);
 
                 if (response.data.status === "success") {
-                    toast.success("تم إضافة السيارة بنجاح");
+                    toast.success(
+                        "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة"
+                    );
                     setSubmitResult({
                         success: true,
-                        message: "تم إضافة السيارة بنجاح",
+                        message:
+                            "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة",
                     });
                     // إعادة تعيين النموذج
                     setFormData(carOjbect);
@@ -696,31 +685,6 @@ export default function CarDataEntryForm() {
                             min="0"
                             placeholder="السعر المستهدف للبيع"
                         />
-                    </div>
-
-                    <div>
-                        <label
-                            htmlFor="category"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                            تصنيف السيارة
-                        </label>
-                        <select
-                            id="category"
-                            name="category"
-                            value={formData.category}
-                            onChange={handleInputChange}
-                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">-- اختر تصنيف السيارة --</option>
-                            {Object.entries(enumOptions.categories).map(
-                                ([value, label]) => (
-                                    <option key={value} value={value}>
-                                        {label}
-                                    </option>
-                                )
-                            )}
-                        </select>
                     </div>
 
                     <div>

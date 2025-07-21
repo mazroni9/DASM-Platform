@@ -68,9 +68,9 @@ const Navbar = () => {
     return (
         <nav className="bg-sky-100 text-sky-900 py-2 text-lg shadow-md">
             <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                     {/* Logo */}
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-1 justify-start">
                         <Link href="/" className="flex items-center gap-4">
                             <Image
                                 src="/logo.jpeg"
@@ -86,26 +86,8 @@ const Navbar = () => {
                         </Link>
                     </div>
 
-                    {/* Main Navigation */}
-                    <div
-                        className="hidden md:flex items-center gap-6 flex-row-reverse"
-                        dir="rtl"
-                    >
-                        <Link
-                            href="/broadcasts"
-                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
-                                isActive("/broadcasts")
-                                    ? "text-blue-700 font-bold"
-                                    : ""
-                            }`}
-                        >
-                            <Clock size={18} />
-                            البث المباشر
-                        </Link>
-                    </div>
-
                     {/* Auth Buttons */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-1 justify-end">
                         {isAdmin && (
                             <Button
                                 variant="outline"

@@ -206,7 +206,7 @@ export default function UnifiedBroadcastManagement({
     // Fetch selected cars for live auction
     const fetchSelectedCars = async () => {
         try {
-            const endpoint = `${apiPrefix}/cars/live-auction-selected`;
+            const endpoint = `${apiPrefix}/cars/approved-auctions`;
             const response = await api.get(endpoint);
             if (response.data.status === "success") {
                 setSelectedCars(response.data.data || []);

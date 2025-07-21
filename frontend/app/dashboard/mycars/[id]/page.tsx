@@ -641,17 +641,6 @@ export default function CarDetailsPage() {
                                     </p>
                                 </div>
                             )}
-
-                            {car.auction_status === "available" && (
-                                <div className="pt-4 border-t">
-                                    <Link
-                                        href={`/add/auction/${car.id}`}
-                                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 transition-colors"
-                                    >
-                                        إضافة للمزاد
-                                    </Link>
-                                </div>
-                            )}
                         </CardContent>
                     </Card>
                 </div>
