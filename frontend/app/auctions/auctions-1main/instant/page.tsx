@@ -130,7 +130,7 @@ export default function InstantAuctionPage() {
                                                 {car["car"].plate}
                                             </td>
                                             <td className="p-2 text-sm">
-                                                {car["car"].odmeter}
+                                                {car["car"].odometer}
                                             </td>
                                             <td className="p-2 text-sm">
                                                 {car["car"].condition}

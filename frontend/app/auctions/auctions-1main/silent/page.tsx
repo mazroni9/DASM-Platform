@@ -238,7 +238,7 @@ export default function SilentAuctionPage() {
                             <div>
                               <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
                               <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">العداد:</span> {car['car'].odmeter} كم</li>
+                                <li><span className="font-medium">العداد:</span> {car['car'].odometer} كم</li>
                                 <li><span className="font-medium">حالة السيارة:</span> {car['car'].condition || 'جيدة'}</li>
                                 <li><span className="font-medium">اللون:</span> {car['car'].color}</li>
                                 <li><span className="font-medium">نوع الوقود:</span> {car['car'].engine}</li>
