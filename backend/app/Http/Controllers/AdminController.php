@@ -82,6 +82,29 @@ class AdminController extends Controller
             'data' => $auctions
         ]);
     }
+
+
+       /**
+     * Approve an auction
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function approve(request $request)
+    {
+        $ids = $request->ids;
+        
+        foreach($ids as $id) {
+            $auction = Auction::findOrFail($id);
+            $auction->status = AuctionStatus::SCHEDULED;
+            $auction->save();
+        }
+
+          return response()->json([
+            'status' => 'success',
+            'message' => ' all auctions apporved successfully',
+        ]);
+    }
     
     /**
      * Approve an auction

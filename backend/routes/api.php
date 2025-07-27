@@ -22,6 +22,7 @@ Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
+
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -30,6 +31,8 @@ Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+
 
 // Cloudinary test endpoints removed for security
 
@@ -53,7 +56,6 @@ Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
-    
     // User routes
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
@@ -148,7 +150,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
     // Admin dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-    
+
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);
@@ -167,13 +169,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/admin/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
     Route::put('/admin/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
     Route::put('/admin/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
+    Route::put('/admin/cars/bulk/approve-rejcet', [AuctionController::class, 'approveRejectAuctionBulk']);
+    Route::put('/admin/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
 
     // Admin car management
     Route::get('/admin/cars', [AdminController::class, 'getAllCars']);
     Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);
     Route::put('/admin/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
     Route::delete('/admin/cars/{id}', [AdminController::class, 'deleteCar']);
-    
+   
+
     // Admin blog management
     Route::get('/admin/blogs', [AdminController::class, 'blogs']);
     Route::post('/admin/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);

@@ -229,6 +229,137 @@ class AuctionController extends Controller
     }
 
 
+    public function approveRejectAuctionBulk(Request $request){
+
+        $user = Auth::user();
+        $tracking=collect([]);
+        if ($user->role != 'admin'){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You are not authorized to create auctions'
+            ], 403);}
+            if ($request->action === true) {
+            $ids = $request->ids;
+            foreach($ids as $id) {
+                $car = Car::find($id);
+                // Check if car is available for auction
+                if ($car->auction_status == 'available') {
+                        // Create the auction
+                        $auction = new Auction();
+                        $auction->car_id = $id;
+                        $auction->starting_bid = $car->starting_bid ?? 0;
+                        $auction->current_bid = $car->starting_bid ?? 0;
+                        $auction->reserve_price = $car->reserve_price ?? 0;
+                        $auction->min_price = $car->min_price ?? 0;
+                        $auction->max_price = $car->max_price ?? 0;
+                        $auction->start_time =Carbon::now();
+                        $auction->end_time = Carbon::parse($car->start_time)->addMinutes(60);
+                        // Set initial status based on start time
+                        $now = Carbon::now();
+                        if (Carbon::parse($car->start_time) <= $now) {
+                            $auction->status = AuctionStatus::ACTIVE;
+                        } else {
+                            $auction->status = AuctionStatus::SCHEDULED;
+                        }
+                        $auction->save();
+                        // Update car status
+                        $car->auction_status = 'in_auction';
+                        $car->save();
+                        $tracking->push($auction);
+                }
+                
+            }
+
+        }
+        
+
+        if ($request->action === false) {
+            $ids = $request->ids;
+            foreach($ids as $id) {
+                $car = Car::find($id);
+                // Check if car is available for auction
+                if ($car->auction_status == 'available') {
+                        $car->auction_status = 'cancelled';
+                        $car->save();
+                        $tracking->push($car);
+                }
+            }
+
+        }
+
+
+        if(count($tracking)>0){
+                return response()->json([
+                                'status' => 'success',
+                                'message' => 'تم الأجراء بنجاح',
+                                'data' => $tracking
+                ], 201);
+            }else{
+                return response()->json([
+                                'status' => 'success',
+                                'message' => 'لا شي  ',
+                                'data' => $tracking
+            ], 201);
+            }
+    }
+
+ 
+
+
+
+    public function moveBetweenAuctionsBulk(Request $request){
+
+        $user = Auth::user();
+        $ids = $request->ids;
+        $tracking=collect([]);
+        if ($user->role != 'admin'){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You are not authorized to create auctions'
+            ], 403);}
+            if ($request->status === "active") {
+            foreach($ids as $id) {
+                $car = Car::find($id);
+                // Check if car is available for auction
+                if ($car->auction_status != 'available') {
+                         $auction1 = Auction::where('car_id',$id)->first();
+                        $auction =Auction::find($auction1->id);
+                        $auction->control_room_approved = true;
+                        $auction->status = AuctionStatus::ACTIVE;
+                        $auction->save();
+                        $tracking->push($auction);
+                }
+            }
+        }else if($request->status === "pending"){
+            foreach($ids as $id) {
+                $car = Car::find($id);
+                // Check if car is available for auction
+                if ($car->auction_status != 'available') {
+                        $auction1 = Auction::where('car_id',$id)->first();
+                        $auction =Auction::find($auction1->id);
+                        $auction->control_room_approved = false;
+                        $auction->status = AuctionStatus::SCHEDULED;
+                        $auction->save();
+                        $tracking->push($auction);
+                }
+            }
+        }
+        
+
+        if(count($tracking)>0){
+                return response()->json([
+                                'status' => 'success',
+                                'message' => 'تم الأجراء بنجاح',
+                                'data' => $tracking
+                ], 201);
+            }else{
+                return response()->json([
+                                'status' => 'success',
+                                'message' => 'لا شي  ',
+                                'data' => $tracking
+            ], 201);
+            }
+    }
     
 
     /**

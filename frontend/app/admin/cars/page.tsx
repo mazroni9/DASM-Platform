@@ -78,7 +78,7 @@ export default function AdminCarsPage() {
 
     useEffect(() => {
         fetchCars();
-        fetchEnumOptions();
+        //fetchEnumOptions();
     }, []);
 
     useEffect(() => {
@@ -145,29 +145,37 @@ export default function AdminCarsPage() {
         }
 
         const carIds = Array.from(selectedCars);
-
         try {
             switch (action) {
                 case "approve-auctions":
-                    await api.put("/api/admin/cars/bulk-approve-auctions", {
-                        car_ids: carIds,
-                        approve: true,
+                    const approveStatus =  await api.put("/api/admin/cars/bulk/approve-rejcet",{
+                        ids: carIds,
+                        action: true,
                     });
-                    toast.success("تم الموافقة على مزادات السيارات");
+                    toast.success(approveStatus.data.message);
                     break;
                 case "reject-auctions":
-                    await api.put("/api/admin/cars/bulk-approve-auctions", {
-                        car_ids: carIds,
-                        approve: false,
+                  const  rejectStatus= await api.put("/api/admin/cars/bulk/approve-rejcet",{
+                        ids: carIds,
+                        action: false,
                     });
-                    toast.success("تم رفض مزادات السيارات");
+                    toast.success(rejectStatus.data.message);
                     break;
                 case "move-to-active":
                     // Add bulk status update endpoint if needed
-                    toast.success("سيتم إضافة هذه الوظيفة قريباً");
+                const  moveActiveStatuss= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                        ids: carIds,
+                        status: "active",
+                    });
+                    toast.success(moveActiveStatuss.data.message);
+                    break;
                     break;
                 case "move-to-pending":
-                    toast.success("سيتم إضافة هذه الوظيفة قريباً");
+                     const  movePendingStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                        ids: carIds,
+                        status: "pending",
+                    });
+                    toast.success(movePendingStatus.data.message);
                     break;
                 case "archive":
                     toast.success("سيتم إضافة هذه الوظيفة قريباً");
@@ -179,7 +187,7 @@ export default function AdminCarsPage() {
             setSelectAll(false);
             setShowBulkActions(false);
         } catch (error: any) {
-            console.error("Error performing bulk action:", error);
+            console.error("Error performing bulk action:", "");
             toast.error(
                 error.response?.data?.message || "فشل في تنفيذ العملية"
             );
