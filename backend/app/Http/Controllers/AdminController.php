@@ -11,6 +11,7 @@ use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Models\Car;
 
 use function Psy\debug;
 
@@ -640,7 +641,7 @@ class AdminController extends Controller
     public function getAllCars(Request $request)
     {
         // Admin can see all cars with filtering options
-        $query = \App\Models\Car::with(['dealer.user']);
+        $query = Car::with(['dealer.user','auctions']);
         
         // Filter by status if provided
         if ($request->has('status')) {
@@ -841,6 +842,48 @@ class AdminController extends Controller
             'data' => $auction
         ]);
     }
+
+
+
+
+    public function setOpeningPrice($id,Request $request)
+    {
+        $user = auth()->user();
+        
+        if ($user->role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'لا يمكن تعديل بيانات '
+            ], 403);
+        }
+
+      $validator = Validator::make($request->all(), [
+            'price' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        $price=$request->price;
+        $auction = Auction::findOrFail($id);
+        $car = Car::findOrFail($auction->car_id);
+        $auction->minimum_bid = $price;
+        $auction->opening_price = $price;
+        $car->evaluation_price = $price;
+        $auction->save();
+
+        $car->save();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auction updated successfully',
+            'id'=>$id,
+            'price'=>$price
+        ]);
+    }
+    
 
     /**
      * Update car details (admin only)

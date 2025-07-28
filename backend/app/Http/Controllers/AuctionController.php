@@ -22,7 +22,7 @@ class AuctionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Auction::with(['car.dealer', 'bids']);
+        $query = Auction::with(['car.dealer', 'bids','car']);
         
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {

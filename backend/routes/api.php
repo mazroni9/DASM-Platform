@@ -171,6 +171,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/admin/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
     Route::put('/admin/cars/bulk/approve-rejcet', [AuctionController::class, 'approveRejectAuctionBulk']);
     Route::put('/admin/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
+    Route::put('/admin/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
 
     // Admin car management
     Route::get('/admin/cars', [AdminController::class, 'getAllCars']);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
     Car,
     Search,
@@ -18,11 +18,22 @@ import {
     Loader2,
     ChevronDown,
     X,
+    MoveVertical,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
+import Modal from "@/components/Modal";
+interface CarFormData {
+    price:string;
+    id:string;
+}
+
+let carOjbect = {
+    price:"",
+    id:""
+};
 
 interface CarData {
     id: number;
@@ -67,6 +78,9 @@ export default function AdminCarsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [showFilters, setShowFilters] = useState(false);
     const [showBulkActions, setShowBulkActions] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [showActions, setShowActions] = useState(false);
+    const [formData, setFormData] = useState<CarFormData>(carOjbect);
     const [filters, setFilters] = useState<FilterOptions>({
         status: "",
         category: "",
@@ -138,6 +152,57 @@ export default function AdminCarsPage() {
         setSelectAll(checked);
     };
 
+        // التعامل مع تغيير قيم حقول النموذج
+    const handleInputChange = (
+        e: ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+
+// تقديم النموذج
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+try {
+            // Check authentication first
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error("يجب تسجيل الدخول أولاً");
+            }
+
+                // إضافة بيانات السيارة
+                Object.keys(formData).forEach((key) => {
+                    const value = formData[key as keyof CarFormData];
+                    if (value !== null && value !== undefined) {
+                        carOjbect[key]=value;
+                    }
+                });
+                const response = await api.put(`/api/admin/auctions/${carOjbect["id"]}/set-open-price`, carOjbect);
+                console.log("API Response:", response);
+
+                if (response.data.status === "success") {
+                    toast.success(
+                        "تم وضع السعر الافتراضي"
+                    );
+                    setTimeout(() =>{
+                        location.reload();
+                    },1000);
+                } else {
+                    toast.error("حصل خطأ ما");
+                }
+ } catch (error: any) {
+            console.error("خطأ في حفظ البيانات:", error);
+  
+        }
+
+}
+
     const handleBulkAction = async (action: string) => {
         if (selectedCars.size === 0) {
             toast.error("يرجى اختيار سيارة واحدة على الأقل");
@@ -186,6 +251,7 @@ export default function AdminCarsPage() {
             setSelectedCars(new Set());
             setSelectAll(false);
             setShowBulkActions(false);
+            setShowActions(false);
         } catch (error: any) {
             console.error("Error performing bulk action:", "");
             toast.error(
@@ -609,10 +675,11 @@ export default function AdminCarsPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {car.evaluation_price
-                                                ? `${car.evaluation_price.toLocaleString()} ريال`
+                                                ? `${car.evaluation_price.toLocaleString() }`
                                                 : "غير محدد"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            
                                             {new Date(
                                                 car.created_at
                                             ).toLocaleDateString("ar-SA")}
@@ -644,13 +711,74 @@ export default function AdminCarsPage() {
                                                         معالجة
                                                     </button>
                                                 )}
+                                                {car.auction_status ===
+                                                    "in_auction" && (
                                                 <button
-                                                    className="text-gray-600 hover:text-gray-900"
-                                                    title="المزيد من الخيارات"
+                                                 onClick= { function t(){
+                                                    console.log(car);
+                                                    formData.price=car.evaluation_price.toString();
+                                                    formData.id=car['auctions'][0].id;
+                                                     setShowModal(true);
+                                                 }}
+                                                    className="bg-gray-600 text-white px-4 py-2 rounded"
+                                                    title="عرض التفاصيل"
                                                 >
-                                                    <MoreVertical size={16} />
-                                                </button>
-                                            </div>
+                                                    حدد السعر للمزاد
+                                                </button>)}
+  
+                                 </div>
+<Modal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        title="حدد السعر للمزاد "
+      >
+                 <form onSubmit={handleSubmit} className="space-y-6" >
+                                                 <div>
+                                                      <input
+                            type="text"
+                            id="id"
+                            name="id"
+                            value={formData.id}
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            required
+                            readOnly
+                            hidden
+                        />
+                                                 </div>
+                  <div>
+                        <label
+                            htmlFor="price"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                        </label>
+                      
+                        <input
+                            type="string"
+                            id="price"
+                            name="price"
+                            value={formData.price} 
+                            onChange={handleInputChange}
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="سعر بدأ المزاد"
+                            required
+                        />
+  
+                    </div>
+                      <button
+                        type="submit"
+                        className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md text-white shadow-sm text-sm font-medium bg-green-600  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                    >
+                      حفظ
+                    </button>
+                         <button
+          onClick={() => setShowModal(false)}
+          className="m-2 p-4 bg-red-500 text-white px-4 py-2 rounded"
+        >
+          إغلاق
+        </button>
+</form>                                      
+   
+      </Modal>
                                         </td>
                                     </tr>
                                 ))}

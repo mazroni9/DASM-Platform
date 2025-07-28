@@ -207,6 +207,7 @@ class CarController extends Controller
         $car->engine = $request->engine ?? null;
         $car->transmission = $transmissionMap[$request->transmission] ?? 'automatic';
         $car->description = $request->description ?? null;
+        $car->plate = $request->plate ?? null;
         $car->auction_status = 'available';
         $car->save();
         
