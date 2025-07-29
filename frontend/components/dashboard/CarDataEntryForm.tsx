@@ -436,19 +436,19 @@ export default function CarDataEntryForm() {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto mb-10">
+        <div className="bbg-white rounded-lg shadow-md p-4 sm:p-6 w-full max-w-6xl mx-auto mb-10">
             <div className="border-b pb-4 mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
                     نموذج إدخال بيانات السيارة
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
                     يرجى تعبئة جميع البيانات المطلوبة لإضافة سيارتك
                 </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* بيانات السيارة الأساسية */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:p-6">
                     <div>
                         <label
                             htmlFor="الماركة"
@@ -838,7 +838,7 @@ export default function CarDataEntryForm() {
                         name="description"
                         value={formData.description}
                         onChange={handleInputChange}
-                        className="w-full p-6 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-4 sm:p-6 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="وصف السيارة"
                         required
                     />
