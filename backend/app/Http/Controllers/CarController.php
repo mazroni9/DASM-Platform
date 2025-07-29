@@ -158,6 +158,7 @@ class CarController extends Controller
             'description' => 'nullable|string',
             'images' => 'sometimes|array|max:10',
             'images.*' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120',
+
         ]);
 
         if ($validator->fails()) {
@@ -209,6 +210,8 @@ class CarController extends Controller
         $car->description = $request->description ?? null;
         $car->plate = $request->plate ?? null;
         $car->auction_status = 'available';
+         $car->min_price = $request->min_price;
+         $car->max_price = $request->max_price;
         $car->save();
         
         // Log debug information about image files
@@ -403,7 +406,8 @@ class CarController extends Controller
         if ($request->has('engine')) $car->engine = $request->engine;
         if ($request->has('transmission')) $car->transmission = $request->transmission;
         if ($request->has('description')) $car->description = $request->description;
-        
+         if ($request->has('min_price')) $car->min_price = $request->min_price;
+          if ($request->has('max_price')) $car->max_price = $request->max_price;
         // Handle car images upload if any
         if ($request->hasFile('images')) {
             $uploadedImages = [];

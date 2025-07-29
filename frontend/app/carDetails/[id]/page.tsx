@@ -44,6 +44,8 @@ interface BidingData {
 }
 
 export default function CarDetailPage() {
+          const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [showConfirm, setShowConfirm] = useState(false);
     const [lastbid, setLastBid] = useState(0);
     const [formData, setFormData] = useState<BidingData>({
@@ -221,9 +223,58 @@ export default function CarDetailPage() {
         );
     }
 
+            const images = item['car'].images;
+        // الصورة الحالية المختارة
+            const currentImage = images[selectedImageIndex];
+            
+            const goToNextImage = () => {
+                setSelectedImageIndex((prevIndex) => 
+                prevIndex === images.length - 1 ? 0 : prevIndex + 1
+                );
+            };
+                // وظائف التنقل بين الصور
+            const goToPreviousImage = () => {
+                setSelectedImageIndex((prevIndex) => 
+                prevIndex === 0 ? images.length - 1 : prevIndex - 1
+                );
+            };
+
     // عرض بيانات السيارة إذا تم العثور عليها
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4">
+              {showImageModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div className="relative w-full max-w-4xl mx-auto">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowImageModal(false); }}
+              className="absolute top-0 right-0 m-4 text-white text-2xl z-10 hover:text-gray-300"
+            >
+              ✖
+            </button>
+            <img 
+              src={currentImage} 
+              alt={item.title} 
+              className="max-w-full max-h-[80vh] mx-auto object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-car.jpg';
+              }}
+            />
+            <div className="absolute inset-x-0 bottom-4 flex justify-center space-x-2 rtl:space-x-reverse">
+              {images.map((img, idx) => (
+                <button 
+                  key={idx} 
+                  onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(idx); }}
+                  className={`w-3 h-3 rounded-full ${idx === selectedImageIndex ? 'bg-white' : 'bg-gray-400'}`}
+                  aria-label={`عرض الصورة ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
             <div className="max-w-6xl mx-auto">
                 {/* زر العودة */}
                 <div className="flex justify-between items-center mb-6">
@@ -297,13 +348,76 @@ export default function CarDetailPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* قسم الصور (يمكن إضافته لاحقاً) */}
                         <div className="rounded-lg flex-direction-column items-center">
-                            <div className="text-gray-500">
-                                <img
-                                    src={item["car"].images[0]}
-                                    alt="Car Image"
-                                    className="w-full h-60"
-                                />
-                            </div>
+<div className="order-2 lg:order-1">
+                {/* الصورة الرئيسية */}
+                <div 
+                  className="bg-gray-100 rounded-lg overflow-hidden relative cursor-pointer"
+                  onClick={() => setShowImageModal(true)}
+                >
+                  <img 
+                    src={currentImage} 
+                    alt={item.title} 
+                    className="w-full h-96 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder-car.jpg';
+                    }}
+                  />
+                  
+                  {/* أزرار التنقل بين الصور */}
+                  {images.length > 1 && (
+                    <>
+
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); goToPreviousImage(); }}
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70"
+                        aria-label="الصورة السابقة"
+                      >
+                         &lt;
+                      </button>
+                       <button 
+                        onClick={(e) => { e.stopPropagation(); goToNextImage(); }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70"
+                        aria-label="الصورة التالية"
+                      >
+                        &gt;
+                      </button>
+     
+                    </>
+                  )}
+                </div>
+                
+                {/* شريط الصور المصغرة */}
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {images.map((img, idx) => (
+                    <div 
+                      key={idx}
+                      className={`cursor-pointer border-2 rounded-md overflow-hidden ${idx === selectedImageIndex ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200 hover:border-gray-300'}`}
+                      onClick={() => setSelectedImageIndex(idx)}
+                    >
+                      <img 
+                        src={img} 
+                        alt={`صورة ${idx + 1}`} 
+                        className="w-full h-16 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-car.jpg';
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* معلومات السعر للشاشات الصغيرة */}
+                <div className="mt-6 block lg:hidden">
+                  <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-2xl font-bold text-blue-600">
+                      السعر الحالي: {item.current_price?.toLocaleString()} ريال
+                    </p>
+                    {item.auction_result && (
+                      <p className="text-lg text-green-600 mt-2">{item.auction_result}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
                             {!isOwner && item["active_auction"] && (
                                 <div
                                     className="max-w-md mx-auto bg-white p-6 rounded-3xl shadow-lg border"

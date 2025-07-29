@@ -48,6 +48,8 @@ interface CarData {
     evaluation_price: number | null;
     plate_number: string | null;
     auction_status: string;
+    min_price:number;
+    max_price:number;
     dealer?: {
         user: {
             first_name: string;
@@ -575,7 +577,19 @@ try {
                                         حالة الموافقة
                                     </th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        السعر المتوقع
+                                       سعر الأفتتاح
+                                    </th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                        أقل سعر مرغوب
+                                    </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                       أعلى سعر مرغوب
+                                    </th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                       أقل سعر في المزاد
+                                    </th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                       أعلى سعر في المزاد
                                     </th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                                         تاريخ الإضافة
@@ -676,7 +690,27 @@ try {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {car.evaluation_price
                                                 ? `${car.evaluation_price.toLocaleString() }`
-                                                : "غير محدد"}
+                                                : "0"}
+                                        </td>
+                                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {car.min_price
+                                                ? `${car.min_price.toLocaleString() }`
+                                                : "0"}
+                                        </td>
+                                                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {car.max_price
+                                                ? `${car.max_price.toLocaleString() }`
+                                                : "0"}
+                                        </td>
+                                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {car['auctions'][0]
+                                                ? `${car['auctions'][0].minimum_bid }`
+                                                : "0"}
+                                        </td>
+                                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {car['auctions'][0]
+                                                ? `${car['auctions'][0].maximum_bid }`
+                                                : "0"}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             
@@ -689,7 +723,7 @@ try {
                                                 <button
                                                     onClick={() =>
                                                         redirect(
-                                                            `/carDetails/${car.id}`
+                                                            `/admin/carDetailsPreview/${car.id}`
                                                         )
                                                     }
                                                     className="text-blue-600 hover:text-blue-900"
@@ -715,7 +749,6 @@ try {
                                                     "in_auction" && (
                                                 <button
                                                  onClick= { function t(){
-                                                    console.log(car);
                                                     formData.price=car.evaluation_price.toString();
                                                     formData.id=car['auctions'][0].id;
                                                      setShowModal(true);
