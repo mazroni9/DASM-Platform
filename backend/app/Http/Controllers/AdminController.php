@@ -113,7 +113,7 @@ class AdminController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function approveAuction($id)
+    public function approveAuction1($id)
     {
         $auction = Auction::findOrFail($id);
         
@@ -136,6 +136,39 @@ class AdminController extends Controller
         ]);
     }
 
+
+    
+
+    public function approveAuction($id)
+    {
+        $auction = Auction::findOrFail($id);
+        
+        if ($auction->status !== AuctionStatus::ACTIVE) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only LIVE auctions can be approved'
+            ], 400);
+        }
+        
+        $check=Auction::where('approved_for_live',true)->first();
+        if($check){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only one auction can be approved for live'
+            ], 400);
+        }
+        // Set approval flag and update status to active
+        $auction->control_room_approved = true;
+        $auction->auction_type = AuctionStatus::ACTIVE;
+        $auction->approved_for_live = true;
+        $auction->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auction approved successfully for live',
+        ]);
+    }
+
     /**
      * Reject an auction
      *
@@ -143,7 +176,7 @@ class AdminController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function rejectAuction($id, Request $request)
+    public function rejectAuction1($id, Request $request)
     {
         $auction = Auction::findOrFail($id);
         
@@ -166,6 +199,36 @@ class AdminController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Auction rejected successfully',
+            'data' => $auction
+        ]);
+    }
+
+
+    public function endAuction($id, Request $request)
+    {
+        $auction = Auction::findOrFail($id);
+        
+        if ($auction->status == AuctionStatus::SCHEDULED) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only other types of auctions can be ended'
+            ], 400);
+        }
+        
+        if($request->status == 'ended'){
+            $auction->status = "ended";
+        }else if($request->status == 'cancelled'){
+            $auction->status = "cancelled";
+        }else if($request->status == 'completed'){
+            $auction->status = "completed";
+        }
+        
+        // Update status to failed
+        $auction->save();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auction processed successfully',
             'data' => $auction
         ]);
     }
@@ -489,8 +552,7 @@ class AdminController extends Controller
         }
         
         $auction = Auction::findOrFail($id);
-        $auction->status = $request->status;
-        $auction->approved_for_live = $request->approved_for_live;
+        $auction->approved_for_live = false;
         
         if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
@@ -505,15 +567,18 @@ class AdminController extends Controller
                 $auction->approved_for_live = false;
             } else if ($request->status === 'completed') {
                 $auction->car->auction_status = 'sold';
+                 $auction->status = "ended";
                 $auction->approved_for_live = false;
             } else if (in_array($request->status, ['ended', 'cancelled', 'failed'])) {
                 $auction->car->auction_status = 'available';
+                
+                $auction->status = "scheduled";
                 $auction->approved_for_live = false;
             }
-            
+            $auction->save();
             $auction->car->save();
         }
-        
+            $auction->save();
         return response()->json([
             'status' => 'success',
             'message' => 'Auction status updated successfully',
@@ -532,7 +597,7 @@ class AdminController extends Controller
     public function updateAuctionType($id, Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'auction_type' => 'required|in:silent_instant,live',
+            'auction_type' => 'required|in:live',
             'approved_for_live' => 'required|boolean',
         ]);
 
@@ -542,10 +607,9 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+        $count = Auction::where("approved_for_live",true)->count();
         $auction = Auction::findOrFail($id);
         $isApproved=$request->approved_for_live;
-        $count=$auction->where("approved_for_live",true)->count();
         if($isApproved && $count > 0){
             return response()->json([
                 'status' => 'error',
