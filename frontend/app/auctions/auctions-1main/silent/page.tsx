@@ -135,16 +135,7 @@ export default function SilentAuctionPage() {
           <p className="text-gray-600 mt-1 text-sm relative z-10">مكمل للسوق الفوري المباشر في تركيبته ويختلف أنه ليس به بث مباشر وصاحب العرض يستطيع أن يغير سعر بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري</p>
         </div>
         
-        {/* لوحة معلومات السعر المباشرة */}
-        <div className="col-span-3">
-          {!loading && !error && cars.length > 0 && (
-            <PriceInfoDashboard 
-              currentPrice={cars[0]?.["current_bid"] || 0}
-              previousPrice={cars[0]?.["minimum_bid"] - (cars[0]?.["maximum_bid"] || 0)}
-              auctionType="silent_instant"
-            />
-          )}
-        </div>
+
       </div>
       
       {/* عرض الحالة */}
@@ -216,9 +207,9 @@ export default function SilentAuctionPage() {
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].year}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["minimum_bid"] || 0)} ر.س</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["minimum_bid"] || 0)}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-purple-600">
-                        {formatMoney(car["current_bid"] || 0)} ر.س
+                        {formatMoney(car["current_bid"] || 0)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${car["التغير"] > 0 ? 'bg-green-100 text-green-800' : car["التغير"] < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
@@ -238,7 +229,7 @@ export default function SilentAuctionPage() {
                             <div>
                               <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
                               <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">العداد:</span> {car['car'].odometer} كم</li>
+                                <li><span className="font-medium">العداد:</span> {car['car'].odmeter} كم</li>
                                 <li><span className="font-medium">حالة السيارة:</span> {car['car'].condition || 'جيدة'}</li>
                                 <li><span className="font-medium">اللون:</span> {car['car'].color}</li>
                                 <li><span className="font-medium">نوع الوقود:</span> {car['car'].engine}</li>
@@ -257,11 +248,11 @@ export default function SilentAuctionPage() {
                             <div>
                               <h4 className="font-semibold text-gray-700 mb-2">معلومات الأسعار</h4>
                               <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">سعر الإفتتاح:</span> {formatMoney(car["minimum_bid"] || 0)} ر.س</li>
-                                <li><span className="font-medium">أقل سعر:</span> {formatMoney(car["minimum_bid"] || 0)} ر.س</li>
-                                <li><span className="font-medium">أعلى سعر:</span> {formatMoney(car["maximum_bid"] || 0)} ر.س</li>
-                                <li><span className="font-medium">آخر سعر:</span> {formatMoney(car["current_bid"] || 0)} ر.س</li>
-                                <li><span className="font-medium">التغير:</span> {formatMoney(car["التغير"] || 0)} ر.س ({car["نسبة التغير"]})</li>
+                                <li><span className="font-medium">سعر الإفتتاح:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
+                                <li><span className="font-medium">أقل سعر:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
+                                <li><span className="font-medium">أعلى سعر:</span> {formatMoney(car["maximum_bid"] || 0)}</li>
+                                <li><span className="font-medium">آخر سعر:</span> {formatMoney(car["current_bid"] || 0)}</li>
+                                <li><span className="font-medium">التغير:</span> {formatMoney(car["التغير"] || 0)} ({car["نسبة التغير"]})</li>
                               </ul>
                             </div>
                           </div>

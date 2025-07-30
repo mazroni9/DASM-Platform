@@ -228,6 +228,14 @@ try {
                     });
                     toast.success(rejectStatus.data.message);
                     break;
+                    case "move-to-live":
+                    // Add bulk status update endpoint if needed
+                const  moveLiveStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                        ids: carIds,
+                        status: "live",
+                    });
+                    toast.success(moveLiveStatus.data.message);
+                    break;
                 case "move-to-active":
                     // Add bulk status update endpoint if needed
                 const  moveActiveStatuss= await api.put("/api/admin/auctions/bulk/move-to-status",{
@@ -236,7 +244,14 @@ try {
                     });
                     toast.success(moveActiveStatuss.data.message);
                     break;
-                    break;
+             case "move-to-instant":
+                    // Add bulk status update endpoint if needed
+                const  moveInstantStatuss= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                        ids: carIds,
+                        status: "instant",
+                    });
+                    toast.success(moveInstantStatuss.data.message);
+                    break;     
                 case "move-to-pending":
                      const  movePendingStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
                         ids: carIds,
@@ -501,7 +516,30 @@ try {
                                             <X size={16} />
                                             رفض المزادات
                                         </button>
-                                        <button
+                                                                                <button
+                                            onClick={() =>
+                                                handleBulkAction(
+                                                    "move-to-live"
+                                                )
+                                            }
+                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                                        >
+                                            <CheckSquare size={16} />
+                                            نقل إلى الحراج المباشر 
+                                         </button>
+   
+                                                                                <button
+                                            onClick={() =>
+                                                handleBulkAction(
+                                                    "move-to-instant"
+                                                )
+                                            }
+                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                                        >
+                                            <CheckSquare size={16} />
+                                            نقل الى المزادات الفوري
+                                        </button>
+                                                                             <button
                                             onClick={() =>
                                                 handleBulkAction(
                                                     "move-to-active"
@@ -684,7 +722,7 @@ try {
                                                     : car.auction_status ===
                                                       "rejected"
                                                     ? "مرفوضة"
-                                                    : "متاحة"}
+                                                    :car.auction_status === "sold" ? "تم إغلاق الصفقة": "متاحة"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

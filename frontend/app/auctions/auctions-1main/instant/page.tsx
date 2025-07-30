@@ -7,6 +7,7 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { formatMoney } from "@/lib/utils";
 
 export default function InstantAuctionPage() {
     const [cars, setCars] = useState([]);
@@ -145,16 +146,17 @@ export default function InstantAuctionPage() {
                                                 {car["bids"].length}
                                             </td>
                                             <td className="p-2 text-sm">
-                                                {car["minimum_bid"]}
+                                                {formatMoney(car["evaluation_price"] || 0)}
                                             </td>
                                             <td className="p-2 text-sm">
-                                                {car["minimum_bid"]}
+                                                {formatMoney(car["minimum_bid"] || 0)}
                                             </td>
                                             <td className="p-2 text-sm">
-                                                {car["maximum_bid"]}
+                                                {formatMoney(car["maximum_bid"] || 0)}
                                             </td>
                                             <td className="p-2 text-sm">
-                                                {car["current_bid"]}
+                                                {formatMoney(car["current_bid"] || 0)}
+                                                
                                             </td>
                                             <td className="p-2 text-sm">
                                                 {car["التغير"]}

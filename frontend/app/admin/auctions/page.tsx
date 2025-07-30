@@ -15,10 +15,13 @@ import {
     CircleCheck,
     ArrowRightLeft,
     Play,
+    CircleCheckBig,
+    CircleDollarSign,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { Button } from "@mui/material";
+import { a } from "framer-motion/dist/types.d-CQt5spQA";
 
 interface Auction {
     id: number;
@@ -44,6 +47,7 @@ export default function AdminAuctionsPage() {
     const router = useRouter();
     const [auctions, setAuctions] = useState<Auction[]>([]);
     const [loading, setLoading] = useState(true);
+    const [approvedAuction, setApprovedAuction] = useState([]);
     const [filter, setFilter] = useState("all");
     const [selectedAuctions, setSelectedAuctions] = useState<number[]>([]);
     const [activeTab, setActiveTab] = useState<"all" | "approvals">("all");
@@ -81,7 +85,12 @@ export default function AdminAuctionsPage() {
             setLoading(true);
             const response = await api.get("/api/admin/auctions");
             if (response.data.status === "success") {
-                setAuctions(response.data.data.data || response.data.data);
+                let data=response.data.data.data || response.data.data;
+                let approvedAuction=data.filter(approved => approved.approved_for_live);
+                setApprovedAuction(approvedAuction);
+                setAuctions(data);
+                setLoading(false);
+                console.log("Auctions fetched successfully:", );
             }
         } catch (error) {
             console.error("Error fetching auctions:", error);
@@ -144,9 +153,8 @@ export default function AdminAuctionsPage() {
             const promises = selectedAuctions.map((auctionId) => {
                 switch (action) {
                     case "approve":
-                        return api.patch(
-                            `/api/admin/auctions/${auctionId}/approve`
-                        );
+                        return api.put(`/api/admin/auctions/${auctionId}/status`,
+                            { auction_type: "live", approved_for_live: true });
                     case "reject":
                         return api.patch(
                             `/api/admin/auctions/${auctionId}/reject`
@@ -297,6 +305,19 @@ export default function AdminAuctionsPage() {
         }
     };
 
+      const getStatusText1 = (status: string) => {
+        switch (status) {
+
+            case "live":
+                return "الحراج المباشر"
+            case "live_instant":
+                return "الحراج الفوري"
+            case "silent_instant":
+                return "الحراج الصامت"
+            default:
+                return status;
+        }
+    };
     const formatDate = (dateString: string) => {
         if (!dateString) return "غير متوفر";
         const date = new Date(dateString);
@@ -454,6 +475,9 @@ export default function AdminAuctionsPage() {
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             نوع الحراج
                                         </th>
+                                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            في البث حاليا
+                                        </th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             الإجراءات
                                         </th>
@@ -480,6 +504,7 @@ export default function AdminAuctionsPage() {
                                                 />
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                             
                                                 <div
                                                     className="flex items-center cursor-pointer hover:text-blue-600"
                                                     onClick={() =>
@@ -533,8 +558,15 @@ export default function AdminAuctionsPage() {
                                                 {formatDate(auction.end_time)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {auction.auction_type}
+                                                { getStatusText1(auction.auction_type)}
                                             </td>
+                                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {auction.approved_for_live  &&(
+                                                    <span>في البث </span>
+                                                )}
+                                            </td>
+
+                                
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center space-x-2 space-x-reverse">
                                                     <button
@@ -549,7 +581,98 @@ export default function AdminAuctionsPage() {
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
+                    {auction.status === "live" &&  auction.approved_for_live &&(
+                                                                        <>
+                                                        
+                                                        <button
+                                                            onClick={async function complete() {
+                                                                let status = await api.put(`/api/admin/auctions/${auction.id}/status`, {
+                                                                    status: "completed",
+                                                                });
+                                                                if (status.data.status === "success") {
+                                                                    toast.success("  تم إتمام الصفقة");
+                                                                    router.refresh();
+                                                                } else {
+                                                                    toast.error("حدث خطأ ما");
+                                                                    router.refresh();
+                                                                }
+                                                            } }
+                                                            className="text-green-600 hover:text-green-900"
+                                                            title=" إتمام الصفقة"
+                                                        >
+                                                                <CircleDollarSign className="w-4 h-4" />
+                                                            </button>
+                                                                                                                    <button
+                                                            onClick={async function cancel() {
+                                                                let status = await api.put(`/api/admin/auctions/${auction.id}/status`, {
+                                                                    status: "ended",
+                                                                });
+                                                                if (status.data.status === "success") {
+                                                                    toast.success("تم الغاء المزاد بنجاح");
+                                                                    router.refresh();
+                                                                } else {
+                                                                    toast.error("حدث خطأ ما");
+                                                                    router.refresh();
+                                                                }
+                                                            } }
+                                                            className="text-red-600 hover:text-red-900"
+                                                            title=" إلغاء المزاد"
+                                                        >
+                                                                <XCircle className="w-4 h-4" />
+                                                            </button>
+                                                            </>
+                                                            )}  
 
+                                                            {auction.auction_type === "live" &&  !auction.approved_for_live && auction.status === "live" && approvedAuction.length == 0 &&
+
+
+                                                                    (
+                                                                                                                     <button
+                                                            onClick={async function approve() {
+                                                                let status = await api.put(`/api/admin/auctions/${auction.id}/auction-type`, {
+                                                                    auction_type: "live",
+                                                                    approved_for_live: true 
+                                                                });
+                                                                if (status.data.status === "success") {
+                                                                    toast.success(" تم بدأ البث بنجاح");
+                                                                    router.refresh();
+                                                                } else {
+                                                                    toast.error("حدث خطأ ما");
+                                                                    router.refresh();
+                                                                }
+                                                            } }
+                                                            className="text-green-600 hover:text-green-900"
+                                                            title="بدأ البث"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4"  name="بدأ البث"/>
+                                                        </button>
+                                                                    )
+                                                            }
+                                                            {auction.status === "live" &&  !auction.approved_for_live &&(
+                                                                        <>
+           
+                                                                                                                    <button
+                                                            onClick={async function cancel() {
+                                                                let status = await api.put(`/api/admin/auctions/${auction.id}/status`, {
+                                                                    status: "ended",
+                                                                });
+                                                                if (status.data.status === "success") {
+                                                                    toast.success("تم الغاء المزاد بنجاح");
+                                                                    router.refresh();
+                                                                } else {
+                                                                    toast.error("حدث خطأ ما");
+                                                                    router.refresh();
+                                                                }
+                                                            } }
+                                                            className="text-red-600 hover:text-red-900"
+                                                            title=" إلغاء المزاد"
+                                                        >
+                                                                <XCircle className="w-4 h-4" />
+                                                            </button>
+                                                            </>
+                                                            )}
+                                                          
+                                                            
                                                     {auction.status ===
                                                         "pending_approval" && (
                                                         <>
@@ -575,6 +698,7 @@ export default function AdminAuctionsPage() {
                                                             >
                                                                 <CheckCircle className="w-4 h-4" />
                                                             </button>
+                                                            
                                                             <button
                                                                 onClick={() =>
                                                                     handleReject(
