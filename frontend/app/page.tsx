@@ -115,7 +115,7 @@ export default function Page() {
                 // Fetch the current live broadcast
                 try {
                     const response = await axios.get(
-                        "http://localhost:8000/api/broadcast"
+                        "https://dasm-platform-backend.onrender.com/api/broadcast"
                     );
                     if (
                         response.data.status === "success" &&
