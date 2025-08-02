@@ -34,7 +34,7 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import AuctionDropdown from "@/components/shared/AuctionDropdown";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
-
+import api from "@/lib/axios";
 const CountdownTimer = ({ targetDate }) => {
     const [timeLeft, setTimeLeft] = useState(null);
     const [mounted, setMounted] = useState(false);
@@ -114,9 +114,7 @@ export default function Page() {
 
                 // Fetch the current live broadcast
                 try {
-                    const response = await axios.get(
-                        "https://dasm-platform-backend.onrender.com/api/broadcast"
-                    );
+                    const response = await api.get("api/broadcast");
                     if (
                         response.data.status === "success" &&
                         response.data.data
@@ -312,7 +310,7 @@ export default function Page() {
                                     px: { xs: 1, sm: 0 }
                                 }}
                             >
-                                {broadcast.title || "البث المباشر للمزاد"}
+                                {broadcast.title || "البث المباشر "}
                             </Typography>
                             {broadcast.description && (
                                 <Typography
