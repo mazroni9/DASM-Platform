@@ -20,14 +20,14 @@ export function Sidebar() {
   const pathname = usePathname()
 
   const navItems = [
-    { href: '/exhibitor-dashboard', icon: <FiHome size={20} />, label: 'الرئيسية' },
-    { href: '/exhibitor-dashboard/add-car', icon: <FiPlusSquare size={20} />, label: 'إضافة سيارة' },
-    { href: '/exhibitor-dashboard/cars', icon: <FiLayers size={20} />, label: 'جميع السيارات' },
-    { href: '/exhibitor-dashboard/auctions', icon: <FiDollarSign size={20} />, label: 'المزادات' },
-    { href: '/exhibitor-dashboard/requests', icon: <FiShoppingCart size={20} />, label: 'الطلبات' },
-    { href: '/exhibitor-dashboard/analytics', icon: <FiBarChart2 size={20} />, label: 'التحليلات' },
-    { href: '/exhibitor-dashboard/profile', icon: <FiUser size={20} />, label: 'الملف الشخصي' },
-    { href: '/exhibitor-dashboard/settings', icon: <FiSettings size={20} />, label: 'الإعدادات' },
+    { href: '/exhibitor', icon: <FiHome size={20} />, label: 'الرئيسية' },
+    { href: '/exhibitor/add-car', icon: <FiPlusSquare size={20} />, label: 'إضافة سيارة' },
+    { href: '/exhibitor/all-cars', icon: <FiLayers size={20} />, label: 'جميع السيارات' },
+    { href: '/exhibitor/auctions', icon: <FiDollarSign size={20} />, label: 'المزادات' },
+    { href: '/exhibitor/requests', icon: <FiShoppingCart size={20} />, label: 'الطلبات' },
+    { href: '/exhibitor/analytics', icon: <FiBarChart2 size={20} />, label: 'التحليلات' },
+    { href: '/exhibitor/profile', icon: <FiUser size={20} />, label: 'الملف الشخصي' },
+    { href: '/exhibitor/settings', icon: <FiSettings size={20} />, label: 'الإعدادات' },
   ]
 
   return (
