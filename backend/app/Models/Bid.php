@@ -10,8 +10,8 @@ class Bid extends Model
     use HasFactory;
 
     protected $fillable = [
-        'auction_id', 
-        'user_id', 
+        'auction_id',
+        'user_id',
         'bid_amount',
         'no_account',
         'bidder_name'
@@ -21,6 +21,7 @@ class Bid extends Model
         'no_account' => 'boolean',
     ];
 
+    public $timestamps = false;
     // A Bid belongs to an Auction.
     public function auction()
     {
