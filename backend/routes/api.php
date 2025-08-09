@@ -45,6 +45,7 @@ Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 
 // Public markets data
 Route::get('/markets', [MarketCategoriesController::class, 'getAllMarkets']);
+Route::get('/markets/{id}', [MarketCategoriesController::class, 'getMarket']);
 Route::get('/markets/{slug}', [MarketController::class, 'show']);
 
 // Public blog routes

@@ -18,6 +18,8 @@ import {
     LogOut,
     Loader,
     Home,
+    ListTree,
+    Store
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -41,11 +43,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
         { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
         { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
+        { name: "أقسام السوق", href: "/admin/categories", icon: ListTree },
+        { name: "الأسواق", href: "/admin/markets", icon: Store },
         { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
         { name: "المزادات", href: "/admin/auctions", icon: Car },
         { name: "السيارات", href: "/admin/cars", icon: Car },
         { name: "التقارير", href: "/admin/reports", icon: BarChart },
         { name: "الإعدادات", href: "/admin/settings", icon: Settings },
+        
     ];
 
     const isActive = (path: string) => {

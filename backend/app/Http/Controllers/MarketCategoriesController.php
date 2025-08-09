@@ -29,4 +29,15 @@ class MarketCategoriesController extends Controller
             'data' => $markets
         ]);
     }
+
+    public function getMarket($slug)
+    {
+        $market = Market::with('category')->where('slug', $slug)->first();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'market details',
+            'data' => $market,
+        ]);
+    }
 }

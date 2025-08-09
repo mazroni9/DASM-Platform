@@ -246,7 +246,7 @@ export default function CarDetailPage() {
                 <div className="mt-6 block lg:hidden">
                   <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <p className="text-2xm font-bold text-blue-600">
-                      السعر الحالي: {item.active_auction.current_bid?.toLocaleString()} ريال
+                      السعر الحالي: {item.active_auction?.current_bid?.toLocaleString()} ريال
                     </p>
                     {item.auction_result && (
                       <p className="text-lg text-green-600 mt-2">{item.auction_result}</p>
