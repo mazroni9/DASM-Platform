@@ -49,12 +49,12 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
   return Math.round(number / 5) * 5;
 };
     const quickBidOptions = [
-        { label: roundToNearest5or0(bid_amount + 100), value:100},
-        { label: roundToNearest5or0(bid_amount + 200), value:200},
-        { label: roundToNearest5or0(bid_amount + 300), value:300},
-        { label: roundToNearest5or0(bid_amount + 400), value:400},
-        { label: roundToNearest5or0(bid_amount + 500), value:500},
-        { label: roundToNearest5or0(bid_amount + 1000), value:1000},
+        { label: roundToNearest5or0(100), value:100},
+        { label: roundToNearest5or0(200), value:200},
+        { label: roundToNearest5or0(300), value:300},
+        { label: roundToNearest5or0(400), value:400},
+        { label: roundToNearest5or0(500), value:500},
+        { label: roundToNearest5or0(1000), value:1000},
 
     ];
 

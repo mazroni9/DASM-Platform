@@ -74,7 +74,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('user_id');
             $table->decimal('bid_amount', 12, 2);
             $table->timestamp('created_at')->useCurrent();
-
+            $table->timestamp('updated_at')->useCurrent();
             $table->foreign('auction_id')->references('id')->on('auctions')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });

@@ -126,12 +126,12 @@ export default function CarDetailPage() {
                 toast.error("فشل في تقديم العرض");
             }
         } catch (error: any) {
-            console.error("خطأ في حفظ البيانات:", error);
+            console.error("خطأ في حفظ البيانات:", error.response.data.message);
             setSubmitResult({
                 success: false,
-                message: error.message || "حدث خطأ أثناء حفظ البيانات",
+                message: error.response.data.message || "حدث خطأ أثناء حفظ البيانات",
             });
-            toast.error(error.message || "فشل في تقديم العرض");
+            toast.error(error.response.data.message || "فشل في تقديم العرض");
         } finally {
             setIsSubmitting(false);
         }

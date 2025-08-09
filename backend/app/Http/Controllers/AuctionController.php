@@ -61,7 +61,7 @@ class AuctionController extends Controller
             $query->orderBy($sortField, $sortDirection);
         }
         
-        $perPage = $request->input('per_page', 10);
+        $perPage = $request->input('per_page', 20);
         $auctions = $query->paginate($perPage);
         
         return response()->json([

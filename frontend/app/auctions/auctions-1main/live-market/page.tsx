@@ -90,19 +90,21 @@ export default function LiveMarketPage() {
            if (!isLoggedIn) return;
           try {
               const response = await api.get('/api/approved-auctions');
+             
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
                    // تحويل البيانات إلى هيكل JSON
                    let liveAuctions = carsData.filter(car => {
                     return car.status === 'live' && car.auction_type === 'live' && !car.approved_for_live;
                    });
+
                    let completedAuctions = carsData.filter(car => {
                     return car.status === 'completed' && car.auction_type === 'live' && !car.approved_for_live;
                    });
                     let current_car = carsData.filter(car => {
                     return car.status === 'live' && car.auction_type === 'live' && car.approved_for_live;
                    });
-             
+                   console.log(carsData);
                                      
                    if(current_car.length > 0){
                        let car_user_id = current_car[0].car.user_id;

@@ -32,7 +32,7 @@ class BidController extends Controller
         }
         
         $bids = $auction->bids()
-            ->with('user:id,name')
+            ->with('user:id')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
             
@@ -360,10 +360,10 @@ class BidController extends Controller
             }
             
             // Check if the bid amount is higher than the current price
-            if ($data['bid_amount'] <= $auction->current_bid) {
+            if ($data['bid_amount'] <= $auction->current_bid || $data['bid_amount'] <= $auction->minimum_bid) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'يجب أن يكون مبلغ المزايدة أعلى من السعر الحالي'
+                    'message' => '  يجب أن يكون مبلغ المزايدة أعلى من السعر الحالي أو سعر الأفتتاح'
                 ], 400);
             }
             
@@ -372,6 +372,7 @@ class BidController extends Controller
             $bid->auction_id = $auction->id;
             $bid->user_id = $user->id;
             $bid->bid_amount = $data['bid_amount'];
+            $bid->increment =  $data['bid_amount'] - $auction->current_bid;
             $bid->save();
             
             // Update the auction's current price
@@ -424,7 +425,7 @@ class BidController extends Controller
         }
         
         $bids = $auction->bids()
-            ->with('user:id,name')
+            ->with('user:id')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
             
