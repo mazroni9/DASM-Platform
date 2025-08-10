@@ -29,7 +29,7 @@ function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive
   } else if (h >= 19 && h < 22) {
     return { label: 'السوق الفوري المباشر', isLive: true };
   } else {
-    return { label: 'السوق الصامت', isLive: true };
+    return { label: 'السوق المتأخر', isLive: true };
   }
 }
 
@@ -77,7 +77,7 @@ export default function SilentAuctionPage() {
               }
                   
           } catch (error) {
-               console.error('فشل تحميل بيانات المزاد الصامت', error);
+               console.error('فشل تحميل بيانات المزاد المتأخر', error);
               setCars([]); // مصفوفة فارغة في حالة الفشل
               setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
               setLoading(false);
@@ -129,7 +129,6 @@ export default function SilentAuctionPage() {
         {/* عنوان الصفحة في الوسط */}
         <div className="col-span-6 text-center relative">
           {/* إضافة صورة خلفية */}
-          <div className="absolute inset-0 bg-contain bg-center bg-no-repeat opacity-20" style={{ backgroundImage: `url('/placeholder-icon.svg')` }}></div>
           
           <h1 className="text-2xl font-bold relative z-10">السوق المتأخر</h1>
           <div className="text-sm text-purple-600 mt-1 relative z-10">وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي</div>
@@ -168,20 +167,19 @@ export default function SilentAuctionPage() {
         <div className="bg-white p-4 rounded-lg shadow-sm">
           {/* عنوان قسم النتائج */}
           <div className="flex justify-between items-center mb-4">
-            <div className="text-lg font-bold text-gray-800">المزاد الصامت - السيارات المتاحة</div>
+            <div className="text-lg font-bold text-gray-800">المزاد المتأخر - السيارات المتاحة</div>
             <div className="text-sm text-gray-600">عدد السيارات: {cars.length}</div>
           </div>
           
           {/* خط فاصل بين المزاد الفوري والصامت */}
           <div className="w-full border-b border-gray-300 my-4"></div>
-          <p className="text-gray-600 mb-4">🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى المزاد الصامت. الأسعار أدناه هي أسعار المزاد الصامت.</p>
+          <p className="text-gray-600 mb-4">🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى المزاد المتأخر. الأسعار أدناه هي أسعار المزاد المتأخر.</p>
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase"></th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المنطقة</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدينة</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الماركة</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الموديل</th>
@@ -207,7 +205,6 @@ export default function SilentAuctionPage() {
                           {expandedRows[idx] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                         </button>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].province}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].city}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
