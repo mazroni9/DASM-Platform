@@ -57,10 +57,10 @@ export default function InstantAuctionPage() {
             try {
                 const response = await api.get("/api/approved-auctions");
                 if (response.data.data || response.data.data) {
-                    const carsData =
-                        response.data.data.data || response.data.data;
+                    const carsData =response.data.data.data || response.data.data;
+                    const live_instant = carsData.filter((car: any) => car.auction_type === "live_instant");
                     // تعامل مع هيكل البيانات من API
-                    setCars(carsData);
+                    setCars(live_instant);
                 }
             } catch (error) {
                 console.error("فشل تحميل بيانات المزاد الصامت", error);
@@ -217,6 +217,7 @@ export default function InstantAuctionPage() {
    
 
     return (
+        
         <div className="p-4">
             <div className="flex justify-end mb-4">
                 <Link
@@ -227,118 +228,138 @@ export default function InstantAuctionPage() {
                     <span>العودة</span>
                 </Link>
             </div>
-
-            <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold">
-                    السوق الفوري المباشر - جميع السيارات
-                </h1>
-                <div className="text-sm text-purple-600 mt-1">
-                    وقت السوق من 7 مساءً إلى 10 مساءً كل يوم
+            {!loading && !error && cars.length === 0 && (
+                <><div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold">
+                        السوق الفوري المباشر - جميع السيارات
+                    </h1>
+                    <div className="text-sm text-purple-600 mt-1">
+                        وقت السوق من 7 مساءً إلى 10 مساءً كل يوم
+                    </div>
+                </div><div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                        <p>لا توجد سيارات متاحة في السوق الفوري حالياً</p>
+                    </div></>
+            )}
+        {!loading && !error && cars.length > 0 && (
+                      <>
+                      <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold">
+                        السوق الفوري المباشر - جميع السيارات
+                    </h1>
+                    <div className="text-sm text-purple-600 mt-1">
+                        وقت السوق من 7 مساءً إلى 10 مساءً كل يوم
+                    </div>
                 </div>
-            </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-300">
+                            <thead className="bg-gray-100">
+                                <tr>
+                                    {[
+                                        "المنطقة",
+                                        "المدينة",
+                                        "الماركة",
+                                        "الموديل",
+                                        "سنة الصنع",
+                                        "رقم اللوحة",
+                                        "العداد",
+                                        "حالة السيارة",
+                                        "لون السيارة",
+                                        "نوع الوقود",
+                                        "المزايدات المقدمة",
+                                        "سعر الافتتاح",
+                                        "اقل سعر",
+                                        "اعلى سعر",
+                                        "اخر سعر",
+                                        "مبلغ الزيادة",
+                                        "نسبة التغير",
+                                        "نتيجة المزايدة",
+                                        "تفاصيل",
+                                    ].map((header, idx) => (
+                                        <th key={idx} className="border p-2 text-sm">
+                                            {header}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {cars.map((car, idx) => (
+                                    <tr key={idx} className="border-t hover:bg-gray-50">
+                                        {car.auction_type != "live" &&
+                                            car["car"].auction_status ==
+                                            "in_auction" && (
+                                                <>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].province}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].city}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].make}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].model}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].year}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].plate}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].odometer}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].condition}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].color}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["car"].engine}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {car["bids"].length}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {formatMoney(car["opening_price"] || 0)}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {formatMoney(car["minimum_bid"] || 0)}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {formatMoney(car["maximum_bid"] || 0)}
+                                                    </td>
+                                                    <td className="p-2 text-sm">
+                                                        {formatMoney(car["current_bid"] || 0)}
+                                                    </td>
+                                                    <td className="p-2 text-sm bg-green-50">
+                                                        {car['bids'][car['bids'].length - 1] ? car['bids'][car['bids'].length - 1].increment : 0}
+                                                    </td>
+                                                    <td className="p-2 text-sm bg-green-50">
+                                                        {car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"}
+                                                    </td>
 
-            <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-300">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            {[
-                                "الماركة",
-                                "الموديل",
-                                "سنة الصنع",
-                                "رقم اللوحة",
-                                "العداد",
-                                "حالة السيارة",
-                                "لون السيارة",
-                                "نوع الوقود",
-                                "المزايدات المقدمة",
-                                "سعر الافتتاح",
-                                "اقل سعر",
-                                "اعلى سعر",
-                                "اخر سعر",
-                                "مبلغ الزيادة",
-                                "نسبة التغير",
-                                "نسبة التغير الكاملة",
-                                "نتيجة المزايدة",
-                                "تفاصيل",
-                            ].map((header, idx) => (
-                                <th key={idx} className="border p-2 text-sm">
-                                    {header}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {cars.map((car, idx) => (
-                            <tr key={idx} className="border-t hover:bg-gray-50">
-                                {car.auction_type != "live" &&
-                                    car["car"].auction_status ==
-                                        "in_auction" && (
-                                        <>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].make}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].model}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].year}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].plate}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].odometer}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].condition}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].color}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["car"].engine}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {car["bids"].length}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {formatMoney(car["opening_price"] || 0)}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {formatMoney(car["minimum_bid"] || 0)}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {formatMoney(car["maximum_bid"] || 0)}
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {formatMoney(car["current_bid"] || 0)}
-                                            </td>
-                                            <td className="p-2 text-sm bg-green-50">
-                                                {car['bids'][car['bids'].length-1] ? car['bids'][car['bids'].length-1].increment  :0}
-                                            </td>
-                                            <td className="p-2 text-sm bg-green-50">
-                                                {car['bids'][car['bids'].length-1] ? ((car['bids'][car['bids'].length-1].increment / car['bids'][car['bids'].length-1].bid_amount) * 100).toFixed(2)+"%" :"0%"} 
-                                            </td>
-                                             <td className="p-2 text-sm bg-green-50">
-                                                {car['bids'][car['bids'].length-1] ? (((car["maximum_bid"] - car["opening_price"]) / car["opening_price"]) * 100).toFixed(2)+"%" :"0%"} 
-                                            </td>
-                                            <td className="p-2 text-sm">
-                                                {getAuctionStatus(car['car'].auction_status)}
-                                            </td>
-                                            <td className="p-2 text-sm text-blue-600 underline">
-                                                <Link
-                                                    href={`/carDetails/${car.car_id}`}
-                                                >
-                                                    عرض
-                                                </Link>
-                                            </td>
-                                        </>
-                                    )}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                                                    <td className="p-2 text-sm">
+                                                        {getAuctionStatus(car['car'].auction_status)}
+                                                    </td>
+                                                    <td className="p-2 text-sm text-blue-600 underline">
+                                                        <Link
+                                                            href={`/carDetails/${car.car_id}`}
+                                                        >
+                                                            عرض
+                                                        </Link>
+                                                    </td>
+                                                </>
+                                            )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div></>
+            )}
+ 
+            
         </div>
     );
 }

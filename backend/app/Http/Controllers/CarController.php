@@ -153,6 +153,8 @@ class CarController extends Controller
             'condition' => 'required|string|in:جديدة,ممتازة,جيدة جداً,جيدة,متوسطة,تحتاج إصلاح',
             'evaluation_price' => 'required|numeric|min:0',
             'color' => 'nullable|string|max:30',
+            'province' => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
             'engine' => 'nullable|string|max:50',
             'transmission' => 'nullable|string|in:أوتوماتيك,يدوي,نصف أوتوماتيك,cvt',
             'description' => 'nullable|string',
@@ -198,6 +200,8 @@ class CarController extends Controller
         
         // Use the mapped values or fallback to defaults if no match
         $car->make = $request->make;
+        $car->province = $request->province;
+        $car->city = $request->city;
         $car->model = $request->model;
         $car->year = $request->year;
         $car->vin = $request->vin;

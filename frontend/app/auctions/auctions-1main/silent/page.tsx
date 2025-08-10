@@ -69,10 +69,11 @@ export default function SilentAuctionPage() {
           try {
             
               const response = await api.get('/api/approved-auctions');
-              if (response.data.data || response.data.data) {
-                  const carsData = response.data.data.data || response.data.data;
+              if (response.data.data || response.data.data) {                  
+                 const carsData =response.data.data.data || response.data.data;
+                 const silent_instant = carsData.filter((car: any) => car.auction_type === "silent_instant");
                     // تعامل مع هيكل البيانات من API
-                  setCars(carsData);
+                    setCars(silent_instant);
               }
                   
           } catch (error) {
@@ -159,7 +160,7 @@ export default function SilentAuctionPage() {
       
       {!loading && !error && cars.length === 0 && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-          <p>لا توجد سيارات متاحة في السوق الصامت حالياً</p>
+          <p>لا توجد سيارات متاحة في السوق المتأخر حالياً</p>
         </div>
       )}
       
@@ -180,6 +181,8 @@ export default function SilentAuctionPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase"></th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المنطقة</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدينة</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الماركة</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الموديل</th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">سنة الصنع</th>
@@ -204,6 +207,8 @@ export default function SilentAuctionPage() {
                           {expandedRows[idx] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                         </button>
                       </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].province}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].city}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].year}</td>
@@ -212,8 +217,8 @@ export default function SilentAuctionPage() {
                         {formatMoney(car["current_bid"] || 0)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${car["التغير"] > 0 ? 'bg-green-100 text-green-800' : car["التغير"] < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {car["التغير"] > 0 ? '+' : ''}{formatMoney(car["التغير"] || 0)} ({car["نسبة التغير"] || '0%'})
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold `}>
+                          {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-purple-600 underline">
@@ -229,7 +234,7 @@ export default function SilentAuctionPage() {
                             <div>
                               <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
                               <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">العداد:</span> {car['car'].odmeter} كم</li>
+                                <li><span className="font-medium">العداد:</span> {car['car'].odometer} كم</li>
                                 <li><span className="font-medium">حالة السيارة:</span> {car['car'].condition || 'جيدة'}</li>
                                 <li><span className="font-medium">اللون:</span> {car['car'].color}</li>
                                 <li><span className="font-medium">نوع الوقود:</span> {car['car'].engine}</li>
@@ -252,7 +257,8 @@ export default function SilentAuctionPage() {
                                 <li><span className="font-medium">أقل سعر:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
                                 <li><span className="font-medium">أعلى سعر:</span> {formatMoney(car["maximum_bid"] || 0)}</li>
                                 <li><span className="font-medium">آخر سعر:</span> {formatMoney(car["current_bid"] || 0)}</li>
-                                <li><span className="font-medium">التغير:</span> {formatMoney(car["التغير"] || 0)} ({car["نسبة التغير"]})</li>
+                                <li><span className="font-medium">التغير:</span> {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
+</li>
                               </ul>
                             </div>
                           </div>

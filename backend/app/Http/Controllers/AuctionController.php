@@ -351,6 +351,20 @@ class AuctionController extends Controller
                         $tracking->push($auction);
                 }
             }
+        }else  if ($request->status === "late") {
+            foreach($ids as $id) {
+                $car = Car::find($id);
+                // Check if car is available for auction
+                if ($car->auction_status != 'available') {
+                        $auction1=Auction::where('car_id',$car->id)->first();
+                        $auction=Auction::find($auction1->id);
+                        $auction->control_room_approved = true;
+                        $auction->status = AuctionStatus::ACTIVE->value;
+                        $auction->auction_type = AuctionType::SILENT_INSTANT->value;
+                        $auction->save();
+                        $tracking->push($auction);
+                }
+            }
         }else if ($request->status === "live") {
             foreach($ids as $id) {
                 $car = Car::find($id);
