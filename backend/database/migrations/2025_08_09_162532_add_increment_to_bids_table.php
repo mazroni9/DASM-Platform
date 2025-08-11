@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('bids', function (Blueprint $table) {
             // Add the description column
-     $table->decimal('increment', 12, 2);
+            $table->decimal('increment', 12, 2)->default(0);
         });
     }
 
@@ -25,7 +25,6 @@ return new class extends Migration
         Schema::table('bids', function (Blueprint $table) {
             // Remove the description column if migration is rolled back
             $table->dropColumn('increment');
-
         });
     }
 };

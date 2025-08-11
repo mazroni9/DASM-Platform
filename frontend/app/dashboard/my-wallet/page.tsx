@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Plus, ArrowDownLeft } from "lucide-react";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { log } from "console";
 
 // Interface for the transaction data
 interface Transaction {
@@ -74,8 +75,8 @@ export default function MyWalletPage() {
                     transactionsResponse.data.status === "success"
                 ) {
                     // Format transactions for display
-                    const transactionData = transactionsResponse.data.data;
-
+                    const transactionData = transactionsResponse.data.data.data;
+                    console.log(`transactionData`, transactionData);
                     if (Array.isArray(transactionData)) {
                         // Create a copy to manipulate
                         let formattedTransactions = [...transactionData];
@@ -106,13 +107,14 @@ export default function MyWalletPage() {
                                         day: "numeric",
                                     }
                                 );
-
+                                
                                 // Calculate balance if not provided
                                 if (index > 0) {
                                     runningBalance =
                                         runningBalance - transaction.amount;
                                 }
-
+                                
+                                
                                 return {
                                     ...transaction,
                                     date: transaction.date || dateString,
@@ -269,9 +271,9 @@ export default function MyWalletPage() {
                                     <th scope="col" className="px-4 py-3">
                                         المبلغ
                                     </th>
-                                    <th scope="col" className="px-4 py-3">
+                                    {/* <th scope="col" className="px-4 py-3">
                                         الرصيد
-                                    </th>
+                                    </th> */}
                                     <th scope="col" className="px-4 py-3">
                                         الوصف
                                     </th>
@@ -307,10 +309,10 @@ export default function MyWalletPage() {
                                                 : `${t.amount.toLocaleString()}`}{" "}
                                             ريال
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
+                                        {/* <td className="px-4 py-3 whitespace-nowrap">
                                             {t.balance?.toLocaleString() || "-"}{" "}
                                             ريال
-                                        </td>
+                                        </td> */}
                                         <td className="px-4 py-3">
                                             {t.description}
                                         </td>
