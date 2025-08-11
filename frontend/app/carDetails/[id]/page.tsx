@@ -316,14 +316,14 @@ export default function CarDetailPage() {
                     )}
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
+                <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 ">
                     {/* رسائل النظام */}
                     {submitResult && (
                         <div
                             className={`p-4 rounded-md ${
                                 submitResult.success
-                                    ? "bg-green-50 border border-green-200"
-                                    : "bg-red-50 border border-red-200"
+                                    ? "bg-green-50 border border-green-200 mb-3"
+                                    : "bg-red-50 border border-red-200 mb-3"
                             }`}
                         >
                             <div className="flex items-start">
@@ -668,6 +668,19 @@ export default function CarDetailPage() {
                                                 </p>
                                                 <p className="font-semibold">
                                                     {item["total_bids"] || "0"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 text-sm">
+                                                    مبلغ المزايدة
+                                                </p>
+                                                <p className="font-semibold text-green-500">
+
+                                                    {(() => {
+                                                        const bids = item?.active_auction?.bids || [];
+                                                        const lastBid = bids.length > 0 ? bids[bids.length - 1] : null;
+                                                        return lastBid ? lastBid.increment : 0;
+                                                    })()}
                                                 </p>
                                             </div>
                                         </div>

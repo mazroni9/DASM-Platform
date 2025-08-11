@@ -183,17 +183,19 @@ export default function MoneyTransfersPage() {
             const response = await api.post("/api/wallet/deposit", depositData);
 
             if (response.data && response.data.status === "success") {
-                setTransactionStatus({
-                    status: "success",
-                    message:
-                        "تم تسجيل طلب الإيداع بنجاح. ستتلقى تأكيداً قريباً.",
-                    transactionId:
-                        response.data.transaction_id || response.data.id,
-                });
-
+                if (data.paymentMethod === "credit_card") {
+                    window.location.href = response.data.payment_url;
+                } else {
+                    setTransactionStatus({
+                        status: "success",
+                        message:
+                            "تم تسجيل طلب الإيداع بنجاح. ستتلقى تأكيداً قريباً.",
+                        transactionId:
+                            response.data.transaction_id || response.data.id,
+                    });
+                }
                 // Reset form
                 depositForm.reset();
-
                 // Show success toast
                 toast.success("تم تسجيل طلب الإيداع بنجاح");
             } else {
@@ -481,12 +483,14 @@ export default function MoneyTransfersPage() {
                                         طريقة الدفع*
                                     </Label>
                                     <Controller
+                                        
                                         control={depositForm.control}
                                         name="paymentMethod"
                                         render={({ field }) => (
                                             <Select
                                                 onValueChange={field.onChange}
                                                 defaultValue={field.value}
+                                                
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="اختر طريقة الدفع" />
@@ -501,10 +505,10 @@ export default function MoneyTransfersPage() {
                                                     <SelectItem value="credit_card">
                                                         <div className="flex items-center">
                                                             <CreditCard className="w-4 h-4 ml-2" />
-                                                            بطاقة ائتمانية
+                                                            بطاقة ائتمانية(my)
                                                         </div>
                                                     </SelectItem>
-                                                    <SelectItem value="mada">
+                                                    {/* <SelectItem value="mada">
                                                         <div className="flex items-center">
                                                             <CreditCard className="w-4 h-4 ml-2" />
                                                             بطاقة مدى
@@ -515,7 +519,7 @@ export default function MoneyTransfersPage() {
                                                             <CreditCard className="w-4 h-4 ml-2" />
                                                             STC Pay
                                                         </div>
-                                                    </SelectItem>
+                                                    </SelectItem> */}
                                                 </SelectContent>
                                             </Select>
                                         )}

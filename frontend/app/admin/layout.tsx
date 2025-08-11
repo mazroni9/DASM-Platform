@@ -18,6 +18,7 @@ import {
     LogOut,
     Loader,
     Home,
+    HandCoins
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -40,6 +41,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "الرئيسية", href: "/", icon: Home },
         { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
         { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
+        { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
         { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
         { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
         { name: "المزادات", href: "/admin/auctions", icon: Car },
