@@ -18,6 +18,7 @@ use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\Admin\CommissionTierController;
+use App\Http\Controllers\Admin\SubscriptionPlanController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -223,4 +224,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/admin/commission-tiers/{id}', [CommissionTierController::class, 'update']);
     Route::delete('/admin/commission-tiers/{id}', [CommissionTierController::class, 'destroy']);
     Route::post('/admin/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
+
+    // Admin subscription plans management
+    Route::get('/admin/subscription-plans', [SubscriptionPlanController::class, 'index']);
+    Route::post('/admin/subscription-plans', [SubscriptionPlanController::class, 'store']);
+    Route::get('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'show']);
+    Route::put('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
+    Route::delete('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
+    Route::post('/admin/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
 });
+
+// Public subscription plans routes
+Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
