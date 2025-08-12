@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             CommissionTierSeeder::class,
+            SubscriptionPlanSeeder::class,
         ]);
     }
 }
