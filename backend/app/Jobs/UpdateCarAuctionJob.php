@@ -29,7 +29,7 @@ class UpdateCarAuctionJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::info("Starting UpdateCarAuctionJob with status: {$this->status}");
+        Log::error("Starting UpdateCarAuctionJob with status: {$this->status}");
 
         try {
             switch ($this->status) {
@@ -44,7 +44,7 @@ class UpdateCarAuctionJob implements ShouldQueue
                             'approved_for_live' => false
                         ]);
 
-                    Log::info("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE_INSTANT (status: {$this->status})");
+                    Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE_INSTANT (status: {$this->status})");
                     break;
                 case "live":
                     // Update silent instant auctions to live instant auctions
@@ -56,7 +56,7 @@ class UpdateCarAuctionJob implements ShouldQueue
                             'auction_type' => AuctionType::LIVE->value,
                         ]);
 
-                    Log::info("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE (status: {$this->status})");
+                    Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE (status: {$this->status})");
                     break;
 
                 case "late":
@@ -69,7 +69,7 @@ class UpdateCarAuctionJob implements ShouldQueue
                             'auction_type' => AuctionType::SILENT_INSTANT->value,
                         ]);
 
-                    Log::info("Updated {$affectedRows} auctions from LIVE_INSTANT to SILENT_INSTANT (late mode)");
+                    Log::error("Updated {$affectedRows} auctions from LIVE_INSTANT to SILENT_INSTANT (late mode)");
                     break;
 
                 default:
@@ -81,6 +81,6 @@ class UpdateCarAuctionJob implements ShouldQueue
             throw $e;
         }
 
-        Log::info("Completed UpdateCarAuctionJob with status: {$this->status}");
+        Log::error("Completed UpdateCarAuctionJob with status: {$this->status}");
     }
 }
