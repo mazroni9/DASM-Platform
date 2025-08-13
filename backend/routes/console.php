@@ -14,4 +14,4 @@ Schedule::job(new UpdateCarAuctionJob('late'))->dailyAt('22:00')->timezone('Asia
 Schedule::job(new UpdateCarAuctionJob('live'))->dailyAt('16:00')->timezone('Asia/Riyadh');
 // Schedule::job(new UpdateCarAuctionJob('instant'))->everyMinute()->timezone('Asia/Riyadh');
 // Schedule::job(new UpdateCarAuctionJob('late'))->everyMinute()->timezone('Asia/Riyadh');
-//Schedule::job(new UpdateCarAuctionJob('live'))->everyMinute()->timezone('Asia/Riyadh');
+Schedule::job(new UpdateCarAuctionJob('live'))->everyMinute()->timezone('Asia/Riyadh');
