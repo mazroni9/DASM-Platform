@@ -4,16 +4,19 @@ import Link from 'next/link';
 import { Timer, BellOff, Video, Tv, ArrowUpDown, Eye, Settings, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import OtherVenuesGrid from '@/components/broadcast/OtherVenuesGrid';
+import api from '@/lib/axios';
+import Countdown from '@components/Countdown'; // adjust the path to where you saved it
 
 export default function AuctionsMainPage() {
   const [showPresenterPanel, setShowPresenterPanel] = useState(false);
   const [currentAuction, setCurrentAuction] = useState('');
   
+
   // مزادات المجلد الأول: auctions-main
   const auctionsMain = [
-    { name: 'الحراج المباشر', slug: 'live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة', icon: Video, color: 'text-red-600', bgColor: 'bg-red-50' },
-    { name: 'السوق الفوري المباشر', slug: 'instant', description: 'نظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته', icon: Timer, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-    { name: 'السوق الصامت', slug: 'silent', description: ' مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين على عروض بعض', icon: BellOff, color: 'text-purple-500', bgColor: 'bg-purple-50' },
+    { currentPage:'live_auction',name: 'الحراج المباشر', slug: 'live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة', time:"من الرابعة عصرا إلى السابعة مساء  ", icon: Video, color: 'text-red-600', bgColor: 'bg-red-50' },
+    {currentPage:'instant_auction', name: 'السوق الفوري المباشر', slug: 'instant', description: 'نظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته', time:"من السابعة مساء إلى العاشرة مساء  ",  icon: Timer, color: 'text-blue-500', bgColor: 'bg-blue-50' },
+    { currentPage:'late_auction',name: 'السوق المتأخر', slug: 'silent', description: ' مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين على عروض بعض', time:"من العاشرة مساء إلى الرابعة عصرا  ",  icon: BellOff, color: 'text-purple-500', bgColor: 'bg-purple-50' },
   ];
 
   return (
@@ -148,7 +151,12 @@ export default function AuctionsMainPage() {
                 </div>
               </div>
               
-              <p className="text-gray-600 text-sm text-center mb-4 flex-grow relative z-10">{auction.description}</p>
+              <p className="text-gray-600 text-sm text-center mb-4 flex-grow relative z-10">{auction.description} <br/>{auction.time} 
+              <br/>
+              <br/>
+                 <Countdown page={auction.currentPage as 'live_auction' | 'instant_auction' | 'late_auction'}/>
+                  <br/>
+              </p>
               
               {/* إضافة الفيديو للحراج المباشر - تصغير الحجم */}
               {auction.slug === 'live-market' && (

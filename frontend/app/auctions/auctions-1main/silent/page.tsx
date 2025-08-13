@@ -12,8 +12,12 @@ import { formatMoney } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
+import Countdown from '@/components/Countdown';
 
-
+async function isWithinAllowedTime(page: string): Promise<boolean> {
+    const response = await api.get(`api/check-time?page=${page}`);
+    return response.data.allowed;
+}
 
 // لا نستطيع إستيراد sqlite3 أو أي مكتبات قاعدة بيانات أخرى في جانب العميل!
 // حذف:
@@ -35,6 +39,7 @@ function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive
 
 
 export default function SilentAuctionPage() {
+  const [isAllowed,setIsAllowed]=useState(true);
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,12 +67,15 @@ export default function SilentAuctionPage() {
     return () => clearInterval(timer);
   }, []);
 
+
+  
+
      // Fetch user profile data
   useEffect(() => {
       async function fetchAuctions() {
            if (!isLoggedIn) return;
           try {
-            
+         setIsAllowed(await isWithinAllowedTime('late_auction'));
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {                  
                  const carsData =response.data.data.data || response.data.data;
@@ -162,19 +170,24 @@ export default function SilentAuctionPage() {
           <p>لا توجد سيارات متاحة في السوق المتأخر حالياً</p>
         </div>
       )}
-      
-      {!loading && !error && cars.length > 0 && (
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+      {!isAllowed &&(
+        <div><p>  السوق ليس مفتوح الان سوف يفتح كما موضح في الوقت الأعلى</p></div>
+      )}
+      {!loading && !error && cars.length > 0 && isAllowed && (
+                              <>
+                              <Countdown page="late_auction" />
+                              <br />
+                              <div className="bg-white p-4 rounded-lg shadow-sm">
           {/* عنوان قسم النتائج */}
           <div className="flex justify-between items-center mb-4">
             <div className="text-lg font-bold text-gray-800">المزاد المتأخر - السيارات المتاحة</div>
             <div className="text-sm text-gray-600">عدد السيارات: {cars.length}</div>
           </div>
-          
+
           {/* خط فاصل بين المزاد الفوري والصامت */}
           <div className="w-full border-b border-gray-300 my-4"></div>
           <p className="text-gray-600 mb-4">🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى المزاد المتأخر. الأسعار أدناه هي أسعار المزاد المتأخر.</p>
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -194,82 +207,82 @@ export default function SilentAuctionPage() {
                 {cars.map((car, idx) => (
 
                   <Fragment key={idx}>
-                                      {car.auction_type !="live" && car["car"].auction_status == "in_auction" && (
-                                        <>
-                                         <tr className="hover:bg-gray-50 cursor-pointer">
-                      <td className="px-2 whitespace-nowrap">
-                        <button 
-                          onClick={() => toggleRowExpansion(idx)}
-                          className="text-gray-500 hover:text-purple-600"
-                        >
-                          {expandedRows[idx] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].city}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].year}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["minimum_bid"] || 0)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-purple-600">
-                        {formatMoney(car["current_bid"] || 0)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold `}>
-                          {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-purple-600 underline">
-                        <a href={`../../carDetails/${car.car_id}`} target="_blank">عرض</a>
-                      </td>
-                    </tr>
-                    
-                    {/* صف التفاصيل الإضافية */}
-                    {expandedRows[idx] && (
-                      <tr className="bg-gray-50">
-                        <td colSpan={8} className="px-4 py-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
-                              <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">العداد:</span> {car['car'].odometer} كم</li>
-                                <li><span className="font-medium">حالة السيارة:</span> {car['car'].condition || 'جيدة'}</li>
-                                <li><span className="font-medium">اللون:</span> {car['car'].color}</li>
-                                <li><span className="font-medium">نوع الوقود:</span> {car['car'].engine}</li>
-                              </ul>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-2">معلومات المزايدة</h4>
-                              <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">المزايدات المقدمة:</span> {car['bids'].length}</li>
-                                <li><span className="font-medium">حالة المزايدة:</span> {car["status"] || 'مغلق'}</li>
-                                <li><span className="font-medium">نتيجة المزايدة:</span> {car["car"].auction_status}</li>
-                              </ul>
-                            </div>
-                            
-                            <div>
-                              <h4 className="font-semibold text-gray-700 mb-2">معلومات الأسعار</h4>
-                              <ul className="space-y-1 text-sm">
-                                <li><span className="font-medium">سعر الإفتتاح:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
-                                <li><span className="font-medium">أقل سعر:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
-                                <li><span className="font-medium">أعلى سعر:</span> {formatMoney(car["maximum_bid"] || 0)}</li>
-                                <li><span className="font-medium">آخر سعر:</span> {formatMoney(car["current_bid"] || 0)}</li>
-                                <li><span className="font-medium">التغير:</span> {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
-</li>
-                              </ul>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
+                    {car.auction_type != "live" && car["car"].auction_status == "in_auction" && (
+                      <>
+                        <tr className="hover:bg-gray-50 cursor-pointer">
+                          <td className="px-2 whitespace-nowrap">
+                            <button
+                              onClick={() => toggleRowExpansion(idx)}
+                              className="text-gray-500 hover:text-purple-600"
+                            >
+                              {expandedRows[idx] ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].city}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].year}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["minimum_bid"] || 0)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-purple-600">
+                            {formatMoney(car["current_bid"] || 0)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold `}>
+                              {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-purple-600 underline">
+                            <a href={`../../carDetails/${car.car_id}`} target="_blank">عرض</a>
+                          </td>
+                        </tr>
+
+                        {/* صف التفاصيل الإضافية */}
+                        {expandedRows[idx] && (
+                          <tr className="bg-gray-50">
+                            <td colSpan={8} className="px-4 py-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                  <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    <li><span className="font-medium">العداد:</span> {car['car'].odometer} كم</li>
+                                    <li><span className="font-medium">حالة السيارة:</span> {car['car'].condition || 'جيدة'}</li>
+                                    <li><span className="font-medium">اللون:</span> {car['car'].color}</li>
+                                    <li><span className="font-medium">نوع الوقود:</span> {car['car'].engine}</li>
+                                  </ul>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-semibold text-gray-700 mb-2">معلومات المزايدة</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    <li><span className="font-medium">المزايدات المقدمة:</span> {car['bids'].length}</li>
+                                    <li><span className="font-medium">حالة المزايدة:</span> {car["status"] || 'مغلق'}</li>
+                                    <li><span className="font-medium">نتيجة المزايدة:</span> {car["car"].auction_status}</li>
+                                  </ul>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-semibold text-gray-700 mb-2">معلومات الأسعار</h4>
+                                  <ul className="space-y-1 text-sm">
+                                    <li><span className="font-medium">سعر الإفتتاح:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
+                                    <li><span className="font-medium">أقل سعر:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
+                                    <li><span className="font-medium">أعلى سعر:</span> {formatMoney(car["maximum_bid"] || 0)}</li>
+                                    <li><span className="font-medium">آخر سعر:</span> {formatMoney(car["current_bid"] || 0)}</li>
+                                    <li><span className="font-medium">التغير:</span> {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     )}
-                                        </>
-                  )}
                   </Fragment>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </div></>
       )}
     </div>
   );

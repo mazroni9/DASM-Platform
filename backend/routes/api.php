@@ -19,12 +19,72 @@ use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
+use Carbon\Carbon;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
+
+Route::get('/check-time', function (Request $request) {
+    $page = $request->query('page');
+
+    $pageTimeRanges = [
+        'live_auction' => [
+            ['start' => '16:00:00', 'end' => '18:59:59'],
+        ],
+        'instant_auction' => [
+            ['start' => '19:00:00', 'end' => '21:59:59'],
+        ],
+        'late_auction' => [
+            ['start' => '22:00:00', 'end' => '15:59:59'], // overnight
+        ]
+    ];
+
+    if (!isset($pageTimeRanges[$page])) {
+        return response()->json(['error' => 'Page not found', 'allowed' => false], 404);
+    }
+
+    $now = Carbon::now('GMT+3');
+    $isAllowed = false;
+    $remainingSeconds = null;
+
+    foreach ($pageTimeRanges[$page] as $range) {
+        // Create start and end as full datetime
+        $start = Carbon::createFromFormat('H:i:s', $range['start'], 'GMT+3')->setDate(
+            $now->year,
+            $now->month,
+            $now->day
+        );
+        $end = Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')->setDate(
+            $now->year,
+            $now->month,
+            $now->day
+        );
+
+        // Handle overnight ranges (end < start)
+        if ($end->lessThanOrEqualTo($start)) {
+            $end->addDay(); // end is tomorrow
+        }
+
+        // Check if current time is within the range
+        if ($now->between($start, $end)) {
+            $isAllowed = true;
+            $remainingSeconds = $end->diffInSeconds($now);
+            break;
+        }
+    }
+
+    return response()->json([
+        'page' => $page,
+        'current_time' => $now->format('H:i:s'),
+        'allowed' => $isAllowed,
+        'remaining_seconds' => $remainingSeconds,
+        'remaining_time' => $remainingSeconds ? gmdate("H:i:s", $remainingSeconds) : null,
+        'timezone' => 'GMT+3'
+    ]);
+});
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);

@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/utils";
+import Countdown from "@/components/Countdown";
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getAuctionStatus(auction: any): string {
     console.log(auction);
@@ -23,7 +24,15 @@ function getAuctionStatus(auction: any): string {
     }
 }
 
+
+async function isWithinAllowedTime(page: string): Promise<boolean> {
+    const response = await api.get(`api/check-time?page=${page}`);
+    console.log(response);
+    return response.data.allowed;
+}
+
 export default function InstantAuctionPage() {
+      const [isAllowed,setIsAllowed]=useState(true);
     const [cars, setCars] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -55,6 +64,8 @@ export default function InstantAuctionPage() {
         async function fetchAuctions() {
             if (!isLoggedIn) return;
             try {
+                              //check
+                setIsAllowed(await isWithinAllowedTime('instant_auction'));
                 const response = await api.get("/api/approved-auctions");
                 if (response.data.data || response.data.data) {
                     const carsData =response.data.data.data || response.data.data;
@@ -228,21 +239,7 @@ export default function InstantAuctionPage() {
                     <span>العودة</span>
                 </Link>
             </div>
-            {!loading && !error && cars.length === 0 && (
-                <><div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold">
-                        السوق الفوري المباشر - جميع السيارات
-                    </h1>
-                    <div className="text-sm text-purple-600 mt-1">
-                        وقت السوق من 7 مساءً إلى 10 مساءً كل يوم
-                    </div>
-                </div><div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-                        <p>لا توجد سيارات متاحة في السوق الفوري حالياً</p>
-                    </div></>
-            )}
-        {!loading && !error && cars.length > 0 && (
-                      <>
-                      <div className="text-center mb-6">
+            <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold">
                         السوق الفوري المباشر - جميع السيارات
                     </h1>
@@ -250,6 +247,18 @@ export default function InstantAuctionPage() {
                         وقت السوق من 7 مساءً إلى 10 مساءً كل يوم
                     </div>
                 </div>
+            {!loading && !error && cars.length === 0 && (
+                <><div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                        <p>لا توجد سيارات متاحة في السوق الفوري حالياً</p>
+                    </div></>
+            )}
+      {!isAllowed &&(
+        <div><p>  السوق ليس مفتوح الان سوف يفتح كما موضح في الوقت الأعلى</p></div>
+      )}
+        {!loading && !error && cars.length > 0 && isAllowed && (
+                      <>
+                      <Countdown page="instant_auction"/>
+                      <br/>
                       <div className="overflow-x-auto">
                         <table className="min-w-full border border-gray-300">
                             <thead className="bg-gray-100">
