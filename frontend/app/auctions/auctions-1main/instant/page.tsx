@@ -257,7 +257,7 @@ export default function InstantAuctionPage() {
       )}
         {!loading && !error && cars.length > 0 && isAllowed && (
                       <>
-                      <Countdown page="instant_auction"/>
+                     {/* <Countdown page="instant_auction"/>*/} 
                       <br/>
                       <div className="overflow-x-auto">
                         <table className="min-w-full border border-gray-300">

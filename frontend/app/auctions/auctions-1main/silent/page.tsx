@@ -175,7 +175,8 @@ export default function SilentAuctionPage() {
       )}
       {!loading && !error && cars.length > 0 && isAllowed && (
                               <>
-                              <Countdown page="late_auction" />
+                              {/* <Countdown page="late_auction"/>*/} 
+
                               <br />
                               <div className="bg-white p-4 rounded-lg shadow-sm">
           {/* عنوان قسم النتائج */}

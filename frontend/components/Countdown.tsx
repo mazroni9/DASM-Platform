@@ -16,18 +16,24 @@ const Countdown: React.FC<CountdownProps> = ({ page }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
-      const today = now.toISOString().split('T')[0];
+      const todayStr = now.toISOString().split('T')[0];
       const ranges = pageTimeRanges[page];
 
       let ongoingEnd: Date | null = null;
 
       for (const range of ranges) {
-        let start = new Date(`${today}T${range.start}`);
-        let end = new Date(`${today}T${range.end}`);
+        let start = new Date(`${todayStr}T${range.start}`);
+        let end = new Date(`${todayStr}T${range.end}`);
 
-        // Handle overnight ranges
         if (end <= start) {
-          end.setDate(end.getDate() + 1);
+          // Overnight case
+          if (now < end) {
+            // We're in the morning part of the range → start was yesterday
+            start.setDate(start.getDate() - 1);
+          } else {
+            // We're in the evening part → end is tomorrow
+            end.setDate(end.getDate() + 1);
+          }
         }
 
         if (now >= start && now <= end) {
@@ -42,7 +48,6 @@ const Countdown: React.FC<CountdownProps> = ({ page }) => {
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-        // Format with Arabic labels
         const formatted = `${hours} ساعة : ${minutes} دقيقة : ${seconds} ثانية`;
         setRemainingTime(formatted);
       } else {

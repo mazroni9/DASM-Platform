@@ -134,13 +134,23 @@ export default function AuctionsMainPage() {
             >
               {/* إضافة صورة الخلفية حسب نوع المزاد */}
               {auction.slug === 'live-market' && (
-                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/showroom.jpg')` }}></div>
-              )}
+<div
+  className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat"
+  style={{
+    backgroundImage: `url('/showroom.jpg')`,
+    width: '100%',
+    height: '100%'
+  }}
+></div>              )}
               {auction.slug === 'instant' && (
-                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/grok auctioneer.jpg')` }}></div>
+                <div className="absolute inset-0 opacity-60 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/grok auctioneer.jpg')`,
+    width: '100%',
+    height: '100%' }}></div>
               )}
               {auction.slug === 'silent' && (
-                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/showroom.jpg')` }}></div>
+                <div className="absolute inset-0 opacity-60 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/late_auction.jpg')`,
+    width: '100%',
+    height: '100%' }}></div>
               )}
               
               {/* العنوان والأيقونة بجانب بعضهما */}
@@ -154,7 +164,7 @@ export default function AuctionsMainPage() {
               <p className="text-gray-600 text-sm text-center mb-4 flex-grow relative z-10">{auction.description} <br/>{auction.time} 
               <br/>
               <br/>
-                 <Countdown page={auction.currentPage as 'live_auction' | 'instant_auction' | 'late_auction'}/>
+        {/*<Countdown page={auction.currentPage as 'live_auction' | 'instant_auction' | 'late_auction'}/>*/}
                   <br/>
               </p>
               

@@ -51,24 +51,22 @@ Route::get('/check-time', function (Request $request) {
     $remainingSeconds = null;
 
     foreach ($pageTimeRanges[$page] as $range) {
-        // Create start and end as full datetime
-        $start = Carbon::createFromFormat('H:i:s', $range['start'], 'GMT+3')->setDate(
-            $now->year,
-            $now->month,
-            $now->day
-        );
-        $end = Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')->setDate(
-            $now->year,
-            $now->month,
-            $now->day
-        );
+        $start = Carbon::createFromFormat('H:i:s', $range['start'], 'GMT+3')
+            ->setDate($now->year, $now->month, $now->day);
+        $end =Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')
+            ->setDate($now->year, $now->month, $now->day);
 
-        // Handle overnight ranges (end < start)
         if ($end->lessThanOrEqualTo($start)) {
-            $end->addDay(); // end is tomorrow
+            // Overnight case
+            if ($now->lessThan($end)) {
+                // Current time is after midnight but before end time → start was yesterday
+                $start->subDay();
+            } else {
+                // Current time is after start → end is tomorrow
+                $end->addDay();
+            }
         }
 
-        // Check if current time is within the range
         if ($now->between($start, $end)) {
             $isAllowed = true;
             $remainingSeconds = $end->diffInSeconds($now);
@@ -85,6 +83,7 @@ Route::get('/check-time', function (Request $request) {
         'timezone' => 'GMT+3'
     ]);
 });
+
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
