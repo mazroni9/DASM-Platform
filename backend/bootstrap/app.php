@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
              HandleInertiaRequests::class,
 
         ]);
+      
+
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

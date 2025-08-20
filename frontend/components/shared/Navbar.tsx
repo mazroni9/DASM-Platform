@@ -36,7 +36,7 @@ const Navbar = () => {
 */
 
     const navigationItems: NavigationItem[] = [
-        { href: "/auctions", label: "المزادات", icon: Store },
+        { href: "/auctions", label: "الأسواق", icon: Store },
     ];
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
@@ -112,13 +112,13 @@ const Navbar = () => {
                         <Link href="/" className="flex items-center gap-2 sm:gap-4">
                             <Image
                                 src="/logo.jpg"
-                                alt="أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية"
+                                alt="أسواق المزادات الرقمية المتخصصة "
                                 width={32}
                                 height={32}
                                 className="rounded-full sm:w-10 sm:h-10"
                             />
                             <span className="font-bold text-sm sm:text-base lg:text-lg  xs:block">
-                                <span className="hidden sm:inline">أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية</span>
+                                <span className="hidden sm:inline">أسواق المزادات الرقمية المتخصصة</span>
                                 <span className="text-blue-700"> DASM-e </span>
                             </span>
                         </Link>

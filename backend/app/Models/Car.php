@@ -2,28 +2,30 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\CarReportImage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Car extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'dealer_id', 
+        'dealer_id',
         'user_id',  // Added user_id to fillable
-        'make', 
-        'model', 
-        'year', 
-        'vin', 
-        'odometer', 
-        'condition', 
-        'evaluation_price', 
+        'make',
+        'model',
+        'year',
+        'vin',
+        'odometer',
+        'condition',
+        'evaluation_price',
         'auction_status',
         'color',
         'engine',
         'transmission',
         'description',
+        'registration_card_image',
         'images'
     ];
 
@@ -34,7 +36,7 @@ class Car extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         // Set default auction_status to 'pending' if not provided
         static::creating(function ($car) {
             if (!$car->auction_status) {
@@ -60,10 +62,15 @@ class Car extends Model
     {
         return $this->hasMany(Auction::class);
     }
-    
+
     // Get the owner of the car (either dealer or user)
     public function getOwnerAttribute()
     {
         return $this->dealer_id ? $this->dealer->user : $this->user;
+    }
+
+    public function reportImages()
+    {
+        return $this->hasMany(CarReportImage::class);
     }
 }

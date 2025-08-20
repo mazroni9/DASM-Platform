@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\Bid;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Auction;
 use App\Enums\AuctionStatus;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use App\Models\CommissionTier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\NewBidNotification;
 use Illuminate\Support\Facades\Validator;
 
 class BidController extends Controller
@@ -165,6 +167,7 @@ class BidController extends Controller
             }
 
             DB::commit();
+            $user = $auction->car->owner;
 
             // Notify dealer of new bid (could be done with events)
             // BidPlaced::dispatch($bid);
@@ -360,16 +363,16 @@ class BidController extends Controller
                 ], 400);
             }
 
-            $evaluation_price = $auction->car?->evaluation_price;
-            $commission = CommissionTier::getCommissionForPrice($evaluation_price);
-            $available_balance = $user->wallet?->available_balance ?? 0;
+            // $evaluation_price = $auction->car?->evaluation_price;
+            // $commission = CommissionTier::getCommissionForPrice($evaluation_price);
+            // $available_balance = $user->wallet?->available_balance ?? 0;
 
-            if ($available_balance <  $commission) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'ليس لديك رصيد كافي للمزايدة. يجب أن يكون لديك على الأقل ' . number_format($commission, 2) . ' ريال في محفظتك. رصيدك الحالي: ' . number_format($available_balance, 2) . ' ريال. الرجاء شحن محفظتك لتتمكن من المزايدة'
-                ], 400);
-            }
+            // if ($available_balance <  $commission) {
+            //     return response()->json([
+            //         'status' => 'error',
+            //         'message' => 'ليس لديك رصيد كافي للمزايدة. يجب أن يكون لديك على الأقل ' . number_format($commission, 2) . ' ريال في محفظتك. رصيدك الحالي: ' . number_format($available_balance, 2) . ' ريال. الرجاء شحن محفظتك لتتمكن من المزايدة'
+            //     ], 400);
+            // }
 
             // $user->wallet->available_balance -= $commission;
             // $user->wallet->save();
@@ -398,7 +401,9 @@ class BidController extends Controller
 
             // Trigger event for real-time updates (if using broadcasting)
             // event(new \App\Events\NewBidPlaced($bid));
-
+            $owner = $auction->car->owner;
+            $owner = User::find($owner->id);
+            $owner->notify(new NewBidNotification());
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',

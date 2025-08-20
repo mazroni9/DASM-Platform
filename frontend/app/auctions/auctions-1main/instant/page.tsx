@@ -65,7 +65,8 @@ export default function InstantAuctionPage() {
             if (!isLoggedIn) return;
             try {
                               //check
-                setIsAllowed(await isWithinAllowedTime('instant_auction'));
+                //setIsAllowed(await isWithinAllowedTime('instant_auction'));
+                setIsAllowed(true);
                 const response = await api.get("/api/approved-auctions");
                 if (response.data.data || response.data.data) {
                     const carsData =response.data.data.data || response.data.data;

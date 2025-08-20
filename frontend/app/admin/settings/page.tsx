@@ -7,7 +7,7 @@ import {
     Bell,
     Shield,
     DollarSign,
-    Mail,
+    SaudiRiyal,
     Database,
     Save,
     AlertTriangle,
@@ -24,6 +24,7 @@ interface SystemSettings {
     supportEmail: string;
     platformFee: number;
     tamFee: number;
+    CarEntryFees: number;
     auctionDuration: number;
     emailNotifications: boolean;
     smsNotifications: boolean;
@@ -39,8 +40,9 @@ export default function AdminSettingsPage() {
         siteUrl: "https://mazbrothers.com",
         adminEmail: "admin@mazbrothers.com",
         supportEmail: "support@mazbrothers.com",
-        platformFee: 5.0,
-        tamFee: 2.5,
+        platformFee: 0,
+        tamFee: 0,
+        CarEntryFees: 0,
         auctionDuration: 24,
         emailNotifications: true,
         smsNotifications: false,
@@ -84,17 +86,20 @@ export default function AdminSettingsPage() {
             setSaving(true);
             const response = await api.put("/api/admin/settings", settings);
             if (response.data && response.data.status === "success") {
-                toast.success("تم حفظ الإعدادات بنجاح");
+                toast.success(response.data.message || "تم حفظ الإعدادات بنجاح");
             } else {
-                // Simulate success for development
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-                toast.success("تم حفظ الإعدادات بنجاح");
+                toast.error(response.data.message || "فشل حفظ الإعدادات");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving settings:", error);
-            // Simulate success for development
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            toast.success("تم حفظ الإعدادات بنجاح (وضع التطوير)");
+            const errorMessage =
+                error.response?.data?.message || "حدث خطأ أثناء حفظ الإعدادات";
+            toast.error(errorMessage);
+            if (error.response?.data?.errors) {
+                Object.values(error.response.data.errors).forEach((err: any) => {
+                    toast.error(err[0]);
+                });
+            }
         } finally {
             setSaving(false);
         }
@@ -111,7 +116,7 @@ export default function AdminSettingsPage() {
         { id: "general", name: "عام", icon: Settings },
         { id: "notifications", name: "الإشعارات", icon: Bell },
         { id: "security", name: "الأمان", icon: Shield },
-        { id: "financial", name: "المالية", icon: DollarSign },
+        { id: "financial", name: "المالية", icon: SaudiRiyal },
         { id: "system", name: "النظام", icon: Database },
     ];
 
@@ -379,14 +384,14 @@ export default function AdminSettingsPage() {
                 {activeTab === "financial" && (
                     <div className="p-6 space-y-6">
                         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                            <DollarSign className="w-5 h-5" />
+                            <SaudiRiyal className="w-5 h-5" />
                             الإعدادات المالية
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    عمولة المنصة (%)
+                                    عربون دخول المزاد
                                 </label>
                                 <input
                                     type="number"
@@ -401,13 +406,13 @@ export default function AdminSettingsPage() {
                                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                    عمولة المنصة من كل عملية بيع
+                                    عربون دخول المزاد للمشتري 
                                 </p>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    رسوم تام (%)
+                                    رسوم تام 
                                 </label>
                                 <input
                                     type="number"
@@ -423,6 +428,26 @@ export default function AdminSettingsPage() {
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
                                     رسوم تام من كل عملية بيع
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    رسوم ادخال السيارة للمزاد 
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={settings.CarEntryFees}
+                                    onChange={(e) =>
+                                        handleInputChange(
+                                            "CarEntryFees",
+                                            parseFloat(e.target.value)
+                                        )
+                                    }
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    رسوم ادخال السيارة للمزاد يدفعها البائع 
                                 </p>
                             </div>
                         </div>
