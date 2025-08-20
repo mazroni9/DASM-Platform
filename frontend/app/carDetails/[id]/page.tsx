@@ -167,7 +167,7 @@ export default function CarDetailPage() {
                         response.data.data.data || response.data.data;
                     setLastBid(
                         roundToNearest5or0(
-                            carsData.active_auction.current_bid
+                            carsData.active_auction?.current_bid || 0
                         ) + 100
                     );
                     // تعامل مع هيكل البيانات من API
@@ -223,7 +223,7 @@ export default function CarDetailPage() {
         );
     }
 
-            const images = item['car'].images;
+            const images = item['car']?.images;
         // الصورة الحالية المختارة
             const currentImage = images[selectedImageIndex];
             
@@ -283,32 +283,11 @@ export default function CarDetailPage() {
                         className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
                     >
                         <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
-                        <span>العودة إلى المزادات</span>
+                        <span>العودة إلى الأسواق</span>
                     </Link>
                     {isOwner && (
                         <button
-                            onClick={async () => {
-                                const type = getCurrentAuctionType();
-                                const resultText =
-                                    type === "live"
-                                        ? "تم البيع في الحراج المباشر"
-                                        : type === "immediate"
-                                        ? "تم البيع في السوق الفوري"
-                                        : "تم البيع في السوق المتأخر";
-
-                                await fetch("/api/items/confirm-sale", {
-                                    method: "POST",
-                                    body: JSON.stringify({
-                                        itemId: item.id,
-                                        result: resultText,
-                                    }),
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                    },
-                                });
-
-                                alert(resultText);
-                            }}
+                            onClick={() => router.push(`/sales/confirm/${carId}`)}
                             className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded"
                         >
                             تأكيد البيع
@@ -616,6 +595,39 @@ export default function CarDetailPage() {
                                         </p>
                                         <p className="font-semibold">
                                             {item["car"].color || "-"}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500 text-sm">
+                                           صورة كرت التسجيل
+                                        </p>
+                                        <p className="font-semibold">
+                                            {item["car"].registration_card_image ? (
+                                                <a 
+                                                    href={item["car"].registration_card_image} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-block"
+                                                >
+                                                    <img 
+                                                        src={item["car"].registration_card_image} 
+                                                        alt="صورة كرت التسجيل" 
+                                                        className="w-20 h-auto rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                                    />
+                                                </a>
+                                            ) : "-"}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500 text-sm">
+                                             تقارير الفحص
+                                        </p>
+                                        <p className="font-semibold">
+                                            {item["car"].report_images.map((file: any) => (
+                                                <div key={file.id}>
+                                                    <a href={file.image_path}>{file.image_path.split('/').pop()}</a>
+                                                </div>
+                                            )) || "-"}
                                         </p>
                                     </div>
                                 </div>

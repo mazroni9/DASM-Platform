@@ -15,7 +15,7 @@ class CloudinaryService
      * @var Cloudinary
      */
     protected $cloudinary;
-    
+
     /**
      * Create a new CloudinaryService instance.
      *
@@ -25,7 +25,7 @@ class CloudinaryService
     {
         $this->cloudinary = $cloudinary;
     }
-    
+
     /**
      * Upload an image to Cloudinary
      *
@@ -45,29 +45,57 @@ class CloudinaryService
                 'folder' => $folder,
                 'public_id' => $publicId
             ]);
-            
+
+            // Check if file is a document or PDF
+            $mimeType = $file->getMimeType();
+            $isDocument = in_array($mimeType, [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            ]);
+
             // Build upload options with SSL verification disabled for development
             $uploadOptions = [
                 'folder' => $folder,
-                'resource_type' => 'image',
-                'format' => 'jpg',
-                'quality' => 'auto',
-                'fetch_format' => 'auto',
+                'resource_type' => $isDocument ? 'raw' : 'image',
                 'verify' => false // Disable SSL verification as per StackOverflow solution
             ];
-            
+
+
+            if ($publicId) {
+                // إذا كان مستند ولا يحتوي على امتداد، أضف الامتداد
+                if ($isDocument && !pathinfo($publicId, PATHINFO_EXTENSION)) {
+                    $extension = $file->getClientOriginalExtension();
+                    $publicId = $publicId . '.' . $extension;
+                }
+                $uploadOptions['public_id'] = $publicId;
+            }
+
+            // Add document-specific or image-specific options
+            // if ($isDocument) {
+            //     $uploadOptions['raw_convert'] = 'aspose';
+            // } else {
+            //     $uploadOptions['format'] = 'jpg';
+            //     $uploadOptions['quality'] = 'auto';
+            //     $uploadOptions['fetch_format'] = 'auto';
+            // }
+
             // Add public_id if provided
             if ($publicId) {
                 $uploadOptions['public_id'] = $publicId;
             }
-            
+
             // Configure HTTP client to handle SSL issues in development
             $httpOptions = [
                 'verify' => false, // Disable SSL verification for development
                 'timeout' => 30,
                 'connect_timeout' => 10
             ];
-            
+
             // Create a new Cloudinary instance with proper configuration
             $cloudinary = new Cloudinary([
                 'cloud' => [
@@ -80,18 +108,18 @@ class CloudinaryService
                 ],
                 'http' => $httpOptions
             ]);
-            
+
             // Upload using the configured instance with verify=false
             $result = $cloudinary->uploadApi()->upload($file->getRealPath(), $uploadOptions);
-            
+
             // Log successful upload
             Log::info('Cloudinary upload successful', [
                 'secure_url' => $result['secure_url'],
                 'public_id' => $result['public_id']
             ]);
-            
+
             return $result['secure_url'];
-            
+
         } catch (\Exception $e) {
             // Log the detailed error
             Log::error('Cloudinary upload failed: ' . $e->getMessage(), [
@@ -100,22 +128,22 @@ class CloudinaryService
                 'line' => $e->getLine(),
                 'message' => $e->getMessage()
             ]);
-            
+
             // Try to save locally as fallback
             try {
                 $filename = 'car_' . time() . '_' . rand(1000, 9999) . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('temp', $filename, 'public');
-                
+
                 Log::info('Image saved locally as fallback', [
                     'path' => $path,
                     'filename' => $filename
                 ]);
-                
+
                 return '/storage/' . $path;
-                
+
             } catch (\Exception $localException) {
                 Log::error('Local storage fallback also failed: ' . $localException->getMessage());
-                
+
                 // Return a placeholder URL as last resort
                 return '/uploads/failed/placeholder_' . time() . '_' . rand(1000, 9999) . '.jpg';
             }

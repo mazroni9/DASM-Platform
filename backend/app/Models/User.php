@@ -7,19 +7,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+//use Illuminate\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable
+use App\Models\DeviceToken;
+
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    // Allow mass assignment for these fields.
+
     protected $fillable = [
         'first_name',
         'last_name',
-        'email', 
-        'phone', 
-        'password_hash', 
-        'role', 
+        'email',
+        'phone',
+        'password_hash',
+        'role',
         'kyc_status',
         'email_verified_at',
         'email_verification_token',
@@ -57,12 +61,22 @@ class User extends Authenticatable
         return $this->hasOne(Dealer::class);
     }
 
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    public function routeNotificationForFcm()
+    {
+        return $this->deviceTokens()->pluck('token')->toArray();
+    }
+
     // Check if email is verified
     public function hasVerifiedEmail()
     {
         return $this->email_verified_at !== null;
     }
-    
+
     // Mark email as verified
     public function markEmailAsVerified()
     {

@@ -3,16 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
+use Inertia\Inertia;
+use Inertia\Response;
 use App\Models\Dealer;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
+use App\Services\CloudinaryService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Services\CloudinaryService;
-use Inertia\Response;
-use Inertia\Inertia;
 
-    // Helper function
+// Helper function
 
 class CarController extends Controller
 {
@@ -44,76 +45,72 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $query = null;
-        
+
         // Handle both user types: dealer or regular user
         if ($user->role === 'dealer' && $user->dealer) {
             $query = Car::where('dealer_id', $user->dealer->id);
         } else {
             $query = Car::where('user_id', $user->id);
         }
-        
+
 
         $query->with('auctions');
-        
+
         // Filter by condition
         if ($request->has('condition')) {
             $query->where('condition', $request->condition);
         }
-        
+
         // Filter by auction status
         if ($request->has('auction_status')) {
             $query->where('auction_status', $request->auction_status);
         }
-        
+
         // Filter by make
         if ($request->has('make')) {
             $query->where('make', 'like', '%' . $request->make . '%');
         }
-        
+
         // Filter by model
         if ($request->has('model')) {
             $query->where('model', 'like', '%' . $request->model . '%');
         }
-        
+
         // Filter by year
         if ($request->has('year')) {
             $query->where('year', $request->year);
         }
-        
+
         // Sort options
         $sortField = $request->input('sort_by', 'id');
         $sortDirection = $request->input('sort_dir', 'desc');
-        $allowedSortFields = ['id','created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
-        
+        $allowedSortFields = ['id', 'created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
+
         if (in_array($sortField, $allowedSortFields)) {
             $query->orderBy($sortField, $sortDirection);
         }
-        $cars= $query->paginate(10);
+        $cars = $query->paginate(10);
 
-    
+
         return response()->json([
             'status' => 'success',
             'data' => $cars
         ]);
-   
- 
-    
-      
     }
 
 
 
     public function getAddedCars(Request $request)
     {
-         $user = Auth::user();
-         // Handle both user types: dealer or regular user
+        $user = Auth::user();
+        // Handle both user types: dealer or regular user
         if ($user->role === 'dealer' && $user->dealer) {
             $query = Car::where('dealer_id', $user->dealer->id);
-        } 
+        }
 
         $cars = $query->paginate(10);
 
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $cars
@@ -134,6 +131,7 @@ class CarController extends Controller
      */
     public function store(Request $request)
     {
+
         // Debug: Log the incoming request data
         \Log::info('Car store request data:', [
             'all_data' => $request->all(),
@@ -169,17 +167,17 @@ class CarController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $user = Auth::user();
         $car = new Car();
-        
+
         // Associate car with dealer if user is dealer, otherwise with user directly
         if ($user->role === 'dealer' && $user->dealer) {
             $car->dealer_id = $user->dealer->id;
         } else {
             $car->user_id = $user->id;
         }
-        
+
         // Map Arabic condition values to English database enum values
         $conditionMap = [
             'ممتازة' => 'excellent',
@@ -189,7 +187,7 @@ class CarController extends Controller
             'متوسطة' => 'fair',
             'تحتاج إصلاح' => 'poor'
         ];
-        
+
         // Map Arabic transmission values to English database enum values
         $transmissionMap = [
             'أوتوماتيك' => 'automatic',
@@ -197,7 +195,7 @@ class CarController extends Controller
             'نصف أوتوماتيك' => 'cvt', // Map semi-automatic to CVT
             'cvt' => 'cvt'
         ];
-        
+
         // Use the mapped values or fallback to defaults if no match
         $car->make = $request->make;
         $car->province = $request->province;
@@ -214,27 +212,51 @@ class CarController extends Controller
         $car->description = $request->description ?? null;
         $car->plate = $request->plate ?? null;
         $car->auction_status = 'available';
-         $car->min_price = $request->min_price;
-         $car->max_price = $request->max_price;
+        $car->min_price = $request->min_price;
+        $car->max_price = $request->max_price;
         $car->save();
-        
+
         // Log debug information about image files
         $this->logImageDebugInfo($request);
-        
+
         // Handle car images upload with our improved method
         $uploadedImages = $this->handleCarImageUpload($request, $car);
-        
+
+
+
         // If we have uploaded images, save them to the car
         if (!empty($uploadedImages)) {
             $car->images = $uploadedImages;
             $car->save();
-            
+
             \Log::info('Images saved to car', [
                 'car_id' => $car->id,
                 'image_count' => count($uploadedImages)
             ]);
         }
-        
+
+        // Handle car report images upload
+        $uploadedReportImages = $this->handleCarReportImageUpload($request, $car);
+
+        if (!empty($uploadedReportImages)) {
+            $car->reportImages()->createMany($uploadedReportImages);
+            $car->save();
+        }
+
+        // Handle registration card image upload
+        if ($request->hasFile('registration_card_image')) {
+            $image = $request->file('registration_card_image');
+            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+
+            $uploadedRegistrationCardImage = $this->cloudinaryService->uploadImage(
+                $image,
+                'cars',
+                $publicId
+            );
+            $car->registration_card_image = $uploadedRegistrationCardImage;
+            $car->save();
+        }
+
         // Log summary information about the car and images
         \Log::info('Car created successfully', [
             'car_id' => $car->id,
@@ -242,7 +264,7 @@ class CarController extends Controller
             'model' => $car->model,
             'images_saved' => !empty($uploadedImages) ? count($uploadedImages) : 0
         ]);
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Car added successfully',
@@ -260,7 +282,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $car = null;
-        
+
         // Allow admins to view any car
         if ($user->role === 'admin') {
             $car = Car::find($id);
@@ -275,14 +297,14 @@ class CarController extends Controller
                 ->where('user_id', $user->id)
                 ->first();
         }
-            
+
         if (!$car) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Car not found or you do not have permission to view it'
             ], 404);
         }
-        
+
         // Get active auction if exists
         $activeAuction = $car->auctions()
             ->whereIn('status', [
@@ -290,7 +312,7 @@ class CarController extends Controller
                 AuctionStatus::ACTIVE->value
             ])
             ->first();
-        
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -310,31 +332,33 @@ class CarController extends Controller
     public function showOnly($id)
     {
         $user = Auth::user();
-        $car = Car::find($id);
+        $car = Car::with('reportImages')->find($id);
         $car->load('dealer');
 
         if (!$car) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Car not found or you do not have permission to view it',
-                'data'=>$car
+                'data' => $car
             ], 404);
         }
-        
+
         // Get active auction if exists
         $activeAuction = $car->auctions()
             ->whereIn('status', [
                 AuctionStatus::SCHEDULED->value,
                 AuctionStatus::ACTIVE->value
-            ])->first();
-              
-         $activeAuction->load('bids');    
+            ])
+            ->with('bids')
+            ->first();
+
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'car' => $car,
                 'active_auction' => $activeAuction,
-                'total_bids' => $activeAuction->bids->count()
+                'total_bids' => $activeAuction ? $activeAuction->bids->count() : 0
             ]
         ]);
     }
@@ -350,7 +374,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $car = null;
-        
+
         // Retrieve car based on user role
         if ($user->role === 'dealer' && $user->dealer) {
             $car = Car::where('id', $id)
@@ -361,14 +385,14 @@ class CarController extends Controller
                 ->where('user_id', $user->id)
                 ->first();
         }
-            
+
         if (!$car) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Car not found or you do not have permission to update it'
             ], 404);
         }
-        
+
         // Prevent updates if car is in active auction
         if (in_array($car->auction_status, ['scheduled', 'active'])) {
             return response()->json([
@@ -376,7 +400,7 @@ class CarController extends Controller
                 'message' => 'Cannot update car details while it is in an active or scheduled auction'
             ], 400);
         }
-        
+
         $validator = Validator::make($request->all(), [
             'make' => 'sometimes|string|max:50',
             'model' => 'sometimes|string|max:50',
@@ -397,7 +421,7 @@ class CarController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         // Update car fields that are allowed to be updated
         if ($request->has('make')) $car->make = $request->make;
         if ($request->has('model')) $car->model = $request->model;
@@ -410,21 +434,21 @@ class CarController extends Controller
         if ($request->has('engine')) $car->engine = $request->engine;
         if ($request->has('transmission')) $car->transmission = $request->transmission;
         if ($request->has('description')) $car->description = $request->description;
-         if ($request->has('min_price')) $car->min_price = $request->min_price;
-          if ($request->has('max_price')) $car->max_price = $request->max_price;
+        if ($request->has('min_price')) $car->min_price = $request->min_price;
+        if ($request->has('max_price')) $car->max_price = $request->max_price;
         // Handle car images upload if any
         if ($request->hasFile('images')) {
             $uploadedImages = [];
-            
+
             foreach ($request->file('images') as $image) {
                 try {
                     // Use our CloudinaryService to handle uploads
                     $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
                     $imageUrl = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
-                    
+
                     // Add the URL to the uploaded images array
                     $uploadedImages[] = $imageUrl;
-                    
+
                     \Log::info('Successfully uploaded car image', [
                         'image_url' => $imageUrl
                     ]);
@@ -434,12 +458,12 @@ class CarController extends Controller
                         'file' => $e->getFile(),
                         'line' => $e->getLine()
                     ]);
-                    
+
                     // Use a local fallback path for testing
                     $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
                 }
             }
-            
+
             // If existing images should be kept, merge with new ones
             if ($request->has('keep_existing_images') && $request->keep_existing_images) {
                 $existingImages = $car->images ?? [];
@@ -448,9 +472,9 @@ class CarController extends Controller
                 $car->images = $uploadedImages;
             }
         }
-        
+
         $car->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Car updated successfully',
@@ -468,7 +492,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $car = null;
-        
+
         // Retrieve car based on user role
         if ($user->role === 'dealer' && $user->dealer) {
             $car = Car::where('id', $id)
@@ -479,14 +503,14 @@ class CarController extends Controller
                 ->where('user_id', $user->id)
                 ->first();
         }
-            
+
         if (!$car) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Car not found or you do not have permission to delete it'
             ], 404);
         }
-        
+
         // Check if car is in any active auctions
         $activeAuction = $car->auctions()
             ->whereIn('status', [
@@ -494,23 +518,23 @@ class CarController extends Controller
                 AuctionStatus::ACTIVE->value
             ])
             ->exists();
-            
+
         if ($activeAuction) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'This car cannot be deleted as it is currently scheduled for or in an active auction'
             ], 400);
         }
-        
+
         // Delete the car
         $car->delete();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Car deleted successfully'
         ]);
     }
-    
+
     /**
      * Get car statistics/dashboard for the user
      *
@@ -520,39 +544,39 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $query = null;
-        
+
         // Get stats based on user role
         if ($user->role === 'dealer' && $user->dealer) {
             $query = Car::where('dealer_id', $user->dealer->id);
         } else {
             $query = Car::where('user_id', $user->id);
         }
-        
+
         // Total cars
         $totalCars = $query->count();
-        
+
         // Cars by condition
         $carsByCondition = (clone $query)
             ->selectRaw('condition, COUNT(*) as count')
             ->groupBy('condition')
             ->get();
-            
+
         // Cars by auction status
         $carsByAuctionStatus = (clone $query)
             ->selectRaw('auction_status, COUNT(*) as count')
             ->groupBy('auction_status')
             ->get();
-            
+
         // Total inventory value
         $inventoryValue = (clone $query)
             ->sum('evaluation_price');
-            
+
         // Recently added cars
         $recentCars = (clone $query)
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-            
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -564,10 +588,10 @@ class CarController extends Controller
             ]
         ]);
     }
-    
+
     /**
      * Helper method to handle image upload debugging
-     * 
+     *
      * @param Request $request
      * @return void
      */
@@ -582,14 +606,14 @@ class CarController extends Controller
             'files_in_request' => array_keys($request->allFiles()),
             'request_content_type' => $request->header('Content-Type')
         ]);
-        
+
         if ($request->hasFile('images')) {
             \Log::info('Images detected', [
                 'count' => is_array($request->file('images')) ? count($request->file('images')) : '1 (not array)'
             ]);
         }
     }
-    
+
     /**
      * Handle upload to Cloudinary
      *
@@ -604,30 +628,30 @@ class CarController extends Controller
             $cloudName = config('cloudinary.cloud_name');
             $apiKey = config('cloudinary.api_key');
             $apiSecret = config('cloudinary.api_secret');
-            
+
             // Log the Cloudinary configuration for debugging
             \Log::info('Cloudinary credentials check:', [
                 'cloud_name' => $cloudName ?? 'not set',
                 'api_key_exists' => !empty($apiKey) ? 'yes' : 'no',
                 'api_secret_exists' => !empty($apiSecret) ? 'yes' : 'no',
             ]);
-            
+
             // Check if credentials are available
             if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
                 \Log::error('Cloudinary credentials missing, using fallback');
                 return '/temp/car_' . $carId . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
             }
-            
+
             // Create Cloudinary configuration
             $config = new Configuration();
             $config->cloud->cloudName = $cloudName;
             $config->cloud->apiKey = $apiKey;
             $config->cloud->apiSecret = $apiSecret;
             $config->url->secure = true;
-            
+
             // Initialize Cloudinary
             $cloudinary = new CloudinarySDK($config);
-            
+
             // Upload file
             $result = $cloudinary->uploadApi()->upload(
                 $file->getRealPath(),
@@ -636,28 +660,27 @@ class CarController extends Controller
                     'public_id' => 'car_' . $carId . '_' . time() . '_' . rand(1000, 9999)
                 ]
             );
-            
+
             \Log::info('Cloudinary upload successful', [
                 'secure_url' => $result['secure_url'] ?? 'no url returned'
             ]);
-            
+
             return $result['secure_url'];
-            
         } catch (\Exception $e) {
             \Log::error('Cloudinary upload failed: ' . $e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // Return fallback URL
             return '/temp/car_' . $carId . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
         }
     }
-    
+
     /**
      * Handle image uploads for a car
-     * 
+     *
      * @param Request $request
      * @param Car $car
      * @return array
@@ -665,38 +688,70 @@ class CarController extends Controller
     private function handleCarImageUpload(Request $request, Car $car)
     {
         $uploadedImages = [];
-        
+
         if (!$request->hasFile('images')) {
             \Log::info('No images to upload for car', ['car_id' => $car->id]);
             return $uploadedImages;
         }
-        
+
         \Log::info('Processing images for car', [
             'car_id' => $car->id,
             'image_count' => count($request->file('images'))
         ]);
-        
+
         foreach ($request->file('images') as $image) {
             // Generate a unique public ID for this image
             $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
-            
+
             // Use our CloudinaryService to upload the image
             $imageUrl = $this->cloudinaryService->uploadImage(
                 $image,
                 'cars', // folder name
                 $publicId // public_id
             );
-            
+
             // Add the URL to our images array
             $uploadedImages[] = $imageUrl;
-            
+
             \Log::info('Image processed for car', [
                 'car_id' => $car->id,
                 'image_url' => $imageUrl,
                 'original_name' => $image->getClientOriginalName()
             ]);
         }
-        
+
+        return $uploadedImages;
+    }
+
+    private function handleCarReportImageUpload(Request $request, Car $car)
+    {
+        $uploadedImages = [];
+
+        if (!$request->hasFile('reports_images')) {
+            \Log::info('No report images to upload for car', ['car_id' => $car->id]);
+            return $uploadedImages;
+        }
+
+        foreach ($request->file('reports_images') as $image) {
+            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+            $imageUrl = $this->cloudinaryService->uploadImage(
+                $image,
+                'cars',
+                $publicId
+            );
+            $uploadedImages[] = [
+                'car_id' => $car->id,
+                'image_path' => $imageUrl,
+                'file_size' => $image->getSize()
+            ];
+
+            Log::info('Report image processed for car', [
+                'car_id' => $car->id,
+                'image_url' => $imageUrl,
+                'original_name' => $image->getClientOriginalName()
+            ]);
+        }
+
         return $uploadedImages;
     }
 }

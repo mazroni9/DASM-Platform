@@ -5,7 +5,7 @@ import { Tajawal } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Providers from "./providers";
-import { createInertiaApp } from "@inertiajs/react";
+import FirebaseMessagingProvider from "@/components/FirebaseMessagingProvider";
 
 const tajawal = Tajawal({
     subsets: ["arabic", "latin"],
@@ -42,9 +42,11 @@ export default function RootLayout({
                         }}
                     />
                     <ProtectedRoute>
+                        <FirebaseMessagingProvider>
                         <div className="min-h-screen bg-gray-50">
                             <main>{children}</main>
                         </div>
+                        </FirebaseMessagingProvider>
                     </ProtectedRoute>
                 </Providers>
             </body>
