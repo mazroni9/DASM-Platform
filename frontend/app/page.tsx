@@ -142,7 +142,7 @@ export default function Page() {
 
     return (
         <>
-            <Navbar />
+            
             <Box sx={{ bgcolor: "#f5f6fa", minHeight: "100vh" }}>
                 {/* Hero Section */}
                 <Box

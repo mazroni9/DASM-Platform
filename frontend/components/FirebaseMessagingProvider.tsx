@@ -4,11 +4,13 @@ import { useEffect, useState, useRef } from "react";
 import { getMessagingInstance } from "../lib/firebase";
 import axios from "../lib/axios";
 import NotificationSnackbar from "./ui/NotificationSnackbar";
+import { useNotification } from "@/context/NotificationContext";
 
 const FirebaseMessagingProvider = ({ children }) => {
   const [NotificationPayload, setNotificationPayload] = useState({
     title: "",
     body: "",
+    link:"/"
   });
   const [ViewNotification, setViewNotification] = useState(false);
   const audioRef = useRef(null);
@@ -16,7 +18,7 @@ const FirebaseMessagingProvider = ({ children }) => {
   const handleCloseNotification = () => {
     setViewNotification(false);
   };
-
+  const {dispatch} = useNotification();
   useEffect(() => {
     const messaging = getMessagingInstance();
     const audio = new Audio("/sounds/default.mp3");
@@ -49,6 +51,16 @@ const FirebaseMessagingProvider = ({ children }) => {
         setNotificationPayload({
           title: payload.notification.title,
           body: payload.notification.body,
+          link:payload.fcmOptions?.link || '/'
+        });
+        dispatch({
+          type: "ADD_NOTIFICATION",
+          payload: {
+            id:payload.messageId,
+            title: payload.notification.title,
+            body: payload.notification.body,
+            action: {route_name: payload.fcmOptions?.link || '/'}
+          },
         });
         setViewNotification(true);
       });
@@ -94,6 +106,7 @@ const FirebaseMessagingProvider = ({ children }) => {
       <NotificationSnackbar
         title={NotificationPayload.title}
         body={NotificationPayload.body}
+        link={NotificationPayload.link}
         ViewNotification={ViewNotification}
         onClose={handleCloseNotification}
       />

@@ -10,14 +10,14 @@ use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 
-class NewBidNotification extends Notification
+class NewSaleNotification extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(public $auction)
+    public function __construct(public $settlements)
     {
         //
     }
@@ -32,25 +32,24 @@ class NewBidNotification extends Notification
         return [FcmChannel::class, 'database'];
     }
 
+    /**
+     * Get the FCM representation of the notification.
+     */
     public function toFcm($notifiable): FcmMessage
     {
         return (new FcmMessage(notification: new FcmNotification(
-            title: 'مزايدة جديدة!',
-            body: 'تم وضع مزايدة جديدة على سيارتك ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' بمبلغ ' . $this->auction->current_bid,
+            title: 'لقد فزت بالمزاد!',
+            body: 'قام البائع بتأكيد فوزك. اضغط هنا لإكمال الدفع واستلام سيارتك.',
             image: asset('assets/images/logo.jpg')
         )))
-            ->data([
-                'car_id' => (string) $this->auction->car_id,
-                'auction_id' => (string)$this->auction->id,
-                'type' => 'new_bid',
-            ])
+            ->data(['car_id' => $this->settlements?->car_id, 'auction_id' => $this->settlements?->auction_id])
             ->custom([
                 "webpush" => [
                     "headers" => [
                         "Urgency" => "high"
                     ],
                     'fcm_options' => [
-                        "link" => "/carDetails/" . $this->auction->car_id,
+                        "link" => "https://www.google.com",
                     ]
                 ],
                 'android' => [
@@ -75,6 +74,7 @@ class NewBidNotification extends Notification
             ]);
     }
 
+
     /**
      * Get the array representation of the notification.
      *
@@ -83,18 +83,18 @@ class NewBidNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'title' => 'مزايدة جديدة',
-            'body' => 'تم وضع مزايدة جديدة على سيارتك ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' بمبلغ ' . $this->auction->current_bid,
+            'title' => 'لقد فزت بالمزاد!',
+            'body' => 'قام البائع بتأكيد فوزك. اضغط هنا لإكمال الدفع واستلام سيارتك.',
             'data' => [
-                'car_id' => $this->auction->car_id,
-                'auction_id' => $this->auction->id,
-                'type' => 'new_bid',
+                'car_id' => $this->settlements?->car_id,
+                'auction_id' => $this->settlements?->auction_id,
+                'type' => 'new_sale',
             ],
             'action' => [
                 'type' => 'VIEW_CAR_DETAILS',
                 'route_name' => '/carDetails/[car_id]',
                 'route_params' => [
-                    'car_id' => $this->auction->car_id
+                    'car_id' => $this->settlements->car_id
                 ]
             ]
         ];

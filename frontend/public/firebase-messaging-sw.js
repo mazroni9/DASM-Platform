@@ -28,10 +28,10 @@ messaging.onBackgroundMessage((payload) => {
 
   //customise notification
   const notificationTitle = payload.notification.title;
+  
   const notificationOptions = {
     body: payload.notification.body,
     icon: payload.notification.icon || "/mazad-logo.png",
-    sound: "/sounds/default.mp3",
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

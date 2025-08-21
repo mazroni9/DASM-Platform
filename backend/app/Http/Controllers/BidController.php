@@ -403,7 +403,7 @@ class BidController extends Controller
             // event(new \App\Events\NewBidPlaced($bid));
             $owner = $auction->car->owner;
             $owner = User::find($owner->id);
-            $owner->notify(new NewBidNotification());
+            $owner->notify(new NewBidNotification($auction));
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',

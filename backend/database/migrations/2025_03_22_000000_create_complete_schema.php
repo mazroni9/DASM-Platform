@@ -114,7 +114,7 @@ return new class extends Migration {
             $table->decimal('platform_fee', 12, 2);
             $table->decimal('tam_fee', 12, 2);
             $table->decimal('net_amount', 12, 2);
-            $table->enum('status', ['pending', 'completed'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('auction_id')->references('id')->on('auctions')->onDelete('cascade');
