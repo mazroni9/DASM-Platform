@@ -1,7 +1,7 @@
 "use client";
 
 import api from "@/lib/axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect,use } from "react";
 import { CheckCircle, Car, SaudiRiyal, Settings } from "lucide-react";
 
 export default function ConfirmSalePage({ params }) {
@@ -9,7 +9,7 @@ export default function ConfirmSalePage({ params }) {
     return Math.round(number / 5) * 5;
   };
 
-  const { car_id } = params;
+  const {car_id}  = use(params);
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,13 +21,30 @@ export default function ConfirmSalePage({ params }) {
   });
   const [isChecked, setIsChecked] = useState(false);
 
-  const handleConfirmSale = () => {
+  const handleConfirmSale = async () => {
+    console.log("handleConfirmSale");
+    
     if (item?.active_auction) {
+      try {
+        const response = await api.post('/api/auctions/confirm-sale', {
+          auction_id: item.active_auction.id,
+          final_price: item.active_auction.current_bid
+        });
+        
+        if (response.data.success) {
+          // Handle successful confirmation
+          alert('تم تأكيد البيع بنجاح!');
+        }
+      } catch (error) {
+        console.error('Error confirming sale:', error);
+        alert('حدث خطأ في تأكيد البيع. يرجى المحاولة مرة أخرى.');
+      }
       console.log(`Sale confirmed for auction ID: ${item.active_auction.id}, Final price: ${item.active_auction.current_bid} SAR`);
     }
   };
   useEffect(() => {
     async function fetchCarData() {
+      console.log("car_id",car_id);
       try {
         const response = await api.get(`/api/car/${car_id}`);
         if (response.data.data || response.data.data) {
@@ -171,6 +188,22 @@ export default function ConfirmSalePage({ params }) {
               <span className="text-gray-600">رسوم المنصة</span>
               <span className="text-red-600 font-medium flex items-center gap-1">
                 - {platformFee.toLocaleString()}
+                <SaudiRiyal className="w-4 h-4" />
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-2 pr-4">
+              <span className="text-gray-600">عمولة المعرض</span>
+              <span className="text-red-600 font-medium flex items-center gap-1">
+                - 150
+                <SaudiRiyal className="w-4 h-4" />
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-2 pr-4">
+              <span className="text-gray-600">عمولة المرور</span>
+              <span className="text-red-600 font-medium flex items-center gap-1">
+                - 150
                 <SaudiRiyal className="w-4 h-4" />
               </span>
             </div>
