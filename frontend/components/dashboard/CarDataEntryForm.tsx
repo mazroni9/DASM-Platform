@@ -20,6 +20,21 @@ import { Upload, FileX, Car, CheckCircle2, AlertCircle } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 
+const emirates = [
+  "منطقة الرياض",
+  "منطقة مكة المكرمة",
+  "منطقة المدينة المنورة",
+  "المنطقة الشرقية",
+  "منطقة القصيم",
+  "منطقة عسير",
+  "منطقة حائل",
+  "منطقة تبوك",
+  "منطقة الباحة",
+  "منطقة الحدود الشمالية",
+  "منطقة الجوف",
+  "منطقة جازان",
+  "منطقة نجران"
+];
 
 const carColors = [
     { name: "أسود", value: "black" },
@@ -72,7 +87,6 @@ interface CarFormData {
     color: string;
     transmission: string;
     condition: string;
-    location: string;
     min_price: string;
     max_price: string;
     description: string;
@@ -80,6 +94,8 @@ interface CarFormData {
     agency_number: string;
     agency_issue_date: string;
     registration_card_image: string;
+    city:string;
+    province: string;
 }
 
 let carOjbect = {
@@ -100,6 +116,8 @@ let carOjbect = {
     agency_number: "",
     agency_issue_date: "",
     registration_card_image: "",
+    city:"",
+    province:""
 };
 export default function CarDataEntryForm() {
     const [color, setColor] = useState<string>('');
@@ -140,7 +158,7 @@ export default function CarDataEntryForm() {
                     setEnumOptions(response.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching enum options:", error);
+                //console.error("Error fetching enum options:", error);
                 // Fallback to hardcoded options if API fails
                 setEnumOptions({
                     conditions: {
@@ -231,6 +249,8 @@ export default function CarDataEntryForm() {
                 { field: "condition", name: "حالة السيارة" },
                 { field: "min_price", name: "الحد الأدنى المقبول" },
                 { field: "color", name: "لون السيارة" },
+                { field: "province", name: "المنطقة" },
+                { field: "city", name: "المدينة " },
             ];
 
             for (const { field, name } of requiredFields) {
@@ -679,25 +699,48 @@ export default function CarDataEntryForm() {
                             <option value="تحتاج إصلاح">تحتاج إصلاح</option>
                         </select>
                     </div>
-
-                    <div>
+                   <div>
                         <label
-                            htmlFor="location"
+                            htmlFor="province"
                             className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            الموقع
+                           المنطقة
+                        </label>
+                        <select
+                            id="province"
+                            name="province"
+                            value={formData.province}
+                            onChange={handleInputChange}
+                            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        >
+                            <option value="">-- أختر المنطقة --</option>
+                            {Object.entries(emirates).map(
+                                ([value, label]) => (
+                                    <option key={value} value={label}>
+                                        {label}
+                                    </option>
+                                )
+                            )}
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            htmlFor="city"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            المدينة
                         </label>
                         <input
                             type="text"
-                            id="location"
-                            name="location"
-                            value={formData.location}
+                            id="city"
+                            name="city"
+                            value={formData.city}
                             onChange={handleInputChange}
                             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="المدينة / المنطقة"
+                            placeholder="المدينة"
                         />
                     </div>
-
                     <div>
                         <label
                             htmlFor="min_price"

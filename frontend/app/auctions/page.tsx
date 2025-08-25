@@ -13,12 +13,13 @@
 
 import Link from 'next/link';
 import { Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale, Store, ShoppingBag, Gift } from 'lucide-react';
+import Countdown from '@/components/Countdown';
 
 export default function AuctionsPage() {
   const auctionsMain = [
-    { name: 'الحراج المباشر', slug: 'auctions-1main/live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصرا الى 7 مساءا', icon: Video, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    { name: 'السوق الفوري المباشر', slug: 'auctions-1main/instant', description: 'مزادات بنظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءا الى 10 مساءا', icon: Timer, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    { name: 'السوق المتاخر', slug: 'auctions-1main/silent', description: 'مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض\nيبدأ من 10 مساءا الى 4 عصرا اليوم التالي', icon: BellOff, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { currentPage:'live_auction' ,name: 'الحراج المباشر', slug: 'auctions-1main/live-market', description: 'بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصرا الى 7 مساءا', icon: Video, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { currentPage:'instant_auction',name: 'السوق الفوري المباشر', slug: 'auctions-1main/instant', description: 'مزادات بنظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءا الى 10 مساءا', icon: Timer, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { currentPage:'late_auction', name: 'السوق المتاخر', slug: 'auctions-1main/silent', description: 'مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض\nيبدأ من 10 مساءا الى 4 عصرا اليوم التالي', icon: BellOff, color: 'text-blue-600', bgColor: 'bg-blue-50' },
   ];
 
   const auctionsCar = [
@@ -99,6 +100,8 @@ export default function AuctionsPage() {
         </div>
         <h3 className={`text-xl font-bold ${auction.color} mb-2 text-center`}>{auction.name}</h3>
         <p className="text-sm text-gray-600 text-center mb-4 flex-grow whitespace-pre-line">{auction.description}</p>
+        {/*<Countdown page={auction.currentPage as 'live_auction' | 'instant_auction' | 'late_auction'}/>*/}
+        <br/>
         <div className="mt-auto">
           <span className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-full bg-white group-hover:bg-blue-500 text-gray-700 group-hover:text-white transition-colors duration-300">
             اضغط للدخول

@@ -21,11 +21,26 @@ interface FormData {
   price: string
   description: string
   features: string[]
+<<<<<<< HEAD
+=======
+  auctionType: string
+  auctionStartPrice: string
+  auctionMinPrice: string
+  auctionMaxPrice: string
+  auctionStartDate: string
+  auctionEndDate: string
+  status: string
+  city: string
+>>>>>>> master
 }
 
 interface PreviewImage {
   url: string
   name: string
+<<<<<<< HEAD
+=======
+  file?: File
+>>>>>>> master
 }
 
 interface OcrData {
@@ -59,7 +74,19 @@ export default function AddCarForm() {
     color: '',
     price: '',
     description: '',
+<<<<<<< HEAD
     features: []
+=======
+    features: [],
+    auctionType: '',
+    auctionStartPrice: '',
+    auctionMinPrice: '',
+    auctionMaxPrice: '',
+    auctionStartDate: '',
+    auctionEndDate: '',
+    status: '',
+    city: ''
+>>>>>>> master
   })
   
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -67,9 +94,16 @@ export default function AddCarForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([])
+<<<<<<< HEAD
   const [activeTab, setActiveTab] = useState('basic')
   const [ocrData, setOcrData] = useState<OcrData | null>(null)
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
+=======
+  const [ocrFile, setOcrFile] = useState<File | null>(null)
+  const [ocrData, setOcrData] = useState<OcrData | null>(null)
+  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+>>>>>>> master
 
   // محاكاة تحليل الذكاء الاصطناعي
   useEffect(() => {
@@ -86,6 +120,7 @@ export default function AddCarForm() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
+<<<<<<< HEAD
     
     const files = Array.from(e.target.files)
     const newPreviewImages = files.map(file => ({
@@ -107,6 +142,19 @@ export default function AddCarForm() {
         })
       }, 1500)
     }
+=======
+    const files = Array.from(e.target.files)
+    if (previewImages.length + files.length > 10) {
+      setErrorMsg('يمكنك رفع 10 صور كحد أقصى')
+      return
+    }
+    const newPreviewImages = files.map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+      file
+    }))
+    setPreviewImages([...previewImages, ...newPreviewImages])
+>>>>>>> master
   }
 
   const removeImage = (index: number) => {
@@ -115,10 +163,51 @@ export default function AddCarForm() {
     setPreviewImages(newImages)
   }
 
+<<<<<<< HEAD
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     
+=======
+  const handleOcrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    setOcrFile(e.target.files[0])
+    // محاكاة عملية OCR
+    setTimeout(() => {
+      setOcrData({
+        brand: 'تويوتا',
+        model: 'كامري',
+        year: '2022',
+        chassisNumber: 'JT2BF22KXW0123456',
+        engineSize: '2.5L',
+        fuelType: 'بنزين'
+      })
+    }, 1500)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setErrorMsg(null)
+    // تحقق من الحقول المطلوبة
+    if (!formData.brand || !formData.model || !formData.year || !formData.price || !formData.carType) {
+      setErrorMsg('يرجى تعبئة جميع الحقول الأساسية المطلوبة')
+      setIsSubmitting(false)
+      return
+    }
+    // تحقق من رفع صورة الاستمارة
+    if (!ocrFile) {
+      setErrorMsg('يرجى رفع صورة استمارة السيارة')
+      setIsSubmitting(false)
+      return
+    }
+    // تحقق من رفع الصور
+    if (previewImages.length === 0) {
+      setErrorMsg('يرجى رفع صور السيارة')
+      setIsSubmitting(false)
+      return
+    }
+>>>>>>> master
     // محاكاة عملية الإرسال
     const interval = setInterval(() => {
       setUploadProgress(prev => {
@@ -131,6 +220,16 @@ export default function AddCarForm() {
         return prev + 10
       })
     }, 300)
+<<<<<<< HEAD
+=======
+    // هنا يمكنك إرسال البيانات للباك-إند باستخدام fetch أو axios
+    // مثال:
+    // const form = new FormData()
+    // Object.entries(formData).forEach(([key, value]) => form.append(key, value))
+    // previewImages.forEach(img => form.append('images[]', img.file))
+    // form.append('ocr', ocrFile)
+    // await fetch('/api/cars', { method: 'POST', body: form, headers: { Authorization: `Bearer ${token}` } })
+>>>>>>> master
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -176,7 +275,11 @@ export default function AddCarForm() {
                 </div>
                 <span className="text-sm mt-1 text-gray-600">
                   {stepNumber === 1 ? 'البيانات الأساسية' : 
+<<<<<<< HEAD
                    stepNumber === 2 ? 'المواصفات' : 'المرفقات'}
+=======
+                   stepNumber === 2 ? 'المواصفات والمزاد' : 'المرفقات'}
+>>>>>>> master
                 </span>
               </div>
             ))}
@@ -191,6 +294,16 @@ export default function AddCarForm() {
           </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* رسالة خطأ */}
+        {errorMsg && (
+          <div className="mb-4 bg-red-100 border border-red-300 text-red-700 rounded-lg p-3">
+            {errorMsg}
+          </div>
+        )}
+
+>>>>>>> master
         {/* محتوى النموذج */}
         <motion.div 
           key={step}
@@ -312,6 +425,36 @@ export default function AddCarForm() {
                     placeholder="مثال: أبيض"
                   />
                 </div>
+<<<<<<< HEAD
+=======
+
+                <div>
+                  <label className="block text-gray-700 mb-2">الحالة</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">اختر الحالة</option>
+                    <option value="new">جديدة</option>
+                    <option value="used">مستعملة</option>
+                    <option value="under_review">تحت الفحص</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 mb-2">المدينة</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="مثال: الرياض"
+                  />
+                </div>
+>>>>>>> master
               </div>
 
               {/* تحليل الذكاء الاصطناعي */}
@@ -358,7 +501,11 @@ export default function AddCarForm() {
             </div>
           )}
 
+<<<<<<< HEAD
           {/* الخطوة 2: المواصفات */}
+=======
+          {/* الخطوة 2: المواصفات والمزاد */}
+>>>>>>> master
           {step === 2 && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -493,6 +640,80 @@ export default function AddCarForm() {
                   ))}
                 </div>
               </div>
+<<<<<<< HEAD
+=======
+
+              {/* بيانات المزاد */}
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-700 mb-2">نوع المزاد</label>
+                  <select
+                    name="auctionType"
+                    value={formData.auctionType}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">اختر نوع المزاد</option>
+                    <option value="live">مباشر</option>
+                    <option value="instant">فوري</option>
+                    <option value="silent">صامت</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">سعر افتتاح المزاد</label>
+                  <input
+                    type="number"
+                    name="auctionStartPrice"
+                    value={formData.auctionStartPrice}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="مثال: 50000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">الحد الأدنى للبيع</label>
+                  <input
+                    type="number"
+                    name="auctionMinPrice"
+                    value={formData.auctionMinPrice}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="مثال: 55000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">الحد الأعلى للبيع</label>
+                  <input
+                    type="number"
+                    name="auctionMaxPrice"
+                    value={formData.auctionMaxPrice}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="مثال: 60000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">تاريخ بدء المزاد</label>
+                  <input
+                    type="datetime-local"
+                    name="auctionStartDate"
+                    value={formData.auctionStartDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">تاريخ نهاية المزاد</label>
+                  <input
+                    type="datetime-local"
+                    name="auctionEndDate"
+                    value={formData.auctionEndDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+>>>>>>> master
             </div>
           )}
 
@@ -553,6 +774,7 @@ export default function AddCarForm() {
               {/* رفع استمارة السيارة */}
               <div className="mt-8">
                 <h3 className="text-lg font-medium text-gray-800 mb-2">رفع استمارة السيارة</h3>
+<<<<<<< HEAD
                 <p className="text-gray-600 mb-4">سيتم استخدام الاستمارة للتحقق من بيانات السيارة</p>
                 
                 <div className="flex items-center justify-center w-full py-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
@@ -564,6 +786,30 @@ export default function AddCarForm() {
                     </button>
                   </div>
                 </div>
+=======
+                <p className="text-gray-600 mb-4">سيتم استخدام الاستمارة للتحقق من بيانات السيارة عبر OCR</p>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handleOcrUpload}
+                  className="hidden"
+                  id="ocr-upload"
+                />
+                <label htmlFor="ocr-upload">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition cursor-pointer"
+                  >
+                    اختر ملف الاستمارة
+                  </motion.button>
+                </label>
+                {ocrFile && (
+                  <div className="mt-3 text-sm text-gray-700">
+                    تم اختيار الملف: {ocrFile.name}
+                  </div>
+                )}
+>>>>>>> master
               </div>
             </div>
           )}
@@ -648,9 +894,25 @@ export default function AddCarForm() {
                       color: '',
                       price: '',
                       description: '',
+<<<<<<< HEAD
                       features: []
                     })
                     setPreviewImages([])
+=======
+                      features: [],
+                      auctionType: '',
+                      auctionStartPrice: '',
+                      auctionMinPrice: '',
+                      auctionMaxPrice: '',
+                      auctionStartDate: '',
+                      auctionEndDate: '',
+                      status: '',
+                      city: ''
+                    })
+                    setPreviewImages([])
+                    setOcrFile(null)
+                    setOcrData(null)
+>>>>>>> master
                   }}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                 >

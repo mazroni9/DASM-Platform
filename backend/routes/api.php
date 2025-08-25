@@ -1,25 +1,88 @@
 <?php
 
+use App\Models\Car;
+use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\BidController;
-use App\Http\Controllers\DealerController;
 use App\Http\Controllers\CarController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\DealerController;
+use App\Http\Controllers\WalletController;
+use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
+use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
-use Inertia\Inertia;
-use App\Models\Car;
+use App\Http\Controllers\ExhibitorAuthController;
+use App\Http\Controllers\Admin\CommissionTierController;
+use App\Http\Controllers\Admin\SubscriptionPlanController;
+use Carbon\Carbon;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
+});
+
+
+Route::get('/check-time', function (Request $request) {
+    $page = $request->query('page');
+
+    $pageTimeRanges = [
+        'live_auction' => [
+            ['start' => '16:00:00', 'end' => '18:59:59'],
+        ],
+        'instant_auction' => [
+            ['start' => '19:00:00', 'end' => '21:59:59'],
+        ],
+        'late_auction' => [
+            ['start' => '22:00:00', 'end' => '15:59:59'], // overnight
+        ]
+    ];
+
+    if (!isset($pageTimeRanges[$page])) {
+        return response()->json(['error' => 'Page not found', 'allowed' => false], 404);
+    }
+
+    $now = Carbon::now('GMT+3');
+    $isAllowed = false;
+    $remainingSeconds = null;
+
+    foreach ($pageTimeRanges[$page] as $range) {
+        $start = Carbon::createFromFormat('H:i:s', $range['start'], 'GMT+3')
+            ->setDate($now->year, $now->month, $now->day);
+        $end =Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')
+            ->setDate($now->year, $now->month, $now->day);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            // Overnight case
+            if ($now->lessThan($end)) {
+                // Current time is after midnight but before end time → start was yesterday
+                $start->subDay();
+            } else {
+                // Current time is after start → end is tomorrow
+                $end->addDay();
+            }
+        }
+
+        if ($now->between($start, $end)) {
+            $isAllowed = true;
+            $remainingSeconds = $end->diffInSeconds($now);
+            break;
+        }
+    }
+
+    return response()->json([
+        'page' => $page,
+        'current_time' => $now->format('H:i:s'),
+        'allowed' => $isAllowed,
+        'remaining_seconds' => $remainingSeconds,
+        'remaining_time' => $remainingSeconds ? gmdate("H:i:s", $remainingSeconds) : null,
+        'timezone' => 'GMT+3'
+    ]);
 });
 
 
@@ -36,7 +99,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Cloudinary test endpoints removed for security
 
-// Public auction browsing 
+// Public auction browsing
 Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 
@@ -61,12 +124,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::post('/logout', [UserController::class, 'logout']);
     Route::get('/user/permissions', [UserController::class, 'getPermissions']);
-    
+
     // Dealer registration
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
-    
+
     // Car management for all users
-    
+
     Route::get('/cars', [CarController::class, 'index']);
     Route::get('/cars?page={id}', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
@@ -75,7 +138,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cars/{id}', [CarController::class, 'update']);
     Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/car-statistics', [CarController::class, 'statistics']);
-    
+
     // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
@@ -86,6 +149,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
+    Route::post('/auctions/{auction}/leave', [AuctionController::class, 'leave']);
+    Route::get('/auctions/{auction}/status', [AuctionController::class, 'status']);
+    Route::post('/auctions/test-bid', [AuctionController::class, 'testBid']);
 
     // Bid routes for all users
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
@@ -93,7 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
-    
+
     // New standardized bid API for the unified frontend
     Route::post('/auctions/bid', [BidController::class, 'placeBid']);
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids']);
@@ -102,26 +168,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auctions/auto-bid', [AutoBidController::class, 'store']);
     Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus']);
     Route::delete('/auctions/auto-bid/{itemId}', [AutoBidController::class, 'destroy']);
-    
+
     // Public broadcast information (read-only)
     Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
     Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
-    
-    // Wallet routes
-    // Route::get('/wallet', [WalletController::class, 'show']);
-    // Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
-    // Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
 
+    // Wallet routes
+    Route::get('/wallet', [WalletController::class, 'show']);
+    Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
+    Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+    Route::post('/wallet/recharge', [WalletController::class, 'recharge']);
 });
+
+Route::post('/wallet/initiate-recharge', [WalletController::class, 'initiateRecharge'])->name('wallet.recharge');
+Route::post('/wallet/callback', [WalletController::class, 'handleCallback'])->name('wallet.callback');
+Route::get('/wallet/error', [WalletController::class, 'handleError'])->name('wallet.error');
+
 
 // Dealer-only routes
 Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])->group(function () {
     // Dealer dashboard
     Route::get('/dealer/dashboard', [DealerController::class, 'dashboard']);
-    
+
     // Dealer-specific functionality
     Route::get('/auctions/{id}/analytics', [AuctionController::class, 'analytics']);
-    
+
     // Legacy routes - these duplicate the routes above but are kept for backward compatibility
     // They should be removed in a future update
     Route::get('/dealer/cars', [CarController::class, 'index']);
@@ -136,12 +207,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
 Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::class])->group(function () {
     // Moderator dashboard
     Route::get('/moderator/dashboard', [ModeratorController::class, 'dashboard']);
-    
+
     // Broadcast management
     Route::post('/moderator/broadcast/start', [ModeratorController::class, 'startBroadcast']);
     Route::post('/moderator/broadcast/stop/{broadcastId}', [ModeratorController::class, 'stopBroadcast']);
     Route::put('/moderator/broadcast/{broadcastId}/current-car', [ModeratorController::class, 'switchCar']);
-    
+
     // Offline bid management
     Route::post('/moderator/bids/offline', [ModeratorController::class, 'addOfflineBid']);
 });
@@ -160,7 +231,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
     Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
     Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
-    
+
     // Admin auction management
     Route::get('/admin/auctions', [AdminController::class, 'auctions']);
     Route::get('/admin/auctions/{id}', [AdminController::class, 'getAuction']);
@@ -178,31 +249,56 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);
     Route::put('/admin/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
     Route::delete('/admin/cars/{id}', [AdminController::class, 'deleteCar']);
-   
+
 
     // Admin blog management
     Route::get('/admin/blogs', [AdminController::class, 'blogs']);
     Route::post('/admin/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);
     Route::post('/admin/blog-tags', [AdminController::class, 'manageTags']);
     Route::get('/admin/blogs/tags', [AdminController::class, 'getBlogTags']);
-    
+
     // Admin financial management
     Route::get('/admin/transactions', [AdminController::class, 'getTransactions']);
     Route::get('/admin/settlements', [AdminController::class, 'getSettlements']);
-    
+
     // Blog CRUD operations (admin only)
     Route::post('/blog', [BlogController::class, 'store']);
     Route::put('/blog/{id}', [BlogController::class, 'update']);
     Route::delete('/blog/{id}', [BlogController::class, 'destroy']);
-    
+
     // Admin venue management
     Route::post('/venues', [VenueController::class, 'store']);
     Route::put('/venues/{id}', [VenueController::class, 'update']);
     Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
-    
+
     // Admin broadcast management
     Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
     Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
     Route::put('/admin/broadcast', [BroadcastController::class, 'update']);
     Route::put('/admin/broadcast/status', [BroadcastController::class, 'updateStatus']);
+
+    // Admin commission tiers management
+    Route::get('/admin/commission-tiers', [CommissionTierController::class, 'index']);
+    Route::post('/admin/commission-tiers', [CommissionTierController::class, 'store']);
+    Route::get('/admin/commission-tiers/{id}', [CommissionTierController::class, 'show']);
+    Route::put('/admin/commission-tiers/{id}', [CommissionTierController::class, 'update']);
+    Route::delete('/admin/commission-tiers/{id}', [CommissionTierController::class, 'destroy']);
+    Route::post('/admin/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
+
+    // Admin subscription plans management
+    Route::get('/admin/subscription-plans', [SubscriptionPlanController::class, 'index']);
+    Route::post('/admin/subscription-plans', [SubscriptionPlanController::class, 'store']);
+    Route::get('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'show']);
+    Route::put('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
+    Route::delete('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
+    Route::post('/admin/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
+});
+
+// Public subscription plans routes
+Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
+
+// exhibitor auth routes
+Route::prefix('exhibitor')->group(function () {
+    Route::post('/register', [ExhibitorAuthController::class, 'register']);
+    Route::post('/login', [ExhibitorAuthController::class, 'login']);
 });

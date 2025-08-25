@@ -238,20 +238,28 @@ try {
                     break;
                 case "move-to-active":
                     // Add bulk status update endpoint if needed
-                const  moveActiveStatuss= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                const  moveActiveStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
                         ids: carIds,
                         status: "active",
                     });
-                    toast.success(moveActiveStatuss.data.message);
+                    toast.success(moveActiveStatus.data.message);
                     break;
              case "move-to-instant":
                     // Add bulk status update endpoint if needed
-                const  moveInstantStatuss= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                const  moveInstantStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
                         ids: carIds,
                         status: "instant",
                     });
-                    toast.success(moveInstantStatuss.data.message);
-                    break;     
+                    toast.success(moveInstantStatus.data.message);
+                    break;
+            case "move-to-late":
+                    // Add bulk status update endpoint if needed
+                const  moveLateStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
+                        ids: carIds,
+                        status: "late",
+                    });
+                    toast.success(moveLateStatus.data.message);
+                    break;        
                 case "move-to-pending":
                      const  movePendingStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
                         ids: carIds,
@@ -528,7 +536,7 @@ try {
                                             نقل إلى الحراج المباشر 
                                          </button>
    
-                                                                                <button
+                                        <button
                                             onClick={() =>
                                                 handleBulkAction(
                                                     "move-to-instant"
@@ -537,9 +545,20 @@ try {
                                             className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
                                         >
                                             <CheckSquare size={16} />
-                                            نقل الى المزادات الفوري
+                                            نقل الى المزادات الفورية
                                         </button>
-                                                                             <button
+                                         <button
+                                            onClick={() =>
+                                                handleBulkAction(
+                                                    "move-to-late"
+                                                )
+                                            }
+                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                                        >
+                                            <CheckSquare size={16} />
+                                            نقل إلى المزادات المتأخرة
+                                        </button>
+                                           <button
                                             onClick={() =>
                                                 handleBulkAction(
                                                     "move-to-active"

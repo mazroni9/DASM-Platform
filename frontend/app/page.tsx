@@ -192,7 +192,7 @@ export default function Page() {
                                 lineHeight: { xs: 1.2, sm: 1.3 }
                             }}
                         >
-                            Digital Auctions specialists Markets & e-Commerce
+                            أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية
                         </Typography>
                         <Typography
                             variant="h5"

@@ -27,13 +27,17 @@ const Navbar = () => {
     const { user, logout } = useAuth();
 
     const isAdmin = user?.role === "admin";
-
+/*
     const navigationItems: NavigationItem[] = [
         { href: "/auctions", label: "المزادات", icon: Store },
         { href: "/archive", label: "الأرشيف", icon: Archive },
         { href: "/history", label: "التاريخ", icon: Clock },
     ];
+*/
 
+    const navigationItems: NavigationItem[] = [
+        { href: "/auctions", label: "المزادات", icon: Store },
+    ];
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
     };
@@ -107,15 +111,15 @@ const Navbar = () => {
                     <div className="flex items-center flex-shrink-0">
                         <Link href="/" className="flex items-center gap-2 sm:gap-4">
                             <Image
-                                src="/logo.jpeg"
-                                alt="منصة داسم DASM - Digital Auctions Sectors Market"
+                                src="/logo.jpg"
+                                alt="أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية"
                                 width={32}
                                 height={32}
                                 className="rounded-full sm:w-10 sm:h-10"
                             />
-                            <span className="font-bold text-sm sm:text-base lg:text-lg hidden xs:block">
-                                <span className="hidden sm:inline">اسواق المزادات الرقمية المتخصصة </span>
-                                <span className="text-blue-700">DASM-e</span>
+                            <span className="font-bold text-sm sm:text-base lg:text-lg  xs:block">
+                                <span className="hidden sm:inline">أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية</span>
+                                <span className="text-blue-700"> DASM-e </span>
                             </span>
                         </Link>
                     </div>
@@ -162,20 +166,7 @@ const Navbar = () => {
                         {user ? (
                             <>
                                 <UserMenu />
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleLogout}
-                                    disabled={isLoggingOut}
-                                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 hidden md:flex"
-                                >
-                                    {isLoggingOut ? (
-                                        <RefreshCw className="h-4 w-4 animate-spin ml-2" />
-                                    ) : (
-                                        <LogOut className="h-4 w-4 ml-2" />
-                                    )}
-                                    <span className="hidden lg:inline">تسجيل الخروج</span>
-                                </Button>
+     
                             </>
                         ) : (
                             <Link href="/auth/login">

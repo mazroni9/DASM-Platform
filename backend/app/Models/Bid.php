@@ -10,13 +10,14 @@ class Bid extends Model
     use HasFactory;
 
     protected $fillable = [
-        'auction_id', 
-        'user_id', 
+        'auction_id',
+        'user_id',
         'bid_amount',
         'no_account',
         'bidder_name'
     ];
-
+    public $timestamps = false;
+    const CREATED_AT = 'created_at';
     protected $casts = [
         'no_account' => 'boolean',
     ];
