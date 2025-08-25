@@ -17,6 +17,7 @@ use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
+use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use Carbon\Carbon;
@@ -295,3 +296,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
 // Public subscription plans routes
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
+
+// exhibitor auth routes
+Route::prefix('exhibitor')->group(function () {
+    Route::post('/register', [ExhibitorAuthController::class, 'register']);
+    Route::post('/login', [ExhibitorAuthController::class, 'login']);
+});
