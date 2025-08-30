@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use App\Models\Car;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VenueController;
+use App\Notifications\NewBidNotification;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\AuctionController;
@@ -18,9 +20,12 @@ use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\ExhibitorAuthController;
+use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\DeviceTokenController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
-use Carbon\Carbon;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -178,6 +183,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
     Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
     Route::post('/wallet/recharge', [WalletController::class, 'recharge']);
+    //confirm sales
+    Route::post('/auctions/confirm-sale', [SettlementController::class, 'confirmSale']);
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+
+
 });
 
 Route::post('/wallet/initiate-recharge', [WalletController::class, 'initiateRecharge'])->name('wallet.recharge');
@@ -221,7 +233,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
     // Admin dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-
+    Route::get('admin/settings',[SettingsController::class,'index']);
+    Route::put('admin/settings',[SettingsController::class,'update']);
+    Route::post('admin/settings',[SettingsController::class,'update']); // Keep POST for backward compatibility
+    Route::get('admin/settings/{key}',[SettingsController::class,'getSetting']);
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);

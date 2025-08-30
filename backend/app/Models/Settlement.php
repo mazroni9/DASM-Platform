@@ -10,16 +10,19 @@ class Settlement extends Model
     use HasFactory;
 
     protected $fillable = [
-        'auction_id', 
-        'seller_id', 
-        'buyer_id', 
-        'car_id', 
-        'final_price', 
-        'platform_fee', 
-        'tam_fee', 
-        'net_amount', 
+        'auction_id',
+        'seller_id',
+        'buyer_id',
+        'car_id',
+        'final_price',
+        'platform_fee',
+        'tam_fee',
+        'net_amount',
         'status'
     ];
+
+    public $timestamps = false;
+    protected $created_at = 'created_at';
 
     // A Settlement belongs to an Auction.
     public function auction()
@@ -28,10 +31,10 @@ class Settlement extends Model
     }
 
     // A Settlement belongs to a Dealer (seller).
-    public function dealer()
-    {
-        return $this->belongsTo(Dealer::class, 'seller_id');
-    }
+    // public function dealer()
+    // {
+    //     return $this->belongsTo(Dealer::class, 'seller_id');
+    // }
 
     // A Settlement belongs to a User (buyer).
     public function buyer()

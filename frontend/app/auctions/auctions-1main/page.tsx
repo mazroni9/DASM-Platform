@@ -22,7 +22,7 @@ export default function AuctionsMainPage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">المزادات الرئيسية الثلاثة</h1>
+        <h1 className="text-3xl font-bold text-gray-800">الأسواق الرئيسية الثلاثة</h1>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowPresenterPanel(!showPresenterPanel)}
@@ -35,7 +35,7 @@ export default function AuctionsMainPage() {
             href="/auctions"
             className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
           >
-            <span className="ml-2">العودة لجميع المزادات</span>
+            <span className="ml-2">العودة لجميع الأسواق</span>
           </Link>
         </div>
       </div>

@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X } from "lucide-react";
+import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X,Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-
+import NotificationMenu from "@/components/NotificationMenu";
 interface NavigationItem {
     href: string;
     label: string;
@@ -36,7 +36,7 @@ const Navbar = () => {
 */
 
     const navigationItems: NavigationItem[] = [
-        { href: "/auctions", label: "المزادات", icon: Store },
+        { href: "/auctions", label: "الأسواق", icon: Store },
     ];
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
@@ -112,13 +112,13 @@ const Navbar = () => {
                         <Link href="/" className="flex items-center gap-2 sm:gap-4">
                             <Image
                                 src="/logo.jpg"
-                                alt="أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية"
+                                alt="أسواق المزادات الرقمية المتخصصة "
                                 width={32}
                                 height={32}
                                 className="rounded-full sm:w-10 sm:h-10"
                             />
                             <span className="font-bold text-sm sm:text-base lg:text-lg  xs:block">
-                                <span className="hidden sm:inline">أسواق المزادات الرقمية المتخصصة والمتاجر الالكترونية</span>
+                                <span className="hidden sm:inline">أسواق المزادات الرقمية المتخصصة</span>
                                 <span className="text-blue-700"> DASM-e </span>
                             </span>
                         </Link>
@@ -144,6 +144,7 @@ const Navbar = () => {
 
                     {/* Desktop Auth Buttons */}
                     <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                        
                         {isAdmin && (
                             <Button
                                 variant="outline"
@@ -165,6 +166,7 @@ const Navbar = () => {
 
                         {user ? (
                             <>
+                            <NotificationMenu />
                                 <UserMenu />
      
                             </>
