@@ -1,47 +1,102 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { FiLock, FiMail, FiLogIn } from 'react-icons/fi'
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { FiLock, FiMail, FiLogIn } from 'react-icons/fi';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/';
 
-export default function Page() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+// 🔹 تعريف نوع البيانات اللي نتلقاها من الخادم
+interface LoginResponse {
+  exhibitor?: {
+    id: number;
+    name: string;
+    email: string;
+    [key: string]: any; // لدعم أي خصائص إضافية
+  };
+  message?: string;
+}
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // اقرأ الرابط الذي يجب العودة إليه بعد الدخول
+  const redirect = searchParams.get('redirect') || '/exhibitor';
+
+  // تحقق من تسجيل الدخول تلقائيًا عند التحميل
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${API_URL}sanctum/csrf-cookie`, {
+          credentials: 'include',
+        });
+
+        const cookieHeader = res.headers.get('set-cookie');
+        const hasSession = document.cookie.includes('laravel_session') || cookieHeader;
+
+        if (hasSession) {
+          router.push(redirect);
+        }
+      } catch (err) {
+        console.log('لا يوجد جلسة نشطة');
+      }
+    };
+
+    checkAuth();
+  }, [router, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     try {
+      // أولًا: جلب CSRF Cookie (مهم لـ Sanctum)
+      await fetch(`${API_URL}sanctum/csrf-cookie`, {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'include',
+      });
+
+      // ثانيًا: إرسال طلب الدخول
       const res = await fetch(`${API_URL}api/exhibitor/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-      let data = {}
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+
+      let data: LoginResponse = {}; // 🔹 نستخدم النوع المعرف أعلاه
       try {
-        data = await res.json()
-      } catch {}
-      // @ts-ignore
-      if (res.ok && data.exhibitor) {
-        // @ts-ignore
-        localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor))
-        router.push('/exhibitor')
-      } else {
-        // @ts-ignore
-        setError(data.message || 'بيانات الدخول غير صحيحة')
+        data = await res.json();
+      } catch (err) {
+        // إذا لم يكن الرد بصيغة JSON
       }
-    } catch {
-      setError('حدث خطأ أثناء الاتصال بالخادم')
+
+      if (res.ok && data.exhibitor) {
+        localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor));
+        // أضف كوكي دليل على تسجيل الدخول
+        document.cookie = "exhibitor_logged_in=true; path=/; max-age=86400; SameSite=Lax";
+        router.push(redirect);
+      } else {
+        setError(data.message || 'بيانات الدخول غير صحيحة');
+      }
+    } catch (err) {
+      setError('حدث خطأ أثناء الاتصال بالخادم');
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-800 to-fuchsia-900 relative overflow-hidden">
@@ -73,7 +128,7 @@ export default function Page() {
         transition={{ type: 'spring', stiffness: 80, damping: 12 }}
         className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 w-full max-w-md relative z-10 border border-indigo-200"
         style={{
-          boxShadow: '0 8px 32px 0 rgba(80,37,186,0.18), 0 1.5px 0 0 #a5b4fc inset'
+          boxShadow: '0 8px 32px 0 rgba(80,37,186,0.18), 0 1.5px 0 0 #a5b4fc inset',
         }}
       >
         <div className="flex flex-col items-center mb-6 gap-2">
@@ -105,7 +160,7 @@ export default function Page() {
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 autoFocus
                 dir="ltr"
@@ -128,7 +183,7 @@ export default function Page() {
               <input
                 type="password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 dir="ltr"
                 className="w-full px-10 py-2 border-none rounded-xl shadow-inner bg-indigo-50/50 focus:ring-2 focus:ring-indigo-300 focus:bg-white placeholder:font-light text-indigo-800 text-sm transition"
@@ -151,8 +206,7 @@ export default function Page() {
             <motion.button
               whileHover={{
                 scale: 1.025,
-                background:
-                  'linear-gradient(90deg, #6366f1 0%, #c084fc 100%)'
+                background: 'linear-gradient(90deg, #6366f1 0%, #c084fc 100%)',
               }}
               whileTap={{ scale: 0.97 }}
               type="submit"
@@ -193,5 +247,5 @@ export default function Page() {
         />
       </motion.div>
     </div>
-  )
+  );
 }

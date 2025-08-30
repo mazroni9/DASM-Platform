@@ -21,8 +21,6 @@ interface FormData {
   price: string
   description: string
   features: string[]
-<<<<<<< HEAD
-=======
   auctionType: string
   auctionStartPrice: string
   auctionMinPrice: string
@@ -31,16 +29,12 @@ interface FormData {
   auctionEndDate: string
   status: string
   city: string
->>>>>>> master
 }
 
 interface PreviewImage {
   url: string
   name: string
-<<<<<<< HEAD
-=======
   file?: File
->>>>>>> master
 }
 
 interface OcrData {
@@ -74,9 +68,6 @@ export default function AddCarForm() {
     color: '',
     price: '',
     description: '',
-<<<<<<< HEAD
-    features: []
-=======
     features: [],
     auctionType: '',
     auctionStartPrice: '',
@@ -86,7 +77,6 @@ export default function AddCarForm() {
     auctionEndDate: '',
     status: '',
     city: ''
->>>>>>> master
   })
   
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -94,16 +84,10 @@ export default function AddCarForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([])
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState('basic')
-  const [ocrData, setOcrData] = useState<OcrData | null>(null)
-  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
-=======
   const [ocrFile, setOcrFile] = useState<File | null>(null)
   const [ocrData, setOcrData] = useState<OcrData | null>(null)
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
->>>>>>> master
 
   // محاكاة تحليل الذكاء الاصطناعي
   useEffect(() => {
@@ -120,29 +104,6 @@ export default function AddCarForm() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
-<<<<<<< HEAD
-    
-    const files = Array.from(e.target.files)
-    const newPreviewImages = files.map(file => ({
-      url: URL.createObjectURL(file),
-      name: file.name
-    }))
-    setPreviewImages([...previewImages, ...newPreviewImages])
-    
-    // محاكاة عملية OCR
-    if (files.length > 0) {
-      setTimeout(() => {
-        setOcrData({
-          brand: 'تويوتا',
-          model: 'كامري',
-          year: '2022',
-          chassisNumber: 'JT2BF22KXW0123456',
-          engineSize: '2.5L',
-          fuelType: 'بنزين'
-        })
-      }, 1500)
-    }
-=======
     const files = Array.from(e.target.files)
     if (previewImages.length + files.length > 10) {
       setErrorMsg('يمكنك رفع 10 صور كحد أقصى')
@@ -154,7 +115,6 @@ export default function AddCarForm() {
       file
     }))
     setPreviewImages([...previewImages, ...newPreviewImages])
->>>>>>> master
   }
 
   const removeImage = (index: number) => {
@@ -163,12 +123,6 @@ export default function AddCarForm() {
     setPreviewImages(newImages)
   }
 
-<<<<<<< HEAD
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    
-=======
   const handleOcrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
     setOcrFile(e.target.files[0])
@@ -207,7 +161,7 @@ export default function AddCarForm() {
       setIsSubmitting(false)
       return
     }
->>>>>>> master
+
     // محاكاة عملية الإرسال
     const interval = setInterval(() => {
       setUploadProgress(prev => {
@@ -220,16 +174,6 @@ export default function AddCarForm() {
         return prev + 10
       })
     }, 300)
-<<<<<<< HEAD
-=======
-    // هنا يمكنك إرسال البيانات للباك-إند باستخدام fetch أو axios
-    // مثال:
-    // const form = new FormData()
-    // Object.entries(formData).forEach(([key, value]) => form.append(key, value))
-    // previewImages.forEach(img => form.append('images[]', img.file))
-    // form.append('ocr', ocrFile)
-    // await fetch('/api/cars', { method: 'POST', body: form, headers: { Authorization: `Bearer ${token}` } })
->>>>>>> master
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -275,11 +219,7 @@ export default function AddCarForm() {
                 </div>
                 <span className="text-sm mt-1 text-gray-600">
                   {stepNumber === 1 ? 'البيانات الأساسية' : 
-<<<<<<< HEAD
-                   stepNumber === 2 ? 'المواصفات' : 'المرفقات'}
-=======
                    stepNumber === 2 ? 'المواصفات والمزاد' : 'المرفقات'}
->>>>>>> master
                 </span>
               </div>
             ))}
@@ -294,8 +234,6 @@ export default function AddCarForm() {
           </div>
         </div>
 
-<<<<<<< HEAD
-=======
         {/* رسالة خطأ */}
         {errorMsg && (
           <div className="mb-4 bg-red-100 border border-red-300 text-red-700 rounded-lg p-3">
@@ -303,7 +241,6 @@ export default function AddCarForm() {
           </div>
         )}
 
->>>>>>> master
         {/* محتوى النموذج */}
         <motion.div 
           key={step}
@@ -425,8 +362,6 @@ export default function AddCarForm() {
                     placeholder="مثال: أبيض"
                   />
                 </div>
-<<<<<<< HEAD
-=======
 
                 <div>
                   <label className="block text-gray-700 mb-2">الحالة</label>
@@ -454,7 +389,6 @@ export default function AddCarForm() {
                     placeholder="مثال: الرياض"
                   />
                 </div>
->>>>>>> master
               </div>
 
               {/* تحليل الذكاء الاصطناعي */}
@@ -501,11 +435,7 @@ export default function AddCarForm() {
             </div>
           )}
 
-<<<<<<< HEAD
-          {/* الخطوة 2: المواصفات */}
-=======
           {/* الخطوة 2: المواصفات والمزاد */}
->>>>>>> master
           {step === 2 && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -640,8 +570,6 @@ export default function AddCarForm() {
                   ))}
                 </div>
               </div>
-<<<<<<< HEAD
-=======
 
               {/* بيانات المزاد */}
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -713,7 +641,6 @@ export default function AddCarForm() {
                   />
                 </div>
               </div>
->>>>>>> master
             </div>
           )}
 
@@ -774,19 +701,6 @@ export default function AddCarForm() {
               {/* رفع استمارة السيارة */}
               <div className="mt-8">
                 <h3 className="text-lg font-medium text-gray-800 mb-2">رفع استمارة السيارة</h3>
-<<<<<<< HEAD
-                <p className="text-gray-600 mb-4">سيتم استخدام الاستمارة للتحقق من بيانات السيارة</p>
-                
-                <div className="flex items-center justify-center w-full py-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-                  <div className="text-center">
-                    <FiCamera size={40} className="mx-auto text-gray-400 mb-3" />
-                    <p className="text-gray-500">قم بتحميل صورة واضحة لاستمارة السيارة</p>
-                    <button className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                      اختر ملف
-                    </button>
-                  </div>
-                </div>
-=======
                 <p className="text-gray-600 mb-4">سيتم استخدام الاستمارة للتحقق من بيانات السيارة عبر OCR</p>
                 <input
                   type="file"
@@ -809,7 +723,6 @@ export default function AddCarForm() {
                     تم اختيار الملف: {ocrFile.name}
                   </div>
                 )}
->>>>>>> master
               </div>
             </div>
           )}
@@ -894,11 +807,6 @@ export default function AddCarForm() {
                       color: '',
                       price: '',
                       description: '',
-<<<<<<< HEAD
-                      features: []
-                    })
-                    setPreviewImages([])
-=======
                       features: [],
                       auctionType: '',
                       auctionStartPrice: '',
@@ -912,7 +820,6 @@ export default function AddCarForm() {
                     setPreviewImages([])
                     setOcrFile(null)
                     setOcrData(null)
->>>>>>> master
                   }}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                 >

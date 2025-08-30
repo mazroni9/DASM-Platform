@@ -1,36 +1,94 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { FiUser, FiMail, FiLock, FiUserPlus, FiHome, FiPhone } from 'react-icons/fi'
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { FiUser, FiMail, FiLock, FiUserPlus, FiHome, FiPhone } from 'react-icons/fi';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/';
 
-export default function Page() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [passwordConfirm, setPasswordConfirm] = useState('')
-  const [showroomName, setShowroomName] = useState('')
-  const [showroomAddress, setShowroomAddress] = useState('')
-  const [phone, setPhone] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+// 🔹 تعريف نوع البيانات اللي نتلقاها من الخادم
+interface RegisterResponse {
+  exhibitor?: {
+    id: number;
+    name: string;
+    email: string;
+    showroom_name: string;
+    phone: string;
+    [key: string]: any; // دعم أي خصائص إضافية
+  };
+  message?: string;
+}
+
+export default function SignupPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [showroomName, setShowroomName] = useState('');
+  const [showroomAddress, setShowroomAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // اقرأ الرابط الذي يجب العودة إليه بعد التسجيل
+  const redirect = searchParams.get('redirect') || '/exhibitor';
+
+  // تحقق من تسجيل الدخول تلقائيًا عند التحميل
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await fetch(`${API_URL}sanctum/csrf-cookie`, {
+          method: 'GET',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          credentials: 'include',
+        });
+
+        const hasSession = document.cookie.includes('laravel_session');
+        if (hasSession) {
+          router.push(redirect);
+        }
+      } catch (err) {
+        console.log('لا يوجد جلسة نشطة');
+      }
+    };
+
+    checkAuth();
+  }, [router, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
+
     if (password !== passwordConfirm) {
-      setError('كلمة المرور غير متطابقة')
-      return
+      setError('كلمة المرور غير متطابقة');
+      return;
     }
-    setLoading(true)
+
+    setLoading(true);
+
     try {
+      // أولًا: جلب CSRF Cookie
+      await fetch(`${API_URL}sanctum/csrf-cookie`, {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'include',
+      });
+
+      // ثانيًا: إرسال طلب التسجيل
       const res = await fetch(`${API_URL}api/exhibitor/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'include',
         body: JSON.stringify({
           name,
           email,
@@ -38,27 +96,30 @@ export default function Page() {
           password_confirmation: passwordConfirm,
           showroom_name: showroomName,
           showroom_address: showroomAddress,
-          phone
-        })
-      })
-      let data = {}
+          phone,
+        }),
+      });
+
+      let data: RegisterResponse = {}; // 🔹 استخدم النوع المعرف
       try {
-        data = await res.json()
-      } catch {}
-      // @ts-ignore
+        data = await res.json();
+      } catch (err) {
+        // إذا لم يكن الرد بصيغة JSON
+      }
+
       if (res.ok && data.exhibitor) {
-        // @ts-ignore
-        localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor))
-        router.push('/exhibitor')
+        localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor));
+        document.cookie = "exhibitor_logged_in=true; path=/; max-age=86400; SameSite=Lax";
+        router.push(redirect);
       } else {
-        // @ts-ignore
-        setError(data.message || 'حدث خطأ أثناء إنشاء الحساب')
+        setError(data.message || 'حدث خطأ أثناء إنشاء الحساب');
       }
     } catch (err) {
-      setError('حدث خطأ أثناء الاتصال بالخادم')
+      setError('حدث خطأ أثناء الاتصال بالخادم');
     }
-    setLoading(false)
-  }
+
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-800 to-fuchsia-900 relative overflow-hidden">
@@ -90,7 +151,7 @@ export default function Page() {
         transition={{ type: 'spring', stiffness: 80, damping: 12 }}
         className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-6 w-full max-w-md relative z-10 border border-indigo-200"
         style={{
-          boxShadow: '0 8px 32px 0 rgba(80,37,186,0.18), 0 1.5px 0 0 #a5b4fc inset'
+          boxShadow: '0 8px 32px 0 rgba(80,37,186,0.18), 0 1.5px 0 0 #a5b4fc inset',
         }}
       >
         <div className="flex flex-col items-center mb-6 gap-2">
@@ -120,7 +181,7 @@ export default function Page() {
                 <input
                   type="text"
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value)}
                   required
                   className="w-full px-10 py-2 border-none rounded-xl shadow-inner bg-indigo-50/50 focus:ring-2 focus:ring-indigo-300 focus:bg-white placeholder:font-light text-indigo-800 text-sm transition"
                   placeholder="اسمك الكامل"
@@ -138,7 +199,7 @@ export default function Page() {
                 <input
                   type="text"
                   value={showroomName}
-                  onChange={e => setShowroomName(e.target.value)}
+                  onChange={(e) => setShowroomName(e.target.value)}
                   required
                   className="w-full px-10 py-2 border-none rounded-xl shadow-inner bg-indigo-50/50 focus:ring-2 focus:ring-indigo-300 focus:bg-white placeholder:font-light text-indigo-800 text-sm transition"
                   placeholder="اسم المعرض"
@@ -156,7 +217,7 @@ export default function Page() {
                 <input
                   type="text"
                   value={showroomAddress}
-                  onChange={e => setShowroomAddress(e.target.value)}
+                  onChange={(e) => setShowroomAddress(e.target.value)}
                   required
                   className="w-full px-10 py-2 border-none rounded-xl shadow-inner bg-indigo-50/50 focus:ring-2 focus:ring-indigo-300 focus:bg-white placeholder:font-light text-indigo-800 text-sm transition"
                   placeholder="المدينة، الحي، الشارع"
@@ -174,7 +235,7 @@ export default function Page() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
                   className="w-full px-10 py-2 border-none rounded-xl shadow-inner bg-indigo-50/50 focus:ring-2 focus:ring-indigo-300 focus:bg-white placeholder:font-light text-indigo-800 text-sm transition"
                   placeholder="05xxxxxxxx"
@@ -192,7 +253,7 @@ export default function Page() {
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   dir="ltr"
                   className="w-full px-10 py-2 border-none rounded-xl shadow-inner bg-indigo-50/50 focus:ring-2 focus:ring-indigo-300 focus:bg-white placeholder:font-light text-indigo-800 text-sm transition"
@@ -211,7 +272,7 @@ export default function Page() {
                 <input
                   type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
                   dir="ltr"
@@ -231,7 +292,7 @@ export default function Page() {
                 <input
                   type="password"
                   value={passwordConfirm}
-                  onChange={e => setPasswordConfirm(e.target.value)}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
                   required
                   minLength={6}
                   dir="ltr"
@@ -257,8 +318,7 @@ export default function Page() {
             <motion.button
               whileHover={{
                 scale: 1.025,
-                background:
-                  'linear-gradient(90deg, #6366f1 0%, #c084fc 100%)'
+                background: 'linear-gradient(90deg, #6366f1 0%, #c084fc 100%)',
               }}
               whileTap={{ scale: 0.97 }}
               type="submit"
@@ -281,7 +341,7 @@ export default function Page() {
             href="/exhibitor/login"
             className="text-indigo-600 font-semibold hover:underline hover:text-indigo-800 transition"
           >
-            لديك حساب بالفعل ؟ تسجيل الدخول
+            لديك حساب بالفعل؟ تسجيل الدخول
           </a>
         </motion.div>
         {/* زخرفة أسفل الفورم */}
@@ -293,5 +353,5 @@ export default function Page() {
         />
       </motion.div>
     </div>
-  )
+  );
 }
