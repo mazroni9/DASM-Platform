@@ -3,27 +3,18 @@
 import { useState } from "react"
 import { FaWallet, FaArrowDown, FaArrowUp, FaMoneyCheckAlt, FaFileExport, FaCheckCircle } from "react-icons/fa"
 
-const summary = [
-  { label: "الرصيد الحالي", value: 12500, icon: <FaWallet className="text-green-500" />, color: "bg-green-50" },
-  { label: "إجمالي الأرباح", value: 32000, icon: <FaArrowUp className="text-blue-500" />, color: "bg-blue-50" },
-  { label: "إجمالي السحوبات", value: 15000, icon: <FaArrowDown className="text-yellow-500" />, color: "bg-yellow-50" },
-  { label: "إجمالي العمولات", value: 4000, icon: <FaMoneyCheckAlt className="text-red-500" />, color: "bg-red-50" },
-]
+// البيانات التجريبية محذوفة. يجب جلب بيانات الملخص والمعاملات من مصدر خارجي أو props.
+const summary: Array<{ label: string, value: number, icon: JSX.Element, color: string }> = []
+const transactions: Array<{ date: string, type: string, amount: number, status: string, note: string }> = []
 
-const transactions = [
-  { date: "2025-08-10", type: "سحب", amount: -2000, status: "تم", note: "تحويل بنكي" },
-  { date: "2025-08-09", type: "عمولة", amount: -500, status: "تم", note: "بيع سيارة" },
-  { date: "2025-08-08", type: "إيداع", amount: 5000, status: "تم", note: "إيداع أرباح" },
-  { date: "2025-08-07", type: "سحب", amount: -1000, status: "تم", note: "تحويل بنكي" },
-]
-
-function formatDate(dateString) {
+function formatDate(dateString: string) {
   const options = { year: "numeric", month: "short", day: "numeric" }
   return new Date(dateString).toLocaleDateString('ar-SA', options)
 }
 
 // رسم بياني بسيط
-function MiniBarChart({ data }) {
+function MiniBarChart({ data }: { data: typeof transactions }) {
+  if (data.length === 0) return null
   const max = Math.max(...data.map(d => Math.abs(d.amount)))
   return (
     <div className="flex items-end gap-2 h-16 mt-4">
@@ -31,7 +22,7 @@ function MiniBarChart({ data }) {
         <div key={i} className="flex flex-col items-center">
           <div
             className={`w-4 rounded-t ${d.amount > 0 ? "bg-green-400" : "bg-red-400"} transition-all`}
-            style={{ height: `${Math.abs(d.amount) / max * 60}px` }}
+            style={{ height: `${max ? (Math.abs(d.amount) / max * 60) : 0}px` }}
             title={d.amount}
           ></div>
           <span className="text-[10px] text-gray-400 mt-1">{formatDate(d.date).split('/')[1]}</span>
