@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiLock, FiUserPlus, FiHome, FiPhone } from 'react-icons/fi';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/';
+// ✅ إزالة fallback إلى localhost
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // 🔹 تعريف نوع البيانات اللي نتلقاها من الخادم
 interface RegisterResponse {
@@ -36,11 +37,21 @@ export default function SignupPage() {
   // اقرأ الرابط الذي يجب العودة إليه بعد التسجيل
   const redirect = searchParams.get('redirect') || '/exhibitor';
 
+  // ⚠️ تحقق من أن API_URL معرّف
+  useEffect(() => {
+    if (!API_URL) {
+      setError('خطأ: لم يتم تهيئة عنوان الخادم. تواصل مع الدعم.');
+      return;
+    }
+  }, []);
+
   // تحقق من تسجيل الدخول تلقائيًا عند التحميل
   useEffect(() => {
+    if (!API_URL) return;
+
     const checkAuth = async () => {
       try {
-        await fetch(`${API_URL}sanctum/csrf-cookie`, {
+        await fetch(`${API_URL}/sanctum/csrf-cookie`, {
           method: 'GET',
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -53,7 +64,7 @@ export default function SignupPage() {
           router.push(redirect);
         }
       } catch (err) {
-        console.log('لا يوجد جلسة نشطة');
+        console.log('لا يوجد اتصال بالخادم أو خطأ في الشبكة');
       }
     };
 
@@ -62,7 +73,11 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    
+    if (!API_URL) {
+      setError('عنوان الخادم غير متوفر. يرجى المحاولة لاحقًا.');
+      return;
+    }
 
     if (password !== passwordConfirm) {
       setError('كلمة المرور غير متطابقة');
@@ -70,10 +85,11 @@ export default function SignupPage() {
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       // أولًا: جلب CSRF Cookie
-      await fetch(`${API_URL}sanctum/csrf-cookie`, {
+      const csrfRes = await fetch(`${API_URL}/sanctum/csrf-cookie`, {
         method: 'GET',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
@@ -81,8 +97,12 @@ export default function SignupPage() {
         credentials: 'include',
       });
 
+      if (!csrfRes.ok) {
+        throw new Error('فشل في جلب CSRF token. تحقق من عنوان API أو CORS.');
+      }
+
       // ثانيًا: إرسال طلب التسجيل
-      const res = await fetch(`${API_URL}api/exhibitor/register`, {
+      const res = await fetch(`${API_URL}/api/exhibitor/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,11 +120,12 @@ export default function SignupPage() {
         }),
       });
 
-      let data: RegisterResponse = {}; // 🔹 استخدم النوع المعرف
+      let data: RegisterResponse = {};
       try {
         data = await res.json();
       } catch (err) {
-        // إذا لم يكن الرد بصيغة JSON
+        console.error('فشل في تحليل استجابة JSON من الخادم');
+        throw new Error('استجابة غير صالحة من الخادم');
       }
 
       if (res.ok && data.exhibitor) {
@@ -114,11 +135,16 @@ export default function SignupPage() {
       } else {
         setError(data.message || 'حدث خطأ أثناء إنشاء الحساب');
       }
-    } catch (err) {
-      setError('حدث خطأ أثناء الاتصال بالخادم');
+    } catch (err: any) {
+      console.error('❌ خطأ في الاتصال:', err.message);
+      if (err.message.includes('Failed to fetch')) {
+        setError('فشل الاتصال بالخادم. تحقق من الإنترنت أو عنوان الخادم.');
+      } else {
+        setError(err.message || 'حدث خطأ غير متوقع');
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
