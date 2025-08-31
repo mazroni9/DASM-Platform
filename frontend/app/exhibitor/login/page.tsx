@@ -5,7 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiLock, FiMail, FiLogIn } from 'react-icons/fi';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/';
+// ✅ التأكد من تعريف المتغير البيئي بشكل صحيح
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// 🔹 التحقق من أن API_URL موجود (مهم جدًا)
+if (!API_URL) {
+  console.error('⚠️ تحذير: NEXT_PUBLIC_API_URL غير معرّف في المتغيرات البيئية');
+}
 
 // 🔹 تعريف نوع البيانات اللي نتلقاها من الخادم
 interface LoginResponse {
@@ -29,22 +35,35 @@ export default function LoginPage() {
   // اقرأ الرابط الذي يجب العودة إليه بعد الدخول
   const redirect = searchParams.get('redirect') || '/exhibitor';
 
+  // ⚠️ تحقق من أن API_URL معرّف
+  useEffect(() => {
+    if (!API_URL) {
+      setError('خطأ: لم يتم تهيئة عنوان الخادم. تواصل مع الدعم.');
+      return;
+    }
+  }, []);
+
   // تحقق من تسجيل الدخول تلقائيًا عند التحميل
   useEffect(() => {
+    if (!API_URL) return;
+
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}sanctum/csrf-cookie`, {
+        const res = await fetch(`${API_URL}/sanctum/csrf-cookie`, {
+          method: 'GET',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          },
           credentials: 'include',
         });
 
-        const cookieHeader = res.headers.get('set-cookie');
-        const hasSession = document.cookie.includes('laravel_session') || cookieHeader;
+        const hasSession = document.cookie.includes('laravel_session');
 
         if (hasSession) {
           router.push(redirect);
         }
       } catch (err) {
-        console.log('لا يوجد جلسة نشطة');
+        console.log('لا يوجد اتصال بالخادم أو خطأ في الشبكة');
       }
     };
 
@@ -53,12 +72,18 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!API_URL) {
+      setError('عنوان الخادم غير متوفر. يرجى المحاولة لاحقًا.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       // أولًا: جلب CSRF Cookie (مهم لـ Sanctum)
-      await fetch(`${API_URL}sanctum/csrf-cookie`, {
+      const csrfRes = await fetch(`${API_URL}/sanctum/csrf-cookie`, {
         method: 'GET',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
@@ -66,8 +91,12 @@ export default function LoginPage() {
         credentials: 'include',
       });
 
+      if (!csrfRes.ok) {
+        throw new Error('فشل في جلب CSRF token. تحقق من عنوان API أو CORS.');
+      }
+
       // ثانيًا: إرسال طلب الدخول
-      const res = await fetch(`${API_URL}api/exhibitor/login`, {
+      const loginRes = await fetch(`${API_URL}/api/exhibitor/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,25 +106,32 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      let data: LoginResponse = {}; // 🔹 نستخدم النوع المعرف أعلاه
+      let data: LoginResponse = {};
+
       try {
-        data = await res.json();
-      } catch (err) {
-        // إذا لم يكن الرد بصيغة JSON
+        data = await loginRes.json();
+      } catch (parseError) {
+        console.error('فشل في تحليل JSON:', parseError);
+        throw new Error('استجابة غير صالحة من الخادم');
       }
 
-      if (res.ok && data.exhibitor) {
+      if (loginRes.ok && data.exhibitor) {
         localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor));
-        // أضف كوكي دليل على تسجيل الدخول
         document.cookie = "exhibitor_logged_in=true; path=/; max-age=86400; SameSite=Lax";
         router.push(redirect);
       } else {
         setError(data.message || 'بيانات الدخول غير صحيحة');
       }
-    } catch (err) {
-      setError('حدث خطأ أثناء الاتصال بالخادم');
+    } catch (err: any) {
+      console.error('❌ خطأ التوصيل:', err.message);
+      if (err.message.includes('Failed to fetch')) {
+        setError('فشل الاتصال بالخادم. تحقق من الإنترنت أو عنوان الخادم.');
+      } else {
+        setError(err.message || 'حدث خطأ غير متوقع');
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
