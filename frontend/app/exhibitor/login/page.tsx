@@ -177,7 +177,8 @@ export default function LoginPage() {
             <FiLogIn size={30} className="text-white drop-shadow" />
           </motion.div>
           <h2 className="text-2xl font-extrabold text-gray-800 tracking-tight text-center drop-shadow-sm">
-أهلا          </h2>
+            أهلاً بك في بوابة العارضين
+          </h2>
           <p className="text-gray-500 mt-1 text-center text-sm font-medium">
             سجل دخولك للمعرض وتمتع بتجربة مميزة وواجهة عصرية
           </p>
