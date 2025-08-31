@@ -312,39 +312,18 @@ export default function ExhibitorCars() {
   const [showModal, setShowModal] = useState(false)
   const carsPerPage = 8
 
-  // بيانات تجريبية
+  // هنا قم بربط جلب السيارات من API أو قاعدة بيانات بدلاً من البيانات التجريبية
   useEffect(() => {
     const fetchCars = async () => {
       setLoading(true)
       try {
-        const mockCars: Car[] = [
-          {
-            id: 1, title: 'تويوتا كامري 2022', brand: 'تويوتا', model: 'كامري', year: 2022, price: 125000, mileage: 25000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'معلن', addedDate: '2023-05-15', views: 1245, inquiries: 23
-          },
-          {
-            id: 2, title: 'نيسان باترول 2021', brand: 'نيسان', model: 'باترول', year: 2021, price: 210000, mileage: 35000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'محجوز', addedDate: '2023-06-20', views: 1890, inquiries: 45
-          },
-          {
-            id: 3, title: 'هيونداي اكسنت 2023', brand: 'هيونداي', model: 'اكسنت', year: 2023, price: 85000, mileage: 5000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'مباع', addedDate: '2023-04-10', views: 980, inquiries: 18
-          },
-          {
-            id: 4, title: 'شفروليه كمارو 2020', brand: 'شفروليه', model: 'كامارو', year: 2020, price: 180000, mileage: 40000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'معلن', addedDate: '2023-07-05', views: 1560, inquiries: 32
-          },
-          {
-            id: 5, title: 'مرسيدس E200 2021', brand: 'مرسيدس', model: 'E200', year: 2021, price: 250000, mileage: 28000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'معلن', addedDate: '2023-06-15', views: 2100, inquiries: 56
-          },
-          {
-            id: 6, title: 'بي ام دبليو X5 2022', brand: 'بي ام دبليو', model: 'X5', year: 2022, price: 320000, mileage: 15000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'محجوز', addedDate: '2023-05-28', views: 2450, inquiries: 67
-          },
-          {
-            id: 7, title: 'لكزس LX570 2020', brand: 'لكزس', model: 'LX570', year: 2020, price: 380000, mileage: 45000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'معلن', addedDate: '2023-07-10', views: 1780, inquiries: 42
-          },
-          {
-            id: 8, title: 'فورد رابتر 2023', brand: 'فورد', model: 'رابتر', year: 2023, price: 290000, mileage: 8000, fuelType: 'بنزين', transmission: 'أوتوماتيك', status: 'معلن', addedDate: '2023-06-01', views: 1950, inquiries: 51
-          }
-        ]
-        setCars(mockCars)
-        setFilteredCars(mockCars)
+        // مثال: const response = await fetch('/api/cars');
+        // const dbCars = await response.json();
+        // setCars(dbCars);
+        // setFilteredCars(dbCars);
+
+        setCars([]) // لا بيانات تجريبية
+        setFilteredCars([])
       } catch (error) {
         console.error('Error fetching cars:', error)
       } finally {
