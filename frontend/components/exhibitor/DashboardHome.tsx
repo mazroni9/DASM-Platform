@@ -20,29 +20,32 @@ export function DashboardHome() {
     upcoming: 0
   });
 
-  // Simulate loading data
+  // جلب البيانات من API أو قاعدة بيانات بدلاً من البيانات التجريبية
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setStats({
-        cars: 24,
-        orders: 18,
-        visits: 1243,
-        revenue: 45800,
-        auctions: 7,
-        upcoming: 3
-      });
-    }, 800);
+    const fetchStats = async () => {
+      // مثال: const response = await fetch('/api/dashboard');
+      // const data = await response.json();
+      // setStats(data);
 
-    return () => clearTimeout(timer);
+      setStats({
+        cars: 0,
+        orders: 0,
+        visits: 0,
+        revenue: 0,
+        auctions: 0,
+        upcoming: 0
+      });
+    };
+    fetchStats();
   }, []);
 
-  // Chart data
+  // Chart data (يفترض أن تأتي من API أو قاعدة بيانات)
   const salesData = {
-    labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+    labels: [],
     datasets: [
       {
         label: 'مبيعات السيارات',
-        data: [12, 19, 3, 5, 2, 3],
+        data: [],
         backgroundColor: 'rgba(99, 102, 241, 0.6)',
         borderColor: 'rgba(99, 102, 241, 1)',
         borderWidth: 2,
@@ -52,10 +55,10 @@ export function DashboardHome() {
   };
 
   const carTypesData = {
-    labels: ['سيدان', 'SUV', 'كوبيه', 'هايبرد', 'كلاسيك'],
+    labels: [],
     datasets: [
       {
-        data: [35, 25, 20, 15, 5],
+        data: [],
         backgroundColor: [
           'rgba(99, 102, 241, 0.7)',
           'rgba(59, 130, 246, 0.7)',
@@ -69,11 +72,11 @@ export function DashboardHome() {
   };
 
   const visitsData = {
-    labels: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+    labels: [],
     datasets: [
       {
         label: 'الزيارات',
-        data: [120, 190, 130, 170, 150, 240, 210],
+        data: [],
         fill: true,
         backgroundColor: 'rgba(99, 102, 241, 0.2)',
         borderColor: 'rgba(99, 102, 241, 1)',
@@ -144,19 +147,19 @@ export function DashboardHome() {
           icon={<FaCar size={24} />} 
           title="السيارات المضافة" 
           value={stats.cars} 
-          change={12} 
+          change={undefined}
         />
         <StatCard 
           icon={<FiShoppingCart size={24} />} 
           title="الطلبات" 
           value={stats.orders} 
-          change={8} 
+          change={undefined}
         />
         <StatCard 
           icon={<FiEye size={24} />} 
           title="الزيارات" 
           value={stats.visits} 
-          change={24} 
+          change={undefined}
         />
         <StatCard 
           icon={<FiDollarSign size={24} />} 
@@ -167,7 +170,7 @@ export function DashboardHome() {
           icon={<FiTrendingUp size={24} />} 
           title="المزادات النشطة" 
           value={stats.auctions} 
-          change={-3} 
+          change={undefined}
         />
         <StatCard 
           icon={<FiCalendar size={24} />} 
@@ -266,27 +269,7 @@ export function DashboardHome() {
       >
         <h3 className="text-lg font-bold text-gray-800 mb-4">أحدث النشاطات</h3>
         <div className="space-y-4">
-          {[
-            { id: 1, action: 'تم بيع سيارة مرسيدس 2023', time: 'منذ ساعتين', amount: '45,000 ر.س' },
-            { id: 2, action: 'تمت إضافة سيارة جديدة (بي إم دبليو X6)', time: 'منذ 5 ساعات' },
-            { id: 3, action: 'مزاد جديد لسيارة كلاسيكية', time: 'منذ يوم', amount: 'بداية من 120,000 ر.س' },
-            { id: 4, action: 'طلب حجز لسيارة تويوتا كامري', time: 'منذ يومين' },
-          ].map((activity) => (
-            <div key={activity.id} className="flex items-start p-4 hover:bg-gray-50 rounded-lg transition-colors">
-              <div className="bg-indigo-100 p-2 rounded-full text-indigo-600 mr-3">
-                <FiShoppingCart size={18} />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-800">{activity.action}</p>
-                <p className="text-sm text-gray-500">{activity.time}</p>
-              </div>
-              {activity.amount && (
-                <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                  {activity.amount}
-                </span>
-              )}
-            </div>
-          ))}
+          {/* هنا من المفترض أن تأتي الأنشطة الفعلية من API */}
         </div>
       </motion.div>
     </motion.section>
