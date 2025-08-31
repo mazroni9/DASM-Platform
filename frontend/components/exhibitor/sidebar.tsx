@@ -102,7 +102,7 @@ export function Sidebar() {
       <div className="p-6 border-b border-indigo-800/50 flex items-center space-x-4 rtl:space-x-reverse">
         <Avatar
           size="large"
-          src={user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : 'https://randomuser.me/api/portraits/men/1.jpg'}
+          src={'https://saraahah.com/images/profile.png'}
           className="border-2 border-white shadow-lg transition-transform hover:scale-105"
         />
         <div className="text-left">

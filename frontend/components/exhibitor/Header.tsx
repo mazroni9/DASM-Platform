@@ -190,7 +190,7 @@ export function Header() {
           >
             <Avatar
               size="large"
-              src={user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : 'https://randomuser.me/api/portraits/men/1.jpg'}
+              src={'https://saraahah.com/images/profile.png'}
               className="border-2 border-white shadow-lg transition-transform group-hover:scale-105"
             />
             <div className="hidden md:flex flex-col text-right">
