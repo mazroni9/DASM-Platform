@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiSearch, FiFilter, FiBarChart2, FiUsers, FiTruck, FiDollarSign, FiTrendingUp
@@ -16,34 +16,14 @@ const periods = [
   { label: 'هذا العام', value: 'year' }
 ]
 
-// بيانات وهمية
-const stats = [
-  { label: 'إجمالي المبيعات', value: 125, icon: <FiDollarSign />, color: 'indigo' },
-  { label: 'العملاء الجدد', value: 32, icon: <FiUsers />, color: 'green' },
-  { label: 'الطلبات', value: 87, icon: <FiTruck />, color: 'blue' },
-  { label: 'النمو الشهري', value: '12%', icon: <FiTrendingUp />, color: 'yellow' }
-]
+// البيانات التجريبية محذوفة. يجب جلب بيانات الإحصائيات من مصدر خارجي هنا.
+// مثال: const stats = useStatsData(); أو جلبها من API أو props أو Context
+const stats: Array<{ label: string, value: number | string, icon: React.ReactNode, color: string }> = []
 
-const salesData = [
-  { name: 'سبت', value: 10 },
-  { name: 'أحد', value: 15 },
-  { name: 'اثنين', value: 20 },
-  { name: 'ثلاثاء', value: 18 },
-  { name: 'أربعاء', value: 25 },
-  { name: 'خميس', value: 22 },
-  { name: 'جمعة', value: 30 }
-]
-
-const ordersData = [
-  { name: 'تم التوصيل', value: 50 },
-  { name: 'قيد التنفيذ', value: 30 },
-  { name: 'ملغي', value: 7 }
-]
-
-const customersData = [
-  { name: 'جديد', value: 20 },
-  { name: 'متكرر', value: 80 }
-]
+// بيانات الرسم البياني محذوفة. يجب جلبها من مصدر خارجي
+const salesData: Array<{ name: string, value: number }> = []
+const ordersData: Array<{ name: string, value: number }> = []
+const customersData: Array<{ name: string, value: number }> = []
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e42', '#ef4444']
 

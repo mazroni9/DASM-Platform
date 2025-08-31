@@ -129,101 +129,10 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const ordersPerPage = 7
 
-  // بيانات تجريبية
+  // البيانات التجريبية محذوفة. يجب جلب البيانات من مصدر خارجي هنا.
   useEffect(() => {
-    const now = new Date()
-    const mockOrders: Order[] = [
-      {
-        id: 1,
-        customer: 'محمد علي',
-        phone: '0501234567',
-        car: 'تويوتا كامري 2022',
-        total: 125000,
-        status: 'قيد التنفيذ',
-        createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-        address: 'الرياض - حي العليا',
-        notes: 'يرجى الاتصال قبل التوصيل'
-      },
-      {
-        id: 2,
-        customer: 'سارة أحمد',
-        phone: '0559876543',
-        car: 'نيسان باترول 2021',
-        total: 210000,
-        status: 'تم التوصيل',
-        createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
-        address: 'جدة - حي الشاطئ',
-        notes: ''
-      },
-      {
-        id: 3,
-        customer: 'خالد فهد',
-        phone: '0533333333',
-        car: 'هيونداي اكسنت 2023',
-        total: 85000,
-        status: 'ملغي',
-        createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString(),
-        address: 'الدمام - حي الفيصلية',
-        notes: 'تم الإلغاء من قبل العميل'
-      },
-      {
-        id: 4,
-        customer: 'أحمد يوسف',
-        phone: '0544444444',
-        car: 'شفروليه كمارو 2020',
-        total: 180000,
-        status: 'قيد التنفيذ',
-        createdAt: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(),
-        address: 'مكة - حي العزيزية',
-        notes: ''
-      },
-      {
-        id: 5,
-        customer: 'نورة خالد',
-        phone: '0566666666',
-        car: 'مرسيدس E200 2021',
-        total: 250000,
-        status: 'تم التوصيل',
-        createdAt: new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString(),
-        address: 'الرياض - حي النرجس',
-        notes: ''
-      },
-      {
-        id: 6,
-        customer: 'عبدالله صالح',
-        phone: '0577777777',
-        car: 'بي ام دبليو X5 2022',
-        total: 320000,
-        status: 'قيد التنفيذ',
-        createdAt: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(),
-        address: 'جدة - حي الروضة',
-        notes: 'توصيل سريع'
-      },
-      {
-        id: 7,
-        customer: 'سلمان ناصر',
-        phone: '0588888888',
-        car: 'لكزس LX570 2020',
-        total: 380000,
-        status: 'ملغي',
-        createdAt: new Date(now.getTime() - 8 * 60 * 60 * 1000).toISOString(),
-        address: 'الدمام - حي الشاطئ',
-        notes: ''
-      },
-      {
-        id: 8,
-        customer: 'ريم عبدالله',
-        phone: '0599999999',
-        car: 'فورد رابتر 2023',
-        total: 290000,
-        status: 'قيد التنفيذ',
-        createdAt: new Date(now.getTime() - 10 * 60 * 60 * 1000).toISOString(),
-        address: 'الرياض - حي الملقا',
-        notes: ''
-      }
-    ]
-    setOrders(mockOrders)
-    setFilteredOrders(mockOrders)
+    setOrders([])
+    setFilteredOrders([])
     setLoading(false)
   }, [])
 

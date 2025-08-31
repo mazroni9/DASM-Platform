@@ -3,13 +3,10 @@
 import { useState } from "react"
 import { FaCar, FaSearch, FaCheckCircle, FaTimesCircle, FaChartPie } from "react-icons/fa"
 
-const cars = [
-  { id: 1, model: "تويوتا كامري", year: 2022, status: "متاحة", price: 95000 },
-  { id: 2, model: "هيونداي سوناتا", year: 2021, status: "مباعة", price: 87000 },
-  { id: 3, model: "كيا سيراتو", year: 2020, status: "متاحة", price: 65000 },
-  { id: 4, model: "هوندا أكورد", year: 2022, status: "محجوزة", price: 99000 },
-  { id: 5, model: "تويوتا يارس", year: 2019, status: "مباعة", price: 42000 },
-]
+// تم إزالة البيانات التجريبية. يجب عليك جلب بيانات السيارات من مصدر خارجي هنا.
+
+// مثال: const cars = useCarsData(); أو جلبها من API أو props أو Context
+const cars: Array<{ id: number, model: string, year: number, status: string, price: number }> = []
 
 function PieChart({ data }) {
   const total = data.reduce((sum, d) => sum + d.value, 0)
