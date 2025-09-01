@@ -1,60 +1,57 @@
 'use client'
-
-import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { FiUpload, FiCamera, FiInfo, FiCheckCircle, FiX, FiChevronDown } from 'react-icons/fi'
-import { FaCar, FaGasPump, FaTachometerAlt, FaCalendarAlt, FaCogs } from 'react-icons/fa'
-import { IoMdSpeedometer } from 'react-icons/io'
-import { GiCarDoor, GiGearStick } from 'react-icons/gi'
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiUpload, FiInfo, FiCheckCircle, FiX, FiChevronDown } from 'react-icons/fi';
+import { FaTachometerAlt, FaGasPump, FaCogs } from 'react-icons/fa';
+import { GiCarDoor, GiGearStick } from 'react-icons/gi';
 
 interface FormData {
-  carType: string
-  brand: string
-  model: string
-  year: string
-  mileage: string
-  fuelType: string
-  transmission: string
-  engineSize: string
-  doors: string
-  color: string
-  price: string
-  description: string
-  features: string[]
-  auctionType: string
-  auctionStartPrice: string
-  auctionMinPrice: string
-  auctionMaxPrice: string
-  auctionStartDate: string
-  auctionEndDate: string
-  status: string
-  city: string
+  carType: string;
+  brand: string;
+  model: string;
+  year: string;
+  mileage: string;
+  fuelType: string;
+  transmission: string;
+  engineSize: string;
+  doors: string;
+  color: string;
+  price: string;
+  description: string;
+  features: string[];
+  auctionStartPrice: string;
+  auctionMinPrice: string;
+  auctionMaxPrice: string;
+  auctionStartDate: string;
+  auctionEndDate: string;
+  status: string;
+  city: string;
 }
 
 interface PreviewImage {
-  url: string
-  name: string
-  file?: File
+  url: string;
+  name: string;
+  file?: File;
 }
 
 interface OcrData {
-  brand: string
-  model: string
-  year: string
-  chassisNumber: string
-  engineSize: string
-  fuelType: string
+  brand: string;
+  model: string;
+  year: string;
+  chassisNumber: string;
+  engineSize: string;
+  fuelType: string;
 }
 
 interface AiAnalysis {
-  marketPrice: number
-  demandLevel: string
-  similarCars: number
-  priceSuggestion: number
+  marketPrice: number;
+  demandLevel: string;
+  similarCars: number;
+  priceSuggestion: number;
 }
 
 export default function AddCarForm() {
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     carType: '',
     brand: '',
@@ -69,7 +66,6 @@ export default function AddCarForm() {
     price: '',
     description: '',
     features: [],
-    auctionType: '',
     auctionStartPrice: '',
     auctionMinPrice: '',
     auctionMaxPrice: '',
@@ -77,19 +73,18 @@ export default function AddCarForm() {
     auctionEndDate: '',
     status: '',
     city: ''
-  })
-  
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [previewImages, setPreviewImages] = useState<PreviewImage[]>([])
-  const [ocrFile, setOcrFile] = useState<File | null>(null)
-  const [ocrData, setOcrData] = useState<OcrData | null>(null)
-  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  });
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewImages, setPreviewImages] = useState<PreviewImage[]>([]);
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrData, setOcrData] = useState<OcrData | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // محاكاة تحليل الذكاء الاصطناعي
+  // تحليل السوق الذكي (وهمي)
   useEffect(() => {
     if (formData.brand && formData.model && formData.year) {
       const mockAnalysis: AiAnalysis = {
@@ -97,36 +92,38 @@ export default function AddCarForm() {
         demandLevel: ['منخفض', 'متوسط', 'مرتفع'][Math.floor(Math.random() * 3)],
         similarCars: Math.round(Math.random() * 50),
         priceSuggestion: Math.round(Math.random() * 50000 + 50000)
-      }
-      setAiAnalysis(mockAnalysis)
+      };
+      setAiAnalysis(mockAnalysis);
     }
-  }, [formData.brand, formData.model, formData.year])
+  }, [formData.brand, formData.model, formData.year]);
 
+  // رفع الصور
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-    const files = Array.from(e.target.files)
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
     if (previewImages.length + files.length > 10) {
-      setErrorMsg('يمكنك رفع 10 صور كحد أقصى')
-      return
+      setErrorMsg('يمكنك رفع 10 صور كحد أقصى');
+      return;
     }
     const newPreviewImages = files.map(file => ({
       url: URL.createObjectURL(file),
       name: file.name,
       file
-    }))
-    setPreviewImages([...previewImages, ...newPreviewImages])
-  }
+    }));
+    setPreviewImages([...previewImages, ...newPreviewImages]);
+  };
 
   const removeImage = (index: number) => {
-    const newImages = [...previewImages]
-    newImages.splice(index, 1)
-    setPreviewImages(newImages)
-  }
+    const newImages = [...previewImages];
+    newImages.splice(index, 1);
+    setPreviewImages(newImages);
+  };
 
+  // رفع صورة الاستمارة (منظر فقط)
   const handleOcrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return
-    setOcrFile(e.target.files[0])
-    // محاكاة عملية OCR
+    if (!e.target.files || e.target.files.length === 0) return;
+    setOcrFile(e.target.files[0]);
+    // محاكاة OCR (وهمي)
     setTimeout(() => {
       setOcrData({
         brand: 'تويوتا',
@@ -135,63 +132,142 @@ export default function AddCarForm() {
         chassisNumber: 'JT2BF22KXW0123456',
         engineSize: '2.5L',
         fuelType: 'بنزين'
-      })
-    }, 1500)
-  }
+      });
+    }, 1500);
+  };
 
+  // إرسال البيانات للباك اند ExhibitorCarController
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setErrorMsg(null)
-    // تحقق من الحقول المطلوبة
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    
     if (!formData.brand || !formData.model || !formData.year || !formData.price || !formData.carType) {
-      setErrorMsg('يرجى تعبئة جميع الحقول الأساسية المطلوبة')
-      setIsSubmitting(false)
-      return
+      setErrorMsg('يرجى تعبئة جميع الحقول الأساسية المطلوبة');
+      setIsSubmitting(false);
+      return;
     }
-    // تحقق من رفع صورة الاستمارة
-    if (!ocrFile) {
-      setErrorMsg('يرجى رفع صورة استمارة السيارة')
-      setIsSubmitting(false)
-      return
-    }
-    // تحقق من رفع الصور
+    
     if (previewImages.length === 0) {
-      setErrorMsg('يرجى رفع صور السيارة')
-      setIsSubmitting(false)
-      return
+      setErrorMsg('يرجى رفع صور السيارة');
+      setIsSubmitting(false);
+      return;
     }
 
-    // محاكاة عملية الإرسال
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsSubmitting(false)
-          setIsSuccess(true)
-          return 100
+    try {
+      // ✅ استخدام exhibitor_token من localStorage
+      const token = localStorage.getItem('exhibitor_token');
+      if (!token) {
+        throw new Error('يرجى تسجيل الدخول أولاً');
+      }
+
+      // ✅ استخدام NEXT_PUBLIC_API_URL الصحيح
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/exhibitor/cars`
+        : 'http://localhost:8000/api/exhibitor/cars';
+      
+      const sendData = new FormData();
+
+      // ✅ مطابقة الحقول مع الباك إند
+      sendData.append('make', formData.brand);
+      sendData.append('model', formData.model);
+      sendData.append('year', formData.year);
+      sendData.append('vin', ocrData?.chassisNumber || 'VIN123456789');
+      sendData.append('odometer', formData.mileage || '0');
+      sendData.append('color', formData.color);
+      sendData.append('engine_size', formData.engineSize || '');
+      sendData.append('transmission', formData.transmission || '');
+      sendData.append('description', formData.description || '');
+      sendData.append('evaluation_price', formData.price);
+      sendData.append('condition', formData.status || '');
+      sendData.append('city', formData.city || '');
+      sendData.append('car_type', formData.carType);
+      sendData.append('fuel_type', formData.fuelType || '');
+      sendData.append('doors', formData.doors || '');
+      
+      // ✅ إرسال المميزات
+      formData.features.forEach((feature, index) => {
+        sendData.append(`features[${index}]`, feature);
+      });
+      
+      // ✅ صور السيارة
+      previewImages.forEach((img, index) => {
+        if (img.file) {
+          sendData.append(`images[${index}]`, img.file);
         }
-        return prev + 10
-      })
-    }, 300)
-  }
+      });
+      
+      // ✅ حقول المزاد
+      if (formData.auctionStartPrice) sendData.append('auction_start_price', formData.auctionStartPrice);
+      if (formData.auctionMinPrice) sendData.append('auction_min_price', formData.auctionMinPrice);
+      if (formData.auctionMaxPrice) sendData.append('auction_max_price', formData.auctionMaxPrice);
+      if (formData.auctionStartDate) sendData.append('auction_start_date', formData.auctionStartDate);
+      if (formData.auctionEndDate) sendData.append('auction_end_date', formData.auctionEndDate);
+
+      console.log('Sending data to:', apiUrl);
+      
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: sendData
+      });
+      
+      console.log('Response status:', res.status);
+      
+      const responseText = await res.text();
+      console.log('Response text:', responseText);
+      
+      if (!res.ok) {
+        let errorMessage = 'فشل الإرسال، تحقق من البيانات.';
+        try {
+          const errorData = JSON.parse(responseText);
+          console.log('Error data:', errorData);
+          errorMessage = errorData.message || errorData.error || `خطأ في الطلب: ${res.status}`;
+          if (errorData.errors) {
+            const fieldErrors = Object.values(errorData.errors).flat().join(', ');
+            errorMessage = `أخطاء في الحقول: ${fieldErrors}`;
+          }
+        } catch (jsonError) {
+          errorMessage = `خطأ في الطلب: ${res.status} - ${responseText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        result = { message: 'تم الإرسال بنجاح' };
+      }
+      
+      console.log('Success:', result);
+      setIsSubmitting(false);
+      setIsSuccess(true);
+    } catch (err: any) {
+      console.error('Submit error:', err);
+      setErrorMsg(err.message || 'فشل الإرسال، تحقق من البيانات.');
+      setIsSubmitting(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value
-    })
-  }
+    });
+  };
 
-  const nextStep = () => setStep(prev => prev + 1)
-  const prevStep = () => setStep(prev => prev - 1)
+  const nextStep = () => setStep(prev => prev + 1);
+  const prevStep = () => setStep(prev => prev - 1);
 
   const featuresList = [
-    'مكيف هواء', 'نظام ملاحة', 'كاميرا خلفية', 'مقاعد جلد', 
+    'مكيف هواء', 'نظام ملاحة', 'كاميرا خلفية', 'مقاعد جلد',
     'شاشة لمس', 'تحكم بمقود', 'فتحة سقف', 'مرآة كهربائية',
     'حساسات ركن', 'نظام صوتي', 'بلوتوث', 'مثبت سرعة'
-  ]
+  ];
 
   const toggleFeature = (feature: string) => {
     setFormData(prev => ({
@@ -199,8 +275,8 @@ export default function AddCarForm() {
       features: prev.features.includes(feature)
         ? prev.features.filter(f => f !== feature)
         : [...prev.features, feature]
-    }))
-  }
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -210,22 +286,22 @@ export default function AddCarForm() {
           <div className="flex items-center justify-between mb-2">
             {[1, 2, 3].map((stepNumber) => (
               <div key={stepNumber} className="flex flex-col items-center">
-                <div 
+                <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center 
-                    ${step === stepNumber ? 'bg-indigo-600 text-white' : 
+                    ${step === stepNumber ? 'bg-indigo-600 text-white' :
                     step > stepNumber ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
                 >
                   {step > stepNumber ? <FiCheckCircle size={20} /> : stepNumber}
                 </div>
                 <span className="text-sm mt-1 text-gray-600">
-                  {stepNumber === 1 ? 'البيانات الأساسية' : 
-                   stepNumber === 2 ? 'المواصفات والمزاد' : 'المرفقات'}
+                  {stepNumber === 1 ? 'البيانات الأساسية' :
+                    stepNumber === 2 ? 'المواصفات والمزاد' : 'المرفقات'}
                 </span>
               </div>
             ))}
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <motion.div 
+            <motion.div
               className="bg-indigo-600 h-2 rounded-full"
               initial={{ width: `${(step - 1) * 50}%` }}
               animate={{ width: `${(step - 1) * 50}%` }}
@@ -234,15 +310,13 @@ export default function AddCarForm() {
           </div>
         </div>
 
-        {/* رسالة خطأ */}
         {errorMsg && (
           <div className="mb-4 bg-red-100 border border-red-300 text-red-700 rounded-lg p-3">
             {errorMsg}
           </div>
         )}
 
-        {/* محتوى النموذج */}
-        <motion.div 
+        <motion.div
           key={step}
           initial={{ opacity: 0, x: step > 1 ? 50 : -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -250,17 +324,14 @@ export default function AddCarForm() {
           transition={{ duration: 0.3 }}
           className="bg-white rounded-xl shadow-lg overflow-hidden"
         >
-          {/* العنوان */}
           <div className="border-b border-gray-200 p-6">
             <h2 className="text-2xl font-bold text-gray-800">إضافة سيارة جديدة</h2>
             <p className="text-gray-600 mt-1">املأ التفاصيل أدناه لإضافة سيارة إلى معرضك</p>
           </div>
 
-          {/* الخطوة 1: البيانات الأساسية */}
           {step === 1 && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* معلومات OCR */}
                 {ocrData && (
                   <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center text-blue-800 mb-2">
@@ -275,8 +346,15 @@ export default function AddCarForm() {
                         </div>
                       ))}
                     </div>
-                    <button 
-                      onClick={() => setFormData({ ...formData, ...ocrData })}
+                    <button
+                      onClick={() => setFormData({
+                        ...formData,
+                        brand: ocrData.brand,
+                        model: ocrData.model,
+                        year: ocrData.year,
+                        engineSize: ocrData.engineSize,
+                        fuelType: ocrData.fuelType
+                      })}
                       className="mt-3 text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition"
                     >
                       تعبئة البيانات تلقائياً
@@ -300,7 +378,6 @@ export default function AddCarForm() {
                     <option value="pickup">بيك أب</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">العلامة التجارية *</label>
                   <input
@@ -312,7 +389,6 @@ export default function AddCarForm() {
                     placeholder="مثال: تويوتا"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">الموديل *</label>
                   <input
@@ -324,7 +400,6 @@ export default function AddCarForm() {
                     placeholder="مثال: كامري"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">سنة الصنع *</label>
                   <input
@@ -338,7 +413,6 @@ export default function AddCarForm() {
                     placeholder="مثال: 2022"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">السعر (ر.س) *</label>
                   <input
@@ -350,7 +424,6 @@ export default function AddCarForm() {
                     placeholder="مثال: 85000"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">اللون *</label>
                   <input
@@ -362,7 +435,6 @@ export default function AddCarForm() {
                     placeholder="مثال: أبيض"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">الحالة</label>
                   <select
@@ -377,7 +449,6 @@ export default function AddCarForm() {
                     <option value="under_review">تحت الفحص</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">المدينة</label>
                   <input
@@ -390,8 +461,6 @@ export default function AddCarForm() {
                   />
                 </div>
               </div>
-
-              {/* تحليل الذكاء الاصطناعي */}
               {aiAnalysis && (
                 <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <h3 className="font-bold text-gray-800 mb-3">تحليل السوق الذكي</h3>
@@ -403,9 +472,9 @@ export default function AddCarForm() {
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
                       <p className="text-sm text-gray-500">مستوى الطلب</p>
                       <p className={`text-xl font-bold ${
-                        aiAnalysis.demandLevel === 'مرتفع' ? 'text-green-600' : 
-                        aiAnalysis.demandLevel === 'متوسط' ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
+                        aiAnalysis.demandLevel === 'مرتفع' ? 'text-green-600' :
+                          aiAnalysis.demandLevel === 'متوسط' ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
                         {aiAnalysis.demandLevel}
                       </p>
                     </div>
@@ -420,7 +489,6 @@ export default function AddCarForm() {
                   </div>
                 </div>
               )}
-
               <div className="mt-6">
                 <label className="block text-gray-700 mb-2">الوصف</label>
                 <textarea
@@ -435,7 +503,6 @@ export default function AddCarForm() {
             </div>
           )}
 
-          {/* الخطوة 2: المواصفات والمزاد */}
           {step === 2 && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -455,7 +522,6 @@ export default function AddCarForm() {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">نوع الوقود</label>
                   <div className="relative">
@@ -479,7 +545,6 @@ export default function AddCarForm() {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">نوع ناقل الحركة</label>
                   <div className="relative">
@@ -502,7 +567,6 @@ export default function AddCarForm() {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">سعة المحرك</label>
                   <div className="relative">
@@ -519,7 +583,6 @@ export default function AddCarForm() {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">عدد الأبواب</label>
                   <div className="relative">
@@ -544,8 +607,6 @@ export default function AddCarForm() {
                   </div>
                 </div>
               </div>
-
-              {/* المميزات الإضافية */}
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-gray-800 mb-3">المميزات الإضافية</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -558,7 +619,7 @@ export default function AddCarForm() {
                         formData.features.includes(feature)
                           ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
                           : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center">
                         {formData.features.includes(feature) && (
@@ -570,23 +631,7 @@ export default function AddCarForm() {
                   ))}
                 </div>
               </div>
-
-              {/* بيانات المزاد */}
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-700 mb-2">نوع المزاد</label>
-                  <select
-                    name="auctionType"
-                    value={formData.auctionType}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">اختر نوع المزاد</option>
-                    <option value="live">مباشر</option>
-                    <option value="instant">فوري</option>
-                    <option value="silent">صامت</option>
-                  </select>
-                </div>
                 <div>
                   <label className="block text-gray-700 mb-2">سعر افتتاح المزاد</label>
                   <input
@@ -644,13 +689,12 @@ export default function AddCarForm() {
             </div>
           )}
 
-          {/* الخطوة 3: الصور والمستندات */}
           {step === 3 && (
             <div className="p-6">
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-800 mb-2">رفع صور السيارة</h3>
                 <p className="text-gray-600 mb-4">قم بتحميل صور واضحة للسيارة من زوايا مختلفة (الحد الأقصى 10 صور)</p>
-                
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -659,7 +703,6 @@ export default function AddCarForm() {
                   accept="image/*"
                   className="hidden"
                 />
-                
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -673,8 +716,6 @@ export default function AddCarForm() {
                   </div>
                 </motion.button>
               </div>
-
-              {/* معاينة الصور */}
               {previewImages.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-800 mb-3">الصور المرفوعة</h3>
@@ -697,8 +738,6 @@ export default function AddCarForm() {
                   </div>
                 </div>
               )}
-
-              {/* رفع استمارة السيارة */}
               <div className="mt-8">
                 <h3 className="text-lg font-medium text-gray-800 mb-2">رفع استمارة السيارة</h3>
                 <p className="text-gray-600 mb-4">سيتم استخدام الاستمارة للتحقق من بيانات السيارة عبر OCR</p>
@@ -727,7 +766,6 @@ export default function AddCarForm() {
             </div>
           )}
 
-          {/* أزرار التنقل */}
           <div className="border-t border-gray-200 p-6 bg-gray-50">
             <div className="flex justify-between">
               {step > 1 ? (
@@ -739,10 +777,7 @@ export default function AddCarForm() {
                 >
                   السابق
                 </motion.button>
-              ) : (
-                <div></div>
-              )}
-
+              ) : <div></div>}
               {step < 3 ? (
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -768,7 +803,6 @@ export default function AddCarForm() {
         </motion.div>
       </div>
 
-      {/* رسالة النجاح */}
       <AnimatePresence>
         {isSuccess && (
           <motion.div
@@ -792,8 +826,8 @@ export default function AddCarForm() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    setIsSuccess(false)
-                    setStep(1)
+                    setIsSuccess(false);
+                    setStep(1);
                     setFormData({
                       carType: '',
                       brand: '',
@@ -808,7 +842,6 @@ export default function AddCarForm() {
                       price: '',
                       description: '',
                       features: [],
-                      auctionType: '',
                       auctionStartPrice: '',
                       auctionMinPrice: '',
                       auctionMaxPrice: '',
@@ -816,10 +849,10 @@ export default function AddCarForm() {
                       auctionEndDate: '',
                       status: '',
                       city: ''
-                    })
-                    setPreviewImages([])
-                    setOcrFile(null)
-                    setOcrData(null)
+                    });
+                    setPreviewImages([]);
+                    setOcrFile(null);
+                    setOcrData(null);
                   }}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                 >
@@ -839,5 +872,5 @@ export default function AddCarForm() {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

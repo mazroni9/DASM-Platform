@@ -75,11 +75,20 @@ export function Sidebar() {
   }, [router]);
 
   // 🔹 تسجيل الخروج
-  const handleLogout = () => {
-    localStorage.removeItem('exhibitor');
-    localStorage.removeItem('auth_token');
-    document.cookie = 'exhibitor_logged_in=; path=/; max-age=0';
-    router.push('/exhibitor/login');
+  const handleLogout = async () => {
+    try {
+      // حذف بيانات المعرض من التخزين المحلي
+      localStorage.removeItem('exhibitor');
+      localStorage.removeItem('auth_token');
+
+      // حذف التوكن الأساسي (exhibitor_token) من الكوكي
+      document.cookie = 'exhibitor_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+      // حذف أي كوكي تسجيل دخول قديم
+      document.cookie = 'exhibitor_logged_in=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+    } finally {
+      // إعادة التوجيه لصفحة تسجيل الدخول
+      router.push('/exhibitor/login');
+    }
   };
 
   // 🔹 إذا لم يبدأ الكلاينت بعد، لا تعرض أي شيء

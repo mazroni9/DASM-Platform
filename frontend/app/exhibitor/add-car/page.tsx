@@ -10,14 +10,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function ExhibitorDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🔹 التأكد أننا في الكلاينت (لحل مشكلة الهيدرات)
+  // 🔹 التأكد أننا في الكلاينت
   useEffect(() => {
     setIsClient(true);
+    
+    // 🔹 التحقق من التوكن فوراً عند التحميل
+    const checkAuth = () => {
+      const token = localStorage.getItem('exhibitor_token');
+      if (!token) {
+        window.location.href = '/exhibitor/login?redirect=/exhibitor/add-car';
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  // 🔹 منع العرض حتى يبدأ الكلاينت
-  if (!isClient) {
+  // 🔹 أثناء التحقق
+  if (isLoading || !isClient) {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <div className="hidden md:block w-72 bg-gray-900 animate-pulse"></div>

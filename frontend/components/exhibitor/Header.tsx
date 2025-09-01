@@ -57,10 +57,40 @@ export function Header() {
   }, [router]);
 
   // 🔹 تسجيل الخروج
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 1. إرسال طلب للخروج للباك اند (اختياري لو عندك /api/exhibitor/logout)
+    try {
+      const token = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('exhibitor_token='))
+        ?.split('=')[1];
+
+      if (token) {
+        // إذا كان عندك endpoint للخروج في الباك اند (اختياري)
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/exhibitor/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+      }
+    } catch (err) {
+      // لا تهتم بالأخطاء هنا، نكمل الخروج محليًا
+    }
+
+    // 2. احذف بيانات المستخدم من localStorage
     localStorage.removeItem('exhibitor');
     localStorage.removeItem('auth_token');
-    document.cookie = 'exhibitor_logged_in=; path=/; max-age=0';
+
+    // 3. احذف التوكن الأساسي (exhibitor_token) من الكوكي
+    document.cookie = 'exhibitor_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+    // احذف أي كوكي تسجيل دخول قديم
+    document.cookie = 'exhibitor_logged_in=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+
+    // 4. إعادة التوجيه لصفحة الدخول
     router.push('/exhibitor/login');
   };
 

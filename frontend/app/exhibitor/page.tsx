@@ -14,23 +14,31 @@ export default function ExhibitorDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // 🔹 التحقق من تسجيل الدخول
+  // 🔹 التحقق من تسجيل الدخول عبر التوكن في localStorage
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/exhibitor/check-session', {
-          method: 'GET',
-          credentials: 'include',
-        });
+    const checkAuth = () => {
+      // جلب التوكن من localStorage
+      const token = localStorage.getItem('exhibitor_token');
 
-        if (!res.ok) {
-          router.push('/exhibitor/login?redirect=/exhibitor');
-        }
-      } catch (err) {
+      if (!token) {
         router.push('/exhibitor/login?redirect=/exhibitor');
-      } finally {
-        setIsLoading(false);
+        return;
       }
+
+      // تحقق من صلاحية التوكن (اختياري)
+      try {
+        const exhibitor = JSON.parse(localStorage.getItem('exhibitor') || '{}');
+        if (!exhibitor || !exhibitor.id) {
+          throw new Error('بيانات المستخدم غير صحيحة');
+        }
+      } catch (error) {
+        localStorage.removeItem('exhibitor_token');
+        localStorage.removeItem('exhibitor');
+        router.push('/exhibitor/login?redirect=/exhibitor');
+        return;
+      }
+
+      setIsLoading(false);
     };
 
     checkAuth();

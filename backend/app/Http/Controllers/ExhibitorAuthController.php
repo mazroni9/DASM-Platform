@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Exhibitor;
@@ -11,12 +12,12 @@ class ExhibitorAuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required',
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:exhibitors',
-            'password' => 'required|min:6|confirmed',
-            'showroom_name' => 'required',
-            'showroom_address' => 'required',
-            'phone' => 'required',
+            'password' => 'required|min:8|confirmed',
+            'showroom_name' => 'required|string|max:255',
+            'showroom_address' => 'required|string|max:500',
+            'phone' => 'required|string|max:20',
         ]);
 
         $exhibitor = Exhibitor::create([
@@ -28,7 +29,13 @@ class ExhibitorAuthController extends Controller
             'phone' => $request->phone,
         ]);
 
-        return response()->json(['exhibitor' => $exhibitor], 201);
+        // إنشاء التوكن
+        $token = $exhibitor->createToken('exhibitor-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'exhibitor' => $exhibitor
+        ], 201);
     }
 
     // تسجيل الدخول لصاحب معرض
@@ -45,8 +52,12 @@ class ExhibitorAuthController extends Controller
             return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
         }
 
-        // هنا يمكنك إصدار توكن JWT أو session حسب إعداداتك
-        // مؤقتاً نرجع بيانات المعرض فقط
-        return response()->json(['exhibitor' => $exhibitor]);
+        // إنشاء التوكن
+        $token = $exhibitor->createToken('exhibitor-token')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'exhibitor' => $exhibitor
+        ]);
     }
 }

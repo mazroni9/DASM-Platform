@@ -10,6 +10,7 @@ class Car extends Model
     use HasFactory;
 
     protected $fillable = [
+<<<<<<< Updated upstream
         'dealer_id', 
         'user_id',  // Added user_id to fillable
         'make', 
@@ -19,16 +20,47 @@ class Car extends Model
         'odometer', 
         'condition', 
         'evaluation_price', 
+=======
+        'dealer_id',
+        'user_id',
+        'make',
+        'model',
+        'year',
+        'vin',
+        'odometer',
+        'condition',
+        'evaluation_price',
+>>>>>>> Stashed changes
         'auction_status',
         'color',
-        'engine',
+        'engine_size',  // ✅ التصحيح هنا
         'transmission',
         'description',
+<<<<<<< Updated upstream
         'images'
+=======
+        'registration_card_image',
+        'images',
+
+        // الحقول الجديدة لدعم الفورم
+        'car_type',
+        'fuel_type',
+        'doors',
+        'features',
+        'auction_start_price',
+        'auction_min_price',
+        'auction_max_price',
+        'auction_start_date',
+        'auction_end_date',
+        'city',
+>>>>>>> Stashed changes
     ];
 
     protected $casts = [
         'images' => 'array',
+        'features' => 'array',
+        'auction_start_date' => 'datetime',
+        'auction_end_date' => 'datetime',
     ];
 
     protected static function boot()

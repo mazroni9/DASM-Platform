@@ -23,31 +23,30 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/exhibitor/')) {
-    // 1. تحقق من وجود بيانات في localStorage (من تسجيل الدخول)
-    const hasLocalStorageExhibitor = request.cookies.get('exhibitor_logged_in');
-
-    // 2. تحقق من وجود جلسة Laravel
-    const hasSession = request.cookies.has('laravel_session');
+    // ✅ تحقق من وجود التوكن في localStorage (عبر API)
+    const exhibitorToken = request.cookies.get('exhibitor_token')?.value || 
+                          request.headers.get('authorization')?.replace('Bearer ', '') ||
+                          null;
 
     const isProtected = PROTECTED_EXHIBITOR_PATHS.some(
       (path) => pathname === path || pathname.startsWith(path + '/')
     );
 
     if (isProtected) {
-      // إذا ما كانش عنده جلسة Laravel ولا بيانات في localStorage → ارفض
-      if (!hasSession && !hasLocalStorageExhibitor) {
+      // إذا لم يوجد توكن → إعادة توجيه إلى صفحة الدخول
+      if (!exhibitorToken) {
         const loginUrl = new URL('/exhibitor/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(loginUrl);
       }
     }
 
-    // منع من فتح login/signup إذا كان عنده بيانات
+    // منع الدخول على login/signup إذا عنده توكن
     if (
       pathname === '/exhibitor/login' ||
       pathname === '/exhibitor/signup'
     ) {
-      if (hasSession || hasLocalStorageExhibitor) {
+      if (exhibitorToken) {
         return NextResponse.redirect(new URL('/exhibitor', request.url));
       }
     }

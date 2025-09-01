@@ -18,6 +18,14 @@ use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\ExhibitorAuthController;
+<<<<<<< Updated upstream
+=======
+use App\Http\Controllers\ExhibitorCarController;
+use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\DeviceTokenController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\SettingsController;
+>>>>>>> Stashed changes
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use Carbon\Carbon;
@@ -298,14 +306,21 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
 
 //======================== Exhibitor Routes ======================================
-// exhibitor auth routes
+// Exhibitor Routes
 Route::prefix('exhibitor')->group(function () {
     Route::post('/register', [ExhibitorAuthController::class, 'register']);
     Route::post('/login', [ExhibitorAuthController::class, 'login']);
+
+    // Protected routes
+    Route::middleware('auth:exhibitor')->group(function () {
+        Route::post('/cars', [ExhibitorCarController::class, 'store']);
+        Route::get('/check-session', function (Request $request) {
+            return response()->json([
+                'authenticated' => true,
+                'exhibitor' => $request->user(),
+            ]);
+        });
+    });
 });
-// تحقق من صحة الجلسة
-Route::get('/exhibitor/check-session', function (Request $request) {
-    return response()->json([
-        'authenticated' => $request->user() ? true : false,
-    ]);
-})->middleware('auth:sanctum');
+
+

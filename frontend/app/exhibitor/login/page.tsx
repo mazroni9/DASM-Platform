@@ -15,7 +15,20 @@ interface LoginResponse {
     email: string;
     [key: string]: any; // لدعم أي خصائص إضافية
   };
+  token?: string;
   message?: string;
+}
+
+// 🔹 دالة لحفظ الكوكي (مهم للـ middleware)
+function setCookie(name: string, value: string, days: number) {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + days);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+// 🔹 دالة لحذف الكوكي
+function removeCookie(name: string) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
 }
 
 export default function LoginPage() {
@@ -29,6 +42,7 @@ export default function LoginPage() {
   // اقرأ الرابط الذي يجب العودة إليه بعد الدخول
   const redirect = searchParams.get('redirect') || '/exhibitor';
 
+<<<<<<< Updated upstream
   // تحقق من تسجيل الدخول تلقائيًا عند التحميل
   useEffect(() => {
     const checkAuth = async () => {
@@ -49,7 +63,33 @@ export default function LoginPage() {
     };
 
     checkAuth();
+=======
+  // ⚠️ تحقق من أن API_URL معرّف
+  useEffect(() => {
+    if (!API_URL) {
+      setError('خطأ: لم يتم تهيئة عنوان الخادم. تواصل مع الدعم.');
+      return;
+    }
+  }, []);
+
+  // ✅ تحقق من تسجيل الدخول تلقائيًا عند التحميل عبر التوكن (في الكوكي أو localStorage)
+  useEffect(() => {
+    const token = localStorage.getItem('exhibitor_token') || 
+                  getCookie('exhibitor_token');
+
+    if (token) {
+      router.push(redirect);
+    }
+>>>>>>> Stashed changes
   }, [router, redirect]);
+
+  // 🔹 دالة مساعدة لقراءة الكوكي (اختياري، للتأكد)
+  function getCookie(name: string): string | null {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +97,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
+<<<<<<< Updated upstream
       // أولًا: جلب CSRF Cookie (مهم لـ Sanctum)
       await fetch(`${API_URL}sanctum/csrf-cookie`, {
         method: 'GET',
@@ -68,13 +109,18 @@ export default function LoginPage() {
 
       // ثانيًا: إرسال طلب الدخول
       const res = await fetch(`${API_URL}api/exhibitor/login`, {
+=======
+      // إرسال طلب الدخول
+      const loginRes = await fetch(`${API_URL}/api/exhibitor/login`, {
+>>>>>>> Stashed changes
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
         },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          password 
+        }),
       });
 
       let data: LoginResponse = {}; // 🔹 نستخدم النوع المعرف أعلاه
@@ -84,16 +130,44 @@ export default function LoginPage() {
         // إذا لم يكن الرد بصيغة JSON
       }
 
+<<<<<<< Updated upstream
       if (res.ok && data.exhibitor) {
         localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor));
         // أضف كوكي دليل على تسجيل الدخول
         document.cookie = "exhibitor_logged_in=true; path=/; max-age=86400; SameSite=Lax";
+=======
+      if (loginRes.ok && data.exhibitor && data.token) {
+        const token = data.token;
+
+        // ✅ احفظ التوكن في localStorage
+        localStorage.setItem('exhibitor_token', token);
+        
+        // ✅ احفظ بيانات المستخدم
+        localStorage.setItem('exhibitor', JSON.stringify(data.exhibitor));
+        
+        // ✅ احفظ التوكن في الكوكي (مهم للـ middleware)
+        setCookie('exhibitor_token', token, 7); // يعيش 7 أيام
+
+        // ✅ توجه إلى الصفحة المطلوبة
+>>>>>>> Stashed changes
         router.push(redirect);
       } else {
         setError(data.message || 'بيانات الدخول غير صحيحة');
       }
+<<<<<<< Updated upstream
     } catch (err) {
       setError('حدث خطأ أثناء الاتصال بالخادم');
+=======
+    } catch (err: any) {
+      console.error('❌ خطأ التوصيل:', err.message);
+      if (err.message && err.message.includes('Failed to fetch')) {
+        setError('فشل الاتصال بالخادم. تحقق من الإنترنت أو عنوان الخادم.');
+      } else {
+        setError(err.message || 'حدث خطأ غير متوقع');
+      }
+    } finally {
+      setLoading(false);
+>>>>>>> Stashed changes
     }
     setLoading(false);
   };
