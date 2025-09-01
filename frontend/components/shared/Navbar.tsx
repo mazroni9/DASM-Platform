@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X,Bell } from "lucide-react";
+import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X,Bell, Book } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
@@ -132,11 +132,12 @@ const Navbar = () => {
                             الأسواق المتخصصة
                         </Link>
                         <Link
-                            href="/broadcasts"
+                            target="_blank"
+                            href="https://blog.dasm.com.sa/"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/broadcasts") ? "text-blue-700 font-bold" : ""}`}
                         >
-                            <Clock size={18} />
-                            البث المباشر
+                            <Book size={18} />
+                            المدونة
                         </Link>
                         <Link
                             href="/auction-archive"
