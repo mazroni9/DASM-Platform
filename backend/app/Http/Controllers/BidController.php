@@ -7,13 +7,18 @@ use App\Models\Bid;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Auction;
+use App\Events\NewBidEvent;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use App\Models\CommissionTier;
+use App\Events\PublicMessageEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\NewBidNotification;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\HigherBidNotification;
+use Illuminate\Support\Facades\Notification;
 
 class BidController extends Controller
 {
@@ -345,7 +350,9 @@ class BidController extends Controller
                 'user_id' => 'required|numeric'
             ]);
 
-            $auction = Auction::find($data['auction_id']);
+            $auction = Auction::select('id','car_id','current_bid','minimum_bid','maximum_bid','last_bid_time','status','start_time','end_time','starting_bid')
+            ->withCount('bids')
+            ->find($data['auction_id']);
 
             // Check if auction is active
             if ($auction->status !== AuctionStatus::ACTIVE) {
@@ -401,9 +408,29 @@ class BidController extends Controller
 
             // Trigger event for real-time updates (if using broadcasting)
             // event(new \App\Events\NewBidPlaced($bid));
+
+            // Broadcast the new bid event
+            $channelName = "auction";
+            $message = "new bid";
+            //return config('broadcasting.connections.ably');
+            //broadcast(new PublicMessageEvent( $channelName, $message ));
+
+            broadcast(new NewBidEvent($auction));
+
             $owner = $auction->car->owner;
             $owner = User::find($owner->id);
+
             $owner->notify(new NewBidNotification($auction));
+
+            $users_ids = $auction->bids()->where('user_id','!=',$user->id)
+            ->select('user_id')
+            ->groupBy('user_id')->pluck('user_id')
+            ->toArray();
+
+            $users = User::whereIn('id',$users_ids)->get();
+            Notification::sendNow($users, new HigherBidNotification($auction));
+
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',

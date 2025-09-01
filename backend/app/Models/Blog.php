@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BlogPost extends Model
+class Blog extends Model
 {
     use HasFactory;
 
@@ -47,14 +47,14 @@ class BlogPost extends Model
     {
         return $this->belongsToMany(BlogTag::class, 'blog_post_tags', 'post_id', 'tag_id');
     }
-    
+
     /**
      * Set the status attribute and update published_at date if status is published
      */
     public function setStatusAttribute($value)
     {
         $this->attributes['status'] = $value;
-        
+
         // Set published_at date when status is set to published for the first time
         if ($value === 'published' && is_null($this->published_at)) {
             $this->attributes['published_at'] = now();
