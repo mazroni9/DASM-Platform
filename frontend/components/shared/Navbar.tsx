@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X,Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
 import NotificationMenu from "@/components/NotificationMenu";
 interface NavigationItem {
     href: string;
@@ -112,34 +111,40 @@ const Navbar = () => {
                         <Link href="/" className="flex items-center gap-2 sm:gap-4">
                             <Image
                                 src="/logo.jpg"
-                                alt="أسواق المزادات الرقمية المتخصصة "
-                                width={32}
-                                height={32}
-                                className="rounded-full sm:w-10 sm:h-10"
+                                alt="منصة DASM-e - Digital Auctions Specialists Markets"
+                                width={40}
+                                height={40}
+                                className="rounded-full"
                             />
-                            <span className="font-bold text-sm sm:text-base lg:text-lg  xs:block">
-                                <span className="hidden sm:inline">أسواق المزادات الرقمية المتخصصة</span>
-                                <span className="text-blue-700"> DASM-e </span>
+                            <span className="font-bold text-base whitespace-nowrap">
+                                المزادات الرقمية <span className="text-blue-700">DASM-e</span>
                             </span>
                         </Link>
                     </div>
 
-                    {/* Desktop Navigation */}
-                    <div className="hidden lg:flex items-center gap-4 xl:gap-6 flex-1 justify-center">
-                        {navigationItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 text-sm xl:text-base ${
-                                    isActive(item.href)
-                                        ? "bg-sky-200 text-sky-900 font-semibold shadow-sm"
-                                        : "hover:bg-sky-50 hover:shadow-sm"
-                                }`}
-                            >
-                                <item.icon className="h-4 w-4" />
-                                {item.label}
-                            </Link>
-                        ))}
+                    {/* Main Navigation */}
+                    <div className="hidden md:flex items-center gap-6 flex-row-reverse" dir="rtl">
+                        <Link
+                            href="/auctions"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/auctions") ? "text-blue-700 font-bold" : ""}`}
+                        >
+                            <Store size={18} />
+                            الأسواق المتخصصة
+                        </Link>
+                        <Link
+                            href="/broadcasts"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/broadcasts") ? "text-blue-700 font-bold" : ""}`}
+                        >
+                            <Clock size={18} />
+                            البث المباشر
+                        </Link>
+                        <Link
+                            href="/auction-archive"
+                            className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/auction-archive") ? "text-blue-700 font-bold" : ""}`}
+                        >
+                            <Archive size={18} />
+                            أرشيف المزادات
+                        </Link>
                     </div>
 
                     {/* Desktop Auth Buttons */}
@@ -155,12 +160,7 @@ const Navbar = () => {
                                 title="إعادة تشغيل الخوادم"
                                 aria-label="إعادة تشغيل الخوادم"
                             >
-                                <RefreshCw
-                                    className={`h-4 w-4 ${
-                                        isRestarting ? "animate-spin" : ""
-                                    }`}
-                                    aria-hidden="true"
-                                />
+                                <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
                             </Button>
                         )}
 

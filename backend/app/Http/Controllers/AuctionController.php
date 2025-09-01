@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AuctionStatus;
-use App\Enums\AuctionType;
-use App\Models\Auction;
-use App\Models\Car;
+use Carbon\Carbon;
 use App\Models\Bid;
+use App\Models\Car;
 use App\Models\Dealer;
+use App\Models\Auction;
+use App\Models\Setting;
+use App\Enums\AuctionType;
+use App\Models\Settlement;
+use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
+use App\Models\CommissionTier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 
 class AuctionController extends Controller
 {
@@ -753,6 +756,31 @@ class AuctionController extends Controller
                     'id' => $auction->highestBidder()->id,
                     'name' => $auction->highestBidder()->name
                 ] : null
+            ]
+        ]);
+    }
+
+    public function purchaseConfirmation($auction_id)
+    {
+        $auction = Auction::with(['car', 'bids', 'car.dealer'])->findOrFail($auction_id);
+        //$settlement = Settlement::where('auction_id', $auction_id)->first();
+
+        $trafficManagementFee = Setting::where('key', 'trafficManagementFee')->first();
+        $tamFeeSetting = Setting::where('key', 'tamFee')->first();
+
+        $trafficManagementFee = $trafficManagementFee->value ?? 0;
+        $tamFee = $tamFeeSetting->value ?? 0;
+
+        $evaluation_price = $auction->car?->evaluation_price ?? 0;
+        $commission = CommissionTier::getCommissionForPrice($evaluation_price);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'auction' => $auction,
+                'trafficPoliceFees' => (int)$trafficManagementFee,
+                'tamFee' => (int)$tamFee,
+                'platformFee' => (int)$commission
             ]
         ]);
     }

@@ -59,6 +59,7 @@ const FirebaseMessagingProvider = ({ children }) => {
             id:payload.messageId,
             title: payload.notification.title,
             body: payload.notification.body,
+            created_at: Date.now(),
             action: {route_name: payload.fcmOptions?.link || '/'}
           },
         });

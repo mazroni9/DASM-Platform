@@ -56,6 +56,7 @@ export default function NotificationMenu() {
           </IconButton>
         </Tooltip>
       </Box>
+
       <Menu
         anchorEl={anchorEl}
         id="notification-menu"
@@ -63,7 +64,6 @@ export default function NotificationMenu() {
         onClose={handleClose}
         onClick={handleClose}
         sx={{
-          overflow: "scroll",
           maxHeight: "500px",
         }}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
@@ -71,11 +71,9 @@ export default function NotificationMenu() {
       >
         {notificationsData.notifications.map((notification) => {
           return (
-            <Link href={handleNotificationClick(notification)}>
+            <Link key={notification.id} href={handleNotificationClick(notification)}>
             <NotificationItem
-              key={notification.id}
-              title={notification.title}
-              body={notification.body}
+              notification={notification}
               handleCloseMenu={handleClose}
             />
             </Link>

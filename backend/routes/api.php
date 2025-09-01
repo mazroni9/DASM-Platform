@@ -1,9 +1,11 @@
 <?php
 
+use App\Events\MyEvent;
 use Carbon\Carbon;
 use App\Models\Car;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use App\Events\PublicMessageEvent;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\CarController;
@@ -32,6 +34,15 @@ Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
+Route::post('/public-event', function (Request $request) {
+    $channelName = $request->post('channelName');
+    $message = $request->post('message');
+    //event(new MyEvent('hello world'));
+    broadcast(new MyEvent( "hello world"));
+    return config('broadcasting.connections.pusher');
+})->middleware('throttle:60,1');
+
+
 
 Route::get('/check-time', function (Request $request) {
     $page = $request->query('page');
@@ -59,7 +70,7 @@ Route::get('/check-time', function (Request $request) {
     foreach ($pageTimeRanges[$page] as $range) {
         $start = Carbon::createFromFormat('H:i:s', $range['start'], 'GMT+3')
             ->setDate($now->year, $now->month, $now->day);
-        $end =Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')
+        $end = Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')
             ->setDate($now->year, $now->month, $now->day);
 
         if ($end->lessThanOrEqualTo($start)) {
@@ -174,6 +185,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus']);
     Route::delete('/auctions/auto-bid/{itemId}', [AutoBidController::class, 'destroy']);
 
+    //purchase-confirmation
+    Route::get('/auctions/purchase-confirmation/{auction_id}', [AuctionController::class, 'purchaseConfirmation']);
+
     // Public broadcast information (read-only)
     Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
     Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
@@ -188,8 +202,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notification routes
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
-
-
 });
 
 Route::post('/wallet/initiate-recharge', [WalletController::class, 'initiateRecharge'])->name('wallet.recharge');
@@ -233,10 +245,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
     // Admin dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-    Route::get('admin/settings',[SettingsController::class,'index']);
-    Route::put('admin/settings',[SettingsController::class,'update']);
-    Route::post('admin/settings',[SettingsController::class,'update']); // Keep POST for backward compatibility
-    Route::get('admin/settings/{key}',[SettingsController::class,'getSetting']);
+    Route::get('admin/settings', [SettingsController::class, 'index']);
+    Route::put('admin/settings', [SettingsController::class, 'update']);
+    Route::post('admin/settings', [SettingsController::class, 'update']); // Keep POST for backward compatibility
+    Route::get('admin/settings/{key}', [SettingsController::class, 'getSetting']);
     // Admin user management
     Route::get('/admin/users', [AdminController::class, 'users']);
     Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);

@@ -7,6 +7,7 @@
         "@etchteam/next-pagination": "^3.5.5",
         "@hookform/resolvers": "^3.10.0",
         "@inertiajs/react": "^2.0.11",
+        "@laravel/echo-react": "^2.2.0",
         "@mui/icons-material": "^7.0.2",
         "@mui/material": "^7.0.2",
         "@radix-ui/react-avatar": "^1.1.7",
@@ -23,6 +24,7 @@
         "classnames": "^2.5.1",
         "clsx": "^2.0.0",
         "date-fns": "^4.1.0",
+        "dayjs": "^1.11.13",
         "embla-carousel-react": "^8.6.0",
         "firebase": "^12.1.0",
         "framer-motion": "^12.23.12",
@@ -60,6 +62,7 @@
         "eslint": "^9.32.0",
         "eslint-config-next": "15.3.1",
         "postcss": "^8.4.24",
+        "pusher-js": "^8.4.0",
         "tailwindcss": "^3.3.0",
         "typescript": "5.8.3"
     },
