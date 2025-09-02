@@ -299,11 +299,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
 
     // Admin broadcast management
+    
+    Route::get('/admin/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
     Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
     Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
     Route::put('/admin/broadcast', [BroadcastController::class, 'update']);
     Route::put('/admin/broadcast/status', [BroadcastController::class, 'updateStatus']);
-
+    Route::delete('/admin/broadcast/{id}', [BroadcastController::class, 'destroy']);
     // Admin commission tiers management
     Route::get('/admin/commission-tiers', [CommissionTierController::class, 'index']);
     Route::post('/admin/commission-tiers', [CommissionTierController::class, 'store']);

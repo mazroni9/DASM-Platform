@@ -386,4 +386,9 @@ class Auction extends Model
     {
         return $this->hasMany(Bid::class);
     }
+
+ public function broadcasts()
+    {
+        return $this->hasMany(Broadcast::class, 'auction_id', 'id');
+    }
 }

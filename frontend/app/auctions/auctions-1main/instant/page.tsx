@@ -265,6 +265,7 @@ export default function InstantAuctionPage() {
                             <thead className="bg-gray-100">
                                 <tr>
                                     {[
+                                         "رابط بث",
                                         "المنطقة",
                                         "المدينة",
                                         "الماركة",
@@ -298,6 +299,20 @@ export default function InstantAuctionPage() {
                                             car["car"].auction_status ==
                                             "in_auction" && (
                                                 <>
+                                                    <td className="p-2 text-sm">
+                                                    {car['broadcasts'].length > 0 &&(
+                                                        <Link
+                                                            target="_blank"
+                                                            href={car['broadcasts'][0].stream_url}
+                                                            className="text-blue-500 hover:text-blue-600"
+                                                        >
+                                                            إضغط هنا
+                                                        </Link>
+                                                    )}
+                                                     {car['broadcasts'].length == 0 &&(
+                                                          <span>#</span>
+                                                    )}
+                                                </td>
                                                     <td className="p-2 text-sm">
                                                         {car["car"].province}
                                                     </td>
