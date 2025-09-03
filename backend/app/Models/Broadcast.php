@@ -67,6 +67,8 @@ class Broadcast extends Model
         return $this->belongsTo(User::class, 'moderator_id');
     }
 
+
+
     /**
      * Get the current car being displayed.
      */
@@ -99,14 +101,19 @@ class Broadcast extends Model
             ->where('status', 'active');
     }
 
-    /**
-     * Get the auction associated with this broadcast.
-     */
+    /*
     public function auction()
     {
         return $this->belongsTo(Auction::class);
     }
-
+*/
+       public function auction()
+    {
+        // assumes broadcasts.auction_id → auctions.id
+        return $this->belongsTo(Auction::class, 'auction_id', 'id');
+        // If you want a safe empty object when auction is missing:
+        // return $this->belongsTo(Auction::class, 'auction_id', 'id')->withDefault();
+    }
     /**
      * Get formatted YouTube embed URL with parameters.
      *

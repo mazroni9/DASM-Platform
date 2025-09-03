@@ -21,6 +21,7 @@ use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ModeratorController;
+use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationController;
@@ -299,11 +300,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
 
     // Admin broadcast management
+    
+    Route::get('/admin/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
     Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
     Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
     Route::put('/admin/broadcast', [BroadcastController::class, 'update']);
     Route::put('/admin/broadcast/status', [BroadcastController::class, 'updateStatus']);
-
+    Route::delete('/admin/broadcast/{id}', [BroadcastController::class, 'destroy']);
     // Admin commission tiers management
     Route::get('/admin/commission-tiers', [CommissionTierController::class, 'index']);
     Route::post('/admin/commission-tiers', [CommissionTierController::class, 'store']);
@@ -323,3 +326,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
 // Public subscription plans routes
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
+
+//======================== Exhibitor Routes ======================================
+// exhibitor auth routes
+Route::prefix('exhibitor')->group(function () {
+    Route::post('/register', [ExhibitorAuthController::class, 'register']);
+    Route::post('/login', [ExhibitorAuthController::class, 'login']);
+});
+// تحقق من صحة الجلسة
+Route::get('/exhibitor/check-session', function (Request $request) {
+    return response()->json([
+        'authenticated' => $request->user() ? true : false,
+    ]);
+})->middleware('auth:sanctum');

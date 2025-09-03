@@ -121,7 +121,7 @@ export default function UnifiedBroadcastManagement({
     useEffect(() => {
         fetchBroadcastInfo();
         fetchAuctions();
-        fetchSelectedCars();
+       // fetchSelectedCars();
     }, []);
 
     // Fetch current broadcast info
@@ -132,31 +132,16 @@ export default function UnifiedBroadcastManagement({
 
             if (role === "admin") {
                 // For admin, try to get current broadcast info from broadcast endpoint
-                endpoint = "/api/admin/broadcast";
+                endpoint = "/api/admin/all-broadcasts";
                 response = await api.get(endpoint);
-
+               
                 if (response.data.status === "success" && response.data.data) {
                     // Transform admin broadcast data to match expected structure
                     const broadcastData = response.data.data;
-                    setBroadcastInfo({
-                        is_live: broadcastData.is_live || false,
-                        title: broadcastData.title,
-                        description: broadcastData.description,
-                        youtube_video_id: broadcastData.youtube_video_id,
-                        current_car: broadcastData.current_car,
-                        current_auction: broadcastData.current_auction,
-                        viewers_count: broadcastData.viewers_count || 0,
-                        bidders_count: broadcastData.bidders_count || 0,
-                        active_broadcasts: broadcastData.is_live
-                            ? [broadcastData]
-                            : [],
-                    });
+                    console.log(broadcastData);
                 } else {
                     // No active broadcast
-                    setBroadcastInfo({
-                        is_live: false,
-                        active_broadcasts: [],
-                    });
+
                 }
             } else {
                 // For moderator, use dashboard endpoint
@@ -182,6 +167,7 @@ export default function UnifiedBroadcastManagement({
             setIsLoading(false);
         }
     };
+
 
     // Fetch auctions for dropdown
     const fetchAuctions = async () => {

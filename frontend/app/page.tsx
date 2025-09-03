@@ -30,7 +30,6 @@ import {
   Clock,
 } from "lucide-react";
 
-import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import AuctionDropdown from "@/components/shared/AuctionDropdown";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
@@ -102,7 +101,6 @@ export default function Page() {
 
   return (
     <>
-      <Navbar />
       <Box sx={{ bgcolor: "#f5f6fa", minHeight: "100vh" }}>
         <Box sx={{
           backgroundImage: "url('https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1200&q=80')",

@@ -279,40 +279,24 @@ export default function AuctionPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const auctionsPerPage = 6
 
-  // بيانات تجريبية
+  // جلب المزادات من مصدر خارجي (API/DB) - بدون بيانات تجريبية
   useEffect(() => {
-    const now = new Date()
-    const mockAuctions: Auction[] = [
-      {
-        id: 1,
-        title: 'مزاد تويوتا كامري 2022',
-        car: 'تويوتا كامري',
-        image: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=400&q=80',
-        startPrice: 120000,
-        currentBid: 135000,
-        endTime: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-        status: 'جاري',
-        bids: 12,
-        watchers: 34,
-        owner: 'معرض الرياض'
-      },
-      {
-        id: 5,
-        title: 'مزاد مرسيدس E200 2021',
-        car: 'مرسيدس E200',
-        image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=400&q=80',
-        startPrice: 240000,
-        currentBid: 250000,
-        endTime: new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString(),
-        status: 'جاري',
-        bids: 15,
-        watchers: 40,
-        owner: 'معرض الرياض'
+    const fetchAuctions = async () => {
+      setLoading(true)
+      try {
+        // const response = await fetch('/api/auctions');
+        // const data = await response.json();
+        // setAuctions(data);
+        // setFilteredAuctions(data);
+        setAuctions([])
+        setFilteredAuctions([])
+      } catch (err) {
+        setAuctions([])
+        setFilteredAuctions([])
       }
-    ]
-    setAuctions(mockAuctions)
-    setFilteredAuctions(mockAuctions)
-    setLoading(false)
+      setLoading(false)
+    }
+    fetchAuctions()
   }, [])
 
   // بحث وفلاتر

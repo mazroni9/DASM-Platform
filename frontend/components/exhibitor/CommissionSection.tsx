@@ -96,18 +96,20 @@ function CommissionGauge({ value, max = 2000 }) {
 }
 
 export function CommissionSection({
-  commissionValue = 500,
-  commissionCurrency = "ريال",
-  commissionNote = "السعي هو مبلغ يحدده المعرض مقابل عرض السيارة وخدماته (غسيل، حماية، شحن بطارية، إلخ).",
-  recentCommissions = [
-    { date: "2025-08-10", car: "تويوتا كامري 2022", value: 500 },
-    { date: "2025-08-08", car: "هيونداي سوناتا 2021", value: 1000 },
-    { date: "2025-08-05", car: "كيا سيراتو 2020", value: 250 },
-  ],
-  onReport = () => alert("تحميل تقرير السعي")
+  commissionValue,
+  commissionCurrency,
+  commissionNote,
+  recentCommissions,
+  onReport
 }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+
+  // القيم الافتراضية إذا لم يتم تمريرها
+  const _commissionValue = commissionValue !== undefined ? commissionValue : 0
+  const _commissionCurrency = commissionCurrency || "ريال"
+  const _commissionNote = commissionNote || "السعي هو مبلغ يحدده المعرض مقابل عرض السيارة وخدماته (غسيل، حماية، شحن بطارية، إلخ)."
+  const _recentCommissions = recentCommissions || []
 
   return (
     <div className="relative bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 mb-8 border border-gray-100 overflow-hidden">
@@ -127,10 +129,10 @@ export function CommissionSection({
           >
             <FaInfoCircle className="text-green-400" />
             قيمة السعي الحالية
-            {showTooltip && <Tooltip text={commissionNote} />}
+            {showTooltip && <Tooltip text={_commissionNote} />}
           </span>
-          <CommissionGauge value={commissionValue} max={2000} />
-          <p className="mt-3 text-gray-600 text-sm text-center">{commissionNote}</p>
+          <CommissionGauge value={_commissionValue} max={2000} />
+          <p className="mt-3 text-gray-600 text-sm text-center">{_commissionNote}</p>
         </div>
         {/* العمليات الأخيرة */}
         <div className="flex-1">
@@ -148,7 +150,7 @@ export function CommissionSection({
                 </tr>
               </thead>
               <tbody>
-                {recentCommissions.map((item, idx) => (
+                {_recentCommissions.map((item, idx) => (
                   <tr
                     key={idx}
                     className="text-gray-700 text-center hover:bg-green-50 transition cursor-pointer"
@@ -158,14 +160,14 @@ export function CommissionSection({
                     <td className="py-2 flex items-center justify-center gap-2">
                       <FaCarSide className="text-gray-400" /> {item.car}
                     </td>
-                    <td className="py-2 font-bold text-green-600">{item.value.toLocaleString()} {commissionCurrency}</td>
+                    <td className="py-2 font-bold text-green-600">{item.value.toLocaleString()} {_commissionCurrency}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div className="flex justify-end mt-4">
               <button
-                onClick={onReport}
+                onClick={onReport || (() => {})}
                 className="bg-gradient-to-l from-green-500 to-green-400 hover:from-green-600 hover:to-green-500 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all duration-200 active:scale-95 text-sm flex items-center gap-2"
               >
                 <FaChartPie className="animate-pulse" /> تحميل تقرير السعي

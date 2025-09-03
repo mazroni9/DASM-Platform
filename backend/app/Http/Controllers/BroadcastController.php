@@ -9,6 +9,20 @@ use Illuminate\Support\Facades\Log;
 
 class BroadcastController extends Controller
 {
+
+        public function destroy($id)
+    {
+        try {
+            // Find the broadcast by ID and delete it
+            $broadcast = Broadcast::findOrFail($id);
+            $broadcast->delete();
+
+            return response()->json(['message' => 'Broadcast deleted successfully!'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Broadcast not found or could not be deleted'], 404);
+        }
+    }
+    
     /**
      * Get the current broadcast information for all users
      *
@@ -50,6 +64,34 @@ class BroadcastController extends Controller
         }
     }
 
+    
+    public function getAllBroadcasts()
+    {
+        try {
+            // Get the current active broadcast (where is_live is true)
+           $broadcast = Broadcast::with(['auction'])->get();
+            
+            if (!$broadcast) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'لا يوجد بث مباشر حالياً',
+                    'data' => null
+                ]);
+            }
+            
+            // Return information for public viewing
+            return response()->json([
+                'status' => 'success',
+                'data' => $broadcast
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching broadcast: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء جلب معلومات البث'
+            ], 500);
+        }
+    }
     /**
      * Get simple status of current broadcast (if any)
      * 
@@ -86,7 +128,7 @@ class BroadcastController extends Controller
     public function show()
     {
         try {
-            $broadcast = Broadcast::with('venue')->first();
+            $broadcast = Broadcast::first();
             
             if (!$broadcast) {
                 return response()->json([
@@ -120,56 +162,37 @@ class BroadcastController extends Controller
         try {
             $data = $request->validate([
                 'title' => 'required|string|max:255',
+                'auction_id'=> 'required|integer',
                 'description' => 'nullable|string',
-                'youtube_stream_id' => 'nullable|string|max:255',
-                'youtube_embed_url' => 'required|string|url',
-                'youtube_chat_embed_url' => 'nullable|string|url',
-                'is_live' => 'sometimes|boolean',
-                'scheduled_start_time' => 'nullable|date',
+                'stream_url' => 'required|string|max:255',
             ]);
             
-            // Check if a broadcast already exists
-            $existingBroadcast = Broadcast::first();
-            
-            
-            if ($existingBroadcast) {
+            $broadcastCheck = Broadcast::where('auction_id',$data['auction_id']);
+            if($broadcastCheck->exists()){
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'البث موجود بالفعل. استخدم API التحديث بدلاً من ذلك.'
-                ], 400);
+                'status' => 'error',
+                'message' => 'تم إدخاله مسبقا'  ,
+                'data' => $broadcastCheck
+            ], 201);
             }
-            
+                
             // Create new broadcast
             $broadcast = new Broadcast();
             $broadcast->title = $data['title'];
+            $broadcast->auction_id = $data['auction_id'];
             $broadcast->description = $data['description'] ?? null;
-            $broadcast->youtube_stream_id = $data['youtube_stream_id'] ?? null;
-            $broadcast->youtube_embed_url = $data['youtube_embed_url'];
-            $broadcast->youtube_chat_embed_url = $data['youtube_chat_embed_url'] ?? null;
-            $broadcast->is_live = $data['is_live'] ?? false;
-            $broadcast->scheduled_start_time = $data['scheduled_start_time'] ?? null;
+            $broadcast->stream_url = $data['stream_url'] ?? null;
+            $broadcast->is_live = true;
             $broadcast->created_by = Auth::id();
+            $broadcast->created_at = now();
             $broadcast->save();
-            
-            // If live, update actual start time
-            if ($broadcast->is_live) {
-                $broadcast->actual_start_time = now();
-                $broadcast->save();
-                
-                // Update venue status
-                $venue = Venue::find($data['venue_id']);
-                if ($venue) {
-                    $venue->is_live = true;
-                    $venue->save();
-                }
-            }
             
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم إنشاء البث بنجاح',
                 'data' => $broadcast
             ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات غير صالحة',

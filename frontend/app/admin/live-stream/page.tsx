@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import UnifiedBroadcastManagement from "@/components/UnifiedBroadcastManagement";
 import { Loader } from "lucide-react";
+import BroadcastForm from "@/components/BroadCastForm";
+
+
 
 export default function LiveStreamManagementPage() {
     const { isAdmin, isLoading, isLoggedIn } = useAuth();
@@ -32,7 +35,7 @@ export default function LiveStreamManagementPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-8 rtl">
-            <UnifiedBroadcastManagement role="admin" />
+            <BroadcastForm />
         </div>
     );
 }

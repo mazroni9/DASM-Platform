@@ -164,16 +164,20 @@ class Auction extends Model
                 }
 
                 // For Live Instant, extend auction if reserve price is reached
-                if ($this->auction_type === AuctionType::LIVE_INSTANT &&
+                if (
+                    $this->auction_type === AuctionType::LIVE_INSTANT &&
                     $amount >= $this->reserve_price &&
-                    !$this->extended_until) {
+                    !$this->extended_until
+                ) {
                     $this->extended_until = Carbon::now()->addMinutes(15);
                     $this->save();
                 }
 
                 // For Silent Instant, auto-accept if reserve price is reached
-                if ($this->auction_type === AuctionType::SILENT_INSTANT &&
-                    $amount >= $this->reserve_price) {
+                if (
+                    $this->auction_type === AuctionType::SILENT_INSTANT &&
+                    $amount >= $this->reserve_price
+                ) {
                     $this->acceptBid($amount, $userId);
                     return [
                         'success' => true,
@@ -391,5 +395,10 @@ class Auction extends Model
     public function getStatusLabelAttribute()
     {
         return $this->status->label();
+    }
+
+    public function broadcasts()
+    {
+        return $this->hasMany(Broadcast::class, 'auction_id', 'id');
     }
 }
