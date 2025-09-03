@@ -11,6 +11,7 @@ import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationMenu from "@/components/NotificationMenu";
+import BidNotifications from '@/components/BidNotifications';
 interface NavigationItem {
     href: string;
     label: string;
@@ -167,6 +168,7 @@ const Navbar = () => {
 
                         {user ? (
                             <>
+                            {/* <BidNotifications /> */}
                             <NotificationMenu />
                                 <UserMenu />
      

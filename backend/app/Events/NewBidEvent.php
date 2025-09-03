@@ -23,7 +23,7 @@ class NewBidEvent implements ShouldBroadcast
      */
     public function __construct(public $auction)
     {
-        $this->channelName = 'auction.' . $auction->id;
+        $this->channelName = 'auction.' . $auction->car_id;
         $this->data = [
             'active_auction' => $auction,
             'total_bids' => $auction ? $auction->bids_count : 0
@@ -46,7 +46,7 @@ class NewBidEvent implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return [new Channel('auction.' . $this->auction->id)];
+        return [new Channel('auction.' . $this->auction->car_id)];
     }
 
     public function broadcastWith()

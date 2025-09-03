@@ -44,7 +44,8 @@ class Auction extends Model
     ];
 
     protected $appends = [
-        'time_remaining'
+        'time_remaining',
+        'status_label'
     ];
 
     /**
@@ -62,11 +63,11 @@ class Auction extends Model
     {
         $now = Carbon::now();
         $hour = (int)$now->format('H');
-        
+
         // Live Auction period is 16:00 - 19:00 (4PM - 7PM)
         return $hour >= 16 && $hour < 19;
     }
-    
+
     /**
      * Check if the auction is in the live instant period
      */
@@ -74,11 +75,11 @@ class Auction extends Model
     {
         $now = Carbon::now();
         $hour = (int)$now->format('H');
-        
+
         // Live Instant period is 19:00 - 22:00 (7PM - 10PM)
         return $hour >= 19 && $hour < 22;
     }
-    
+
     /**
      * Check if the auction is in the silent auction period
      */
@@ -86,7 +87,7 @@ class Auction extends Model
     {
         $now = Carbon::now();
         $hour = (int)$now->format('H');
-        
+
         // Silent period is 22:00 - 16:00 next day (10PM - 4PM)
         return $hour >= 22 || $hour < 16;
     }
@@ -98,31 +99,31 @@ class Auction extends Model
     {
         $previousType = $this->auction_type;
         $hadPreviousBids = $this->current_bid > 0;
-        
+
         // Determine the new auction type
         if ($this->isInLiveAuctionPeriod() && $this->approved_for_live) {
             $this->auction_type = AuctionType::LIVE;
         } elseif ($this->isInLiveInstantPeriod()) {
             $this->auction_type = AuctionType::LIVE_INSTANT;
-            
+
             // If transitioning from LIVE to LIVE_INSTANT and we had bids, update opening price
             if ($previousType === AuctionType::LIVE && $hadPreviousBids) {
                 $this->opening_price = $this->current_bid;
             }
         } else {
             $this->auction_type = AuctionType::SILENT_INSTANT;
-            
+
             // If transitioning from LIVE_INSTANT to SILENT_INSTANT and we had bids, update opening price
             if ($previousType === AuctionType::LIVE_INSTANT && $hadPreviousBids) {
                 $this->opening_price = $this->current_bid;
             }
         }
-        
+
         $this->save();
-        
+
         return $this;
     }
-    
+
     /**
      * Process a new bid based on auction type rules
      */
@@ -135,44 +136,48 @@ class Auction extends Model
                 'message' => 'This auction is not active'
             ];
         }
-        
+
         if ($amount <= $this->current_bid) {
             return [
                 'success' => false,
                 'message' => 'Bid must be higher than current bid'
             ];
         }
-        
+
         // Apply auction type specific rules
         switch ($this->auction_type) {
             case AuctionType::LIVE:
                 // Live auction has standard rules
                 break;
-                
+
             case AuctionType::LIVE_INSTANT:
             case AuctionType::SILENT_INSTANT:
                 // Check if bid is within allowed range
                 $minAllowed = $this->opening_price * 0.9; // -10%
                 $maxAllowed = $this->opening_price * 1.3; // +30%
-                
+
                 if ($amount < $minAllowed || $amount > $maxAllowed) {
                     return [
                         'success' => false,
                         'message' => 'Bid must be within the allowed range'
                     ];
                 }
-                
+
                 // For Live Instant, extend auction if reserve price is reached
-                if ($this->auction_type === AuctionType::LIVE_INSTANT && 
-                    $amount >= $this->reserve_price && 
-                    !$this->extended_until) {
+                if (
+                    $this->auction_type === AuctionType::LIVE_INSTANT &&
+                    $amount >= $this->reserve_price &&
+                    !$this->extended_until
+                ) {
                     $this->extended_until = Carbon::now()->addMinutes(15);
                     $this->save();
                 }
-                
+
                 // For Silent Instant, auto-accept if reserve price is reached
-                if ($this->auction_type === AuctionType::SILENT_INSTANT && 
-                    $amount >= $this->reserve_price) {
+                if (
+                    $this->auction_type === AuctionType::SILENT_INSTANT &&
+                    $amount >= $this->reserve_price
+                ) {
                     $this->acceptBid($amount, $userId);
                     return [
                         'success' => true,
@@ -182,26 +187,26 @@ class Auction extends Model
                 }
                 break;
         }
-        
+
         // Create the bid
         $bid = Bid::create([
             'auction_id' => $this->id,
             'user_id' => $userId,
             'bid_amount' => $amount
         ]);
-        
+
         // Update auction
         $this->current_bid = $amount;
         $this->last_bid_time = Carbon::now();
         $this->save();
-        
+
         return [
             'success' => true,
             'message' => 'Bid placed successfully',
             'bid' => $bid
         ];
     }
-    
+
     /**
      * Accept a bid (for seller manual accepts or auto-accept)
      */
@@ -215,18 +220,18 @@ class Auction extends Model
                 'bid_amount' => $amount
             ]
         );
-        
+
         // Update auction
         $this->current_bid = $amount;
         $this->status = AuctionStatus::ENDED;
         $this->save();
-        
+
         // Update car status
         if ($this->car) {
             $this->car->auction_status = 'sold';
             $this->car->save();
         }
-        
+
         // Create settlement
         Settlement::create([
             'auction_id' => $this->id,
@@ -239,10 +244,10 @@ class Auction extends Model
             'net_amount' => $amount - $this->calculatePlatformFee($amount),
             'status' => 'pending'
         ]);
-        
+
         return $this;
     }
-    
+
     /**
      * Calculate platform fee based on final amount
      */
@@ -251,7 +256,7 @@ class Auction extends Model
         // Implement your fee calculation logic
         return $amount * 0.05; // Example: 5% fee
     }
-    
+
     /**
      * Control room approval
      */
@@ -265,7 +270,7 @@ class Auction extends Model
         $this->control_room_approved = true;
         $this->approved_for_live = $approveForLive;
         $this->save();
-        
+
         return $this;
     }
 
@@ -276,7 +281,7 @@ class Auction extends Model
     {
         return $this->status === AuctionStatus::ACTIVE;
     }
-    
+
     /**
      * Start the auction if scheduled
      */
@@ -286,13 +291,13 @@ class Auction extends Model
             $this->status = AuctionStatus::ACTIVE;
             $this->updateAuctionTypeBasedOnTime(); // Set the proper auction type
             $this->save();
-            
+
             // Update car status
             if ($this->car) {
                 $this->car->auction_status = 'active';
                 $this->car->save();
             }
-            
+
             // If this is a live auction type that needs streaming, create session
             if (in_array($this->auction_type, [AuctionType::LIVE, AuctionType::LIVE_INSTANT])) {
                 $this->liveStreamingSession()->create([
@@ -301,10 +306,10 @@ class Auction extends Model
                 ]);
             }
         }
-        
+
         return $this;
     }
-    
+
     /**
      * End the auction
      */
@@ -322,33 +327,33 @@ class Auction extends Model
                     $this->car->save();
                 }
             }
-            
+
             $this->save();
         }
-        
+
         return $this;
     }
-    
+
     /**
      * Check if auction needs status update based on current time
      */
     public function updateStatusBasedOnTime(): self
     {
         $now = Carbon::now();
-        
+
         if ($this->status === AuctionStatus::SCHEDULED && $now >= $this->start_time && $this->control_room_approved) {
             $this->start();
         } elseif ($this->status === AuctionStatus::ACTIVE) {
             // Check if auction type needs to change
             $this->updateAuctionTypeBasedOnTime();
-            
+
             // Check if auction has ended
             $endTime = $this->extended_until ?? $this->end_time;
             if ($now > $endTime) {
                 $this->end();
             }
         }
-        
+
         return $this;
     }
 
@@ -360,17 +365,17 @@ class Auction extends Model
         if ($this->status !== AuctionStatus::ACTIVE) {
             return 0;
         }
-        
+
         $endTime = $this->extended_until ?? $this->end_time;
         $now = Carbon::now();
-        
+
         if ($now > $endTime) {
             return 0;
         }
-        
+
         return $now->diffInSeconds($endTime);
     }
-    
+
     /**
      * Get the live streaming session for this auction
      */
@@ -378,7 +383,7 @@ class Auction extends Model
     {
         return $this->hasOne(LiveStreamingSession::class);
     }
-    
+
     /**
      * Get the bids for this auction
      */
@@ -387,7 +392,12 @@ class Auction extends Model
         return $this->hasMany(Bid::class);
     }
 
- public function broadcasts()
+    public function getStatusLabelAttribute()
+    {
+        return $this->status->label();
+    }
+
+    public function broadcasts()
     {
         return $this->hasMany(Broadcast::class, 'auction_id', 'id');
     }
