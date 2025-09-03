@@ -73,6 +73,19 @@ class AuctionController extends Controller
         ]);
     }
 
+
+    public function AuctionsFinished()
+    {
+        $query = Auction::with(['car.dealer', 'bids', 'car'])
+            ->where('status', AuctionStatus::ENDED->value);
+        $auctions = $query->paginate(10);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $auctions
+        ]);
+    }
+
     /**
      * Store a newly created auction
      *

@@ -211,7 +211,7 @@ export default function CarDetailPage() {
             setIsOwner(true);
           }
 
-          const auctionId = carsData.active_auction.id;
+          const auctionId = carsData.id;
           console.log(`🎯 Setting up Echo listener for auction.${auctionId}`);
         
           var channel = pusher.subscribe(`auction.${auctionId}`);
