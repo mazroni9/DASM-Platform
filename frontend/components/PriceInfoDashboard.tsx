@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ArrowUp, ArrowDown, Minus, DollarSign } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface PricePoint {
     time: string;
@@ -150,7 +150,7 @@ export default function PriceInfoDashboard({
                     <div
                         className={`text-4xl font-bold ${getPriceDirectionColor()} transition-colors duration-500`}
                     >
-                        {formatMoney(currentPrice)} 
+                        {formatCurrency (currentPrice)} 
                     </div>
 
                     {/* تغير السعر */}
@@ -158,7 +158,7 @@ export default function PriceInfoDashboard({
                         {getPriceDirectionIcon()}
                         <span className={`mx-1 ${getPriceDirectionColor()}`}>
                             {priceChange.amount > 0 ? "+" : ""}
-                            {formatMoney(priceChange.amount)} 
+                            {formatCurrency (priceChange.amount)} 
                         </span>
                         <span className={`text-sm ${getPriceDirectionColor()}`}>
                             ({priceChange.percentage > 0 ? "+" : ""}
@@ -201,7 +201,7 @@ export default function PriceInfoDashboard({
                                             style={{ height: `${height}%` }}
                                             title={`${
                                                 point.time
-                                            }: ${formatMoney(point.price)} `}
+                                            }: ${formatCurrency (point.price)} `}
                                         ></div>
                                         {/* نعرض الوقت لبعض النقاط فقط لتجنب التزاحم */}
                                         {index % 6 === 0 && (

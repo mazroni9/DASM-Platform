@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
@@ -77,7 +77,7 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
         const cleanValue = value.replace(/[^0-9]/g, "");
         if (cleanValue) {
             const numValue = parseInt(cleanValue);
-            setCustomAmount(formatMoney(numValue));
+            setCustomAmount(formatCurrency (numValue));
             setBidAmount(numValue);
         }
     };
@@ -186,7 +186,7 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
         }
 
         if (numericBid <= bid_amount) {
-            setError(`يجب أن يكون المبلغ أكبر من ${formatMoney(bid_amount)} `);
+            setError(`يجب أن يكون المبلغ أكبر من ${formatCurrency (bid_amount)} `);
             return;
         }
 
@@ -249,7 +249,7 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
                         type="text"
                         value={customAmount}
                         onChange={handleCustomAmountChange}
-                        placeholder={`أدخل مبلغ أعلى من ${formatMoney(
+                        placeholder={`أدخل مبلغ أعلى من ${formatCurrency (
                             bid_amount
                         )} `}
                         className="w-full border border-gray-300 p-2.5 rounded text-center text-gray-600 h-full"
@@ -387,9 +387,9 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
                                     <p>
                                         سيقوم النظام بالمزايدة تلقائياً لصالحك
                                         عند وصول سعر المزاد إلى سعر معين
-                                        بزيادة {formatMoney(autoBidIncrement)}{" "}
+                                        بزيادة {formatCurrency (autoBidIncrement)}{" "}
                                         ريال لكل مزايدة، حتى الوصول للحد الأقصى{" "}
-                                        {formatMoney(autoBidMaximum)} ريال.
+                                        {formatCurrency (autoBidMaximum)} ريال.
                                     </p>
                                 </div>
 

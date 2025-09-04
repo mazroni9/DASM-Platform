@@ -15,7 +15,7 @@ import {
     ChevronDown,
     ArrowLeft,
 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // واجهة بيانات السيارة الموصى بها
 interface RecommendedCar {
@@ -372,7 +372,7 @@ export default function RecommendationsPage() {
                                 </div>
 
                                 <div className="mt-2 text-2xl font-bold text-gray-800">
-                                    {formatMoney(car.price)} ريال
+                                    {formatCurrency (car.price)} ريال
                                 </div>
 
                                 {car.timeLeft && (

@@ -19,7 +19,7 @@
  * 🧩 المكونات المستخدمة:
  * - lucide-react: للأيقونات
  * - React Hooks: لإدارة حالة المشغل والفيديو
- * - formatMoney, formatTime: لتنسيق البيانات المعروضة بجانب الفيديو
+ * - formatCurrency , formatTime: لتنسيق البيانات المعروضة بجانب الفيديو
  */
 
 "use client";
@@ -37,7 +37,7 @@ import {
     Bookmark,
     Share2,
 } from "lucide-react";
-import { formatMoney, formatTime } from "@/lib/utils";
+import { formatCurrency , formatTime } from "@/lib/utils";
 
 // معلومات السيارة المُباعة
 interface AuctionCarEvent {
@@ -472,12 +472,12 @@ export default function RecordedAuctionPlayer({
                                 <div className="flex items-center gap-3 text-xs text-gray-300">
                                     <span>
                                         سعر البداية:{" "}
-                                        {formatMoney(currentCar.startPrice)}{" "}
+                                        {formatCurrency (currentCar.startPrice)}{" "}
                                         ريال
                                     </span>
                                     <span className="text-teal-400 font-semibold">
                                         سعر البيع:{" "}
-                                        {formatMoney(currentCar.finalPrice)}{" "}
+                                        {formatCurrency (currentCar.finalPrice)}{" "}
                                         ريال
                                     </span>
                                 </div>
@@ -506,7 +506,7 @@ export default function RecordedAuctionPlayer({
                                             {event.description}
                                             {event.amount && (
                                                 <span className="mr-1.5 font-semibold">
-                                                    {formatMoney(event.amount)}{" "}
+                                                    {formatCurrency (event.amount)}{" "}
                                                     ريال
                                                 </span>
                                             )}

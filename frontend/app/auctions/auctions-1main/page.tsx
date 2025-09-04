@@ -16,6 +16,7 @@ import OtherVenuesGrid from "@/components/broadcast/OtherVenuesGrid";
 import api from "@/lib/axios";
 import Countdown from "@components/Countdown"; // adjust the path to where you saved it
 import AuctionsFinished from "@components/AuctionsFinished"; // adjust the path to where you saved it
+import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function AuctionsMainPage() {
   const [showPresenterPanel, setShowPresenterPanel] = useState(false);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Car, Gavel, ArrowRight, Clock, Tag, Info } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // واجهة السيارة الحالية في المزاد
 interface AuctionCar {
@@ -359,7 +359,7 @@ export default function AuctionInfo({ venueId }: AuctionInfoProps) {
                                     السعر الحالي
                                 </p>
                                 <p className="text-2xl font-bold text-teal-800">
-                                    {formatMoney(currentCar.currentPrice)} ريال
+                                    {formatCurrency (currentCar.currentPrice)} ريال
                                 </p>
                             </div>
                             <div className="text-center">
@@ -382,7 +382,7 @@ export default function AuctionInfo({ venueId }: AuctionInfoProps) {
                             <Gavel className="h-5 w-5 mr-2" />
                             <span>
                                 المزايدة بمبلغ{" "}
-                                {formatMoney(
+                                {formatCurrency (
                                     currentCar.currentPrice +
                                         currentCar.nextIncrement
                                 )}{" "}
@@ -395,7 +395,7 @@ export default function AuctionInfo({ venueId }: AuctionInfoProps) {
                                 هل أنت متأكد من المزايدة بمبلغ؟
                             </p>
                             <p className="text-xl font-bold text-gray-800 text-center">
-                                {formatMoney(
+                                {formatCurrency (
                                     currentCar.currentPrice +
                                         currentCar.nextIncrement
                                 )}{" "}
@@ -461,7 +461,7 @@ export default function AuctionInfo({ venueId }: AuctionInfoProps) {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-teal-700">
-                                            {formatMoney(bid.amount)} ريال
+                                            {formatCurrency (bid.amount)} ريال
                                         </p>
                                         {bid.bidderName === "أنت" && (
                                             <span className="inline-block px-2 py-0.5 bg-teal-100 text-teal-800 text-xs rounded">

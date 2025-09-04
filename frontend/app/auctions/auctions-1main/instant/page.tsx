@@ -7,7 +7,7 @@ import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import Countdown from "@/components/Countdown";
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getAuctionStatus(auction: any): string {
@@ -347,16 +347,16 @@ export default function InstantAuctionPage() {
                                                         {car["bids"].length}
                                                     </td>
                                                     <td className="p-2 text-sm">
-                                                        {formatMoney(car["opening_price"] || 0)}
+                                                        {formatCurrency (car["opening_price"] || 0)}
                                                     </td>
                                                     <td className="p-2 text-sm">
-                                                        {formatMoney(car["minimum_bid"] || 0)}
+                                                        {formatCurrency (car["minimum_bid"] || 0)}
                                                     </td>
                                                     <td className="p-2 text-sm">
-                                                        {formatMoney(car["maximum_bid"] || 0)}
+                                                        {formatCurrency (car["maximum_bid"] || 0)}
                                                     </td>
                                                     <td className="p-2 text-sm">
-                                                        {formatMoney(car["current_bid"] || 0)}
+                                                        {formatCurrency (car["current_bid"] || 0)}
                                                     </td>
                                                     <td className="p-2 text-sm bg-green-50">
                                                         {car['bids'][car['bids'].length - 1] ? car['bids'][car['bids'].length - 1].increment : 0}

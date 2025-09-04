@@ -19,7 +19,7 @@ import BidTimer from '@/components/BidTimer';
 import BidForm from '@/components/BidForm';
 import LiveBidding from '@/components/LiveBidding';
 import BidNotifications from '@/components/BidNotifications';
-import { formatMoney } from '@/lib/utils';
+import { formatCurrency } from "@/utils/formatCurrency";
 // استيراد المكونات الجديدة
 import BidderChat from '@/components/social/BidderChat';
 import LiveAuctionPulse from '@/components/social/LiveAuctionPulse';
@@ -318,9 +318,9 @@ setIsAllowed(await isWithinAllowedTime('live_auction'));
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.car.make}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.car.model}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.car.year}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.min_price)} </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.max_price)} </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatMoney(car.current_bid)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car.min_price)} </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car.max_price)} </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatCurrency (car.current_bid)}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
                               <Link target='_blank' href={`/carDetails/${car.id}`} className="hover:underline">عرض</Link>
                             </td>
@@ -366,9 +366,9 @@ setIsAllowed(await isWithinAllowedTime('live_auction'));
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.car.make}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.car.model}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.car.year}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.min_price)} </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.max_price)} </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatMoney(car.current_bid)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car.min_price)} </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car.max_price)} </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatCurrency (car.current_bid)}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
                               <Link target='_blank' href="#" className="hover:underline">عرض</Link>
                             </td>
@@ -442,7 +442,7 @@ setIsAllowed(await isWithinAllowedTime('live_auction'));
                           <div className="text-center mb-3">
                             <h3 className="font-semibold text-base text-teal-800">آخر سعر</h3>
                             <div className="text-2xl font-bold text-teal-600 my-2 py-2 rounded-lg border-2 border-teal-200 bg-white">
-                              {formatMoney(car.current_bid == 0 ?  car.opening_price :car.current_bid  || 0)}
+                              {formatCurrency (car.current_bid == 0 ?  car.opening_price :car.current_bid  || 0)}
                             </div>
                           </div>
 
