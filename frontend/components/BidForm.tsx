@@ -186,7 +186,7 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
         }
 
         if (numericBid <= bid_amount) {
-            setError(`يجب أن يكون المبلغ أكبر من ${formatMoney(bid_amount)} ريال`);
+            setError(`يجب أن يكون المبلغ أكبر من ${formatMoney(bid_amount)} `);
             return;
         }
 
@@ -251,7 +251,7 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
                         onChange={handleCustomAmountChange}
                         placeholder={`أدخل مبلغ أعلى من ${formatMoney(
                             bid_amount
-                        )} ريال`}
+                        )} `}
                         className="w-full border border-gray-300 p-2.5 rounded text-center text-gray-600 h-full"
                     />
                 </div>

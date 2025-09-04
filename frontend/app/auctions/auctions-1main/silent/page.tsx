@@ -76,6 +76,7 @@ export default function SilentAuctionPage() {
            if (!isLoggedIn) return;
           try {
          setIsAllowed(await isWithinAllowedTime('late_auction'));
+         //setIsAllowed(false);
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {                  
                  const carsData =response.data.data.data || response.data.data;

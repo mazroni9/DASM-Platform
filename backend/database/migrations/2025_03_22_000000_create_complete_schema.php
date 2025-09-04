@@ -72,6 +72,7 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('auction_id');
             $table->unsignedBigInteger('user_id');
+            $table->decimal('increment', 12, 2)->default(0);
             $table->decimal('bid_amount', 12, 2);
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();

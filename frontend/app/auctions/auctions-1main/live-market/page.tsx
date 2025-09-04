@@ -100,7 +100,7 @@ export default function LiveMarketPage() {
 
             
 setIsAllowed(await isWithinAllowedTime('live_auction'));
-
+//setIsAllowed(true);
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
@@ -421,6 +421,7 @@ setIsAllowed(await isWithinAllowedTime('live_auction'));
                     <div key={index}>
                       <div className="space-y-2">
                         <div className="grid grid-cols-2 gap-y-2 text-sm">
+                          {}
                           <div><span className="font-semibold">الماركة:</span> {car.car.make}</div>
                           <div><span className="font-semibold">الموديل:</span> {car.car.model}</div>
                           <div><span className="font-semibold">السنة:</span> {car.car.year}</div>
@@ -441,7 +442,7 @@ setIsAllowed(await isWithinAllowedTime('live_auction'));
                           <div className="text-center mb-3">
                             <h3 className="font-semibold text-base text-teal-800">آخر سعر</h3>
                             <div className="text-2xl font-bold text-teal-600 my-2 py-2 rounded-lg border-2 border-teal-200 bg-white">
-                              {formatMoney(car.current_bid || "0")}
+                              {formatMoney(car.current_bid == 0 ?  car.opening_price :car.current_bid  || 0)}
                             </div>
                           </div>
 
@@ -464,7 +465,7 @@ setIsAllowed(await isWithinAllowedTime('live_auction'));
                             <div>
                               <BidForm
                                 auction_id={parseInt(car.id)}
-                                bid_amount={parseInt((car.current_bid).toString().replace(/,/g, ''))}
+                                bid_amount={parseInt((car.current_bid == 0 ?  car.opening_price :car.current_bid  || 0).toString().replace(/,/g, ''))}
                                 user_id={car.user_id}
                                 onSuccess={() => {
                                   setShowBid(false);
