@@ -100,7 +100,7 @@ export default function LiveMarketPage() {
 
             
 setIsAllowed(await isWithinAllowedTime('live_auction'));
-//setIsAllowed(true);
+setIsAllowed(true);
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {
                   const carsData = response.data.data.data || response.data.data;
