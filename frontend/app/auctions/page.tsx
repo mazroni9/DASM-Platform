@@ -136,7 +136,7 @@ export default function AuctionsPage() {
         {auctionsMain.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
         <Divider />
 
-        <SectionTitle title="قطاع السيارات المتنوعة" />
+        <SectionTitle title="أسواق السيارات المتنوعة" />
         {auctionsCar.map((auction) => <AuctionCard key={auction.slug} auction={auction} />)}
         <Divider />
 
