@@ -13,7 +13,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Zap, Users, TrendingUp, Eye, Clock, HeartPulse } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface LiveAuctionPulseProps {
     auctionId: number;

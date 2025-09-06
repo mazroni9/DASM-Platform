@@ -3,7 +3,8 @@
 import api from "@/lib/axios";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
+
 export default function AuctionFinished() {
   const [auctionsFinished, setAuctionsFinished] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,16 +121,16 @@ export default function AuctionFinished() {
                     <td className="p-2 text-sm">{auction["car"].engine}</td>
                     <td className="p-2 text-sm">{auction["bids"].length}</td>
                     <td className="p-2 text-sm">
-                      {formatMoney(auction["opening_price"] || 0)}
+                      {formatCurrency (auction["opening_price"] || 0)}
                     </td>
                     <td className="p-2 text-sm">
-                      {formatMoney(auction["minimum_bid"] || 0)}
+                      {formatCurrency (auction["minimum_bid"] || 0)}
                     </td>
                     <td className="p-2 text-sm">
-                      {formatMoney(auction["maximum_bid"] || 0)}
+                      {formatCurrency (auction["maximum_bid"] || 0)}
                     </td>
                     <td className="p-2 text-sm">
-                      {formatMoney(auction["current_bid"] || 0)}
+                      {formatCurrency (auction["current_bid"] || 0)}
                     </td>
                     <td className="p-2 text-sm bg-green-50">
                       {auction["bids"][auction["bids"].length - 1]

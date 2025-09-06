@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { ChevronRight, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import BidTimer from '@/components/BidTimer';
 import PriceInfoDashboard from '@/components/PriceInfoDashboard';
-import { formatMoney } from '@/lib/utils';
+import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
@@ -76,6 +76,7 @@ export default function SilentAuctionPage() {
            if (!isLoggedIn) return;
           try {
          setIsAllowed(await isWithinAllowedTime('late_auction'));
+         //setIsAllowed(false);
               const response = await api.get('/api/approved-auctions');
               if (response.data.data || response.data.data) {                  
                  const carsData =response.data.data.data || response.data.data;
@@ -223,13 +224,13 @@ export default function SilentAuctionPage() {
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].make}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].model}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car['car'].year}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car["minimum_bid"] || 0)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car["minimum_bid"] || 0)}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-purple-600">
-                            {formatMoney(car["current_bid"] || 0)}
+                            {formatCurrency (car["current_bid"] || 0)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             <span className={`px-2 py-1 rounded-full text-xs font-semibold `}>
-                              {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
+                              {car['bids'][car['bids'].length - 1] ? formatCurrency (car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
                             </span>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-purple-600 underline">
@@ -264,11 +265,11 @@ export default function SilentAuctionPage() {
                                 <div>
                                   <h4 className="font-semibold text-gray-700 mb-2">معلومات الأسعار</h4>
                                   <ul className="space-y-1 text-sm">
-                                    <li><span className="font-medium">سعر الإفتتاح:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
-                                    <li><span className="font-medium">أقل سعر:</span> {formatMoney(car["minimum_bid"] || 0)}</li>
-                                    <li><span className="font-medium">أعلى سعر:</span> {formatMoney(car["maximum_bid"] || 0)}</li>
-                                    <li><span className="font-medium">آخر سعر:</span> {formatMoney(car["current_bid"] || 0)}</li>
-                                    <li><span className="font-medium">التغير:</span> {car['bids'][car['bids'].length - 1] ? formatMoney(car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
+                                    <li><span className="font-medium">سعر الإفتتاح:</span> {formatCurrency (car["minimum_bid"] || 0)}</li>
+                                    <li><span className="font-medium">أقل سعر:</span> {formatCurrency (car["minimum_bid"] || 0)}</li>
+                                    <li><span className="font-medium">أعلى سعر:</span> {formatCurrency (car["maximum_bid"] || 0)}</li>
+                                    <li><span className="font-medium">آخر سعر:</span> {formatCurrency (car["current_bid"] || 0)}</li>
+                                    <li><span className="font-medium">التغير:</span> {car['bids'][car['bids'].length - 1] ? formatCurrency (car['bids'][car['bids'].length - 1].increment) : 0} ({car['bids'][car['bids'].length - 1] ? ((car['bids'][car['bids'].length - 1].increment / car['bids'][car['bids'].length - 1].bid_amount) * 100).toFixed(2) + "%" : "0%"})
                                     </li>
                                   </ul>
                                 </div>

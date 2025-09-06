@@ -28,7 +28,7 @@ export function isValidEmail(email: string): boolean {
     return emailRegex.test(email);
 }
 
-export function formatMoney(
+export function formatCurrency (
     value: number | string | null | undefined,
     currency: string = "ريال"
 ): string {
