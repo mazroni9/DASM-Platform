@@ -12,6 +12,7 @@ interface PageHeaderProps {
 
 export default function PageHeader({ 
   title, 
+  description,
   backUrl, 
   backLabel = 'العودة',
   gradient = true,
@@ -25,6 +26,7 @@ export default function PageHeader({
       case 'green': return 'bg-gradient-to-r from-green-500/80 to-green-400/80';
       case 'indigo': return 'bg-gradient-to-r from-indigo-500/80 to-blue-400/80';
       case 'purple': return 'bg-gradient-to-r from-purple-500/80 to-purple-400/80';
+      case 'yellow': return 'bg-gradient-to-r from-yellow-500/80 to-yellow-400/80';
       default: return 'bg-gradient-to-r from-blue-500/80 to-blue-400/80';
     }
   };
@@ -45,6 +47,7 @@ export default function PageHeader({
           {/* العنوان في المنتصف */}
           <div className="flex-1 text-center">
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{title}</h1>
+            <p className=" text-white/90">{description}</p>
           </div>
         </div>
       </div>

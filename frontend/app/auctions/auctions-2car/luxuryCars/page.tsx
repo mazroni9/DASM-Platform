@@ -6,62 +6,104 @@
  * - عرض قائمة السيارات الفاخرة المتاحة للمزاد
  * - تصفية السيارات حسب الفئة والماركة والسعر
  * - عرض تفاصيل أولية وصور للسيارات
- * 
+ *
  * 🔄 الارتباطات:
  * - تنتقل من: الصفحة الرئيسية لمزادات السيارات
  * - يتم التنقل إلى: صفحات تفاصيل السيارات الفردية
  */
 
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 // استيراد مكون AuctionCard من المسار الصحيح
-import AuctionCard from '@/components/AuctionCard';
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import AuctionCard from "@/components/AuctionCard";
+import Link from "next/link";
+import api from "@/lib/axios";
+import { ChevronRight } from "lucide-react";
+import Pagination from "@mui/material/Pagination";
+import Stack from "@mui/material/Stack";
+import PaginationItem from '@mui/material/PaginationItem';
+import Skeleton from '@mui/material/Skeleton';
+import PageHeader from '@/components/shared/PageHeader';
+
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 export default function LuxuryCarsPage() {
   const [cars, setCars] = useState([]);
+  const [pagination, setPagination] = useState({total:0,last_page:1});
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/items?category=cars&subcategory=luxury')
-      .then(res => res.json())
-      .then(setCars)
-      .catch(err => console.error('فشل في تحميل السيارات الفاخرة:', err));
-  }, []);
+    setLoading(true);
+      api
+      .get(`/api/cars/in-auctions?market_category=luxuryCars&page=${page}`)
+      .then((res) => res.data)
+      .then((data) => {
+        setCars(data.data);
+        setPagination(data.pagination);
+      })
+      .catch((err) => console.error("فشل في تحميل السيارات الفاخرة:", err))
+      .finally(() => setLoading(false));
+     
+}, [page]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black py-12 px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* زر العودة */}
-        <div className="flex justify-start mb-6">
-          <Link 
-            href="/auctions/auctions-2car"
-            className="inline-flex items-center text-yellow-400 hover:text-yellow-300 transition-colors px-4 py-2 rounded-full border border-yellow-500 hover:border-yellow-400 bg-opacity-20 bg-yellow-900 hover:bg-opacity-30"
-          >
-            <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
-            <span>العودة لسوق السيارات</span>
-          </Link>
+    <div className="min-h-screen  from-gray-900  py-12 px-6">
+       <PageHeader 
+       color="indigo"
+        title="سوق السيارات الفارهة"
+        description="اكتشف مجموعتنا المميزة من السيارات الفارهة بأسعار تنافسية وخيارات فاخرة لا مثيل لها."
+        backUrl="/auctions/auctions-2car"
+        backLabel="العودة إلى سوق السيارات"
+        gradient={true}
+      />
+      <div className="max-w-7xl mt-10 mx-auto">
+       
+        {/* عرض المحتوى مع skeleton loading */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {loading ? (
+            // عرض skeleton cards أثناء التحميل
+            Array.from(new Array(6)).map((_, index) => (
+              <AuctionCard key={index} loading={true} />
+            ))
+          ) : cars.length === 0 ? (
+            // عرض رسالة عدم وجود سيارات
+            <div className="col-span-full">
+              <p className="text-center text-gray-300">
+                لا توجد سيارات فاخرة حالياً.
+              </p>
+            </div>
+          ) : (
+            // عرض البيانات الحقيقية
+            cars.map((item: any) => (
+              <AuctionCard car={item} key={item.id} loading={false} />
+            ))
+          )}
         </div>
 
-        <h1 className="text-4xl font-serif text-center text-yellow-400 mb-10">سوق السيارات الفارهة</h1>
-
-        {cars.length === 0 ? (
-          <p className="text-center text-gray-300">لا توجد سيارات فاخرة حالياً.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {cars.map((item: any) => (
-              <AuctionCard
-                key={item.id}
-                id={item.id}
-                title={item.title}
-                image={JSON.parse(item.images || '[]')[0]}
-                current_price={item.current_price}
-                auction_result={item.auction_result}
-              />
-            ))}
-          </div>
-        )}
+        {/* عرض Pagination فقط عند عدم التحميل ووجود بيانات */}
+          <Stack dir="rtl" spacing={2} className="mt-10 flex justify-center">
+            <Pagination
+              className="flex justify-center"
+              dir="rtl"
+              count={pagination.last_page}
+              variant="outlined"
+              color="primary"
+              renderItem={item => (
+                <PaginationItem
+                slots={{ previous: NavigateNextIcon, next: NavigateBeforeIcon }}
+                  {...item}
+                />
+              )}
+              onChange={(e,page)=>{
+                console.log(e,page);
+                setPage(page)
+                
+              }}
+            />
+          </Stack>
       </div>
     </div>
   );

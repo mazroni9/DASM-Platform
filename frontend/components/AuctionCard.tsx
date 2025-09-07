@@ -6,40 +6,96 @@
  * ✅ الوظيفة:
  * - عرض بطاقة سيارة تحتوي على صورة، اسم، سعر، زر تفاصيل
  * - يُستخدم في صفحات المزادات مثل الفوري أو المجوهرات
+ * - يدعم حالة الـ skeleton loading
  */
 
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
+import { Fuel, KeySquare } from 'lucide-react';
+import Skeleton from '@mui/material/Skeleton';
+import Box from '@mui/material/Box';
 
 interface AuctionCardProps {
-  id: number;
-  title: string;
-  image: string;
-  current_price: number;
-  auction_result?: string;
+  car?: any;
+  loading?: boolean;
 }
 
-export default function AuctionCard({ id, title, image, current_price, auction_result }: AuctionCardProps) {
+export default function AuctionCard({ car, loading = false }: AuctionCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-4 flex flex-col">
-      <img
-        src={image || '/placeholder-car.jpg'}
-        alt={title}
-        className="w-full h-48 object-cover rounded-md mb-4"
-      />
-      <h3 className="text-lg font-bold text-gray-800 mb-1">{title}</h3>
-      <p className="text-blue-600 font-semibold mb-2">السعر الحالي: {current_price.toLocaleString()} ريال</p>
-      {auction_result && (
-        <p className="text-sm text-green-600">{auction_result}</p>
+      {/* صورة السيارة أو skeleton */}
+      {loading ? (
+        <Skeleton variant="rectangular" width="100%" height={192} className="rounded-md mb-4" />
+      ) : (
+        <img
+          src={car?.image || '/placeholder-car.jpg'}
+          alt={car?.title || 'Car image'}
+          className="w-full h-48 object-cover rounded-md mb-4"
+        />
       )}
-      <Link
-        href={`/carDetails?id=${id}`}
-        className="mt-auto text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 block text-sm"
-      >
-        عرض التفاصيل
-      </Link>
+
+      {/* عنوان السيارة أو skeleton */}
+      {loading ? (
+        <Skeleton variant="text" height={28} className="mb-1" />
+      ) : (
+        <h3 className="text-lg font-bold text-gray-800 mb-1">{car?.title}</h3>
+      )}
+
+      {/* السعر الحالي أو skeleton */}
+      {loading ? (
+        <Skeleton variant="text" height={24} width="60%" className="mb-2" />
+      ) : (
+        <p className="text-blue-600 font-semibold mb-2">
+          السعر الحالي: {car?.evaluation_price?.toLocaleString() ?? 0} ريال
+        </p>
+      )}
+
+      {/* حالة المزاد أو skeleton */}
+      {loading ? (
+        <Skeleton variant="text" height={20} width="40%" className="mb-2" />
+      ) : (
+        car?.active_auction?.status_label && (
+          <div className="flex items-center mb-2">
+            <span className="ml-1">حالة المزاد:</span>
+            <p className="text-sm text-green-600">{car.active_auction.status_label}</p>
+          </div>
+        )
+      )}
+
+      {/* تفاصيل السيارة أو skeleton */}
+      {loading ? (
+        <Box className="flex items-center gap-1 mb-4">
+          <Skeleton variant="text" width={60} height={16} />
+          <Skeleton variant="text" width={80} height={16} />
+          <Skeleton variant="text" width={70} height={16} />
+        </Box>
+      ) : (
+        <div className="flex items-center gap-1 mb-4">
+          <span className="flex items-center gap-1 text-gray-500">
+            <KeySquare size={12}/> {car?.condition?.ar}
+          </span>
+          <span className="flex items-center gap-1 text-gray-500">
+            <Fuel size={12}/> {car?.engine}
+          </span>
+          <span className="flex items-center gap-1 text-gray-500">
+            <KeySquare size={12}/> {car?.transmission?.ar}
+          </span>
+        </div>
+      )}
+
+      {/* زر التفاصيل أو skeleton */}
+      {loading ? (
+        <Skeleton variant="rectangular" width="100%" height={40} className="mt-auto rounded" />
+      ) : (
+        <Link
+          href={`/carDetails/${car?.id}`}
+          className="mt-auto text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 block text-sm"
+        >
+          عرض التفاصيل
+        </Link>
+      )}
     </div>
   );
 }

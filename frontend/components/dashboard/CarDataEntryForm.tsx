@@ -98,6 +98,7 @@ interface CarFormData {
   registration_card_image: string;
   city: string;
   province: string;
+  market_category: string;
 }
 
 let carOjbect = {
@@ -120,6 +121,7 @@ let carOjbect = {
   registration_card_image: "",
   city: "",
   province: "",
+  market_category: "",
 };
 
 interface AiAnalysis {
@@ -141,9 +143,11 @@ export default function CarDataEntryForm() {
   const [enumOptions, setEnumOptions] = useState<{
     conditions: Record<string, string>;
     transmissions: Record<string, string>;
+    market_categories: Record<string, string>;
   }>({
     conditions: {},
     transmissions: {},
+    market_categories: {},
   });
 
   const [images, setImages] = useState<File[]>([]);
@@ -187,6 +191,14 @@ export default function CarDataEntryForm() {
             automatic: "أوتوماتيك",
             manual: "يدوي",
             cvt: "نصف أوتوماتيك",
+          },
+          market_categories: {
+            luxuryCars: "سوق السيارات الفارهة",
+            classic: "سوق السيارات الكلاسيكية",
+            caravan: "سوق الكرافانات",
+            busesTrucks: "سوق الشاحنات والحافلات",
+            companiesCars: "سوق سيارات الشركات",
+            government: "سوق سيارات الجهات الحكومية",
           },
         });
       }
@@ -292,6 +304,7 @@ export default function CarDataEntryForm() {
         { field: "color", name: "لون السيارة" },
         { field: "province", name: "المنطقة" },
         { field: "city", name: "المدينة " },
+        { field: "market_category", name: "سوق السيارة" },
       ];
 
       for (const { field, name } of requiredFields) {
@@ -700,7 +713,7 @@ export default function CarDataEntryForm() {
               <option value="">-- اختر نوع ناقل الحركة --</option>
               {Object.entries(enumOptions.transmissions).map(
                 ([value, label]) => (
-                  <option key={value} value={label}>
+                  <option key={value} value={value}>
                     {label}
                   </option>
                 )
@@ -725,14 +738,11 @@ export default function CarDataEntryForm() {
             >
               <option value="">-- اختر حالة السيارة --</option>
               {Object.entries(enumOptions.conditions).map(([value, label]) => (
-                <option key={value} value={label}>
+                <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-              {/* Keep legacy options for backward compatibility */}
-              <option value="جديدة">جديدة</option>
-              <option value="جيدة جداً">جيدة جداً</option>
-              <option value="تحتاج إصلاح">تحتاج إصلاح</option>
+              
             </select>
           </div>
           <div>
@@ -847,6 +857,31 @@ export default function CarDataEntryForm() {
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="condition"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              سوق السيارة
+            </label>
+            <select
+              id="market_category"
+              name="market_category"
+              value={formData.market_category}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">-- اختر  سوق السيارة --</option>
+              {Object.entries(enumOptions.market_categories).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+              
+            </select>
           </div>
         </div>
 

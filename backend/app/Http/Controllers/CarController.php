@@ -6,11 +6,17 @@ use App\Models\Car;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Dealer;
+use App\Enums\CarCondition;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
+use App\Enums\CarTransmission;
+use Illuminate\Validation\Rule;
+use App\Enums\CarsMarketsCategory;
 use App\Services\CloudinaryService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\CarCardResource;
+use App\Http\Resources\CarCollection;
 use Illuminate\Support\Facades\Validator;
 
 // Helper function
@@ -98,7 +104,24 @@ class CarController extends Controller
         ]);
     }
 
+    public function CarsInAuction(Request $request)
+    {
+        $query = Car::with(['activeAuction'])->whereHas('activeAuction');
 
+        if($request->has('market_category')){
+            $query->where('market_category', $request->market_category);
+        }
+
+         $cars = $query->paginate(10);
+        $carCollection = new CarCollection($cars);
+        $responseData = $carCollection->toResponse(request())->getData(true);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $responseData['data'],
+            'pagination' => $responseData['pagination']
+        ]);
+    }
 
     public function getAddedCars(Request $request)
     {
@@ -148,13 +171,14 @@ class CarController extends Controller
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'vin' => 'required|string|unique:cars,vin|max:17',
             'odometer' => 'required|integer|min:0',
-            'condition' => 'required|string|in:جديدة,ممتازة,جيدة جداً,جيدة,متوسطة,تحتاج إصلاح',
+            'condition' => ['required','string',Rule::in(CarCondition::values())],
             'evaluation_price' => 'required|numeric|min:0',
             'color' => 'nullable|string|max:30',
             'province' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:100',
             'engine' => 'nullable|string|max:50',
-            'transmission' => 'nullable|string|in:أوتوماتيك,يدوي,نصف أوتوماتيك,cvt',
+            'transmission' => ['nullable','string',Rule::in(CarTransmission::values())],
+            'market_category' => ['required','string',Rule::in(CarsMarketsCategory::values())],
             'description' => 'nullable|string',
             'images' => 'sometimes|array|max:10',
             'images.*' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120',
@@ -178,23 +202,7 @@ class CarController extends Controller
             $car->user_id = $user->id;
         }
 
-        // Map Arabic condition values to English database enum values
-        $conditionMap = [
-            'ممتازة' => 'excellent',
-            'جديدة' => 'excellent',
-            'جيدة جداً' => 'good',
-            'جيدة' => 'good',
-            'متوسطة' => 'fair',
-            'تحتاج إصلاح' => 'poor'
-        ];
-
-        // Map Arabic transmission values to English database enum values
-        $transmissionMap = [
-            'أوتوماتيك' => 'automatic',
-            'يدوي' => 'manual',
-            'نصف أوتوماتيك' => 'cvt', // Map semi-automatic to CVT
-            'cvt' => 'cvt'
-        ];
+        // Enum validation is now handled by the validation rules
 
         // Use the mapped values or fallback to defaults if no match
         $car->make = $request->make;
@@ -204,16 +212,17 @@ class CarController extends Controller
         $car->year = $request->year;
         $car->vin = $request->vin;
         $car->odometer = $request->odometer;
-        $car->condition = $conditionMap[$request->condition] ?? 'good';
+        $car->condition = CarCondition::from($request->condition);
         $car->evaluation_price = $request->evaluation_price;
         $car->color = $request->color ?? null;
         $car->engine = $request->engine ?? null;
-        $car->transmission = $transmissionMap[$request->transmission] ?? 'automatic';
+        $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
         $car->description = $request->description ?? null;
         $car->plate = $request->plate ?? null;
         $car->auction_status = 'available';
         $car->min_price = $request->min_price;
         $car->max_price = $request->max_price;
+        $car->market_category = $request->market_category;
         $car->save();
 
         // Log debug information about image files
@@ -753,5 +762,32 @@ class CarController extends Controller
         }
 
         return $uploadedImages;
+    }
+
+    public function enumOptions()
+    {
+        /*
+        {
+          conditions: {
+            excellent: "ممتازة",
+            good: "جيدة",
+            fair: "متوسطة",
+            poor: "ضعيفة",
+          },
+          transmissions: {
+            automatic: "أوتوماتيك",
+            manual: "يدوي",
+            cvt: "نصف أوتوماتيك",
+          },
+        }
+        */
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'conditions' => CarCondition::getCarConditions(),
+                'transmissions' => CarTransmission::getTransmissions(),
+                'market_categories' => CarsMarketsCategory::getCategories()
+            ]
+        ]);
     }
 }

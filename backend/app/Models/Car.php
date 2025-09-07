@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\CarCondition;
+use App\Enums\AuctionStatus;
+use App\Enums\CarTransmission;
 use App\Models\CarReportImage;
+use App\Enums\CarsMarketsCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -21,6 +25,7 @@ class Car extends Model
         'condition',
         'evaluation_price',
         'auction_status',
+        'market_category',
         'color',
         'engine',
         'transmission',
@@ -31,6 +36,9 @@ class Car extends Model
 
     protected $casts = [
         'images' => 'array',
+        'market_category' => CarsMarketsCategory::class,
+        'condition' => CarCondition::class,
+        'transmission' => CarTransmission::class,
     ];
 
     protected static function boot()
@@ -61,6 +69,11 @@ class Car extends Model
     public function auctions()
     {
         return $this->hasMany(Auction::class);
+    }
+
+    public function activeAuction()
+    {
+        return $this->hasOne(Auction::class)->where('status', AuctionStatus::ACTIVE);
     }
 
     // Get the owner of the car (either dealer or user)
