@@ -429,8 +429,6 @@ class BidController extends Controller
 
             $users = User::whereIn('id',$users_ids)->get();
             Notification::sendNow($users, new HigherBidNotification($auction));
-
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',

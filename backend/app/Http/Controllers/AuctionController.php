@@ -26,7 +26,7 @@ class AuctionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Auction::with(['car.dealer', 'bids', 'car','broadcasts']);
+        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
 
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {
@@ -73,6 +73,36 @@ class AuctionController extends Controller
         ]);
     }
 
+    public function AuctionsLive()
+    {
+        /*
+            status === "live" &&
+            auction_type === "live" &&
+            approved_for_live
+        */
+
+        $current_live_car = Auction::with(['car.dealer', 'bids', 'car'])
+            ->where('auction_type', AuctionType::LIVE->value)
+            ->where('approved_for_live', true)
+            ->where('status', AuctionStatus::ACTIVE->value)->first();
+
+        $query = Auction::with(['car.dealer', 'bids', 'car'])
+            ->where('auction_type', AuctionType::LIVE->value)
+            //->where('approved_for_live', false)
+            ->orderBy('approved_for_live', 'desc')
+            ->where('status', AuctionStatus::ACTIVE->value);
+
+        $pendingLiveAuctions = $query->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'current_live_car' => $current_live_car,
+                'pending_live_auctions' => $pendingLiveAuctions,
+                'completed_live_auctions' => []
+            ]
+        ]);
+    }
 
     public function AuctionsFinished()
     {

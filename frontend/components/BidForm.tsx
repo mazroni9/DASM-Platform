@@ -68,6 +68,8 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
     };
 
     const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log(bid_amount);
+        
         const value = e.target.value;
         if (value === "") {
             setCustomAmount("");
@@ -75,8 +77,11 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
             return;
         }
         const cleanValue = value.replace(/[^0-9]/g, "");
+        
         if (cleanValue) {
             const numValue = parseInt(cleanValue);
+            console.log(numValue);
+            
             setCustomAmount(formatCurrency (numValue));
             setBidAmount(numValue);
         }
@@ -249,9 +254,9 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
                         type="text"
                         value={customAmount}
                         onChange={handleCustomAmountChange}
-                        placeholder={`أدخل مبلغ أعلى من ${formatCurrency (
+                        placeholder={`أدخل مبلغ أعلى من ${bid_amount}
                             bid_amount
-                        )} `}
+                         `}
                         className="w-full border border-gray-300 p-2.5 rounded text-center text-gray-600 h-full"
                     />
                 </div>
