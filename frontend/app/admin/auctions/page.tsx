@@ -21,7 +21,8 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { Button } from "@mui/material";
-import { a } from "framer-motion/dist/types.d-CQt5spQA";
+import Pagination from "@/components/Pagination";
+
 
 interface Auction {
     id: number;
@@ -61,6 +62,9 @@ export default function AdminAuctionsPage() {
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [processingId, setProcessingId] = useState<number | null>(null);
+    const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10; // or allow user to change it
 
     // Approval form state
     const [approvalData, setApprovalData] = useState({
@@ -78,18 +82,20 @@ export default function AdminAuctionsPage() {
         } else if (activeTab === "approvals") {
             fetchPendingAuctions();
         }
-    }, [activeTab]);
+    }, [currentPage, activeTab]);
 
     const fetchAuctions = async () => {
         try {
             setLoading(true);
-            const response = await api.get("/api/admin/auctions");
+            const response = await api.get(`/api/admin/auctions?page=${currentPage}&pageSize=${pageSize}`);
             if (response.data.status === "success") {
                 let data=response.data.data.data || response.data.data;
                 let approvedAuction=data.filter(approved => approved.approved_for_live);
                 setApprovedAuction(approvedAuction);
-                setAuctions(data);
+                setAuctions(response.data.data.data);
                 setLoading(false);
+                setTotalCount(response.data.data.total);
+                console.log(auctions);
                 console.log("Auctions fetched successfully:", );
             }
         } catch (error) {
@@ -948,6 +954,14 @@ export default function AdminAuctionsPage() {
                     </div>
                 </div>
             )}
+
+             <Pagination
+        className="pagination-bar"
+        currentPage={currentPage}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={page => setCurrentPage(page)}
+      />
         </div>
     );
 }

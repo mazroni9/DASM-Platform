@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Enums\UserRole;
 
-class AdminMiddleware
+class InvestorMiddleware
 {
     /**
      * Handle an incoming request.
@@ -26,11 +26,11 @@ class AdminMiddleware
             ], 401);
         }
 
-        // Check if the authenticated user is an admin
-        if (!Auth::user()->isAdmin()) {
+        // Check if the authenticated user is an investor
+        if (!Auth::user()->isInvestor()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Access denied. Admin privileges required.'
+                'message' => 'Access denied. Investor privileges required.'
             ], 403);
         }
 

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Dealer;
+use App\Models\VenueOwner;
+use App\Models\Investor;
 use App\Enums\UserStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +33,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'required|string|max:15|unique:users|regex:/^[\+]?[0-9\s\-\(\)]{10,15}$/',
             'password' => 'required|string|min:8',
-            'account_type' => 'nullable|string|in:user,dealer',
+            'account_type' => 'nullable|string|in:user,dealer,venue_owner,investor',
         ], [
             'first_name.required' => 'الاسم الأول مطلوب',
             'first_name.string' => 'الاسم الأول يجب أن يكون نصًا',
@@ -66,32 +68,39 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Additional validation for dealer registration
-        $isDealer = $request->account_type === 'dealer';
-        if ($isDealer) {
-            Log::info('Dealer registration detected', ['email' => $request->email]);
-            $dealerValidator = Validator::make($request->all(), [
+        // Additional validation for business account types (dealer, venue_owner, investor)
+        $isBusinessAccount = in_array($request->account_type, ['dealer', 'venue_owner', 'investor']);
+        if ($isBusinessAccount) {
+            Log::info('Business account registration detected', [
+                'email' => $request->email,
+                'type' => $request->account_type,
+                'commercial_registry' => $request->commercial_registry,
+                'company_name' => $request->company_name,
+                'description' => $request->description,
+            ]);
+            $businessValidator = Validator::make($request->all(), [
                 'company_name' => 'required|string|max:255',
-                'commercial_registry' => 'required|string|max:255',
-                'description' => 'nullable|string',
+                'commercial_registry' => 'required|string|max:50',
+                'description' => 'nullable|string|max:1000',
             ], [
-                'company_name.required' => 'اسم الشركة مطلوب للتجار',
-                'company_name.string' => 'اسم الشركة يجب أن يكون نصًا',
-                'company_name.max' => 'اسم الشركة يجب ألا يتجاوز 255 حرفًا',
-                'commercial_registry.required' => 'رقم السجل التجاري مطلوب للتجار',
+                'company_name.required' => 'اسم الشركة/المعرض مطلوب',
+                'company_name.string' => 'اسم الشركة/المعرض يجب أن يكون نصًا',
+                'company_name.max' => 'اسم الشركة/المعرض يجب ألا يتجاوز 255 حرفًا',
+                'commercial_registry.required' => 'رقم السجل التجاري مطلوب',
                 'commercial_registry.string' => 'رقم السجل التجاري يجب أن يكون نصًا',
-                'commercial_registry.max' => 'رقم السجل التجاري يجب ألا يتجاوز 255 حرفًا',
-                'description.string' => 'وصف الشركة يجب أن يكون نصًا',
+                'commercial_registry.max' => 'رقم السجل التجاري يجب ألا يتجاوز 50 حرفًا',
+                'description.string' => 'وصف الشركة يجب أن يكون نصاً',
+                'description.max' => 'وصف الشركة يجب ألا يتجاوز 1000 حرفاً',
             ]);
 
-            if ($dealerValidator->fails()) {
-                Log::warning('Dealer validation failed', ['errors' => $dealerValidator->errors()->toArray()]);
+            if ($businessValidator->fails()) {
+                Log::warning('Business account validation failed', ['errors' => $businessValidator->errors()->toArray()]);
 
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'بيانات التاجر غير صالحة',
-                    'errors' => $dealerValidator->errors()->toArray(),
-                    'first_error' => $dealerValidator->errors()->first()
+                    'message' => 'بيانات الحساب التجاري غير صالحة',
+                    'errors' => $businessValidator->errors()->toArray(),
+                    'first_error' => $businessValidator->errors()->first()
                 ], 422);
             }
         }
@@ -108,7 +117,7 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password_hash' => Hash::make($request->password),
-                'role' => $isDealer ? 'dealer' : 'user',
+                'role' => $request->account_type ?? 'user',
                 'email_verification_token' => $verificationToken,
                 'is_active' => false
             ]);
@@ -119,17 +128,53 @@ class AuthController extends Controller
                 'role' => $user->role
             ]);
 
-            // Create dealer record if applicable
-            if ($isDealer) {
-                Dealer::create([
+            // Create business account record based on role type
+            if ($isBusinessAccount) {
+                Log::info('Creating business account record with data', [
                     'user_id' => $user->id,
+                    'account_type' => $request->account_type,
                     'company_name' => $request->company_name,
                     'commercial_registry' => $request->commercial_registry,
-                    'description' => $request->description ?? null,
-                    'is_active' => 'false',
-                    'rating' => 0,
+                    'description' => $request->description,
                 ]);
-                Log::info('Dealer record created', ['user_id' => $user->id]);
+                
+                switch ($request->account_type) {
+                    case 'dealer':
+                        Dealer::create([
+                            'user_id' => $user->id,
+                            'company_name' => $request->company_name,
+                            'commercial_registry' => $request->commercial_registry,
+                            'description' => $request->description ?? null,
+                            'status' => 'pending',
+                            'is_active' => false,
+                        ]);
+                        break;
+                        
+                    case 'venue_owner':
+                        VenueOwner::create([
+                            'user_id' => $user->id,
+                            'venue_name' => $request->company_name,
+                            'commercial_registry' => $request->commercial_registry,
+                            'description' => null, // Can be added later if needed
+                            'status' => 'pending',
+                            'is_active' => false,
+                        ]);
+                        break;
+                        
+                    case 'investor':
+                        Investor::create([
+                            'user_id' => $user->id,
+                            'company_name' => $request->company_name,
+                            'commercial_registry' => $request->commercial_registry,
+                            'investment_description' => null, // Can be added later if needed
+                            'investment_capacity' => null, // Can be added later if needed
+                            'status' => 'pending',
+                            'is_active' => false,
+                        ]);
+                        break;
+                }
+                
+                Log::info('Business account record created', ['user_id' => $user->id, 'type' => $request->account_type]);
             }
 
             // Send verification email
@@ -138,7 +183,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => $isDealer ? 'تم إنشاء حساب التاجر بنجاح وهو في انتظار التحقق' : 'تم إنشاء الحساب بنجاح',
+                'message' => $isBusinessAccount ? 'تم إنشاء الحساب التجاري بنجاح وهو في انتظار التحقق' : 'تم إنشاء الحساب بنجاح',
                 'user' => [
                     'id' => $user->id,
                     'first_name' => $user->first_name,

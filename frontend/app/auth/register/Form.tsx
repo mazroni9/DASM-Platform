@@ -29,6 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
 import Link from "next/link";
+import { UserRole } from "@/types/types";
 
 interface RegisterResponse {
     status: string;
@@ -80,26 +81,26 @@ const registerSchema = z
                 message: "كلمة المرور يجب أن تحتوي على رمز خاص واحد على الأقل",
             }),
         password_confirmation: z.string(),
-        account_type: z.enum(["user", "dealer"]),
+        account_type: z.enum(["user", "dealer", "venue_owner", "investor"]),
         company_name: z.string().optional(),
         commercial_registry: z.string().optional(),
         description: z.string().optional(),
     })
     .refine(
         (data) => {
-            if (data.account_type === "dealer") {
+            if (data.account_type === "dealer" || data.account_type === "venue_owner" || data.account_type === "investor") {
                 return !!data.company_name && data.company_name.length >= 3;
             }
             return true;
         },
         {
-            message: "اسم الشركة مطلوب ويجب أن يكون 3 أحرف على الأقل",
+            message: "اسم الشركة/المعرض مطلوب ويجب أن يكون 3 أحرف على الأقل",
             path: ["company_name"],
         }
     )
     .refine(
         (data) => {
-            if (data.account_type === "dealer") {
+            if (data.account_type === "dealer" || data.account_type === "venue_owner" || data.account_type === "investor") {
                 return (
                     !!data.commercial_registry &&
                     data.commercial_registry.length >= 5
@@ -124,7 +125,7 @@ export default function RegisterForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [accountType, setAccountType] = useState<"user" | "dealer">("user");
+    const [accountType, setAccountType] = useState<"user" | "dealer" | "venue_owner" | "investor">("user");
 
     const {
         register,
@@ -444,7 +445,7 @@ export default function RegisterForm() {
                         نوع الحساب
                     </Label>
                     <Select
-                        onValueChange={(value: "user" | "dealer") => {
+                        onValueChange={(value: "user" | "dealer" | "venue_owner" | "investor") => {
                             setAccountType(value);
                             setValue("account_type", value);
                         }}
@@ -456,6 +457,8 @@ export default function RegisterForm() {
                         <SelectContent className="z-50 bg-white">
                             <SelectItem value="user">مستخدم</SelectItem>
                             <SelectItem value="dealer">تاجر</SelectItem>
+                            <SelectItem value="venue_owner">مالك المعرض</SelectItem>
+                            <SelectItem value="investor">مستثمر</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -517,22 +520,127 @@ export default function RegisterForm() {
                                 htmlFor="description"
                                 className="text-gray-700 font-medium"
                             >
-                                وصف الشركة
+                                وصف النشاط التجاري (اختياري)
                             </Label>
-                            <div className="relative">
-                                <div className="absolute top-2 right-0 flex items-start pr-3 pointer-events-none">
-                                    <FileText className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Textarea
-                                    id="description"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 min-h-[100px]"
-                                    {...register("description")}
-                                    disabled={isLoading}
-                                />
-                            </div>
+                            <Textarea
+                                id="description"
+                                className="pr-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                {...register("description")}
+                                disabled={isLoading}
+                                rows={3}
+                                placeholder="اكتب وصفاً مختصراً عن نشاطك التجاري..."
+                            />
                             {errors.description && (
                                 <p className="text-sm text-red-500">
                                     {errors.description.message}
+                                </p>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {accountType === "venue_owner" && (
+                    <>
+                        <div className="grid gap-2">
+                            <Label
+                                htmlFor="company_name"
+                                className="text-gray-700 font-medium"
+                            >
+                                اسم المعرض
+                            </Label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <Building className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <Input
+                                    id="company_name"
+                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                    {...register("company_name")}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            {errors.company_name && (
+                                <p className="text-sm text-red-500">
+                                    {errors.company_name.message}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label
+                                htmlFor="commercial_registry"
+                                className="text-gray-700 font-medium"
+                            >
+                                السجل التجاري
+                            </Label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <ClipboardList className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <Input
+                                    id="commercial_registry"
+                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                    {...register("commercial_registry")}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            {errors.commercial_registry && (
+                                <p className="text-sm text-red-500">
+                                    {errors.commercial_registry.message}
+                                </p>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {accountType === "investor" && (
+                    <>
+                        <div className="grid gap-2">
+                            <Label
+                                htmlFor="company_name"
+                                className="text-gray-700 font-medium"
+                            >
+                                اسم الشركة الاستثمارية
+                            </Label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <Building className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <Input
+                                    id="company_name"
+                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                    {...register("company_name")}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            {errors.company_name && (
+                                <p className="text-sm text-red-500">
+                                    {errors.company_name.message}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label
+                                htmlFor="commercial_registry"
+                                className="text-gray-700 font-medium"
+                            >
+                                السجل التجاري
+                            </Label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <ClipboardList className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <Input
+                                    id="commercial_registry"
+                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                    {...register("commercial_registry")}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            {errors.commercial_registry && (
+                                <p className="text-sm text-red-500">
+                                    {errors.commercial_registry.message}
                                 </p>
                             )}
                         </div>

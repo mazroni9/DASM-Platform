@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
+import { UserRole } from "@/types/types";
 import NotificationMenu from "@/components/NotificationMenu";
 import BidNotifications from '@/components/BidNotifications';
 interface NavigationItem {
@@ -26,7 +27,7 @@ const Navbar = () => {
     const router = useRouter();
     const { user, logout } = useAuth();
 
-    const isAdmin = user?.role === "admin";
+    const isAdmin = user?.role === UserRole.ADMIN;
 /*
     const navigationItems: NavigationItem[] = [
         { href: "/auctions", label: "المزادات", icon: Store },

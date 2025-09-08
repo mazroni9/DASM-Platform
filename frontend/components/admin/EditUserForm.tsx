@@ -21,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, X } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { UserRole } from "@/types/types";
 import api from "@/lib/axios";
 
 interface User {
@@ -95,7 +96,7 @@ export default function EditUserForm({
             };
 
             // Only include dealer fields if the role is dealer
-            if (formData.role === "dealer") {
+            if (formData.role === UserRole.DEALER) {
                 dataToSend.company_name = formData.company_name;
                 dataToSend.commercial_registry = formData.commercial_registry;
                 dataToSend.description = formData.description;
@@ -251,7 +252,13 @@ export default function EditUserForm({
                                         <SelectItem value="moderator">
                                             مشرف
                                         </SelectItem>
-                                        {user.role === "admin" && (
+                                        <SelectItem value="venue_owner">
+                                            مالك المعرض
+                                        </SelectItem>
+                                        <SelectItem value="investor">
+                                            مستثمر
+                                        </SelectItem>
+                                        {user.role === UserRole.ADMIN && (
                                             <SelectItem value="admin">
                                                 مدير
                                             </SelectItem>
@@ -306,7 +313,7 @@ export default function EditUserForm({
                     </div>
 
                     {/* Dealer Information - Only show if role is dealer */}
-                    {(formData.role === "dealer" || user.dealer) && (
+                    {(formData.role === UserRole.DEALER || user.dealer) && (
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium text-gray-800 border-b pb-2">
                                 معلومات التاجر

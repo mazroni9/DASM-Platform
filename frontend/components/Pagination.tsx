@@ -1,7 +1,7 @@
 import React from "react";
 import classnames from "classnames";
 import { usePagination, DOTS } from "./usePagination";
-//import "./pagination.scss";
+
 const Pagination = (props) => {
   const {
     onPageChange,
@@ -23,50 +23,82 @@ const Pagination = (props) => {
     return null;
   }
 
-  const onNext = () => {
+  const onNext = (e) => {
+    e?.preventDefault?.();
+    if (currentPage === paginationRange[paginationRange.length - 1]) return;
     onPageChange(currentPage + 1);
   };
 
-  const onPrevious = () => {
+  const onPrevious = (e) => {
+    e?.preventDefault?.();
+    if (currentPage === 1) return;
     onPageChange(currentPage - 1);
   };
 
-  let lastPage = paginationRange[paginationRange.length - 1];
+  const lastPage = paginationRange[paginationRange.length - 1];
+
   return (
-    <ul
-      className={classnames("pagination-container", { [className]: className })}
-    >
+    <ul className={classnames("pagination-container", className)}>
+      {/* Previous */}
       <li
-        className={classnames("pagination-item", {
-          disabled: currentPage === 1
-        })}
-        onClick={onPrevious}
+        className={classnames("page-item", { disabled: currentPage === 1 })}
       >
-        <div>prev</div>
+        <a
+          href="#"
+          className="page-link"
+          onClick={onPrevious}
+          aria-disabled={currentPage === 1}
+          aria-label="السابق"
+        >
+          السابق
+        </a>
       </li>
-      {paginationRange.map((pageNumber) => {
+
+      {/* Numbers + DOTS */}
+      {paginationRange.map((pageNumber, idx) => {
         if (pageNumber === DOTS) {
-          return <li className="pagination-item dots">&#8230;</li>;
+          return (
+            <li key={`dots-${idx}`} className="page-item disabled">
+              <span className="page-link">…</span>
+            </li>
+          );
         }
+
+        const isActive = pageNumber === currentPage;
 
         return (
           <li
-            className={classnames("pagination-item", {
-              selected: pageNumber === currentPage
-            })}
-            onClick={() => onPageChange(pageNumber)}
+            key={`page-${pageNumber}`}
+            className={classnames("page-item", { active: isActive })}
           >
-            {pageNumber}
+            <a
+              href="#"
+              className="page-link"
+              onClick={(e) => {
+                e.preventDefault();
+                if (!isActive) onPageChange(pageNumber);
+              }}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {pageNumber}
+            </a>
           </li>
         );
       })}
+
+      {/* Next */}
       <li
-        className={classnames("pagination-item", {
-          disabled: currentPage === lastPage
-        })}
-        onClick={onNext}
+        className={classnames("page-item", { disabled: currentPage === lastPage })}
       >
-        <div>next</div>
+        <a
+          href="#"
+          className="page-link"
+          onClick={onNext}
+          aria-disabled={currentPage === lastPage}
+          aria-label="التالي"
+        >
+          التالي
+        </a>
       </li>
     </ul>
   );

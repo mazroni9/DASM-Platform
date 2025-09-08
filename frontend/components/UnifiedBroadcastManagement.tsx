@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Car, Search, Users, Eye, Play, Pause, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
+import { UserRole } from "@/types/types";
 
 // Interfaces
 interface BroadcastInfo {
@@ -85,7 +86,7 @@ export default function UnifiedBroadcastManagement({
     const [searchTerm, setSearchTerm] = useState("");
 
     // API path prefix based on role
-    const apiPrefix = role === "admin" ? "/api/admin" : "/api/moderator";
+    const apiPrefix = role === UserRole.ADMIN ? "/api/admin" : "/api/moderator";
 
     // Form for broadcast management
     const {
@@ -130,7 +131,7 @@ export default function UnifiedBroadcastManagement({
         try {
             let endpoint, response;
 
-            if (role === "admin") {
+            if (role === UserRole.ADMIN) {
                 // For admin, try to get current broadcast info from broadcast endpoint
                 endpoint = "/api/admin/all-broadcasts";
                 response = await api.get(endpoint);
@@ -156,7 +157,7 @@ export default function UnifiedBroadcastManagement({
             }
         } catch (error) {
             console.error("Error fetching broadcast info:", error);
-            if (error.response?.status === 404 && role === "admin") {
+            if (error.response?.status === 404 && role === UserRole.ADMIN) {
                 // No current broadcast for admin
                 setBroadcastInfo({ is_live: false, active_broadcasts: [] });
             } else {
@@ -339,7 +340,7 @@ export default function UnifiedBroadcastManagement({
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-semibold text-gray-800">
                     إدارة البث المباشر{" "}
-                    {role === "admin" ? "(المشرف العام)" : "(المشرف)"}
+                    {role === UserRole.ADMIN ? "(المشرف العام)" : "(المشرف)"}
                 </h2>
                 {broadcastInfo?.is_live && (
                     <div className="flex items-center space-x-3 rtl:space-x-reverse">
