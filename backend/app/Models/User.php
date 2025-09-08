@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Enums\UserStatus;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
-//use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Models\DeviceToken;
@@ -39,6 +39,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password_reset_expires_at' => 'datetime',
         'status' => UserStatus::class,
+        'role' => UserRole::class,
     ];
 
     // Relationships
@@ -86,5 +87,61 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_active' => false,
             'status' => UserStatus::PENDING,
         ])->save();
+    }
+
+    // Role checking methods
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::ADMIN;
+    }
+
+    public function isDealer(): bool
+    {
+        return $this->role === UserRole::DEALER;
+    }
+
+    public function isModerator(): bool
+    {
+        return $this->role === UserRole::MODERATOR;
+    }
+
+    public function isVenueOwner(): bool
+    {
+        return $this->role === UserRole::VENUE_OWNER;
+    }
+
+    public function isInvestor(): bool
+    {
+        return $this->role === UserRole::INVESTOR;
+    }
+
+    public function isUser(): bool
+    {
+        return $this->role === UserRole::USER;
+    }
+
+    public function hasRole(UserRole $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    public function canManageAuctions(): bool
+    {
+        return $this->role->canManageAuctions();
+    }
+
+    public function canManageUsers(): bool
+    {
+        return $this->role->canManageUsers();
+    }
+
+    public function canManageVenues(): bool
+    {
+        return $this->role->canManageVenues();
+    }
+
+    public function canAccessInvestments(): bool
+    {
+        return $this->role->canAccessInvestments();
     }
 }

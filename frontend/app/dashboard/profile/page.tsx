@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { UserRole } from "@/types/types";
 import { Textarea } from "@/components/ui/textarea";
 
 interface UserProfile {
@@ -195,7 +196,7 @@ export default function ProfilePage() {
             };
 
             // Add dealer-specific data if user is a dealer
-            if (profile?.role === "dealer") {
+            if (profile?.role === UserRole.DEALER) {
                 Object.assign(personalData, {
                     company_name: formData.company_name,
                     trade_license: formData.trade_license,
@@ -492,9 +493,9 @@ export default function ProfilePage() {
                                 <div className="flex flex-wrap justify-center sm:justify-start gap-3 mb-2">
                                     <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-700">
                                         <span>
-                                            {profile.role === "dealer"
+                                            {profile.role === UserRole.DEALER
                                                 ? "تاجر"
-                                                : profile.role === "admin"
+                                                : profile.role === UserRole.ADMIN
                                                 ? "مدير"
                                                 : "مستخدم"}
                                         </span>
@@ -691,7 +692,7 @@ export default function ProfilePage() {
                                 </div>
 
                                 {/* Dealer-specific fields */}
-                                {profile.role === "dealer" && (
+                                {profile.role === UserRole.DEALER && (
                                     <div className="mt-6 space-y-5 border-t pt-5">
                                         <h3 className="text-lg font-semibold text-gray-700">
                                             معلومات التاجر

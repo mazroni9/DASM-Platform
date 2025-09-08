@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Enums\UserRole;
 
 class DealerMiddleware
 {
@@ -26,10 +27,10 @@ class DealerMiddleware
         }
 
         // Check if the authenticated user is a dealer
-        if (!Auth::user()->dealer_id) {
+        if (!Auth::user()->isDealer()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Access denied. Dealer account required.'
+                'message' => 'Access denied. Dealer privileges required.'
             ], 403);
         }
 

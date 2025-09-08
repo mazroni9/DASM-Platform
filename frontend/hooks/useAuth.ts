@@ -1,4 +1,5 @@
 import { useAuthStore as useStoreAuth } from "@/store/authStore";
+import { UserRole } from "@/types/types";
 
 // This is a wrapper around the authStore to maintain compatibility with existing code
 export function useAuth() {
@@ -15,8 +16,12 @@ export function useAuth() {
 
     return {
         user,
-        isAdmin: user?.role === "admin",
-        isModerator: user?.role === "moderator",
+        isAdmin: user?.role === UserRole.ADMIN,
+        isModerator: user?.role === UserRole.MODERATOR,
+        isDealer: user?.role === UserRole.DEALER,
+        isVenueOwner: user?.role === UserRole.VENUE_OWNER,
+        isInvestor: user?.role === UserRole.INVESTOR,
+        isUser: user?.role === UserRole.USER,
         isLoading: loading,
         login,
         logout,
