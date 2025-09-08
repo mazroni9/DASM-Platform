@@ -28,8 +28,7 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
             $table->string('company_name');
-            $table->string('cr_number', 50)->unique();
-            $table->string('vat_number', 50)->unique();
+            $table->string('commercial_registry', 50)->unique();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 

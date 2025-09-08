@@ -72,16 +72,16 @@ class AuthController extends Controller
         $isBusinessAccount = in_array($request->account_type, ['dealer', 'venue_owner', 'investor']);
         if ($isBusinessAccount) {
             Log::info('Business account registration detected', [
-                'email' => $request->email, 
+                'email' => $request->email,
                 'type' => $request->account_type,
                 'commercial_registry' => $request->commercial_registry,
                 'company_name' => $request->company_name,
-                'vat_number' => $request->vat_number
+                'description' => $request->description,
             ]);
             $businessValidator = Validator::make($request->all(), [
                 'company_name' => 'required|string|max:255',
                 'commercial_registry' => 'required|string|max:50',
-                'vat_number' => 'nullable|string|max:50',
+                'description' => 'nullable|string|max:1000',
             ], [
                 'company_name.required' => 'اسم الشركة/المعرض مطلوب',
                 'company_name.string' => 'اسم الشركة/المعرض يجب أن يكون نصًا',
@@ -89,8 +89,8 @@ class AuthController extends Controller
                 'commercial_registry.required' => 'رقم السجل التجاري مطلوب',
                 'commercial_registry.string' => 'رقم السجل التجاري يجب أن يكون نصًا',
                 'commercial_registry.max' => 'رقم السجل التجاري يجب ألا يتجاوز 50 حرفًا',
-                'vat_number.string' => 'رقم ضريبة القيمة المضافة يجب أن يكون نصًا',
-                'vat_number.max' => 'رقم ضريبة القيمة المضافة يجب ألا يتجاوز 50 حرفًا',
+                'description.string' => 'وصف الشركة يجب أن يكون نصاً',
+                'description.max' => 'وصف الشركة يجب ألا يتجاوز 1000 حرفاً',
             ]);
 
             if ($businessValidator->fails()) {
@@ -135,7 +135,7 @@ class AuthController extends Controller
                     'account_type' => $request->account_type,
                     'company_name' => $request->company_name,
                     'commercial_registry' => $request->commercial_registry,
-                    'vat_number' => $request->vat_number,
+                    'description' => $request->description,
                 ]);
                 
                 switch ($request->account_type) {
@@ -143,8 +143,8 @@ class AuthController extends Controller
                         Dealer::create([
                             'user_id' => $user->id,
                             'company_name' => $request->company_name,
-                            'cr_number' => $request->commercial_registry,
-                            'vat_number' => $request->vat_number ?? null,
+                            'commercial_registry' => $request->commercial_registry,
+                            'description' => $request->description ?? null,
                             'status' => 'pending',
                             'is_active' => false,
                         ]);
@@ -154,8 +154,7 @@ class AuthController extends Controller
                         VenueOwner::create([
                             'user_id' => $user->id,
                             'venue_name' => $request->company_name,
-                            'cr_number' => $request->commercial_registry,
-                            'vat_number' => $request->vat_number ?? null,
+                            'commercial_registry' => $request->commercial_registry,
                             'description' => null, // Can be added later if needed
                             'status' => 'pending',
                             'is_active' => false,
@@ -166,8 +165,7 @@ class AuthController extends Controller
                         Investor::create([
                             'user_id' => $user->id,
                             'company_name' => $request->company_name,
-                            'cr_number' => $request->commercial_registry,
-                            'vat_number' => $request->vat_number ?? null,
+                            'commercial_registry' => $request->commercial_registry,
                             'investment_description' => null, // Can be added later if needed
                             'investment_capacity' => null, // Can be added later if needed
                             'status' => 'pending',

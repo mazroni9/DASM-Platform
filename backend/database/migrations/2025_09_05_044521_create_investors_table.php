@@ -15,8 +15,7 @@ return new class extends Migration
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
             $table->string('company_name');
-            $table->string('cr_number', 50)->unique();
-            $table->string('vat_number', 50)->nullable();
+            $table->string('commercial_registry', 50)->unique();
             $table->text('investment_description')->nullable();
             $table->decimal('investment_capacity', 15, 2)->nullable();
             $table->enum('status', ['pending', 'active', 'rejected'])->default('pending');

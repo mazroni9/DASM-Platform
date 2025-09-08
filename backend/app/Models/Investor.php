@@ -12,8 +12,7 @@ class Investor extends Model
     protected $fillable = [
         'user_id',
         'company_name',
-        'cr_number',
-        'vat_number',
+        'commercial_registry',
         'investment_description',
         'investment_capacity',
         'status',
