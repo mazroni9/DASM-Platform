@@ -84,7 +84,7 @@ const registerSchema = z
         account_type: z.enum(["user", "dealer", "venue_owner", "investor"]),
         company_name: z.string().optional(),
         commercial_registry: z.string().optional(),
-        vat_number: z.string().optional(),
+        description: z.string().optional(),
     })
     .refine(
         (data) => {
@@ -517,25 +517,22 @@ export default function RegisterForm() {
 
                         <div className="grid gap-2">
                             <Label
-                                htmlFor="vat_number"
+                                htmlFor="description"
                                 className="text-gray-700 font-medium"
                             >
-                                رقم ضريبة القيمة المضافة (اختياري)
+                                وصف النشاط التجاري (اختياري)
                             </Label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <FileText className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Input
-                                    id="vat_number"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                    {...register("vat_number")}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {errors.vat_number && (
+                            <Textarea
+                                id="description"
+                                className="pr-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                                {...register("description")}
+                                disabled={isLoading}
+                                rows={3}
+                                placeholder="اكتب وصفاً مختصراً عن نشاطك التجاري..."
+                            />
+                            {errors.description && (
                                 <p className="text-sm text-red-500">
-                                    {errors.vat_number.message}
+                                    {errors.description.message}
                                 </p>
                             )}
                         </div>
@@ -593,31 +590,6 @@ export default function RegisterForm() {
                                 </p>
                             )}
                         </div>
-
-                        <div className="grid gap-2">
-                            <Label
-                                htmlFor="vat_number"
-                                className="text-gray-700 font-medium"
-                            >
-                                رقم ضريبة القيمة المضافة (اختياري)
-                            </Label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <FileText className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Input
-                                    id="vat_number"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                    {...register("vat_number")}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {errors.vat_number && (
-                                <p className="text-sm text-red-500">
-                                    {errors.vat_number.message}
-                                </p>
-                            )}
-                        </div>
                     </>
                 )}
 
@@ -669,31 +641,6 @@ export default function RegisterForm() {
                             {errors.commercial_registry && (
                                 <p className="text-sm text-red-500">
                                     {errors.commercial_registry.message}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label
-                                htmlFor="vat_number"
-                                className="text-gray-700 font-medium"
-                            >
-                                رقم ضريبة القيمة المضافة (اختياري)
-                            </Label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <FileText className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Input
-                                    id="vat_number"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                    {...register("vat_number")}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {errors.vat_number && (
-                                <p className="text-sm text-red-500">
-                                    {errors.vat_number.message}
                                 </p>
                             )}
                         </div>
