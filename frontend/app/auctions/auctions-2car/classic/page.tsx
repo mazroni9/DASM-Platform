@@ -3,63 +3,36 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, Clock, Award, Shield, Star, Users, ChevronLeft, ArrowLeft, Heart, Play } from 'lucide-react';
+import { Award, Shield, Star, Users, ArrowLeft, Play } from 'lucide-react';
+import ClassicCarCard from '@/components/ClassicCarCard';
+import api from '@/lib/axios';
+import Pagination from "@mui/material/Pagination";
+import Stack from "@mui/material/Stack";
+import PaginationItem from '@mui/material/PaginationItem';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import { title } from 'process';
 
 export default function ClassicCarsAuctionPage() {
-  const [activeTab, setActiveTab] = useState('upcoming');
   const [showVideo, setShowVideo] = useState(false);
-  
-  // صور وهمية للسيارات الكلاسيكية
-  const classicCars = [
-    {
-      id: 'c1',
-      name: 'فورد موستانج 1967',
-      description: 'موستانج فاستباك بحالة استثنائية، لون أصلي، محرك V8',
-      estimatedPrice: '280,000 - 320,000',
-      image: '/auctionsPIC/car-classicPIC/GpdqKuZXMAArNyp.jpg',
-      auctionDate: '15 مايو 2025',
-      status: 'upcoming'
-    },
-    {
-      id: 'c2',
-      name: 'شيفروليه كورفيت 1963',
-      description: 'سبليت ويندو كوبيه، ترميم كامل، محرك أصلي',
-      estimatedPrice: '450,000 - 520,000',
-      image: '/auctionsPIC/car-classicPIC/1969 Pontiac Grand Prix SJ.png',
-      auctionDate: '22 مايو 2025',
-      status: 'upcoming'
-    },
-    {
-      id: 'c3',
-      name: 'مرسيدس SL 300 1957',
-      description: 'نادرة جدًا، مستوردة من ألمانيا، جميع القطع أصلية',
-      estimatedPrice: '900,000 - 1,100,000',
-      image: '/auctionsPIC/car-classicPIC/1969 Pontiac Grand Prix SJ.png',
-      auctionDate: '8 يونيو 2025',
-      status: 'upcoming'
-    },
-    {
-      id: 'c4',
-      name: 'بورش 911 كاريرا 1973',
-      description: 'طراز RS، حالة نادرة، كتالوج صيانة كامل',
-      estimatedPrice: '550,000 - 600,000',
-      image: '/1969 Pontiac Grand Prix SJ.png',
-      auctionDate: 'تم البيع بمبلغ 580,000',
-      status: 'past'
-    },
-    {
-      id: 'c5',
-      name: 'جاكوار E-Type 1962',
-      description: 'سلسلة 1، كوبيه، ترميم حديث، وثائق كاملة',
-      estimatedPrice: '700,000 - 750,000',
-      image: '/1970 Plum Crazy Dodge Dart Swinger.jpg',
-      auctionDate: 'تم البيع بمبلغ 725,000',
-      status: 'past'
-    }
-  ];
+  const [loading, setLoading] = useState(true);
+  const [cars, setCars] = useState([]);
+  const [pagination, setPagination] = useState({total: 0, last_page: 1});
+  const [page, setPage] = useState(1);
 
-  // تصفية السيارات حسب التبويب النشط
-  const filteredCars = classicCars.filter(car => car.status === activeTab);
+  // تحديث البيانات من API
+  useEffect(() => {
+    setLoading(true);
+    api
+      .get(`/api/cars/in-auctions?market_category=classic&page=${page}`)
+      .then((res) => res.data)
+      .then((data) => {
+        setCars(data.data);
+        setPagination(data.pagination);
+      })
+      .catch((err) => console.error("فشل في تحميل السيارات الكلاسيكية:", err))
+      .finally(() => setLoading(false));
+  }, [page]);
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
@@ -179,79 +152,68 @@ export default function ClassicCarsAuctionPage() {
         </div>
       </div>
       
-      {/* الأسواق القادمة والسابقة */}
+      {/* قائمة السيارات الكلاسيكية */}
       <div className="container mx-auto px-4 py-12">
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="flex -mb-px space-x-8 justify-center">
-            <button
-              onClick={() => setActiveTab('upcoming')}
-              className={`py-4 px-1 border-b-2 font-medium text-lg ${
-                activeTab === 'upcoming'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              الأسواق القادمة
-            </button>
-            <button
-              onClick={() => setActiveTab('past')}
-              className={`py-4 px-1 border-b-2 font-medium text-lg ${
-                activeTab === 'past'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              الأسواق السابقة
-            </button>
-          </nav>
-        </div>
+        <h2 className="text-3xl font-bold text-center mb-8">السيارات الكلاسيكية المتاحة</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredCars.map((car) => (
-            <div key={car.id} className="bg-white rounded-xl shadow-md overflow-hidden group">
-              <div className="relative h-64 w-full">
-                <Image
-                  src={car.image}
-                  alt={car.name}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-105"
-                />
-                <button 
-                  className="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white text-amber-500"
-                  title="إضافة للمفضلة"
-                  aria-label="إضافة للمفضلة"
-                >
-                  <Heart size={20} />
-                </button>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">{car.name}</h3>
-                <p className="text-gray-600 mb-4">{car.description}</p>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">السعر التقديري</p>
-                    <p className="font-semibold text-amber-600">{car.estimatedPrice} ريال</p>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar size={16} className="ml-1" />
-                    <span>{car.auctionDate}</span>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  {car.status === 'upcoming' ? (
-                    <button className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
-                      سجل للمشاركة في السوق
-                    </button>
-                  ) : (
-                    <div className="w-full py-2 bg-gray-100 text-gray-700 rounded-md font-medium text-center">
-                      تم الانتهاء من السوق
-                    </div>
-                  )}
-                </div>
-              </div>
+          {loading ? (
+            // عرض skeleton cards أثناء التحميل
+            Array.from(new Array(6)).map((_, index) => (
+              <ClassicCarCard key={index} loading={true} />
+            ))
+          ) : cars.length === 0 ? (
+            // عرض رسالة عدم وجود سيارات
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 text-lg">
+                لا توجد سيارات كلاسيكية متاحة حالياً.
+              </p>
             </div>
-          ))}
+          ) : (
+            // عرض البيانات الحقيقية من API
+            cars.map((car: any) => {
+              // تحويل هيكل البيانات من API إلى هيكل ClassicCarCard
+              const transformedCar = {
+                id: car.id,
+                title: car.title,
+                description: car.description || `${car.make} ${car.model} ${car.year}`,
+                evaluation_price: car.evaluation_price ? 
+                  `${car.evaluation_price.toLocaleString()}` : 
+                  'غير محدد',
+                image: car.image,
+                created_at:  car.created_at,
+                status: car.active_auction?.status ,
+                //status: 'upcoming' as const
+              };
+              return (
+                <ClassicCarCard key={car.id} car={transformedCar} loading={false} />
+              );
+            })
+          )}
         </div>
+
+        {/* عرض Pagination فقط عند عدم التحميل ووجود بيانات */}
+        {!loading && cars.length > 0 && (
+          <Stack dir="rtl" spacing={2} className="mt-10 flex justify-center">
+            <Pagination
+              className="flex justify-center"
+              dir="rtl"
+              count={pagination.last_page}
+              variant="outlined"
+              color="primary"
+              renderItem={item => (
+                <PaginationItem
+                slots={{ previous: NavigateNextIcon, next: NavigateBeforeIcon }}
+                  {...item}
+                />
+              )}
+              onChange={(e, page) => {
+                console.log(e, page);
+                setPage(page);
+              }}
+            />
+          </Stack>
+        )}
       </div>
       
       {/* للاشتراك */}

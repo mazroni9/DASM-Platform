@@ -76,7 +76,7 @@ class AdminController extends Controller
             });
         }
         
-        $auctions = $query->orderBy('created_at', 'desc')->paginate(15);
+        $auctions = $query->orderBy('created_at', 'desc')->paginate(10);
         
         return response()->json([
             'status' => 'success',
@@ -727,7 +727,7 @@ class AdminController extends Controller
             });
         }
         
-        $cars = $query->orderBy('created_at', 'desc')->get();
+        $cars = $query->orderBy('created_at', 'desc')->paginate(10);
         
         return response()->json([
             'status' => 'success',

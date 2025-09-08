@@ -22,7 +22,7 @@ import {
     Volume2,
     VolumeX,
 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface Notification {
     id: string;
@@ -137,12 +137,12 @@ export default function BidNotifications({
                 message:
                     Math.random() > 0.5
                         ? "قام مزايد آخر بتقديم عرض أعلى على سيارة هيونداي توسان 2021 بقيمة " +
-                          formatMoney(
+                          formatCurrency (
                               Math.floor(Math.random() * 50000) + 80000
                           ) +
                           " ريال"
                         : "تغيّر سعر سيارة كيا K5 2021 إلى " +
-                          formatMoney(
+                          formatCurrency (
                               Math.floor(Math.random() * 40000) + 90000
                           ) +
                           " ريال",

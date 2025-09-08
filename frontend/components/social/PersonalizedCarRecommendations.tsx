@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // واجهة بيانات السيارة الموصى بها
 interface RecommendedCar {
@@ -406,7 +406,7 @@ export default function PersonalizedCarRecommendations({
                                             </h4>
                                             <p className="text-sm text-gray-500">
                                                 {car.year} •{" "}
-                                                {formatMoney(car.price)} ريال
+                                                {formatCurrency (car.price)} ريال
                                             </p>
                                         </div>
 

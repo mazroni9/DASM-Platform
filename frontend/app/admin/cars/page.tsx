@@ -25,6 +25,7 @@ import api from "@/lib/axios";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/Modal";
+import Pagination from "@/components/Pagination";
 interface CarFormData {
     price:string;
     id:string;
@@ -83,6 +84,9 @@ export default function AdminCarsPage() {
     const [showModal, setShowModal] = useState(false);
     const [showActions, setShowActions] = useState(false);
     const [formData, setFormData] = useState<CarFormData>(carOjbect);
+    const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10; // or allow user to change it
     const [filters, setFilters] = useState<FilterOptions>({
         status: "",
         category: "",
@@ -92,14 +96,16 @@ export default function AdminCarsPage() {
     });
     const [enumOptions, setEnumOptions] = useState<any>({});
 
-    useEffect(() => {
-        fetchCars();
-        //fetchEnumOptions();
-    }, []);
 
     useEffect(() => {
         fetchCars();
-    }, [filters, searchTerm]);
+        //fetchEnumOptions();
+    }, [currentPage]);
+
+    useEffect(() => {
+        
+        fetchCars();
+    }, [currentPage, searchTerm, filters]);
 
     const fetchCars = async () => {
         try {
@@ -111,9 +117,11 @@ export default function AdminCarsPage() {
             if (filters.dealer_id)
                 params.append("dealer_id", filters.dealer_id);
 
-            const response = await api.get(`/api/admin/cars?${params}`);
+            const response = await api.get(`/api/admin/cars?page=${currentPage}&pageSize=${pageSize}`);
             if (response.data.status === "success") {
-                setCars(response.data.data);
+                setCars(response.data.data.data);
+                setTotalCount(response.data.data.total); // Laravel gives you total
+
             }
         } catch (error) {
             console.error("Error fetching cars:", error);
@@ -815,8 +823,8 @@ try {
                                                 >
                                                     حدد السعر للمزاد
                                                 </button>)}
-  
                                  </div>
+                                 
 <Modal
         show={showModal}
         onClose={() => setShowModal(false)}
@@ -874,6 +882,7 @@ try {
                                 ))}
                             </tbody>
                         </table>
+                                                 
 
                         {filteredCars.length === 0 && !loading && (
                             <div className="text-center py-12">
@@ -889,6 +898,14 @@ try {
                     </div>
                 )}
             </div>
+    <Pagination
+        className="pagination-bar"
+        currentPage={currentPage}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={page => setCurrentPage(page)}
+      />
         </div>
+        
     );
 }

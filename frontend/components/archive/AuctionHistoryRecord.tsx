@@ -19,7 +19,7 @@
  * 🧩 المكونات المستخدمة:
  * - lucide-react: للأيقونات
  * - next/image: لعرض صور المزادات
- * - formatMoney, formatDate: لتنسيق البيانات
+ * - formatCurrency , formatDate: لتنسيق البيانات
  */
 
 "use client";
@@ -38,7 +38,7 @@ import {
     Car,
     Tag,
 } from "lucide-react";
-import { formatMoney, formatDate, formatTime } from "@/lib/utils";
+import { formatCurrency , formatDate, formatTime } from "@/lib/utils";
 
 // واجهة بيانات السيارة المباعة في المزاد
 interface AuctionCar {
@@ -169,7 +169,7 @@ export default function AuctionHistoryRecord({
                                 إجمالي المبيعات
                             </div>
                             <div className="text-lg font-semibold text-teal-600">
-                                {formatMoney(auction.totalSales)} ريال
+                                {formatCurrency (auction.totalSales)} ريال
                             </div>
                         </div>
                         <div className="bg-gray-50 p-2 rounded">
@@ -208,7 +208,7 @@ export default function AuctionHistoryRecord({
                                 <div className="flex items-center">
                                     <Tag className="h-4 w-4 text-gray-400 ml-1" />
                                     <span className="text-gray-600">
-                                        متوسط {formatMoney(averageSalePrice)}
+                                        متوسط {formatCurrency (averageSalePrice)}
                                     </span>
                                 </div>
                             </div>
@@ -290,7 +290,7 @@ export default function AuctionHistoryRecord({
                         <div className="flex items-center">
                             <Tag className="h-4 w-4 text-teal-500 ml-1" />
                             <span className="text-teal-600 font-semibold">
-                                {formatMoney(auction.totalSales)} ريال
+                                {formatCurrency (auction.totalSales)} ريال
                             </span>
                         </div>
                         <div className="flex items-center">

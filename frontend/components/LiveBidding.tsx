@@ -12,7 +12,7 @@
 import api from '@/lib/axios';
 
 import React, { useEffect, useState } from "react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { User, Clock, Users } from "lucide-react";
 
 interface Bid {
@@ -171,7 +171,7 @@ export default function LiveBidding({data}: LiveBiddingProps) {
                                                 : "text-gray-800"
                                         }`}
                                     >
-                                        {formatMoney(bid.amount)} 
+                                        {formatCurrency (bid.amount)} 
                                     </div>
                                     {bid.is_winning && (
                                         <div className="text-xs text-yellow-600 font-medium">

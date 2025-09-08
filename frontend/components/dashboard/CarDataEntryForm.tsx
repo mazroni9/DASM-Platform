@@ -17,8 +17,10 @@
 
 import { useState, useRef, FormEvent, ChangeEvent, useEffect } from "react";
 import { Upload, FileX, Car, CheckCircle2, AlertCircle } from "lucide-react";
+import carsData from "@/components/shared/cars_syarah.en.json";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { match } from "assert";
 
 const emirates = [
   "منطقة الرياض",
@@ -96,6 +98,7 @@ interface CarFormData {
   registration_card_image: string;
   city: string;
   province: string;
+  market_category: string;
 }
 
 let carOjbect = {
@@ -118,8 +121,20 @@ let carOjbect = {
   registration_card_image: "",
   city: "",
   province: "",
+  market_category: "",
 };
+
+interface AiAnalysis {
+  marketPrice: number
+  demandLevel: string
+  similarCars: number
+  priceSuggestion: number
+}
+
+
+
 export default function CarDataEntryForm() {
+    const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
   const [color, setColor] = useState<string>("");
   const handleColorChange = (value: string) => {
     setColor(value);
@@ -128,9 +143,11 @@ export default function CarDataEntryForm() {
   const [enumOptions, setEnumOptions] = useState<{
     conditions: Record<string, string>;
     transmissions: Record<string, string>;
+    market_categories: Record<string, string>;
   }>({
     conditions: {},
     transmissions: {},
+    market_categories: {},
   });
 
   const [images, setImages] = useState<File[]>([]);
@@ -149,9 +166,11 @@ export default function CarDataEntryForm() {
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const reportInputRef = useRef<HTMLInputElement>(null);
+      
 
   // Fetch enum options on component mount
   useEffect(() => {
+   
     const fetchEnumOptions = async () => {
       try {
         const response = await api.get("/api/cars/enum-options");
@@ -173,12 +192,47 @@ export default function CarDataEntryForm() {
             manual: "يدوي",
             cvt: "نصف أوتوماتيك",
           },
+          market_categories: {
+            luxuryCars: "سوق السيارات الفارهة",
+            classic: "سوق السيارات الكلاسيكية",
+            caravan: "سوق الكرافانات",
+            busesTrucks: "سوق الشاحنات والحافلات",
+            companiesCars: "سوق سيارات الشركات",
+            government: "سوق سيارات الجهات الحكومية",
+          },
         });
       }
     };
 
     fetchEnumOptions();
-  }, []);
+
+// formData.make ="Toyota"; formData.model ="Camry"; formData.year="2018";
+   console.log(formData.make , formData.model , formData.year);
+       if (formData.make && formData.model && formData.year) {
+      // Filter cars that match brand, model, and year
+      const matchingCars = carsData.filter((car: any) =>
+        car.make.trim() === formData.make.trim() &&
+        car.model.trim().includes(formData.model.trim()) &&
+        Math.floor(car.year) === Number(formData.year)
+      )
+      if (matchingCars.length > 0) {
+        const avgPrice =
+          matchingCars.reduce((sum, car) => sum + Number(car.price), 0) / matchingCars.length
+
+        const mockAnalysis: AiAnalysis = {
+          marketPrice: Math.round(avgPrice),
+          demandLevel: ['منخفض', 'متوسط', 'مرتفع'][Math.floor(Math.random() * 3)],
+          similarCars: matchingCars.length,
+          priceSuggestion: Math.round(avgPrice * (0.95 + Math.random() * 0.1)) // ±5%
+        }
+
+        setAiAnalysis(mockAnalysis)
+      } else {
+        setAiAnalysis(null) // No matching cars found
+      }
+    }
+    
+    }, [formData.make, formData.model, formData.year]);
 
   // التعامل مع تغيير قيم حقول النموذج
   const handleInputChange = (
@@ -250,6 +304,7 @@ export default function CarDataEntryForm() {
         { field: "color", name: "لون السيارة" },
         { field: "province", name: "المنطقة" },
         { field: "city", name: "المدينة " },
+        { field: "market_category", name: "سوق السيارة" },
       ];
 
       for (const { field, name } of requiredFields) {
@@ -658,7 +713,7 @@ export default function CarDataEntryForm() {
               <option value="">-- اختر نوع ناقل الحركة --</option>
               {Object.entries(enumOptions.transmissions).map(
                 ([value, label]) => (
-                  <option key={value} value={label}>
+                  <option key={value} value={value}>
                     {label}
                   </option>
                 )
@@ -683,14 +738,11 @@ export default function CarDataEntryForm() {
             >
               <option value="">-- اختر حالة السيارة --</option>
               {Object.entries(enumOptions.conditions).map(([value, label]) => (
-                <option key={value} value={label}>
+                <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-              {/* Keep legacy options for backward compatibility */}
-              <option value="جديدة">جديدة</option>
-              <option value="جيدة جداً">جيدة جداً</option>
-              <option value="تحتاج إصلاح">تحتاج إصلاح</option>
+              
             </select>
           </div>
           <div>
@@ -806,7 +858,62 @@ export default function CarDataEntryForm() {
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+
+          <div>
+            <label
+              htmlFor="condition"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              سوق السيارة
+            </label>
+            <select
+              id="market_category"
+              name="market_category"
+              value={formData.market_category}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">-- اختر  سوق السيارة --</option>
+              {Object.entries(enumOptions.market_categories).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+              
+            </select>
+          </div>
         </div>
+
+        {/* تحليل الذكاء الاصطناعي */}
+              {aiAnalysis && (
+                <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-bold text-gray-800 mb-3">تحليل السوق الذكي</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-500">متوسط السعر بالسوق</p>
+                      <p className="text-xl font-bold">{aiAnalysis.marketPrice.toLocaleString()} ر.س</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-500">مستوى الطلب</p>
+                      <p className={`text-xl font-bold ${
+                        aiAnalysis.demandLevel === 'مرتفع' ? 'text-green-600' : 
+                        aiAnalysis.demandLevel === 'متوسط' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {aiAnalysis.demandLevel}
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-500">سيارات مشابهة</p>
+                      <p className="text-xl font-bold">{aiAnalysis.similarCars}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-500">السعر المقترح</p>
+                      <p className="text-xl font-bold text-indigo-600">{aiAnalysis.priceSuggestion.toLocaleString()} ر.س</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
         {/* حقل صورة كرت التسجيل */}
         <div className="border-t pt-6">

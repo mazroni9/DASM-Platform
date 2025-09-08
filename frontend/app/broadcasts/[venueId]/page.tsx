@@ -6,7 +6,7 @@ import { ChevronRight, Clock, Video, ExternalLink, MapPin, Info, Users } from 'l
 import BidTimer from '@/components/BidTimer';
 import LiveBidding from '@/components/LiveBidding';
 import BidderChat from '@/components/social/BidderChat';
-import { formatMoney } from '@/lib/utils';
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // المعارض العشرة من نفس القائمة في OtherVenuesGrid
 const venuesData = [
@@ -521,7 +521,7 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
                       <div className="text-center mb-4">
                         <h3 className="font-semibold text-lg text-teal-800">آخر سعر</h3>
                         <div className="text-3xl font-bold text-teal-600 my-3 py-3 rounded-lg border-2 border-teal-200 bg-white">
-                          {formatMoney(currentCar.current_price)} ريال
+                          {formatCurrency (currentCar.current_price)} ريال
                         </div>
                       </div>
                       
@@ -589,9 +589,9 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.make}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.model}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{car.year}</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.min_price)} ريال</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatMoney(car.max_price)} ريال</td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatMoney(car.current_price)} ريال</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car.min_price)} ريال</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{formatCurrency (car.max_price)} ريال</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">{formatCurrency (car.current_price)} ريال</td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-600">
                           <button 
                             onClick={() => setCurrentCar(car)} 

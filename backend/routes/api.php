@@ -147,8 +147,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Car management for all users
 
     Route::get('/cars', [CarController::class, 'index']);
+    Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']);
     Route::get('/cars?page={id}', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
+    Route::get('/cars/enum-options', [CarController::class, 'enumOptions']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
     Route::get('/car/{id}', [CarController::class, 'showOnly']);
     Route::put('/cars/{id}', [CarController::class, 'update']);
@@ -300,7 +302,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
 
     // Admin broadcast management
-    
+
     Route::get('/admin/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
     Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
     Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
