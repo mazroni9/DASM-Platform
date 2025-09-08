@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Car, Check, X, Plus, Minus, Search, Filter, Eye } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { UserRole } from "@/types/types";
 
 interface CarForAuction {
     id: number;
@@ -46,7 +47,7 @@ export default function LiveAuctionCarSelection({
     const loadCars = async () => {
         try {
             setLoading(true);
-            const rolePrefix = userRole === "admin" ? "/admin" : "/moderator";
+            const rolePrefix = userRole === UserRole.ADMIN ? "/admin" : "/moderator";
 
             // Get approved auctions (cars ready for live auction)
             const availableResponse = await api.get(
@@ -79,7 +80,7 @@ export default function LiveAuctionCarSelection({
 
     const selectCarForDisplay = async (carId: number) => {
         try {
-            const rolePrefix = userRole === "admin" ? "/admin" : "/moderator";
+            const rolePrefix = userRole === UserRole.ADMIN ? "/admin" : "/moderator";
             const response = await api.put(
                 `${rolePrefix}/broadcast/current-car`,
                 { car_id: carId }
@@ -102,7 +103,7 @@ export default function LiveAuctionCarSelection({
         }
 
         try {
-            const rolePrefix = userRole === "admin" ? "/admin" : "/moderator";
+            const rolePrefix = userRole === UserRole.ADMIN ? "/admin" : "/moderator";
             const response = await api.put(
                 `${rolePrefix}/cars/bulk-live-auction`,
                 {
