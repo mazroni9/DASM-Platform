@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Notifications\CarApprovedForAuctionNotification;
 use App\Notifications\CarMovedToAuctionNotification;
+use App\Events\CarMovedBetweenAuctionsEvent;
 
 class AuctionController extends Controller
 {
@@ -435,6 +436,9 @@ class AuctionController extends Controller
                     if ($carOwner) {
                         $carOwner->notify(new CarMovedToAuctionNotification($car, $auction, $request->status));
                     }
+
+                    // Broadcast event for real-time updates
+                    event(new CarMovedBetweenAuctionsEvent($auction, $request->status, $car));
                 } else {
 
                     $newData = [
@@ -456,6 +460,9 @@ class AuctionController extends Controller
                     if ($carOwner) {
                         $carOwner->notify(new CarMovedToAuctionNotification($car, $auction, $request->status));
                     }
+
+                    // Broadcast event for real-time updates
+                    event(new CarMovedBetweenAuctionsEvent($auction, $request->status, $car));
                 }
                 $tracking->push($car);
             }
