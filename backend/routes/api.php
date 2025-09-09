@@ -164,6 +164,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
+    Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
     Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
     //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
