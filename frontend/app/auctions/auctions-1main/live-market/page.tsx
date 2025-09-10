@@ -210,6 +210,24 @@ export default function LiveMarketPage() {
       toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
     });
 
+    // Listen for auction status changes
+    channel.bind('AuctionStatusChangedEvent', (data: any) => {
+      console.log('Auction status changed:', data);
+      // Refresh auction data when status changes
+      fetchAuctions();
+      const statusLabels = {
+        'live': 'مباشر',
+        'ended': 'منتهي',
+        'completed': 'مكتمل',
+        'cancelled': 'ملغي',
+        'failed': 'فاشل',
+        'scheduled': 'مجدول'
+      };
+      const oldStatusLabel = statusLabels[data.old_status] || data.old_status;
+      const newStatusLabel = statusLabels[data.new_status] || data.new_status;
+      toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
+    });
+
     // Cleanup function
     return () => {
       pusher.unsubscribe('auction.live');
