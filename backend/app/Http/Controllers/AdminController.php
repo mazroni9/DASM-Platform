@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use App\Models\Car;
 use App\Events\CarApprovedForLiveEvent;
 use App\Notifications\CarApprovedForLiveNotification;
+use App\Events\AuctionStatusChangedEvent;
 
 use function Psy\debug;
 
@@ -554,6 +555,11 @@ class AdminController extends Controller
         }
 
         $auction = Auction::findOrFail($id);
+
+        // Capture old status before making changes
+        $oldStatus = $auction->status;
+        $newStatus = $request->status;
+
         $auction->approved_for_live = false;
 
         if ($request->status === 'live' && !$auction->control_room_approved) {
@@ -581,6 +587,12 @@ class AdminController extends Controller
             $auction->car->save();
         }
             $auction->save();
+
+        // Broadcast event for real-time updates
+        if ($oldStatus !== $newStatus) {
+            event(new AuctionStatusChangedEvent($auction, $oldStatus, $newStatus, $auction->car));
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction status updated successfully',
