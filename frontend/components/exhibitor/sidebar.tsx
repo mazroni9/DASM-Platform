@@ -20,19 +20,9 @@ import {
 import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import { Avatar } from 'antd';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 
-// 🔹 نوع البيانات
-interface Exhibitor {
-  id: number;
-  name: string;
-  email: string;
-  showroom_name: string;
-  phone?: string;
-}
-
-// 🔹 عناصر القائمة (مُعرفة خارجياً لتنظيم الكود)
+// 🔹 عناصر القائمة
 const navItems = [
   { href: '/exhibitor', icon: FiHome, label: 'الرئيسية' },
   { href: '/exhibitor/add-car', icon: FiPlusSquare, label: 'إضافة سيارة' },
@@ -53,43 +43,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<Exhibitor | null>(null);
-  const [isClient, setIsClient] = useState(false); // 🔥 لحل مشكلة الهيدرات
-
-  // 🔹 التأكد من أننا في الكلاينت قبل استخدام localStorage
-  useEffect(() => {
-    setIsClient(true); // ✅ الآن نثق إننا في المتصفح
-
-    const saved = localStorage.getItem('exhibitor');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch (err) {
-        console.error('فشل قراءة بيانات المستخدم');
-        router.push('/exhibitor/login');
-      }
-    } else {
-      router.push('/exhibitor/login');
-    }
-  }, [router]);
-
-  // 🔹 تسجيل الخروج
-  const handleLogout = () => {
-    localStorage.removeItem('exhibitor');
-    localStorage.removeItem('auth_token');
-    document.cookie = 'exhibitor_logged_in=; path=/; max-age=0';
-    router.push('/exhibitor/login');
-  };
-
-  // 🔹 إذا لم يبدأ الكلاينت بعد، لا تعرض أي شيء
-  if (!isClient) {
-    return (
-      <aside className="w-72 bg-gray-900 h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-      </aside>
-    );
-  }
+  const { user, logout } = useAuthStore();
 
   return (
     <motion.aside
@@ -106,10 +60,13 @@ export function Sidebar() {
           className="border-2 border-white shadow-lg transition-transform hover:scale-105"
         />
         <div className="text-left">
+          {/* 👇 ثابتة زي ما طلبت */}
           <h2 className="font-bold text-sm md:text-base text-white truncate max-w-[150px]">
-            {user?.showroom_name || 'معرضك'}
+           {user?.venue_name || 'معرض السيارات'}
           </h2>
-          <p className="text-xs text-indigo-200">مرحباً، {user?.name?.split(' ')[0] || 'مستخدم'}</p>
+          <p className="text-xs text-indigo-200">
+            مرحباً، {user?.first_name || 'زائر'}
+          </p>
         </div>
       </div>
 
@@ -134,11 +91,7 @@ export function Sidebar() {
                       }
                     `}
                   >
-                    <span
-                      className={`${
-                        isActive ? 'text-indigo-600' : 'text-indigo-200 group-hover:text-white'
-                      }`}
-                    >
+                    <span className={isActive ? 'text-indigo-600' : 'text-indigo-200 group-hover:text-white'}>
                       <Icon size={18} />
                     </span>
                     <span className="font-medium text-sm">{item.label}</span>
@@ -153,7 +106,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-indigo-800/50">
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="w-full flex items-center space-x-3 rtl:space-x-reverse p-3 rounded-xl text-red-100 hover:bg-red-600 hover:bg-opacity-30 transition-all duration-200 group"
         >
           <FiLogOut size={18} className="text-red-200 group-hover:text-red-50" />
@@ -161,7 +114,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* شريط التمرير الأنيق */}
+      {/* Scrollbar styles */}
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
