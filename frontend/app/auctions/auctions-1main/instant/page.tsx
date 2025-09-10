@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/formatCurrency";
 import Countdown from "@/components/Countdown";
+import Pusher from 'pusher-js';
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getAuctionStatus(auction: any): string {
     console.log(auction);
@@ -87,6 +88,18 @@ export default function InstantAuctionPage() {
         }
         fetchAuctions();
 
+        // Setup Pusher listener for real-time auction updates
+        const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+        });
+
+        const channel = pusher.subscribe('auction.instant');
+        channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
+            console.log('Car moved to auction:', data);
+            // Refresh auction data when cars are moved
+            fetchAuctions();
+            //toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
+        });
 
         async function startAutoBiddingForAuctions(auctionIds: any[]) {
     const userIds = [5, 6, 7, 8, 9, 10];
@@ -224,6 +237,12 @@ export default function InstantAuctionPage() {
 }
 //startAutoBidding();
 //startAutoBiddingForAuctions([1,2])
+
+        // Cleanup function
+        return () => {
+            pusher.unsubscribe('auction.instant');
+            pusher.disconnect();
+        };
     }, []);
 
    

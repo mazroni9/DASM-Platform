@@ -37,6 +37,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Countdown from "@/components/Countdown";
+import Pusher from 'pusher-js';
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
   const response = await api.get(`api/check-time?page=${page}`);
@@ -187,6 +188,33 @@ export default function LiveMarketPage() {
       }
     }
     fetchAuctions();
+
+    // Setup Pusher listener for real-time auction updates
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+    });
+
+    const channel = pusher.subscribe('auction.live');
+    channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
+      console.log('Car moved to auction:', data);
+      // Refresh auction data when cars are moved
+      fetchAuctions();
+      //toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
+    });
+
+    // Listen for cars approved for live auction
+    channel.bind('CarApprovedForLiveEvent', (data: any) => {
+      console.log('Car approved for live auction:', data);
+      // Refresh auction data when cars are approved for live
+      fetchAuctions();
+      toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
+    });
+
+    // Cleanup function
+    return () => {
+      pusher.unsubscribe('auction.live');
+      pusher.disconnect();
+    };
   }, []);
 
   const submitBid = async () => {
