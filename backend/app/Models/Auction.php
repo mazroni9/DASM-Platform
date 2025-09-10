@@ -19,8 +19,11 @@ class Auction extends Model
         'car_id',
         'start_time',
         'end_time',
+        'starting_bid', // Added missing starting_bid field
         'minimum_bid',
         'maximum_bid', // Renamed from max_price
+        'min_price', // Added for compatibility
+        'max_price', // Added for compatibility
         'current_bid',
         'reserve_price', // Renamed from min_price
         'status',
