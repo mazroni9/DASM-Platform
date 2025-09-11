@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 export default function ModeratorPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
 
     useEffect(() => {
         // Redirect to moderator dashboard

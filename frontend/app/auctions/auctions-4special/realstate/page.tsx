@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { ArrowLeft, MapPin, Home, Ruler, Building } from 'lucide-react';
 
@@ -49,10 +49,10 @@ export default function RealEstateAuctionsPage() {
             <div className="flex-1 text-center">
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">مزادات العقارات</h1>
             </div>
-            <Link href="/auctions/auctions-special" className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse">
+            <LoadingLink href="/auctions/auctions-special" className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse">
               <ArrowLeft size={16} className="ml-1 rtl:mr-1 rtl:ml-0" />
               <span>العودة إلى المزادات الخاصة</span>
-            </Link>
+            </LoadingLink>
           </div>
           <p className="text-base text-white/90 max-w-2xl mx-auto text-center">
             استثمر في افضل العقارات السكنية والتجارية عبر منصة مزادات موثوقة وشفافة
@@ -120,12 +120,12 @@ export default function RealEstateAuctionsPage() {
             <p className="text-gray-600 text-sm mb-6">
               سجل عقارك الآن في منصتنا ليتم عرضه في المزادات القادمة. فريقنا سيتواصل معك لتقييم العقار وإتمام إجراءات البيع.
             </p>
-            <Link 
+            <LoadingLink 
               href="/forms/real-estate-auction-request"
               className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition text-sm"
             >
               تسجيل عقار للمزاد
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

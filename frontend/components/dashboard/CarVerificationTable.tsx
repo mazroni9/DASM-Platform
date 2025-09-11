@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { toast } from "react-hot-toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
+
 interface CarVerificationTableProps {
   isAdmin?: boolean;
   status?: "pending" | "under_review" | "approved" | "rejected";
@@ -17,7 +18,8 @@ interface CarVerificationTableProps {
 }
 
 export function CarVerificationTable({ isAdmin = false, status = "pending", userId }: CarVerificationTableProps) {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

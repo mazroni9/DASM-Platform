@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Facebook,
     Twitter,
@@ -20,33 +20,33 @@ const Footer = () => {
                 {/* Desktop Layout */}
                 <div className="hidden lg:flex justify-between items-center">
                     <div className="w-1/3 flex justify-start gap-4">
-                        <Link
+                        <LoadingLink
                             href="/about"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             من نحن
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link
+                        <LoadingLink
                             href="/how-it-works"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             كيف نعمل
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link
+                        <LoadingLink
                             href="/privacy"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             سياسة الخصوصية
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link
+                        <LoadingLink
                             href="/terms"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             الشروط والأحكام
-                        </Link>
+                        </LoadingLink>
                     </div>
                     <div className="w-1/3 text-center text-sky-700">
                         © {currentYear} منصة DASM-e. جميع الحقوق محفوظة.
@@ -65,33 +65,33 @@ const Footer = () => {
                 <div className="hidden md:flex lg:hidden flex-col gap-4">
                     {/* Navigation Links */}
                     <div className="flex justify-center items-center gap-3 flex-wrap">
-                        <Link
+                        <LoadingLink
                             href="/about"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             من نحن
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link
+                        <LoadingLink
                             href="/how-it-works"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             كيف نعمل
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link
+                        <LoadingLink
                             href="/privacy"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             سياسة الخصوصية
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link
+                        <LoadingLink
                             href="/terms"
                             className="text-sky-800 hover:text-sky-600 transition-colors"
                         >
                             الشروط والأحكام
-                        </Link>
+                        </LoadingLink>
                     </div>
                     
                     {/* Bottom Row */}
@@ -112,30 +112,30 @@ const Footer = () => {
                 <div className="flex md:hidden flex-col gap-4">
                     {/* Navigation Links - Mobile Grid */}
                     <div className="grid grid-cols-2 gap-2 text-center">
-                        <Link
+                        <LoadingLink
                             href="/about"
                             className="text-sky-800 hover:text-sky-600 transition-colors py-2 px-1 rounded hover:bg-sky-50"
                         >
                             من نحن
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             href="/how-it-works"
                             className="text-sky-800 hover:text-sky-600 transition-colors py-2 px-1 rounded hover:bg-sky-50"
                         >
                             كيف نعمل
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             href="/privacy"
                             className="text-sky-800 hover:text-sky-600 transition-colors py-2 px-1 rounded hover:bg-sky-50"
                         >
                             سياسة الخصوصية
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             href="/terms"
                             className="text-sky-800 hover:text-sky-600 transition-colors py-2 px-1 rounded hover:bg-sky-50"
                         >
                             الشروط والأحكام
-                        </Link>
+                        </LoadingLink>
                     </div>
                     
                     {/* Contact Info */}

@@ -11,7 +11,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { MapPin, Calendar, Users } from 'lucide-react';
 import Skeleton from '@mui/material/Skeleton';
@@ -103,12 +103,12 @@ export default function CaravanCard({ caravan, loading = false }: CaravanCardPro
         {loading ? (
           <Skeleton variant="rectangular" width="100%" height={48} className="rounded-lg" />
         ) : (
-          <Link 
+          <LoadingLink 
             href={`/carDetails/${caravan?.id}`}
             className="block w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition text-center"
           >
             قدم عرضك
-          </Link>
+          </LoadingLink>
         )}
       </div>
     </div>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiLock, FiUserPlus, FiHome, FiPhone } from 'react-icons/fi';
+
 
 // ✅ إزالة fallback إلى localhost
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -31,7 +33,8 @@ export default function SignupPage() {
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const searchParams = useSearchParams();
   
   // اقرأ الرابط الذي يجب العودة إليه بعد التسجيل

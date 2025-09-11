@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { FiSearch, FiBell, FiLogOut, FiUser, FiHome, FiSettings } from 'react-icons/fi';
 import { Avatar, Badge, Dropdown, Input, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 // 🔹 نوع البيانات
 interface Exhibitor {
@@ -27,7 +28,8 @@ const DropdownItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: 
 );
 
 export function Header() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [user, setUser] = useState<Exhibitor | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

@@ -1,10 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import { useState } from 'react';
 
 export default function AuctionDropdown() {
-  const router = useRouter();
+  const router = useLoadingRouter();
   const [showPlaceholder, setShowPlaceholder] = useState(true);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { ArrowLeft, Anchor, Navigation, Calendar, Ruler } from 'lucide-react';
 
@@ -45,10 +45,10 @@ export default function YachtAuctionsPage() {
       <div className="relative h-80 bg-gradient-to-r from-cyan-800 to-blue-500 overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
-          <Link href="/auctions/auctions-4special" className="flex items-center text-white/80 hover:text-white mb-6 transition">
+          <LoadingLink href="/auctions/auctions-4special" className="flex items-center text-white/80 hover:text-white mb-6 transition">
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى الأسواق المتخصصة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-5xl font-bold text-white mb-4">سوق اليخوت والقوارب المستعملة</h1>
           <p className="text-xl text-white/90 max-w-2xl">
             استكشف مجموعة متنوعة من اليخوت الفاخرة للاستخدام الشخصي أو الاستثمار
@@ -116,12 +116,12 @@ export default function YachtAuctionsPage() {
             <p className="text-gray-600 mb-8">
               سجل بيانات يختك في منصتنا ليتم عرضه في المزادات القادمة. نوفر خدمة تقييم مجانية وعرض احترافي يضمن أعلى سعر ممكن.
             </p>
-            <Link 
+            <LoadingLink 
               href="/add/yacht"
               className="inline-block px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded-lg transition"
             >
               سجل البيانات
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

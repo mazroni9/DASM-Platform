@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
   Timer,
   BellOff,
@@ -72,12 +72,12 @@ export default function AuctionsMainPage() {
             <Tv className="h-5 w-5 ml-2" />
             <span>شاشة المعلق</span>
           </button>
-          <Link
+          <LoadingLink
             href="/auctions"
             className="flex items-center px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
           >
             <span className="ml-2">العودة لجميع الأسواق</span>
-          </Link>
+          </LoadingLink>
         </div>
       </div>
 
@@ -133,14 +133,14 @@ export default function AuctionsMainPage() {
             <div className="bg-gray-800 p-4 rounded-lg">
               <h3 className="font-semibold mb-3 text-gray-300">روابط سريعة</h3>
               {currentAuction && (
-                <Link
+                <LoadingLink
                   href={`/auctions/auctions-1main/${currentAuction}`}
                   target="_blank"
                   className="flex items-center justify-center gap-1 p-2 bg-purple-600 hover:bg-purple-700 rounded text-sm"
                 >
                   <ExternalLink className="h-4 w-4" />
                   <span>فتح في نافذة جديدة</span>
-                </Link>
+                </LoadingLink>
               )}
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function AuctionsMainPage() {
         {auctionsMain.map((auction) => {
           const Icon = auction.icon;
           return (
-            <Link
+            <LoadingLink
               key={auction.slug}
               href={`/auctions/auctions-1main/${auction.slug}`}
               className={`group flex flex-col border rounded-xl shadow hover:shadow-lg p-4 ${auction.bgColor} hover:bg-white transition-all duration-300 h-auto relative overflow-hidden`}
@@ -263,7 +263,7 @@ export default function AuctionsMainPage() {
                   اضغط للدخول إلى السوق
                 </span>
               </div>
-            </Link>
+            </LoadingLink>
           );
         })}
       </div>

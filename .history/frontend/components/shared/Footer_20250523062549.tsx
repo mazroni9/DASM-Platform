@@ -1,4 +1,4 @@
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Facebook,
     Twitter,
@@ -16,17 +16,17 @@ const Footer = () => {
             <div className="container mx-auto px-4 py-4">
                 <div className="flex justify-between items-center">
                     <div className="w-1/3 flex justify-start gap-4">
-                        <Link href="/privacy" className="text-sky-800 hover:text-sky-600 transition-colors">
+                        <LoadingLink href="/privacy" className="text-sky-800 hover:text-sky-600 transition-colors">
                             سياسة الخصوصية
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link href="/terms" className="text-sky-800 hover:text-sky-600 transition-colors">
+                        <LoadingLink href="/terms" className="text-sky-800 hover:text-sky-600 transition-colors">
                             الشروط والأحكام
-                        </Link>
+                        </LoadingLink>
                         <span className="text-sky-300">|</span>
-                        <Link href="/how-it-works" className="text-sky-800 hover:text-sky-600 transition-colors">
+                        <LoadingLink href="/how-it-works" className="text-sky-800 hover:text-sky-600 transition-colors">
                             كيف نعمل
-                        </Link>
+                        </LoadingLink>
                     </div>
                     <div className="w-1/3 text-center text-sky-700">
                         © {currentYear} منصة داسم. جميع الحقوق محفوظة.

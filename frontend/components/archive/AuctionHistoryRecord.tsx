@@ -25,7 +25,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import Image from "next/image";
 import {
     Calendar,
@@ -148,12 +148,12 @@ export default function AuctionHistoryRecord({
                 {/* محتوى البطاقة */}
                 <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-teal-600 transition-colors">
-                        <Link
+                        <LoadingLink
                             href={`/auction-archive/${auction.id}`}
                             className="hover:underline"
                         >
                             {auction.title}
-                        </Link>
+                        </LoadingLink>
                     </h3>
 
                     <div className="text-sm text-gray-600 mb-3">
@@ -217,13 +217,13 @@ export default function AuctionHistoryRecord({
 
                     {/* زر الإجراء */}
                     <div className="mt-4 flex justify-between">
-                        <Link
+                        <LoadingLink
                             href={`/auction-archive/${auction.id}`}
                             className="flex items-center text-teal-600 hover:text-teal-700 text-sm font-medium transition-colors"
                         >
                             عرض التفاصيل
                             <ChevronLeft className="h-4 w-4 mr-1" />
-                        </Link>
+                        </LoadingLink>
 
                         <button
                             title="حفظ في المفضلة"
@@ -263,12 +263,12 @@ export default function AuctionHistoryRecord({
                 {/* المعلومات الأساسية */}
                 <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-800 mb-1 hover:text-teal-600 transition-colors">
-                        <Link
+                        <LoadingLink
                             href={`/auction-archive/${auction.id}`}
                             className="hover:underline"
                         >
                             {auction.title}
-                        </Link>
+                        </LoadingLink>
                     </h3>
 
                     <div className="flex flex-wrap items-center text-sm text-gray-600 mb-3 gap-x-4">
@@ -308,13 +308,13 @@ export default function AuctionHistoryRecord({
 
                 {/* زر الإجراء */}
                 <div className="flex justify-end mt-4 md:mt-0">
-                    <Link
+                    <LoadingLink
                         href={`/auction-archive/${auction.id}`}
                         className="bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors px-4 py-2 rounded-lg flex items-center"
                     >
                         عرض التفاصيل
                         <ChevronLeft className="h-4 w-4 mr-1" />
-                    </Link>
+                    </LoadingLink>
                 </div>
             </div>
         </div>

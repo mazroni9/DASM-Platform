@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import VenueSelector from "@/components/broadcast/VenueSelector";
 import AuctionInfo from "@/components/broadcast/AuctionInfo";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { useAuthStore } from "@/store/authStore";
 import BidForm from "@/components/BidForm";
 import BidNotifications from "@/components/BidNotifications";
@@ -376,12 +376,12 @@ export default function BroadcastsPage() {
             <div className="max-w-7xl mx-auto">
                 {/* زر العودة */}
                 <div className="mb-6 flex justify-end">
-                    <Link
+                    <LoadingLink
                         href="/auctions/auctions-1main"
                         className="inline-flex items-center px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm transition-colors font-medium"
                     >
                         العودة إلى المزادات الرئيسية الثلاثة
-                    </Link>
+                    </LoadingLink>
                 </div>
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold text-gray-900">
@@ -482,7 +482,7 @@ export default function BroadcastsPage() {
                 {/* عرض المعارض في شكل هيت ماب */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredVenues.map((venue) => (
-                        <Link
+                        <LoadingLink
                             key={venue.id}
                             href={`/broadcasts/${venue.id}`}
                             className="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow relative flex flex-col h-full"
@@ -535,7 +535,7 @@ export default function BroadcastsPage() {
 
                             {/* شريط الموقع */}
                             <div className="w-full h-1 bg-gradient-to-r from-teal-500 to-teal-700"></div>
-                        </Link>
+                        </LoadingLink>
                     ))}
                 </div>
 

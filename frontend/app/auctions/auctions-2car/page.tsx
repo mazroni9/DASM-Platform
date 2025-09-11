@@ -18,7 +18,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { ArrowLeft, Car, Building, Building2, Truck, Home, ChevronRight } from 'lucide-react';
 
@@ -115,13 +115,13 @@ export default function CarAuctionsPage() {
         <div className="container mx-auto">
           {/* زر العودة إلى السوق الرئيسي */}
           <div className="mb-6">
-            <Link 
+            <LoadingLink 
               href="/auctions" 
               className="inline-flex items-center text-white/90 hover:text-white transition-colors group"
             >
               <ChevronRight className="ml-1 transform group-hover:-translate-x-1 transition-transform" size={20} />
               <span>العودة للسوق الرئيسي</span>
-            </Link>
+            </LoadingLink>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">قطاع السيارات المختلفة</h1>
@@ -137,7 +137,7 @@ export default function CarAuctionsPage() {
           {carMarkets.map((market) => {
             const Icon = market.icon;
             return (
-              <Link 
+              <LoadingLink 
                 key={market.id}
                 href={market.path}
                 className={`group flex flex-col h-full rounded-xl shadow-md border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg ${market.bgColor} hover:${market.hoverColor} transform hover:-translate-y-1`}
@@ -171,7 +171,7 @@ export default function CarAuctionsPage() {
                     </span>
                   </div>
                 </div>
-              </Link>
+              </LoadingLink>
             );
           })}
         </div>

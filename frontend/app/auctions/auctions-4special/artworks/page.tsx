@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { Calendar, Filter, Award, ArrowLeft, Heart, Clock, User, Search } from 'lucide-react';
 
@@ -132,13 +132,13 @@ export default function ArtworksPage() {
         <div className="container mx-auto px-4 relative z-10">
           {/* زر العودة */}
           <div className="mb-8">
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-special" 
               className="inline-flex items-center text-white/90 hover:text-white transition"
             >
               <ArrowLeft size={20} className="ml-2" />
               <span>العودة إلى الأسواق المتخصصة</span>
-            </Link>
+            </LoadingLink>
           </div>
           
           <h1 className="text-5xl font-bold text-white mb-4 text-center">اللوحات الفنية الأصلية</h1>
@@ -148,13 +148,13 @@ export default function ArtworksPage() {
           
           {/* زر إضافة لوحة فنية جديدة */}
           <div className="mt-8 flex justify-center">
-            <Link
+            <LoadingLink
               href="/forms/artwork-auction-request"
               className="bg-white text-purple-700 hover:bg-purple-50 px-6 py-3 rounded-lg font-bold transition shadow-lg hover:shadow-xl flex items-center"
             >
               <span>سجل لوحتك الفنية للمزاد</span>
               <span className="mr-2 bg-purple-100 text-purple-800 text-xs py-1 px-2 rounded-full">جديد</span>
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function ArtworksPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredArtworks.map(artwork => (
-              <Link 
+              <LoadingLink 
                 key={artwork.id} 
                 href={`/auctions/auctions-special/artworks/${artwork.id}`}
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -267,7 +267,7 @@ export default function ArtworksPage() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </LoadingLink>
             ))}
           </div>
         )}

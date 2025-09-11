@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import LoadingLink from "@/components/LoadingLink";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { toast } from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
 
 export function LoginForm() {
-    const router = useRouter();
+    const router = useLoadingRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -123,12 +123,12 @@ export function LoginForm() {
             </div>
 
             <div className="text-center">
-                <Link
+                <LoadingLink
                     href="/auth/register"
                     className="text-sm text-blue-600 hover:underline"
                 >
                     ليس لديك حساب؟ سجل الآن
-                </Link>
+                </LoadingLink>
             </div>
         </div>
     );

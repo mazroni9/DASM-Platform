@@ -23,9 +23,10 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { redirect } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
+
 interface CarFormData {
     price:string;
     id:string;
@@ -73,7 +74,8 @@ interface FilterOptions {
 }
 
 export default function AdminCarsPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [cars, setCars] = useState<CarData[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());

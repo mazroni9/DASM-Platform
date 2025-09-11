@@ -9,8 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import LoadingLink from "@/components/LoadingLink";
 import axios from 'axios';
 
 interface ResetPasswordResponse {
@@ -29,7 +30,8 @@ const resetPasswordSchema = z.object({
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPasswordForm() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [isLoading, setIsLoading] = useState(false);
@@ -80,9 +82,9 @@ export default function ResetPasswordForm() {
           <AlertDescription>رابط إعادة تعيين كلمة المرور غير صالح</AlertDescription>
         </Alert>
         <div className="mt-4">
-          <Link href="/auth/forgot-password" className="text-primary hover:underline">
+          <LoadingLink href="/auth/forgot-password" className="text-primary hover:underline">
             طلب رابط جديد
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     );
@@ -136,9 +138,9 @@ export default function ResetPasswordForm() {
         </Button>
 
         <div className="text-center text-sm">
-          <Link href="/auth/login" className="text-primary hover:underline">
+          <LoadingLink href="/auth/login" className="text-primary hover:underline">
             العودة إلى تسجيل الدخول
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </form>

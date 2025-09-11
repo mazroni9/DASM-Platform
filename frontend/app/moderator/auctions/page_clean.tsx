@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Eye, CheckCircle, XCircle, Clock, Filter } from "lucide-react";
+
 
 interface Auction {
     id: number;
@@ -26,7 +27,8 @@ interface Auction {
 
 export default function ModeratorAuctionsPage() {
     const { isModerator, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [auctions, setAuctions] = useState<Auction[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");

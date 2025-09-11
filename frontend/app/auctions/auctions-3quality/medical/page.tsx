@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 import { ArrowLeft, Filter, FilterX, Search, HeartPulse, Stethoscope, ChevronLeft } from 'lucide-react';
 
 // واجهة نموذج البيانات للأجهزة الطبية
@@ -18,7 +19,8 @@ interface MedicalProduct {
 }
 
 export default function MedicalEquipmentPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [products, setProducts] = useState<MedicalProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,13 +81,13 @@ export default function MedicalEquipmentPage() {
       <div className="bg-gradient-to-r from-teal-500 to-teal-700 py-6">
         <div className="container mx-auto px-4">
           <div className="mb-4">
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-3quality" 
               className="inline-flex items-center text-white/90 hover:text-white transition-colors px-4 py-2 rounded-full border border-teal-400 hover:border-teal-300 bg-teal-600/50 hover:bg-teal-600/70 rtl:flex-row-reverse"
             >
               <ChevronLeft className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
               <span>العودة للسوق النوعي</span>
-            </Link>
+            </LoadingLink>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
@@ -205,12 +207,12 @@ export default function MedicalEquipmentPage() {
                       <span className="text-teal-700 font-bold">
                         {product.price.toLocaleString()} ريال
                       </span>
-                      <Link 
+                      <LoadingLink 
                         href={`/auctions/auctions-3quality/medical/${product.id}`}
                         className="bg-teal-100 hover:bg-teal-200 text-teal-800 px-3 py-1 rounded transition text-sm"
                       >
                         عرض التفاصيل
-                      </Link>
+                      </LoadingLink>
                     </div>
                   </div>
                 </div>

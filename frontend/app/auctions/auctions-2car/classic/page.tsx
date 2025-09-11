@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { Award, Shield, Star, Users, ArrowLeft, Play } from 'lucide-react';
 import ClassicCarCard from '@/components/ClassicCarCard';
@@ -40,10 +40,10 @@ export default function ClassicCarsAuctionPage() {
       <div className="relative h-80 bg-gradient-to-r from-amber-800 to-amber-600 overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
-          <Link href="/auctions/auctions-2car" className="flex items-center text-white/80 hover:text-white mb-6 transition">
+          <LoadingLink href="/auctions/auctions-2car" className="flex items-center text-white/80 hover:text-white mb-6 transition">
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة لسوق السيارات</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-5xl font-bold text-white mb-4">سوق السيارات الكلاسيكية</h1>
           <p className="text-xl text-white/90 max-w-2xl">
             سيارات نادرة وأصيلة من الخمسينات والستينات والسبعينات بحالة ممتازة وتاريخ موثق

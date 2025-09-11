@@ -13,8 +13,8 @@ import {
   Check
 } from 'lucide-react';
 import HealthIndexDisplay from '@/components/ai/HealthIndexDisplay';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import LoadingLink from "@/components/LoadingLink";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { CarValueAssessment, carAnalysisService, CarHealthReport } from '@/lib/ai/services/carAnalysisService';
 import { imageService } from '@/lib/ai/services/imageService';
 
@@ -243,7 +243,8 @@ function EnhancedImagesDisplay({ originalUrl, enhancedUrl }: { originalUrl: stri
 
 // الصفحة الرئيسية لتحليل السيارة
 export default function CarInsightsPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const carId = parseInt(params.id);
   
   const [carDetails, setCarDetails] = useState<any>(null);
@@ -378,10 +379,10 @@ export default function CarInsightsPage({ params }: { params: { id: string } }) 
       {/* شريط التنقل */}
       <div className="mb-6">
         <div className="flex items-center mb-2">
-          <Link href="/ai/insights" className="text-blue-600 hover:text-blue-800 flex items-center">
+          <LoadingLink href="/ai/insights" className="text-blue-600 hover:text-blue-800 flex items-center">
             <ChevronLeft className="h-4 w-4 ml-1" />
             <span>العودة إلى التحليلات</span>
-          </Link>
+          </LoadingLink>
         </div>
         <h1 className="text-2xl font-bold text-gray-900">{carDetails.title}</h1>
         <p className="text-gray-600">{carDetails.year} • {carDetails.make} • {carDetails.model} • {carDetails.mileage.toLocaleString()} كم</p>

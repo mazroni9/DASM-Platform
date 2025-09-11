@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Car,
     Search,
@@ -177,13 +177,13 @@ export default function RecommendationsPage() {
                     <h1 className="text-3xl font-bold text-gray-900">
                         توصيات مخصصة لك
                     </h1>
-                    <Link
+                    <LoadingLink
                         href="/dashboard"
                         className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors gap-1 px-3 py-2 rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
                     >
                         <span>لوحة التحكم</span>
                         <ArrowLeft className="h-4 w-4" />
-                    </Link>
+                    </LoadingLink>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4">
@@ -383,12 +383,12 @@ export default function RecommendationsPage() {
                                 )}
 
                                 <div className="mt-4">
-                                    <Link
+                                    <LoadingLink
                                         href={`/car/${car.id}`}
                                         className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors"
                                     >
                                         عرض التفاصيل
-                                    </Link>
+                                    </LoadingLink>
                                 </div>
                             </div>
                         </div>

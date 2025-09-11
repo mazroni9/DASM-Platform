@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { motion } from 'framer-motion';
 import { ShoppingBag, ChevronRight, Calendar, Clock, Sparkles } from 'lucide-react';
 
@@ -156,13 +156,13 @@ export default function BazarPage() {
       <div className="relative z-10">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
-            <Link 
+            <LoadingLink 
               href="/auctions" 
               className="flex items-center text-purple-600 hover:text-purple-800 transition group"
             >
               <ChevronRight className="ml-1 transform group-hover:-translate-x-1 transition-transform" size={20} />
               <span>العودة للسوق الرئيسي</span>
-            </Link>
+            </LoadingLink>
           </div>
           
           {/* عنوان البازار الكبير */}
@@ -196,57 +196,57 @@ export default function BazarPage() {
               </div>
               <div className="bg-white p-5 shadow-lg">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 rtl">
-                  <Link href="/auctions/auctions-6big/riyadh" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  <LoadingLink href="/auctions/auctions-6big/riyadh" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     الرياض
-                  </Link>
-                  <Link href="/auctions/auctions-6big/jeddah" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/jeddah" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     جدة
-                  </Link>
-                  <Link href="/auctions/auctions-6big/mekkah" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/mekkah" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     مكة المكرمة
-                  </Link>
-                  <Link href="/auctions/auctions-6big/madinah" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/madinah" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     المدينة المنورة
-                  </Link>
-                  <Link href="/auctions/auctions-6big/eastern" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/eastern" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     المنطقة الشرقية
-                  </Link>
-                  <Link href="/auctions/auctions-6big/gaseem" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/gaseem" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     القصيم
-                  </Link>
-                  <Link href="/auctions/auctions-6big/tabouk" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/tabouk" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     تبوك
-                  </Link>
-                  <Link href="/auctions/auctions-6big/hail" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/hail" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     حائل
-                  </Link>
-                  <Link href="/auctions/auctions-6big/abha" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/abha" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     أبها
-                  </Link>
-                  <Link href="/auctions/auctions-6big/jouf" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/jouf" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     الجوف
-                  </Link>
-                  <Link href="/auctions/auctions-6big/baha" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/baha" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     الباحة
-                  </Link>
-                  <Link href="/auctions/auctions-6big/taif" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/taif" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     الطائف
-                  </Link>
-                  <Link href="/auctions/auctions-6big/jizzan" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/jizzan" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     جيزان
-                  </Link>
-                  <Link href="/auctions/auctions-6big/haffer" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/haffer" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     حفر الباطن
-                  </Link>
-                  <Link href="/auctions/auctions-6big/kharj" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/kharj" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     الخرج
-                  </Link>
-                  <Link href="/auctions/auctions-6big/hassa" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/hassa" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     الأحساء
-                  </Link>
-                  <Link href="/auctions/auctions-6big/wadi" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
+                  </LoadingLink>
+                  <LoadingLink href="/auctions/auctions-6big/wadi" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium py-2 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-200 text-center flex items-center justify-center">
                     وادي الدواسر
-                  </Link>
+                  </LoadingLink>
                 </div>
               </div>
             </motion.div>

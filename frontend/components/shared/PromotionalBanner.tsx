@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 
 interface PromotionalBannerProps {
   title: string;
@@ -32,12 +32,12 @@ export default function PromotionalBanner({
           <p className={`${textColor} opacity-80 mb-6`}>
             {description}
           </p>
-          <Link 
+          <LoadingLink 
             href={linkWithReferrer}
             className="inline-block px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition"
           >
             {linkText}
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </div>

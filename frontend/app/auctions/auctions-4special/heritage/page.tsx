@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { 
   ChevronRight, 
   Search, 
@@ -195,10 +195,10 @@ export default function HeritagePage() {
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center items-center relative z-10 py-16">
           <div className="flex w-full justify-end mb-6">
-            <Link href="/auctions/auctions-special" className="flex items-center text-white/80 hover:text-white transition group">
+            <LoadingLink href="/auctions/auctions-special" className="flex items-center text-white/80 hover:text-white transition group">
               <ChevronRight className="ml-2 transform group-hover:-translate-x-1 transition-transform" size={20} />
               <span>العودة للأسواق المتخصصة</span>
-            </Link>
+            </LoadingLink>
           </div>
           {/* العنوان في المنتصف */}
           <div className="text-center">
@@ -208,18 +208,18 @@ export default function HeritagePage() {
             </p>
           </div>
           <div className="flex items-center gap-4 mt-4">
-            <Link 
+            <LoadingLink 
               href="/forms/precious-auction-request" 
               className="px-6 py-3 bg-white text-indigo-600 hover:bg-gray-100 font-bold rounded-full shadow-md hover:shadow-lg transition-all"
             >
               عرض قطعة للبيع
-            </Link>
-            <Link 
+            </LoadingLink>
+            <LoadingLink 
               href="#featured-items" 
               className="px-6 py-3 bg-transparent border-2 border-white text-white hover:bg-white/10 font-bold rounded-full transition-all"
             >
               تصفح القطع النادرة
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>
@@ -260,7 +260,7 @@ export default function HeritagePage() {
           {categories.map((category) => {
             const Icon = category.icon;
             return (
-              <Link 
+              <LoadingLink 
                 key={category.id}
                 href={`/auctions/auctions-special/heritage/category/${category.id}`}
                 className="flex flex-col items-center text-center p-5 bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 hover:border-indigo-200 transition-all"
@@ -270,7 +270,7 @@ export default function HeritagePage() {
                 </div>
                 <h3 className="text-lg font-bold mb-2">{category.name}</h3>
                 <p className="text-sm text-gray-500">{category.description}</p>
-              </Link>
+              </LoadingLink>
             );
           })}
         </div>
@@ -316,7 +316,7 @@ export default function HeritagePage() {
         <h2 className="text-2xl font-bold mb-8">القطع النادرة المميزة</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredItems.map((item) => (
-            <Link 
+            <LoadingLink 
               key={item.id} 
               href={`/auctions/auctions-special/heritage/${item.id}`}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -361,7 +361,7 @@ export default function HeritagePage() {
                   </div>
                 </div>
               </div>
-            </Link>
+            </LoadingLink>
           ))}
         </div>
         
@@ -409,12 +409,12 @@ export default function HeritagePage() {
             <p className="text-gray-600 mb-8">
               سجل قطعتك النادرة في منصتنا لتصل إلى آلاف المهتمين والمقتنين حول العالم. نوفر عملية توثيق احترافية وعرض مميز لجذب أفضل العروض.
             </p>
-            <Link 
+            <LoadingLink 
               href="/forms/precious-auction-request"
               className="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition"
             >
               تسجيل قطعة للبيع
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

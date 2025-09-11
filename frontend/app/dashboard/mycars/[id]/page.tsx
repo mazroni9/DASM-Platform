@@ -3,7 +3,8 @@
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Edit, Save, X, Upload, Trash2 } from "lucide-react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { Car } from "@/types/types";
+
 
 export default function CarDetailsPage() {
     const [loading, setLoading] = useState(true);
@@ -30,7 +32,8 @@ export default function CarDetailsPage() {
     const [editedCar, setEditedCar] = useState<Partial<Car>>({});
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const params = useParams();
     const carId = params.id as string;
 
@@ -192,12 +195,12 @@ export default function CarDetailsPage() {
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">
                         السيارة غير موجودة
                     </h2>
-                    <Link
+                    <LoadingLink
                         href="/dashboard/mycars"
                         className="text-blue-600 hover:underline"
                     >
                         العودة إلى قائمة السيارات
-                    </Link>
+                    </LoadingLink>
                 </div>
             </div>
         );

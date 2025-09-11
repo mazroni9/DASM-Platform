@@ -9,7 +9,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import NotificationItem from "./NotificationItem";
 import { useState, useEffect } from "react";
 import { useNotification } from "context/NotificationContext";
-import Link from 'next/link'
+import LoadingLink from "@/components/LoadingLink";
 
 export default function NotificationMenu() {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -71,12 +71,12 @@ export default function NotificationMenu() {
       >
         {notificationsData.notifications.map((notification) => {
           return (
-            <Link key={notification.id} href={handleNotificationClick(notification)}>
+            <LoadingLink key={notification.id} href={handleNotificationClick(notification)}>
             <NotificationItem
               notification={notification}
               handleCloseMenu={handleClose}
             />
-            </Link>
+            </LoadingLink>
           );
         })}
       </Menu>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, Smartphone, Laptop, Camera, Tv, Speaker, Tablet, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 
@@ -96,13 +96,13 @@ export default function ElectronicsMarketPage() {
   return (
     <div className="container mx-auto p-4 py-8">
       <div className="mb-6 flex justify-between items-center">
-        <Link 
+        <LoadingLink 
           href="/auctions/auctions-5general" 
           className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100 rtl:flex-row-reverse"
         >
           <ArrowLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1 rtl:rotate-180" />
           <span>العودة إلى الأسواق العامة</span>
-        </Link>
+        </LoadingLink>
         
         <h1 className="text-3xl font-bold text-center text-blue-700">سوق الأجهزة الإلكترونية</h1>
         
@@ -165,12 +165,12 @@ export default function ElectronicsMarketPage() {
         {!isLoading && !error && featuredProducts.length === 0 && (
           <div className="bg-gray-50 p-8 rounded-lg text-center">
             <p className="text-gray-500">لا توجد منتجات متاحة حالياً. يرجى التحقق لاحقاً.</p>
-            <Link 
+            <LoadingLink 
               href="/forms/electronics-auction-request" 
               className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
               إضافة أول جهاز إلكتروني
-            </Link>
+            </LoadingLink>
           </div>
         )}
         
@@ -215,12 +215,12 @@ export default function ElectronicsMarketPage() {
                         الحالة: {product.condition || "مستعمل"}
                       </span>
                     </div>
-                    <Link 
+                    <LoadingLink 
                       href={`/auctions/auctions-5general/electronics/${product.id}`}
                       className="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors block text-center"
                     >
                       عرض التفاصيل
-                    </Link>
+                    </LoadingLink>
                   </div>
                 </div>
               );
@@ -229,12 +229,12 @@ export default function ElectronicsMarketPage() {
         )}
         
         <div className="mt-6 text-center">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-5general/electronics/all"
             className="px-6 py-2 border border-blue-600 text-blue-600 hover:bg-blue-50 rounded-lg transition inline-block"
           >
             عرض المزيد من الأجهزة
-          </Link>
+          </LoadingLink>
         </div>
       </div>
       
@@ -256,12 +256,12 @@ export default function ElectronicsMarketPage() {
             يمكنك الآن بيع أجهزتك الإلكترونية التي لم تعد بحاجة لها بكل سهولة. نوفر لك منصة آمنة وندعمك في عملية البيع من البداية إلى النهاية.
           </p>
           <div className="flex justify-center">
-            <Link
+            <LoadingLink
               href="/forms/electronics-auction-request"
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
             >
               بيع جهازك الآن
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Search,
     Filter,
@@ -218,12 +218,12 @@ export default function PublicCarsPage() {
                             تصفح جميع السيارات المتاحة للمزايدة
                         </p>
                     </div>
-                    <Link
+                    <LoadingLink
                         href="/"
                         className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
                     >
                         الرئيسية
-                    </Link>
+                    </LoadingLink>
                 </div>
 
                 {/* Search and Filters */}
@@ -496,21 +496,21 @@ export default function PublicCarsPage() {
                                             )}
 
                                         <div className="flex gap-2">
-                                            <Link
+                                            <LoadingLink
                                                 href={`/carDetails/${car.id}`}
                                                 className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
                                             >
                                                 <Eye className="h-4 w-4 ml-2" />
                                                 عرض التفاصيل
-                                            </Link>
+                                            </LoadingLink>
 
                                             {canEditCar(car) && (
-                                                <Link
+                                                <LoadingLink
                                                     href={`/carDetails/${car.id}?edit=true`}
                                                     className="flex items-center justify-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
                                                 >
                                                     <Edit className="h-4 w-4" />
-                                                </Link>
+                                                </LoadingLink>
                                             )}
                                         </div>
                                     </div>

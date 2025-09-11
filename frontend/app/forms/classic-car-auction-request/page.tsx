@@ -11,7 +11,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Upload, Info, HelpCircle, Car, History, Wrench, FileText } from 'lucide-react';
 
 export default function ClassicCarAuctionRequestPage() {
@@ -327,13 +327,13 @@ export default function ClassicCarAuctionRequestPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-amber-800 to-amber-600 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-special/classic-cars" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى سوق السيارات الكلاسيكية</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">تسجيل سيارة كلاسيكية للمزاد</h1>
           <p className="text-white/80 mt-2">
             سجل سيارتك الكلاسيكية في منصتنا وانضم إلى مجتمع هواة ومقتني السيارات الكلاسيكية
@@ -905,7 +905,7 @@ export default function ClassicCarAuctionRequestPage() {
               className="w-5 h-5 text-amber-600 rounded focus:ring-2 focus:ring-amber-500 mt-1"
             />
             <label htmlFor="terms" className="mr-2 text-gray-700">
-              أؤكد أن المعلومات المقدمة صحيحة وأن لدي حق ملكية هذه السيارة، وأوافق على <Link href="/terms" className="text-amber-600 hover:underline">شروط وأحكام</Link> المنصة.
+              أؤكد أن المعلومات المقدمة صحيحة وأن لدي حق ملكية هذه السيارة، وأوافق على <LoadingLink href="/terms" className="text-amber-600 hover:underline">شروط وأحكام</LoadingLink> المنصة.
             </label>
           </div>
 
@@ -918,12 +918,12 @@ export default function ClassicCarAuctionRequestPage() {
             >
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-special/classic-cars"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء
-            </Link>
+            </LoadingLink>
           </div>
         </form>
       </div>

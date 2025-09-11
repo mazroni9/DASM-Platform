@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { ArrowLeft, Plane, Calendar, Info, ChevronRight } from 'lucide-react';
 
@@ -12,10 +12,10 @@ export default function JetsAuctionsPage() {
       <div className="relative h-80 bg-gradient-to-r from-cyan-800 to-blue-600 overflow-hidden">
         <div className="absolute inset-0 bg-black/30"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
-          <Link href="/auctions/auctions-4special" className="flex items-center text-white/80 hover:text-white mb-6 transition group">
+          <LoadingLink href="/auctions/auctions-4special" className="flex items-center text-white/80 hover:text-white mb-6 transition group">
             <ChevronRight className="ml-2 transform group-hover:-translate-x-1 transition-transform" size={20} />
             <span>العودة للأسواق المتخصصة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-5xl font-bold text-white mb-4">سوق الطائرات النفاثة المستعملة</h1>
           <p className="text-xl text-white/90 max-w-2xl">
             استكشف فرص شراء طائرات نفاثة فاخرة عبر مزادات عالمية منظمة وآمنة
@@ -125,15 +125,15 @@ export default function JetsAuctionsPage() {
       {/* أزرار إضافية للتفاعل */}
       <div className="container mx-auto px-4 py-8 text-center">
         <div className="flex flex-wrap gap-6 justify-center">
-          <Link href="/forms/request-inspection" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+          <LoadingLink href="/forms/request-inspection" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
             طلب معاينة الطائرة
-          </Link>
-          <Link href="/forms/request-report" className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+          </LoadingLink>
+          <LoadingLink href="/forms/request-report" className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
             طلب تقرير فني مفصل
-          </Link>
-          <Link href="/forms/contact-seller" className="px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition">
+          </LoadingLink>
+          <LoadingLink href="/forms/contact-seller" className="px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition">
             تواصل مع البائع
-          </Link>
+          </LoadingLink>
         </div>
       </div>
 
@@ -174,12 +174,12 @@ export default function JetsAuctionsPage() {
             <p className="text-gray-600 mb-8">
               سجل بيانات طائرتك في منصتنا ليتم عرضها في المزادات القادمة. نوفر خدمة تقييم مجانية وعرض احترافي يضمن أعلى سعر ممكن.
             </p>
-            <Link 
+            <LoadingLink 
               href="/add/aircraft"
               className="inline-block px-8 py-4 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded-lg transition"
             >
               سجل البيانات
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

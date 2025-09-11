@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { 
   ArrowLeft, 
@@ -97,13 +97,13 @@ export default function WatchDetailPage({ params }) {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-yellow-700 to-amber-600 py-6">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-4special/watches" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى سوق الساعات الفاخرة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">{watchDetails.title}</h1>
           <div className="flex items-center mt-2 text-white/80">
             <span>الرقم المرجعي: {watchDetails.reference}</span>
@@ -241,10 +241,10 @@ export default function WatchDetailPage({ params }) {
                 <p className="text-gray-700 mb-4">
                   تم فحص هذه الساعة والتحقق من أصالتها بواسطة خبراء معتمدين في مجال الساعات الفاخرة.
                 </p>
-                <Link href={watchDetails.certificate} className="flex items-center text-yellow-600 hover:text-yellow-700">
+                <LoadingLink href={watchDetails.certificate} className="flex items-center text-yellow-600 hover:text-yellow-700">
                   <Download size={18} className="ml-2" />
                   <span>تحميل شهادة الفحص والأصالة</span>
-                </Link>
+                </LoadingLink>
               </div>
             )}
           </div>
@@ -380,7 +380,7 @@ export default function WatchDetailPage({ params }) {
           {/* ساعات مشابهة ستأتي من قاعدة البيانات */}
           {/* هذه نماذج توضيحية */}
           {[1, 2, 3, 4].map((item) => (
-            <Link 
+            <LoadingLink 
               key={item} 
               href={`/auctions/auctions-4special/watches/${item}`}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -393,7 +393,7 @@ export default function WatchDetailPage({ params }) {
                   {formatPrice(Math.floor(Math.random() * 500000) + 50000)} ريال
                 </div>
               </div>
-            </Link>
+            </LoadingLink>
           ))}
         </div>
       </div>

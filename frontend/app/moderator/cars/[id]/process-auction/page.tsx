@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     ArrowLeft,
     Car,
@@ -23,6 +24,7 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import Image from "next/image";
+
 
 interface CarData {
     id: number;
@@ -66,7 +68,8 @@ interface AuctionData {
 }
 
 export default function ModeratorProcessAuctionPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const params = useParams();
     const carId = params.id as string;
 

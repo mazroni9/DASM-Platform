@@ -1,8 +1,9 @@
 "use client";
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "react-hot-toast";
+
 
 interface AdminGuardProps {
     children: ReactNode;
@@ -14,7 +15,8 @@ interface AdminGuardProps {
  * إذا لم يكن المستخدم مديراً، يتم توجيهه إلى الصفحة الرئيسية
  */
 export default function AdminGuard({ children }: AdminGuardProps) {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const { user, isLoggedIn } = useAuthStore();
     const [isLoading, setIsLoading] = useState(true);
 

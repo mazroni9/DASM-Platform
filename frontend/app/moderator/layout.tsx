@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import LoadingLink from "@/components/LoadingLink";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     LayoutDashboard,
     Video,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
+
 interface ModeratorLayoutProps {
     children: React.ReactNode;
 }
@@ -23,7 +25,8 @@ interface ModeratorLayoutProps {
 export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
     const pathname = usePathname();
     const { user, isModerator, logout, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Simplified auth check - let ProtectedRoute handle the main logic
@@ -119,7 +122,7 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
                     <ul className="space-y-2">
                         {navigation.map((item) => (
                             <li key={item.name}>
-                                <Link
+                                <LoadingLink
                                     href={item.href}
                                     className={`flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors ${
                                         isActive(item.href)
@@ -133,7 +136,7 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
                                             {item.name}
                                         </span>
                                     )}
-                                </Link>
+                                </LoadingLink>
                             </li>
                         ))}
                     </ul>

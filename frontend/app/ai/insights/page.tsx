@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { 
   Car, 
   BarChart4, 
@@ -40,9 +40,9 @@ function InsightCard({
         </div>
       )
     : ({ children }: { children: React.ReactNode }) => (
-        <Link href={link} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden block">
+        <LoadingLink href={link} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden block">
           {children}
-        </Link>
+        </LoadingLink>
       );
 
   return (

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { motion } from 'framer-motion';
 import { FiLock, FiMail, FiLogIn } from 'react-icons/fi';
+
 
 // ✅ التأكد من تعريف المتغير البيئي بشكل صحيح
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -29,7 +31,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const searchParams = useSearchParams();
   
   // اقرأ الرابط الذي يجب العودة إليه بعد الدخول

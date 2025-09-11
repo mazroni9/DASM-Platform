@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { motion } from 'framer-motion'
 import { FiMail, FiRefreshCw } from 'react-icons/fi'
 
@@ -10,7 +10,7 @@ export default function Page() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const router = useLoadingRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

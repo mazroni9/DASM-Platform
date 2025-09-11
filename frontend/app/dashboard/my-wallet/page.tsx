@@ -2,7 +2,7 @@
 
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Plus, ArrowDownLeft } from "lucide-react";
 import api from "@/lib/axios";
@@ -30,7 +30,7 @@ export default function MyWalletPage() {
         funded: 0,
         total: 0,
     });
-    const router = useRouter();
+    const router = useLoadingRouter();
     const { isLoggedIn } = useAuth();
 
     // Verify user is authenticated

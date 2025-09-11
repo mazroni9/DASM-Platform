@@ -11,7 +11,7 @@
 
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale, Store, ShoppingBag, Gift } from 'lucide-react';
 import Countdown from '@/components/Countdown';
 
@@ -77,12 +77,12 @@ export default function AuctionsPage() {
         {title}
       </h2>
       {link && linkText && (
-        <Link 
+        <LoadingLink 
           href={link}
           className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium rounded-lg border border-blue-200 hover:border-blue-300 transition"
         >
           {linkText}
-        </Link>
+        </LoadingLink>
       )}
     </div>
   );
@@ -90,7 +90,7 @@ export default function AuctionsPage() {
   const AuctionCard = ({ auction, isSpecial = false }) => {
     const Icon = auction.icon;
     return (
-      <Link
+      <LoadingLink
         key={auction.slug}
         href={`/auctions/${auction.slug}`}
         className={`group flex flex-col items-center border rounded-xl shadow hover:shadow-lg p-6 ${auction.bgColor} hover:bg-white transition-all duration-300 h-full`}
@@ -107,14 +107,14 @@ export default function AuctionsPage() {
             اضغط للدخول
           </span>
         </div>
-      </Link>
+      </LoadingLink>
     );
   };
 
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex justify-end mb-4">
-        <Link href="/" className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium">الرئيسية</Link>
+        <LoadingLink href="/" className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium">الرئيسية</LoadingLink>
       </div>
 
       <div className="bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 rounded-xl shadow-md p-6 mb-8 max-w-3xl mx-auto">

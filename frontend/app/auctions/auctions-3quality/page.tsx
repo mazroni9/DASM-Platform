@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Stethoscope, Printer, Server } from 'lucide-react';
 
 export default function AuctionsQualityPage() {
@@ -44,12 +44,12 @@ export default function AuctionsQualityPage() {
       <div className="mb-8 text-center">
         <p className="text-gray-600">استكشف المزادات الخاصة والمتخصصة في مجالات متعددة مثل الأجهزة الطبية والمعدات المكتبية والسيرفرات.</p>
         <div className="mt-4">
-          <Link 
+          <LoadingLink 
             href="/auctions"
             className="inline-flex items-center px-4 py-2 text-teal-600 hover:text-teal-800 font-medium"
           >
             <span className="ml-2">العودة لجميع المزادات</span>
-          </Link>
+          </LoadingLink>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export default function AuctionsQualityPage() {
         {auctionsQuality.map((auction) => {
           const Icon = auction.icon;
           return (
-            <Link
+            <LoadingLink
               key={auction.slug}
               href={`/auctions/auctions-3quality/${auction.slug}`}
               className={`group flex flex-col items-center border rounded-xl shadow hover:shadow-lg p-8 ${auction.bgColor} hover:${auction.hoverBgColor} transition-all duration-300 h-full transform hover:-translate-y-1`}
@@ -72,7 +72,7 @@ export default function AuctionsQualityPage() {
                   اضغط للدخول
                 </span>
               </div>
-            </Link>
+            </LoadingLink>
           );
         })}
       </div>

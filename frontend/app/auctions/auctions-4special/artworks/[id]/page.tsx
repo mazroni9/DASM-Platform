@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { 
   ArrowLeft, 
@@ -103,13 +103,13 @@ export default function ArtworkDetailsPage({ params }) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-600 text-xl mb-4">عذراً، القطعة الفنية غير موجودة</div>
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-special/artworks" 
             className="inline-flex items-center text-purple-600 hover:text-purple-800"
           >
             <ArrowLeft size={16} className="ml-1" />
             <span>العودة إلى معرض الفنون</span>
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     );
@@ -133,13 +133,13 @@ export default function ArtworkDetailsPage({ params }) {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-purple-800 to-indigo-900 py-6">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-special/artworks" 
             className="inline-flex items-center text-white/90 hover:text-white transition"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى معرض الفنون</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white mt-2">{artwork.title}</h1>
           <div className="flex items-center text-white/80 mt-1">
             <User size={16} className="ml-1" />
@@ -399,7 +399,7 @@ export default function ArtworkDetailsPage({ params }) {
           <h2 className="text-2xl font-bold mb-6">قطع فنية مشابهة قد تعجبك</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {artwork.similarItems.map(item => (
-              <Link 
+              <LoadingLink 
                 key={item.id} 
                 href={`/auctions/auctions-special/artworks/${item.id}`}
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -413,7 +413,7 @@ export default function ArtworkDetailsPage({ params }) {
                   <h3 className="font-bold group-hover:text-purple-600 transition">{item.title}</h3>
                   <div className="mt-2 font-semibold text-purple-600">{item.price} ريال</div>
                 </div>
-              </Link>
+              </LoadingLink>
             ))}
           </div>
         </div>

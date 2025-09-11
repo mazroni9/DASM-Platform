@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { 
   ArrowLeft,
@@ -133,13 +133,13 @@ export default function RareItemDetailPage({ params }) {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-amber-800 to-amber-600 py-6">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-4special/precious" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى سوق التحف والقطع النادرة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">{itemDetails.title}</h1>
           <div className="flex items-center mt-2 text-white/80">
             <span>{itemDetails.categoryName}</span>
@@ -293,10 +293,10 @@ export default function RareItemDetailPage({ params }) {
                   <div>
                     <p className="font-medium text-amber-800">شهادة توثيق وأصالة معتمدة</p>
                     <p className="text-sm text-amber-700">صادرة من: {itemDetails.certificateAuthority}</p>
-                    <Link href={itemDetails.certificate} className="flex items-center text-amber-600 hover:text-amber-700 mt-1 text-sm">
+                    <LoadingLink href={itemDetails.certificate} className="flex items-center text-amber-600 hover:text-amber-700 mt-1 text-sm">
                       <Download size={14} className="ml-1" />
                       <span>تحميل الشهادة</span>
-                    </Link>
+                    </LoadingLink>
                   </div>
                 </div>
               )}
@@ -463,7 +463,7 @@ export default function RareItemDetailPage({ params }) {
         <h2 className="text-2xl font-bold mb-6">قطع نادرة مشابهة قد تعجبك</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {itemDetails.similarItems.map((item) => (
-            <Link 
+            <LoadingLink 
               key={item.id} 
               href={`/auctions/auctions-4special/precious/${item.id}`}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -475,7 +475,7 @@ export default function RareItemDetailPage({ params }) {
                   {formatPrice(item.price)} ريال
                 </div>
               </div>
-            </Link>
+            </LoadingLink>
           ))}
         </div>
       </div>

@@ -15,7 +15,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Upload, Info, Database, Save, HelpCircle, X } from 'lucide-react';
 
 export default function ServerMarketEntryPage() {
@@ -137,13 +137,13 @@ export default function ServerMarketEntryPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-800 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى الأسواق الرئيسية</span>
-          </Link>
+          </LoadingLink>
           <div className="flex items-center">
             <Database className="text-white mr-3 h-8 w-8" />
             <h1 className="text-3xl font-bold text-white">إضافة سيرفر للسوق النوعي</h1>
@@ -373,12 +373,12 @@ export default function ServerMarketEntryPage() {
                 </>
               )}
             </button>
-            <Link 
+            <LoadingLink 
               href="/auctions"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء
-            </Link>
+            </LoadingLink>
           </div>
         </form>
 

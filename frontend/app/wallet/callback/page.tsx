@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/axios";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
+
 export default function WalletCallbackPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const searchParams = useSearchParams();
     const paymentId = searchParams.get("paymentId");
 

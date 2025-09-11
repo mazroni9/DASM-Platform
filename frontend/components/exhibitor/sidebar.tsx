@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { motion } from 'framer-motion';
 import {
   FiHome,
@@ -21,7 +21,8 @@ import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import { Avatar } from 'antd';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 // 🔹 نوع البيانات
 interface Exhibitor {
@@ -53,7 +54,8 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [user, setUser] = useState<Exhibitor | null>(null);
   const [isClient, setIsClient] = useState(false); // 🔥 لحل مشكلة الهيدرات
 
@@ -122,7 +124,7 @@ export function Sidebar() {
 
             return (
               <li key={item.href}>
-                <Link href={item.href}>
+                <LoadingLink href={item.href}>
                   <motion.div
                     whileHover={{ x: 2, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
@@ -143,7 +145,7 @@ export function Sidebar() {
                     </span>
                     <span className="font-medium text-sm">{item.label}</span>
                   </motion.div>
-                </Link>
+                </LoadingLink>
               </li>
             );
           })}

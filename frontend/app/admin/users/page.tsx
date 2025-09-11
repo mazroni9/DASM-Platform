@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 
 // Types
 interface UserData {
@@ -633,11 +633,11 @@ export default function UsersManagementPage() {
                                                 size="sm"
                                                 className="mt-2"
                                             >
-                                                <Link
+                                                <LoadingLink
                                                     href={`/admin/users/${user.id}`}
                                                 >
                                                     عرض التفاصيل
-                                                </Link>
+                                                </LoadingLink>
                                             </Button>
                                         </td>
                                     </tr>

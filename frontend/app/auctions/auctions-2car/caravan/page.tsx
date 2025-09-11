@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import React, { useEffect, useState } from "react";
 import PageHeader from '@/components/shared/PageHeader';
 import CaravanCard from "@/components/CaravanCard";
@@ -108,12 +108,12 @@ export default function CaravanAuctionsPage() {
             <p className="text-gray-600 mb-8">
               نحن نبحث دائمًا عن كرفانات مميزة لعرضها في منصتنا. سجل بياناتك وسنتواصل معك لإتمام عملية التسجيل.
             </p>
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-car/caravan/register"
               className="inline-block px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition"
             >
               تسجيل كرفان للسوق
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

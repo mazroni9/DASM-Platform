@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     ChevronRight,
     Sofa,
@@ -125,13 +125,13 @@ export default function FurnitureMarketPage() {
     return (
         <div className="container mx-auto p-4 py-8">
             <div className="mb-6 flex justify-between items-center">
-                <Link
+                <LoadingLink
                     href="/auctions/auctions-5general"
                     className="inline-flex items-center text-amber-600 hover:text-amber-700 transition-colors px-4 py-2 rounded-full border border-amber-200 hover:border-amber-300 bg-amber-50 hover:bg-amber-100"
                 >
                     <ChevronRight className="h-4 w-4 ltr:mr-1 rtl:ml-1 rtl:rotate-180" />
                     <span>العودة</span>
-                </Link>
+                </LoadingLink>
 
                 <h1 className="text-3xl font-bold text-center text-amber-700">
                     سوق الأثاث المنزلي
@@ -212,12 +212,12 @@ export default function FurnitureMarketPage() {
                         <p className="text-gray-500">
                             لا توجد منتجات متاحة حالياً. يرجى التحقق لاحقاً.
                         </p>
-                        <Link
+                        <LoadingLink
                             href="/forms/furniture-auction-request"
                             className="mt-4 inline-block px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition"
                         >
                             إضافة أول منتج أثاث
-                        </Link>
+                        </LoadingLink>
                     </div>
                 )}
 
@@ -277,12 +277,12 @@ export default function FurnitureMarketPage() {
                                                 {product.condition || "مستعمل"}
                                             </span>
                                         </div>
-                                        <Link
+                                        <LoadingLink
                                             href={`/auctions/auctions-5general/furniture/${product.id}`}
                                             className="mt-4 w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors block text-center"
                                         >
                                             عرض التفاصيل
-                                        </Link>
+                                        </LoadingLink>
                                     </div>
                                 </div>
                             );
@@ -291,12 +291,12 @@ export default function FurnitureMarketPage() {
                 )}
 
                 <div className="mt-6 text-center">
-                    <Link
+                    <LoadingLink
                         href="/auctions/auctions-5general/furniture/all"
                         className="px-6 py-2 border border-amber-600 text-amber-600 hover:bg-amber-50 rounded-lg transition inline-block"
                     >
                         عرض المزيد من قطع الأثاث
-                    </Link>
+                    </LoadingLink>
                 </div>
             </div>
 
@@ -327,12 +327,12 @@ export default function FurnitureMarketPage() {
                         المهتمين.
                     </p>
                     <div className="flex justify-center">
-                        <Link
+                        <LoadingLink
                             href="/forms/furniture-auction-request"
                             className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition"
                         >
                             بيع الأثاث الآن
-                        </Link>
+                        </LoadingLink>
                     </div>
                 </div>
             </div>
