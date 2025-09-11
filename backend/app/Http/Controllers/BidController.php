@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Services\AuctionLoggingService;
 
 class BidController extends Controller
 {
@@ -341,24 +342,72 @@ class BidController extends Controller
     public function placeBid(Request $request)
     {
         try {
-
-            $user=Auth::user();
-            // Validate incoming request
+            $user = Auth::user();
+            
+            // Enhanced validation rules
             $data = $request->validate([
                 'auction_id' => 'required|integer|exists:auctions,id',
-                'bid_amount' => 'required|numeric|min:1',
-                'user_id' => 'required|numeric'
+                'bid_amount' => [
+                    'required',
+                    'numeric',
+                    'min:1',
+                    'max:999999999.99',
+                    'regex:/^\d+(\.\d{1,2})?$/'
+                ],
+                'user_id' => 'required|numeric|exists:users,id'
+            ], [
+                'auction_id.required' => 'معرف المزاد مطلوب',
+                'auction_id.exists' => 'المزاد غير موجود',
+                'bid_amount.required' => 'مبلغ المزايدة مطلوب',
+                'bid_amount.numeric' => 'مبلغ المزايدة يجب أن يكون رقماً',
+                'bid_amount.min' => 'مبلغ المزايدة يجب أن يكون أكبر من صفر',
+                'bid_amount.max' => 'مبلغ المزايدة كبير جداً',
+                'bid_amount.regex' => 'تنسيق مبلغ المزايدة غير صحيح',
+                'user_id.required' => 'معرف المستخدم مطلوب',
+                'user_id.exists' => 'المستخدم غير موجود'
             ]);
 
-            $auction = Auction::select('id','car_id','current_bid','minimum_bid','maximum_bid','last_bid_time','status','start_time','end_time','starting_bid')
+            $auction = Auction::select('id','car_id','current_bid','minimum_bid','maximum_bid','last_bid_time','status','start_time','end_time','starting_bid','auction_type','reserve_price','opening_price')
             ->withCount('bids')
+            ->with('car:id,dealer_id,user_id')
             ->find($data['auction_id']);
+
+            // Validate auction exists
+            if (!$auction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'المزاد غير موجود'
+                ], 404);
+            }
 
             // Check if auction is active
             if ($auction->status !== AuctionStatus::ACTIVE) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'المزاد غير نشط حالياً'
+                ], 400);
+            }
+
+            // Validate user authorization
+            if ($user->id != $data['user_id']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'غير مصرح لك بالمزايدة نيابة عن مستخدم آخر'
+                ], 403);
+            }
+
+            // Check if user is trying to bid on their own auction
+            $isOwner = false;
+            if ($auction->car->dealer_id && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
+                $isOwner = true;
+            } elseif ($auction->car->user_id === $user->id) {
+                $isOwner = true;
+            }
+
+            if ($isOwner) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'لا يمكنك المزايدة على مزادك الخاص'
                 ], 400);
             }
 
@@ -383,13 +432,41 @@ class BidController extends Controller
 
             // $user->wallet->available_balance -= $commission;
             // $user->wallet->save();
-            // Check if the bid amount is higher than the current price
-            if ($data['bid_amount'] <= $auction->current_bid || $data['bid_amount'] <= $auction->minimum_bid) {
+            // Enhanced bid amount validation
+            $minBidAmount = max($auction->current_bid, $auction->minimum_bid, $auction->starting_bid);
+            
+            if ($data['bid_amount'] <= $minBidAmount) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => '  يجب أن يكون مبلغ المزايدة أعلى من السعر الحالي أو سعر الأفتتاح'
+                    'message' => 'يجب أن يكون مبلغ المزايدة أعلى من ' . number_format($minBidAmount, 2) . ' ريال'
                 ], 400);
             }
+
+            // Validate bid amount for instant auctions
+            if (in_array($auction->auction_type, ['live_instant', 'silent_instant'])) {
+                $openingPrice = $auction->opening_price ?? $auction->starting_bid;
+                $minAllowed = $openingPrice * 0.9; // -10%
+                $maxAllowed = $openingPrice * 1.3; // +30%
+
+                if ($data['bid_amount'] < $minAllowed || $data['bid_amount'] > $maxAllowed) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'مبلغ المزايدة يجب أن يكون بين ' . number_format($minAllowed, 2) . ' و ' . number_format($maxAllowed, 2) . ' ريال'
+                    ], 400);
+                }
+            }
+
+            // Check for reasonable bid increment (minimum 1% of current bid)
+            $minIncrement = max($auction->current_bid * 0.01, 100);
+            if ($data['bid_amount'] - $auction->current_bid < $minIncrement) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'الزيادة في المزايدة يجب أن تكون على الأقل ' . number_format($minIncrement, 2) . ' ريال'
+                ], 400);
+            }
+
+            // Log bid attempt
+            AuctionLoggingService::logBidAttempt($user, $auction, $data['bid_amount'], $request);
 
             // Create the bid
             $bid = new Bid();
@@ -406,6 +483,9 @@ class BidController extends Controller
             $auction->maximum_bid=Bid::where('auction_id',$data['auction_id'])->max('bid_amount');
             $auction->save();
 
+            // Log successful bid placement
+            AuctionLoggingService::logBidSuccess($bid, $auction, $user, $request);
+
             // Trigger event for real-time updates (if using broadcasting)
             // event(new \App\Events\NewBidPlaced($bid));
 
@@ -415,10 +495,26 @@ class BidController extends Controller
             //return config('broadcasting.connections.ably');
             //broadcast(new PublicMessageEvent( $channelName, $message ));
 
+            // Log broadcasting attempt
+            \Illuminate\Support\Facades\Log::info('Broadcasting bid event', [
+                'auction_id' => $auction->id,
+                'bid_id' => $bid->id,
+                'user_id' => $user->id,
+                'timestamp' => now()->toISOString()
+            ]);
+
             broadcast(new NewBidEvent($auction));
 
             $owner = $auction->car->owner;
             $owner = User::find($owner->id);
+
+            // Log notification to auction owner
+            \Illuminate\Support\Facades\Log::info('Sending notification to auction owner', [
+                'auction_id' => $auction->id,
+                'owner_id' => $owner->id,
+                'bid_id' => $bid->id,
+                'timestamp' => now()->toISOString()
+            ]);
 
             $owner->notify(new NewBidNotification($auction));
 
@@ -428,6 +524,16 @@ class BidController extends Controller
             ->toArray();
 
             $users = User::whereIn('id',$users_ids)->get();
+            
+            // Log notification to other bidders
+            \Illuminate\Support\Facades\Log::info('Sending notifications to other bidders', [
+                'auction_id' => $auction->id,
+                'bid_id' => $bid->id,
+                'recipients_count' => count($users_ids),
+                'recipients' => $users_ids,
+                'timestamp' => now()->toISOString()
+            ]);
+
             Notification::sendNow($users, new HigherBidNotification($auction));
 
 
@@ -444,16 +550,58 @@ class BidController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Bid validation failed', [
+                'user_id' => Auth::id(),
+                'auction_id' => $request->input('auction_id'),
+                'errors' => $e->errors(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات غير صالحة',
                 'errors' => $e->errors()
             ], 422);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error placing bid: ' . $e->getMessage());
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::error('Database error during bid placement', [
+                'user_id' => Auth::id(),
+                'auction_id' => $request->input('auction_id'),
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'ip' => $request->ip()
+            ]);
+            
             return response()->json([
                 'status' => 'error',
-                'message' =>  $e->getMessage()
+                'message' => 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى'
+            ], 500);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Illuminate\Support\Facades\Log::warning('Model not found during bid placement', [
+                'user_id' => Auth::id(),
+                'auction_id' => $request->input('auction_id'),
+                'error' => $e->getMessage(),
+                'ip' => $request->ip()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'المزاد أو المستخدم غير موجود'
+            ], 404);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Unexpected error during bid placement', [
+                'user_id' => Auth::id(),
+                'auction_id' => $request->input('auction_id'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى'
             ], 500);
         }
     }
