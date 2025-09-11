@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import ModeratorAuctionApproval from "@/components/moderator/AuctionApproval";
@@ -9,7 +9,8 @@ import { ArrowLeft } from "lucide-react";
 
 export default function AdminApprovalsPage() {
     const { isAdmin, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
 
     // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {

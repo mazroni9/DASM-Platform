@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import RegisterForm from "./Form";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function RegisterPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const { user, isLoading } = useAuth();
 
     useEffect(() => {

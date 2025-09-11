@@ -11,7 +11,7 @@ import PriceInfoDashboard from '@/components/PriceInfoDashboard';
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Countdown from '@/components/Countdown';
 import Pusher from 'pusher-js';
 import toast from 'react-hot-toast';
@@ -53,7 +53,8 @@ export default function SilentAuctionPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10; // or allow user to change it
   const { user, isLoggedIn } = useAuth();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 

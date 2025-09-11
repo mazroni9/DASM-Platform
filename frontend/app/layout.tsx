@@ -9,6 +9,7 @@ import Navbar from "@/components/shared/Navbar";
 import NotificationProvider from "context/NotificationContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import GlobalLoader from "@/components/GlobalLoader";
+import { Suspense } from "react";
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "700", "800"],

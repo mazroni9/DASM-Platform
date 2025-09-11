@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 interface CarData {
     id: number;
@@ -60,7 +61,8 @@ interface FilterOptions {
 }
 
 export default function ModeratorCarsPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [cars, setCars] = useState<CarData[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());

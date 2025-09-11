@@ -32,11 +32,11 @@ import BidderChat from "@/components/social/BidderChat";
 import LiveAuctionPulse from "@/components/social/LiveAuctionPulse";
 import LiveYouTubeEmbed from "@/components/LiveYouTubeEmbed";
 
-import api from "@/lib/axios";
-import toast from "react-hot-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
-import Countdown from "@/components/Countdown";
+import api from '@/lib/axios';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import Countdown from '@/components/Countdown';
 import Pusher from 'pusher-js';
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
@@ -65,7 +65,8 @@ export default function LiveMarketPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isLoggedIn } = useAuth();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [marketCars, setMarketCars] = useState([]);
   const [currentCar, setCurrentCar] = useState(null);
   const [marketCarsCompleted, setMarketCarsCompleted] = useState([]);

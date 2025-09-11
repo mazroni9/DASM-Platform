@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import ModeratorBroadcastManagement from "@/components/moderator/BroadcastManagement";
@@ -9,7 +9,8 @@ import { FileText, Car, BarChart3 } from "lucide-react";
 
 export default function ModeratorDashboardPage() {
     const { isModerator, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
 
     // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {

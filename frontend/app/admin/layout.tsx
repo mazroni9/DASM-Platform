@@ -4,8 +4,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import LoadingLink from "@/components/LoadingLink";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     LayoutDashboard,
     Users,
@@ -31,7 +32,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const pathname = usePathname();
     const { user, isAdmin, logout } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const handleLogout = async () => {
@@ -94,7 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             const Icon = item.icon;
                             return (
                                 <li key={item.name}>
-                                    <Link
+                                    <LoadingLink
                                         href={item.href}
                                         className={`flex items-center p-3 rounded-lg transition-colors ${
                                             isActive(item.href)
@@ -114,7 +115,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                         >
                                             {item.name}
                                         </span>
-                                    </Link>
+                                    </LoadingLink>
                                 </li>
                             );
                         })}

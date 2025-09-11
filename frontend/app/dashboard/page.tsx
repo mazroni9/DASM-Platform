@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     Home,
     ArrowRight,
@@ -19,9 +20,11 @@ import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
 
+
 export default function DashboardTabs() {
     const pathname = usePathname();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const { user, isLoggedIn } = useAuth();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({

@@ -6,8 +6,9 @@ import { ChevronRight } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { formatCurrency } from "@/utils/formatCurrency";
+
 import Countdown from "@/components/Countdown";
 import Pusher from 'pusher-js';
 import Pagination from "@/components/Pagination";
@@ -46,7 +47,8 @@ export default function InstantAuctionPage() {
         [key: number]: boolean;
     }>({});
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
 
     // Verify user is authenticated
     useEffect(() => {

@@ -21,12 +21,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import Link from 'next/link';
 import { ArrowLeft, Plus, X, Upload, Info } from 'lucide-react';
 
 export default function YachtRegistrationPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages] = useState<string[]>([]);

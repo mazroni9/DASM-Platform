@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Image from "next/image";
 import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X,Bell, Book } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
 import NotificationMenu from "@/components/NotificationMenu";
 import BidNotifications from '@/components/BidNotifications';
+
 interface NavigationItem {
     href: string;
     label: string;
@@ -24,7 +26,8 @@ const Navbar = () => {
     const [isRestarting, setIsRestarting] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const pathname = usePathname();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const { user, logout } = useAuth();
 
     const isAdmin = user?.role === UserRole.ADMIN;

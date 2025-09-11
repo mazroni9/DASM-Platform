@@ -10,14 +10,15 @@ import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isRestarting, setIsRestarting] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const pathname = usePathname();
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const { user, logout } = useAuth();
 
     const isAdmin = user?.role === "admin";

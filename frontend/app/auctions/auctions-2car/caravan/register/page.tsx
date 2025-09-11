@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 import Link from 'next/link';
 import { ArrowLeft, Plus, X, Upload } from 'lucide-react';
 
 export default function RegisterCaravanPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [features, setFeatures] = useState<string[]>([]);

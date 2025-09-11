@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useLayoutEffect } from 'react';
 
 interface LoadingContextType {
   loadingCount: number;
@@ -17,12 +17,25 @@ interface LoadingProviderProps {
 
 export function LoadingProvider({ children }: LoadingProviderProps) {
   const [loadingCount, setLoadingCount] = useState(0);
+  const isMountedRef = useRef(false);
+
+  // Track if component is mounted to prevent updates during unmount
+  useLayoutEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const startLoading = useCallback(() => {
-    setLoadingCount(prev => prev + 1);
+    if (isMountedRef.current) {
+      setLoadingCount(prev => prev + 1);
+    }
   }, []);
 
   const stopLoading = useCallback(() => {
+    // Always allow stopLoading to work, even during unmount
+    // This ensures loading states are properly cleaned up
     setLoadingCount(prev => Math.max(0, prev - 1));
   }, []);
 

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 import { ArrowLeft, Printer, FilterX, Search, Tag, SortAsc, Monitor, ChevronLeft } from 'lucide-react';
 
 // واجهة نموذج البيانات للآلات المكتبية
@@ -18,7 +19,8 @@ interface OfficeProduct {
 }
 
 export default function OfficeEquipmentPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [products, setProducts] = useState<OfficeProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

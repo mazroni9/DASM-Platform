@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Link from "next/link";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { toast } from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
 
 export function LoginForm() {
-    const router = useRouter();
+    const router = useLoadingRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
 import UnifiedBroadcastManagement from "@/components/UnifiedBroadcastManagement";
 import { Loader } from "lucide-react";
@@ -11,7 +11,8 @@ import BroadcastForm from "@/components/BroadCastForm";
 
 export default function LiveStreamManagementPage() {
     const { isAdmin, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
 
     // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {

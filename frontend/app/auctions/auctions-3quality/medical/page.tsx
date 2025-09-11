@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 import { ArrowLeft, Filter, FilterX, Search, HeartPulse, Stethoscope, ChevronLeft } from 'lucide-react';
 
 // واجهة نموذج البيانات للأجهزة الطبية
@@ -18,7 +19,8 @@ interface MedicalProduct {
 }
 
 export default function MedicalEquipmentPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [products, setProducts] = useState<MedicalProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

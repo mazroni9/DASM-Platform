@@ -4,12 +4,14 @@ import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useMemo, useState } from 'react';
 import { Package, DollarSign, Truck, CheckCircle, MessageSquare, Loader2, Route } from 'lucide-react';
 import { useAuth } from "@/hooks/useAuth";
-import { redirect, useRouter  } from "next/navigation";
+import { redirect } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import {Pagination} from 'react-laravel-paginex'
 import axios from "axios";
 import { PagesOutlined } from "@mui/icons-material";
+
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { Car } from "@/types/types";
@@ -31,7 +33,8 @@ export default function MyCarsPage() {
   const [cars, setCars] = useState<Car[]>([]);
   const { user, isLoggedIn } = useAuth();
   const [processingCarId, setProcessingCarId] = useState<number | null>(null);
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   
   let options = {
     containerClass: "pagination-container",

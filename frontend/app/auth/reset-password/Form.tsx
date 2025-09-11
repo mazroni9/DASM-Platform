@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Link from 'next/link';
 import axios from 'axios';
 
@@ -29,7 +30,8 @@ const resetPasswordSchema = z.object({
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPasswordForm() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [isLoading, setIsLoading] = useState(false);

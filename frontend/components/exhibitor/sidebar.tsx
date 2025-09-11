@@ -20,6 +20,7 @@ import {
 import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import { Avatar } from 'antd';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuthStore } from '@/store/authStore';
 
 // 🔹 عناصر القائمة
@@ -43,6 +44,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useLoadingRouter();
   const { user, logout } = useAuthStore();
 
   return (

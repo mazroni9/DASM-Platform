@@ -20,7 +20,8 @@ import Link from "next/link";
 import { ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
@@ -50,7 +51,8 @@ export default function CarDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const params = useParams<{ tag: string; item: string }>();
     let carId = params["id"];
     const [isOwner, setIsOwner] = useState(false);
