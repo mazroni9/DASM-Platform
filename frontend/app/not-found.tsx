@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Home, Search, ArrowRight } from 'lucide-react';
 
 export default function NotFound() {
@@ -22,21 +22,21 @@ export default function NotFound() {
           </p>
           
           <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Link 
+            <LoadingLink 
               href="/" 
               className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Home size={18} />
               <span>الرجوع للصفحة الرئيسية</span>
-            </Link>
+            </LoadingLink>
             
-            <Link 
+            <LoadingLink 
               href="/auctions" 
               className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
             >
               <span>استكشاف الأسواق</span>
               <ArrowRight size={18} />
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

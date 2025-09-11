@@ -22,7 +22,7 @@
 
 import { useState } from 'react';
 import { useLoadingRouter } from '@/hooks/useLoadingRouter';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Plus, X, Upload, Info } from 'lucide-react';
 
 export default function YachtRegistrationPage() {
@@ -215,13 +215,13 @@ export default function YachtRegistrationPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-cyan-600 to-blue-700 py-6">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-4special/yachts" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى سوق اليخوت والقوارب المستعملة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white text-center">تسجيل يخت للمزاد</h1>
         </div>
       </div>

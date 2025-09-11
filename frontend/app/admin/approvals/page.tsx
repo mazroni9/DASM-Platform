@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { useAuth } from "@/hooks/useAuth";
 import ModeratorAuctionApproval from "@/components/moderator/AuctionApproval";
 import { ArrowLeft } from "lucide-react";
@@ -33,13 +33,13 @@ export default function AdminApprovalsPage() {
             <div className="container mx-auto py-8 px-4">
                 {/* Header */}
                 <div className="mb-8">
-                    <Link
+                    <LoadingLink
                         href="/admin"
                         className="inline-flex items-center space-x-2 rtl:space-x-reverse text-blue-600 hover:text-blue-800 mb-4"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         <span>العودة إلى لوحة التحكم</span>
-                    </Link>
+                    </LoadingLink>
                     <h1 className="text-3xl font-bold text-gray-900">
                         موافقة المزادات
                     </h1>

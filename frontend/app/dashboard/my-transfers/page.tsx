@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Select,
     SelectContent,
@@ -394,13 +394,13 @@ export default function MoneyTransfersPage() {
                                     </p>
                                 )}
                                 <div className="flex gap-4 justify-center">
-                                    <Link
+                                    <LoadingLink
                                         href="/dashboard/my-wallet"
                                         className="px-4 py-2 border border-blue-200 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
                                     >
                                         <ArrowLeft className="w-4 h-4 inline ml-1" />
                                         العودة إلى المحفظة
-                                    </Link>
+                                    </LoadingLink>
                                     <Button
                                         onClick={() =>
                                             setTransactionStatus({
@@ -584,13 +584,13 @@ export default function MoneyTransfersPage() {
                                     </p>
                                 )}
                                 <div className="flex gap-4 justify-center">
-                                    <Link
+                                    <LoadingLink
                                         href="/dashboard/my-wallet"
                                         className="px-4 py-2 border border-blue-200 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
                                     >
                                         <ArrowLeft className="w-4 h-4 inline ml-1" />
                                         العودة إلى المحفظة
-                                    </Link>
+                                    </LoadingLink>
                                     <Button
                                         onClick={() =>
                                             setTransactionStatus({

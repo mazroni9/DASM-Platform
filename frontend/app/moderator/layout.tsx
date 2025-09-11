@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
@@ -122,7 +122,7 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
                     <ul className="space-y-2">
                         {navigation.map((item) => (
                             <li key={item.name}>
-                                <Link
+                                <LoadingLink
                                     href={item.href}
                                     className={`flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors ${
                                         isActive(item.href)
@@ -136,7 +136,7 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
                                             {item.name}
                                         </span>
                                     )}
-                                </Link>
+                                </LoadingLink>
                             </li>
                         ))}
                     </ul>

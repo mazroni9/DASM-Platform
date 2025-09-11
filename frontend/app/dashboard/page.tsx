@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
@@ -179,13 +179,13 @@ export default function DashboardTabs() {
             <div className="bg-white border-b shadow-sm">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex justify-between items-center">
-                        <Link
+                        <LoadingLink
                             href="/"
                             className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                         >
                             <Home className="w-5 h-5" />
                             <span>الرئيسية</span>
-                        </Link>
+                        </LoadingLink>
                         <h1 className="text-2xl font-bold text-gray-800">
                             لوحة التحكم
                         </h1>
@@ -217,7 +217,7 @@ export default function DashboardTabs() {
                     <div className="flex overflow-x-auto pb-2 scrollbar-hide">
                         <div className="flex gap-3 mx-auto">
                             {tabs.map((tab) => (
-                                <Link
+                                <LoadingLink
                                     key={tab.href}
                                     href={tab.href}
                                     className={cn(
@@ -240,7 +240,7 @@ export default function DashboardTabs() {
                                     <span className="text-sm font-medium whitespace-nowrap">
                                         {tab.name}
                                     </span>
-                                </Link>
+                                </LoadingLink>
                             ))}
                         </div>
                     </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Plus, X, Upload } from 'lucide-react';
 
 export default function RegisterCaravanPage() {
@@ -169,13 +169,13 @@ export default function RegisterCaravanPage() {
       <div className="bg-gradient-to-r from-green-400 to-green-500 py-6">
         <div className="container mx-auto px-4">
           <div className="flex justify-start mb-4">
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-2car/caravan" 
               className="flex items-center text-white hover:text-white/90 transition"
             >
               <ArrowLeft size={20} className="ml-2" />
               <span>العودة إلى سوق الكرفانات</span>
-            </Link>
+            </LoadingLink>
           </div>
           <h1 className="text-3xl font-bold text-white text-center">تسجيل كرفان للسوق</h1>
         </div>

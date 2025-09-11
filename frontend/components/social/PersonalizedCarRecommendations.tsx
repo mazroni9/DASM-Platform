@@ -22,7 +22,7 @@ import {
     Zap,
 } from "lucide-react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 
@@ -503,12 +503,12 @@ export default function PersonalizedCarRecommendations({
 
             {/* تذييل المكون */}
             <div className="bg-gray-50 p-3 text-center">
-                <Link
+                <LoadingLink
                     href="/recommendations"
                     className="text-blue-600 text-sm hover:underline"
                 >
                     عرض جميع التوصيات
-                </Link>
+                </LoadingLink>
             </div>
         </div>
     );

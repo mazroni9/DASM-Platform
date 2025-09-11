@@ -7,7 +7,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
-import Link from 'next/link'
+import LoadingLink from "@/components/LoadingLink";
 
 export default function NotificationSnackbar({
   title,
@@ -39,7 +39,7 @@ export default function NotificationSnackbar({
         sx={{ width: "40%" }}
       >
       
-        <Link href={link}>
+        <LoadingLink href={link}>
 
         <Card sx={{ width: "80%",backgroundColor: "white",borderRadius: "10px",boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.32)" }}> 
           
@@ -52,7 +52,7 @@ export default function NotificationSnackbar({
               </Typography>
             </CardContent>
         </Card>
-      </Link>
+      </LoadingLink>
       </Snackbar>
     </div>
   );

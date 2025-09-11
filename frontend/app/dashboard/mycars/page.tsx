@@ -13,7 +13,7 @@ import axios from "axios";
 import { PagesOutlined } from "@mui/icons-material";
 
 import { Button } from "@/components/ui/button";
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Car } from "@/types/types";
 
 export default function MyCarsPage() {
@@ -155,23 +155,23 @@ export default function MyCarsPage() {
               <br />
               {/* زر تعديل فقط إذا كانت السيارة بانتظار الموافقة أو تحت المعالجة */}
               {(car.status === 'pending' || car.status === 'processing') && (
-                <Link
+                <LoadingLink
                   className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-center inline-block mt-2"
                   href={`/dashboard/mycars/${car.id}?edit=1`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   تعديل البيانات
-                </Link>
+                </LoadingLink>
               )}
               {/* زر عرض السيارة متاح دائماً */}
-              <Link
+              <LoadingLink
                 target="_blank"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-center inline-block mt-2"
                 href={`/carDetails/${car.id}`}
                 onClick={(e) => e.stopPropagation()}
               >
                 عرض السيارة
-              </Link>
+              </LoadingLink>
             </div>
           ))}
         </div>

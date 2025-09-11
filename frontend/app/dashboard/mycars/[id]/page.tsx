@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Edit, Save, X, Upload, Trash2 } from "lucide-react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { Car } from "@/types/types";
 
 
@@ -195,12 +195,12 @@ export default function CarDetailsPage() {
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">
                         السيارة غير موجودة
                     </h2>
-                    <Link
+                    <LoadingLink
                         href="/dashboard/mycars"
                         className="text-blue-600 hover:underline"
                     >
                         العودة إلى قائمة السيارات
-                    </Link>
+                    </LoadingLink>
                 </div>
             </div>
         );

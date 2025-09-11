@@ -2,7 +2,7 @@
 
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ShoppingBag, CreditCard, Truck, CheckCircle, AlertCircle } from 'lucide-react';
 
 // Mock data for purchases
@@ -119,19 +119,19 @@ export default function MyPurchasesPage() {
                 {/* Actions */}
                 <div className="flex flex-col justify-start sm:items-end gap-2 pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-r sm:pr-4 sm:w-48">
                   {purchase.status === 'pending_payment' && (
-                    <Link href={`/dashboard/my-transfers?purchaseId=${purchase.id}&amount=${purchase.winningBid}`}
+                    <LoadingLink href={`/dashboard/my-transfers?purchaseId=${purchase.id}&amount=${purchase.winningBid}`}
                           className="w-full sm:w-auto text-center bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-4 rounded transition">
                       إتمام الدفع
-                    </Link>
+                    </LoadingLink>
                   )}
                   {purchase.status === 'delivered_pending_confirmation' && (
                     <button onClick={() => handleConfirmReceipt(purchase.id)} className="w-full sm:w-auto text-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded transition">
                       تأكيد الاستلام
                     </button>
                   )}
-                  <Link href={`/auctions/item/${purchase.itemId}`} className="w-full sm:w-auto text-center text-sky-600 hover:text-sky-800 text-sm font-medium py-2 px-4 rounded border border-sky-200 hover:bg-sky-50 transition">
+                  <LoadingLink href={`/auctions/item/${purchase.itemId}`} className="w-full sm:w-auto text-center text-sky-600 hover:text-sky-800 text-sm font-medium py-2 px-4 rounded border border-sky-200 hover:bg-sky-50 transition">
                     عرض تفاصيل العنصر
-                  </Link>
+                  </LoadingLink>
                   {purchase.status !== 'completed' && (
                     <button onClick={() => handleOpenDispute(purchase.id)} className="w-full sm:w-auto text-center text-red-600 hover:text-red-800 text-xs font-medium py-1 px-2 rounded hover:bg-red-50 transition">
                       فتح نزاع

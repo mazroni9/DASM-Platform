@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
@@ -234,13 +234,13 @@ export default function InstantAuctionPage() {
         
         <div className="p-4">
             <div className="flex justify-end mb-4">
-                <Link
+                <LoadingLink
                     href="/auctions"
                     className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
                 >
                     <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
                     <span>العودة</span>
-                </Link>
+                </LoadingLink>
             </div>
             <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold">
@@ -303,13 +303,13 @@ export default function InstantAuctionPage() {
                                                 <>
                                                     <td className="p-2 text-sm">
                                                     {car['broadcasts'].length > 0 &&(
-                                                        <Link
+                                                        <LoadingLink
                                                             target="_blank"
                                                             href={car['broadcasts'][0].stream_url}
                                                             className="text-blue-500 hover:text-blue-600"
                                                         >
                                                             إضغط هنا
-                                                        </Link>
+                                                        </LoadingLink>
                                                     )}
                                                      {car['broadcasts'].length == 0 &&(
                                                           <span>#</span>
@@ -371,11 +371,11 @@ export default function InstantAuctionPage() {
                                                         {getAuctionStatus(car['car'].auction_status)}
                                                     </td>
                                                     <td className="p-2 text-sm text-blue-600 underline">
-                                                        <Link
+                                                        <LoadingLink
                                                             href={`/carDetails/${car.car_id}`}
                                                         >
                                                             عرض
-                                                        </Link>
+                                                        </LoadingLink>
                                                     </td>
                                                 </>
                                             )}

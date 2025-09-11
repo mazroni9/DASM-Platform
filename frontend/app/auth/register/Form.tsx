@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import axios from "axios";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { UserRole } from "@/types/types";
 
 interface RegisterResponse {

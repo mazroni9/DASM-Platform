@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Car,
     Search,
@@ -256,13 +256,13 @@ export default function ModeratorCarsPage() {
         <div className="space-y-6">
             {/* Navigation Header */}
             <div className="mb-4">
-                <Link
+                <LoadingLink
                     href="/moderator/dashboard"
                     className="inline-flex items-center space-x-2 rtl:space-x-reverse text-blue-600 hover:text-blue-800 mb-4"
                 >
                     <ArrowLeft className="h-4 w-4" />
                     <span>العودة إلى لوحة التحكم</span>
-                </Link>
+                </LoadingLink>
                 <h1 className="text-3xl font-bold text-gray-900">
                     إدارة السيارات
                 </h1>

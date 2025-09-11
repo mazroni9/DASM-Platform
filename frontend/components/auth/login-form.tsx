@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,12 +123,12 @@ export function LoginForm() {
             </div>
 
             <div className="text-center">
-                <Link
+                <LoadingLink
                     href="/auth/register"
                     className="text-sm text-blue-600 hover:underline"
                 >
                     ليس لديك حساب؟ سجل الآن
-                </Link>
+                </LoadingLink>
             </div>
         </div>
     );

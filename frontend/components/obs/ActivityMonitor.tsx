@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, AlertCircle, ArrowUpRight, Zap, Video } from 'lucide-react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 
 // واجهة نشاط المزاد
 interface AuctionActivity {
@@ -239,14 +239,14 @@ export default function ActivityMonitor({ className, onSwitchToVenue }: Activity
               
               {/* أزرار التحكم */}
               <div className="flex justify-between">
-                <Link 
+                <LoadingLink 
                   href={`/broadcasts?venue=${activity.venueId}`}
                   target="_blank"
                   className="flex items-center text-sm text-blue-600 hover:text-blue-800"
                 >
                   <Video className="h-3.5 w-3.5 mr-1" />
                   مشاهدة البث
-                </Link>
+                </LoadingLink>
                 
                 <button
                   onClick={() => handleSwitchToVenue(activity.venueId)}

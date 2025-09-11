@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Watch, Car, Home, Paintbrush, Smartphone, Leaf, Star, Gem, Store } from 'lucide-react';
 
 const GROUP_COLORS = {
@@ -58,7 +58,7 @@ export default function MarketTypeNav() {
             // const isActive = ...
 
             return (
-              <Link
+              <LoadingLink
                 key={item.href}
                 href={item.href}
                 className={`flex items-center px-4 py-2 rounded-full ${colorScheme.bg} ${colorScheme.hover} ${colorScheme.text} transition-all duration-200 text-sm sm:text-base md:text-lg whitespace-nowrap`}
@@ -66,7 +66,7 @@ export default function MarketTypeNav() {
                 <Icon className={`h-5 w-5 ${item.group !== 'right' ? 'ml-2' : 'mr-2'}`} />
                 {/* عرض النص فقط على الشاشات المتوسطة والكبيرة لتوفير المساحة على الشاشات الصغيرة */}
                 <span className=" sm:inline">{item.name}</span>
-              </Link>
+              </LoadingLink>
             );
           })}
         </div>

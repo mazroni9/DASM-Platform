@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { motion } from 'framer-motion';
 import {
   FiHome,
@@ -124,7 +124,7 @@ export function Sidebar() {
 
             return (
               <li key={item.href}>
-                <Link href={item.href}>
+                <LoadingLink href={item.href}>
                   <motion.div
                     whileHover={{ x: 2, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
@@ -145,7 +145,7 @@ export function Sidebar() {
                     </span>
                     <span className="font-medium text-sm">{item.label}</span>
                   </motion.div>
-                </Link>
+                </LoadingLink>
               </li>
             );
           })}

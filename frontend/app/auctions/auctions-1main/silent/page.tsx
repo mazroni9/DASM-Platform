@@ -4,7 +4,7 @@
 // المسار: /pages/silent/page.tsx
 
 import React, { useEffect, useState, Fragment } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import BidTimer from '@/components/BidTimer';
 import PriceInfoDashboard from '@/components/PriceInfoDashboard';
@@ -111,13 +111,13 @@ export default function SilentAuctionPage() {
     <div className="p-4">
       {/* زر العودة في أعلى يمين الصفحة */}
       <div className="flex justify-end mb-4">
-        <Link 
+        <LoadingLink 
           href="/auctions/auctions-1main" 
           className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
         >
           <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
           <span>العودة</span>
-        </Link>
+        </LoadingLink>
       </div>
 
       <div className="grid grid-cols-12 items-center mb-6 gap-4">

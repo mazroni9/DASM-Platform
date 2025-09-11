@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, Wrench, Hammer, Shovel, Cog, Ruler, Scissors } from 'lucide-react';
 import Image from 'next/image';
 import CategoryIcon from '@/components/ui/CategoryIcon';
@@ -113,13 +113,13 @@ export default function EquipmentMarketPage() {
   return (
     <div className="container mx-auto p-4 py-8">
       <div className="mb-6 flex justify-between items-center">
-        <Link 
+        <LoadingLink 
           href="/auctions/auctions-5general" 
           className="inline-flex items-center text-gray-700 hover:text-gray-800 transition-colors px-4 py-2 rounded-full border border-gray-200 hover:border-gray-300 bg-gray-50 hover:bg-gray-100 rtl:flex-row-reverse"
         >
           <ChevronRight className="h-4 w-4 ltr:mr-1 rtl:ml-1 rtl:rotate-180" />
           <span>العودة</span>
-        </Link>
+        </LoadingLink>
         
         <h1 className="text-3xl font-bold text-center text-gray-800">سوق المعدات العامة</h1>
         
@@ -182,12 +182,12 @@ export default function EquipmentMarketPage() {
         {!isLoading && !error && featuredProducts.length === 0 && (
           <div className="bg-gray-50 p-8 rounded-lg text-center">
             <p className="text-gray-500">لا توجد منتجات متاحة حالياً. يرجى التحقق لاحقاً.</p>
-            <Link 
+            <LoadingLink 
               href="/forms/equipment-auction-request" 
               className="mt-4 inline-block px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition"
             >
               إضافة أول منتج معدات
-            </Link>
+            </LoadingLink>
           </div>
         )}
         
@@ -232,12 +232,12 @@ export default function EquipmentMarketPage() {
                         الحالة: {product.condition || "مستعمل"}
                       </span>
                     </div>
-                    <Link 
+                    <LoadingLink 
                       href={`/auctions/auctions-5general/equipment/${product.id}`}
                       className="mt-4 w-full py-2 bg-gray-700 hover:bg-gray-800 text-white rounded transition-colors block text-center"
                     >
                       عرض التفاصيل
-                    </Link>
+                    </LoadingLink>
                   </div>
                 </div>
               );
@@ -246,12 +246,12 @@ export default function EquipmentMarketPage() {
         )}
         
         <div className="mt-6 text-center">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-5general/equipment/all"
             className="px-6 py-2 border border-gray-700 text-gray-700 hover:bg-gray-50 rounded-lg transition inline-block"
           >
             عرض المزيد من المعدات
-          </Link>
+          </LoadingLink>
         </div>
       </div>
       
@@ -273,12 +273,12 @@ export default function EquipmentMarketPage() {
             يمكنك الآن بيع معداتك وأدواتك التي لم تعد بحاجة لها. سنساعدك على الوصول إلى المشترين المهتمين وضمان عملية بيع آمنة وسريعة.
           </p>
           <div className="flex justify-center">
-            <Link
+            <LoadingLink
               href="/forms/equipment-auction-request"
               className="px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white font-medium rounded-lg transition"
             >
               بيع معداتك الآن
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

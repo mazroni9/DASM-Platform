@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { useState, useEffect } from 'react';
 import { 
   ChevronRight, 
@@ -91,23 +91,23 @@ export default function ExecutiveAuctionsPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* زر العودة للسوق الرئيسي */}
       <div className="container mx-auto px-4 pt-4 flex justify-end">
-        <Link 
+        <LoadingLink 
           href="/auctions" 
           className="inline-flex items-center text-blue-600 hover:text-blue-800 transition p-2 rounded-full hover:bg-blue-50"
         >
           <ArrowLeft size={16} className="ml-1" />
           <span>العودة للسوق الرئيسي</span>
-        </Link>
+        </LoadingLink>
       </div>
 
       {/* بانر علوي */}
       <div className="relative h-96 bg-gradient-to-r from-indigo-900 via-purple-800 to-indigo-800 overflow-hidden">
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10 py-16">
-          <Link href="/auctions/auctions-special" className="flex items-center text-white/80 hover:text-white mb-6 transition group">
+          <LoadingLink href="/auctions/auctions-special" className="flex items-center text-white/80 hover:text-white mb-6 transition group">
             <ChevronRight className="ml-2 transform group-hover:-translate-x-1 transition-transform" size={20} />
             <span>العودة للأسواق المتخصصة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-5xl font-bold text-white mb-4 flex items-center">
             مزادات VIP الخاصة
             <Crown className="mr-3 text-yellow-400" size={32} />
@@ -253,7 +253,7 @@ export default function ExecutiveAuctionsPage() {
             <h2 className="text-2xl font-bold mb-8">المنتجات الحصرية المتاحة</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {executiveItems.map((item) => (
-                <Link 
+                <LoadingLink 
                   key={item.id} 
                   href={`/auctions/auctions-special/executive/${item.id}`}
                   className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -303,7 +303,7 @@ export default function ExecutiveAuctionsPage() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </LoadingLink>
               ))}
             </div>
           </>

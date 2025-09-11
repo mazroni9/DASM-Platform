@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSearchParams } from 'next/navigation';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import axios from 'axios';
 
 interface ResetPasswordResponse {
@@ -82,9 +82,9 @@ export default function ResetPasswordForm() {
           <AlertDescription>رابط إعادة تعيين كلمة المرور غير صالح</AlertDescription>
         </Alert>
         <div className="mt-4">
-          <Link href="/auth/forgot-password" className="text-primary hover:underline">
+          <LoadingLink href="/auth/forgot-password" className="text-primary hover:underline">
             طلب رابط جديد
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     );
@@ -138,9 +138,9 @@ export default function ResetPasswordForm() {
         </Button>
 
         <div className="text-center text-sm">
-          <Link href="/auth/login" className="text-primary hover:underline">
+          <LoadingLink href="/auth/login" className="text-primary hover:underline">
             العودة إلى تسجيل الدخول
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </form>
