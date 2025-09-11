@@ -17,6 +17,7 @@ class VenueOwner extends Model
         'status',
         'is_active',
         'rating',
+        'address',
     ];
 
     protected $casts = [

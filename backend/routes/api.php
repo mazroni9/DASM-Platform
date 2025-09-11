@@ -329,16 +329,3 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
 // Public subscription plans routes
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
-
-//======================== Exhibitor Routes ======================================
-// exhibitor auth routes
-Route::prefix('exhibitor')->group(function () {
-    Route::post('/register', [ExhibitorAuthController::class, 'register']);
-    Route::post('/login', [ExhibitorAuthController::class, 'login']);
-});
-// تحقق من صحة الجلسة
-Route::get('/exhibitor/check-session', function (Request $request) {
-    return response()->json([
-        'authenticated' => $request->user() ? true : false,
-    ]);
-})->middleware('auth:sanctum');
