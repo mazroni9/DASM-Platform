@@ -2,6 +2,7 @@
 
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
+import { getLoadingFunctions } from "@/contexts/LoadingContext";
 
 // Create a proper base URL with full URL including http/https
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -31,9 +32,39 @@ if (typeof window !== "undefined") {
     }
 }
 
+// Request interceptor to start loading
+api.interceptors.request.use(
+    (config) => {
+        const loadingFunctions = getLoadingFunctions();
+        if (loadingFunctions) {
+            loadingFunctions.startLoading();
+        }
+        return config;
+    },
+    (error) => {
+        const loadingFunctions = getLoadingFunctions();
+        if (loadingFunctions) {
+            loadingFunctions.stopLoading();
+        }
+        return Promise.reject(error);
+    }
+);
+
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Stop loading on successful response
+        const loadingFunctions = getLoadingFunctions();
+        if (loadingFunctions) {
+            loadingFunctions.stopLoading();
+        }
+        return response;
+    },
     async (error) => {
+        // Stop loading on error response
+        const loadingFunctions = getLoadingFunctions();
+        if (loadingFunctions) {
+            loadingFunctions.stopLoading();
+        }
         // Log the error in development only and less verbosely
         if (
             process.env.NODE_ENV !== "production" &&

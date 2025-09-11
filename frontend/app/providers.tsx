@@ -3,13 +3,18 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { useLoading, setLoadingFunctions } from "@/contexts/LoadingContext";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
     const { initializeFromStorage } = useAuthStore();
     const [initialized, setInitialized] = useState(false);
     const router = useRouter();
+    const { startLoading, stopLoading } = useLoading();
 
     useEffect(() => {
+        // Set up loading functions for axios interceptors
+        setLoadingFunctions({ startLoading, stopLoading });
+
         const initAuth = async () => {
             try {
                 await initializeFromStorage();
@@ -21,7 +26,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         };
 
         initAuth();
-    }, [initializeFromStorage]);
+    }, [initializeFromStorage, startLoading, stopLoading]);
 
     if (!initialized) {
         return (
