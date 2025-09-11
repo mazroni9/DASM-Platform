@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import HealthIndexDisplay from '@/components/ai/HealthIndexDisplay';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { CarValueAssessment, carAnalysisService, CarHealthReport } from '@/lib/ai/services/carAnalysisService';
 import { imageService } from '@/lib/ai/services/imageService';
 
@@ -243,7 +243,8 @@ function EnhancedImagesDisplay({ originalUrl, enhancedUrl }: { originalUrl: stri
 
 // الصفحة الرئيسية لتحليل السيارة
 export default function CarInsightsPage({ params }: { params: { id: string } }) {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const carId = parseInt(params.id);
   
   const [carDetails, setCarDetails] = useState<any>(null);

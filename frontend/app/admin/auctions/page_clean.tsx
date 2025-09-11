@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     Car,
     Clock,
@@ -41,7 +41,8 @@ interface Auction {
 }
 
 export default function AdminAuctionsPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const [auctions, setAuctions] = useState<Auction[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");

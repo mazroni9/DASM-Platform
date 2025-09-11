@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 import {
     ArrowLeft,
     Car,
@@ -66,7 +68,8 @@ interface AuctionData {
 }
 
 export default function AdminProcessAuctionPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const params = useParams();
     const carId = params.id as string;
 

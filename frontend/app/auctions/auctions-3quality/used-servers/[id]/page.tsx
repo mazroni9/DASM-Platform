@@ -18,7 +18,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, } from 'next/navigation';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -48,7 +48,8 @@ interface ServerDetails {
 
 export default function ServerDetailsPage() {
   const params = useParams();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [server, setServer] = useState<ServerDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

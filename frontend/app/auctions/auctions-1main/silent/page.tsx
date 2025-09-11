@@ -11,7 +11,7 @@ import PriceInfoDashboard from '@/components/PriceInfoDashboard';
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Countdown from '@/components/Countdown';
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
@@ -46,7 +46,8 @@ export default function SilentAuctionPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
   const { user, isLoggedIn } = useAuth();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 

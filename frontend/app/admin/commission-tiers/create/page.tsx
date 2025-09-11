@@ -1,10 +1,10 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import CommissionTierForm from "@/components/admin/CommissionTierForm";
 import { Button } from "@/components/ui/button";
 
 export default function Page() {
-  const r = useRouter();
+  const r = useLoadingRouter();
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

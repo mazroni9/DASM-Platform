@@ -1,8 +1,10 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuthStore } from "@/store/authStore";
+
 import { handleRoleBasedRedirection } from "@/lib/roleNavigation";
 
 // List of routes that are public and don't require authentication
@@ -16,7 +18,8 @@ const publicPaths = [
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
     const pathname = usePathname();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const { isLoggedIn, user, initialized } = useAuthStore();
     const [isLoading, setIsLoading] = useState(true);
 

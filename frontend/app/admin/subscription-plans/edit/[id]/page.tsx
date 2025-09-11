@@ -1,11 +1,12 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import SubscriptionPlanForm from "@/components/admin/SubscriptionPlanForm";
 import { Button } from "@/components/ui/button";
 
 export default function Page() {
   const p = useParams();
-  const r = useRouter();
+  const r = useLoadingRouter();
   const id = p?.id as string;
   return (
     <div className="space-y-6">

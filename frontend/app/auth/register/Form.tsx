@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import { z } from "zod";
 import {
     AlertCircle,
@@ -121,7 +122,8 @@ const registerSchema = z
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");

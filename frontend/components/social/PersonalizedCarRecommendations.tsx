@@ -21,9 +21,10 @@ import {
     Clock,
     Zap,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Link from "next/link";
 import { formatCurrency } from "@/utils/formatCurrency";
+
 
 // واجهة بيانات السيارة الموصى بها
 interface RecommendedCar {
@@ -62,7 +63,8 @@ export default function PersonalizedCarRecommendations({
     >("similar");
     const [error, setError] = useState<string | null>(null);
 
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
 
     useEffect(() => {
         // محاكاة جلب البيانات من الخادم

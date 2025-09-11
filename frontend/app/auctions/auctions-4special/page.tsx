@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { Gem, Sailboat, Home, Watch, BadgeCheck, Plane, Brush, Star, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 export default function AuctionsSpecialPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   
   // الأسواق المتخصصة
   const specialMarkets = [

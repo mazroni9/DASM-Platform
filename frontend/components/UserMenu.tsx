@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import { ChevronDown, LogOut, User, Settings } from 'lucide-react';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,7 +9,8 @@ import { UserRole } from '@/types/types';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 

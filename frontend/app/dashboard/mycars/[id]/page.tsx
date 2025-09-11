@@ -3,7 +3,8 @@
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Loader2, Edit, Save, X, Upload, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Car } from "@/types/types";
 
+
 export default function CarDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -30,7 +32,8 @@ export default function CarDetailsPage() {
     const [editedCar, setEditedCar] = useState<Partial<Car>>({});
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const params = useParams();
     const carId = params.id as string;
 

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     LayoutDashboard,
     Video,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
+
 interface ModeratorLayoutProps {
     children: React.ReactNode;
 }
@@ -23,7 +25,8 @@ interface ModeratorLayoutProps {
 export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
     const pathname = usePathname();
     const { user, isModerator, logout, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Simplified auth check - let ProtectedRoute handle the main logic

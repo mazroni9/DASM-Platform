@@ -1,14 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { MapPin, Calendar, Users, DollarSign, ThumbsUp } from 'lucide-react';
+
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function CaravanBidPage() {
   const params = useParams();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const searchParams = useSearchParams();
   const caravanId = params.id as string;
   

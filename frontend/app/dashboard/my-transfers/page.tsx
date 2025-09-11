@@ -2,7 +2,8 @@
 
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
 import {
     Loader2,
@@ -92,7 +93,8 @@ export default function MoneyTransfersPage() {
             message: "",
         });
 
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const { isLoggedIn } = useAuth();
 
     // Deposit form handling

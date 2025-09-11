@@ -21,7 +21,8 @@ import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import { Avatar } from 'antd';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 // 🔹 نوع البيانات
 interface Exhibitor {
@@ -53,7 +54,8 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [user, setUser] = useState<Exhibitor | null>(null);
   const [isClient, setIsClient] = useState(false); // 🔥 لحل مشكلة الهيدرات
 

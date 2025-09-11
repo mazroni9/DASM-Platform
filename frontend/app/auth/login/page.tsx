@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Link from "next/link";
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
 export default function LoginPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const searchParams = useSearchParams();
     const returnUrl = searchParams?.get("returnUrl") || "/dashboard";
     const { login, verifyCode } = useAuthStore();
