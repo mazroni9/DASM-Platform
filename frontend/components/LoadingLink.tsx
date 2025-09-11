@@ -9,8 +9,14 @@ interface LoadingLinkProps extends React.ComponentProps<typeof Link> {
 }
 
 export default function LoadingLink({ children, href, onClick, ...props }: LoadingLinkProps) {
-  const { startLoading, stopLoading } = useLoading();
+  const loadingContext = useLoading();
   const isNavigatingRef = useRef(false);
+  
+  // Handle SSR case where context might not be available
+  const { startLoading, stopLoading } = loadingContext || { 
+    startLoading: () => {}, 
+    stopLoading: () => {} 
+  };
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {

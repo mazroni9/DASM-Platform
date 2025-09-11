@@ -15,7 +15,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import Image from "next/image";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
@@ -122,13 +122,13 @@ export default function UsedServersPage() {
             {/* رأس الصفحة */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-6">
                 <div className="container mx-auto px-4">
-                    <Link
+                    <LoadingLink
                         href="/auctions/auctions-3quality"
                         className="flex items-center text-white hover:text-white/90 transition mb-4"
                     >
                         <ArrowLeft size={20} className="ml-2" />
                         <span>العودة إلى السوق النوعي</span>
-                    </Link>
+                    </LoadingLink>
                     <div className="text-center">
                         <div className="flex items-center justify-center mb-2">
                             <Server className="text-white ml-3" size={24} />
@@ -322,12 +322,12 @@ export default function UsedServersPage() {
                                         <span className="text-lg font-bold text-blue-700">
                                             {server.price.toLocaleString()} ريال
                                         </span>
-                                        <Link
+                                        <LoadingLink
                                             href={`/auctions/auctions-3quality/used-servers/${server.id}`}
                                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition text-sm"
                                         >
                                             عرض التفاصيل
-                                        </Link>
+                                        </LoadingLink>
                                     </div>
                                 </div>
                             </div>

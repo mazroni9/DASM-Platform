@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 
 export default function VerifyCodePage() {
   const router = useLoadingRouter();
@@ -156,12 +156,12 @@ export default function VerifyCodePage() {
               }
             </button>
 
-            <Link
+            <LoadingLink
               href="/auth/login"
               className="block mt-4 text-black font-medium hover:underline"
             >
               العودة إلى تسجيل الدخول
-            </Link>
+            </LoadingLink>
           </div>
         </form>
       </div>

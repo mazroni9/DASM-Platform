@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
@@ -229,20 +229,20 @@ export default function LoginPage() {
 
                             <div className="flex items-center justify-between">
                                 <div className="text-sm">
-                                    <Link
+                                    <LoadingLink
                                         href="/auth/forgot-password"
                                         className="font-medium text-teal-600 hover:text-teal-500"
                                     >
                                         نسيت كلمة المرور؟
-                                    </Link>
+                                    </LoadingLink>
                                 </div>
                                 <div className="text-sm">
-                                    <Link
+                                    <LoadingLink
                                         href="/auth/register"
                                         className="font-medium text-teal-600 hover:text-teal-500"
                                     >
                                         إنشاء حساب جديد
-                                    </Link>
+                                    </LoadingLink>
                                 </div>
                             </div>
 

@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import axios, { AxiosError } from "axios";
+import LoadingLink from "@/components/LoadingLink";
+import { UserRole } from "@/types/types";
 
 interface RegisterResponse {
   status: string;

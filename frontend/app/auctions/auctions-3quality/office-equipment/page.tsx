@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
@@ -81,13 +81,13 @@ export default function OfficeEquipmentPage() {
       <div className="bg-gradient-to-r from-sky-500 to-blue-600 py-6">
         <div className="container mx-auto px-4">
           <div className="mb-4">
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-quality" 
               className="inline-flex items-center text-white/90 hover:text-white transition-colors px-4 py-2 rounded-full border border-sky-400 hover:border-sky-300 bg-sky-600/50 hover:bg-sky-600/70 rtl:flex-row-reverse"
             >
               <ChevronLeft className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
               <span>العودة للسوق النوعي</span>
-            </Link>
+            </LoadingLink>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
@@ -207,12 +207,12 @@ export default function OfficeEquipmentPage() {
                       <span className="text-sky-700 font-bold">
                         {product.price.toLocaleString()} ريال
                       </span>
-                      <Link 
+                      <LoadingLink 
                         href={`/auctions/auctions-quality/office-equipment/${product.id}`}
                         className="bg-sky-100 hover:bg-sky-200 text-sky-800 px-3 py-1 rounded transition text-sm"
                       >
                         عرض التفاصيل
-                      </Link>
+                      </LoadingLink>
                     </div>
                   </div>
                 </div>

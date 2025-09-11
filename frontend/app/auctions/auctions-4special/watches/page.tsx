@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, Watch, Clock, Shield, Award, Calendar, Star, Search, Filter, Tag } from 'lucide-react';
 
 export default function WatchesMarketPage() {
@@ -125,27 +125,27 @@ export default function WatchesMarketPage() {
             <div className="flex-1 text-center">
               <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">سوق الساعات الفاخرة المستعملة</h1>
             </div>
-            <Link href="/auctions/auctions-4special" className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse">
+            <LoadingLink href="/auctions/auctions-4special" className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse">
               <ChevronRight className="ml-1 rtl:mr-1 rtl:ml-0 transform group-hover:-translate-x-1 transition-transform" size={16} />
               <span>العودة للأسواق المتخصصة</span>
-            </Link>
+            </LoadingLink>
           </div>
           <p className="text-base text-white/90 max-w-2xl mx-auto mb-4 text-center">
             منصة آمنة وموثوقة لشراء وبيع أفخم الساعات السويسرية المستعملة بضمان أصلي ومعتمد
           </p>
           <div className="flex justify-center items-center gap-4">
-            <Link 
+            <LoadingLink 
               href="/forms/watch-auction-request" 
               className="px-5 py-2 bg-white text-indigo-600 hover:bg-gray-100 font-medium rounded-full shadow-md hover:shadow-lg transition-all text-sm"
             >
               بيع ساعتك معنا
-            </Link>
-            <Link 
+            </LoadingLink>
+            <LoadingLink 
               href="#featured-watches" 
               className="px-5 py-2 bg-transparent border border-white text-white hover:bg-white/10 font-medium rounded-full transition-all text-sm"
             >
               تصفح الساعات
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>
@@ -231,7 +231,7 @@ export default function WatchesMarketPage() {
               <ul className="space-y-2">
                 {luxuryBrands.map((brand) => (
                   <li key={brand.name}>
-                    <Link 
+                    <LoadingLink 
                       href={`/auctions/auctions-4special/watches/brand/${brand.name.toLowerCase().replace(/\s+/g, '-')}`}
                       className="flex items-center justify-between py-2 px-2 hover:bg-gray-50 rounded-md"
                     >
@@ -239,7 +239,7 @@ export default function WatchesMarketPage() {
                       <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded-full">
                         {brand.count}
                       </span>
-                    </Link>
+                    </LoadingLink>
                   </li>
                 ))}
               </ul>
@@ -320,7 +320,7 @@ export default function WatchesMarketPage() {
             <h2 id="featured-watches" className="text-2xl font-bold mb-6">الساعات المميزة</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {featuredWatches.map((watch) => (
-                <Link 
+                <LoadingLink 
                   key={watch.id} 
                   href={`/auctions/auctions-4special/watches/${watch.id}`}
                   className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition group"
@@ -366,7 +366,7 @@ export default function WatchesMarketPage() {
                       )}
                     </div>
                   </div>
-                </Link>
+                </LoadingLink>
               ))}
             </div>
             
@@ -416,12 +416,12 @@ export default function WatchesMarketPage() {
             <p className="text-gray-600 mb-8">
               سجل ساعتك الفاخرة في منصتنا ليتم عرضها للمهتمين والمستثمرين. نوفر خدمة تقييم احترافية وعرض مميز يضمن لك أفضل سعر ممكن.
             </p>
-            <Link 
+            <LoadingLink 
               href="/forms/watch-auction-request"
               className="inline-block px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition"
             >
               تسجيل ساعة للبيع
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

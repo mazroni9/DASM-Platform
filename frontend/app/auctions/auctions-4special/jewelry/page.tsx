@@ -21,7 +21,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import PageHeader from '@/components/shared/PageHeader';
 
 export default function JewelryAuctionsPage() {
@@ -78,12 +78,12 @@ export default function JewelryAuctionsPage() {
                   </div>
                 )}
                 
-                <Link 
+                <LoadingLink 
                   href={`/auctions/auctions-special/jewelry/bid/${item.id}?from=${currentPageUrl}`}
                   className="mt-4 block w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition text-center"
                 >
                   قدم عرضك
-                </Link>
+                </LoadingLink>
               </div>
             ))}
           </div>

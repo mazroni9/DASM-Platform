@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { useAuthStore } from "@/store/authStore";
 
 const loginSchema = z.object({
@@ -265,12 +265,12 @@ export default function LoginForm() {
                         >
                             كلمة المرور
                         </Label>
-                        <Link
+                        <LoadingLink
                             href="/auth/forgot-password"
                             className="text-sm text-indigo-600 hover:text-indigo-500"
                         >
                             نسيت كلمة المرور؟
-                        </Link>
+                        </LoadingLink>
                     </div>
                     <div className="relative">
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -338,12 +338,12 @@ export default function LoginForm() {
 
             <div className="text-center text-sm">
                 <span>ليس لديك حساب؟</span>
-                <Link
+                <LoadingLink
                     href="/auth/register"
                     className="text-indigo-600 hover:text-indigo-500 font-medium mr-2"
                 >
                     إنشاء حساب جديد
-                </Link>
+                </LoadingLink>
             </div>
         </form>
     );

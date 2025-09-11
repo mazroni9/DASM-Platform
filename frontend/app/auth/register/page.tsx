@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import RegisterForm from "./Form";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function RegisterPage() {
@@ -43,12 +43,12 @@ export default function RegisterPage() {
                     </div>
                     <div className="text-center text-sm text-gray-500 mt-2">
                         <span>لديك حساب بالفعل؟</span>
-                        <Link
+                        <LoadingLink
                             href="/auth/login"
                             className="text-indigo-600 hover:text-indigo-500 font-medium mr-2"
                         >
                             تسجيل الدخول
-                        </Link>
+                        </LoadingLink>
                     </div>
                     <p className="text-center text-xs text-gray-500 border-t border-gray-100 pt-4">
                         بإنشاء حساب، أنت توافق على{" "}

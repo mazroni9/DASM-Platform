@@ -22,7 +22,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Upload, Info, HelpCircle, RotateCw } from 'lucide-react';
 
 export default function EquipmentAuctionRequestPage() {
@@ -204,13 +204,13 @@ export default function EquipmentAuctionRequestPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-gray-700 to-gray-800 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-5general/equipment" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى سوق المعدات</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">تسجيل معدة للمزاد</h1>
           <p className="text-white/80 mt-2">
             سجل معداتك وأدواتك في منصتنا وانضم إلى سوق المعدات المستعملة
@@ -485,7 +485,7 @@ export default function EquipmentAuctionRequestPage() {
               className="w-5 h-5 text-gray-600 rounded focus:ring-2 focus:ring-gray-500 mt-1"
             />
             <label htmlFor="terms" className="mr-2 text-gray-700">
-              أوافق على <Link href="/terms" className="text-gray-600 hover:underline">شروط وأحكام</Link> المنصة وأتعهد بصحة المعلومات المدخلة وملكيتي للمعدة.
+              أوافق على <LoadingLink href="/terms" className="text-gray-600 hover:underline">شروط وأحكام</LoadingLink> المنصة وأتعهد بصحة المعلومات المدخلة وملكيتي للمعدة.
             </label>
           </div>
 
@@ -498,12 +498,12 @@ export default function EquipmentAuctionRequestPage() {
             >
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-5general/equipment"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء
-            </Link>
+            </LoadingLink>
           </div>
         </form>
 
