@@ -29,6 +29,8 @@ class AuctionController extends Controller
      */
     public function index(Request $request)
     {
+     
+
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
 
         // Only show control room approved auctions in public listing by default
@@ -67,8 +69,57 @@ class AuctionController extends Controller
             $query->orderBy($sortField, $sortDirection);
         }
 
-        $perPage = $request->input('per_page', 10);
-        $auctions = $query->paginate($perPage);
+        $auctions = $query->paginate(5);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $auctions
+        ]);
+    }
+
+    public function auctionByType(Request $request)
+    {
+
+        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])->where('auction_type',$request['auction_type']);
+
+        
+        // Only show control room approved auctions in public listing by default
+        if (!$request->has('control_room_approved')) {
+            $query->where('control_room_approved', true);
+        } else if ($request->has('control_room_approved')) {
+            $query->where('control_room_approved', $request->control_room_approved);
+        }
+
+        // Filter by status
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter active auctions (ongoing)
+        if ($request->has('active') && $request->active) {
+            $now = Carbon::now();
+            $query->where('start_time', '<=', $now)
+                ->where('end_time', '>=', $now)
+                ->where('status', AuctionStatus::ACTIVE->value);
+        }
+
+        // Filter by car make/model
+        if ($request->has('car_make')) {
+            $query->whereHas('car', function ($q) use ($request) {
+                $q->where('make', $request->car_make);
+            });
+        }
+
+        // Sort options
+        $sortField = $request->input('sort_by', 'created_at');
+        $sortDirection = $request->input('sort_dir', 'desc');
+        $allowedSortFields = ['created_at', 'start_time', 'end_time', 'current_bid', 'starting_bid'];
+
+        if (in_array($sortField, $allowedSortFields)) {
+            $query->orderBy($sortField, $sortDirection);
+        }
+
+        $auctions = $query->paginate(10);
 
         return response()->json([
             'status' => 'success',
