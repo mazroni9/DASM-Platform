@@ -179,17 +179,37 @@ class AuctionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'car_id' => 'required',
-            'starting_bid' => 'required|numeric|min:0',
-            'reserve_price' => 'nullable|numeric|min:0',
+            'car_id' => 'required|integer|exists:cars,id',
+            'starting_bid' => 'required|numeric|min:1|max:999999999.99',
+            'reserve_price' => 'nullable|numeric|min:0|max:999999999.99',
             'start_time' => 'required|date|after_or_equal:today',
             'end_time' => 'required|date|after:start_time',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:1000',
+        ], [
+            'car_id.required' => 'معرف السيارة مطلوب',
+            'car_id.exists' => 'السيارة غير موجودة',
+            'starting_bid.required' => 'سعر البداية مطلوب',
+            'starting_bid.min' => 'سعر البداية يجب أن يكون أكبر من صفر',
+            'starting_bid.max' => 'سعر البداية كبير جداً',
+            'reserve_price.max' => 'السعر الاحتياطي كبير جداً',
+            'start_time.required' => 'وقت البداية مطلوب',
+            'start_time.after_or_equal' => 'وقت البداية يجب أن يكون اليوم أو بعده',
+            'end_time.required' => 'وقت النهاية مطلوب',
+            'end_time.after' => 'وقت النهاية يجب أن يكون بعد وقت البداية',
+            'description.max' => 'وصف المزاد طويل جداً'
         ]);
 
         if ($validator->fails()) {
+            \Illuminate\Support\Facades\Log::warning('Auction creation validation failed', [
+                'user_id' => Auth::id(),
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+            
             return response()->json([
                 'status' => 'error',
+                'message' => 'بيانات المزاد غير صالحة',
                 'errors' => $validator->errors()
             ], 422);
         }
