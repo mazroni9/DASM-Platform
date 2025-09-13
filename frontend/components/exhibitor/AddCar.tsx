@@ -2,33 +2,32 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiUpload, FiCamera, FiInfo, FiCheckCircle, FiX, FiChevronDown } from 'react-icons/fi'
-import { FaCar, FaGasPump, FaTachometerAlt, FaCalendarAlt, FaCogs } from 'react-icons/fa'
-import { IoMdSpeedometer } from 'react-icons/io'
-import { GiCarDoor, GiGearStick } from 'react-icons/gi'
+import { FiUpload, FiInfo, FiCheckCircle, FiX, FiChevronDown } from 'react-icons/fi'
+import { FaTachometerAlt } from 'react-icons/fa'
+import { GiGearStick } from 'react-icons/gi'
+
+type Condition = 'excellent' | 'good' | 'fair' | 'poor'
+type Transmission = 'automatic' | 'manual' | 'cvt'
+type MarketCategory = 'luxuryCars' | 'classic' | 'caravan' | 'busesTrucks' | 'companiesCars' | 'government'
 
 interface FormData {
-  carType: string
-  brand: string
+  make: string
   model: string
-  year: string
-  mileage: string
-  fuelType: string
-  transmission: string
-  engineSize: string
-  doors: string
+  year: string | number
+  vin: string
+  odometer: string | number
+  condition: Condition | ''
+  evaluation_price: string | number
   color: string
-  price: string
+  engine: string
+  transmission: Transmission | ''
+  market_category: MarketCategory | ''
   description: string
-  features: string[]
-  auctionType: string
-  auctionStartPrice: string
-  auctionMinPrice: string
-  auctionMaxPrice: string
-  auctionStartDate: string
-  auctionEndDate: string
-  status: string
+  min_price: string | number
+  max_price: string | number
+  province: string
   city: string
+  plate: string
 }
 
 interface PreviewImage {
@@ -38,69 +37,53 @@ interface PreviewImage {
 }
 
 interface OcrData {
-  brand: string
-  model: string
-  year: string
-  chassisNumber: string
-  engineSize: string
-  fuelType: string
-}
-
-interface AiAnalysis {
-  marketPrice: number
-  demandLevel: string
-  similarCars: number
-  priceSuggestion: number
+  make?: string
+  model?: string
+  year?: string
+  vin?: string
+  engine?: string
 }
 
 export default function AddCarForm() {
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState<FormData>({
-    carType: '',
-    brand: '',
+    make: '',
     model: '',
     year: '',
-    mileage: '',
-    fuelType: '',
-    transmission: '',
-    engineSize: '',
-    doors: '',
+    vin: '',
+    odometer: '',
+    condition: '',
+    evaluation_price: '',
     color: '',
-    price: '',
+    engine: '',
+    transmission: '',
+    market_category: '',
     description: '',
-    features: [],
-    auctionType: '',
-    auctionStartPrice: '',
-    auctionMinPrice: '',
-    auctionMaxPrice: '',
-    auctionStartDate: '',
-    auctionEndDate: '',
-    status: '',
-    city: ''
+    min_price: '',
+    max_price: '',
+    province: '',
+    city: '',
+    plate: ''
   })
   
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [serverMsg, setServerMsg] = useState<string | null>(null)
+
+  // صور السيارة (تبقى بدون ربط backend الآن)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([])
+
+  // مستندات السيارة/الاستمارة (بدون ربط backend الآن)
   const [ocrFile, setOcrFile] = useState<File | null>(null)
   const [ocrData, setOcrData] = useState<OcrData | null>(null)
-  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // محاكاة تحليل الذكاء الاصطناعي
   useEffect(() => {
-    if (formData.brand && formData.model && formData.year) {
-      const mockAnalysis: AiAnalysis = {
-        marketPrice: Math.round(Math.random() * 50000 + 50000),
-        demandLevel: ['منخفض', 'متوسط', 'مرتفع'][Math.floor(Math.random() * 3)],
-        similarCars: Math.round(Math.random() * 50),
-        priceSuggestion: Math.round(Math.random() * 50000 + 50000)
-      }
-      setAiAnalysis(mockAnalysis)
-    }
-  }, [formData.brand, formData.model, formData.year])
+    // ممكن لاحقًا تجيب خيارات enum من /api/cars/enum-options
+    // حالياً ثابتة لتجنب أي تبعيات
+  }, [])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
@@ -125,86 +108,215 @@ export default function AddCarForm() {
 
   const handleOcrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
-    setOcrFile(e.target.files[0])
-    // محاكاة عملية OCR
+    const file = e.target.files[0]
+    setOcrFile(file)
+
+    // محاكاة استخراج بيانات من الاستمارة (OCR) — لا يتم ربط backend الآن
     setTimeout(() => {
-      setOcrData({
-        brand: 'تويوتا',
-        model: 'كامري',
-        year: '2022',
-        chassisNumber: 'JT2BF22KXW0123456',
-        engineSize: '2.5L',
-        fuelType: 'بنزين'
-      })
-    }, 1500)
+      const mocked: OcrData = {
+        make: 'Toyota',
+        model: 'Camry',
+        year: '2020',
+        vin: '1HGCM82633A123456',
+        engine: '2.5L',
+      }
+      setOcrData(mocked)
+    }, 1200)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const nextStep = () => setStep(prev => prev + 1)
+  const prevStep = () => setStep(prev => prev - 1)
+
+  const requiredFields: (keyof FormData)[] = [
+    'make','model','year','vin','odometer','condition','evaluation_price',
+    'color','engine','transmission','market_category',
+    'min_price','max_price','province','city','plate'
+  ]
+
+  const validate = (): string | null => {
+    for (const key of requiredFields) {
+      const v = formData[key]
+      if (v === '' || v === null || v === undefined) {
+        return `الرجاء تعبئة الحقل المطلوب: ${labelFor(key)}`
+      }
+    }
+
+    // قيم enum
+    const allowedConditions: Condition[] = ['excellent','good','fair','poor']
+    if (!allowedConditions.includes(formData.condition as Condition)) {
+      return 'قيمة "condition" غير صحيحة'
+    }
+
+    const allowedTransmissions: Transmission[] = ['automatic','manual','cvt']
+    if (!allowedTransmissions.includes(formData.transmission as Transmission)) {
+      return 'قيمة "transmission" غير صحيحة'
+    }
+
+    const allowedCategories: MarketCategory[] = ['luxuryCars','classic','caravan','busesTrucks','companiesCars','government']
+    if (!allowedCategories.includes(formData.market_category as MarketCategory)) {
+      return 'قيمة "market_category" غير صحيحة'
+    }
+
+    // year رقم ضمن المدى
+    const y = Number(formData.year)
+    const thisYearPlusOne = new Date().getFullYear() + 1
+    if (isNaN(y) || y < 1900 || y > thisYearPlusOne) {
+      return `سنة الصنع يجب أن تكون بين 1900 و ${thisYearPlusOne}`
+    }
+
+    // أرقام منطقية
+    const od = Number(formData.odometer)
+    if (isNaN(od) || od < 0) return 'العداد (odometer) غير صحيح'
+
+    const evalPrice = Number(formData.evaluation_price)
+    if (isNaN(evalPrice) || evalPrice < 0) return 'evaluation_price غير صحيح'
+
+    const minP = Number(formData.min_price)
+    const maxP = Number(formData.max_price)
+    if (isNaN(minP) || isNaN(maxP) || minP < 0 || maxP < 0) return 'min_price/max_price غير صحيح'
+    if (minP > maxP) return 'min_price يجب أن يكون أقل من أو يساوي max_price'
+
+    if (!/^[A-Za-z0-9]{1,17}$/.test(formData.vin)) {
+      // الباكند يطلب max:17 وفريد — هنا فقط تحقق شكلي
+      return 'رقم الهيكل (VIN) يجب أن يكون من حروف/أرقام بطول حتى 17'
+    }
+
+    return null
+  }
+
+  const labelFor = (key: keyof FormData): string => {
+    const map: Record<keyof FormData, string> = {
+      make: 'الشركة المصنعة',
+      model: 'الموديل',
+      year: 'سنة الصنع',
+      vin: 'رقم الهيكل (VIN)',
+      odometer: 'عدد الكيلومترات',
+      condition: 'حالة السيارة',
+      evaluation_price: 'السعر المقيّم',
+      color: 'اللون',
+      engine: 'سعة/نوع المحرك',
+      transmission: 'ناقل الحركة',
+      market_category: 'فئة السوق',
+      description: 'الوصف',
+      min_price: 'الحد الأدنى',
+      max_price: 'الحد الأعلى',
+      province: 'المحافظة',
+      city: 'المدينة',
+      plate: 'رقم اللوحة'
+    }
+    return map[key]
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrorMsg(null)
-    // تحقق من الحقول المطلوبة
-    if (!formData.brand || !formData.model || !formData.year || !formData.price || !formData.carType) {
-      setErrorMsg('يرجى تعبئة جميع الحقول الأساسية المطلوبة')
-      setIsSubmitting(false)
-      return
+    setServerMsg(null)
+
+    // تعبئة تلقائية من OCR (اختياري) — لا يرسل الملفات
+    if (ocrData) {
+      setFormData(prev => ({
+        ...prev,
+        make: prev.make || ocrData.make || '',
+        model: prev.model || ocrData.model || '',
+        year: prev.year || ocrData.year || '',
+        vin: prev.vin || ocrData.vin || '',
+        engine: prev.engine || ocrData.engine || ''
+      }))
     }
-    // تحقق من رفع صورة الاستمارة
-    if (!ocrFile) {
-      setErrorMsg('يرجى رفع صورة استمارة السيارة')
-      setIsSubmitting(false)
-      return
-    }
-    // تحقق من رفع الصور
-    if (previewImages.length === 0) {
-      setErrorMsg('يرجى رفع صور السيارة')
+
+    const validationError = validate()
+    if (validationError) {
+      setErrorMsg(validationError)
       setIsSubmitting(false)
       return
     }
 
-    // محاكاة عملية الإرسال
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsSubmitting(false)
-          setIsSuccess(true)
-          return 100
+    // تجهيز الجسم المطلوب للـ backend — بدون صور الآن
+    const payload = {
+      make: String(formData.make).trim(),
+      model: String(formData.model).trim(),
+      year: Number(formData.year),
+      vin: String(formData.vin).trim(),
+      odometer: Number(formData.odometer),
+      condition: formData.condition,
+      evaluation_price: Number(formData.evaluation_price),
+      color: String(formData.color).trim(),
+      engine: String(formData.engine).trim(),
+      transmission: formData.transmission,
+      market_category: formData.market_category,
+      description: String(formData.description || ''),
+      min_price: Number(formData.min_price),
+      max_price: Number(formData.max_price),
+      province: String(formData.province).trim(),
+      city: String(formData.city).trim(),
+      plate: String(formData.plate).trim()
+    }
+
+    try {
+   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+if (!token) {
+  setIsSubmitting(false);
+  setErrorMsg('غير مصرح: مفقود رمز الدخول. الرجاء تسجيل الدخول أولاً.');
+  return;
+}
+
+const res = await fetch('/api/cars', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify(payload)
+});
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        // إظهار أخطاء الفاليديشن من الباكند إن وجدت
+        if (data?.errors) {
+          const firstKey = Object.keys(data.errors)[0]
+          const firstMsg = data.errors[firstKey]?.[0] || 'فشل إنشاء السيارة'
+          setErrorMsg(firstMsg)
+        } else {
+          setErrorMsg(data?.message || 'حدث خطأ غير متوقع')
         }
-        return prev + 10
-      })
-    }, 300)
+        setIsSubmitting(false)
+        return
+      }
+
+      setServerMsg(data?.message || 'تمت الإضافة بنجاح')
+      // محاكاة تقدّم بعد نجاح الإرسال
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval)
+            setIsSubmitting(false)
+            setIsSuccess(true)
+            return 100
+          }
+          return prev + 20
+        })
+      }, 150)
+
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'تعذّر الاتصال بالخادم')
+      setIsSubmitting(false)
+    }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value
-    })
-  }
-
-  const nextStep = () => setStep(prev => prev + 1)
-  const prevStep = () => setStep(prev => prev - 1)
-
-  const featuresList = [
-    'مكيف هواء', 'نظام ملاحة', 'كاميرا خلفية', 'مقاعد جلد', 
-    'شاشة لمس', 'تحكم بمقود', 'فتحة سقف', 'مرآة كهربائية',
-    'حساسات ركن', 'نظام صوتي', 'بلوتوث', 'مثبت سرعة'
-  ]
-
-  const toggleFeature = (feature: string) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.includes(feature)
-        ? prev.features.filter(f => f !== feature)
-        : [...prev.features, feature]
-    }))
-  }
-
+  // ---------- UI ----------
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
+
         {/* شريط التقدم */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -219,7 +331,7 @@ export default function AddCarForm() {
                 </div>
                 <span className="text-sm mt-1 text-gray-600">
                   {stepNumber === 1 ? 'البيانات الأساسية' : 
-                   stepNumber === 2 ? 'المواصفات والمزاد' : 'المرفقات'}
+                   stepNumber === 2 ? 'التفاصيل الإضافية' : 'المرفقات (بدون ربط)'}
                 </span>
               </div>
             ))}
@@ -234,14 +346,19 @@ export default function AddCarForm() {
           </div>
         </div>
 
-        {/* رسالة خطأ */}
+        {/* تنبيهات */}
         {errorMsg && (
           <div className="mb-4 bg-red-100 border border-red-300 text-red-700 rounded-lg p-3">
             {errorMsg}
           </div>
         )}
+        {serverMsg && !isSuccess && (
+          <div className="mb-4 bg-green-100 border border-green-300 text-green-700 rounded-lg p-3">
+            {serverMsg}
+          </div>
+        )}
 
-        {/* محتوى النموذج */}
+        {/* بطاقة النموذج */}
         <motion.div 
           key={step}
           initial={{ opacity: 0, x: step > 1 ? 50 : -50 }}
@@ -253,66 +370,47 @@ export default function AddCarForm() {
           {/* العنوان */}
           <div className="border-b border-gray-200 p-6">
             <h2 className="text-2xl font-bold text-gray-800">إضافة سيارة جديدة</h2>
-            <p className="text-gray-600 mt-1">املأ التفاصيل أدناه لإضافة سيارة إلى معرضك</p>
+            <p className="text-gray-600 mt-1">املأ التفاصيل أدناه لإضافة سيارة</p>
           </div>
 
-          {/* الخطوة 1: البيانات الأساسية */}
+          {/* الخطوة 1: الأساسية */}
           {step === 1 && (
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* معلومات OCR */}
-                {ocrData && (
-                  <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center text-blue-800 mb-2">
-                      <FiInfo className="ml-2" />
-                      <h3 className="font-medium">تم التعرف على بيانات السيارة</h3>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {Object.entries(ocrData).map(([key, value]) => (
-                        <div key={key} className="bg-white p-3 rounded-lg border border-blue-100">
-                          <p className="text-xs text-blue-600 capitalize">{key}</p>
-                          <p className="font-medium">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <button 
-                      onClick={() => setFormData({ ...formData, ...ocrData })}
-                      className="mt-3 text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition"
-                    >
-                      تعبئة البيانات تلقائياً
-                    </button>
+              {ocrData && (
+                <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center text-blue-800 mb-2">
+                    <FiInfo className="ml-2" />
+                    <h3 className="font-medium">تم استخراج بيانات مبدئية من الاستمارة (محاكاة)</h3>
                   </div>
-                )}
-
-                <div>
-                  <label className="block text-gray-700 mb-2">نوع السيارة *</label>
-                  <select
-                    name="carType"
-                    value={formData.carType}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {Object.entries(ocrData).map(([k, v]) => (
+                      <div key={k} className="bg-white p-3 rounded-lg border border-blue-100">
+                        <p className="text-xs text-blue-600">{k}</p>
+                        <p className="font-medium">{v}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => setFormData(prev => ({ ...prev, ...ocrData }))}
+                    className="mt-3 text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition"
                   >
-                    <option value="">اختر نوع السيارة</option>
-                    <option value="sedan">سيدان</option>
-                    <option value="suv">SUV</option>
-                    <option value="coupe">كوبيه</option>
-                    <option value="hatchback">هاتشباك</option>
-                    <option value="pickup">بيك أب</option>
-                  </select>
+                    تعبئة تلقائية
+                  </button>
                 </div>
+              )}
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-700 mb-2">العلامة التجارية *</label>
+                  <label className="block text-gray-700 mb-2">الشركة المصنعة *</label>
                   <input
                     type="text"
-                    name="brand"
-                    value={formData.brand}
+                    name="make"
+                    value={formData.make}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: تويوتا"
+                    placeholder="Toyota"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">الموديل *</label>
                   <input
@@ -321,10 +419,9 @@ export default function AddCarForm() {
                     value={formData.model}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: كامري"
+                    placeholder="Camry"
                   />
                 </div>
-
                 <div>
                   <label className="block text-gray-700 mb-2">سنة الصنع *</label>
                   <input
@@ -332,94 +429,56 @@ export default function AddCarForm() {
                     name="year"
                     value={formData.year}
                     onChange={handleInputChange}
-                    min="1900"
+                    min={1900}
                     max={new Date().getFullYear() + 1}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: 2022"
+                    placeholder="2020"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-gray-700 mb-2">السعر (ر.س) *</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: 85000"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 mb-2">اللون *</label>
+                  <label className="block text-gray-700 mb-2">رقم الهيكل (VIN) *</label>
                   <input
                     type="text"
-                    name="color"
-                    value={formData.color}
+                    name="vin"
+                    value={formData.vin}
                     onChange={handleInputChange}
+                    maxLength={17}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: أبيض"
+                    placeholder="1HGCM82633A123456"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-gray-700 mb-2">الحالة</label>
+                  <label className="block text-gray-700 mb-2">عدد الكيلومترات *</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="odometer"
+                      value={formData.odometer}
+                      onChange={handleInputChange}
+                      className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="45000"
+                    />
+                    <div className="absolute left-3 top-2.5 text-gray-400">
+                      <FaTachometerAlt />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">حالة السيارة *</label>
                   <select
-                    name="status"
-                    value={formData.status}
+                    name="condition"
+                    value={formData.condition}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   >
                     <option value="">اختر الحالة</option>
-                    <option value="new">جديدة</option>
-                    <option value="used">مستعملة</option>
-                    <option value="under_review">تحت الفحص</option>
+                    <option value="excellent">ممتازة</option>
+                    <option value="good">جيدة</option>
+                    <option value="fair">متوسطة</option>
+                    <option value="poor">ضعيفة</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-gray-700 mb-2">المدينة</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: الرياض"
-                  />
-                </div>
               </div>
-
-              {/* تحليل الذكاء الاصطناعي */}
-              {aiAnalysis && (
-                <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-bold text-gray-800 mb-3">تحليل السوق الذكي</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-500">متوسط السعر بالسوق</p>
-                      <p className="text-xl font-bold">{aiAnalysis.marketPrice.toLocaleString()} ر.س</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-500">مستوى الطلب</p>
-                      <p className={`text-xl font-bold ${
-                        aiAnalysis.demandLevel === 'مرتفع' ? 'text-green-600' : 
-                        aiAnalysis.demandLevel === 'متوسط' ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {aiAnalysis.demandLevel}
-                      </p>
-                    </div>
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-500">سيارات مشابهة</p>
-                      <p className="text-xl font-bold">{aiAnalysis.similarCars}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-500">السعر المقترح</p>
-                      <p className="text-xl font-bold text-indigo-600">{aiAnalysis.priceSuggestion.toLocaleString()} ر.س</p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="mt-6">
                 <label className="block text-gray-700 mb-2">الوصف</label>
@@ -435,53 +494,35 @@ export default function AddCarForm() {
             </div>
           )}
 
-          {/* الخطوة 2: المواصفات والمزاد */}
+          {/* الخطوة 2: التفاصيل الإضافية المطابقة للباكند */}
           {step === 2 && (
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-700 mb-2">عدد الكيلومترات</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      name="mileage"
-                      value={formData.mileage}
-                      onChange={handleInputChange}
-                      className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="مثال: 45000"
-                    />
-                    <div className="absolute left-3 top-2.5 text-gray-400">
-                      <FaTachometerAlt />
-                    </div>
-                  </div>
+                  <label className="block text-gray-700 mb-2">السعر المقيّم *</label>
+                  <input
+                    type="number"
+                    name="evaluation_price"
+                    value={formData.evaluation_price}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="80000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 mb-2">اللون *</label>
+                  <input
+                    type="text"
+                    name="color"
+                    value={formData.color}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="أبيض"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 mb-2">نوع الوقود</label>
-                  <div className="relative">
-                    <select
-                      name="fuelType"
-                      value={formData.fuelType}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
-                    >
-                      <option value="">اختر نوع الوقود</option>
-                      <option value="gasoline">بنزين</option>
-                      <option value="diesel">ديزل</option>
-                      <option value="hybrid">هايبرد</option>
-                      <option value="electric">كهرباء</option>
-                    </select>
-                    <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                      <FiChevronDown />
-                    </div>
-                    <div className="absolute left-3 top-2.5 text-gray-400">
-                      <FaGasPump />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 mb-2">نوع ناقل الحركة</label>
+                  <label className="block text-gray-700 mb-2">ناقل الحركة *</label>
                   <div className="relative">
                     <select
                       name="transmission"
@@ -491,8 +532,8 @@ export default function AddCarForm() {
                     >
                       <option value="">اختر ناقل الحركة</option>
                       <option value="automatic">أوتوماتيك</option>
-                      <option value="manual">مانيوال</option>
-                      <option value="semi-automatic">نصف أوتوماتيك</option>
+                      <option value="manual">يدوي</option>
+                      <option value="cvt">CVT</option>
                     </select>
                     <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
                       <FiChevronDown />
@@ -504,152 +545,104 @@ export default function AddCarForm() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 mb-2">سعة المحرك</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="engineSize"
-                      value={formData.engineSize}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="مثال: 2.5L"
-                    />
-                    <div className="absolute left-3 top-2.5 text-gray-400">
-                      <FaCogs />
-                    </div>
-                  </div>
+                  <label className="block text-gray-700 mb-2">سعة/نوع المحرك *</label>
+                  <input
+                    type="text"
+                    name="engine"
+                    value={formData.engine}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="2.5L"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 mb-2">عدد الأبواب</label>
-                  <div className="relative">
-                    <select
-                      name="doors"
-                      value={formData.doors}
-                      onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
-                    >
-                      <option value="">اختر عدد الأبواب</option>
-                      <option value="2">2 أبواب</option>
-                      <option value="3">3 أبواب</option>
-                      <option value="4">4 أبواب</option>
-                      <option value="5">5 أبواب</option>
-                    </select>
-                    <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                      <FiChevronDown />
-                    </div>
-                    <div className="absolute left-3 top-2.5 text-gray-400">
-                      <GiCarDoor />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* المميزات الإضافية */}
-              <div className="mt-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-3">المميزات الإضافية</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {featuresList.map((feature) => (
-                    <motion.div
-                      key={feature}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleFeature(feature)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                        formData.features.includes(feature)
-                          ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
-                          : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        {formData.features.includes(feature) && (
-                          <FiCheckCircle className="ml-2 text-indigo-600" />
-                        )}
-                        <span>{feature}</span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* بيانات المزاد */}
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-700 mb-2">نوع المزاد</label>
+                  <label className="block text-gray-700 mb-2">فئة السوق *</label>
                   <select
-                    name="auctionType"
-                    value={formData.auctionType}
+                    name="market_category"
+                    value={formData.market_category}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   >
-                    <option value="">اختر نوع المزاد</option>
-                    <option value="live">مباشر</option>
-                    <option value="instant">فوري</option>
-                    <option value="silent">صامت</option>
+                    <option value="">اختر الفئة</option>
+                    <option value="luxuryCars">سوق السيارات الفارهة</option>
+                    <option value="classic">سوق السيارات الكلاسيكية</option>
+                    <option value="caravan">سوق الكرافانات</option>
+                    <option value="busesTrucks">سوق الشاحنات والحافلات</option>
+                    <option value="companiesCars">سوق سيارات الشركات</option>
+                    <option value="government">سوق سيارات الجهات الحكومية</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-gray-700 mb-2">سعر افتتاح المزاد</label>
+                  <label className="block text-gray-700 mb-2">الحد الأدنى *</label>
                   <input
                     type="number"
-                    name="auctionStartPrice"
-                    value={formData.auctionStartPrice}
+                    name="min_price"
+                    value={formData.min_price}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: 50000"
+                    placeholder="75000"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-gray-700 mb-2">الحد الأدنى للبيع</label>
+                  <label className="block text-gray-700 mb-2">الحد الأعلى *</label>
                   <input
                     type="number"
-                    name="auctionMinPrice"
-                    value={formData.auctionMinPrice}
+                    name="max_price"
+                    value={formData.max_price}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: 55000"
+                    placeholder="85000"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-gray-700 mb-2">الحد الأعلى للبيع</label>
+                  <label className="block text-gray-700 mb-2">المحافظة *</label>
                   <input
-                    type="number"
-                    name="auctionMaxPrice"
-                    value={formData.auctionMaxPrice}
+                    type="text"
+                    name="province"
+                    value={formData.province}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="مثال: 60000"
+                    placeholder="الرياض"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-gray-700 mb-2">تاريخ بدء المزاد</label>
+                  <label className="block text-gray-700 mb-2">المدينة *</label>
                   <input
-                    type="datetime-local"
-                    name="auctionStartDate"
-                    value={formData.auctionStartDate}
+                    type="text"
+                    name="city"
+                    value={formData.city}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="الرياض"
                   />
                 </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">تاريخ نهاية المزاد</label>
+
+                <div className="md:col-span-2">
+                  <label className="block text-gray-700 mb-2">رقم اللوحة *</label>
                   <input
-                    type="datetime-local"
-                    name="auctionEndDate"
-                    value={formData.auctionEndDate}
+                    type="text"
+                    name="plate"
+                    value={formData.plate}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="1234 ABC"
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* الخطوة 3: الصور والمستندات */}
+          {/* الخطوة 3: الصور والمستندات — تبقى بدون ربط بالباكند الآن */}
           {step === 3 && (
             <div className="p-6">
               <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">رفع صور السيارة</h3>
-                <p className="text-gray-600 mb-4">قم بتحميل صور واضحة للسيارة من زوايا مختلفة (الحد الأقصى 10 صور)</p>
+                <h3 className="text-lg font-medium text-gray-800 mb-2">رفع صور السيارة (بدون ربط حاليًا)</h3>
+                <p className="text-gray-600 mb-4">الحد الأقصى 10 صور</p>
                 
                 <input
                   type="file"
@@ -669,12 +662,11 @@ export default function AddCarForm() {
                   <div className="flex flex-col items-center justify-center text-gray-500">
                     <FiUpload size={40} className="mb-3" />
                     <p className="text-lg">انقر أو اسحب الصور هنا</p>
-                    <p className="text-sm mt-1">JPEG, PNG (الحد الأقصى 5MB لكل صورة)</p>
+                    <p className="text-sm mt-1">JPEG, PNG (5MB كحد أقصى لكل صورة)</p>
                   </div>
                 </motion.button>
               </div>
 
-              {/* معاينة الصور */}
               {previewImages.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-800 mb-3">الصور المرفوعة</h3>
@@ -698,10 +690,10 @@ export default function AddCarForm() {
                 </div>
               )}
 
-              {/* رفع استمارة السيارة */}
+              {/* رفع استمارة السيارة (بدون ربط) */}
               <div className="mt-8">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">رفع استمارة السيارة</h3>
-                <p className="text-gray-600 mb-4">سيتم استخدام الاستمارة للتحقق من بيانات السيارة عبر OCR</p>
+                <h3 className="text-lg font-medium text-gray-800 mb-2">رفع استمارة السيارة (بدون ربط)</h3>
+                <p className="text-gray-600 mb-4">سيتم استخدامها لاحقًا للتحقق عبر OCR</p>
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -727,7 +719,7 @@ export default function AddCarForm() {
             </div>
           )}
 
-          {/* أزرار التنقل */}
+          {/* أزرار التنقل / الإرسال */}
           <div className="border-t border-gray-200 p-6 bg-gray-50">
             <div className="flex justify-between">
               {step > 1 ? (
@@ -739,9 +731,7 @@ export default function AddCarForm() {
                 >
                   السابق
                 </motion.button>
-              ) : (
-                <div></div>
-              )}
+              ) : <div />}
 
               {step < 3 ? (
                 <motion.button
@@ -786,7 +776,7 @@ export default function AddCarForm() {
                 <FiCheckCircle size={40} className="text-green-600" />
               </div>
               <h3 className="text-2xl font-bold text-gray-800 mb-2">تمت الإضافة بنجاح!</h3>
-              <p className="text-gray-600 mb-6">تمت إضافة السيارة إلى معرضك بنجاح وسيتم مراجعتها قبل النشر.</p>
+              <p className="text-gray-600 mb-6">تمت إضافة السيارة وسيتم مراجعتها قبل النشر.</p>
               <div className="space-x-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -795,31 +785,17 @@ export default function AddCarForm() {
                     setIsSuccess(false)
                     setStep(1)
                     setFormData({
-                      carType: '',
-                      brand: '',
-                      model: '',
-                      year: '',
-                      mileage: '',
-                      fuelType: '',
-                      transmission: '',
-                      engineSize: '',
-                      doors: '',
-                      color: '',
-                      price: '',
-                      description: '',
-                      features: [],
-                      auctionType: '',
-                      auctionStartPrice: '',
-                      auctionMinPrice: '',
-                      auctionMaxPrice: '',
-                      auctionStartDate: '',
-                      auctionEndDate: '',
-                      status: '',
-                      city: ''
+                      make: '', model: '', year: '', vin: '', odometer: '',
+                      condition: '', evaluation_price: '', color: '', engine: '',
+                      transmission: '', market_category: '', description: '',
+                      min_price: '', max_price: '', province: '', city: '', plate: ''
                     })
                     setPreviewImages([])
                     setOcrFile(null)
                     setOcrData(null)
+                    setUploadProgress(0)
+                    setServerMsg(null)
+                    setErrorMsg(null)
                   }}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                 >
@@ -831,7 +807,7 @@ export default function AddCarForm() {
                   onClick={() => setIsSuccess(false)}
                   className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
                 >
-                  العودة للوحة التحكم
+                  إغلاق
                 </motion.button>
               </div>
             </motion.div>
