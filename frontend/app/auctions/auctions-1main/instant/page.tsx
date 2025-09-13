@@ -10,9 +10,10 @@ import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/utils/formatCurrency";
 import Countdown from "@/components/Countdown";
 import Pusher from 'pusher-js';
+import Pagination from "@/components/Pagination";
+
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getAuctionStatus(auction: any): string {
-    console.log(auction);
     switch(auction){
         case "in_auction":
             return "جاري المزايدة";
@@ -38,6 +39,9 @@ export default function InstantAuctionPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+        const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10; // or allow user to change it
     const [expandedRows, setExpandedRows] = useState<{
         [key: number]: boolean;
     }>({});
@@ -68,12 +72,12 @@ export default function InstantAuctionPage() {
                               //check
                 setIsAllowed(await isWithinAllowedTime('instant_auction'));
                 setIsAllowed(true);
-                const response = await api.get("/api/approved-auctions");
+                const response = await api.get(`/api/approved-auctions/live_instant?page=${currentPage}&pageSize=${pageSize}`);
                 if (response.data.data || response.data.data) {
+                    console.log(response);
                     const carsData =response.data.data.data || response.data.data;
-                    const live_instant = carsData.filter((car: any) => car.auction_type === "live_instant");
-                    // تعامل مع هيكل البيانات من API
-                    setCars(live_instant);
+                    setTotalCount(response.data.data.total);
+                    setCars(carsData);
                 }
             } catch (error) {
                 console.error("فشل تحميل بيانات المزاد الصامت", error);
@@ -261,7 +265,7 @@ export default function InstantAuctionPage() {
             pusher.unsubscribe('auction.instant');
             pusher.disconnect();
         };
-    }, []);
+    }, [currentPage]);
 
    
 
@@ -418,6 +422,13 @@ export default function InstantAuctionPage() {
                                 ))}
                             </tbody>
                         </table>
+                                     <Pagination
+        className="pagination-bar"
+        currentPage={currentPage}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={page => setCurrentPage(page)}
+      />
                     </div></>
             )}
  

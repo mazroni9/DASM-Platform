@@ -164,6 +164,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
+    Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
     Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
     Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
     //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
@@ -329,16 +330,3 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
 // Public subscription plans routes
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
-
-//======================== Exhibitor Routes ======================================
-// exhibitor auth routes
-Route::prefix('exhibitor')->group(function () {
-    Route::post('/register', [ExhibitorAuthController::class, 'register']);
-    Route::post('/login', [ExhibitorAuthController::class, 'login']);
-});
-// تحقق من صحة الجلسة
-Route::get('/exhibitor/check-session', function (Request $request) {
-    return response()->json([
-        'authenticated' => $request->user() ? true : false,
-    ]);
-})->middleware('auth:sanctum');

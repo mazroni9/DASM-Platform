@@ -18,7 +18,7 @@ class VenueController extends Controller
     {
         try {
             $venues = Venue::orderBy('name')->get();
-            
+
             return response()->json([
                 'status' => 'success',
                 'data' => $venues
@@ -48,9 +48,9 @@ class VenueController extends Controller
                 'stream_key' => 'nullable|string|max:255',
                 'rtmp_url' => 'nullable|string|max:255',
             ]);
-            
+
             $venue = Venue::create($data);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم إنشاء المعرض بنجاح',
@@ -81,7 +81,7 @@ class VenueController extends Controller
     {
         try {
             $venue = Venue::findOrFail($id);
-            
+
             return response()->json([
                 'status' => 'success',
                 'data' => $venue
@@ -111,7 +111,7 @@ class VenueController extends Controller
     {
         try {
             $venue = Venue::findOrFail($id);
-            
+
             $data = $request->validate([
                 'name' => 'sometimes|string|max:255|unique:venues,name,' . $id,
                 'location' => 'nullable|string|max:255',
@@ -120,9 +120,9 @@ class VenueController extends Controller
                 'rtmp_url' => 'nullable|string|max:255',
                 'is_live' => 'sometimes|boolean',
             ]);
-            
+
             $venue->update($data);
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تحديث المعرض بنجاح',
@@ -158,7 +158,7 @@ class VenueController extends Controller
     {
         try {
             $venue = Venue::findOrFail($id);
-            
+
             // Check if venue has active broadcasts
             if ($venue->broadcasts()->where('is_live', true)->exists()) {
                 return response()->json([
@@ -166,9 +166,9 @@ class VenueController extends Controller
                     'message' => 'لا يمكن حذف المعرض لوجود بث مباشر نشط'
                 ], 400);
             }
-            
+
             $venue->delete();
-            
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم حذف المعرض بنجاح'

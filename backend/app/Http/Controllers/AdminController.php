@@ -68,15 +68,10 @@ class AdminController extends Controller
         $query = Auction::with(['car.dealer.user']);
 
         // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by dealer
-        if ($request->has('dealer_id')) {
-            $query->whereHas('car', function($q) use ($request) {
-                $q->where('dealer_id', $request->dealer_id);
-            });
+        if ($request->has('status') && $request['status'] !=null) {
+            if($request['status'] != 'all'){
+                $query->where('status', $request->status);
+            }
         }
 
         $auctions = $query->orderBy('created_at', 'desc')->paginate(10);
@@ -738,17 +733,17 @@ class AdminController extends Controller
         $query = Car::with(['dealer.user','auctions']);
 
         // Filter by status if provided
-        if ($request->has('status')) {
+        if ($request->has('status')  &&  $request['status'] != null) {
             $query->where('auction_status', $request->status);
         }
 
         // Filter by dealer
-        if ($request->has('dealer_id')) {
+        if ($request->has('dealer_id') &&  $request['dealer_id'] != null) {
             $query->where('dealer_id', $request->dealer_id);
         }
 
         // Search by make/model
-        if ($request->has('search')) {
+        if ($request->has('search') &&  $request['search'] != null) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('make', 'like', "%{$search}%")
@@ -761,7 +756,8 @@ class AdminController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $cars
+            'data' => $cars,
+            
         ]);
     }
 

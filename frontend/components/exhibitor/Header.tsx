@@ -3,17 +3,9 @@
 import { motion } from 'framer-motion';
 import { FiSearch, FiBell, FiLogOut, FiUser, FiHome, FiSettings } from 'react-icons/fi';
 import { Avatar, Badge, Dropdown, Input, Tooltip } from 'antd';
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-// 🔹 نوع البيانات
-interface Exhibitor {
-  id: number;
-  name: string;
-  email: string;
-  showroom_name: string;
-  phone?: string;
-}
+import { useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
 
 // 🔹 عنصر قائمة
 const DropdownItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) => (
@@ -28,10 +20,9 @@ const DropdownItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: 
 
 export function Header() {
   const router = useRouter();
-  const [user, setUser] = useState<Exhibitor | null>(null);
+  const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
 
   const notifications = [
     { id: 1, title: 'طلب جديد', description: 'لديك طلب حجز جديد لسيارة مرسيدس' },
@@ -39,32 +30,6 @@ export function Header() {
     { id: 3, title: 'رسالة جديدة', description: 'لديك رسالة من العميل أحمد محمد' },
   ];
 
-  // 🔹 التأكد أننا في الكلاينت
-  useEffect(() => {
-    setIsClient(true);
-
-    const saved = localStorage.getItem('exhibitor');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch (err) {
-        console.error('فشل قراءة بيانات المستخدم');
-        router.push('/exhibitor/login');
-      }
-    } else {
-      router.push('/exhibitor/login');
-    }
-  }, [router]);
-
-  // 🔹 تسجيل الخروج
-  const handleLogout = () => {
-    localStorage.removeItem('exhibitor');
-    localStorage.removeItem('auth_token');
-    document.cookie = 'exhibitor_logged_in=; path=/; max-age=0';
-    router.push('/exhibitor/login');
-  };
-
-  // 🔹 البحث
   const handleSearch = () => {
     if (searchQuery.trim()) {
       router.push(`/exhibitor/search?q=${encodeURIComponent(searchQuery)}`);
@@ -73,12 +38,12 @@ export function Header() {
     }
   };
 
-  // 🔹 قائمة المستخدم
   const userMenu = (
     <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-64 overflow-hidden">
       <div className="px-5 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
-        <p className="font-bold text-sm truncate">{user?.showroom_name || 'معرض غير معروف'}</p>
-        <p className="text-xs opacity-90">مرحباً، {user?.name?.split(' ')[0] || 'مستخدم'}</p>
+        {/* 👇 لا تغير هذا النص */}
+        <p className="font-bold text-sm truncate">{user?.venue_name || 'معرض السيارات'}</p>
+        <p className="text-xs opacity-90">مرحباً، {user?.first_name || 'زائر'}</p>
       </div>
       <div className="py-2">
         <DropdownItem icon={<FiHome size={16} className="text-indigo-500" />} label="الرئيسية" onClick={() => router.push('/exhibitor')} />
@@ -86,7 +51,7 @@ export function Header() {
         <DropdownItem icon={<FiSettings size={16} className="text-purple-500" />} label="الإعدادات" onClick={() => router.push('/exhibitor/settings')} />
         <div className="border-t border-gray-100 my-1"></div>
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="w-full text-right px-4 py-2.5 text-red-500 hover:bg-red-50 rounded-lg flex items-center gap-3 text-sm font-medium transition-colors"
         >
           <FiLogOut size={16} /> تسجيل الخروج
@@ -121,10 +86,6 @@ export function Header() {
     </div>
   );
 
-  if (!isClient) {
-    return <header className="h-16 bg-white border-b border-gray-200"></header>;
-  }
-
   return (
     <motion.header
       initial={{ y: -50, opacity: 0 }}
@@ -132,7 +93,7 @@ export function Header() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="bg-white/95 backdrop-blur-md border-b border-gray-200/60 shadow-sm px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-50"
     >
-      {/* حقل البحث - يتوسع عند الفتح */}
+      {/* حقل البحث */} 
       <div className="relative flex-1 max-w-xl">
         {isSearchOpen ? (
           <motion.div
@@ -170,7 +131,7 @@ export function Header() {
         )}
       </div>
 
-      {/* الجانب الأيمن - يبقى دائماً مرئياً */}
+      {/* الجانب الأيمن */}
       <div className="flex items-center space-x-3 rtl:space-x-reverse z-0">
         {/* الإشعارات */}
         <Dropdown overlay={notificationMenu} trigger={['click']} placement="bottomLeft">
@@ -195,9 +156,8 @@ export function Header() {
             />
             <div className="hidden md:flex flex-col text-right">
               <p className="font-semibold text-sm text-gray-800 truncate max-w-[120px]">
-                {user?.showroom_name || 'معرضك'}
-              </p>
-              <p className="text-xs text-gray-500">مرحباً، {user?.name?.split(' ')[0] || 'مستخدم'}</p>
+              {user?.venue_name || 'معرض السيارات'}              </p>
+              <p className="text-xs text-gray-500">مرحباً، {user?.first_name || 'زائر'}</p>
             </div>
           </motion.div>
         </Dropdown>
