@@ -19,11 +19,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
 import { UserRole } from "@/types/types";
 import { Textarea } from "@/components/ui/textarea";
+
 
 interface UserProfile {
     id: number;
@@ -99,7 +100,8 @@ export default function ProfilePage() {
     });
 
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
 
     // Verify user is authenticated
     useEffect(() => {

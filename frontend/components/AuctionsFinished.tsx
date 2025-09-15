@@ -2,7 +2,7 @@
 
 import api from "@/lib/axios";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function AuctionFinished() {
@@ -151,7 +151,7 @@ export default function AuctionFinished() {
                       {(auction.status_label)}
                     </td>
                     <td className="p-2 text-sm text-blue-600 underline">
-                      <Link href={`/carDetails/${auction.car_id}`}>عرض</Link>
+                      <LoadingLink href={`/carDetails/${auction.car_id}`}>عرض</LoadingLink>
                     </td>
                   </>
                 )}

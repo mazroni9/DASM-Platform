@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Eye, Users, Clock, LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 import CurrentCar from "./components/CurrentCar";
 import OnlineBids from "./components/OnlineBids";
@@ -11,6 +11,7 @@ import UpcomingCars from "./components/UpcomingCars";
 import AuctionControls from "./components/AuctionControls";
 import LiveStats from "./components/LiveStats";
 import { WebSocketProvider, useWebSocket } from "@/app/lib/websocket-provider";
+
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -31,7 +32,8 @@ export default function AuctioneerPage() {
 }
 
 function AuctioneerDashboard() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const [user, setUser] = useState<User | null>(null);
     const [transcribedText, setTranscribedText] = useState("");
     const [currentTime, setCurrentTime] = useState("");

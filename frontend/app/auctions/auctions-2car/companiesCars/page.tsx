@@ -1,19 +1,19 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronLeft } from 'lucide-react';
 
 export default function CompanyCarsAuctionPage() {
   return (
     <div className="container mx-auto p-4 py-8">
       <div className="mb-6">
-        <Link 
+        <LoadingLink 
           href="/auctions/auctions-2car" 
           className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-4 py-2 rounded-full border border-blue-200 hover:border-blue-300 bg-white hover:bg-blue-50 rtl:flex-row-reverse"
         >
           <ChevronLeft className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
           <span>العودة لقطاع السيارات</span>
-        </Link>
+        </LoadingLink>
       </div>
       
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">

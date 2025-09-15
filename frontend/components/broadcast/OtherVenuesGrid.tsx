@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { Building, ExternalLink, Map } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -60,18 +60,18 @@ export default function OtherVenuesGrid() {
         <div className="mb-12">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">معارض أخرى</h2>
-                <Link
+                <LoadingLink
                     href="/broadcasts"
                     className="text-blue-600 hover:text-blue-800 flex items-center"
                 >
                     <span className="ml-1">عرض جميع المعارض</span>
                     <ExternalLink className="h-4 w-4" />
-                </Link>
+                </LoadingLink>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {venues.map((venue) => (
-                    <Link
+                    <LoadingLink
                         key={venue.id}
                         href={`/broadcasts/${venue.id}`}
                         className="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
@@ -132,7 +132,7 @@ export default function OtherVenuesGrid() {
                                 </div>
                             )}
                         </div>
-                    </Link>
+                    </LoadingLink>
                 ))}
             </div>
         </div>

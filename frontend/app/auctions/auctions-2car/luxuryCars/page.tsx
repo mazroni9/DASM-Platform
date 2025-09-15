@@ -17,7 +17,7 @@
 import React, { useEffect, useState } from "react";
 // استيراد مكون AuctionCard من المسار الصحيح
 import AuctionCard from "@/components/AuctionCard";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import api from "@/lib/axios";
 import { ChevronRight } from "lucide-react";
 import Pagination from "@mui/material/Pagination";

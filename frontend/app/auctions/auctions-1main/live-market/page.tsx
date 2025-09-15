@@ -12,7 +12,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
   ChevronRight,
   Clock,
@@ -32,11 +32,11 @@ import BidderChat from "@/components/social/BidderChat";
 import LiveAuctionPulse from "@/components/social/LiveAuctionPulse";
 import LiveYouTubeEmbed from "@/components/LiveYouTubeEmbed";
 
-import api from "@/lib/axios";
-import toast from "react-hot-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
-import Countdown from "@/components/Countdown";
+import api from '@/lib/axios';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import Countdown from '@/components/Countdown';
 import Pusher from 'pusher-js';
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
@@ -65,7 +65,8 @@ export default function LiveMarketPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isLoggedIn } = useAuth();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [marketCars, setMarketCars] = useState([]);
   const [currentCar, setCurrentCar] = useState(null);
   const [marketCarsCompleted, setMarketCarsCompleted] = useState([]);
@@ -305,13 +306,13 @@ export default function LiveMarketPage() {
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <BidNotifications />
           </div>
-          <Link
+          <LoadingLink 
             href="/auctions/auctions-1main"
             className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 	        hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
           >
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
             <span>العودة</span>
-          </Link>
+          </LoadingLink>
         </div>
 
         {/* رأس الصفحة: السوق الصامت - الحراج المباشر - وقت السوق */}
@@ -464,13 +465,13 @@ export default function LiveMarketPage() {
                                 {formatCurrency(car.current_bid)}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
-                                <Link
+                                <LoadingLink
                                   target="_blank"
                                   href={`/carDetails/${car.id}`}
                                   className="hover:underline"
                                 >
                                   عرض
-                                </Link>
+                                </LoadingLink>
                               </td>
                             </tr>
                           ))
@@ -553,13 +554,13 @@ export default function LiveMarketPage() {
                                 {formatCurrency(car.current_bid)}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
-                                <Link
+                                <LoadingLink
                                   target="_blank"
                                   href="#"
                                   className="hover:underline"
                                 >
                                   عرض
-                                </Link>
+                                </LoadingLink>
                               </td>
                             </tr>
                           ))

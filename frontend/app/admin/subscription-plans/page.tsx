@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { subscriptionPlanService } from "@/services/subscription-plan-service";
@@ -8,7 +8,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { Eye, Loader2, Pencil, RefreshCw, Search, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 
 export default function Page() {
-  const r = useRouter();
+  const r = useLoadingRouter();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

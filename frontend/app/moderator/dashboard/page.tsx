@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import LoadingLink from "@/components/LoadingLink";
 import { useAuth } from "@/hooks/useAuth";
 import ModeratorBroadcastManagement from "@/components/moderator/BroadcastManagement";
 import { FileText, Car, BarChart3 } from "lucide-react";
 
 export default function ModeratorDashboardPage() {
     const { isModerator, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
 
     // Simplified auth check - let ProtectedRoute handle the main logic
     useEffect(() => {
@@ -38,7 +39,7 @@ export default function ModeratorDashboardPage() {
 
                     {/* Quick Navigation */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                        <Link
+                        <LoadingLink
                             href="/moderator/auctions"
                             className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 hover:border-blue-300"
                         >
@@ -55,9 +56,9 @@ export default function ModeratorDashboardPage() {
                                     </p>
                                 </div>
                             </div>
-                        </Link>
+                        </LoadingLink>
 
-                        <Link
+                        <LoadingLink
                             href="/moderator/cars"
                             className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 hover:border-green-300"
                         >
@@ -74,7 +75,7 @@ export default function ModeratorDashboardPage() {
                                     </p>
                                 </div>
                             </div>
-                        </Link>
+                        </LoadingLink>
 
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <div className="flex items-center space-x-3 rtl:space-x-reverse">

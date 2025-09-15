@@ -22,7 +22,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Upload, Info, HelpCircle } from 'lucide-react';
 
 export default function GeneralAuctionRequestPage() {
@@ -178,13 +178,13 @@ export default function GeneralAuctionRequestPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-5general" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى الأسواق العامة</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">طلب مزاد عام</h1>
           <p className="text-white/80 mt-2">
             قم بتسجيل منتجك للبيع من خلال منصتنا واستفد من سوق واسع من المشترين المهتمين
@@ -478,7 +478,7 @@ export default function GeneralAuctionRequestPage() {
               className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 mt-1"
             />
             <label htmlFor="terms" className="mr-2 text-gray-700">
-              أوافق على <Link href="/terms" className="text-blue-600 hover:underline">شروط وأحكام</Link> المنصة وأتعهد بصحة المعلومات المدخلة وملكيتي للمنتج.
+              أوافق على <LoadingLink href="/terms" className="text-blue-600 hover:underline">شروط وأحكام</LoadingLink> المنصة وأتعهد بصحة المعلومات المدخلة وملكيتي للمنتج.
             </label>
           </div>
 
@@ -491,12 +491,12 @@ export default function GeneralAuctionRequestPage() {
             >
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-5general"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء
-            </Link>
+            </LoadingLink>
           </div>
         </form>
 

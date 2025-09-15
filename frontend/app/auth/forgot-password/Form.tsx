@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import axios from 'axios';
 
 interface ForgotPasswordResponse {
@@ -89,9 +89,9 @@ export default function ForgotPasswordForm() {
         </Button>
 
         <div className="text-center text-sm">
-          <Link href="/auth/login" className="text-primary hover:underline">
+          <LoadingLink href="/auth/login" className="text-primary hover:underline">
             العودة إلى تسجيل الدخول
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { RefreshCw, Store, Archive, Clock, LogOut } from "lucide-react";
@@ -10,14 +10,15 @@ import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 const Navbar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isRestarting, setIsRestarting] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const pathname = usePathname();
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const { user, logout } = useAuth();
 
     const isAdmin = user?.role === "admin";
@@ -71,7 +72,7 @@ const Navbar = () => {
                 <div className="flex justify-between items-center">
                     {/* Logo */}
                     <div className="flex items-center">
-                        <Link href="/" className="flex items-center gap-4">
+                        <LoadingLink href="/" className="flex items-center gap-4">
                             <Image
                                 src="/logo.jpg"
                                 alt="منصة داسم DASM - Digital Auctions Sectors Market"
@@ -83,7 +84,7 @@ const Navbar = () => {
                                 سوق المزادات الرقمية{" "}
                                 <span className="text-blue-700">DASM</span>
                             </span>
-                        </Link>
+                        </LoadingLink>
                     </div>
 
                     {/* Main Navigation */}
@@ -91,7 +92,7 @@ const Navbar = () => {
                         className="hidden md:flex items-center gap-6 flex-row-reverse"
                         dir="rtl"
                     >
-                        <Link
+                        <LoadingLink
                             href="/auctions"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
                                 isActive("/auctions")
@@ -101,8 +102,8 @@ const Navbar = () => {
                         >
                             <Store size={18} />
                             قطاع الأسواق المتعددة
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             href="/broadcasts"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
                                 isActive("/broadcasts")
@@ -112,8 +113,8 @@ const Navbar = () => {
                         >
                             <Clock size={18} />
                             البث المباشر
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             href="/auction-archive"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${
                                 isActive("/auction-archive")
@@ -123,7 +124,7 @@ const Navbar = () => {
                         >
                             <Archive size={18} />
                             أرشيف المزادات
-                        </Link>
+                        </LoadingLink>
                     </div>
 
                     {/* Auth Buttons */}
@@ -150,14 +151,14 @@ const Navbar = () => {
                                 <UserMenu />
                             </>
                         ) : (
-                            <Link href="/auth/login">
+                            <LoadingLink href="/auth/login">
                                 <Button
                                     variant="outline"
                                     className="text-sky-800 border-sky-800 hover:bg-sky-800 hover:text-sky-100"
                                 >
                                     تسجيل الدخول
                                 </Button>
-                            </Link>
+                            </LoadingLink>
                         )}
                     </div>
                 </div>

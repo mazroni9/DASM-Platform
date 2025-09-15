@@ -16,11 +16,12 @@
 // المسار: /pages/silent/page.tsx
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
@@ -50,7 +51,8 @@ export default function CarDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const params = useParams<{ tag: string; item: string }>();
     let carId = params["id"];
     const [isOwner, setIsOwner] = useState(false);
@@ -168,13 +170,13 @@ export default function CarDetailPage() {
             <div className="max-w-6xl mx-auto">
                 {/* زر العودة */}
                 <div className="flex justify-between items-center mb-6">
-                    <Link
+                    <LoadingLink
                         href="/auctions"
                         className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
                     >
                         <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
                         <span>العودة إلى المزادات</span>
-                    </Link>
+                    </LoadingLink>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">

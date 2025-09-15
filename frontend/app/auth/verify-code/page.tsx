@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
+import LoadingLink from "@/components/LoadingLink";
 
 export default function VerifyCodePage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -154,12 +156,12 @@ export default function VerifyCodePage() {
               }
             </button>
 
-            <Link
+            <LoadingLink
               href="/auth/login"
               className="block mt-4 text-black font-medium hover:underline"
             >
               العودة إلى تسجيل الدخول
-            </Link>
+            </LoadingLink>
           </div>
         </form>
       </div>
