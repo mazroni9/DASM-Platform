@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, Clock, Video, ExternalLink, MapPin, Info, Users } from 'lucide-react';
 import BidTimer from '@/components/BidTimer';
 import LiveBidding from '@/components/LiveBidding';
@@ -431,13 +431,13 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-6">
           <h1 className="text-2xl font-bold text-red-600 mb-4">خطأ</h1>
           <p className="text-gray-700 mb-4">{error || 'لم يتم العثور على المعرض المطلوب'}</p>
-          <Link 
+          <LoadingLink 
             href="/broadcasts" 
             className="inline-flex items-center text-blue-600 hover:text-blue-700"
           >
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
             <span>العودة إلى صفحة البث</span>
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     );
@@ -449,13 +449,13 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
         {/* زر العودة منفرد في الجهة اليمنى والمشاهدين في منطقة متميزة */}
         <div className="flex justify-between items-center mb-4">
           <div></div> {/* عنصر فارغ للمحافظة على محاذاة العناصر */}
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-1main" 
             className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
           >
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
             <span>العودة</span>
-          </Link>
+          </LoadingLink>
         </div>
         
         {/* إضافة قسم المشاهدين كعنصر منفصل في الأعلى مع عرض العدد الحقيقي */}
@@ -477,13 +477,13 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
               </div>
             </div>
             <div className="mt-4 md:mt-0">
-              <Link 
+              <LoadingLink 
                 href="/broadcasts"
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 <span className="text-sm">العودة إلى صفحة بث المعارض</span>
                 <ExternalLink className="h-4 w-4 mr-1" />
-              </Link>
+              </LoadingLink>
             </div>
           </div>
           
@@ -526,12 +526,12 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
                       </div>
                       
                       {/* زر تقديم العرض */}
-                      <Link 
+                      <LoadingLink 
                         href={venue.detailsUrl}
                         className="block w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-4 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 transition-all duration-200 text-center"
                       >
                         قدم عرضك
-                      </Link>
+                      </LoadingLink>
                     </div>
                   </div>
                 </div>
@@ -646,7 +646,7 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
               .filter(v => v.id !== venue.id)
               .slice(0, 4)
               .map(v => (
-                <Link 
+                <LoadingLink 
                   key={v.id}
                   href={`/broadcasts/${v.id}`}
                   className="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -658,7 +658,7 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
                     <h3 className="font-medium text-sm">{v.name}</h3>
                     <p className="text-xs text-gray-500 truncate">{v.location}</p>
                   </div>
-                </Link>
+                </LoadingLink>
               ))
             }
           </div>

@@ -22,7 +22,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, Upload, Info, HelpCircle, X } from 'lucide-react';
 
 export default function ElectronicsAuctionRequestPage() {
@@ -191,13 +191,13 @@ export default function ElectronicsAuctionRequestPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 py-6 rounded-t-lg">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-5general/electronics" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى سوق الأجهزة الإلكترونية</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">تسجيل جهاز إلكتروني للمزاد</h1>
           <p className="text-white/80 mt-2">
             سجل جهازك الإلكتروني في منصتنا وانضم إلى سوق الأجهزة المستعملة بكل سهولة وأمان
@@ -469,7 +469,7 @@ export default function ElectronicsAuctionRequestPage() {
               className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 mt-1"
             />
             <label htmlFor="terms" className="mr-2 text-gray-700">
-              أوافق على <Link href="/terms" className="text-blue-600 hover:underline">شروط وأحكام</Link> المنصة وأتعهد بصحة المعلومات المدخلة وملكيتي للجهاز.
+              أوافق على <LoadingLink href="/terms" className="text-blue-600 hover:underline">شروط وأحكام</LoadingLink> المنصة وأتعهد بصحة المعلومات المدخلة وملكيتي للجهاز.
             </label>
           </div>
 
@@ -482,12 +482,12 @@ export default function ElectronicsAuctionRequestPage() {
             >
               {isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
             </button>
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-5general/electronics"
               className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
             >
               إلغاء
-            </Link>
+            </LoadingLink>
           </div>
         </form>
 

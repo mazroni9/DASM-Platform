@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight, Leaf, Recycle, Flower, Sun, Wind, Droplets } from 'lucide-react';
 import Image from 'next/image';
 
@@ -95,13 +95,13 @@ export default function GreenMarketPage() {
   return (
     <div className="container mx-auto p-4 py-8">
       <div className="mb-6 flex justify-between items-center">
-        <Link 
+        <LoadingLink 
           href="/auctions/auctions-5general" 
           className="inline-flex items-center text-green-600 hover:text-green-700 transition-colors px-4 py-2 rounded-full border border-green-200 hover:border-green-300 bg-green-50 hover:bg-green-100 rtl:flex-row-reverse"
         >
           <ChevronRight className="h-4 w-4 ltr:mr-1 rtl:ml-1 rtl:rotate-180" />
           <span>العودة</span>
-        </Link>
+        </LoadingLink>
         
         <h1 className="text-3xl font-bold text-center text-green-700">سوق المنتجات الخضراء</h1>
         
@@ -164,12 +164,12 @@ export default function GreenMarketPage() {
         {!isLoading && !error && featuredProducts.length === 0 && (
           <div className="bg-gray-50 p-8 rounded-lg text-center">
             <p className="text-gray-500">لا توجد منتجات متاحة حالياً. يرجى التحقق لاحقاً.</p>
-            <Link 
+            <LoadingLink 
               href="/forms/green-auction-request" 
               className="mt-4 inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
             >
               إضافة أول منتج أخضر
-            </Link>
+            </LoadingLink>
           </div>
         )}
         
@@ -214,12 +214,12 @@ export default function GreenMarketPage() {
                         الحالة: {product.condition || "مستعمل"}
                       </span>
                     </div>
-                    <Link 
+                    <LoadingLink 
                       href={`/auctions/auctions-5general/green/${product.id}`}
                       className="mt-4 w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors block text-center"
                     >
                       عرض التفاصيل
-                    </Link>
+                    </LoadingLink>
                   </div>
                 </div>
               );
@@ -228,12 +228,12 @@ export default function GreenMarketPage() {
         )}
         
         <div className="mt-6 text-center">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-5general/green/all"
             className="px-6 py-2 border border-green-600 text-green-600 hover:bg-green-50 rounded-lg transition inline-block"
           >
             عرض المزيد من المنتجات الخضراء
-          </Link>
+          </LoadingLink>
         </div>
       </div>
       
@@ -255,12 +255,12 @@ export default function GreenMarketPage() {
             يمكنك المساهمة في نشر ثقافة الاستدامة من خلال بيع منتجاتك الخضراء ووصولها لمن يبحث عن أسلوب حياة صديق للبيئة.
           </p>
           <div className="flex justify-center">
-            <Link
+            <LoadingLink
               href="/forms/green-auction-request"
               className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition"
             >
               بيع منتجاتك الخضراء
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>

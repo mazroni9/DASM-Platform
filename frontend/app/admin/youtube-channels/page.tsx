@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 
 const MAIN_CHANNEL_ID = 'UCxiLyu5z-T0FanDNotwTJcg';
 
@@ -100,12 +100,12 @@ export default function YoutubeChannelManagementPage() {
         </div>
         
         <div className="mt-8">
-          <Link
+          <LoadingLink
             href="/"
             className="text-blue-600 hover:text-blue-800"
           >
             العودة إلى الصفحة الرئيسية
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </div>
