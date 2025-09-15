@@ -499,7 +499,7 @@ const res = await fetch('/api/cars', {
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-700 mb-2">السعر المقيّم *</label>
+                  <label className="block text-gray-700 mb-2"> سعر السيارة*</label>
                   <input
                     type="number"
                     name="evaluation_price"
@@ -575,7 +575,7 @@ const res = await fetch('/api/cars', {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 mb-2">الحد الأدنى *</label>
+                  <label className="block text-gray-700 mb-2">الحد الأدنى للسعر*</label>
                   <input
                     type="number"
                     name="min_price"
@@ -587,7 +587,7 @@ const res = await fetch('/api/cars', {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 mb-2">الحد الأعلى *</label>
+                  <label className="block text-gray-700 mb-2">الحد الأعلى للسعر*</label>
                   <input
                     type="number"
                     name="max_price"
