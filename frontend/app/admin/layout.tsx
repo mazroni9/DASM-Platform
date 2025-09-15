@@ -19,7 +19,8 @@ import {
     Loader,
     Home,
     HandCoins,
-    CreditCard
+    CreditCard,
+    Shield
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -42,6 +43,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "الرئيسية", href: "/", icon: Home },
         { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
         { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
+        { name: "إدارة المشرفين", href: "/admin/moderators", icon: Shield },
         { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
         { name: "خطط الاشتراك", href: "/admin/subscription-plans", icon: CreditCard },
         { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
