@@ -228,6 +228,21 @@ export default function LiveMarketPage() {
       toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
     });
 
+    // Listen for live market bid events (excludes the bidder)
+    channel.bind('LiveMarketBidEvent', (data: any) => {
+      // Only show notification if the current user is not the bidder
+      if (user && data.bidder_id !== user.id) {
+        toast.success(`مزايدة جديدة: ${data.car_make} ${data.car_model} - ${data.bid_amount.toLocaleString()} ريال`, {
+          duration: 5000,
+          position: 'top-right',
+        });
+        // Refresh auction data to show updated bid
+        fetchAuctions();
+      }
+    });
+
+    // Note: Only listening on auction.live channel to avoid duplicate notifications
+
     // Cleanup function
     return () => {
       pusher.unsubscribe('auction.live');
