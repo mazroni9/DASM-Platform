@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'dealer' => \App\Http\Middleware\DealerMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'moderator' => \App\Http\Middleware\ModeratorMiddleware::class,
+            'bid.rate.limit' => \App\Http\Middleware\BidRateLimitMiddleware::class,
              HandleInertiaRequests::class,
 
         ]);

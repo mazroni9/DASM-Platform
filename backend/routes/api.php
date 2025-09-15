@@ -176,13 +176,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Bid routes for all users
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
-    Route::post('/auctions/{auction}/bids', [BidController::class, 'store']);
+    Route::post('/auctions/{auction}/bids', [BidController::class, 'store'])->middleware('bid.rate.limit');
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
 
     // New standardized bid API for the unified frontend
-    Route::post('/auctions/bid', [BidController::class, 'placeBid']);
+    Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids']);
 
     // Auto-bid routes
