@@ -512,17 +512,22 @@ class AuctionController extends Controller
                     event(new CarMovedBetweenAuctionsEvent($auction, $request->status, $car));
                 } else {
 
+                    // Ensure we have all required fields with proper fallbacks
+                    $startingBid = $car->starting_bid ?? 0;
+                    $startTime = Carbon::now();
+                    $endTime = $car->start_time ? Carbon::parse($car->start_time)->addMinutes(60) : Carbon::now()->addMinutes(60);
+
                     $newData = [
                         'car_id' => $car->id,
-                        'starting_bid' => $car->starting_bid ?? 0,
-                        'current_bid' => $car->starting_bid ?? 0,
+                        'starting_bid' => $startingBid,
+                        'current_bid' => $startingBid,
                         'reserve_price' => $car->reserve_price ?? 0,
                         'min_price' => $car->min_price ?? 0,
                         'max_price' => $car->max_price ?? 0,
-                        'start_time' => Carbon::now(),
-                        'end_time' => Carbon::parse($car->start_time)->addMinutes(60),
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
                     ];
-                    $data = array_merge($data,$newData);
+                    $data = array_merge($newData, $data);
                     $auction = Auction::create($data);
                     $tracking->push($auction);
 

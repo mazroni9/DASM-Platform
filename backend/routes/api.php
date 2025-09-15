@@ -20,6 +20,7 @@ use App\Http\Controllers\WalletController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\SettlementController;
@@ -263,6 +264,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
     Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
     Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
+
+    // Admin moderator management
+    Route::get('/admin/moderators', [AdminModeratorController::class, 'index']);
+    Route::post('/admin/moderators', [AdminModeratorController::class, 'store']);
+    Route::get('/admin/moderators/{id}', [AdminModeratorController::class, 'show']);
+    Route::put('/admin/moderators/{id}', [AdminModeratorController::class, 'update']);
+    Route::delete('/admin/moderators/{id}', [AdminModeratorController::class, 'destroy']);
+    Route::patch('/admin/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus']);
 
     // Admin auction management
     Route::get('/admin/auctions', [AdminController::class, 'auctions']);
