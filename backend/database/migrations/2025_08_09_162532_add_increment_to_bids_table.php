@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bids', function (Blueprint $table) {
-            // Add the description column
-            $table->decimal('increment', 12, 2)->default(0);
-        });
+        // أضِف العمود فقط لو مش موجود
+        if (! Schema::hasColumn('bids', 'increment')) {
+            Schema::table('bids', function (Blueprint $table) {
+                // default(0) رقمية + NOT NULL
+                $table->decimal('increment', 12, 2)->default(0)->nullable(false);
+            });
+        }
     }
 
     /**
@@ -22,9 +25,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bids', function (Blueprint $table) {
-            // Remove the description column if migration is rolled back
-            $table->dropColumn('increment');
-        });
+        // احذف العمود فقط لو موجود
+        if (Schema::hasColumn('bids', 'increment')) {
+            Schema::table('bids', function (Blueprint $table) {
+                $table->dropColumn('increment');
+            });
+        }
     }
 };

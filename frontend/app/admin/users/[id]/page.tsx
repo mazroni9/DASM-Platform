@@ -76,8 +76,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 }
                 if (user.role == "dealer") {
                     //check rating if it is null or assign default value
-                    let rating = response.data.data.dealer.rating || 4.5;
-                    response.data.data.dealer.rating = rating;
+                    let rating = response.data.data.dealer?.rating || 4.5;
+                    response.data.data.dealer = {rating:rating};
+                    
+                    
                 }
                 setUser(response.data.data.user);
             }

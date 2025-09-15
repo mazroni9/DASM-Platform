@@ -20,6 +20,7 @@ use App\Http\Controllers\WalletController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\SettlementController;
@@ -164,6 +165,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
+    Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+    Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
     Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
     //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
@@ -262,6 +265,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
     Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
 
+    // Admin moderator management
+    Route::get('/admin/moderators', [AdminModeratorController::class, 'index']);
+    Route::post('/admin/moderators', [AdminModeratorController::class, 'store']);
+    Route::get('/admin/moderators/{id}', [AdminModeratorController::class, 'show']);
+    Route::put('/admin/moderators/{id}', [AdminModeratorController::class, 'update']);
+    Route::delete('/admin/moderators/{id}', [AdminModeratorController::class, 'destroy']);
+    Route::patch('/admin/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus']);
+
     // Admin auction management
     Route::get('/admin/auctions', [AdminController::class, 'auctions']);
     Route::get('/admin/auctions/{id}', [AdminController::class, 'getAuction']);
@@ -328,16 +339,3 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
 // Public subscription plans routes
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
-
-//======================== Exhibitor Routes ======================================
-// exhibitor auth routes
-Route::prefix('exhibitor')->group(function () {
-    Route::post('/register', [ExhibitorAuthController::class, 'register']);
-    Route::post('/login', [ExhibitorAuthController::class, 'login']);
-});
-// تحقق من صحة الجلسة
-Route::get('/exhibitor/check-session', function (Request $request) {
-    return response()->json([
-        'authenticated' => $request->user() ? true : false,
-    ]);
-})->middleware('auth:sanctum');

@@ -12,12 +12,12 @@ class VenueOwner extends Model
     protected $fillable = [
         'user_id',
         'venue_name',
-        'cr_number',
-        'vat_number',
+        'commercial_registry',
         'description',
         'status',
         'is_active',
         'rating',
+        'address',
     ];
 
     protected $casts = [

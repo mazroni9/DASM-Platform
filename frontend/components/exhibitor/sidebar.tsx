@@ -20,11 +20,11 @@ import {
 import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import { Avatar } from 'antd';
-import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { useState } from 'react';
+import { useEffect } from 'react';
 
-
-// 🔹 نوع البيانات
 interface Exhibitor {
   id: number;
   name: string;
@@ -33,7 +33,7 @@ interface Exhibitor {
   phone?: string;
 }
 
-// 🔹 عناصر القائمة (مُعرفة خارجياً لتنظيم الكود)
+// 🔹 عناصر القائمة
 const navItems = [
   { href: '/exhibitor', icon: FiHome, label: 'الرئيسية' },
   { href: '/exhibitor/add-car', icon: FiPlusSquare, label: 'إضافة سيارة' },
@@ -54,9 +54,9 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [exhibitor, setExhibitor] = useState<Exhibitor | null>(null);
+  const {user, logout } = useAuthStore();
   const router = useLoadingRouter();
-  
-  const [user, setUser] = useState<Exhibitor | null>(null);
   const [isClient, setIsClient] = useState(false); // 🔥 لحل مشكلة الهيدرات
 
   // 🔹 التأكد من أننا في الكلاينت قبل استخدام localStorage
@@ -66,7 +66,7 @@ export function Sidebar() {
     const saved = localStorage.getItem('exhibitor');
     if (saved) {
       try {
-        setUser(JSON.parse(saved));
+        setExhibitor(JSON.parse(saved));
       } catch (err) {
         console.error('فشل قراءة بيانات المستخدم');
         router.push('/exhibitor/login');
@@ -108,10 +108,13 @@ export function Sidebar() {
           className="border-2 border-white shadow-lg transition-transform hover:scale-105"
         />
         <div className="text-left">
+          {/* 👇 ثابتة زي ما طلبت */}
           <h2 className="font-bold text-sm md:text-base text-white truncate max-w-[150px]">
-            {user?.showroom_name || 'معرضك'}
+           {user?.venue_name || 'معرض السيارات'}
           </h2>
-          <p className="text-xs text-indigo-200">مرحباً، {user?.name?.split(' ')[0] || 'مستخدم'}</p>
+          <p className="text-xs text-indigo-200">
+            مرحباً، {user?.first_name || 'زائر'}
+          </p>
         </div>
       </div>
 
@@ -136,11 +139,7 @@ export function Sidebar() {
                       }
                     `}
                   >
-                    <span
-                      className={`${
-                        isActive ? 'text-indigo-600' : 'text-indigo-200 group-hover:text-white'
-                      }`}
-                    >
+                    <span className={isActive ? 'text-indigo-600' : 'text-indigo-200 group-hover:text-white'}>
                       <Icon size={18} />
                     </span>
                     <span className="font-medium text-sm">{item.label}</span>
@@ -155,7 +154,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-indigo-800/50">
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="w-full flex items-center space-x-3 rtl:space-x-reverse p-3 rounded-xl text-red-100 hover:bg-red-600 hover:bg-opacity-30 transition-all duration-200 group"
         >
           <FiLogOut size={18} className="text-red-200 group-hover:text-red-50" />
@@ -163,7 +162,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* شريط التمرير الأنيق */}
+      {/* Scrollbar styles */}
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;

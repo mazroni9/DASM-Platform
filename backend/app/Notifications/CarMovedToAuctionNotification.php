@@ -10,14 +10,14 @@ use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 
-class HigherBidNotification extends Notification
+class CarMovedToAuctionNotification extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(public $auction)
+    public function __construct(public $car, public $auction, public $auctionType)
     {
         //
     }
@@ -32,17 +32,31 @@ class HigherBidNotification extends Notification
         return [FcmChannel::class, 'database'];
     }
 
+    /**
+     * Get the FCM representation of the notification.
+     */
     public function toFcm($notifiable): FcmMessage
     {
+        $auctionTypeLabels = [
+            'active' => 'المزاد النشط',
+            'instant' => 'المزاد الفوري',
+            'late' => 'المزاد المتأخر',
+            'live' => 'المزاد المباشر',
+            'pending' => 'في الانتظار'
+        ];
+
+        $auctionLabel = $auctionTypeLabels[$this->auctionType] ?? 'مزاد جديد';
+
         return (new FcmMessage(notification: new FcmNotification(
-            title: 'مزايدة جديدة!',
-            body: 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
+            title: 'تم نقل سيارتك إلى مزاد جديد!',
+            body: 'تم نقل سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') إلى ' . $auctionLabel . '. يمكنك متابعة حالة المزاد الآن.',
             image: asset('assets/images/logo.jpg')
         )))
             ->data([
-                'car_id' => (string) $this->auction->car_id,
-                'auction_id' => (string)$this->auction->id,
-                'type' => 'new_bid',
+                'car_id' => (string) $this->car->id,
+                'auction_id' => (string) $this->auction->id,
+                'auction_type' => $this->auctionType,
+                'type' => 'car_moved_to_auction',
             ])
             ->custom([
                 "webpush" => [
@@ -50,7 +64,7 @@ class HigherBidNotification extends Notification
                         "Urgency" => "high"
                     ],
                     'fcm_options' => [
-                        "link" => "/carDetails/" . $this->auction->car_id,
+                        "link" => "/carDetails/" . $this->car->id,
                     ]
                 ],
                 'android' => [
@@ -82,20 +96,30 @@ class HigherBidNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $auctionTypeLabels = [
+            'active' => 'المزاد النشط',
+            'instant' => 'المزاد الفوري',
+            'late' => 'المزاد المتأخر',
+            'live' => 'المزاد المباشر',
+            'pending' => 'في الانتظار'
+        ];
+
+        $auctionLabel = $auctionTypeLabels[$this->auctionType] ?? 'مزاد جديد';
+
         return [
-            'title' => 'مزايدة جديدة',
-            'body' => 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
+            'title' => 'تم نقل سيارتك إلى مزاد جديد',
+            'body' => 'تم نقل سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') إلى ' . $auctionLabel . '. يمكنك متابعة حالة المزاد الآن.',
             'data' => [
-                'car_id' => $this->auction->car_id,
+                'car_id' => $this->car->id,
                 'auction_id' => $this->auction->id,
-                'type' => 'new_bid',
-                'bid_amount' => $this->auction->current_bid,
+                'auction_type' => $this->auctionType,
+                'type' => 'car_moved_to_auction',
             ],
             'action' => [
                 'type' => 'VIEW_CAR_DETAILS',
                 'route_name' => '/carDetails/[car_id]',
                 'route_params' => [
-                    'car_id' => $this->auction->car_id
+                    'car_id' => $this->car->id
                 ]
             ]
         ];

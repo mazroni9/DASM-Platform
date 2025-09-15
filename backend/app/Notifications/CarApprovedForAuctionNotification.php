@@ -10,14 +10,14 @@ use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 
-class HigherBidNotification extends Notification
+class CarApprovedForAuctionNotification extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(public $auction)
+    public function __construct(public $car, public $auction = null)
     {
         //
     }
@@ -32,17 +32,20 @@ class HigherBidNotification extends Notification
         return [FcmChannel::class, 'database'];
     }
 
+    /**
+     * Get the FCM representation of the notification.
+     */
     public function toFcm($notifiable): FcmMessage
     {
         return (new FcmMessage(notification: new FcmNotification(
-            title: 'مزايدة جديدة!',
-            body: 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
+            title: 'تم الموافقة على سيارتك للمزاد!',
+            body: 'تم الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد. يمكنك الآن متابعة حالة المزاد.',
             image: asset('assets/images/logo.jpg')
         )))
             ->data([
-                'car_id' => (string) $this->auction->car_id,
-                'auction_id' => (string)$this->auction->id,
-                'type' => 'new_bid',
+                'car_id' => (string) $this->car->id,
+                'auction_id' => $this->auction ? (string) $this->auction->id : null,
+                'type' => 'car_approved_for_auction',
             ])
             ->custom([
                 "webpush" => [
@@ -50,7 +53,7 @@ class HigherBidNotification extends Notification
                         "Urgency" => "high"
                     ],
                     'fcm_options' => [
-                        "link" => "/carDetails/" . $this->auction->car_id,
+                        "link" => "/carDetails/" . $this->car->id,
                     ]
                 ],
                 'android' => [
@@ -83,19 +86,18 @@ class HigherBidNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'title' => 'مزايدة جديدة',
-            'body' => 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
+            'title' => 'تم الموافقة على سيارتك للمزاد',
+            'body' => 'تم الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد. يمكنك الآن متابعة حالة المزاد.',
             'data' => [
-                'car_id' => $this->auction->car_id,
-                'auction_id' => $this->auction->id,
-                'type' => 'new_bid',
-                'bid_amount' => $this->auction->current_bid,
+                'car_id' => $this->car->id,
+                'auction_id' => $this->auction ? $this->auction->id : null,
+                'type' => 'car_approved_for_auction',
             ],
             'action' => [
                 'type' => 'VIEW_CAR_DETAILS',
                 'route_name' => '/carDetails/[car_id]',
                 'route_params' => [
-                    'car_id' => $this->auction->car_id
+                    'car_id' => $this->car->id
                 ]
             ]
         ];

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Auction;
 use App\Events\NewBidEvent;
+use App\Events\LiveMarketBidEvent;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use App\Models\CommissionTier;
@@ -368,6 +369,7 @@ class BidController extends Controller
             ]);
 
             $auction = Auction::select('id','car_id','current_bid','minimum_bid','maximum_bid','last_bid_time','status','start_time','end_time','starting_bid','auction_type','reserve_price','opening_price')
+            ->with(['car'])
             ->withCount('bids')
             ->with('car:id,dealer_id,user_id')
             ->find($data['auction_id']);
@@ -505,6 +507,9 @@ class BidController extends Controller
 
             broadcast(new NewBidEvent($auction));
 
+            // Broadcast live market bid event for notifications (excludes the bidder)
+            broadcast(new LiveMarketBidEvent($user->id, $auction, $data['bid_amount'], $auction->car));
+
             $owner = $auction->car->owner;
             $owner = User::find($owner->id);
 
@@ -535,8 +540,6 @@ class BidController extends Controller
             ]);
 
             Notification::sendNow($users, new HigherBidNotification($auction));
-
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',

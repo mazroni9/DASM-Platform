@@ -13,6 +13,10 @@ import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Countdown from '@/components/Countdown';
+import Pusher from 'pusher-js';
+import toast from 'react-hot-toast';
+import Pagination from "@/components/Pagination";
+
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
     const response = await api.get(`api/check-time?page=${page}`);
@@ -45,6 +49,9 @@ export default function SilentAuctionPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
+          const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10; // or allow user to change it
   const { user, isLoggedIn } = useAuth();
   const router = useLoadingRouter();
   
@@ -77,14 +84,13 @@ export default function SilentAuctionPage() {
            if (!isLoggedIn) return;
           try {
          setIsAllowed(await isWithinAllowedTime('late_auction'));
-         //setIsAllowed(false);
-              const response = await api.get('/api/approved-auctions');
-              if (response.data.data || response.data.data) {                  
-                 const carsData =response.data.data.data || response.data.data;
-                 const silent_instant = carsData.filter((car: any) => car.auction_type === "silent_instant");
-                    // تعامل مع هيكل البيانات من API
-                    setCars(silent_instant);
-              }
+         setIsAllowed(true);
+                const response = await api.get(`/api/approved-auctions/silent_instant?page=${currentPage}&pageSize=${pageSize}`);
+                if (response.data.data || response.data.data) {
+                    const carsData =response.data.data.data || response.data.data;
+                    setTotalCount(response.data.data.total);
+                    setCars(carsData);
+                }
                   
           } catch (error) {
                console.error('فشل تحميل بيانات المزاد المتأخر', error);
@@ -96,7 +102,44 @@ export default function SilentAuctionPage() {
           }
       }
       fetchAuctions();
-  }, []);
+
+      // Setup Pusher listener for real-time auction updates
+      const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+      });
+
+      const channel = pusher.subscribe('auction.silent');
+      channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
+          console.log('Car moved to auction:', data);
+          // Refresh auction data when cars are moved
+          fetchAuctions();
+          // toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
+      });
+
+      // Listen for auction status changes
+      channel.bind('AuctionStatusChangedEvent', (data: any) => {
+          console.log('Auction status changed:', data);
+          // Refresh auction data when status changes
+          fetchAuctions();
+          const statusLabels = {
+              'live': 'مباشر',
+              'ended': 'منتهي',
+              'completed': 'مكتمل',
+              'cancelled': 'ملغي',
+              'failed': 'فاشل',
+              'scheduled': 'مجدول'
+          };
+          const oldStatusLabel = statusLabels[data.old_status] || data.old_status;
+          const newStatusLabel = statusLabels[data.new_status] || data.new_status;
+          toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
+      });
+
+      // Cleanup function
+      return () => {
+          pusher.unsubscribe('auction.silent');
+          pusher.disconnect();
+      };
+  }, [currentPage]);
   
 
   // تبديل حالة التوسيع للصف
@@ -285,6 +328,13 @@ export default function SilentAuctionPage() {
               </tbody>
             </table>
           </div>
+                                               <Pagination
+        className="pagination-bar"
+        currentPage={currentPage}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={page => setCurrentPage(page)}
+      />
         </div></>
       )}
     </div>
