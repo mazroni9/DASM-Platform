@@ -36,7 +36,7 @@ class HigherBidNotification extends Notification
     {
         return (new FcmMessage(notification: new FcmNotification(
             title: 'مزايدة جديدة!',
-            body: 'تم وضع مزايدة جديدة أعلى من مزايدتك على السيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model,
+            body: 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
             image: asset('assets/images/logo.jpg')
         )))
             ->data([
@@ -84,11 +84,12 @@ class HigherBidNotification extends Notification
     {
         return [
             'title' => 'مزايدة جديدة',
-            'body' => 'تم وضع مزايدة جديدة أعلى من مزايدتك على السيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model,
+            'body' => 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
             'data' => [
                 'car_id' => $this->auction->car_id,
                 'auction_id' => $this->auction->id,
                 'type' => 'new_bid',
+                'bid_amount' => $this->auction->current_bid,
             ],
             'action' => [
                 'type' => 'VIEW_CAR_DETAILS',
