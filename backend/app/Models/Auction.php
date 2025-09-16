@@ -17,6 +17,7 @@ class Auction extends Model
 
     protected $fillable = [
         'car_id',
+        'session_id',
         'start_time',
         'end_time',
         'minimum_bid',
@@ -54,6 +55,14 @@ class Auction extends Model
     public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
+    }
+
+    /**
+     * Get the session associated with the auction.
+     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(AuctionSession::class, 'session_id');
     }
 
     /**

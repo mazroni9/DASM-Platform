@@ -29,6 +29,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
+use App\Http\Controllers\Admin\AuctionSessionController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -335,6 +336,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
     Route::delete('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
     Route::post('/admin/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
+
+    // Admin auction sessions management
+    Route::get('/admin/sessions', [AuctionSessionController::class, 'index']);
+    Route::post('/admin/sessions', [AuctionSessionController::class, 'store']);
+    Route::get('/admin/sessions/{id}', [AuctionSessionController::class, 'show']);
+    Route::put('/admin/sessions/{id}', [AuctionSessionController::class, 'update']);
+    Route::delete('/admin/sessions/{id}', [AuctionSessionController::class, 'destroy']);
 });
 
 // Public subscription plans routes
