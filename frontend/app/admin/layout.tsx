@@ -21,7 +21,8 @@ import {
     Home,
     HandCoins,
     CreditCard,
-    Shield
+    Shield,
+    Calendar
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -47,6 +48,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "إدارة المشرفين", href: "/admin/moderators", icon: Shield },
         { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
         { name: "خطط الاشتراك", href: "/admin/subscription-plans", icon: CreditCard },
+        { name: "إدارة الجلسات", href: "/admin/sessions", icon: Calendar },
         { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
         { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
         { name: "المزادات", href: "/admin/auctions", icon: Car },
