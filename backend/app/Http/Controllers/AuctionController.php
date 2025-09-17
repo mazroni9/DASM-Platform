@@ -180,12 +180,14 @@ class AuctionController extends Controller
             $query->orderBy($sortField, $sortDirection);
         }
 
-        $auctions = $query->paginate(30);
+        $auctions = $query->paginate(50);
+        $total = $auctions->total();
 
         return response()->json([
             'status' => 'success',
             'data' => $auctions,
-            'brands'=>$brands
+            'brands'=>$brands,
+            'total'=> $auctions
         ]);
 
 

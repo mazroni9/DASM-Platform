@@ -3,7 +3,7 @@
 // ✅ صفحة عرض السوق الصامت مع رابط للتفاصيل السيارة
 // المسار: /pages/silent/page.tsx
 
-import React, { useEffect, useState, Fragment } from 'react';
+import React, { useEffect, useState, Fragment, useRef } from 'react'; // + useRef
 import LoadingLink from "@/components/LoadingLink";
 import BidTimer from '@/components/BidTimer';
 import PriceInfoDashboard from '@/components/PriceInfoDashboard';
@@ -45,10 +45,6 @@ async function isWithinAllowedTime(page: string): Promise<boolean> {
     return response.data.allowed;
 }
 
-// لا نستطيع إستيراد sqlite3 أو أي مكتبات قاعدة بيانات أخرى في جانب العميل!
-// حذف:
-// import sqlite3 from 'sqlite3';
-// import { open } from 'sqlite';
 
 // دالة للحصول على نوع المزاد الحالي
 function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive: boolean } {
@@ -63,37 +59,39 @@ function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive
   }
 }
 
-
 export default function SilentAuctionPage() {
-          const [searchTerm, setSearchTerm] = useState("");
+      const [carsTotal,setCarsTotal]=useState(0);
 
-      const [showFilters, setShowFilters] = useState(false);
-    const [carsBrands,setCarsBrands]=useState<[]>();
-        const [filters, setFilters] = useState<FilterOptions>({
-            brand: "",
-        });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [carsBrands,setCarsBrands]=useState<[]>();
+  const [filters, setFilters] = useState<FilterOptions>({ brand: "" });
   const [isAllowed,setIsAllowed]=useState(true);
-  const [cars, setCars] = useState([]);
+  const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
-          const [totalCount, setTotalCount] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 30; // or allow user to change it
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50; // or allow user to change it
   const { user, isLoggedIn } = useAuth();
   const router = useLoadingRouter();
-  
-  
+
+  // === إضافات Infinity Scroll ===
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null); // الحاوية ذات overflow-auto
+  const sentryRef = useRef<HTMLDivElement | null>(null);          // الحارس بأسفل القائمة
+  const loadingGateRef = useRef(false);                           // منع الطلبات المتوازية
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 
-
-     // Verify user is authenticated
-      useEffect(() => {
-          if (!isLoggedIn) {
-              router.push("/auth/login?returnUrl=/dashboard/profile");
-          }
-        }, [isLoggedIn, router]);
+  // Verify user is authenticated
+  useEffect(() => {
+      if (!isLoggedIn) {
+          router.push("/auth/login?returnUrl=/dashboard/profile");
+      }
+    }, [isLoggedIn, router]);
 
   // تحديث الوقت كل ثانية
   useEffect(() => {
@@ -104,40 +102,43 @@ export default function SilentAuctionPage() {
     return () => clearInterval(timer);
   }, []);
 
-
-  
-
-     // Fetch user profile data
+  // Fetch user profile data
   useEffect(() => {
       async function fetchAuctions() {
            if (!isLoggedIn) return;
           try {
-         setIsAllowed(await isWithinAllowedTime('late_auction'));
-         setIsAllowed(true);
-               const params = new URLSearchParams();
-                if (searchTerm) params.append("search", searchTerm);
-                if (filters.brand) params.append("brand", filters.brand);
-                const response = await api.get(`/api/approved-auctions/live_instant?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
+            loadingGateRef.current = true; // قفل منع الطلبات المتوازية
+
+            setIsAllowed(await isWithinAllowedTime('late_auction'));
+            setIsAllowed(true);
+
+            const params = new URLSearchParams();
+            if (searchTerm) params.append("search", searchTerm);
+            if (filters.brand) params.append("brand", filters.brand);
+            const response = await api.get(`/api/approved-auctions/silent_instant?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
               {
-    headers: {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Accept": "application/json; charset=UTF-8"
-    }
-  });
-                if (response.data.data || response.data.data) {
-                    const carsData =response.data.data.data || response.data.data;
-                    setCarsBrands(response.data.brands || []);
-                    setTotalCount(response.data.data.total);
-                    setCars(carsData);
+                headers: {
+                  "Content-Type": "application/json; charset=UTF-8",
+                  "Accept": "application/json; charset=UTF-8"
                 }
+              });
+            if (response.data.data || response.data.data) {
+                const carsData =response.data.data.data || response.data.data;
+                setCarsBrands(response.data.brands || []);
+                setTotalCount(response.data.data.total);
+                setCarsTotal(response.data.total);
+                // 👇 سطر واحد: لو الصفحة > 1 نلحق النتائج (append) بدلاً من الاستبدال
+                setCars(prev => currentPage > 1 ? [...prev, ...carsData] : carsData);
+            }
                   
           } catch (error) {
-               console.error('فشل تحميل بيانات المزاد المتأخر', error);
-              setCars([]); // مصفوفة فارغة في حالة الفشل
+              console.error('فشل تحميل بيانات المزاد المتأخر', error);
+              if (currentPage === 1) setCars([]); // أول صفحة فشلت
               setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
               setLoading(false);
           } finally {
               setLoading(false);
+              loadingGateRef.current = false; // فك القفل
           }
       }
       fetchAuctions();
@@ -178,8 +179,35 @@ export default function SilentAuctionPage() {
           pusher.unsubscribe('auction.silent');
           pusher.disconnect();
       };
-  }, [currentPage,searchTerm, filters]);
-  
+  }, [currentPage,searchTerm, filters, isLoggedIn, pageSize]);
+
+  // 🔭 مراقبة الحارس لتفعيل التحميل التلقائي
+  useEffect(() => {
+    const rootEl = scrollContainerRef.current;
+    const sentryEl = sentryRef.current;
+    if (!rootEl || !sentryEl) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const ent = entries[0];
+        if (!ent.isIntersecting) return;
+        if (loading) return;
+        if (loadingGateRef.current) return;
+        if (!isAllowed) return;
+        if (currentPage >= totalPages) return;
+
+        setCurrentPage((p) => p + 1); // هذا سيستدعي fetchAuctions عبر useEffect أعلاه
+      },
+      {
+        root: rootEl,           // نراقب داخل الحاوية القابلة للتمرير
+        rootMargin: "600px 0px",// ابدأ قبل الوصول للنهاية
+        threshold: 0,
+      }
+    );
+
+    io.observe(sentryEl);
+    return () => io.disconnect();
+  }, [loading, currentPage, totalPages, isAllowed]);
 
   // تبديل حالة التوسيع للصف
   const toggleRowExpansion = (id: number) => {
@@ -189,10 +217,11 @@ export default function SilentAuctionPage() {
     }));
   };
 
-      const filteredCars = cars.filter((car) => {
-        if (filters.brand == car.make) return false;
-        return true
-    });
+  const filteredCars = cars.filter((car) => {
+    if (filters.brand == (car as any).make) return false;
+    return true
+  });
+
   return (
   <div className="p-4">
     {/* زر العودة */}
@@ -228,7 +257,7 @@ export default function SilentAuctionPage() {
           وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي
         </div>
         <p className="text-gray-600 mt-1 text-sm relative z-10">
-          مكمل للسوق الفوري المباشر في تركيبته ويختلف أنه ليس به بث مباشر
+          مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر
           وصاحب العرض يستطيع أن يغير سعر بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري
         </p>
       </div>
@@ -265,7 +294,7 @@ export default function SilentAuctionPage() {
       </div>
     )}
 
- <div className="flex flex-col md:flex-row gap-4 mb-4">
+    <div className="flex flex-col md:flex-row gap-4 mb-4">
       <div className="flex-1">
         <div className="relative">
           <Search
@@ -320,13 +349,17 @@ export default function SilentAuctionPage() {
       <>
         <br />
        
-
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <div className="text-lg font-bold text-gray-800">
               المزاد المتأخر - السيارات المتاحة
             </div>
-            <div className="text-sm text-gray-600">عدد السيارات: {filteredCars.length}</div>
+            <div className="text-sm text-gray-600"> 
+              عدد السيارات
+               {filteredCars.length} 
+              من
+               {carsTotal['total']}
+              </div>
           </div>
 
           <div className="w-full border-b border-gray-300 my-4"></div>
@@ -336,7 +369,7 @@ export default function SilentAuctionPage() {
 
           {/* الجدول */}
           <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 mt-6">
-            <div className="max-h-[70vh] overflow-auto">
+            <div className="max-h-[70vh] overflow-auto" ref={scrollContainerRef}>
               <table className="min-w-full text-sm text-gray-700 border border-gray-200 border-collapse">
                 <thead className="sticky top-0 z-10">
                 <tr className="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-800 text-xs uppercase tracking-wide">
@@ -362,7 +395,7 @@ export default function SilentAuctionPage() {
                 </thead>
 
                 <tbody>
-                  {filteredCars.map((car, idx) => (
+                  {filteredCars.map((car: any, idx: number) => (
                     <Fragment key={idx}>
                       {car.auction_type !== "live" &&
                         car["car"].auction_status === "in_auction" && (
@@ -481,9 +514,18 @@ export default function SilentAuctionPage() {
                   ))}
                 </tbody>
               </table>
+
+              {/* حارس السحب اللامتناهي */}
+              <div ref={sentryRef} className="py-4 text-center text-sm text-gray-500">
+                {loading
+                  ? "تحميل المزيد…"
+                  : (currentPage >= totalPages && cars.length > 0)
+                  ? "لا مزيد من النتائج"
+                  : ""}
+              </div>
             </div>
           </div>
-
+{/*
           <Pagination
             className="pagination-bar mt-4"
             currentPage={currentPage}
@@ -491,6 +533,7 @@ export default function SilentAuctionPage() {
             pageSize={pageSize}
             onPageChange={(page) => setCurrentPage(page)}
           />
+           */}
         </div>
       </>
     )}
