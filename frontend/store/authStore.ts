@@ -88,15 +88,13 @@ export const useAuthStore = create<AuthState>()(
           api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         }
 
-        // حتى لو عندنا كاش، هنجلب نسخة محدثة فورًا
-        const ok = await get().fetchProfile({ force: true, silent: true });
-        set({
-          token,
-          isLoggedIn: ok,
-          loading: false,
-          initialized: true,
+        // Don't block first interaction: mark as logged-in optimistically
+        set({ token, isLoggedIn: true });
+        // Kick off profile fetch in background
+        get().fetchProfile({ force: true, silent: true }).finally(() => {
+          set({ loading: false, initialized: true });
         });
-        return ok;
+        return true;
       },
 
       // جلب بروفايل المستخدم مع خيار force لتجاهل الكاش

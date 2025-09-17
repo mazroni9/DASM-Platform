@@ -36,14 +36,9 @@ export default function LoadingLink({ children, href, onClick, ...props }: Loadi
           isNavigatingRef.current = true;
           startLoading();
           
-          // Stop loading after navigation completes
-          // This will be handled by NavigationProgressProvider, but we add a fallback
-          setTimeout(() => {
-            if (isNavigatingRef.current) {
-              isNavigatingRef.current = false;
-              stopLoading();
-            }
-          }, 2000); // Fallback timeout
+          // Stop loading immediately; avoid artificial delay
+          isNavigatingRef.current = false;
+          stopLoading();
         }
       }
     },
