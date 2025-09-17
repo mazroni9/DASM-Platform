@@ -10,7 +10,7 @@
  * - يرتبط بصفحة: Frontend-local/app/add/Car/page.tsx
  */
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Car, PlusCircle } from 'lucide-react';
 
 interface CarDataEntryButtonProps {
@@ -34,7 +34,7 @@ export default function CarDataEntryButton({
   const buttonStyle = styles[variant];
 
   return (
-    <Link
+    <LoadingLink
       href="/add/Car"
       className={`inline-flex items-center justify-center px-6 py-3 rounded-md shadow-sm text-base font-medium transition-colors ${buttonStyle} ${className}`}
     >
@@ -44,6 +44,6 @@ export default function CarDataEntryButton({
         <Car className="ml-2 h-5 w-5" />
       )}
       {label}
-    </Link>
+    </LoadingLink>
   );
 } 

@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import EditUserForm from "@/components/admin/EditUserForm";
 
 // Types
@@ -76,8 +76,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 }
                 if (user.role == "dealer") {
                     //check rating if it is null or assign default value
-                    let rating = response.data.data.dealer.rating || 4.5;
-                    response.data.data.dealer.rating = rating;
+                    let rating = response.data.data.dealer?.rating || 4.5;
+                    response.data.data.dealer = {rating:rating};
+                    
+                    
                 }
                 setUser(response.data.data.user);
             }
@@ -259,13 +261,13 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 <p className="text-gray-600 mb-6">
                     المستخدم المطلوب غير موجود أو تم حذفه
                 </p>
-                <Link
+                <LoadingLink
                     href="/admin/users"
                     className="text-blue-600 hover:underline"
                 >
                     <ArrowLeft className="w-4 h-4 inline ml-1" />
                     العودة إلى قائمة المستخدمين
-                </Link>
+                </LoadingLink>
             </div>
         );
     }
@@ -280,13 +282,13 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 <h1 className="text-3xl font-bold text-gray-800">
                     تفاصيل المستخدم
                 </h1>
-                <Link
+                <LoadingLink
                     href="/admin/users"
                     className="text-blue-600 hover:underline flex items-center"
                 >
                     <ArrowLeft className="w-4 h-4 ml-1" />
                     العودة إلى قائمة المستخدمين
-                </Link>
+                </LoadingLink>
             </div>
 
             {/* User status and actions */}

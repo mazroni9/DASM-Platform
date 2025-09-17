@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { Header } from '../../components/exhibitor/Header';
 import { Sidebar } from '../../components/exhibitor/sidebar';
 import { DashboardHome } from '../../components/exhibitor/DashboardHome';
@@ -8,6 +9,9 @@ import { FiMenu } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ExhibitorDashboard() {
+  const router = useLoadingRouter();
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 

@@ -4,8 +4,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import LoadingLink from "@/components/LoadingLink";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     LayoutDashboard,
     Users,
@@ -19,7 +20,9 @@ import {
     Loader,
     Home,
     HandCoins,
-    CreditCard
+    CreditCard,
+    Shield,
+    Calendar
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -30,7 +33,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const pathname = usePathname();
     const { user, isAdmin, logout } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const handleLogout = async () => {
@@ -42,8 +45,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "الرئيسية", href: "/", icon: Home },
         { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
         { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
+        { name: "إدارة المشرفين", href: "/admin/moderators", icon: Shield },
         { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
         { name: "خطط الاشتراك", href: "/admin/subscription-plans", icon: CreditCard },
+        { name: "إدارة الجلسات", href: "/admin/sessions", icon: Calendar },
         { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
         { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
         { name: "المزادات", href: "/admin/auctions", icon: Car },
@@ -92,7 +97,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             const Icon = item.icon;
                             return (
                                 <li key={item.name}>
-                                    <Link
+                                    <LoadingLink
                                         href={item.href}
                                         className={`flex items-center p-3 rounded-lg transition-colors ${
                                             isActive(item.href)
@@ -112,7 +117,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                         >
                                             {item.name}
                                         </span>
-                                    </Link>
+                                    </LoadingLink>
                                 </li>
                             );
                         })}

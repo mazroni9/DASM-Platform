@@ -1,11 +1,13 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Gem, Sailboat, Home, Watch, BadgeCheck, Plane, Brush, Star, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 export default function AuctionsSpecialPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   
   // الأسواق المتخصصة
   const specialMarkets = [
@@ -104,13 +106,13 @@ export default function AuctionsSpecialPage() {
       <div className="bg-gradient-to-r from-blue-500/90 to-cyan-400/90 text-white py-6 md:py-8">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-3">
-            <Link 
+            <LoadingLink 
               href="/auctions" 
               className="flex items-center text-white/90 hover:text-white transition group"
             >
               <ChevronRight className="ml-1 transform group-hover:-translate-x-1 transition-transform" size={20} />
               <span>العودة للسوق الرئيسي</span>
-            </Link>
+            </LoadingLink>
           </div>
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-2">الأسواق المتخصصة</h1>
           <p className="text-lg text-white/90 text-center max-w-3xl mx-auto">
@@ -136,7 +138,7 @@ export default function AuctionsSpecialPage() {
             .map((market) => {
             const Icon = market.icon;
             return (
-              <Link
+              <LoadingLink
                 key={market.slug}
                 href={`/auctions/auctions-4special/${market.slug}`}
                 className={`group flex flex-col h-full rounded-xl shadow-md border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg ${market.bgColor} hover:${market.hoverBgColor} transform hover:-translate-y-1`}
@@ -156,7 +158,7 @@ export default function AuctionsSpecialPage() {
                     </span>
                   </div>
                 </div>
-              </Link>
+              </LoadingLink>
             );
           })}
         </div>

@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 import ForgotPasswordForm from './Form';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const { user, isLoading } = useAuth();
 
   useEffect(() => {

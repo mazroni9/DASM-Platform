@@ -32,7 +32,7 @@ class AuctionController extends Controller
      
 
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
-
+ 
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {
             $query->where('control_room_approved', true);
@@ -77,12 +77,13 @@ class AuctionController extends Controller
         ]);
     }
 
-    public function auctionByType(Request $request)
+
+    public function getAllAuctionsIds(Request $request)
     {
+     
 
-        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])->where('auction_type',$request['auction_type']);
+        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
 
-        
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {
             $query->where('control_room_approved', true);
@@ -119,12 +120,75 @@ class AuctionController extends Controller
             $query->orderBy($sortField, $sortDirection);
         }
 
-        $auctions = $query->paginate(10);
+        $auctions = $query->get();
 
         return response()->json([
             'status' => 'success',
             'data' => $auctions
         ]);
+    }
+
+    public function auctionByType(Request $request)
+    {
+
+        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])->where('auction_type',$request->auction_type);
+        $brands = Auction::query()
+            ->where('auction_type', $request->auction_type)
+            ->where('control_room_approved', true)
+            ->join('cars', 'auctions.car_id', '=', 'cars.id')
+            ->distinct()
+            ->pluck('cars.make');
+
+        // Only show control room approved auctions in public listing by default
+        if (!$request->has('control_room_approved')) {
+            $query->where('control_room_approved', true);
+        } else if ($request->has('control_room_approved')) {
+            $query->where('control_room_approved', true);
+        }
+
+        // Filter active auctions (ongoing)
+        if ($request->has('active') && $request->active) {
+            $now = Carbon::now();
+            $query->where('start_time', '<=', $now)
+                ->where('end_time', '>=', $now)
+                ->where('status', AuctionStatus::ACTIVE->value);
+        }
+
+                            // Search by name or email
+        if ($request->has('brand')) {
+            $brand = $request->brand;
+            $query->whereHas('car',function($q) use ($brand) {
+                $q->where('make', 'like', "%{$brand}%");
+            });
+        }
+                       // Search by name or email
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->whereHas('car',function($q) use ($search) {
+                $q->where('year', 'like', "%{$search}%")
+                 ->orWhere('plate', 'like', "%{$search}%")
+                 ->orWhere('make', 'like', "%{$search}%");
+            });
+        }
+        
+        // Sort options
+        $sortField = $request->input('sort_by', 'updated_at');
+        $sortDirection = $request->input('sort_dir', 'desc');
+        $allowedSortFields = ['created_at', 'updated_at', 'start_time', 'end_time', 'current_bid', 'starting_bid'];
+
+        if (in_array($sortField, $allowedSortFields)) {
+            $query->orderBy($sortField, $sortDirection);
+        }
+
+        $auctions = $query->paginate(30);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $auctions,
+            'brands'=>$brands
+        ]);
+
+
     }
 
     public function AuctionsLive()
@@ -179,17 +243,37 @@ class AuctionController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'car_id' => 'required',
-            'starting_bid' => 'required|numeric|min:0',
-            'reserve_price' => 'nullable|numeric|min:0',
+            'car_id' => 'required|integer|exists:cars,id',
+            'starting_bid' => 'required|numeric|min:1|max:999999999.99',
+            'reserve_price' => 'nullable|numeric|min:0|max:999999999.99',
             'start_time' => 'required|date|after_or_equal:today',
             'end_time' => 'required|date|after:start_time',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:1000',
+        ], [
+            'car_id.required' => 'معرف السيارة مطلوب',
+            'car_id.exists' => 'السيارة غير موجودة',
+            'starting_bid.required' => 'سعر البداية مطلوب',
+            'starting_bid.min' => 'سعر البداية يجب أن يكون أكبر من صفر',
+            'starting_bid.max' => 'سعر البداية كبير جداً',
+            'reserve_price.max' => 'السعر الاحتياطي كبير جداً',
+            'start_time.required' => 'وقت البداية مطلوب',
+            'start_time.after_or_equal' => 'وقت البداية يجب أن يكون اليوم أو بعده',
+            'end_time.required' => 'وقت النهاية مطلوب',
+            'end_time.after' => 'وقت النهاية يجب أن يكون بعد وقت البداية',
+            'description.max' => 'وصف المزاد طويل جداً'
         ]);
 
         if ($validator->fails()) {
+            \Illuminate\Support\Facades\Log::warning('Auction creation validation failed', [
+                'user_id' => Auth::id(),
+                'errors' => $validator->errors(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+            
             return response()->json([
                 'status' => 'error',
+                'message' => 'بيانات المزاد غير صالحة',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -492,17 +576,22 @@ class AuctionController extends Controller
                     event(new CarMovedBetweenAuctionsEvent($auction, $request->status, $car));
                 } else {
 
+                    // Ensure we have all required fields with proper fallbacks
+                    $startingBid = $car->starting_bid ?? 0;
+                    $startTime = Carbon::now();
+                    $endTime = $car->start_time ? Carbon::parse($car->start_time)->addMinutes(60) : Carbon::now()->addMinutes(60);
+
                     $newData = [
                         'car_id' => $car->id,
-                        'starting_bid' => $car->starting_bid ?? 0,
-                        'current_bid' => $car->starting_bid ?? 0,
+                        'starting_bid' => $startingBid,
+                        'current_bid' => $startingBid,
                         'reserve_price' => $car->reserve_price ?? 0,
                         'min_price' => $car->min_price ?? 0,
                         'max_price' => $car->max_price ?? 0,
-                        'start_time' => Carbon::now(),
-                        'end_time' => Carbon::parse($car->start_time)->addMinutes(60),
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
                     ];
-                    $data = array_merge($data,$newData);
+                    $data = array_merge($newData, $data);
                     $auction = Auction::create($data);
                     $tracking->push($auction);
 

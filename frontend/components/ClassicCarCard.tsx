@@ -15,7 +15,7 @@ import Image from 'next/image';
 import { Calendar, Heart } from 'lucide-react';
 import Skeleton from '@mui/material/Skeleton';
 import Box from '@mui/material/Box';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 interface ClassicCarCardProps {
   car?: {
     id: string;
@@ -112,11 +112,11 @@ export default function ClassicCarCard({ car, loading = false }: ClassicCarCardP
           {loading ? (
             <Skeleton variant="rectangular" width="100%" height={40} className="rounded-md" />
           ) : car?.status === 'live' ? (
-            <Link href={`/carDetails/${car?.id}`} className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
+            <LoadingLink href={`/carDetails/${car?.id}`} className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
               <button className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
                 عرض التفاصيل
               </button>
-            </Link>
+            </LoadingLink>
           ) : (
             <div className="w-full py-2 bg-gray-100 text-gray-700 rounded-md font-medium text-center">
               تم الانتهاء من السوق

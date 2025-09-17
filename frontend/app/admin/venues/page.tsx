@@ -2,12 +2,13 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useEffect } from "react";
 
 export default function VenuesDashboard() {
   const { user, isLoading } = useAuth();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== UserRole.ADMIN)) {

@@ -16,9 +16,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, } from 'next/navigation';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -48,7 +48,8 @@ interface ServerDetails {
 
 export default function ServerDetailsPage() {
   const params = useParams();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const [server, setServer] = useState<ServerDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,12 +151,12 @@ export default function ServerDetailsPage() {
             <p className="text-gray-600 mb-6">
               قد يكون هذا السيرفر غير موجود أو تم إزالته
             </p>
-            <Link 
+            <LoadingLink 
               href="/auctions/auctions-quality/used-servers" 
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
             >
               العودة إلى قائمة السيرفرات
-            </Link>
+            </LoadingLink>
           </div>
         </div>
       </div>
@@ -167,13 +168,13 @@ export default function ServerDetailsPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-800 py-6">
         <div className="container mx-auto px-4">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-quality/used-servers" 
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة إلى قائمة السيرفرات</span>
-          </Link>
+          </LoadingLink>
           <h1 className="text-3xl font-bold text-white">{server.name}</h1>
           <div className="flex items-center text-white/80 mt-2">
             <Calendar className="ml-2" size={16} />
@@ -346,13 +347,13 @@ export default function ServerDetailsPage() {
         
         {/* زر العودة للخلف */}
         <div className="mt-8 text-center">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-quality/used-servers" 
             className="inline-flex items-center text-blue-700 hover:text-blue-800"
           >
             <ArrowLeft size={16} className="ml-1" />
             <span>العودة إلى قائمة السيرفرات</span>
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </div>

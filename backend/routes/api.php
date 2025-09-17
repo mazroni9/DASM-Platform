@@ -20,6 +20,7 @@ use App\Http\Controllers\WalletController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\SettlementController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
+use App\Http\Controllers\Admin\AuctionSessionController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -164,6 +166,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
+    Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
     Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
     Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
     Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
@@ -176,13 +179,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Bid routes for all users
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
-    Route::post('/auctions/{auction}/bids', [BidController::class, 'store']);
+    Route::post('/auctions/{auction}/bids', [BidController::class, 'store'])->middleware('bid.rate.limit');
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
 
     // New standardized bid API for the unified frontend
-    Route::post('/auctions/bid', [BidController::class, 'placeBid']);
+    Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids']);
 
     // Auto-bid routes
@@ -264,6 +267,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
     Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
 
+    // Admin moderator management
+    Route::get('/admin/moderators', [AdminModeratorController::class, 'index']);
+    Route::post('/admin/moderators', [AdminModeratorController::class, 'store']);
+    Route::get('/admin/moderators/{id}', [AdminModeratorController::class, 'show']);
+    Route::put('/admin/moderators/{id}', [AdminModeratorController::class, 'update']);
+    Route::delete('/admin/moderators/{id}', [AdminModeratorController::class, 'destroy']);
+    Route::patch('/admin/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus']);
+
     // Admin auction management
     Route::get('/admin/auctions', [AdminController::class, 'auctions']);
     Route::get('/admin/auctions/{id}', [AdminController::class, 'getAuction']);
@@ -326,6 +337,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
     Route::delete('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
     Route::post('/admin/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
+
+    // Admin auction sessions management
+    Route::get('/admin/sessions', [AuctionSessionController::class, 'index']);
+    Route::post('/admin/sessions', [AuctionSessionController::class, 'store']);
+    Route::get('/admin/sessions/{id}', [AuctionSessionController::class, 'show']);
+    Route::put('/admin/sessions/{id}', [AuctionSessionController::class, 'update']);
+    Route::delete('/admin/sessions/{id}', [AuctionSessionController::class, 'destroy']);
 });
 
 // Public subscription plans routes

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { subscriptionPlanService } from "@/services/subscription-plan-service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const p = useParams();
-  const r = useRouter();
+  const r = useLoadingRouter();
   const id = p?.id as string;
   const [d, setD] = useState<any>(null);
   const [loading, setLoading] = useState(true);

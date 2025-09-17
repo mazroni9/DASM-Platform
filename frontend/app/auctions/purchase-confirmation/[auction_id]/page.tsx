@@ -3,10 +3,12 @@
 import api from "@/lib/axios";
 import { useState, useEffect, use } from "react";
 import { CheckCircle, Car, SaudiRiyal, CreditCard, Truck, FileText } from "lucide-react";
-import { useRouter } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+
 
 export default function ConfirmPurchasePage({ params }: { params: Promise<{ auction_id: string }> }) {
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const roundToNearest5or0 = (number: number): number => {
     return Math.round(number / 5) * 5;
   };

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft, ChevronLeft, PencilRuler, Sofa, Smartphone, Leaf } from 'lucide-react';
 
 export default function SelectiveMarketsPage() {
@@ -83,13 +83,13 @@ export default function SelectiveMarketsPage() {
       <div className="sticky top-0 z-10 bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <Link
+            <LoadingLink
               href="/auctions"
               className="flex items-center text-blue-600 hover:text-blue-800 transition"
             >
               <ArrowLeft size={20} className="ml-2" />
               <span>العودة إلى الأسواق الرئيسية</span>
-            </Link>
+            </LoadingLink>
             <h1 className="text-xl font-bold">الأسواق العامة</h1>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function SelectiveMarketsPage() {
                   ))}
                 </ul>
                 
-                <Link 
+                <LoadingLink 
                   href={`/auctions/auctions-5general/${market.id}`}
                   className={`mt-6 block w-full py-3 text-center rounded-lg ${market.bgColor} ${market.hoverColor} ${market.color} font-medium transition-colors duration-300 border border-gray-200 hover:border-gray-300`}
                 >
@@ -142,7 +142,7 @@ export default function SelectiveMarketsPage() {
                     استعراض السوق 
                     <ChevronLeft size={16} className="mr-1" />
                   </span>
-                </Link>
+                </LoadingLink>
               </div>
             </div>
           ))}
@@ -175,12 +175,12 @@ export default function SelectiveMarketsPage() {
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl py-10 px-6">
           <h2 className="text-3xl font-bold mb-4">هل لديك منتجات ترغب في بيعها؟</h2>
           <p className="text-xl mb-6 max-w-2xl mx-auto">انضم إلى منصتنا اليوم وابدأ في عرض منتجاتك للبيع في أسواقنا المتنوعة</p>
-          <Link
+          <LoadingLink
             href="/forms/general-auction-request"
             className="inline-block py-3 px-8 bg-white text-blue-600 font-bold rounded-lg hover:bg-gray-100 transition-colors duration-300 shadow-lg"
           >
             تسجيل منتج للبيع
-          </Link>
+          </LoadingLink>
         </div>
       </div>
     </div>

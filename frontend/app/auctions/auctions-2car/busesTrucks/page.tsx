@@ -16,7 +16,7 @@
 
 import React, { useEffect, useState } from 'react';
 import AuctionCard from '@/components/AuctionCard';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft } from 'lucide-react';
 
 export default function BusesTrucksPage() {
@@ -68,13 +68,13 @@ export default function BusesTrucksPage() {
       <div className="max-w-7xl mx-auto">
         {/* زر العودة إلى سوق السيارات */}
         <div className="flex justify-start mb-6">
-          <Link 
+          <LoadingLink 
             href="/auctions/auctions-2car" 
             className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-full border border-blue-500 hover:border-blue-400 bg-opacity-20 bg-blue-900 hover:bg-opacity-30"
           >
             <ArrowLeft className="h-4 w-4 ml-2" />
             <span>العودة إلى سوق السيارات</span>
-          </Link>
+          </LoadingLink>
         </div>
 
         <h1 className="text-4xl font-serif text-center text-yellow-400 mb-10">سوق الشاحنات والحافلات</h1>

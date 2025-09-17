@@ -57,48 +57,10 @@ export default function BidNotifications({
     const notificationsRef = useRef<HTMLDivElement>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
 
-    // بيانات تجريبية للتنبيهات
+    // Initialize with empty notifications - will be populated from real API data
     useEffect(() => {
-        const mockNotifications: Notification[] = [
-            {
-                id: "1",
-                type: "outbid",
-                title: "تم تجاوز عرضك!",
-                message:
-                    "قام مزايد آخر بتقديم عرض أعلى من عرضك على سيارة تويوتا كامري 2020 بقيمة 110,000 ريال",
-                timestamp: Date.now() - 2 * 60 * 1000, // منذ دقيقتين
-                isRead: false,
-                itemId: 123,
-                itemTitle: "تويوتا كامري 2020",
-            },
-            {
-                id: "2",
-                type: "upcoming",
-                title: "سيارة مفضلة قادمة!",
-                message:
-                    "سيتم عرض سيارة نيسان باترول 2022 في المزاد خلال 10 دقائق، وهي تطابق بحثك السابق",
-                timestamp: Date.now() - 10 * 60 * 1000, // منذ 10 دقائق
-                isRead: true,
-                itemId: 124,
-                itemTitle: "نيسان باترول 2022",
-            },
-            {
-                id: "3",
-                type: "bidAccepted",
-                title: "تم قبول عرضك!",
-                message:
-                    "تهانينا! تم قبول عرضك على سيارة مرسيدس E200 2019 بقيمة 150,000 ريال",
-                timestamp: Date.now() - 30 * 60 * 1000, // منذ 30 دقيقة
-                isRead: false,
-                itemId: 125,
-                itemTitle: "مرسيدس E200 2019",
-            },
-        ];
-
-        setNotifications(mockNotifications);
-        setUnreadCount(mockNotifications.filter((n) => !n.isRead).length);
-
-        // في المستقبل، سنستخدم WebSockets للاتصال المباشر واستلام الإشعارات
+        setNotifications([]);
+        setUnreadCount(0);
     }, []);
 
     // إغلاق مربع الإشعارات عند النقر خارجه
@@ -126,40 +88,7 @@ export default function BidNotifications({
         }
     };
 
-    // محاكاة وصول إشعار جديد كل 30 ثانية (للتجربة فقط)
-    useEffect(() => {
-        const mockNotificationsInterval = setInterval(() => {
-            const newNotification: Notification = {
-                id: Date.now().toString(),
-                type: Math.random() > 0.5 ? "outbid" : "priceChange",
-                title:
-                    Math.random() > 0.5 ? "تم تجاوز عرضك!" : "تغيّر سعر سيارة!",
-                message:
-                    Math.random() > 0.5
-                        ? "قام مزايد آخر بتقديم عرض أعلى على سيارة هيونداي توسان 2021 بقيمة " +
-                          formatCurrency (
-                              Math.floor(Math.random() * 50000) + 80000
-                          ) +
-                          " ريال"
-                        : "تغيّر سعر سيارة كيا K5 2021 إلى " +
-                          formatCurrency (
-                              Math.floor(Math.random() * 40000) + 90000
-                          ) +
-                          " ريال",
-                timestamp: Date.now(),
-                isRead: false,
-                itemId: Math.floor(Math.random() * 10) + 120,
-                itemTitle:
-                    Math.random() > 0.5 ? "هيونداي توسان 2021" : "كيا K5 2021",
-            };
-
-            setNotifications((prev) => [newNotification, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-            playNotificationSound();
-        }, 30000); // كل 30 ثانية
-
-        return () => clearInterval(mockNotificationsInterval);
-    }, [sound]);
+    // Mock notifications disabled - using real notifications from API
 
     // وضع علامة "مقروءة" على الإشعار
     const markAsRead = (id: string) => {

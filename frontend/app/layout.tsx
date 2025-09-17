@@ -7,6 +7,9 @@ import Providers from "./providers";
 import FirebaseMessagingProvider from "@/components/FirebaseMessagingProvider";
 import Navbar from "@/components/shared/Navbar";
 import NotificationProvider from "context/NotificationContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import GlobalLoader from "@/components/GlobalLoader";
+import { Suspense } from "react";
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "700", "800"],
@@ -29,28 +32,31 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={`${tajawal.className} min-h-screen bg-gray-50`}>
-        <Providers>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 5000,
-              style: {
-                background: "#363636",
-                color: "#fff",
-              },
-            }}
-          />
-          <ProtectedRoute>
-            <NotificationProvider>
-              <FirebaseMessagingProvider>
-                <Navbar />
-                <div className="min-h-screen bg-gray-50">
-                  <main>{children}</main>
-                </div>
-              </FirebaseMessagingProvider>
-            </NotificationProvider>
-          </ProtectedRoute>
-        </Providers>
+        <LoadingProvider>
+          <Providers>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 5000,
+                style: {
+                  background: "#363636",
+                  color: "#fff",
+                },
+              }}
+            />
+            <ProtectedRoute>
+              <NotificationProvider>
+                <FirebaseMessagingProvider>
+                  <Navbar />
+                  <div className="min-h-screen bg-gray-50">
+                    <main>{children}</main>
+                  </div>
+                </FirebaseMessagingProvider>
+              </NotificationProvider>
+            </ProtectedRoute>
+            <GlobalLoader />
+          </Providers>
+        </LoadingProvider>
       </body>
     </html>
   );

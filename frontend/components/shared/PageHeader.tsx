@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { ArrowLeft } from 'lucide-react';
 interface PageHeaderProps {
   title: string;
@@ -36,13 +36,13 @@ export default function PageHeader({
       <div className="container mx-auto px-4 h-full flex flex-col justify-center">
         <div className="flex justify-between mb-2">
           {/* زر العودة في الجهة اليمنى */}
-          <Link 
+          <LoadingLink 
             href={backUrl} 
             className="flex items-center text-white/90 hover:text-white transition rtl:flex-row-reverse"
           >
             <ArrowLeft size={16} className="ml-1 rtl:mr-1 rtl:ml-0" />
             <span>{backLabel}</span>
-          </Link>
+          </LoadingLink>
           
           {/* العنوان في المنتصف */}
           <div className="flex-1 text-center">
