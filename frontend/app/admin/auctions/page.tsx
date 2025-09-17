@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
     Car,
     Clock,
@@ -45,7 +45,8 @@ interface Auction {
 }
 
 export default function AdminAuctionsPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+  
     const [auctions, setAuctions] = useState<Auction[]>([]);
     const [loading, setLoading] = useState(true);
     const [approvedAuction, setApprovedAuction] = useState([]);
@@ -82,12 +83,15 @@ export default function AdminAuctionsPage() {
         } else if (activeTab === "approvals") {
             fetchPendingAuctions();
         }
-    }, [currentPage, activeTab]);
+    }, [currentPage, filter,activeTab]);
 
     const fetchAuctions = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/api/admin/auctions?page=${currentPage}&pageSize=${pageSize}`);
+             const params = new URLSearchParams();
+            if (filter) params.append("status", filter);
+            console.log(params.toString())
+            const response = await api.get(`/api/admin/auctions?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`);
             if (response.data.status === "success") {
                 let data=response.data.data.data || response.data.data;
                 let approvedAuction=data.filter(approved => approved.approved_for_live);
@@ -404,11 +408,8 @@ export default function AdminAuctionsPage() {
                                     className="border border-gray-300 rounded-md px-3 py-1 text-sm"
                                 >
                                     <option value="all">جميع المزادات</option>
-                                    <option value="pending_approval">
-                                        في انتظار الموافقة
-                                    </option>
                                     <option value="scheduled">مجدولة</option>
-                                    <option value="active">نشطة</option>
+                                    <option value="live">نشطة</option>
                                     <option value="ended">منتهية</option>
                                     <option value="cancelled">ملغية</option>
                                     <option value="completed">مكتملة</option>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+
 import { Eye, Trash2, User, Clock, DollarSign } from "lucide-react";
 
 interface Bid {
@@ -30,7 +31,8 @@ interface Bid {
 
 export default function ModeratorBidsPage() {
     const { isModerator, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [bids, setBids] = useState<Bid[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("all");

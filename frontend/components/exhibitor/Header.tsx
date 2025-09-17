@@ -3,8 +3,8 @@
 import { motion } from 'framer-motion';
 import { FiSearch, FiBell, FiLogOut, FiUser, FiHome, FiSettings } from 'react-icons/fi';
 import { Avatar, Badge, Dropdown, Input, Tooltip } from 'antd';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuthStore } from '@/store/authStore';
 
 // 🔹 عنصر قائمة
@@ -19,7 +19,7 @@ const DropdownItem = ({ icon, label, onClick }: { icon: React.ReactNode; label: 
 );
 
 export function Header() {
-  const router = useRouter();
+  const router = useLoadingRouter();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

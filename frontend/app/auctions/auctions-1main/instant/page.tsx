@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import { ChevronRight } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { formatCurrency } from "@/utils/formatCurrency";
+
 import Countdown from "@/components/Countdown";
+import Pusher from 'pusher-js';
+import Pagination from "@/components/Pagination";
+
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getAuctionStatus(auction: any): string {
-    console.log(auction);
     switch(auction){
         case "in_auction":
             return "جاري المزايدة";
@@ -37,11 +40,15 @@ export default function InstantAuctionPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(new Date());
+        const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10; // or allow user to change it
     const [expandedRows, setExpandedRows] = useState<{
         [key: number]: boolean;
     }>({});
     const { user, isLoggedIn } = useAuth();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
 
     // Verify user is authenticated
     useEffect(() => {
@@ -67,12 +74,12 @@ export default function InstantAuctionPage() {
                               //check
                 setIsAllowed(await isWithinAllowedTime('instant_auction'));
                 setIsAllowed(true);
-                const response = await api.get("/api/approved-auctions");
+                const response = await api.get(`/api/approved-auctions/live_instant?page=${currentPage}&pageSize=${pageSize}`);
                 if (response.data.data || response.data.data) {
+                    console.log(response);
                     const carsData =response.data.data.data || response.data.data;
-                    const live_instant = carsData.filter((car: any) => car.auction_type === "live_instant");
-                    // تعامل مع هيكل البيانات من API
-                    setCars(live_instant);
+                    setTotalCount(response.data.data.total);
+                    setCars(carsData);
                 }
             } catch (error) {
                 console.error("فشل تحميل بيانات المزاد الصامت", error);
@@ -87,6 +94,36 @@ export default function InstantAuctionPage() {
         }
         fetchAuctions();
 
+        // Setup Pusher listener for real-time auction updates
+        const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+        });
+
+        const channel = pusher.subscribe('auction.instant');
+        channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
+            console.log('Car moved to auction:', data);
+            // Refresh auction data when cars are moved
+            fetchAuctions();
+            //toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
+        });
+
+        // Listen for auction status changes
+        channel.bind('AuctionStatusChangedEvent', (data: any) => {
+            console.log('Auction status changed:', data);
+            // Refresh auction data when status changes
+            fetchAuctions();
+            const statusLabels = {
+                'live': 'مباشر',
+                'ended': 'منتهي',
+                'completed': 'مكتمل',
+                'cancelled': 'ملغي',
+                'failed': 'فاشل',
+                'scheduled': 'مجدول'
+            };
+            const oldStatusLabel = statusLabels[data.old_status] || data.old_status;
+            const newStatusLabel = statusLabels[data.new_status] || data.new_status;
+            toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
+        });
 
         async function startAutoBiddingForAuctions(auctionIds: any[]) {
     const userIds = [5, 6, 7, 8, 9, 10];
@@ -224,7 +261,13 @@ export default function InstantAuctionPage() {
 }
 //startAutoBidding();
 //startAutoBiddingForAuctions([1,2])
-    }, []);
+
+        // Cleanup function
+        return () => {
+            pusher.unsubscribe('auction.instant');
+            pusher.disconnect();
+        };
+    }, [currentPage]);
 
    
 
@@ -232,13 +275,13 @@ export default function InstantAuctionPage() {
         
         <div className="p-4">
             <div className="flex justify-end mb-4">
-                <Link
+                <LoadingLink
                     href="/auctions"
                     className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
                 >
                     <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
                     <span>العودة</span>
-                </Link>
+                </LoadingLink>
             </div>
             <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold">
@@ -301,13 +344,13 @@ export default function InstantAuctionPage() {
                                                 <>
                                                     <td className="p-2 text-sm">
                                                     {car['broadcasts'].length > 0 &&(
-                                                        <Link
+                                                        <LoadingLink
                                                             target="_blank"
                                                             href={car['broadcasts'][0].stream_url}
                                                             className="text-blue-500 hover:text-blue-600"
                                                         >
                                                             إضغط هنا
-                                                        </Link>
+                                                        </LoadingLink>
                                                     )}
                                                      {car['broadcasts'].length == 0 &&(
                                                           <span>#</span>
@@ -369,11 +412,11 @@ export default function InstantAuctionPage() {
                                                         {getAuctionStatus(car['car'].auction_status)}
                                                     </td>
                                                     <td className="p-2 text-sm text-blue-600 underline">
-                                                        <Link
+                                                        <LoadingLink
                                                             href={`/carDetails/${car.car_id}`}
                                                         >
                                                             عرض
-                                                        </Link>
+                                                        </LoadingLink>
                                                     </td>
                                                 </>
                                             )}
@@ -381,6 +424,13 @@ export default function InstantAuctionPage() {
                                 ))}
                             </tbody>
                         </table>
+                                     <Pagination
+        className="pagination-bar"
+        currentPage={currentPage}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={page => setCurrentPage(page)}
+      />
                     </div></>
             )}
  

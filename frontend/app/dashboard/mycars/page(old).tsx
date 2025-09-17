@@ -12,14 +12,16 @@ import {
     Route,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { redirect, useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Pagination } from "react-laravel-paginex";
 import axios from "axios";
 import { PagesOutlined } from "@mui/icons-material";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
+
 import { Car } from "@/types/types";
 
 export default function MyCarsPage() {
@@ -58,7 +60,8 @@ export default function MyCarsPage() {
     const [cars, setCars] = useState<Car[]>([]);
     const { user, isLoggedIn } = useAuth();
     const [processingCarId, setProcessingCarId] = useState<number | null>(null);
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     let options = {
         containerClass: "pagination-container",
         prevButtonClass: "prev-button-class",
@@ -126,13 +129,13 @@ export default function MyCarsPage() {
                     سيارتي ({cars.length})
                 </h1>
                 {cars.length > 0 && (
-                    <Link
+                    <LoadingLink
                         href="/add/Car"
                         className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
                     >
                         <Package className="w-5 h-5 ml-2" />
                         إضافة سيارة جديدة
-                    </Link>
+                    </LoadingLink>
                 )}
             </div>
 
@@ -147,13 +150,13 @@ export default function MyCarsPage() {
                             لم تقم بإضافة أي سيارات بعد. عند إضافة سيارة، سيتم
                             إنشاء مزاد تلقائياً وإرساله للمراجعة.
                         </p>
-                        <Link
+                        <LoadingLink
                             href="/add/Car"
                             className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
                         >
                             <Package className="w-5 h-5 ml-2" />
                             إضافة سيارة جديدة
-                        </Link>
+                        </LoadingLink>
                     </div>
                 </div>
             ) : (
@@ -238,14 +241,14 @@ export default function MyCarsPage() {
                             <br />
                             {car.auction_status == "in_auction" &&
                             car.auctions[0].control_room_approved ? (
-                                <Link
+                                <LoadingLink
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-center inline-block"
                                     href={`/carDetails/${car.id}`}
                                     onClick={(e) => e.stopPropagation()}
                                     key={`link-${car.id}`}
                                 >
                                     <label htmlFor="">عرض السيارة</label>
-                                </Link>
+                                </LoadingLink>
                             ) : car.auction_status == "sold" &&
                               car.auctions[0]?.control_room_approved ? (
                                 <div className="bg-green-600 text-white px-4 py-2 rounded text-center inline-block">

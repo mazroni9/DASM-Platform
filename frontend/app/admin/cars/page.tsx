@@ -23,9 +23,10 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { redirect } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
+
 interface CarFormData {
     price:string;
     id:string;
@@ -73,7 +74,8 @@ interface FilterOptions {
 }
 
 export default function AdminCarsPage() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const [cars, setCars] = useState<CarData[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
@@ -103,7 +105,6 @@ export default function AdminCarsPage() {
     }, [currentPage]);
 
     useEffect(() => {
-        
         fetchCars();
     }, [currentPage, searchTerm, filters]);
 
@@ -111,13 +112,10 @@ export default function AdminCarsPage() {
         try {
             setLoading(true);
             const params = new URLSearchParams();
-
             if (searchTerm) params.append("search", searchTerm);
             if (filters.status) params.append("status", filters.status);
-            if (filters.dealer_id)
-                params.append("dealer_id", filters.dealer_id);
-
-            const response = await api.get(`/api/admin/cars?page=${currentPage}&pageSize=${pageSize}`);
+            const response = await api.get(`/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`);
+            console.log(response);
             if (response.data.status === "success") {
                 setCars(response.data.data.data);
                 setTotalCount(response.data.data.total); // Laravel gives you total
@@ -410,8 +408,8 @@ try {
                             className="p-2 border border-gray-300 rounded-md"
                         >
                             <option value="">كل الحالات</option>
-                            <option value="active">نشط</option>
-                            <option value="pending">في الانتظار</option>
+                            <option value="available">متاح</option>
+                            <option value="in_auction">غير متاح</option>
                             <option value="completed">مكتمل</option>
                             <option value="cancelled">ملغي</option>
                         </select>

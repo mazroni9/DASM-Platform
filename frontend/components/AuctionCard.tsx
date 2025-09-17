@@ -12,7 +12,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 import { Fuel, KeySquare } from 'lucide-react';
 import Skeleton from '@mui/material/Skeleton';
 import Box from '@mui/material/Box';
@@ -89,12 +89,12 @@ export default function AuctionCard({ car, loading = false }: AuctionCardProps) 
       {loading ? (
         <Skeleton variant="rectangular" width="100%" height={40} className="mt-auto rounded" />
       ) : (
-        <Link
+        <LoadingLink
           href={`/carDetails/${car?.id}`}
           className="mt-auto text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 block text-sm"
         >
           عرض التفاصيل
-        </Link>
+        </LoadingLink>
       )}
     </div>
   );

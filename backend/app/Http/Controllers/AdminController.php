@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Models\Car;
+use App\Events\CarApprovedForLiveEvent;
+use App\Notifications\CarApprovedForLiveNotification;
+use App\Events\AuctionStatusChangedEvent;
 
 use function Psy\debug;
 
@@ -26,7 +29,7 @@ class AdminController extends Controller
     public function users(Request $request)
     {
         $query = User::query();
-        
+
         // Filter by role
         if ($request->has('role')) {
             if ($request->role === 'dealer') {
@@ -35,7 +38,7 @@ class AdminController extends Controller
                 $query->whereDoesntHave('dealer');
             }
         }
-        
+
         // Search by name or email
         if ($request->has('search')) {
             $search = $request->search;
@@ -45,15 +48,15 @@ class AdminController extends Controller
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
-        
+
         $users = $query->with('dealer')->paginate(15);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $users
         ]);
     }
-    
+
     /**
      * List all auctions
      *
@@ -63,21 +66,16 @@ class AdminController extends Controller
     public function auctions(Request $request)
     {
         $query = Auction::with(['car.dealer.user']);
-        
+
         // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->has('status') && $request['status'] !=null) {
+            if($request['status'] != 'all'){
+                $query->where('status', $request->status);
+            }
         }
-        
-        // Filter by dealer
-        if ($request->has('dealer_id')) {
-            $query->whereHas('car', function($q) use ($request) {
-                $q->where('dealer_id', $request->dealer_id);
-            });
-        }
-        
+
         $auctions = $query->orderBy('created_at', 'desc')->paginate(10);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $auctions
@@ -94,7 +92,7 @@ class AdminController extends Controller
     public function approve(request $request)
     {
         $ids = $request->ids;
-        
+
         foreach($ids as $id) {
             $auction = Auction::findOrFail($id);
             $auction->status = AuctionStatus::SCHEDULED;
@@ -106,7 +104,7 @@ class AdminController extends Controller
             'message' => ' all auctions apporved successfully',
         ]);
     }
-    
+
     /**
      * Approve an auction
      *
@@ -116,19 +114,19 @@ class AdminController extends Controller
     public function approveAuction1($id)
     {
         $auction = Auction::findOrFail($id);
-        
+
         if ($auction->status !== AuctionStatus::SCHEDULED) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only scheduled auctions can be approved'
             ], 400);
         }
-        
+
         // Set approval flag and update status to active
         $auction->control_room_approved = true;
         $auction->status = AuctionStatus::ACTIVE;
         $auction->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction approved successfully',
@@ -137,19 +135,19 @@ class AdminController extends Controller
     }
 
 
-    
+
 
     public function approveAuction($id)
     {
         $auction = Auction::findOrFail($id);
-        
+
         if ($auction->status !== AuctionStatus::ACTIVE) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only LIVE auctions can be approved'
             ], 400);
         }
-        
+
         $check=Auction::where('approved_for_live',true)->first();
         if($check){
             return response()->json([
@@ -162,7 +160,7 @@ class AdminController extends Controller
         $auction->auction_type = AuctionStatus::ACTIVE;
         $auction->approved_for_live = true;
         $auction->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction approved successfully for live',
@@ -179,23 +177,23 @@ class AdminController extends Controller
     public function rejectAuction1($id, Request $request)
     {
         $auction = Auction::findOrFail($id);
-        
+
         if ($auction->status !== AuctionStatus::SCHEDULED) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only scheduled auctions can be rejected'
             ], 400);
         }
-        
+
         // Set rejection reason if provided
         if ($request->has('reason')) {
             $auction->rejection_reason = $request->reason;
         }
-        
+
         // Update status to failed
         $auction->status = AuctionStatus::FAILED;
         $auction->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction rejected successfully',
@@ -207,14 +205,14 @@ class AdminController extends Controller
     public function endAuction($id, Request $request)
     {
         $auction = Auction::findOrFail($id);
-        
+
         if ($auction->status == AuctionStatus::SCHEDULED) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only other types of auctions can be ended'
             ], 400);
         }
-        
+
         if($request->status == 'ended'){
             $auction->status = "ended";
         }else if($request->status == 'cancelled'){
@@ -222,17 +220,17 @@ class AdminController extends Controller
         }else if($request->status == 'completed'){
             $auction->status = "completed";
         }
-        
+
         // Update status to failed
         $auction->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction processed successfully',
             'data' => $auction
         ]);
     }
-    
+
     /**
      * Approve a dealer verification request
      *
@@ -243,25 +241,25 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($userId);
         $dealer = $user->dealer;
-        
+
         if (!$dealer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User is not a dealer'
             ], 400);
         }
-        
+
         // Update dealer status
         $dealer->is_active = true;
         $dealer->status = 'active';
         $dealer->save();
-        
+
         // Update user role if needed
         if ($user->role !== 'dealer') {
             $user->role = 'dealer';
             $user->save();
         }
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Dealer verification approved successfully',
@@ -271,7 +269,7 @@ class AdminController extends Controller
             ]
         ]);
     }
-    
+
     /**
      * Find User details a dealer verification request
      *
@@ -303,24 +301,24 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($userId);
         $dealer = $user->dealer;
-        
+
         if (!$dealer) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User is not a dealer'
             ], 400);
         }
-        
+
         // Set rejection reason if provided
         if ($request->has('reason')) {
             $dealer->rejection_reason = $request->reason;
         }
-        
+
         // Update dealer status
         $dealer->is_active = false;
         $dealer->status = 'rejected';
         $dealer->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Dealer verification rejected successfully',
@@ -341,7 +339,7 @@ class AdminController extends Controller
         $pendingDealers = Dealer::where('status', 'pending')
             ->with('user')
             ->get();
-            
+
         return response()->json([
             'status' => 'success',
             'data' => $pendingDealers
@@ -357,19 +355,19 @@ class AdminController extends Controller
     public function blogs(Request $request)
     {
         $query = BlogPost::with(['user:id,first_name,last_name', 'tags']);
-        
+
         // Filter by status
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
-        
+
         // Filter by tag
         if ($request->has('tag')) {
             $query->whereHas('tags', function ($q) use ($request) {
                 $q->where('name', $request->tag);
             });
         }
-        
+
         // Search by title or content
         if ($request->has('search')) {
             $search = $request->search;
@@ -378,15 +376,15 @@ class AdminController extends Controller
                   ->orWhere('content', 'like', "%{$search}%");
             });
         }
-        
+
         $blogs = $query->orderBy('created_at', 'desc')->paginate(15);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $blogs
         ]);
     }
-    
+
     /**
      * Publish or unpublish a blog post
      *
@@ -406,18 +404,18 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $blog = BlogPost::findOrFail($id);
         $blog->status = $request->status;
         $blog->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Blog status updated successfully',
             'data' => $blog
         ]);
     }
-    
+
     /**
      * Manage blog tags
      *
@@ -438,34 +436,34 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         switch ($request->action) {
             case 'create':
                 $tag = BlogTag::create(['name' => $request->name]);
                 $message = 'Tag created successfully';
                 break;
-                
+
             case 'update':
                 $tag = BlogTag::findOrFail($request->id);
                 $tag->name = $request->name;
                 $tag->save();
                 $message = 'Tag updated successfully';
                 break;
-                
+
             case 'delete':
                 $tag = BlogTag::findOrFail($request->id);
                 $tag->delete();
                 $message = 'Tag deleted successfully';
                 break;
         }
-        
+
         return response()->json([
             'status' => 'success',
             'message' => $message,
             'data' => $tag ?? null
         ]);
     }
-    
+
     /**
      * Get dashboard statistics for admin
      *
@@ -478,37 +476,37 @@ class AdminController extends Controller
         $pendingUsers = User::where('status', 'pending')->count();
         $dealerCount = Dealer::count();
         $regularUserCount = $totalUsers - $dealerCount;
-        
+
         // Count auctions
         $totalAuctions = Auction::count();
         $activeAuctions = Auction::where('status', AuctionStatus::ACTIVE)->count();
         $completedAuctions = Auction::where('status', AuctionStatus::ENDED)->count();
         $pendingAuctions = Auction::where('status', AuctionStatus::SCHEDULED)->count();
-        
+
         // Count verification requests - using status field
         $pendingVerifications = Dealer::where('status', 'pending')->count();
-            
+
         // Count blogs
         $totalBlogs = BlogPost::count();
         $publishedBlogs = BlogPost::where('status', 'published')->count();
         $draftBlogs = BlogPost::where('status', 'draft')->count();
-        
+
         // Most viewed blogs
         $popularBlogs = BlogPost::orderBy('views', 'desc')
             ->take(5)
             ->get(['id', 'title', 'slug', 'views']);
-            
+
         // Recent auctions
         $recentAuctions = Auction::with(['car:id,make,model,year'])
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-            
+
         // Recent users
         $recentUsers = User::orderBy('created_at', 'desc')
             ->take(5)
             ->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active', 'status']);
-            
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -550,16 +548,21 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $auction = Auction::findOrFail($id);
+
+        // Capture old status before making changes
+        $oldStatus = $auction->status;
+        $newStatus = $request->status;
+
         $auction->approved_for_live = false;
-        
+
         if ($request->status === 'live' && !$auction->control_room_approved) {
             $auction->control_room_approved = true;
         }
-        
+
         $auction->save();
-        
+
         // Update car status if needed
         if ($auction->car) {
             if ($request->status === 'live') {
@@ -571,7 +574,7 @@ class AdminController extends Controller
                 $auction->approved_for_live = false;
             } else if (in_array($request->status, ['ended', 'cancelled', 'failed'])) {
                 $auction->car->auction_status = 'available';
-                
+
                 $auction->status = "scheduled";
                 $auction->approved_for_live = false;
             }
@@ -579,6 +582,12 @@ class AdminController extends Controller
             $auction->car->save();
         }
             $auction->save();
+
+        // Broadcast event for real-time updates
+        if ($oldStatus !== $newStatus) {
+            event(new AuctionStatusChangedEvent($auction, $oldStatus, $newStatus, $auction->car));
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction status updated successfully',
@@ -608,28 +617,44 @@ class AdminController extends Controller
             ], 422);
         }
         $count = Auction::where("approved_for_live",true)->count();
+
         $auction = Auction::findOrFail($id);
+
         $isApproved=$request->approved_for_live;
+
         if($isApproved && $count > 0){
             return response()->json([
                 'status' => 'error',
                 'message' => 'Only one auction can be approved for live at a time',
             ], 422);
         }
-        
+
         // Update auction type (if needed
         $auction->auction_type = $request->auction_type;
         $auction->approved_for_live = $request->approved_for_live;
         $auction->save();
-        
-        
+
+        // Send notification and event when car is approved for live
+        if ($request->approved_for_live) {
+            $car = $auction->car;
+
+            // Send notification to car owner
+            $carOwner = $car->owner;
+            if ($carOwner) {
+                $carOwner->notify(new CarApprovedForLiveNotification($car, $auction));
+            }
+
+            // Broadcast event for real-time updates
+            event(new CarApprovedForLiveEvent($auction, $car));
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction status updated successfully',
             'data' => $auction
         ]);
     }
-    
+
     /**
      * Get list of blog tags
      *
@@ -638,13 +663,13 @@ class AdminController extends Controller
     public function getBlogTags()
     {
         $tags = BlogTag::all();
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $tags
         ]);
     }
-    
+
     /**
      * Get transactions list
      *
@@ -654,25 +679,25 @@ class AdminController extends Controller
     public function getTransactions(Request $request)
     {
         $query = \App\Models\Transaction::with(['user', 'auction']);
-        
+
         // Filter by status if provided
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
-        
+
         // Filter by type if provided
         if ($request->has('type')) {
             $query->where('type', $request->type);
         }
-        
+
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $transactions
         ]);
     }
-    
+
     /**
      * Get settlements list
      *
@@ -682,14 +707,14 @@ class AdminController extends Controller
     public function getSettlements(Request $request)
     {
         $query = \App\Models\Settlement::with(['dealer.user', 'auction', 'car']);
-        
+
         // Filter by status if provided
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
-        
+
         $settlements = $query->orderBy('created_at', 'desc')->paginate(15);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $settlements
@@ -706,19 +731,19 @@ class AdminController extends Controller
     {
         // Admin can see all cars with filtering options
         $query = Car::with(['dealer.user','auctions']);
-        
+
         // Filter by status if provided
-        if ($request->has('status')) {
+        if ($request->has('status')  &&  $request['status'] != null) {
             $query->where('auction_status', $request->status);
         }
-        
+
         // Filter by dealer
-        if ($request->has('dealer_id')) {
+        if ($request->has('dealer_id') &&  $request['dealer_id'] != null) {
             $query->where('dealer_id', $request->dealer_id);
         }
-        
+
         // Search by make/model
-        if ($request->has('search')) {
+        if ($request->has('search') &&  $request['search'] != null) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('make', 'like', "%{$search}%")
@@ -726,12 +751,13 @@ class AdminController extends Controller
                   ->orWhere('vin', 'like', "%{$search}%");
             });
         }
-        
+
         $cars = $query->orderBy('created_at', 'desc')->paginate(10);
-        
+
         return response()->json([
             'status' => 'success',
-            'data' => $cars
+            'data' => $cars,
+            
         ]);
     }
 
@@ -754,10 +780,10 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $car = \App\Models\Car::findOrFail($id);
         $car->auction_status = $request->status;
-        
+
         // If changing to in_auction, check if there's an active auction and create one if not
         if ($request->status === 'in_auction') {
             $activeAuction = $car->auctions()->where('status', 'active')->first();
@@ -771,7 +797,7 @@ class AdminController extends Controller
                 }
             }
         }
-        
+
         // If changing to available, cancel any active auctions
         if ($request->status === 'available') {
             $activeAuctions = $car->auctions()->whereIn('status', ['active', 'scheduled'])->get();
@@ -780,26 +806,26 @@ class AdminController extends Controller
                 $auction->save();
             }
         }
-        
+
         $car->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Car status updated successfully',
             'data' => $car
         ]);
     }
-    
+
     /**
      * Delete a car (admin only)
-     * 
+     *
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function deleteCar($id)
     {
         $car = \App\Models\Car::findOrFail($id);
-        
+
         // Check for any active auctions
         $hasActiveAuctions = $car->auctions()->where('status', 'active')->exists();
         if ($hasActiveAuctions) {
@@ -808,17 +834,17 @@ class AdminController extends Controller
                 'message' => 'Cannot delete car with active auctions. Please cancel the auctions first.'
             ], 400);
         }
-        
+
         // Cancel any scheduled auctions
         $scheduledAuctions = $car->auctions()->where('status', 'scheduled')->get();
         foreach ($scheduledAuctions as $auction) {
             $auction->status = 'cancelled';
             $auction->save();
         }
-        
+
         // Delete the car
         $car->delete();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Car deleted successfully'
@@ -835,7 +861,7 @@ class AdminController extends Controller
     {
         $auction = Auction::with(['car', 'bids.user', 'liveStreamingSession'])
             ->findOrFail($id);
-            
+
         return response()->json([
             'status' => 'success',
             'data' => $auction
@@ -870,9 +896,9 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $auction = Auction::findOrFail($id);
-        
+
         // Update auction details
         $auction->start_time = $request->start_time;
         $auction->end_time = $request->end_time;
@@ -884,9 +910,9 @@ class AdminController extends Controller
         $auction->auction_type = $request->auction_type;
         $auction->control_room_approved = $request->control_room_approved;
         $auction->approved_for_live = $request->approved_for_live;
-        
+
         $auction->save();
-        
+
         // Update car status based on auction status
         if ($auction->car) {
             if ($auction->status === 'active') {
@@ -896,10 +922,10 @@ class AdminController extends Controller
             } else if (in_array($auction->status, ['ended', 'cancelled', 'failed'])) {
                 $auction->car->auction_status = 'available';
             }
-            
+
             $auction->car->save();
         }
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Auction updated successfully',
@@ -913,7 +939,7 @@ class AdminController extends Controller
     public function setOpeningPrice($id,Request $request)
     {
         $user = auth()->user();
-        
+
         if ($user->role !== 'admin') {
             return response()->json([
                 'status' => 'error',
@@ -947,7 +973,7 @@ class AdminController extends Controller
             'price'=>$price
         ]);
     }
-    
+
 
     /**
      * Update car details (admin only)
@@ -978,9 +1004,9 @@ class AdminController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        
+
         $car = \App\Models\Car::findOrFail($id);
-        
+
         // Check if the car has an active auction before allowing changes
         $hasActiveAuctions = $car->auctions()->where('status', 'active')->exists();
         if ($hasActiveAuctions && $request->auction_status !== 'in_auction') {
@@ -989,7 +1015,7 @@ class AdminController extends Controller
                 'message' => 'Cannot update car with active auctions except for status changes.'
             ], 400);
         }
-        
+
         // Update car details
         $car->make = $request->make;
         $car->model = $request->model;
@@ -1002,16 +1028,16 @@ class AdminController extends Controller
         $car->engine = $request->engine;
         $car->transmission = $request->transmission;
         $car->description = $request->description;
-        
+
         $car->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Car updated successfully',
             'data' => $car
         ]);
     }
-    
+
     /**
      * Approve a user account
      *
@@ -1021,19 +1047,19 @@ class AdminController extends Controller
     public function approveUser($userId)
     {
         $user = User::findOrFail($userId);
-        
+
         // Update user status to active
         $user->status = 'active';
         $user->is_active = true; // Keep is_active for backward compatibility
         $user->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'User approved successfully',
             'data' => $user
         ]);
     }
-    
+
     /**
      * Reject a user account
      *
@@ -1044,17 +1070,17 @@ class AdminController extends Controller
     public function rejectUser($userId, Request $request)
     {
         $user = User::findOrFail($userId);
-        
+
         // Optionally, you could add a reason for rejection
         // if ($request->has('reason')) {
         //     $user->rejection_reason = $request->reason;
         // }
-        
+
         // Update user status to rejected
         $user->status = 'rejected';
         $user->is_active = false; // Keep is_active for backward compatibility
         $user->save();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'User rejection processed successfully',
@@ -1073,7 +1099,7 @@ class AdminController extends Controller
     {
         $currentUser = auth()->user();
         $userToUpdate = User::with('dealer')->findOrFail($userId);
-        
+
         // Prevent admin from editing other admin accounts
         if ($userToUpdate->role === 'admin' && $currentUser->id !== $userToUpdate->id) {
             return response()->json([
@@ -1081,7 +1107,7 @@ class AdminController extends Controller
                 'message' => 'لا يمكن تعديل بيانات مدير آخر'
             ], 403);
         }
-        
+
         // Prevent admin from changing their own role
         if ($currentUser->id === $userToUpdate->id && $request->has('role') && $request->role !== 'admin') {
             return response()->json([
@@ -1152,7 +1178,7 @@ class AdminController extends Controller
             $oldRole = $userToUpdate->role;
             if ($request->has('role') && $request->role !== $oldRole) {
                 $newRole = $request->role;
-                
+
                 // If changing to dealer, create dealer record if it doesn't exist
                 if ($newRole === 'dealer' && !$userToUpdate->dealer) {
                     Dealer::create([
@@ -1165,7 +1191,7 @@ class AdminController extends Controller
                         'rating' => 0,
                     ]);
                 }
-                
+
                 // If changing from dealer to another role, deactivate dealer record
                 if ($oldRole === 'dealer' && $newRole !== 'dealer' && $userToUpdate->dealer) {
                     $userToUpdate->dealer->update([
@@ -1173,14 +1199,14 @@ class AdminController extends Controller
                         'status' => 'inactive'
                     ]);
                 }
-                
+
                 $userToUpdate->role = $newRole;
             }
 
             // Update dealer information if user is/becoming a dealer
             if (($userToUpdate->role === 'dealer' || $request->role === 'dealer') && $userToUpdate->dealer) {
                 $dealer = $userToUpdate->dealer;
-                
+
                 if ($request->has('company_name')) {
                     $dealer->company_name = $request->company_name;
                 }
@@ -1194,7 +1220,7 @@ class AdminController extends Controller
                     $dealer->status = $request->dealer_status;
                     $dealer->is_active = $request->dealer_status === 'active';
                 }
-                
+
                 $dealer->save();
             }
 

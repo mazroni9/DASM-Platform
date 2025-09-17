@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import LoadingLink from "@/components/LoadingLink";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Image from "next/image";
 import { RefreshCw, Store, Archive, Clock, LogOut, Menu, X,Bell, Book } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
 import NotificationMenu from "@/components/NotificationMenu";
 import BidNotifications from '@/components/BidNotifications';
+
 interface NavigationItem {
     href: string;
     label: string;
@@ -24,7 +26,8 @@ const Navbar = () => {
     const [isRestarting, setIsRestarting] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const pathname = usePathname();
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const { user, logout } = useAuth();
 
     const isAdmin = user?.role === UserRole.ADMIN;
@@ -110,7 +113,7 @@ const Navbar = () => {
                 <div className="flex items-center justify-between min-h-[60px]">
                     {/* Logo */}
                     <div className="flex items-center flex-shrink-0">
-                        <Link href="/" className="flex items-center gap-2 sm:gap-4">
+                        <LoadingLink href="/" className="flex items-center gap-2 sm:gap-4">
                             <Image
                                 src="/logo.jpg"
                                 alt="منصة DASM-e - Digital Auctions Specialists Markets"
@@ -121,33 +124,33 @@ const Navbar = () => {
                             <span className="font-bold text-base whitespace-nowrap">
                                 المزادات الرقمية <span className="text-blue-700">DASM-e</span>
                             </span>
-                        </Link>
+                        </LoadingLink>
                     </div>
 
                     {/* Main Navigation */}
                     <div className="hidden md:flex items-center gap-6 flex-row-reverse" dir="rtl">
-                        <Link
+                        <LoadingLink
                             href="/auctions"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/auctions") ? "text-blue-700 font-bold" : ""}`}
                         >
                             <Store size={18} />
                             الأسواق المتخصصة
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             target="_blank"
                             href="https://blog.dasm.com.sa/"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/broadcasts") ? "text-blue-700 font-bold" : ""}`}
                         >
                             <Book size={18} />
                             المدونة
-                        </Link>
-                        <Link
+                        </LoadingLink>
+                        <LoadingLink
                             href="/auction-archive"
                             className={`hover:text-sky-700 transition-colors flex items-center gap-2 ${isActive("/auction-archive") ? "text-blue-700 font-bold" : ""}`}
                         >
                             <Archive size={18} />
                             أرشيف المزادات
-                        </Link>
+                        </LoadingLink>
                     </div>
 
                     {/* Desktop Auth Buttons */}
@@ -175,7 +178,7 @@ const Navbar = () => {
      
                             </>
                         ) : (
-                            <Link href="/auth/login">
+                            <LoadingLink href="/auth/login">
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -183,7 +186,7 @@ const Navbar = () => {
                                 >
                                     <span className="text-xs sm:text-sm">تسجيل الدخول</span>
                                 </Button>
-                            </Link>
+                            </LoadingLink>
                         )}
                     </div>
 
@@ -214,7 +217,7 @@ const Navbar = () => {
                     <div className="py-4 space-y-2 border-t border-sky-200 mt-2">
                         {/* Mobile Navigation Links */}
                         {navigationItems.map((item) => (
-                            <Link
+                            <LoadingLink
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 ${
@@ -226,7 +229,7 @@ const Navbar = () => {
                             >
                                 <item.icon className="h-5 w-5" />
                                 <span className="text-base">{item.label}</span>
-                            </Link>
+                            </LoadingLink>
                         ))}
 
                         {/* Mobile Admin Controls */}
@@ -266,13 +269,13 @@ const Navbar = () => {
                                 <span className="text-base">تسجيل الخروج</span>
                             </button>
                         ) : (
-                            <Link
+                            <LoadingLink
                                 href="/auth/login"
                                 className="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-sky-50 text-sky-800 transition-all duration-200"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 <span className="text-base">تسجيل الدخول</span>
-                            </Link>
+                            </LoadingLink>
                         )}
                     </div>
                 </div>
