@@ -14,17 +14,31 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Global middleware
+        $middleware->append([
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
+            \App\Http\Middleware\PerformanceMiddleware::class,
+        ]);
+
+        // API middleware
+        $middleware->api(append: [
+            \App\Http\Middleware\ApiCacheMiddleware::class,
+        ]);
+
         // Register your custom middleware alias here
         $middleware->alias([
             'dealer' => \App\Http\Middleware\DealerMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'moderator' => \App\Http\Middleware\ModeratorMiddleware::class,
             'bid.rate.limit' => \App\Http\Middleware\BidRateLimitMiddleware::class,
-             HandleInertiaRequests::class,
-
+            'performance' => \App\Http\Middleware\PerformanceMiddleware::class,
+            'api.cache' => \App\Http\Middleware\ApiCacheMiddleware::class,
+            'security.headers' => \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ]);
-      
 
+        $middleware->web(append: [
+            HandleInertiaRequests::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

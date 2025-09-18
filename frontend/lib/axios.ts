@@ -12,7 +12,12 @@ const api = axios.create({
     baseURL: API_BASE_URL,
     // Avoid cross-site cookies; we use Authorization Bearer tokens
     withCredentials: false,
-    timeout: 20000,
+    timeout: 30000, // Increased timeout for better reliability
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    },
 });
 
 // We need a flag to prevent infinite refresh loops
@@ -30,9 +35,9 @@ if (typeof window !== "undefined") {
     const token = localStorage.getItem("token");
     if (token) {
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        console.log("Token loaded from localStorage");
-    } else {
-        console.log("No token found in localStorage");
+        if (process.env.NODE_ENV === 'development') {
+            console.log("Token loaded from localStorage");
+        }
     }
 }
 

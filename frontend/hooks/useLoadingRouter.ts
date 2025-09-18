@@ -13,10 +13,11 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.push(href, options);
+        // Stop loading immediately after navigation starts
+        requestAnimationFrame(() => stopLoading());
       } finally {
-        setTimeout(() => {
-          stopLoading();
-        }, 100);
+        // Fallback timeout in case requestAnimationFrame doesn't fire
+        setTimeout(() => stopLoading(), 50);
       }
     },
     [router, startLoading, stopLoading]
@@ -27,10 +28,9 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.replace(href, options);
+        requestAnimationFrame(() => stopLoading());
       } finally {
-        setTimeout(() => {
-          stopLoading();
-        }, 100);
+        setTimeout(() => stopLoading(), 50);
       }
     },
     [router, startLoading, stopLoading]
@@ -41,10 +41,9 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.refresh();
+        requestAnimationFrame(() => stopLoading());
       } finally {
-        setTimeout(() => {
-          stopLoading();
-        }, 500);
+        setTimeout(() => stopLoading(), 200);
       }
     },
     [router, startLoading, stopLoading]
@@ -55,10 +54,9 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.back();
+        requestAnimationFrame(() => stopLoading());
       } finally {
-        setTimeout(() => {
-          stopLoading();
-        }, 100);
+        setTimeout(() => stopLoading(), 50);
       }
     },
     [router, startLoading, stopLoading]
@@ -69,10 +67,9 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.forward();
+        requestAnimationFrame(() => stopLoading());
       } finally {
-        setTimeout(() => {
-          stopLoading();
-        }, 100);
+        setTimeout(() => stopLoading(), 50);
       }
     },
     [router, startLoading, stopLoading]

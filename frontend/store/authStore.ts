@@ -115,8 +115,10 @@ export const useAuthStore = create<AuthState>()(
 
           if (!silent) set({ loading: true });
 
-          const res = await api.get(`/api/user/profile`);
-          const userData: User = res.data?.data || res.data || null;
+          // Use cached API request for better performance
+          const { cachedApiRequest } = await import('@/lib/request-cache');
+          const res = await cachedApiRequest('/api/user/profile', undefined, PROFILE_CACHE_DURATION);
+          const userData: User = res?.data || res || null;
 
           set({
             user: userData,
@@ -128,7 +130,9 @@ export const useAuthStore = create<AuthState>()(
 
           return true;
         } catch (error: any) {
-          console.error("fetchProfile error:", error?.response?.data || error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error("fetchProfile error:", error?.response?.data || error);
+          }
 
           if (error?.response?.status === 401) {
             // توكن غير صالح
