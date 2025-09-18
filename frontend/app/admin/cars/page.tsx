@@ -119,7 +119,6 @@ export default function AdminCarsPage() {
             if (response.data.status === "success") {
                 setCars(response.data.data.data);
                 setTotalCount(response.data.data.total); // Laravel gives you total
-
             }
         } catch (error) {
             console.error("Error fetching cars:", error);
@@ -903,6 +902,8 @@ try {
         pageSize={pageSize}
         onPageChange={page => setCurrentPage(page)}
       />
+
+
         </div>
         
     );
