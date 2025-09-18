@@ -12,13 +12,17 @@ use App\Enums\AuctionType;
 use App\Models\Settlement;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
+use App\Models\AuctionSession;
 use App\Models\CommissionTier;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Notifications\CarApprovedForAuctionNotification;
-use App\Notifications\CarMovedToAuctionNotification;
 use App\Events\CarMovedBetweenAuctionsEvent;
+use App\Http\Resources\LiveAuctionSessionResource;
+use App\Notifications\CarMovedToAuctionNotification;
+use App\Notifications\CarApprovedForAuctionNotification;
 use Illuminate\Support\Facades\DB;
+
 class AuctionController extends Controller
 {
     /**
@@ -29,7 +33,7 @@ class AuctionController extends Controller
      */
     public function index(Request $request)
     {
-     
+
 
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
  
@@ -200,27 +204,25 @@ class AuctionController extends Controller
             auction_type === "live" &&
             approved_for_live
         */
+        $live_session = AuctionSession::where('status', 'active')
+        ->where('type', 'live')
+        ->with('auctions.car')
+        ->with('auctions.bids')
+        ->with('auctions.car.dealer')
+        ->first();
+        if (! $live_session) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No live session found'
+            ], 404);
+        }
 
-        $current_live_car = Auction::with(['car.dealer', 'bids', 'car'])
-            ->where('auction_type', AuctionType::LIVE->value)
-            ->where('approved_for_live', true)
-            ->where('status', AuctionStatus::ACTIVE->value)->first();
+        $session_data = new LiveAuctionSessionResource($live_session);
 
-        $query = Auction::with(['car.dealer', 'bids', 'car'])
-            ->where('auction_type', AuctionType::LIVE->value)
-            //->where('approved_for_live', false)
-            ->orderBy('approved_for_live', 'desc')
-            ->where('status', AuctionStatus::ACTIVE->value);
-
-        $pendingLiveAuctions = $query->get();
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'current_live_car' => $current_live_car,
-                'pending_live_auctions' => $pendingLiveAuctions,
-                'completed_live_auctions' => []
-            ]
+            'data' =>$session_data
         ]);
     }
 
@@ -272,7 +274,7 @@ class AuctionController extends Controller
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات المزاد غير صالحة',
@@ -975,6 +977,7 @@ public function moveBetweenAuctionsBulk(Request $request)
                 'control_room_approved' => true,
                 'status' => AuctionStatus::ACTIVE->value,
                 'auction_type' => AuctionType::LIVE_INSTANT->value,
+                'approved_for_live' => false
             ];
         } else  if ($request->status === "instant") {
 
@@ -982,6 +985,7 @@ public function moveBetweenAuctionsBulk(Request $request)
                 'control_room_approved' => true,
                 'status' => AuctionStatus::ACTIVE->value,
                 'auction_type' => AuctionType::LIVE_INSTANT->value,
+                'approved_for_live' => false
             ];
         } else  if ($request->status === "late") {
 
@@ -989,6 +993,7 @@ public function moveBetweenAuctionsBulk(Request $request)
                 'control_room_approved' => true,
                 'status' => AuctionStatus::ACTIVE->value,
                 'auction_type' => AuctionType::SILENT_INSTANT->value,
+                'approved_for_live' => false
             ];
         } else if ($request->status === "live") {
             $data = [
@@ -997,6 +1002,11 @@ public function moveBetweenAuctionsBulk(Request $request)
                 'auction_type' => AuctionType::LIVE->value,
                 'approved_for_live' => false
             ];
+
+            // Add session_id if provided for live auctions
+            if ($request->has('session_id')) {
+                $data['session_id'] = $request->session_id;
+            }
         } else if ($request->status === "pending") {
             $data = [
                 'control_room_approved' => false,
@@ -1033,7 +1043,7 @@ public function moveBetweenAuctionsBulk(Request $request)
 
                     $newData = [
                         'car_id' => $car->id,
-                        'starting_bid' => $startingBid,
+                        'starting_bid' => $startingBid ?? 0,
                         'current_bid' => $startingBid,
                         'reserve_price' => $car->reserve_price ?? 0,
                         'min_price' => $car->min_price ?? 0,
@@ -1440,6 +1450,38 @@ public function moveBetweenAuctionsBulk(Request $request)
                 'tamFee' => (int)$tamFee,
                 'platformFee' => (int)$commission
             ]
+        ]);
+    }
+
+    /**
+     * Bulk update the status for multiple auctions.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'auction_ids' => 'required|array',
+            'auction_ids.*' => 'integer|exists:auctions,id',
+            'status' => ['required', Rule::in(['live', 'ended', 'completed', 'cancelled', 'failed'])],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $auctionIds = $request->input('auction_ids');
+        $newStatus = $request->input('status');
+
+        Auction::whereIn('id', $auctionIds)->update(['status' => $newStatus, 'approved_for_live' => false]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auctions status updated successfully.'
         ]);
     }
 }

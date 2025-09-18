@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import LoadingLink from '@/components/LoadingLink';
-import { Trash2, Edit, Plus, Calendar, Users } from 'lucide-react';
+import { Trash2, Edit, Plus, Calendar, Users, Eye } from 'lucide-react';
+
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -35,7 +36,7 @@ const statusLabels = {
 };
 
 const typeLabels = {
-  live: 'مزاد مباشر',
+  live: 'الحراج المباشر',
   instant: 'مزاد فوري',
   silent: 'مزاد صامت',
 };
@@ -94,7 +95,6 @@ export default function SessionsListPage() {
     setDeleteModalOpen(false);
     setSessionToDelete(null);
   };
-
 
 
   return (
@@ -172,12 +172,20 @@ export default function SessionsListPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
+                        <LoadingLink 
+                          href={`/admin/sessions/view/${session.id}`}
+                          className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1"
+                        >
+                          <Eye size={16} />
+                          
+                        </LoadingLink>
+
                         <LoadingLink
                           href={`/admin/sessions/edit/${session.id}`}
                           className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1"
                         >
                           <Edit size={16} />
-                          تعديل
+
                         </LoadingLink>
                         <button
                           onClick={() => openDeleteModal(session)}
@@ -185,7 +193,7 @@ export default function SessionsListPage() {
                           disabled={session.auctions_count > 0}
                         >
                           <Trash2 size={16} />
-                          حذف
+
                         </button>
                       </div>
                     </td>

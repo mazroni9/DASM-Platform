@@ -403,7 +403,7 @@ class Auction extends Model
 
     public function getStatusLabelAttribute()
     {
-        return $this->status->label();
+        return $this->status ? $this->status->label() : '';
     }
 
     public function broadcasts()

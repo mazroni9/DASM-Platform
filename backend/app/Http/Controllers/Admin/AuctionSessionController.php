@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\AuctionSession;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use App\Models\AuctionSession;
 use Illuminate\Validation\Rule;
+use Illuminate\Http\JsonResponse;
+use App\Events\UpdateSessionEvent;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 
 class AuctionSessionController extends Controller
 {
@@ -57,6 +59,9 @@ class AuctionSessionController extends Controller
         $session = AuctionSession::with(['auctions.car' => function ($query) {
             $query->select('id', 'make', 'model', 'year');
         }])
+            ->with(['auctions' => function ($query) {
+                $query->orderBy('approved_for_live', 'desc');
+            }])
             ->findOrFail($id);
 
         return response()->json([
@@ -79,8 +84,25 @@ class AuctionSessionController extends Controller
             'type' => ['sometimes', 'required', Rule::in(['live', 'instant', 'silent'])],
         ]);
 
-        $session->update($validated);
+        if ($request->type === 'live' && $request->status === 'active') {
+            $liveSessionsCount = AuctionSession::where('type', 'live')
+            ->where('status', 'active')
+            ->where('id', '!=', $id)
+            ->count();
 
+            if ($liveSessionsCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'فقط جلسة واحدة يمكن التنشيط في وقت واحد للمزاد المباشر',
+                ], 422);
+            }
+        }
+        
+        $session->update($validated);
+        $session->auctions()->update(['approved_for_live' => false]);
+        if ($request->type === 'live' && $request->status === 'active') {
+            broadcast(new UpdateSessionEvent($session));
+        }
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث جلسة المزاد بنجاح',
@@ -108,6 +130,77 @@ class AuctionSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم حذف جلسة المزاد بنجاح'
+        ]);
+    }
+
+    /**
+     * Update the status of the specified auction session.
+     */
+    public function updateStatus(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['active', 'completed', 'cancelled'])],
+        ]);
+        $session = AuctionSession::findOrFail($id);
+        if ($session->session_date > now()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا يمكن تحديث حالة الجلسة قبل تاريخ الجلسة',
+            ], 422);
+        }
+
+        if ($request->status === 'active' && $session->type === 'live') {
+            $liveSessionsCount = AuctionSession::where('type', 'live')
+            ->where('status', 'active')
+            ->where('id', '!=', $id)
+            ->count();
+
+            if ($liveSessionsCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'فقط جلسة واحدة يمكن التنشيط في وقت واحد للمزاد المباشر',
+                ], 422);
+            }
+        }
+
+
+        DB::beginTransaction();
+        try {
+            $session = AuctionSession::findOrFail($id);
+            $session->status = $validated['status'];
+            $session->save();
+
+            $session->auctions()->update(['approved_for_live' => false]);
+            DB::commit();
+            broadcast(new UpdateSessionEvent($session));
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تحديث حالة الجلسة بنجاح',
+                'data' => $session
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء تحديث حالة الجلسة',
+                'errors' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get active and scheduled auction sessions.
+     */
+    public function getActiveAndScheduledSessions(): JsonResponse
+    {
+        $sessions = AuctionSession::whereIn('status', ['scheduled', 'active'])
+            ->where('type', 'live') // Only live sessions can have live auctions
+            ->orderBy('session_date', 'asc')
+            ->get(['id', 'name', 'session_date', 'status']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $sessions
         ]);
     }
 }
