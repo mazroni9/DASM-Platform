@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import LoadingLink from "@/components/LoadingLink";
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import SuspenseLoader from '@/components/SuspenseLoader';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useLoadingRouter();
   
     const searchParams = useSearchParams();
@@ -319,5 +320,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<SuspenseLoader />}>
+            <LoginForm />
+        </Suspense>
     );
 }

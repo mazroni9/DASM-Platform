@@ -1,8 +1,9 @@
 "use client";
 
 import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import SuspenseLoader from '@/components/SuspenseLoader';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -77,7 +78,7 @@ interface TransactionStatus {
     transactionId?: string | number;
 }
 
-export default function MoneyTransfersPage() {
+function MoneyTransfersContent() {
     const searchParams = useSearchParams();
     const initialAction =
         searchParams?.get("action") === "withdraw" ? "withdraw" : "deposit";
@@ -777,5 +778,13 @@ export default function MoneyTransfersPage() {
                 </Tabs>
             </div>
         </main>
+    );
+}
+
+export default function MoneyTransfersPage() {
+    return (
+        <Suspense fallback={<SuspenseLoader />}>
+            <MoneyTransfersContent />
+        </Suspense>
     );
 }
