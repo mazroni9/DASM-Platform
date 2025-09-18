@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useLoading, setLoadingFunctions } from "@/contexts/LoadingContext";
+import { preloadCriticalComponents, preloadCriticalData } from "@/lib/dynamic-imports";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
     const { initializeFromStorage } = useAuthStore();
@@ -16,20 +17,30 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         setLoadingFunctions({ startLoading, stopLoading });
 
         const initAuth = async () => {
-            // Start loading immediately when auth initialization begins
-            startLoading();
             try {
                 await initializeFromStorage();
+                // Preload critical data after auth
+                preloadCriticalData();
             } catch (error) {
                 console.error("Auth initialization error:", error);
             } finally {
                 setInitialized(true);
-                // Stop loading when auth initialization completes
-                stopLoading();
             }
         };
 
-        initAuth();
+        // Defer auth initialization to avoid blocking first paint
+        const id = typeof requestIdleCallback !== 'undefined'
+            ? requestIdleCallback(initAuth)
+            : setTimeout(initAuth, 0) as unknown as number;
+
+        // Preload critical components on user interaction
+        preloadCriticalComponents();
+
+        return () => {
+            if (typeof cancelIdleCallback !== 'undefined') {
+                try { cancelIdleCallback(id as unknown as number); } catch {}
+            }
+        };
     }, [initializeFromStorage, startLoading, stopLoading]);
 
     // Always render children - the GlobalLoader will be shown/hidden automatically
