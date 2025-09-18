@@ -55,13 +55,7 @@ export default function AuctionFinished() {
 
   console.log("auctionsFinished:", auctionsFinished, "Type:", typeof auctionsFinished, "Is Array:", Array.isArray(auctionsFinished));
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="text-lg text-gray-600">جاري تحميل المزايدات المنتهية...</div>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (

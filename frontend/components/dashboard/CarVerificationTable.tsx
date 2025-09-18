@@ -94,14 +94,7 @@ export function CarVerificationTable({ isAdmin = false, status = "pending", user
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-500">جاري تحميل البيانات...</p>
-      </div>
-    );
-  }
+
 
   if (cars.length === 0) {
     return (

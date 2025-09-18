@@ -251,14 +251,7 @@ export default function CarDetailPage() {
   
 
 
-  // صفحة التحميل
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">جاري تحميل البيانات...</div>
-      </div>
-    );
-  }
+
 
   const images = item["car"]?.images;
   // الصورة الحالية المختارة

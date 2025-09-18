@@ -202,7 +202,7 @@ export default function DashboardTabs() {
                                 مرحباً بك {userName} في DASM-e
                             </h2>
                             <p className="text-green-500 font-bold mt-1">
-                                {user.role == "user" || user.role == "dealer"  ? "الاشتراك : مجاني" : ""}
+                                {user?.role == "user" || user?.role == "dealer"  ? "الاشتراك : مجاني" : ""}
                             </p>
                             <p className="text-gray-500 mt-1">
                                 يمكنك إدارة حسابك ومشترياتك ومبيعاتك من هنا

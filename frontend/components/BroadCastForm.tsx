@@ -42,6 +42,7 @@ const handleDelete = async (id: number) => {
             try {
                 const response = await api.get('/api/admin/all-broadcasts');
                 const all_broadcasts=response.data.data.data || response.data.data; // Replace with your actual API endpoint
+                 console.log(all_broadcasts);
                 setBroadcasts(all_broadcasts);
             } catch (err) {
                 setError('Failed to load auction IDs');
@@ -50,8 +51,9 @@ const handleDelete = async (id: number) => {
 
                const fetchAuctionIds = async () => {
             try {
-                const response = await api.get('/api/approved-auctions');
+                const response = await api.get('/api/approved-auctions-ids');
                 const auctions=response.data.data.data || response.data.data; // Replace with your actual API endpoint
+                console.log(auctions);
                 setAuctionOptions(auctions.filter(a => a.broadcasts.length == 0)); // Assuming the response is an array of auction objects with 'id' and 'name'
             } catch (err) {
                 setError('Failed to load auction IDs');

@@ -417,13 +417,7 @@ export default function VenueBroadcastPage({ params }: { params: { venueId: stri
     };
   }, [params.venueId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-500"></div>
-      </div>
-    );
-  }
+
 
   if (error || !venue) {
     return (

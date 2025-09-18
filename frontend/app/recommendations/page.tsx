@@ -128,7 +128,6 @@ export default function RecommendationsPage() {
     });
 
     // عرض حالة التحميل
-    if (loading) {
         return (
             <div className="container mx-auto px-4 py-8 max-w-6xl">
                 <div className="animate-pulse">
@@ -150,7 +149,7 @@ export default function RecommendationsPage() {
                 </div>
             </div>
         );
-    }
+  
 
     // عرض حالة الخطأ
     if (error) {
