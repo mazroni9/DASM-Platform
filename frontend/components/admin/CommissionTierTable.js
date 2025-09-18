@@ -34,7 +34,6 @@ export default function CommissionTierTable({ onView, onEdit, onDelete }) {
     load();
   }, []);
 
-  if (loading) return <div className="text-center py-6">جارٍ التحميل...</div>;
 
   if (error)
     return (

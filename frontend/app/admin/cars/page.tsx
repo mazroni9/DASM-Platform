@@ -15,7 +15,6 @@ import {
     Pause,
     Archive,
     RotateCcw,
-    Loader2,
     ChevronDown,
     X,
     MoveVertical,
@@ -75,9 +74,7 @@ interface FilterOptions {
 
 export default function AdminCarsPage() {
     const router = useLoadingRouter();
-    
     const [cars, setCars] = useState<CarData[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
     const [selectAll, setSelectAll] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -110,7 +107,6 @@ export default function AdminCarsPage() {
 
     const fetchCars = async () => {
         try {
-            setLoading(true);
             const params = new URLSearchParams();
             if (searchTerm) params.append("search", searchTerm);
             if (filters.status) params.append("status", filters.status);
@@ -123,9 +119,7 @@ export default function AdminCarsPage() {
         } catch (error) {
             console.error("Error fetching cars:", error);
             toast.error("فشل في تحميل السيارات");
-        } finally {
-            setLoading(false);
-        }
+        } 
     };
 
     const fetchEnumOptions = async () => {
@@ -604,12 +598,7 @@ try {
 
             {/* Cars Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                        <span className="mr-2">جاري تحميل السيارات...</span>
-                    </div>
-                ) : (
+                {(
                     <div className="overflow-x-auto">
                         <table className="min-w-full">
                             <thead className="bg-gray-50">
@@ -879,9 +868,8 @@ try {
                                 ))}
                             </tbody>
                         </table>
-                                                 
 
-                        {filteredCars.length === 0 && !loading && (
+                        {filteredCars.length === 0 && (
                             <div className="text-center py-12">
                                 <Car className="mx-auto h-12 w-12 text-gray-400" />
                                 <h3 className="mt-2 text-sm font-medium text-gray-900">

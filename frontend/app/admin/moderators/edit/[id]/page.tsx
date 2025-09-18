@@ -209,16 +209,7 @@ export default function EditModeratorPage({ params }: { params: { id: string } }
         }
     };
 
-    if (initialLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                <span className="mr-2 text-xl">
-                    جاري تحميل بيانات المشرف...
-                </span>
-            </div>
-        );
-    }
+  
 
     if (!moderator) {
         return (

@@ -26,12 +26,7 @@ export default function Page() {
     if (id) load();
   }, [id]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-12">
-      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      <span className="mr-2">جارٍ التحميل...</span>
-    </div>
-  );
+
 
   return (
     <div className="space-y-6">

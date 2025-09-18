@@ -214,14 +214,7 @@ export default function ModeratorProcessAuctionPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <span className="mr-2">جاري تحميل البيانات...</span>
-            </div>
-        );
-    }
+
 
     if (!car || !auction) {
         return (

@@ -6,7 +6,6 @@ import { commissionTierService } from "@/services/commission-tier-service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import CommissionCalculator from "@/components/admin/CommissionCalculator";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const p = useParams();
@@ -27,12 +26,6 @@ export default function Page() {
     if (id) load();
   }, [id]);
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-12">
-      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      <span className="mr-2">جارٍ التحميل...</span>
-    </div>
-  );
 
   return (
     <div className="space-y-6">

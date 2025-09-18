@@ -81,14 +81,6 @@ export default function AdminReportsPage() {
         }).format(amount);
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                <span className="mr-2">جاري تحميل التقارير...</span>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">

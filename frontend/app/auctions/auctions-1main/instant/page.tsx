@@ -194,7 +194,6 @@ export default function InstantAuctionPage() {
             (entries) => {
                 const ent = entries[0];
                 if (!ent.isIntersecting) return;
-                if (loading) return;
                 if (loadingGateRef.current) return;
                 if (!isAllowed) return;
                 if (currentPage >= totalPages) return;

@@ -51,7 +51,6 @@ export default function SubscriptionPlanTable({ onView, onEdit, onDelete, onTogg
     }
   };
 
-  if (loading) return <div className="text-center py-6">جارٍ التحميل...</div>;
 
   if (error)
     return (

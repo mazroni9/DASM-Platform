@@ -55,7 +55,7 @@ export default function RootLayout({
               </NotificationProvider>
             </ProtectedRoute>
             <GlobalLoader />
-          </Providers>
+            </Providers>
         </LoadingProvider>
       </body>
     </html>

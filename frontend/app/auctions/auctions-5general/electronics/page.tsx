@@ -150,11 +150,7 @@ export default function ElectronicsMarketPage() {
       <div className="mb-10">
         <h2 className="text-2xl font-bold mb-6 border-b pb-2">الأجهزة المميزة</h2>
         
-        {isLoading && (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        )}
+
         
         {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4">

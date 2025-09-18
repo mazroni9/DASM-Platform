@@ -197,14 +197,7 @@ export default function ModeratorAuctionApproval() {
         return "غير محدد";
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                <span className="mr-2 text-gray-600">جاري التحميل...</span>
-            </div>
-        );
-    }
+
 
     return (
         <div className="space-y-6">
