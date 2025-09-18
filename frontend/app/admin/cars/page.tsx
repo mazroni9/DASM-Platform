@@ -26,6 +26,7 @@ import { redirect } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
+import { MoveToLiveDialog } from "@/components/admin/MoveToLiveDialog";
 
 interface CarFormData {
     price:string;
@@ -89,6 +90,7 @@ export default function AdminCarsPage() {
     const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10; // or allow user to change it
+    const [showMoveToLiveDialog, setShowMoveToLiveDialog] = useState(false);
     const [filters, setFilters] = useState<FilterOptions>({
         status: "",
         category: "",
@@ -221,27 +223,23 @@ try {
         try {
             switch (action) {
                 case "approve-auctions":
-                    const approveStatus =  await api.put("/api/admin/cars/bulk/approve-rejcet",{
+                    const approveStatus =  await api.put("/api/admin/cars/bulk/approve-reject",{
                         ids: carIds,
                         action: true,
                     });
                     toast.success(approveStatus.data.message);
                     break;
                 case "reject-auctions":
-                  const  rejectStatus= await api.put("/api/admin/cars/bulk/approve-rejcet",{
+                  const  rejectStatus= await api.put("/api/admin/cars/bulk/approve-reject",{
                         ids: carIds,
                         action: false,
                     });
                     toast.success(rejectStatus.data.message);
                     break;
                     case "move-to-live":
-                    // Add bulk status update endpoint if needed
-                const  moveLiveStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
-                        ids: carIds,
-                        status: "live",
-                    });
-                    toast.success(moveLiveStatus.data.message);
-                    break;
+                    // Show dialog for session selection
+                    setShowMoveToLiveDialog(true);
+                    return; // Don't reset selections or refresh yet
                 case "move-to-active":
                     // Add bulk status update endpoint if needed
                 const  moveActiveStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
@@ -352,6 +350,7 @@ try {
     });
 
     return (
+        <>
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-800">
@@ -905,5 +904,17 @@ try {
       />
         </div>
         
+        <MoveToLiveDialog
+            open={showMoveToLiveDialog}
+            onClose={() => setShowMoveToLiveDialog(false)}
+            carIds={Array.from(selectedCars)}
+            onSuccess={() => {
+                setSelectedCars(new Set());
+                setSelectAll(false);
+                fetchCars();
+                setShowMoveToLiveDialog(false);
+            }}
+        />
+        </>
     );
 }

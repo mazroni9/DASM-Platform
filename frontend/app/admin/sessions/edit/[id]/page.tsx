@@ -76,7 +76,10 @@ export default function EditSessionPage() {
         Object.values(error.response.data.errors).forEach((errorMsg: any) => {
           toast.error(errorMsg[0]);
         });
-      } else {
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      }
+      else {
         toast.error('حدث خطأ أثناء تحديث الجلسة');
       }
     } finally {
@@ -169,7 +172,7 @@ export default function EditSessionPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                 required
               >
-                <option value="live">مزاد مباشر</option>
+                <option value="live">الحراج المباشر</option>
                 <option value="instant">مزاد فوري</option>
                 <option value="silent">مزاد صامت</option>
               </select>

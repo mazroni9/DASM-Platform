@@ -282,7 +282,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/admin/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
     Route::put('/admin/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
     Route::put('/admin/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
-    Route::put('/admin/cars/bulk/approve-rejcet', [AuctionController::class, 'approveRejectAuctionBulk']);
+    Route::post('/admin/auctions/bulk-status', [AuctionController::class, 'bulkUpdateStatus']);
+    Route::put('/admin/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
     Route::put('/admin/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
     Route::put('/admin/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
 
@@ -339,9 +340,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
     // Admin auction sessions management
     Route::get('/admin/sessions', [AuctionSessionController::class, 'index']);
+    Route::get('/admin/sessions/active-scheduled', [AuctionSessionController::class, 'getActiveAndScheduledSessions']);
     Route::post('/admin/sessions', [AuctionSessionController::class, 'store']);
     Route::get('/admin/sessions/{id}', [AuctionSessionController::class, 'show']);
     Route::put('/admin/sessions/{id}', [AuctionSessionController::class, 'update']);
+    Route::post('/admin/sessions/{id}/status', [AuctionSessionController::class, 'updateStatus']);
     Route::delete('/admin/sessions/{id}', [AuctionSessionController::class, 'destroy']);
 });
 
