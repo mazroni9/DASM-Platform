@@ -13,8 +13,6 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.push(href, options);
-        // Stop loading immediately after navigation starts
-        requestAnimationFrame(() => stopLoading());
       } finally {
         // Fallback timeout in case requestAnimationFrame doesn't fire
         setTimeout(() => stopLoading(), 50);
@@ -28,7 +26,6 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.replace(href, options);
-        requestAnimationFrame(() => stopLoading());
       } finally {
         setTimeout(() => stopLoading(), 50);
       }
@@ -41,7 +38,6 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.refresh();
-        requestAnimationFrame(() => stopLoading());
       } finally {
         setTimeout(() => stopLoading(), 200);
       }
@@ -54,7 +50,6 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.back();
-        requestAnimationFrame(() => stopLoading());
       } finally {
         setTimeout(() => stopLoading(), 50);
       }
@@ -67,7 +62,6 @@ export function useLoadingRouter() {
       startLoading();
       try {
         router.forward();
-        requestAnimationFrame(() => stopLoading());
       } finally {
         setTimeout(() => stopLoading(), 50);
       }

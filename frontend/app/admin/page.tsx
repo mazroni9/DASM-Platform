@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import {
     Users,
     Car,
@@ -17,9 +17,22 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AdminAuctionApproval from "@/components/admin/AuctionApproval";
-import AdminBroadcastManagement from "@/components/admin/AdminBroadcastManagement";
-import AdminCarsPage from "./cars/page";
+import dynamic from 'next/dynamic';
+import GlobalLoader from '@/components/GlobalLoader';
+
+// Dynamic imports for heavy admin components
+const AdminAuctionApproval = dynamic(() => import("@/components/admin/AuctionApproval"), {
+  loading: () => <GlobalLoader />,
+  ssr: false
+});
+const AdminBroadcastManagement = dynamic(() => import("@/components/admin/AdminBroadcastManagement"), {
+  loading: () => <GlobalLoader />,
+  ssr: false
+});
+const AdminCarsPage = dynamic(() => import("./cars/page"), {
+  loading: () => <GlobalLoader />,
+  ssr: false
+});
 
 // Types for dashboard statistics
 interface DashboardStats {
@@ -425,15 +438,21 @@ export default function AdminDashboard() {
                 </TabsContent>
 
                 <TabsContent value="cars">
-                    <AdminCarsPage />
+                    <Suspense fallback={<GlobalLoader />}>
+                        <AdminCarsPage />
+                    </Suspense>
                 </TabsContent>
 
                 <TabsContent value="broadcast">
-                    <AdminBroadcastManagement />
+                    <Suspense fallback={<GlobalLoader />}>
+                        <AdminBroadcastManagement />
+                    </Suspense>
                 </TabsContent>
 
                 <TabsContent value="auctions">
-                    <AdminAuctionApproval />
+                    <Suspense fallback={<GlobalLoader />}>
+                        <AdminAuctionApproval />
+                    </Suspense>
                 </TabsContent>
             </Tabs>
         </div>

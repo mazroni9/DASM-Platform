@@ -12,8 +12,14 @@ import BidForm from '@/components/BidForm';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 // Dynamic imports for heavy components
-const CountdownTimer = dynamic(() => import("@/components/CountdownTimer"), { ssr: false });
-const LiveBidding = dynamic(() => import("@/components/LiveBidding"), { ssr: false });
+const CountdownTimer = dynamic(() => import("@/components/CountdownTimer"), { 
+  loading: () => <GlobalLoader />,
+  ssr: false 
+});
+const LiveBidding = dynamic(() => import("@/components/LiveBidding"), { 
+  loading: () => <GlobalLoader />,
+  ssr: false 
+});
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
   try {
