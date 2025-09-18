@@ -1,22 +1,27 @@
 // Extracted content from LiveMarketPage for dynamic loading
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { cachedApiRequest } from "@/lib/request-cache";
 import api from "@/lib/axios";
+import GlobalLoader from '@/components/GlobalLoader';
+import BidForm from '@/components/BidForm';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 // Dynamic imports for heavy components
-const BidForm = dynamic(() => import("@/components/BidForm"), { ssr: false });
 const CountdownTimer = dynamic(() => import("@/components/CountdownTimer"), { ssr: false });
 const LiveBidding = dynamic(() => import("@/components/LiveBidding"), { ssr: false });
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
   try {
-    const response = await cachedApiRequest(`/api/check-time/${page}`, undefined, 60000); // 1 minute cache
-    return response.data.allowed;
+    const response = await cachedApiRequest(`/api/check-time/${page}`, undefined, 0); // 0 minute cache
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as any).data?.allowed || true;
+    }
+    return true; // Allow by default
   } catch (error) {
     console.error("Time check error:", error);
     return true; // Allow by default
@@ -62,63 +67,65 @@ export default function LiveMarketContent() {
     }
   }, [isLoggedIn, router]);
 
-  // Fetch auction data with caching
-  useEffect(() => {
-    async function fetchAuctions() {
-      if (!isLoggedIn) return;
-      try {
-        setIsAllowed(await isWithinAllowedTime("live_auction"));
-        setIsAllowed(true);
+  // Function to fetch auction data
+  const fetchAuctions = async (forceRefresh = false) => {
+    if (!isLoggedIn) return;
+    try {
+      setIsAllowed(await isWithinAllowedTime("live_auction"));
+      setIsAllowed(true);
+      
+      // Use cached API request, but force refresh if needed
+      const response = await cachedApiRequest("/api/approved-live-auctions", undefined, forceRefresh ? 0 : 30000);
+      
+      if (response && typeof response === 'object' && 'data' in response) {
+        const carsData = (response as any).data?.data || (response as any).data;
         
-        // Use cached API request
-        const response = await cachedApiRequest("/api/approved-live-auctions", undefined, 30000); // 30 second cache
-        
-        if (response.data || response.data) {
-          const carsData = response.data.data || response.data;
-          
-          let current_car = carsData.current_live_car;
-          let liveAuctions = carsData.pending_live_auctions;
-          let completedAuctions = carsData.completed_live_auctions;
+        let current_car = carsData.current_live_car;
+        let liveAuctions = carsData.pending_live_auctions;
+        let completedAuctions = carsData.completed_live_auctions;
 
-          if (current_car && current_car.car) {
-            let car_user_id = current_car.car.user_id;
-            let current_user_id = user.id;
-            let dealer_user_id = current_car.car.dealer;
-            if (current_car.car.dealer != null) {
-              dealer_user_id = current_car.car.dealer.user_id;
-            }
-
-            if (current_user_id == car_user_id) {
-              setIsOwner(true);
-            } else if (dealer_user_id == current_user_id) {
-              setIsOwner(true);
-            } else {
-              setIsOwner(false);
-            }
+        if (current_car && current_car.car) {
+          let car_user_id = current_car.car.user_id;
+          let current_user_id = user.id;
+          let dealer_user_id = current_car.car.dealer;
+          if (current_car.car.dealer != null) {
+            dealer_user_id = current_car.car.dealer.user_id;
           }
 
-          setMarketCars(liveAuctions);
-          setCurrentCar(current_car);
-          setMarketCarsCompleted(completedAuctions);
-        } else {
-          setMarketCars([]);
-          setCurrentCar(null);
-          setMarketCarsCompleted([]);
-          setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
-          setLoading(false);
+          if (current_user_id == car_user_id) {
+            setIsOwner(true);
+          } else if (dealer_user_id == current_user_id) {
+            setIsOwner(true);
+          } else {
+            setIsOwner(false);
+          }
         }
-      } catch (error) {
-        console.error("فشل تحميل بيانات المزاد الصامت", error);
+
+        setMarketCars(liveAuctions);
+        setCurrentCar(current_car);
+        setMarketCarsCompleted(completedAuctions);
+      } else {
         setMarketCars([]);
         setCurrentCar(null);
         setMarketCarsCompleted([]);
         setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
         setLoading(false);
-      } finally {
-        setLoading(false);
       }
+    } catch (error) {
+      console.error("فشل تحميل بيانات المزاد الصامت", error);
+      setMarketCars([]);
+      setCurrentCar(null);
+      setMarketCarsCompleted([]);
+      setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
+      setLoading(false);
+    } finally {
+      setLoading(false);
     }
-    fetchAuctions();
+  };
+
+  // Fetch auction data with caching
+  useEffect(() => {
+    fetchAuctions(true);
   }, [isLoggedIn, user]);
 
   const submitBid = async () => {
@@ -169,14 +176,7 @@ export default function LiveMarketContent() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 py-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">جاري التحميل...</p>
-        </div>
-      </div>
-    );
+    return <GlobalLoader />;
   }
 
   return (
@@ -276,23 +276,59 @@ export default function LiveMarketContent() {
           </div>
 
           {/* Live Bidding */}
-          <Suspense fallback={<div className="h-32 bg-gray-100 rounded-lg animate-pulse" />}>
-            <LiveBidding />
+          <Suspense fallback={<GlobalLoader />}>
+            <LiveBidding data={currentCar} />
           </Suspense>
         </div>
       </div>
 
       {/* Bid Modal */}
-      {showBid && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg">جاري التحميل...</div>
-        </div>}>
-          <BidForm
-            currentBid={currentCar?.current_bid || 0}
-            onSubmit={submitBid}
-            onClose={() => setShowBid(false)}
-          />
-        </Suspense>
+      {showBid && currentCar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">مزايدة على السيارة</h3>
+                <button 
+                  onClick={() => setShowBid(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">السيارة: {currentCar.make} {currentCar.model}</p>
+                <p className="text-sm text-gray-600 mb-2">السعر الحالي: {formatCurrency(currentCar.current_bid || 0)}</p>
+              </div>
+
+              <BidForm
+                auction_id={parseInt(currentCar.id)}
+                bid_amount={parseInt(
+                  (currentCar.current_bid == 0
+                    ? currentCar.opening_price
+                    : currentCar.current_bid || 0
+                  )
+                    .toString()
+                    .replace(/,/g, "")
+                )}
+                onSuccess={() => {
+                  setShowBid(false);
+                  setStatus("✅ تمت المزايدة بنجاح");
+                  // Force refresh the auction data to show updated bid
+                  fetchAuctions(true);
+                }}
+              />
+              {status && (
+                <p className="text-center text-sm mt-2">
+                  {status}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

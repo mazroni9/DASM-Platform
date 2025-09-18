@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // API middleware
         $middleware->api(append: [
             \App\Http\Middleware\ApiCacheMiddleware::class,
+            \App\Http\Middleware\QueryOptimizationMiddleware::class,
+            \App\Http\Middleware\ResponseOptimizationMiddleware::class,
         ]);
 
         // Register your custom middleware alias here
