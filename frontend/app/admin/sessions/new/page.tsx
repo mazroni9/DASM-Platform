@@ -131,7 +131,7 @@ export default function NewSessionPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                 required
               >
-                <option value="live">مزاد مباشر</option>
+                <option value="live">الحراج المباشر</option>
                 <option value="instant">مزاد فوري</option>
                 <option value="silent">مزاد صامت</option>
               </select>

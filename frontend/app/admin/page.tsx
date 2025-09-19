@@ -10,7 +10,6 @@ import {
     FileText,
     AlertTriangle,
     CheckCircle,
-    Loader2,
     Settings,
     Play,
 } from "lucide-react";
@@ -141,14 +140,7 @@ export default function AdminDashboard() {
         });
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                <span className="mr-2 text-xl">جاري تحميل البيانات...</span>
-            </div>
-        );
-    }
+
 
     console.log("recentUsers", recentUsers);
 

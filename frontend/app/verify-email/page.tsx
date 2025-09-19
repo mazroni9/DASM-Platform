@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import VerifyEmailForm from "./Form";
 import { useAuth } from "@/hooks/useAuth";
+import SuspenseLoader from '@/components/SuspenseLoader';
 
 
 export default function VerifyEmailPage() {
@@ -38,7 +39,9 @@ export default function VerifyEmailPage() {
                         </p>
                     </div>
                     <div className="bg-white rounded-lg p-4">
-                        <VerifyEmailForm />
+                        <Suspense fallback={<SuspenseLoader />}>
+                            <VerifyEmailForm />
+                        </Suspense>
                     </div>
                     <div className="text-center text-sm text-gray-500 mt-4">
                         <p>لم تتلق البريد الإلكتروني؟</p>

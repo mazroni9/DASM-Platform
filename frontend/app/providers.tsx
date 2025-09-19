@@ -25,7 +25,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
             } finally {
                 setInitialized(true);
                 // Stop loading when auth initialization completes
-                stopLoading();
+               stopLoading();
             }
         };
 

@@ -75,7 +75,6 @@ export default function AdminProcessAuctionPage() {
 
     const [car, setCar] = useState<CarData | null>(null);
     const [auction, setAuction] = useState<AuctionData | null>(null);
-    const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [editMode, setEditMode] = useState(false);
 
@@ -122,7 +121,6 @@ export default function AdminProcessAuctionPage() {
 
     const fetchCarData = async () => {
         try {
-            setLoading(true);
             const response = await api.get(
                 `/api/admin/cars/${carId}/process-auction`
             );
@@ -134,9 +132,7 @@ export default function AdminProcessAuctionPage() {
             console.error("Error fetching car data:", error);
             toast.error("فشل في تحميل بيانات السيارة");
             router.push("/admin/cars");
-        } finally {
-            setLoading(false);
-        }
+        } 
     };
 
     const handleApprove = async () => {
@@ -214,14 +210,6 @@ export default function AdminProcessAuctionPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <span className="mr-2">جاري تحميل البيانات...</span>
-            </div>
-        );
-    }
 
     if (!car || !auction) {
         return (

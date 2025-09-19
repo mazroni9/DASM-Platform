@@ -98,13 +98,7 @@ export default function ModeratorBidsPage() {
         return `${amount.toLocaleString()} ر.س`;
     };
 
-    if (isLoading || loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
+
 
     if (!isModerator) {
         return null; // Will redirect in useEffect

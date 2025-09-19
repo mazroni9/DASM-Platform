@@ -81,14 +81,7 @@ export default function ConfirmSalePage({ params }) {
 
     fetchCarData();
   }, [car_id]);
-  // Handle loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
-        <div className="text-xl text-gray-600">جاري التحميل...</div>
-      </div>
-    );
-  }
+
 
   // Handle error state
   if (error) {

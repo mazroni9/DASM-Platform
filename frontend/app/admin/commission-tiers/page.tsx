@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { commissionTierService } from "@/services/commission-tier-service";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { Eye, Loader2, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Eye, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";
 
 export default function Page() {
   const r = useLoadingRouter();
@@ -104,12 +104,7 @@ export default function Page() {
       </div>
 
       <div className="bg-white rounded-lg shadow border overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            <span className="mr-2">جاري تحميل الفئات...</span>
-          </div>
-        ) : (
+        { (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">

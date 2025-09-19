@@ -619,13 +619,19 @@ class AdminController extends Controller
         $count = Auction::where("approved_for_live",true)->count();
 
         $auction = Auction::findOrFail($id);
-
+        $sessionStatus=$auction->session?->status;
+        if($sessionStatus !== "active"){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'فقط الجلسات النشطة يمكن الموافقة عليها للمزاد المباشر',
+            ], 422);
+        }
         $isApproved=$request->approved_for_live;
 
         if($isApproved && $count > 0){
             return response()->json([
                 'status' => 'error',
-                'message' => 'Only one auction can be approved for live at a time',
+                'message' => 'فقط عملية واحدة يمكن الموافقة عليها للمزاد المباشر في وقت واحد',
             ], 422);
         }
 
@@ -635,9 +641,8 @@ class AdminController extends Controller
         $auction->save();
 
         // Send notification and event when car is approved for live
+        $car = $auction->car;
         if ($request->approved_for_live) {
-            $car = $auction->car;
-
             // Send notification to car owner
             $carOwner = $car->owner;
             if ($carOwner) {
@@ -645,8 +650,8 @@ class AdminController extends Controller
             }
 
             // Broadcast event for real-time updates
-            event(new CarApprovedForLiveEvent($auction, $car));
         }
+        event(new CarApprovedForLiveEvent($auction, $car));
 
         return response()->json([
             'status' => 'success',
@@ -757,7 +762,7 @@ class AdminController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $cars,
-            
+
         ]);
     }
 
@@ -940,7 +945,7 @@ class AdminController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role !== 'admin') {
+        if (!$user->isAdmin()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'لا يمكن تعديل بيانات '

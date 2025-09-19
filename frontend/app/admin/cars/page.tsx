@@ -15,7 +15,6 @@ import {
     Pause,
     Archive,
     RotateCcw,
-    Loader2,
     ChevronDown,
     X,
     MoveVertical,
@@ -26,6 +25,7 @@ import { redirect } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
+import { MoveToLiveDialog } from "@/components/admin/MoveToLiveDialog";
 
 interface CarFormData {
     price:string;
@@ -75,9 +75,7 @@ interface FilterOptions {
 
 export default function AdminCarsPage() {
     const router = useLoadingRouter();
-    
     const [cars, setCars] = useState<CarData[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
     const [selectAll, setSelectAll] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -89,6 +87,7 @@ export default function AdminCarsPage() {
     const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10; // or allow user to change it
+    const [showMoveToLiveDialog, setShowMoveToLiveDialog] = useState(false);
     const [filters, setFilters] = useState<FilterOptions>({
         status: "",
         category: "",
@@ -110,7 +109,6 @@ export default function AdminCarsPage() {
 
     const fetchCars = async () => {
         try {
-            setLoading(true);
             const params = new URLSearchParams();
             if (searchTerm) params.append("search", searchTerm);
             if (filters.status) params.append("status", filters.status);
@@ -119,14 +117,11 @@ export default function AdminCarsPage() {
             if (response.data.status === "success") {
                 setCars(response.data.data.data);
                 setTotalCount(response.data.data.total); // Laravel gives you total
-
             }
         } catch (error) {
             console.error("Error fetching cars:", error);
             toast.error("فشل في تحميل السيارات");
-        } finally {
-            setLoading(false);
-        }
+        } 
     };
 
     const fetchEnumOptions = async () => {
@@ -221,27 +216,23 @@ try {
         try {
             switch (action) {
                 case "approve-auctions":
-                    const approveStatus =  await api.put("/api/admin/cars/bulk/approve-rejcet",{
+                    const approveStatus =  await api.put("/api/admin/cars/bulk/approve-reject",{
                         ids: carIds,
                         action: true,
                     });
                     toast.success(approveStatus.data.message);
                     break;
                 case "reject-auctions":
-                  const  rejectStatus= await api.put("/api/admin/cars/bulk/approve-rejcet",{
+                  const  rejectStatus= await api.put("/api/admin/cars/bulk/approve-reject",{
                         ids: carIds,
                         action: false,
                     });
                     toast.success(rejectStatus.data.message);
                     break;
                     case "move-to-live":
-                    // Add bulk status update endpoint if needed
-                const  moveLiveStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
-                        ids: carIds,
-                        status: "live",
-                    });
-                    toast.success(moveLiveStatus.data.message);
-                    break;
+                    // Show dialog for session selection
+                    setShowMoveToLiveDialog(true);
+                    return; // Don't reset selections or refresh yet
                 case "move-to-active":
                     // Add bulk status update endpoint if needed
                 const  moveActiveStatus= await api.put("/api/admin/auctions/bulk/move-to-status",{
@@ -352,6 +343,7 @@ try {
     });
 
     return (
+        <>
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-gray-800">
@@ -605,12 +597,7 @@ try {
 
             {/* Cars Table */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                        <span className="mr-2">جاري تحميل السيارات...</span>
-                    </div>
-                ) : (
+                {(
                     <div className="overflow-x-auto">
                         <table className="min-w-full">
                             <thead className="bg-gray-50">
@@ -880,9 +867,8 @@ try {
                                 ))}
                             </tbody>
                         </table>
-                                                 
 
-                        {filteredCars.length === 0 && !loading && (
+                        {filteredCars.length === 0 && (
                             <div className="text-center py-12">
                                 <Car className="mx-auto h-12 w-12 text-gray-400" />
                                 <h3 className="mt-2 text-sm font-medium text-gray-900">
@@ -903,7 +889,21 @@ try {
         pageSize={pageSize}
         onPageChange={page => setCurrentPage(page)}
       />
+
+
         </div>
         
+        <MoveToLiveDialog
+            open={showMoveToLiveDialog}
+            onClose={() => setShowMoveToLiveDialog(false)}
+            carIds={Array.from(selectedCars)}
+            onSuccess={() => {
+                setSelectedCars(new Set());
+                setSelectAll(false);
+                fetchCars();
+                setShowMoveToLiveDialog(false);
+            }}
+        />
+        </>
     );
 }
