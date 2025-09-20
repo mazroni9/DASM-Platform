@@ -36,7 +36,7 @@ class AuctionController extends Controller
 
 
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
- 
+
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {
             $query->where('control_room_approved', true);
@@ -84,7 +84,7 @@ class AuctionController extends Controller
 
     public function getAllAuctionsIds(Request $request)
     {
-     
+
 
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
 
@@ -174,7 +174,7 @@ class AuctionController extends Controller
                  ->orWhere('make', 'like', "%{$search}%");
             });
         }
-        
+
         // Sort options
         $sortField = $request->input('sort_by', 'updated_at');
         $sortDirection = $request->input('sort_dir', 'desc');
@@ -244,180 +244,150 @@ class AuctionController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'car_id' => 'required|integer|exists:cars,id',
-            'starting_bid' => 'required|numeric|min:1|max:999999999.99',
-            'reserve_price' => 'nullable|numeric|min:0|max:999999999.99',
-            'start_time' => 'required|date|after_or_equal:today',
-            'end_time' => 'required|date|after:start_time',
-            'description' => 'nullable|string|max:1000',
-        ], [
-            'car_id.required' => 'معرف السيارة مطلوب',
-            'car_id.exists' => 'السيارة غير موجودة',
-            'starting_bid.required' => 'سعر البداية مطلوب',
-            'starting_bid.min' => 'سعر البداية يجب أن يكون أكبر من صفر',
-            'starting_bid.max' => 'سعر البداية كبير جداً',
-            'reserve_price.max' => 'السعر الاحتياطي كبير جداً',
-            'start_time.required' => 'وقت البداية مطلوب',
-            'start_time.after_or_equal' => 'وقت البداية يجب أن يكون اليوم أو بعده',
-            'end_time.required' => 'وقت النهاية مطلوب',
-            'end_time.after' => 'وقت النهاية يجب أن يكون بعد وقت البداية',
-            'description.max' => 'وصف المزاد طويل جداً'
+   public function store(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'car_id'        => 'required|integer|exists:cars,id',
+        'starting_bid'  => 'required|numeric|min:1|max:999999999.99',
+        'reserve_price' => 'nullable|numeric|min:0|max:999999999.99',
+        'start_time'    => 'required|date|after_or_equal:today',
+        'end_time'      => 'required|date|after:start_time',
+        'description'   => 'nullable|string|max:1000',
+        'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
+    ], [
+        'session_id.required' => 'الجلسة مطلوبة',
+        'session_id.exists'   => 'الجلسة غير موجودة',
+        // باقي الرسائل كما هي…
+    ]);
+
+    if ($validator->fails()) {
+        \Log::warning('Auction creation validation failed', [
+            'user_id' => Auth::id(),
+            'errors'  => $validator->errors(),
+            'ip'      => $request->ip(),
+            'ua'      => $request->userAgent()
         ]);
 
-        if ($validator->fails()) {
-            \Illuminate\Support\Facades\Log::warning('Auction creation validation failed', [
-                'user_id' => Auth::id(),
-                'errors' => $validator->errors(),
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'بيانات المزاد غير صالحة',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Verify car belongs to the authenticated user (either as dealer or regular user)
-        $user = Auth::user();
-        $car = Car::find($request->car_id);
-
-        $isOwner = false;
-        if ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id) {
-            $isOwner = true;
-        } elseif ($car->user_id === $user->id) {
-            $isOwner = true;
-        }
-
-        if (!$isOwner) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You can only create auctions for your own cars'
-            ], 403);
-        }
-
-        // Check if car is available for auction
-        if ($car->auction_status !== 'available') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'This car is not available for auction'
-            ], 400);
-        }
-
-        // Create the auction
-        $auction = new Auction();
-        $auction->car_id = $request->car_id;
-        $auction->starting_bid = $request->starting_bid;
-        $auction->current_bid = $request->starting_bid;
-        $auction->reserve_price = $request->reserve_price ?? 0;
-        $auction->start_time = $request->start_time;
-        $auction->end_time = $request->end_time;
-        $auction->description = $request->description;
-
-        // Set initial status based on start time
-        $now = Carbon::now();
-        if (Carbon::parse($request->start_time) <= $now) {
-            $auction->status = AuctionStatus::ACTIVE;
-        } else {
-            $auction->status = AuctionStatus::SCHEDULED;
-        }
-
-        $auction->save();
-
-        // Update car status
-        $car->auction_status = 'in_auction';
-        $car->save();
-
         return response()->json([
-            'status' => 'success',
-            'message' => 'Auction created successfully',
-            'data' => $auction
-        ], 201);
+            'status'  => 'error',
+            'message' => 'بيانات المزاد غير صالحة',
+            'errors'  => $validator->errors()
+        ], 422);
     }
 
-    /**
-     * add to acution
-     */
+    // تأكد أن السيارة تابعة للمستخدم
+    $user = Auth::user();
+    $car  = Car::find($request->car_id);
+    $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
+        || ($car->user_id === $user->id);
+
+    if (!$isOwner) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'You can only create auctions for your own cars'
+        ], 403);
+    }
+
+    if ($car->auction_status !== 'available') {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'This car is not available for auction'
+        ], 400);
+    }
+
+    $auction = new Auction();
+    $auction->car_id        = $request->car_id;
+    $auction->starting_bid  = $request->starting_bid;
+    $auction->current_bid   = $request->starting_bid;
+    $auction->reserve_price = $request->reserve_price ?? 0;
+    $auction->start_time    = $request->start_time;
+    $auction->end_time      = $request->end_time;
+    $auction->description   = $request->description;
+    $auction->session_id    = $request->session_id; // 👈 يحفظ الجلسة
+
+    $now = Carbon::now();
+    $auction->status = (Carbon::parse($request->start_time) <= $now)
+        ? AuctionStatus::ACTIVE
+        : AuctionStatus::SCHEDULED;
+
+    $auction->save();
+
+    // تحديث حالة السيارة
+    $car->auction_status = 'in_auction';
+    $car->save();
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Auction created successfully',
+        'data'    => $auction->load('session')
+    ], 201);
+}
+
+
     public function addToAuction(Request $request)
-    {
+{
+    $validator = Validator::make($request->all(), [
+        'car_id'        => 'required|integer|exists:cars,id',
+        'starting_bid'  => 'required|numeric|min:0',
+        'reserve_price' => 'nullable|numeric|min:0',
+        'min_price'     => 'required|numeric|min:0',
+        'max_price'     => 'required|numeric|min:0|gte:min_price',
+        'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
+        'duration_minutes' => 'nullable|integer|min:1|max:1440',          // اختياري
+    ]);
 
-
-        $validator = Validator::make($request->all(), [
-            'car_id' => 'required',
-            'starting_bid' => 'required|numeric|min:0',
-            'reserve_price' => 'nullable|numeric|min:0',
-            'min_price' => 'required|numeric|min:0',
-            'max_price' => 'required|numeric|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $car = Car::find($request->car_id);
-
-        $isOwner = false;
-        if ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id) {
-            $isOwner = true;
-        } elseif ($car->user_id === $user->id) {
-            $isOwner = true;
-        }
-
-        if (!$isOwner) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'You can only create auctions for your own cars'
-            ], 403);
-        }
-
-        // Check if car is available for auction
-        if ($car->auction_status !== 'available') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'This car is not available for auction'
-            ], 400);
-        }
-
-
-        // Create the auction
-        $auction = new Auction();
-        $auction->car_id = $request->car_id;
-        $auction->starting_bid = $request->starting_bid;
-        $auction->current_bid = $request->starting_bid;
-        $auction->reserve_price = $request->reserve_price ?? 0;
-        $auction->min_price = $request->min_price;
-        $auction->max_price = $request->max_price;
-        $auction->start_time = Carbon::now();
-        $auction->end_time = Carbon::parse($request->start_time)->addMinutes(60);
-        // Set initial status based on start time
-        $now = Carbon::now();
-        if (Carbon::parse($request->start_time) <= $now) {
-            $auction->status = AuctionStatus::ACTIVE;
-        } else {
-            $auction->status = AuctionStatus::SCHEDULED;
-        }
-
-        $auction->save();
-
-        // Update car status
-        $car->auction_status = 'in_auction';
-        $car->save();
-
+    if ($validator->fails()) {
         return response()->json([
-            'status' => 'success',
-            'message' => 'Auction created successfully',
-            'data' => $auction
-        ], 201);
+            'status' => 'error',
+            'errors' => $validator->errors()
+        ], 422);
     }
 
+    $user = Auth::user();
+    $car  = Car::findOrFail($request->car_id);
+
+    $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
+        || ($car->user_id === $user->id);
+
+    if (!$isOwner) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'You can only create auctions for your own cars'
+        ], 403);
+    }
+
+    if ($car->auction_status !== 'available') {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'This car is not available for auction'
+        ], 400);
+    }
+
+    $now      = Carbon::now();
+    $duration = (int) ($request->duration_minutes ?? 60);
+
+    $auction = new Auction();
+    $auction->car_id        = $request->car_id;
+    $auction->starting_bid  = $request->starting_bid;
+    $auction->current_bid   = $request->starting_bid;
+    $auction->reserve_price = $request->reserve_price ?? 0;
+    $auction->min_price     = $request->min_price;
+    $auction->max_price     = $request->max_price;
+    $auction->start_time    = $now;                      // يبدأ الآن
+    $auction->end_time      = (clone $now)->addMinutes($duration);
+    $auction->status        = AuctionStatus::ACTIVE;     // فوري = نشط
+    $auction->session_id    = $request->session_id;      // 👈 يحفظ الجلسة
+    $auction->save();
+
+    $car->auction_status = 'in_auction';
+    $car->save();
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Auction created successfully',
+        'data'    => $auction->load('session')
+    ], 201);
+}
 
 public function approveRejectAuctionBulk(Request $request)
 {

@@ -161,6 +161,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
+    Route::get('/sessions/active-scheduled', [AdminController::class, 'getActiveAndScheduledSessions']);
+    Route::get('/sessions/{id}', [AdminController::class, 'showSessionPublic']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);

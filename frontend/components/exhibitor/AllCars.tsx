@@ -1,13 +1,73 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  FiSearch, FiFilter, FiEdit, FiTrash2, FiEye, FiChevronLeft, FiChevronRight, FiPlus, FiX
+  FiSearch, FiFilter, FiEdit, FiTrash2, FiEye, FiChevronLeft, FiChevronRight, FiPlus, FiX,
+  FiDollarSign, FiCalendar
 } from 'react-icons/fi'
 import { FaCar } from 'react-icons/fa'
 
-interface Car {
+/** ===== Types coming from backend (Laravel paginator) ===== */
+type CarFromApi = {
+  id: number
+  dealer_id: number | null
+  make: string
+  model: string
+  year: number
+  vin: string
+  odometer: number
+  condition: string
+  evaluation_price: string
+  auction_status: string
+  created_at: string
+  updated_at: string
+  color: string | null
+  engine: string | null
+  transmission: string | null
+  description: string | null
+  user_id: number
+  images: string[] | null
+  plate: string | null
+  min_price: string | null
+  max_price: string | null
+  province: string | null
+  city: string | null
+  registration_card_image: string | null
+  market_category: string | null
+  auctions: any[]
+}
+
+type CarsApiResponse = {
+  status: 'success'
+  data: {
+    current_page: number
+    data: CarFromApi[]
+    first_page_url: string
+    from: number
+    last_page: number
+    last_page_url: string
+    links: { url: string | null; label: string; page: number | null; active: boolean }[]
+    next_page_url: string | null
+    path: string
+    per_page: number
+    prev_page_url: string | null
+    to: number
+    total: number
+  }
+}
+
+type ShowCarApiResponse = {
+  status: 'success'
+  data: {
+    car: CarFromApi
+    active_auction?: any
+    total_bids?: number
+  }
+}
+
+type UiCar = {
   id: number
   title: string
   brand: string
@@ -15,291 +75,625 @@ interface Car {
   year: number
   price: number
   mileage: number
-  fuelType: string
   transmission: string
-  status: 'معلن' | 'مباع' | 'محجوز'
+  status: 'معلن' | 'محجوز' | 'مباع' | 'ملغي' | 'غير معروف'
   addedDate: string
   views: number
   inquiries: number
 }
 
-const brandsList = [
-  'تويوتا', 'نيسان', 'هيونداي', 'شفروليه', 'مرسيدس', 'بي ام دبليو', 'لكزس', 'فورد'
+/** ===== Helpers & Mappers ===== */
+
+// auction_status → Arabic
+const mapStatusToArabic = (s?: string): UiCar['status'] => {
+  switch ((s || '').toLowerCase()) {
+    case 'available':
+    case 'active':
+      return 'معلن'
+    case 'scheduled':
+      return 'محجوز'
+    case 'sold':
+      return 'مباع'
+    case 'cancelled':
+    case 'canceled':
+      return 'ملغي'
+    default:
+      return 'غير معروف'
+  }
+}
+
+// transmission label
+const mapTransmissionLabel = (t?: string) => {
+  const v = (t || '').toLowerCase()
+  if (v === 'automatic') return 'أوتوماتيك'
+  if (v === 'manual') return 'عادي'
+  if (v === 'cvt') return 'CVT'
+  return ''
+}
+
+const statuses = ['معلن', 'محجوز', 'مباع'] as const
+
+// backend enums for update
+const transmissionOptions = [
+  { value: 'automatic', label: 'أوتوماتيك' },
+  { value: 'manual', label: 'عادي' },
+  { value: 'cvt', label: 'CVT' },
 ]
-const fuelTypes = ['بنزين', 'ديزل', 'كهرباء', 'هايبرد']
-const transmissions = ['أوتوماتيك', 'عادي']
-const statuses = ['معلن', 'محجوز', 'مباع']
 
-// Popup Modal Component (فقط للإضافة)
-function CarModal({ open, onClose, onSubmit }: {
-  open: boolean,
-  onClose: () => void,
-  onSubmit: (car: Omit<Car, 'id' | 'addedDate' | 'views' | 'inquiries'>) => void
-}) {
-  const [form, setForm] = useState({
-    title: '',
-    brand: '',
-    model: '',
-    year: '',
-    price: '',
-    mileage: '',
-    fuelType: '',
-    transmission: '',
-    status: 'معلن'
-  })
-  const [errors, setErrors] = useState<{ [k: string]: string }>({})
-  const firstInputRef = useRef<HTMLInputElement>(null)
+const conditionOptions = [
+  { value: 'excellent', label: 'ممتازة' },
+  { value: 'good', label: 'جيدة' },
+  { value: 'fair', label: 'متوسطة' },
+  { value: 'poor', label: 'ضعيفة' },
+]
 
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => firstInputRef.current?.focus(), 100)
-      setForm({
-        title: '',
-        brand: '',
-        model: '',
-        year: '',
-        price: '',
-        mileage: '',
-        fuelType: '',
-        transmission: '',
-        status: 'معلن'
-      })
-      setErrors({})
-    }
-  }, [open])
+/** ===== UI Modals ===== */
 
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose])
+function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onMouseDown={onClose}
+    >
+      <motion.div
+        className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative"
+        initial={{ scale: 0.95, opacity: 0, y: 40 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 40 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute left-4 top-4 text-gray-400 hover:text-gray-700"
+          aria-label="إغلاق"
+        >
+          <FiX size={22} />
+        </button>
+        {children}
+      </motion.div>
+    </motion.div>
+  )
+}
 
-  const validate = () => {
-    const newErrors: typeof errors = {}
-    if (!form.title.trim()) newErrors.title = 'اسم السيارة مطلوب'
-    if (!form.brand) newErrors.brand = 'العلامة مطلوبة'
-    if (!form.model.trim()) newErrors.model = 'الموديل مطلوب'
-    if (!form.year || isNaN(Number(form.year)) || Number(form.year) < 1990) newErrors.year = 'سنة غير صحيحة'
-    if (!form.price || isNaN(Number(form.price)) || Number(form.price) < 1000) newErrors.price = 'السعر غير صحيح'
-    if (!form.mileage || isNaN(Number(form.mileage)) || Number(form.mileage) < 0) newErrors.mileage = 'الممشى غير صحيح'
-    if (!form.fuelType) newErrors.fuelType = 'نوع الوقود مطلوب'
-    if (!form.transmission) newErrors.transmission = 'ناقل الحركة مطلوب'
-    return newErrors
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const v = validate()
-    setErrors(v)
-    if (Object.keys(v).length === 0) {
-      onSubmit({
-        ...form,
-        year: Number(form.year),
-        price: Number(form.price),
-        mileage: Number(form.mileage)
-      } as any)
-      onClose()
-    }
-  }
-
-  const modalRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const focusable = modalRef.current?.querySelectorAll<HTMLElement>(
-      'input,select,button,textarea,[tabindex]:not([tabindex="-1"])'
-    )
-    let first = focusable?.[0]
-    let last = focusable?.[focusable.length - 1]
-    const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return
-      if (!focusable) return
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault()
-          last?.focus()
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault()
-          first?.focus()
-        }
-      }
-    }
-    document.addEventListener('keydown', handleTab)
-    return () => document.removeEventListener('keydown', handleTab)
-  }, [open])
-
-  const backdropRef = useRef<HTMLDivElement>(null)
-  const handleBackdrop = (e: React.MouseEvent) => {
-    if (e.target === backdropRef.current) onClose()
-  }
-
+function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => void; car: CarFromApi | null }) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          ref={backdropRef}
-          onMouseDown={handleBackdrop}
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          aria-modal="true"
-          role="dialog"
-        >
-          <motion.div
-            ref={modalRef}
-            initial={{ scale: 0.95, opacity: 0, y: 40 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 40 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-8 relative"
-            onMouseDown={e => e.stopPropagation()}
-          >
-            <button
-              onClick={onClose}
-              className="absolute left-4 top-4 text-gray-400 hover:text-gray-700 focus:outline-none"
-              aria-label="إغلاق"
-              tabIndex={0}
-            >
-              <FiX size={24} />
-            </button>
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">إضافة سيارة جديدة</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <Backdrop onClose={onClose}>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">تفاصيل السيارة</h2>
+          {!car ? (
+            <div className="text-gray-500">جاري التحميل...</div>
+          ) : (
+            <div className="space-y-3 text-gray-800">
+              <div className="grid grid-cols-2 gap-3">
+                <Info label="الماركة" value={car.make} />
+                <Info label="الموديل" value={car.model} />
+                <Info label="سنة الصنع" value={String(car.year)} />
+                <Info label="VIN" value={car.vin} />
+                <Info label="الممشى (كم)" value={String(car.odometer ?? '')} />
+                <Info label="الحالة" value={mapStatusToArabic(car.auction_status)} />
+                <Info label="القير" value={mapTransmissionLabel(car.transmission ?? '')} />
+                <Info label="المحرك" value={car.engine ?? ''} />
+                <Info label="السعر التقييمي" value={`${car.evaluation_price ?? '0'} ر.س`} />
+                <Info label="اللون" value={car.color ?? ''} />
+                <Info label="اللوحة" value={car.plate ?? ''} />
+                <Info label="المنطقة" value={car.province ?? ''} />
+                <Info label="المدينة" value={car.city ?? ''} />
+                <Info label="فئة السوق" value={car.market_category ?? ''} />
+              </div>
               <div>
-                <label className="block mb-1 text-gray-700">اسم السيارة</label>
-                <input
-                  ref={firstInputRef}
-                  type="text"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.title ? 'border-red-400' : 'border-gray-300'}`}
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  autoComplete="off"
-                />
-                {errors.title && <div className="text-red-500 text-xs mt-1">{errors.title}</div>}
+                <p className="text-sm text-gray-500 mb-1">الوصف</p>
+                <p className="bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">{car.description || '—'}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 text-gray-700">العلامة</label>
-                  <select
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.brand ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.brand}
-                    onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
-                  >
-                    <option value="">اختر</option>
-                    {brandsList.map(b => <option key={b} value={b}>{b}</option>)}
-                  </select>
-                  {errors.brand && <div className="text-red-500 text-xs mt-1">{errors.brand}</div>}
-                </div>
-                <div>
-                  <label className="block mb-1 text-gray-700">الموديل</label>
-                  <input
-                    type="text"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.model ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.model}
-                    onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
-                  />
-                  {errors.model && <div className="text-red-500 text-xs mt-1">{errors.model}</div>}
-                </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-2">الصور</p>
+                {Array.isArray(car.images) && car.images.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {car.images.map((src, i) => (
+                      <img key={i} src={src} alt={`image-${i}`} className="w-full h-24 object-cover rounded" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500">لا توجد صور</div>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 text-gray-700">سنة الصنع</label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.year ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.year}
-                    onChange={e => setForm(f => ({ ...f, year: e.target.value }))}
-                    min={1990}
-                    max={new Date().getFullYear() + 1}
-                  />
-                  {errors.year && <div className="text-red-500 text-xs mt-1">{errors.year}</div>}
-                </div>
-                <div>
-                  <label className="block mb-1 text-gray-700">السعر (ر.س)</label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.price ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.price}
-                    onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                    min={1000}
-                  />
-                  {errors.price && <div className="text-red-500 text-xs mt-1">{errors.price}</div>}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 text-gray-700">الممشى (كم)</label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.mileage ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.mileage}
-                    onChange={e => setForm(f => ({ ...f, mileage: e.target.value }))}
-                    min={0}
-                  />
-                  {errors.mileage && <div className="text-red-500 text-xs mt-1">{errors.mileage}</div>}
-                </div>
-                <div>
-                  <label className="block mb-1 text-gray-700">نوع الوقود</label>
-                  <select
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.fuelType ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.fuelType}
-                    onChange={e => setForm(f => ({ ...f, fuelType: e.target.value }))}
-                  >
-                    <option value="">اختر</option>
-                    {fuelTypes.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                  {errors.fuelType && <div className="text-red-500 text-xs mt-1">{errors.fuelType}</div>}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 text-gray-700">ناقل الحركة</label>
-                  <select
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.transmission ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.transmission}
-                    onChange={e => setForm(f => ({ ...f, transmission: e.target.value }))}
-                  >
-                    <option value="">اختر</option>
-                    {transmissions.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  {errors.transmission && <div className="text-red-500 text-xs mt-1">{errors.transmission}</div>}
-                </div>
-                <div>
-                  <label className="block mb-1 text-gray-700">الحالة</label>
-                  <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    value={form.status}
-                    onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                  >
-                    {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="w-full py-3 mt-4 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors text-lg"
-              >
-                إضافة السيارة
-              </button>
-            </form>
-          </motion.div>
-        </motion.div>
+            </div>
+          )}
+        </Backdrop>
       )}
     </AnimatePresence>
   )
 }
 
-// Main Component
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-gray-50 p-3 rounded-lg">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="font-medium">{value || '—'}</p>
+    </div>
+  )
+}
+
+type EditFormState = {
+  make: string
+  model: string
+  year: string
+  odometer: string
+  evaluation_price: string
+  color: string
+  engine: string
+  transmission: string
+  description: string
+  province: string
+  city: string
+  plate: string
+  min_price: string
+  max_price: string
+  condition: string
+  market_category: string
+}
+
+function EditCarModal({
+  open, onClose, car, onSaved
+}: {
+  open: boolean
+  onClose: () => void
+  car: CarFromApi | null
+  onSaved: (updated: CarFromApi) => void
+}) {
+  const [form, setForm] = useState<EditFormState | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open && car) {
+      setForm({
+        make: car.make || '',
+        model: car.model || '',
+        year: String(car.year || ''),
+        odometer: String(car.odometer ?? ''),
+        evaluation_price: car.evaluation_price ?? '',
+        color: car.color ?? '',
+        engine: car.engine ?? '',
+        transmission: (car.transmission || '').toLowerCase(),
+        description: car.description ?? '',
+        province: car.province ?? '',
+        city: car.city ?? '',
+        plate: car.plate ?? '',
+        min_price: car.min_price ?? '',
+        max_price: car.max_price ?? '',
+        condition: (car.condition || '').toLowerCase(),
+        market_category: car.market_category ?? '',
+      })
+      setError(null)
+    }
+  }, [open, car])
+
+  const updateField = (name: keyof EditFormState, value: string) => {
+    setForm((prev) => (prev ? { ...prev, [name]: value } : prev))
+  }
+
+  const submit = async () => {
+    if (!car || !form) return
+    setSaving(true)
+    setError(null)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const payload: any = {}
+
+      ;(
+        [
+          'make','model','year','odometer','evaluation_price','color',
+          'engine','transmission','description','province','city',
+          'plate','min_price','max_price','condition','market_category'
+        ] as (keyof EditFormState)[]
+      ).forEach((k) => {
+        const v = form[k]
+        if (v !== undefined && v !== null && String(v).trim() !== '') {
+          if (['year','odometer'].includes(k)) payload[k] = Number(v)
+          else if (['evaluation_price','min_price','max_price'].includes(k)) payload[k] = Number(String(v).replace(',', '.'))
+          else payload[k] = v
+        }
+      })
+
+      const res = await fetch(`/api/cars/${car.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (res.status === 401) throw new Error('غير مصرح: يُرجى تسجيل الدخول.')
+      if (res.status === 400) {
+        const j = await res.json().catch(() => null)
+        throw new Error(j?.message || 'لا يمكن التعديل أثناء وجود مزاد نشط/مجدول.')
+      }
+      if (res.status === 422) {
+        const j = await res.json().catch(() => null)
+        const firstErr = j?.errors && Object.values(j.errors as Record<string, string[]>)[0]?.[0]
+        throw new Error(firstErr || 'بيانات غير صالحة.')
+      }
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        throw new Error(`فشل الحفظ (${res.status}) ${txt}`)
+      }
+      const j = await res.json()
+      onSaved(j.data as CarFromApi)
+      onClose()
+    } catch (e: any) {
+      setError(e?.message || 'حدث خطأ غير متوقع.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <Backdrop onClose={onClose}>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">تعديل السيارة</h2>
+          {!form ? (
+            <div className="text-gray-500">جاري التحميل...</div>
+          ) : (
+            <>
+              {error && (
+                <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">{error}</div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="الماركة">
+                  <input className="input" value={form.make} onChange={(e)=>updateField('make', e.target.value)} />
+                </Field>
+                <Field label="الموديل">
+                  <input className="input" value={form.model} onChange={(e)=>updateField('model', e.target.value)} />
+                </Field>
+                <Field label="سنة الصنع">
+                  <input type="number" className="input" value={form.year} onChange={(e)=>updateField('year', e.target.value)} />
+                </Field>
+                <Field label="الممشى (كم)">
+                  <input type="number" className="input" value={form.odometer} onChange={(e)=>updateField('odometer', e.target.value)} />
+                </Field>
+                <Field label="السعر التقييمي (ر.س)">
+                  <input type="number" className="input" value={form.evaluation_price} onChange={(e)=>updateField('evaluation_price', e.target.value)} />
+                </Field>
+                <Field label="اللون">
+                  <input className="input" value={form.color} onChange={(e)=>updateField('color', e.target.value)} />
+                </Field>
+                <Field label="المحرك">
+                  <input className="input" value={form.engine} onChange={(e)=>updateField('engine', e.target.value)} />
+                </Field>
+                <Field label="القير">
+                  <select className="input" value={form.transmission} onChange={(e)=>updateField('transmission', e.target.value)}>
+                    <option value="">اختر</option>
+                    {transmissionOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </Field>
+                <Field label="الحالة الفنية">
+                  <select className="input" value={form.condition} onChange={(e)=>updateField('condition', e.target.value)}>
+                    <option value="">اختر</option>
+                    {conditionOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </Field>
+                <Field label="المنطقة">
+                  <input className="input" value={form.province} onChange={(e)=>updateField('province', e.target.value)} />
+                </Field>
+                <Field label="المدينة">
+                  <input className="input" value={form.city} onChange={(e)=>updateField('city', e.target.value)} />
+                </Field>
+                <Field label="رقم اللوحة">
+                  <input className="input" value={form.plate} onChange={(e)=>updateField('plate', e.target.value)} />
+                </Field>
+                <Field label="أقل سعر (ر.س)">
+                  <input type="number" className="input" value={form.min_price} onChange={(e)=>updateField('min_price', e.target.value)} />
+                </Field>
+                <Field label="أعلى سعر (ر.س)">
+                  <input type="number" className="input" value={form.max_price} onChange={(e)=>updateField('max_price', e.target.value)} />
+                </Field>
+                <div className="md:col-span-2">
+                  <label className="block text-gray-700 mb-1">الوصف</label>
+                  <textarea className="input h-24" value={form.description} onChange={(e)=>updateField('description', e.target.value)} />
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end gap-3">
+                <button onClick={onClose} className="px-5 py-2 border rounded-lg">إلغاء</button>
+                <button onClick={submit} disabled={saving}
+                        className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                  {saving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
+                </button>
+              </div>
+            </>
+          )}
+        </Backdrop>
+      )}
+    </AnimatePresence>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-gray-700 mb-1">{label}</label>
+      {children}
+      <style jsx>{`
+        .input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none }
+        .input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, .2) }
+      `}</style>
+    </div>
+  )
+}
+
+function DeleteConfirmModal({
+  open, onClose, onConfirm, loading, error
+}: {
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  loading: boolean
+  error: string | null
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <Backdrop onClose={onClose}>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">حذف السيارة</h2>
+          <p className="text-gray-700">هل أنت متأكد من حذف هذه السيارة؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+          {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">{error}</div>}
+          <div className="mt-5 flex justify-end gap-3">
+            <button onClick={onClose} className="px-5 py-2 border rounded-lg">إلغاء</button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            >
+              {loading ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
+            </button>
+          </div>
+        </Backdrop>
+      )}
+    </AnimatePresence>
+  )
+}
+
+/** ===== Filter Panel (New, responsive & polished) ===== */
+type Filters = { status: string; brand: string; minPrice: string; maxPrice: string; yearFrom: string; yearTo: string }
+
+function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs">
+      {label}
+      <button onClick={onClear} className="hover:text-indigo-900" aria-label="إزالة">
+        <FiX size={14} />
+      </button>
+    </span>
+  )
+}
+
+function FilterPanel({
+  open, onClose, filters, setFilters, brands, onApply, onReset
+}: {
+  open: boolean
+  onClose: () => void
+  filters: Filters
+  setFilters: React.Dispatch<React.SetStateAction<Filters>>
+  brands: string[]
+  onApply: () => void
+  onReset: () => void
+}) {
+  const activeChips = useMemo(() => {
+    const chips: { key: keyof Filters; label: string }[] = []
+    if (filters.status) chips.push({ key: 'status', label: `الحالة: ${filters.status}` })
+    if (filters.brand) chips.push({ key: 'brand', label: `العلامة: ${filters.brand}` })
+    if (filters.minPrice) chips.push({ key: 'minPrice', label: `≥ ${Number(filters.minPrice).toLocaleString()} ر.س` })
+    if (filters.maxPrice) chips.push({ key: 'maxPrice', label: `≤ ${Number(filters.maxPrice).toLocaleString()} ر.س` })
+    if (filters.yearFrom) chips.push({ key: 'yearFrom', label: `من سنة ${filters.yearFrom}` })
+    if (filters.yearTo) chips.push({ key: 'yearTo', label: `إلى سنة ${filters.yearTo}` })
+    return chips
+  }, [filters])
+
+  const handle = (name: keyof Filters, value: string) => {
+    setFilters((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const body = (
+    <>
+      {/* Active chips */}
+      {activeChips.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {activeChips.map((c, i) => (
+            <FilterChip key={i} label={c.label} onClear={() => handle(c.key, '')} />
+          ))}
+          <button
+            onClick={onReset}
+            className="text-xs text-gray-600 hover:text-gray-900 underline decoration-dotted"
+          >
+            مسح الكل
+          </button>
+        </div>
+      )}
+
+      {/* Content grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Status pills */}
+        <div>
+          <p className="block text-gray-700 mb-2">حالة الإعلان</p>
+          <div className="flex flex-wrap gap-2">
+            {(['', ...statuses] as string[]).map((s) => {
+              const selected = filters.status === s || (s === '' && !filters.status)
+              return (
+                <button
+                  key={s || 'الكل'}
+                  onClick={() => handle('status', s)}
+                  className={`px-3 py-1.5 rounded-full text-xs border transition ${
+                    selected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {s || 'الكل'}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Brand */}
+        <div>
+          <label className="block text-gray-700 mb-2">العلامة التجارية</label>
+          <select
+            value={filters.brand}
+            onChange={(e) => handle('brand', e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+          >
+            <option value="">الكل</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Price range */}
+        <div>
+          <label className="block text-gray-700 mb-2">السعر من</label>
+          <div className="relative">
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiDollarSign /></span>
+            <input
+              type="number"
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="أدنى سعر"
+              value={filters.minPrice}
+              onChange={(e) => handle('minPrice', e.target.value)}
+              min={0}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-gray-700 mb-2">السعر إلى</label>
+          <div className="relative">
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiDollarSign /></span>
+            <input
+              type="number"
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="أعلى سعر"
+              value={filters.maxPrice}
+              onChange={(e) => handle('maxPrice', e.target.value)}
+              min={0}
+            />
+          </div>
+        </div>
+
+        {/* Year range */}
+        <div>
+          <label className="block text-gray-700 mb-2">سنة الصنع من</label>
+          <div className="relative">
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiCalendar /></span>
+            <input
+              type="number"
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="أقدم سنة"
+              value={filters.yearFrom}
+              onChange={(e) => handle('yearFrom', e.target.value)}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-gray-700 mb-2">سنة الصنع إلى</label>
+          <div className="relative">
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiCalendar /></span>
+            <input
+              type="number"
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="أحدث سنة"
+              value={filters.yearTo}
+              onChange={(e) => handle('yearTo', e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {open && (
+          <motion.div className="fixed inset-0 z-50 md:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            <motion.div
+              className="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-xl p-6 overflow-y-auto rounded-l-2xl"
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">الفلاتر</h3>
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><FiX size={22} /></button>
+              </div>
+
+              {body}
+
+              {/* Drawer footer */}
+              <div className="sticky bottom-0 bg-white pt-4 border-t mt-6">
+                <div className="flex gap-3">
+                  <button onClick={onReset} className="flex-1 px-4 py-2 rounded-lg border">إعادة تعيين</button>
+                  <button onClick={onApply} className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">تطبيق</button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Floating Card */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className="hidden md:block bg-white p-6 rounded-xl shadow-xl border mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">الفلاتر المتقدمة</h3>
+              <div className="flex items-center gap-2">
+                {activeChips.slice(0, 4).map((c, i) => (
+                  <FilterChip key={i} label={c.label} onClear={() => handle(c.key, '')} />
+                ))}
+                {activeChips.length > 4 && <span className="text-xs text-gray-500">+{activeChips.length - 4}</span>}
+              </div>
+            </div>
+
+            {body}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={onReset} className="px-5 py-2 border rounded-lg">إعادة تعيين</button>
+              <button onClick={onApply} className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">تطبيق الفلاتر</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+/** ===== Main Component ===== */
 export default function ExhibitorCars() {
-  const [cars, setCars] = useState<Car[]>([])
-  const [filteredCars, setFilteredCars] = useState<Car[]>([])
+  const router = useRouter()
+
+  // list + paging meta
+  const [cars, setCars] = useState<UiCar[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastPage, setLastPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [perPage, setPerPage] = useState(10)
+
+  const [sortKey, setSortKey] = useState<'latest' | 'oldest' | 'price_desc' | 'price_asc'>('latest')
+
+  // search & filters
   const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState({
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState<Filters>({
     status: '',
     brand: '',
     minPrice: '',
@@ -307,397 +701,358 @@ export default function ExhibitorCars() {
     yearFrom: '',
     yearTo: ''
   })
-  const [showFilters, setShowFilters] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showModal, setShowModal] = useState(false)
-  const carsPerPage = 8
 
-  // هنا قم بربط جلب السيارات من API أو قاعدة بيانات بدلاً من البيانات التجريبية
-  useEffect(() => {
-    const fetchCars = async () => {
+  // modals
+  const [viewOpen, setViewOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedCarData, setSelectedCarData] = useState<CarFromApi | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
+
+  const fetchCars = async (page = 1) => {
+    try {
       setLoading(true)
-      try {
-        // مثال: const response = await fetch('/api/cars');
-        // const dbCars = await response.json();
-        // setCars(dbCars);
-        // setFilteredCars(dbCars);
+      setErrorMsg(null)
 
-        setCars([]) // لا بيانات تجريبية
-        setFilteredCars([])
-      } catch (error) {
-        console.error('Error fetching cars:', error)
-      } finally {
-        setLoading(false)
+      const token = getToken()
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+
+      if (sortKey === 'latest') {
+        params.set('sort_by', 'created_at'); params.set('sort_dir', 'desc')
+      } else if (sortKey === 'oldest') {
+        params.set('sort_by', 'created_at'); params.set('sort_dir', 'asc')
+      } else if (sortKey === 'price_desc') {
+        params.set('sort_by', 'evaluation_price'); params.set('sort_dir', 'desc')
+      } else if (sortKey === 'price_asc') {
+        params.set('sort_by', 'evaluation_price'); params.set('sort_dir', 'asc')
       }
+
+      if (searchTerm.trim()) {
+        params.set('make', searchTerm.trim())
+        params.set('model', searchTerm.trim())
+      }
+      if (filters.status) {
+        const backendStatus =
+          filters.status === 'معلن' ? 'available' :
+          filters.status === 'محجوز' ? 'scheduled' :
+          filters.status === 'مباع' ? 'sold' : ''
+        if (backendStatus) params.set('auction_status', backendStatus)
+      }
+      if (filters.brand) params.set('make', filters.brand)
+
+      const res = await fetch(`/api/cars?${params.toString()}`, {
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      })
+      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
+      if (!res.ok) {
+        const txt = await res.text().catch(()=>'')
+        throw new Error(`تعذر جلب البيانات (${res.status}) ${txt}`)
+      }
+      const json: CarsApiResponse = await res.json()
+
+      const mapped: UiCar[] = (json.data.data || []).map((c) => ({
+        id: c.id,
+        title: `${c.make ?? ''} ${c.model ?? ''}`.trim(),
+        brand: c.make ?? '',
+        model: c.model ?? '',
+        year: c.year ?? 0,
+        price: c.evaluation_price ? Number(c.evaluation_price) : 0,
+        mileage: c.odometer ?? 0,
+        transmission: mapTransmissionLabel(c.transmission ?? ''),
+        status: mapStatusToArabic(c.auction_status),
+        addedDate: c.created_at?.slice(0, 10) ?? '',
+        views: 0,
+        inquiries: 0
+      }))
+
+      setCars(mapped)
+      setCurrentPage(json.data.current_page)
+      setLastPage(json.data.last_page)
+      setTotal(json.data.total)
+      setPerPage(json.data.per_page)
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'حدث خطأ غير متوقع أثناء جلب البيانات.')
+      setCars([])
+      setCurrentPage(1)
+      setLastPage(1)
+      setTotal(0)
+    } finally {
+      setLoading(false)
     }
-    fetchCars()
-  }, [])
-
-  useEffect(() => {
-    let results = cars.filter(car => {
-      const matchesSearch = car.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        car.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        car.model.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesFilters = (
-        (filters.status === '' || car.status === filters.status) &&
-        (filters.brand === '' || car.brand === filters.brand) &&
-        (filters.minPrice === '' || car.price >= Number(filters.minPrice)) &&
-        (filters.maxPrice === '' || car.price <= Number(filters.maxPrice)) &&
-        (filters.yearFrom === '' || car.year >= Number(filters.yearFrom)) &&
-        (filters.yearTo === '' || car.year <= Number(filters.yearTo))
-      )
-      return matchesSearch && matchesFilters
-    })
-    setFilteredCars(results)
-    setCurrentPage(1)
-  }, [searchTerm, filters, cars])
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFilters({
-      ...filters,
-      [name]: value
-    })
   }
 
+  useEffect(() => {
+    fetchCars(currentPage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortKey, currentPage])
+
+  const filteredCars = useMemo(() => {
+    let results = [...cars]
+    if (filters.yearFrom) results = results.filter((c) => c.year >= Number(filters.yearFrom))
+    if (filters.yearTo) results = results.filter((c) => c.year <= Number(filters.yearTo))
+    if (filters.minPrice) results = results.filter((c) => c.price >= Number(filters.minPrice))
+    if (filters.maxPrice) results = results.filter((c) => c.price <= Number(filters.maxPrice))
+    return results
+  }, [cars, filters])
+
+  const brands = useMemo(
+    () => Array.from(new Set(cars.map((c) => c.brand).filter(Boolean))),
+    [cars]
+  )
+
+  const activeFilterCount = useMemo(() => {
+    return Object.values(filters).filter(Boolean).length
+  }, [filters])
+
   const resetFilters = () => {
-    setFilters({
-      status: '',
-      brand: '',
-      minPrice: '',
-      maxPrice: '',
-      yearFrom: '',
-      yearTo: ''
-    })
+    setFilters({ status: '', brand: '', minPrice: '', maxPrice: '', yearFrom: '', yearTo: '' })
     setSearchTerm('')
   }
 
-  const indexOfLastCar = currentPage * carsPerPage
-  const indexOfFirstCar = indexOfLastCar - carsPerPage
-  const currentCars = filteredCars.slice(indexOfFirstCar, indexOfLastCar)
-  const totalPages = Math.ceil(filteredCars.length / carsPerPage)
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
-  const brands = [...new Set(cars.map(car => car.brand))]
+  const goToAddCar = () => router.push('/exhibitor/add-car')
 
-  const handleAddCar = (car: Omit<Car, 'id' | 'addedDate' | 'views' | 'inquiries'>) => {
-    setCars(prev => [
-      {
-        ...car,
-        id: prev.length ? Math.max(...prev.map(c => c.id)) + 1 : 1,
-        addedDate: new Date().toISOString().slice(0, 10),
-        views: 0,
-        inquiries: 0
-      } as Car,
-      ...prev
-    ])
+  /** ===== Actions: open modals ===== */
+  const openView = async (id: number) => {
+    setSelectedId(id); setViewOpen(true); setSelectedCarData(null); setActionError(null)
+    try {
+      const token = getToken()
+      const res = await fetch(`/api/cars/${id}`, {
+        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      })
+      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
+      if (!res.ok) {
+        const txt = await res.text().catch(()=>'')
+        throw new Error(`تعذر جلب بيانات السيارة (${res.status}) ${txt}`)
+      }
+      const j: ShowCarApiResponse = await res.json()
+      setSelectedCarData(j.data.car)
+    } catch (e: any) {
+      setActionError(e?.message || 'تعذر تحميل تفاصيل السيارة.')
+    }
+  }
+
+  const openEdit = async (id: number) => {
+    setSelectedId(id); setEditOpen(true); setSelectedCarData(null); setActionError(null)
+    try {
+      const token = getToken()
+      const res = await fetch(`/api/cars/${id}`, {
+        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      })
+      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
+      if (!res.ok) {
+        const txt = await res.text().catch(()=>'')
+        throw new Error(`تعذر جلب بيانات السيارة (${res.status}) ${txt}`)
+      }
+      const j: ShowCarApiResponse = await res.json()
+      setSelectedCarData(j.data.car)
+    } catch (e: any) {
+      setActionError(e?.message || 'تعذر تحميل بيانات التعديل.')
+    }
+  }
+
+  const openDelete = (id: number) => { setSelectedId(id); setDeleteOpen(true); setActionError(null) }
+
+  /** ===== Action handlers (PUT / DELETE) ===== */
+  const handleSaved = (updated: CarFromApi) => {
+    setCars((prev) =>
+      prev.map((c) =>
+        c.id === updated.id
+          ? {
+              ...c,
+              title: `${updated.make ?? ''} ${updated.model ?? ''}`.trim(),
+              brand: updated.make ?? '',
+              model: updated.model ?? '',
+              year: updated.year ?? 0,
+              price: updated.evaluation_price ? Number(updated.evaluation_price) : 0,
+              mileage: updated.odometer ?? 0,
+              transmission: mapTransmissionLabel(updated.transmission ?? ''),
+              status: mapStatusToArabic(updated.auction_status),
+              addedDate: updated.created_at?.slice(0, 10) ?? ''
+            }
+          : c
+      )
+    )
+  }
+
+  const confirmDelete = async () => {
+    if (!selectedId) return
+    setActionLoading(true); setActionError(null)
+    try {
+      const token = getToken()
+      const res = await fetch(`/api/cars/${selectedId}`, {
+        method: 'DELETE',
+        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      })
+      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
+      if (res.status === 400) {
+        const j = await res.json().catch(() => null)
+        throw new Error(j?.message || 'لا يمكن حذف السيارة لوجود مزاد نشط/مجدول.')
+      }
+      if (!res.ok) {
+        const txt = await res.text().catch(()=>'')
+        throw new Error(`فشل الحذف (${res.status}) ${txt}`)
+      }
+      setCars((prev) => prev.filter((c) => c.id !== selectedId))
+      setDeleteOpen(false)
+    } catch (e: any) {
+      setActionError(e?.message || 'حدث خطأ أثناء الحذف.')
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <CarModal open={showModal} onClose={() => setShowModal(false)} onSubmit={handleAddCar} />
+      {/* Modals */}
+      <ViewCarModal open={viewOpen} onClose={()=>setViewOpen(false)} car={selectedCarData} />
+      <EditCarModal open={editOpen} onClose={()=>setEditOpen(false)} car={selectedCarData} onSaved={handleSaved} />
+      <DeleteConfirmModal open={deleteOpen} onClose={()=>setDeleteOpen(false)} onConfirm={confirmDelete} loading={actionLoading} error={actionError} />
+
       <div className="max-w-7xl mx-auto">
-        {/* العنوان والبحث */}
+        {/* Header + Search */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
-              <motion.h1
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="text-3xl font-bold text-gray-900 mb-2"
-              >
+              <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+                className="text-3xl font-bold text-gray-900 mb-2">
                 سيارات المعرض
               </motion.h1>
               <p className="text-gray-600">إدارة السيارات المضافة إلى معرضك</p>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              onClick={() => setShowModal(true)}
-              aria-label="إضافة سيارة جديدة"
-            >
+              onClick={goToAddCar} aria-label="إضافة سيارة جديدة">
               <FiPlus className="ml-2" />
               <span>إضافة سيارة جديدة</span>
             </motion.button>
           </div>
+
           <div className="flex flex-col md:flex-row gap-4">
-            <motion.div
-              className="relative flex-grow"
-              whileHover={{ scale: 1.005 }}
-            >
+            <motion.div className="relative flex-grow" whileHover={{ scale: 1.005 }}>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <FiSearch className="text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="ابحث عن سيارة (ماركة، موديل، سنة...)"
+                placeholder="ابحث عن سيارة (ماركة أو موديل)"
                 className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchCars(1) } }}
               />
             </motion.div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={() => { setCurrentPage(1); fetchCars(1) }}
+              className="flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              بحث
+            </motion.button>
+
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={() => setShowFilters(true)}
+              className="relative flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <FiFilter className="ml-2" />
               <span>الفلاتر</span>
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-2 -left-2 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </motion.button>
           </div>
         </div>
-        {/* لوحة الفلاتر */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white p-6 rounded-xl shadow-md mb-8 overflow-hidden"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div>
-                  <label className="block text-gray-700 mb-2">حالة السيارة</label>
-                  <select
-                    name="status"
-                    value={filters.status}
-                    onChange={handleFilterChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">الكل</option>
-                    {statuses.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">العلامة التجارية</label>
-                  <select
-                    name="brand"
-                    value={filters.brand}
-                    onChange={handleFilterChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">الكل</option>
-                    {brands.map(brand => (
-                      <option key={brand} value={brand}>{brand}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-gray-700 mb-2">السعر من</label>
-                    <input
-                      type="number"
-                      name="minPrice"
-                      placeholder="أدنى سعر"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={filters.minPrice}
-                      onChange={handleFilterChange}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-gray-700 mb-2">السعر إلى</label>
-                    <input
-                      type="number"
-                      name="maxPrice"
-                      placeholder="أعلى سعر"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={filters.maxPrice}
-                      onChange={handleFilterChange}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-gray-700 mb-2">سنة الصنع من</label>
-                    <input
-                      type="number"
-                      name="yearFrom"
-                      placeholder="أقدم سنة"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={filters.yearFrom}
-                      onChange={handleFilterChange}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-gray-700 mb-2">سنة الصنع إلى</label>
-                    <input
-                      type="number"
-                      name="yearTo"
-                      placeholder="أحدث سنة"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={filters.yearTo}
-                      onChange={handleFilterChange}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={resetFilters}
-                  className="px-6 py-2 text-gray-700 hover:text-gray-900 transition-colors"
-                >
-                  إعادة تعيين
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowFilters(false)}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  تطبيق الفلاتر
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* إحصائيات سريعة */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500"
-          >
-            <h3 className="text-gray-500 mb-2">إجمالي السيارات</h3>
-            <p className="text-3xl font-bold">{cars.length}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500"
-          >
-            <h3 className="text-gray-500 mb-2">السيارات المعلنة</h3>
-            <p className="text-3xl font-bold">{cars.filter(car => car.status === 'معلن').length}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500"
-          >
-            <h3 className="text-gray-500 mb-2">السيارات المحجوزة</h3>
-            <p className="text-3xl font-bold">{cars.filter(car => car.status === 'محجوز').length}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-red-500"
-          >
-            <h3 className="text-gray-500 mb-2">السيارات المباعة</h3>
-            <p className="text-3xl font-bold">{cars.filter(car => car.status === 'مباع').length}</p>
-          </motion.div>
-        </div>
-        {/* نتائج البحث */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="text-gray-600">
-            <span className="font-medium">{filteredCars.length}</span> سيارة متاحة
+
+        {/* Error */}
+        {errorMsg && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+            {errorMsg}
           </div>
+        )}
+
+        {/* New Filters Panel */}
+        <FilterPanel
+          open={showFilters}
+          onClose={() => setShowFilters(false)}
+          filters={filters}
+          setFilters={setFilters}
+          brands={brands}
+          onApply={() => { setShowFilters(false); setCurrentPage(1); fetchCars(1) }}
+          onReset={() => { resetFilters(); setCurrentPage(1); fetchCars(1) }}
+        />
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <StatCard title="إجمالي الصفحة الحالية" color="indigo" value={cars.length} />
+          <StatCard title="معلن" color="green" value={cars.filter(c => c.status === 'معلن').length} />
+          <StatCard title="محجوز" color="yellow" value={cars.filter(c => c.status === 'محجوز').length} />
+          <StatCard title="مباع" color="red" value={cars.filter(c => c.status === 'مباع').length} />
+        </div>
+
+        {/* Toolbar */}
+        <div className="mb-6 flex justify-between items-center">
+          <div className="text-gray-600"><span className="font-medium">{total}</span> إجمالي السيارات</div>
           <div className="flex items-center">
             <span className="text-gray-600 mr-2">ترتيب حسب:</span>
-            <select className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-              <option>الأحدث إضافة</option>
-              <option>الأقدم إضافة</option>
-              <option>الأعلى سعراً</option>
-              <option>الأقل سعراً</option>
+            <select
+              className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              value={sortKey}
+              onChange={(e) => { setSortKey(e.target.value as any); setCurrentPage(1) }}
+            >
+              <option value="latest">الأحدث إضافة</option>
+              <option value="oldest">الأقدم إضافة</option>
+              <option value="price_desc">الأعلى سعراً</option>
+              <option value="price_asc">الأقل سعراً</option>
             </select>
           </div>
         </div>
-        {/* حالة التحميل */}
-        {loading && (
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السيارة</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السعر</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المشاهدات</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاستفسارات</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {[...Array(5)].map((_, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    </td>
-                    <td className="px-6 py-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </td>
-                    <td className="px-6 py-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </td>
-                    <td className="px-6 py-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </td>
-                    <td className="px-6 py-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </td>
-                    <td className="px-6 py-4 animate-pulse">
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {/* عندما لا توجد نتائج */}
+
+        {/* Loading skeleton */}
+        {loading && <SkeletonTable />}
+
+        {/* No results */}
         {!loading && filteredCars.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-md p-12 text-center"
-          >
-            <div className="text-gray-400 mb-4">
-              <FiSearch size={48} className="mx-auto" />
-            </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="bg-white rounded-xl shadow-md p-12 text-center">
+            <div className="text-gray-400 mb-4"><FiSearch size={48} className="mx-auto" /></div>
             <h3 className="text-xl font-medium text-gray-700 mb-2">لا توجد سيارات متطابقة</h3>
-            <p className="text-gray-500 mb-6">لم نتمكن من العثور على أي سيارات تطابق بحثك. حاول تعديل الفلاتر.</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={resetFilters}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
+            <p className="text-gray-500 mb-6">عدّل الفلاتر أو أعد البحث.</p>
+            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={() => { resetFilters(); setCurrentPage(1); fetchCars(1) }}
+              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
               عرض جميع السيارات
             </motion.button>
           </motion.div>
         )}
-        {/* جدول السيارات */}
+
+        {/* Table */}
         {!loading && filteredCars.length > 0 && (
           <>
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السيارة</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">السعر</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المشاهدات</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الاستفسارات</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                    <Th>السيارة</Th>
+                    <Th>السعر</Th>
+                    <Th>الحالة</Th>
+                    <Th>المشاهدات</Th>
+                    <Th>الاستفسارات</Th>
+                    <Th>الإجراءات</Th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {currentCars.map((car, index) => (
-                    <motion.tr
-                      key={car.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-gray-50"
-                    >
+                  {filteredCars.map((car, index) => (
+                    <motion.tr key={car.id} initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+                      className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -715,30 +1070,31 @@ export default function ExhibitorCars() {
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           car.status === 'معلن' ? 'bg-green-100 text-green-800' :
-                            car.status === 'محجوز' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                          }`}>
+                          car.status === 'محجوز' ? 'bg-yellow-100 text-yellow-800' :
+                          car.status === 'مباع' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
                           {car.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <FiEye className="ml-1" />
-                          {car.views.toLocaleString()}
-                        </div>
+                        <div className="flex items-center"><FiEye className="ml-1" />{car.views.toLocaleString()}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {car.inquiries.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium">
-                        <div className="flex justify-end space-x-3">
-                          <button className="text-indigo-600 hover:text-indigo-900" aria-label="تعديل" type="button">
+                        <div className="flex justify-end gap-3">
+                          <button className="text-indigo-600 hover:text-indigo-900" aria-label="تعديل" type="button"
+                                  onClick={() => openEdit(car.id)}>
                             <FiEdit size={18} />
                           </button>
-                          <button className="text-gray-600 hover:text-gray-900" aria-label="عرض التفاصيل" type="button">
+                          <button className="text-gray-600 hover:text-gray-900" aria-label="عرض التفاصيل" type="button"
+                                  onClick={() => openView(car.id)}>
                             <FiEye size={18} />
                           </button>
-                          <button className="text-red-600 hover:text-red-900" aria-label="حذف" type="button">
+                          <button className="text-red-600 hover:text-red-900" aria-label="حذف" type="button"
+                                  onClick={() => openDelete(car.id)}>
                             <FiTrash2 size={18} />
                           </button>
                         </div>
@@ -748,38 +1104,37 @@ export default function ExhibitorCars() {
                 </tbody>
               </table>
             </div>
+
             {/* Pagination */}
-            {totalPages > 1 && (
+            {lastPage > 1 && (
               <div className="mt-8 flex justify-between items-center">
                 <div className="text-sm text-gray-500">
-                  عرض <span className="font-medium">{indexOfFirstCar + 1}</span> إلى <span className="font-medium">
-                    {Math.min(indexOfLastCar, filteredCars.length)}
-                  </span> من <span className="font-medium">{filteredCars.length}</span> سيارة
+                  صفحة <span className="font-medium">{currentPage}</span> من <span className="font-medium">{lastPage}</span> — إجمالي <span className="font-medium">{total}</span>
                 </div>
                 <nav className="flex items-center gap-1">
                   <button
-                    onClick={() => paginate(Math.max(1, currentPage - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-2 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiChevronLeft />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                  {Array.from({ length: lastPage }, (_, i) => i + 1).map(number => (
                     <button
                       key={number}
-                      onClick={() => paginate(number)}
+                      onClick={() => setCurrentPage(number)}
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         currentPage === number
                           ? 'bg-indigo-600 text-white'
                           : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
-                        }`}
+                      }`}
                     >
                       {number}
                     </button>
                   ))}
                   <button
-                    onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(lastPage, p + 1))}
+                    disabled={currentPage === lastPage}
                     className="p-2 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiChevronRight />
@@ -791,5 +1146,51 @@ export default function ExhibitorCars() {
         )}
       </div>
     </div>
+  )
+}
+
+/** ===== Small UI helpers ===== */
+function StatCard({ title, value, color }: { title: string; value: number | string; color: 'indigo'|'green'|'yellow'|'red' }) {
+  const colorMap: any = {
+    indigo: 'border-l-4 border-indigo-500',
+    green: 'border-l-4 border-green-500',
+    yellow: 'border-l-4 border-yellow-500',
+    red: 'border-l-4 border-red-500',
+  }
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      className={`bg-white p-6 rounded-xl shadow-md ${colorMap[color]}`}>
+      <h3 className="text-gray-500 mb-2">{title}</h3>
+      <p className="text-3xl font-bold">{value}</p>
+    </motion.div>
+  )
+}
+
+function SkeletonTable() {
+  return (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <Th>السيارة</Th><Th>السعر</Th><Th>الحالة</Th><Th>المشاهدات</Th><Th>الاستفسارات</Th><Th>الإجراءات</Th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {[...Array(5)].map((_, i) => (
+            <tr key={i}>
+              {Array.from({length:6}).map((_,j)=>(
+                <td key={j} className="px-6 py-4 animate-pulse"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>
   )
 }
