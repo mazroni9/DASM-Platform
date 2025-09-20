@@ -28,7 +28,7 @@ export default function GlobalLoader() {
   return (
     <div style={loadingContainerStyle} className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50">
+      <div className="loading-container absolute inset-0 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50">
         <div className="absolute inset-0 bg-white opacity-0"></div> {/* Overlay opacity 0 */}
 
         {/* Floating particles */}
