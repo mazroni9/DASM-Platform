@@ -6,17 +6,19 @@ import {
   FiSearch, FiFilter, FiPlus, FiX, FiChevronLeft, FiChevronRight, FiEye, FiClock, FiUser, FiRefreshCw
 } from 'react-icons/fi'
 import { FaGavel, FaCar } from 'react-icons/fa'
+import api from '@/lib/axios'
+import { format } from 'date-fns'
+import { ar } from 'date-fns/locale'
 
 /** ========= الإعدادات ========= **/
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
-const API_BASE = `${API_ROOT}/api` // نضمن /api مرة واحدة فقط
-const TOKEN_KEY = 'token' // ← اسم مفتاح التوكن في localStorage
+const API_BASE = `${API_ROOT}/api`
+const TOKEN_KEY = 'token'
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null
   const raw = localStorage.getItem(TOKEN_KEY)
   if (!raw) return null
-  // في حال اتخزن التوكن كنص مقتبس
   return raw.replace(/^"(.+)"$/, '$1')
 }
 
@@ -27,13 +29,12 @@ function authHeaders() {
   return h
 }
 
-// جلب JSON مع رسائل أخطاء واضحة (401/HTML/…)
+// جلب JSON مع رسائل أخطاء واضحة
 async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: { ...(init?.headers || {}), ...authHeaders() },
   })
-
   const text = await res.text()
   let data: any
   try {
@@ -42,12 +43,8 @@ async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
     const snippet = text?.slice(0, 200) || ''
     throw new Error(`HTTP ${res.status} @ ${url}\nالرد ليس JSON:\n${snippet}`)
   }
-
   if (!res.ok) {
-    // Laravel بيبعت "Unauthenticated." في 401
-    if (res.status === 401) {
-      throw new Error('غير مصرح: يرجى تسجيل الدخول مرة أخرى (401).')
-    }
+    if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول مرة أخرى (401).')
     const msg = data?.message || data?.error || `HTTP ${res.status}`
     throw new Error(msg)
   }
@@ -82,6 +79,10 @@ interface CarApi {
   year: number
   images?: string[] | null
   evaluation_price?: number | null
+  min_price?: number | null
+  max_price?: number | null
+  user_id?: number | null
+  owner_id?: number | null
 }
 
 interface BidApi {
@@ -97,7 +98,6 @@ interface AuctionApi {
   car: CarApi
   starting_bid: number
   current_bid: number
-  reserve_price?: number | null
   min_price?: number | null
   max_price?: number | null
   start_time: string
@@ -130,12 +130,24 @@ interface UiAuction {
   owner?: string
 }
 
-const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop'
+/** شكل الجلسة طبقًا لمسار الباك الجديد **/
+interface AuctionSession {
+  id: number
+  name: string
+  session_date: string
+  status: 'scheduled' | 'active' | 'completed' | 'cancelled'
+  type: 'live' | 'instant' | 'silent'
+  auctions_count?: number
+  created_at?: string
+  updated_at?: string
+}
+
+const PLACEHOLDER_IMG =
+  'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop'
 
 /** ========= عدّاد تنازلي ========= **/
 function Countdown({ endIso }: { endIso: string }) {
   const [t, setT] = useState('')
-
   useEffect(() => {
     const update = () => {
       const now = new Date().getTime()
@@ -151,8 +163,87 @@ function Countdown({ endIso }: { endIso: string }) {
     const id = setInterval(update, 1000)
     return () => clearInterval(id)
   }, [endIso])
-
   return <span className="font-mono text-sm">{t}</span>
+}
+
+/** ========= Utilities ========= **/
+function extractArray<T = any>(js: any, key: string): T[] | null {
+  if (Array.isArray(js?.[key])) return js[key]
+  if (Array.isArray(js?.data?.[key])) return js.data[key]
+  if (Array.isArray(js?.data?.data)) return js.data.data
+  if (Array.isArray(js?.data)) return js.data
+  if (Array.isArray(js)) return js
+  return null
+}
+
+// محاولة إحضار user_id من عدة مسارات شائعة
+async function readMyUserId(): Promise<number | null> {
+  const candidates = [
+    `${API_BASE}/me`,
+    `${API_BASE}/auth/me`,
+    `${API_BASE}/user`,
+    `${API_BASE}/profile`,
+  ]
+  for (const url of candidates) {
+    try {
+      const js: any = await fetchJSON(url)
+      const id = js?.data?.id ?? js?.id ?? js?.user?.id ?? null
+      if (typeof id === 'number') return id
+      if (typeof id === 'string' && /^\d+$/.test(id)) return Number(id)
+    } catch { /* skip */ }
+  }
+  return null
+}
+
+/** ========= جلب سيارات المستخدم فقط ========= **/
+async function fetchMyCarsOnly(): Promise<CarApi[]> {
+  const myId = await readMyUserId().catch(() => null)
+
+  const urls: string[] = []
+  if (myId != null) {
+    urls.push(`${API_BASE}/cars?user_id=${myId}&sort_by=created_at&sort_dir=desc`)
+    urls.push(`${API_BASE}/cars?owner_id=${myId}&sort_by=created_at&sort_dir=desc`)
+  }
+  urls.push(`${API_BASE}/my-cars?sort_by=created_at&sort_dir=desc`)
+  urls.push(`${API_BASE}/cars?mine=1&sort_by=created_at&sort_dir=desc`)
+  urls.push(`${API_BASE}/cars?user_id=me&sort_by=created_at&sort_dir=desc`)
+
+  for (const url of urls) {
+    try {
+      const js: any = await fetchJSON(url)
+      const arr = extractArray<CarApi>(js, 'cars') ?? extractArray<CarApi>(js, 'data') ?? null
+      if (arr && arr.length) {
+        if (myId != null) {
+          return arr.filter(c =>
+            (c.user_id != null && c.user_id === myId) ||
+            (c.owner_id != null && c.owner_id === myId) ||
+            (c.user_id == null && c.owner_id == null)
+          )
+        }
+        return arr
+      }
+    } catch { /* try next */ }
+  }
+  return []
+}
+
+/** ========= جلب الجلسات من المسار العام الجديد ========= **/
+async function fetchPublicSessions(): Promise<AuctionSession[]> {
+  try {
+    const js: any = await fetchJSON(`${API_BASE}/sessions/active-scheduled?with_counts=1`)
+    const arr = extractArray<AuctionSession>(js, 'data') ?? extractArray<AuctionSession>(js, 'sessions') ?? js
+    return Array.isArray(arr) ? arr : []
+  } catch (e: any) {
+    // رجّع مصفوفة فاضية وتتحكم الواجهة بالرسالة
+    return []
+  }
+}
+
+function sessionLabel(s: AuctionSession) {
+  const dateTxt = s.session_date
+    ? ` — ${format(new Date(s.session_date), 'dd MMMM yyyy', { locale: ar })}`
+    : ''
+  return `${s.name}${dateTxt}`
 }
 
 /** ========= مودال إنشاء مزاد فوري الآن ========= **/
@@ -165,12 +256,18 @@ function StartLiveModal({
 }) {
   const [cars, setCars] = useState<CarApi[]>([])
   const [loadingCars, setLoadingCars] = useState(false)
+
+  const [sessions, setSessions] = useState<AuctionSession[]>([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [sessionsError, setSessionsError] = useState<string | null>(null)
+
   const [form, setForm] = useState({
     car_id: '',
+    car_price: '',
     starting_bid: '',
-    reserve_price: '',
     min_price: '',
-    max_price: ''
+    max_price: '',
+    session_id: ''
   })
   const [errors, setErrors] = useState<{ [k: string]: string }>({})
   const firstInputRef = useRef<HTMLSelectElement>(null)
@@ -178,23 +275,40 @@ function StartLiveModal({
   useEffect(() => {
     if (open) {
       setErrors({})
-      setForm({ car_id: '', starting_bid: '', reserve_price: '', min_price: '', max_price: '' })
+      setSessionsError(null)
+      setForm({ car_id: '', car_price: '', starting_bid: '', min_price: '', max_price: '', session_id: '' })
       setTimeout(() => firstInputRef.current?.focus(), 100)
-      // جلب سيارات المعرض المتاحة فقط
+
       const run = async () => {
         try {
           const token = getToken()
           if (!token) throw new Error('غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.')
           setLoadingCars(true)
-          const js = await fetchJSON<{ status: string; data: Paged<CarApi> }>(
-            `${API_BASE}/cars?auction_status=available&sort_by=created_at&sort_dir=desc`
-          )
-          setCars(Array.isArray(js?.data?.data) ? js.data.data : [])
+          setLoadingSessions(true)
+
+          const [mine, sess] = await Promise.all([
+            fetchMyCarsOnly(),
+            fetchPublicSessions(), // 👈 المسار الجديد
+          ])
+
+          setCars(Array.isArray(mine) ? mine : [])
+          setSessions(Array.isArray(sess) ? sess : [])
+
+          if (Array.isArray(mine) && mine.length === 0) {
+            setErrors(prev => ({ ...prev, carsEmpty: 'لا توجد سيارات مرتبطة بحسابك.' }))
+          }
+
+          if (!sess || sess.length === 0) {
+            setSessionsError('لا توجد جلسات متاحة (active / scheduled).')
+          }
         } catch (e: any) {
           setCars([])
-          setErrors(prev => ({ ...prev, global: e.message }))
+          setSessions([])
+          setSessionsError(e?.message || 'تعذر جلب الجلسات.')
+          setErrors(prev => ({ ...prev, global: e?.message || 'حدث خطأ غير متوقع' }))
         } finally {
           setLoadingCars(false)
+          setLoadingSessions(false)
         }
       }
       run()
@@ -204,8 +318,8 @@ function StartLiveModal({
   const validate = () => {
     const e: Record<string, string> = {}
     if (!form.car_id) e.car_id = 'السيارة مطلوبة'
+    if (!form.session_id) e.session_id = 'الجلسة مطلوبة'
     if (!form.starting_bid || Number(form.starting_bid) < 1000) e.starting_bid = 'سعر البدء غير صحيح'
-    if (form.reserve_price && Number(form.reserve_price) < 0) e.reserve_price = 'قيمة غير صحيحة'
     if (!form.min_price || !form.max_price) e.minmax = 'أدخل حد أدنى وأقصى موصى به'
     if (form.min_price && form.max_price && Number(form.min_price) > Number(form.max_price)) e.minmax = 'الحد الأدنى يجب أن يكون ≤ الحد الأعلى'
     return e
@@ -221,21 +335,16 @@ function StartLiveModal({
       const token = getToken()
       if (!token) throw new Error('غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.')
 
-      const payload = {
+      const payload: any = {
         car_id: Number(form.car_id),
         starting_bid: Number(form.starting_bid),
-        reserve_price: form.reserve_price ? Number(form.reserve_price) : 0,
         min_price: Number(form.min_price),
-        max_price: Number(form.max_price)
+        max_price: Number(form.max_price),
+        session_id: Number(form.session_id), // 👈 إرسال session_id
       }
-      const js = await fetchJSON<{ status: string; message: string; data: AuctionApi }>(
-        `${API_BASE}/auction`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }
-      )
+
+      const res = await api.post('/api/auction', payload)
+      const js = res.data as { status?: string; message?: string; data: AuctionApi }
 
       const a: AuctionApi = js.data
       const car = cars.find(c => c.id === a.car_id)
@@ -254,12 +363,25 @@ function StartLiveModal({
       onCreated(ui)
       onClose()
     } catch (err: any) {
-      setErrors({ global: err.message || 'حدث خطأ غير متوقع' })
+      setErrors({ global: err?.response?.data?.message || err.message || 'حدث خطأ غير متوقع' })
     }
   }
 
   const backdropRef = useRef<HTMLDivElement>(null)
   const closeOnBackdrop = (e: React.MouseEvent) => { if (e.target === backdropRef.current) onClose() }
+
+  // عند اختيار السيارة: نملأ car_price / min/max تلقائيًا
+  const onSelectCar = (val: string) => {
+    const idNum = Number(val)
+    const selected = cars.find(c => c.id === idNum)
+    setForm(f => ({
+      ...f,
+      car_id: val,
+      car_price: selected?.evaluation_price != null ? String(selected.evaluation_price) : '',
+      min_price: selected?.min_price != null ? String(selected.min_price) : f.min_price,
+      max_price: selected?.max_price != null ? String(selected.max_price) : f.max_price,
+    }))
+  }
 
   return (
     <AnimatePresence>
@@ -287,20 +409,59 @@ function StartLiveModal({
             {errors.global && <div className="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm whitespace-pre-wrap">{errors.global}</div>}
 
             <form onSubmit={submit} className="space-y-4">
+              {/* السيارة */}
               <div>
                 <label className="block mb-1 text-gray-700">السيارة</label>
                 <select
                   ref={firstInputRef}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.car_id ? 'border-red-400' : 'border-gray-300'}`}
                   value={form.car_id}
-                  onChange={e => setForm(f => ({ ...f, car_id: e.target.value }))}
+                  onChange={e => onSelectCar(e.target.value)}
                 >
-                  <option value="">{loadingCars ? '...جاري التحميل' : 'اختر سيارة متاحة'}</option>
+                  <option value="">
+                    {loadingCars ? '...جاري تحميل سياراتك' : (cars.length ? 'اختر سيارة من سيارات حسابك' : 'لا توجد سيارات مرتبطة بحسابك')}
+                  </option>
                   {cars.map(c => (
                     <option key={c.id} value={c.id}>{`${c.make} ${c.model} ${c.year}`}</option>
                   ))}
                 </select>
                 {errors.car_id && <div className="text-red-500 text-xs mt-1">{errors.car_id}</div>}
+                {errors.carsEmpty && !loadingCars && <div className="text-gray-500 text-xs mt-1">{errors.carsEmpty}</div>}
+              </div>
+
+              {/* الجلسة */}
+              <div>
+                <label className="block mb-1 text-gray-700">الجلسة</label>
+                <select
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.session_id ? 'border-red-400' : 'border-gray-300'}`}
+                  value={form.session_id}
+                  onChange={e => setForm(f => ({ ...f, session_id: e.target.value }))}
+                >
+                  <option value="">
+                    {loadingSessions
+                      ? '...جاري تحميل الجلسات'
+                      : sessions.length
+                        ? `اختر جلسة (${sessions.length})`
+                        : (sessionsError ? 'تعذر جلب الجلسات' : 'لا توجد جلسات')}
+                  </option>
+                  {sessions.map(s => (
+                    <option key={s.id} value={s.id}>{sessionLabel(s)}</option>
+                  ))}
+                </select>
+                {sessionsError && !loadingSessions && <div className="text-red-500 text-xs mt-1">{sessionsError}</div>}
+                {errors.session_id && <div className="text-red-500 text-xs mt-1">{errors.session_id}</div>}
+              </div>
+
+              {/* سعر السيارة (عرض فقط) */}
+              <div>
+                <label className="block mb-1 text-gray-700">سعر السيارة (تقييم)</label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 border-gray-300 bg-gray-50"
+                  value={form.car_price}
+                  readOnly
+                  placeholder="يُملأ تلقائيًا من تقييم السيارة"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -314,16 +475,6 @@ function StartLiveModal({
                     min={1000}
                   />
                   {errors.starting_bid && <div className="text-red-500 text-xs mt-1">{errors.starting_bid}</div>}
-                </div>
-                <div>
-                  <label className="block mb-1 text-gray-700">حد البيع (اختياري)</label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.reserve_price ? 'border-red-400' : 'border-gray-300'}`}
-                    value={form.reserve_price}
-                    onChange={e => setForm(f => ({ ...f, reserve_price: e.target.value }))}
-                    min={0}
-                  />
                 </div>
               </div>
 
@@ -469,7 +620,6 @@ export default function DealerAuctionsPage() {
   const endedCount = filtered.filter(a => a.statusApi === 'ended').length
 
   const onCreated = (created: UiAuction) => {
-    // بعد إنشاء مزاد فوري: ضيفه في أعلى القائمة وارجع للصفحة 1
     setList(prev => [created, ...prev])
     setPage(1)
   }

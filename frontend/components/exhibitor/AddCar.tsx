@@ -9,6 +9,10 @@ import { GiGearStick } from 'react-icons/gi'
 type Condition = 'excellent' | 'good' | 'fair' | 'poor'
 type Transmission = 'automatic' | 'manual' | 'cvt'
 type MarketCategory = 'luxuryCars' | 'classic' | 'caravan' | 'busesTrucks' | 'companiesCars' | 'government'
+type AuctionStatus = 'available' | 'in_auction' | 'sold' | 'reserved' | 'pending_approval'
+
+// أبسط حل: ثبّت حالة السيارة مبدئيًا كـ available عند الإنشاء
+const DEFAULT_AUCTION_STATUS: AuctionStatus = 'available'
 
 interface FormData {
   make: string
@@ -238,6 +242,7 @@ export default function AddCarForm() {
     }
 
     // تجهيز الجسم المطلوب للـ backend — بدون صور الآن
+    // ملاحظة: نضيف auction_status: 'available' كقيمة ثابتة لتكون السيارة متاحة للمزاد مباشرة.
     const payload = {
       make: String(formData.make).trim(),
       model: String(formData.model).trim(),
@@ -255,27 +260,30 @@ export default function AddCarForm() {
       max_price: Number(formData.max_price),
       province: String(formData.province).trim(),
       city: String(formData.city).trim(),
-      plate: String(formData.plate).trim()
+      plate: String(formData.plate).trim(),
+      auction_status: DEFAULT_AUCTION_STATUS // 👈 أهم سطر لحل المشكلة
     }
 
     try {
-   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      // استخراج التوكن مع إزالة الاقتباسات إن وجدت
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      const token = raw ? raw.replace(/^"(.+)"$/, '$1') : null
 
-if (!token) {
-  setIsSubmitting(false);
-  setErrorMsg('غير مصرح: مفقود رمز الدخول. الرجاء تسجيل الدخول أولاً.');
-  return;
-}
+      if (!token) {
+        setIsSubmitting(false)
+        setErrorMsg('غير مصرح: مفقود رمز الدخول. الرجاء تسجيل الدخول أولاً.')
+        return
+      }
 
-const res = await fetch('/api/cars', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': `Bearer ${token}`
-  },
-  body: JSON.stringify(payload)
-});
+      const res = await fetch('/api/cars', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      })
 
       const data = await res.json()
 

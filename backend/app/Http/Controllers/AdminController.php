@@ -15,6 +15,8 @@ use App\Models\Car;
 use App\Events\CarApprovedForLiveEvent;
 use App\Notifications\CarApprovedForLiveNotification;
 use App\Events\AuctionStatusChangedEvent;
+use App\Models\AuctionSession;
+use Illuminate\Http\JsonResponse;
 
 use function Psy\debug;
 
@@ -1257,4 +1259,54 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+
+     public function getActiveAndScheduledSessions(Request $request): JsonResponse
+    {
+        $select = ['id', 'name', 'session_date', 'status', 'type', 'created_at', 'updated_at'];
+
+        $q = AuctionSession::query()
+            ->select($select)
+            ->whereIn('status', ['active', 'scheduled']);
+
+        // فلتر اختياري على النوع
+        if ($request->filled('type')) {
+            $types = array_filter(explode(',', (string) $request->query('type')));
+            $q->whereIn('type', $types);
+        }
+
+        // إرجاع عدد المزادات لو طلبت
+        if ($request->boolean('with_counts')) {
+            $q->withCount('auctions');
+        }
+
+        $sessions = $q->orderBy('session_date', 'asc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $sessions,
+        ]);
+    }
+
+    /**
+     * عرض جلسة واحدة (للواجهة العامة)
+     * GET /api/sessions/{id}
+     *
+     * يرجع الجلسة مع عدّاد المزادات فقط (بدون تفاصيل عميقة).
+     */
+    public function showSessionPublic(string $id): JsonResponse
+    {
+        $select = ['id', 'name', 'session_date', 'status', 'type', 'created_at', 'updated_at'];
+
+        $session = AuctionSession::query()
+            ->select($select)
+            ->withCount('auctions')   // يتطلب وجود relation auctions في الموديل
+            ->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $session,
+        ]);
+    }
+    
 }
