@@ -21,7 +21,7 @@ class ModeratorController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'moderator') {
             return response()->json([
                 'status' => 'error',
@@ -58,7 +58,7 @@ class ModeratorController extends Controller
     public function startBroadcast(Request $request)
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'moderator') {
             return response()->json([
                 'status' => 'error',
@@ -84,7 +84,7 @@ class ModeratorController extends Controller
         $youtubeUrl = $request->youtube_url;
         $youtubeVideoId = null;
         $youtubeEmbedUrl = null;
-        
+
         if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $youtubeUrl, $matches)) {
             $youtubeVideoId = $matches[1];
             $youtubeEmbedUrl = "https://www.youtube.com/embed/{$youtubeVideoId}";
@@ -131,8 +131,8 @@ class ModeratorController extends Controller
             ]);
         } catch (\Exception $e) {
             // Log the error
-            \Log::error('Failed to create broadcast: ' . $e->getMessage());
-            
+//            \Log::error(message: 'Failed to create broadcast: ' . $e->getMessage());
+
             // Return a more helpful error response
             return response()->json([
                 'status' => 'error',
@@ -158,7 +158,7 @@ class ModeratorController extends Controller
     public function switchCar(Request $request, $broadcastId)
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'moderator') {
             return response()->json([
                 'status' => 'error',
@@ -221,7 +221,7 @@ class ModeratorController extends Controller
     public function addOfflineBid(Request $request)
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'moderator') {
             return response()->json([
                 'status' => 'error',
@@ -244,7 +244,7 @@ class ModeratorController extends Controller
         }
 
         $auction = Auction::find($request->auction_id);
-        
+
         if ($auction->status !== AuctionStatus::ACTIVE) {
             return response()->json([
                 'status' => 'error',
@@ -294,7 +294,7 @@ class ModeratorController extends Controller
     public function stopBroadcast($broadcastId)
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'moderator') {
             return response()->json([
                 'status' => 'error',

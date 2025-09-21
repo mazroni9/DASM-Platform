@@ -134,3 +134,8 @@ body {
 html[dir="rtl"] .pagination-container {
   flex-direction: row-reverse;
 }
+
+
+/* .bg-gradient-to-br{
+  opacity: 0.3 !important;
+} */

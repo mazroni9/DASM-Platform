@@ -278,7 +278,6 @@ export default function PersonalizedCarRecommendations({
     };
 
     // عرض حالة التحميل
-    if (loading) {
         return (
             <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
                 <div className="p-4 border-b">
@@ -300,7 +299,7 @@ export default function PersonalizedCarRecommendations({
                 </div>
             </div>
         );
-    }
+   
 
     // عرض حالة الخطأ
     if (error) {

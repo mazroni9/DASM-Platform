@@ -88,13 +88,7 @@ export default function ExecutiveItemDetailPage({ params }) {
     return `${days} يوم ${hours} ساعة ${minutes} دقيقة`;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-purple-600">جاري تحميل بيانات المنتج...</div>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (

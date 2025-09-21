@@ -6,6 +6,7 @@ import Providers from "./providers";
 import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import ClientProviders from "@/components/ClientProviders";
+import GlobalLoader from "@/components/GlobalLoader";
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "700", "800"],
@@ -38,6 +39,7 @@ export default function RootLayout({
                 </div>
               </ClientProviders>
             </ProtectedRoute>
+            <GlobalLoader />
           </Providers>
         </LoadingProvider>
       </body>

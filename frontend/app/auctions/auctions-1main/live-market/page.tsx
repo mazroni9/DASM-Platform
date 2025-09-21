@@ -20,6 +20,8 @@ import {
   Timer,
   Video,
   Radio,
+  XCircle,
+  CircleAlert,
 } from "lucide-react";
 import PlateSearch from "./component/PlateSearch";
 import BidTimer from "@/components/BidTimer";
@@ -114,29 +116,7 @@ export default function LiveMarketPage() {
         if (response.data.data || response.data.data) {
           const carsData = response.data.data.data || response.data.data;
           // تحويل البيانات إلى هيكل JSON
-          // let liveAuctions = carsData.filter((car) => {
-          //   return (
-          //     car.status === "live" &&
-          //     car.auction_type === "live" &&
-          //     !car.approved_for_live
-          //   );
-          // });
-
-          // let completedAuctions = carsData.filter((car) => {
-          //   return (
-          //     car.status === "completed" &&
-          //     car.auction_type === "live" &&
-          //     !car.approved_for_live
-          //   );
-          // });
-
-          // let current_car = carsData.filter((car) => {
-          //   return (
-          //     car.status === "live" &&
-          //     car.auction_type === "live" &&
-          //     car.approved_for_live
-          //   );
-          // });
+    
           console.log("API Response - Full carsData:", carsData);
           let current_car = carsData.current_live_car;
           let liveAuctions = carsData.pending_live_auctions;
@@ -196,6 +176,11 @@ export default function LiveMarketPage() {
     });
 
     const channel = pusher.subscribe('auction.live');
+    channel.bind('UpdateSessionEvent', (data: any) => {
+      console.log('Session updated:', data);
+      // Refresh auction data when session is updated
+      fetchAuctions();
+    });
     channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
       console.log('Car moved to auction:', data);
       // Refresh auction data when cars are moved
@@ -208,7 +193,14 @@ export default function LiveMarketPage() {
       console.log('Car approved for live auction:', data);
       // Refresh auction data when cars are approved for live
       fetchAuctions();
-      toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
+      if (data.approved_for_live) {
+        toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
+      }else{
+        toast.custom(<div style={{padding: '16px', borderRadius: '8px',backgroundColor: '#ffffcc'}} className="text-black flex items-center gap-2"> <CircleAlert className="w-4 h-4" /> تم إيقاف المزاد المباشر على {data.car_make} {data.car_model}!</div>,{
+          duration: 5000,
+         
+        });
+      }
     });
 
     // Listen for auction status changes

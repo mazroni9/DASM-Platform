@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/axios";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import SuspenseLoader from '@/components/SuspenseLoader';
 
 
-export default function WalletCallbackPage() {
+function WalletCallbackContent() {
     const router = useLoadingRouter();
     
     const searchParams = useSearchParams();
@@ -86,5 +87,13 @@ export default function WalletCallbackPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function WalletCallbackPage() {
+    return (
+        <Suspense fallback={<SuspenseLoader />}>
+            <WalletCallbackContent />
+        </Suspense>
     );
 }

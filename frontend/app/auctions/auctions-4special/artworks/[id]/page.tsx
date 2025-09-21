@@ -90,13 +90,7 @@ export default function ArtworkDetailsPage({ params }) {
     fetchArtwork();
   }, [id]);
   
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-purple-600 text-xl">جاري تحميل بيانات القطعة الفنية...</div>
-      </div>
-    );
-  }
+
   
   if (!artwork) {
     return (

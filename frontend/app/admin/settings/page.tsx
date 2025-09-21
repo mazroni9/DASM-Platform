@@ -122,14 +122,7 @@ export default function AdminSettingsPage() {
         { id: "system", name: "النظام", icon: Database },
     ];
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                <span className="mr-2">جاري تحميل الإعدادات...</span>
-            </div>
-        );
-    }
+
 
     return (
         <div className="space-y-6">

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 import ResetPasswordForm from './Form';
 import { useAuth } from '@/hooks/useAuth';
+import SuspenseLoader from '@/components/SuspenseLoader';
 
 export default function ResetPasswordPage() {
   const router = useLoadingRouter();
@@ -63,7 +64,9 @@ export default function ResetPasswordPage() {
               أدخل كلمة المرور الجديدة لحسابك
             </p>
           </div>
-          <ResetPasswordForm />
+          <Suspense fallback={<SuspenseLoader />}>
+            <ResetPasswordForm />
+          </Suspense>
         </div>
       </div>
     </div>
