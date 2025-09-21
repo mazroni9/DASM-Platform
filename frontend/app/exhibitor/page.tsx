@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import { Header } from '../../components/exhibitor/Header';
-import { Sidebar } from '../../components/exhibitor/sidebar';
-import { DashboardHome } from '../../components/exhibitor/DashboardHome';
 import { FiMenu } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DynamicComponents } from '@/lib/dynamic-imports';
+import GlobalLoader from '@/components/GlobalLoader';
+
+// Dynamic imports for heavy exhibitor components
+const Header = DynamicComponents.ExhibitorHeader;
+const Sidebar = DynamicComponents.ExhibitorSidebar;
+const DashboardHome = DynamicComponents.ExhibitorDashboardHome;
 
 export default function ExhibitorDashboard() {
   const router = useLoadingRouter();
@@ -33,7 +37,9 @@ export default function ExhibitorDashboard() {
     <div className="flex min-h-screen bg-gray-50 relative">
       {/* الشريط الجانبي - يظهر فقط على الشاشات المتوسطة فأكبر */}
       <div className="hidden md:block flex-shrink-0">
-        <Sidebar />
+        <Suspense fallback={<GlobalLoader />}>
+          <Sidebar />
+        </Suspense>
       </div>
 
       {/* الشريط الجانبي - نسخة الجوال (Drawer) */}
@@ -56,7 +62,9 @@ export default function ExhibitorDashboard() {
             />
             {/* الشريط نفسه */}
             <motion.div className="relative w-72 bg-gradient-to-b from-slate-900 via-indigo-900 to-indigo-950 shadow-2xl">
-              <Sidebar />
+              <Suspense fallback={<GlobalLoader />}>
+                <Sidebar />
+              </Suspense>
             </motion.div>
           </motion.div>
         )}
@@ -64,9 +72,13 @@ export default function ExhibitorDashboard() {
 
       {/* المحتوى الرئيسي */}
       <div className="flex-1 flex flex-col w-0">
-        <Header />
+        <Suspense fallback={<GlobalLoader />}>
+          <Header />
+        </Suspense>
         <main className="flex-1 overflow-auto bg-gray-50">
-          <DashboardHome />
+          <Suspense fallback={<GlobalLoader />}>
+            <DashboardHome />
+          </Suspense>
         </main>
       </div>
 
