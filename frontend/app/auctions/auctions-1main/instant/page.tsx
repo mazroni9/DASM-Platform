@@ -237,8 +237,9 @@ export default function InstantAuctionPage() {
       </div>
     </div>
 
-    <div className="flex flex-col md:flex-row gap-4 mb-4">
-      
+    <h1 className="text-3xl font-bold text-gray-800 mb-2">سيارات المزاد</h1>
+    <div className="flex flex-col md:flex-row gap-4 mb-4 justify-between items-center">
+  
       <div className="flex-1">
         <div className="relative">
           <Search
@@ -253,6 +254,12 @@ export default function InstantAuctionPage() {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
+      </div>
+      <div className="text-sm text-gray-500">
+        عدد السيارات
+         { filteredCars.length }
+        من
+         { carsTotal['total'] }
       </div>
       <button
         onClick={() => setShowFilters(!showFilters)}
@@ -295,19 +302,7 @@ export default function InstantAuctionPage() {
       </div>
     )}
 
-    <div className="flex justify-between items-center mt-6">
-      <h1 className="text-3xl font-bold text-gray-800">سيارات المزاد</h1>
-      <div className="text-sm text-gray-500">
-        عدد السيارات
-         { filteredCars.length }
-        من
-         { carsTotal['total'] }
-
-
-
-      </div>
-    </div>
-
+   
     {!isAllowed && (
       <div className="mt-4">
         <p>السوق ليس مفتوح الان سوف يفتح كما موضح في الوقت الأعلى</p>
@@ -349,7 +344,9 @@ export default function InstantAuctionPage() {
                   ].map((header, idx) => (
                     <th
                       key={idx}
-                      className="px-4 py-3 text-center font-semibold border border-gray-200 whitespace-nowrap bg-blue-50/95 backdrop-blur-sm"
+                      className={`px-4 py-3 text-center font-semibold border border-gray-200 whitespace-nowrap bg-blue-50/95 backdrop-blur-sm ${
+                        header === "تفاصيل" ? "sticky left-0" : ""
+                      }`}
                     >
                       {header}
                     </th>
@@ -447,10 +444,10 @@ export default function InstantAuctionPage() {
                           <td className="px-4 py-3 text-center border border-gray-200">
                             {getAuctionStatus(car["car"].auction_status)}
                           </td>
-                          <td className="px-4 py-3 text-center border border-gray-200">
+                          <td className="sticky left-0 bg-white hover:bg-blue-50 px-4 py-3 text-center border border-gray-200">
                             <LoadingLink
                               href={`/carDetails/${car.car_id}`}
-                              className="text-blue-600 hover:text-blue-800 underline"
+                              className=" bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold  p-1 shadow-lg transform hover:scale-105"
                             >
                               عرض
                             </LoadingLink>
