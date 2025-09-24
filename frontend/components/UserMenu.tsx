@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import { ChevronDown, LogOut, User, Settings } from 'lucide-react';
 import Image from 'next/image';
@@ -14,26 +14,26 @@ export default function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setIsOpen(false);
     }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [handleClickOutside]);
+
+  const handleLogout = useCallback(async () => {
     await logout();
     router.push('/auth/login');
-  };
+  }, [logout, router]);
 
-  const navigateTo = (path: string) => {
+  const navigateTo = useCallback((path: string) => {
     router.push(path);
     setIsOpen(false);
-  };
+  }, [router]);
 
   if (!user) return null;
 

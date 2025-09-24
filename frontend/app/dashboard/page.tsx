@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import GlobalLoader from "@/components/GlobalLoader";
 
 
 export default function DashboardTabs() {

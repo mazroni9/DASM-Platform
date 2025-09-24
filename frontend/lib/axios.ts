@@ -4,13 +4,20 @@ import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 import { getLoadingFunctions } from "@/contexts/LoadingContext";
 
-// Create a proper base URL with full URL including http/https
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Prefer same-origin relative API to leverage Next.js rewrites and avoid CORS preflights
+// Fallback to explicit URL only if no rewrite environment is used
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL : "";
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    withCredentials: true,
-    timeout: 30000, // Increase timeout to 30 seconds for deployment
+    // Avoid cross-site cookies; we use Authorization Bearer tokens
+    withCredentials: false,
+    timeout: 30000, // Increased timeout for better reliability
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    },
 });
 
 // We need a flag to prevent infinite refresh loops
@@ -18,17 +25,19 @@ let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
 // Add debug logs for development
-console.log("API Base URL:", API_BASE_URL);
-console.log("Environment:", process.env.NODE_ENV);
+if (process.env.NODE_ENV !== "production") {
+    console.log("API Base URL:", API_BASE_URL || "<same-origin>");
+    console.log("Environment:", process.env.NODE_ENV);
+}
 
 // Load token from localStorage on startup
 if (typeof window !== "undefined") {
     const token = localStorage.getItem("token");
     if (token) {
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        console.log("Token loaded from localStorage");
-    } else {
-        console.log("No token found in localStorage");
+        if (process.env.NODE_ENV === 'development') {
+            console.log("Token loaded from localStorage");
+        }
     }
 }
 

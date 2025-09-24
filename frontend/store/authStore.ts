@@ -88,15 +88,13 @@ export const useAuthStore = create<AuthState>()(
           api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         }
 
-        // حتى لو عندنا كاش، هنجلب نسخة محدثة فورًا
-        const ok = await get().fetchProfile({ force: true, silent: true });
-        set({
-          token,
-          isLoggedIn: ok,
-          loading: false,
-          initialized: true,
+        // Don't block first interaction: mark as logged-in optimistically
+        set({ token, isLoggedIn: true });
+        // Kick off profile fetch in background
+        get().fetchProfile({ force: true, silent: true }).finally(() => {
+          set({ loading: false, initialized: true });
         });
-        return ok;
+        return true;
       },
 
       // جلب بروفايل المستخدم مع خيار force لتجاهل الكاش
@@ -117,8 +115,10 @@ export const useAuthStore = create<AuthState>()(
 
           if (!silent) set({ loading: true });
 
-          const res = await api.get(`/api/user/profile`);
-          const userData: User = res.data?.data || res.data || null;
+          // Use cached API request for better performance
+          const { cachedApiRequest } = await import('@/lib/request-cache');
+          const res = await cachedApiRequest('/api/user/profile', undefined, PROFILE_CACHE_DURATION);
+          const userData: User = res?.data || res || null;
 
           set({
             user: userData,
@@ -130,7 +130,9 @@ export const useAuthStore = create<AuthState>()(
 
           return true;
         } catch (error: any) {
-          console.error("fetchProfile error:", error?.response?.data || error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error("fetchProfile error:", error?.response?.data || error);
+          }
 
           if (error?.response?.status === 401) {
             // توكن غير صالح
