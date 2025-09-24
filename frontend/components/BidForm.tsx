@@ -81,8 +81,8 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
         if (cleanValue) {
             const numValue = parseInt(cleanValue);
             console.log(numValue);
-            
-            setCustomAmount(formatCurrency (numValue));
+            //setCustomAmount(formatCurrency (numValue));
+            setCustomAmount(numValue.toString());
             setBidAmount(numValue);
         }
     };
@@ -276,7 +276,7 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
                             : "bg-blue-500 hover:bg-blue-600"
                     }`}
                 >
-                    تأكيد
+                    إرسال العرض
                 </button>
             </div>
 

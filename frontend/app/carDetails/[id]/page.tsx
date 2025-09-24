@@ -17,13 +17,16 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
-import { ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ChevronRight, AlertCircle, CheckCircle2, Plus,  } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { PriceWithIcon } from "@/components/ui/priceWithIcon";
 import api from "@/lib/axios";
 import { useParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
 import Pusher from "pusher-js";
+import BidForm from "@/components/BidForm";
+
 import { useEcho } from "@laravel/echo-react";
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
@@ -71,7 +74,7 @@ export default function CarDetailPage() {
   const params = useParams<{ id: string }>();
   let carId = params["id"];
   const [isOwner, setIsOwner] = useState(false);
-
+  const [showBid, setShowBid] = useState(false);
   // التعامل مع تغيير قيم حقول النموذج
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -197,6 +200,7 @@ export default function CarDetailPage() {
           let car_user_id = carsData.car.user_id;
           let current_user_id = user?.id;
           let dealer_user_id = carsData.car.dealer;
+
           if (dealer_user_id != null) {
             dealer_user_id = carsData.car.dealer.user_id;
           }
@@ -205,6 +209,8 @@ export default function CarDetailPage() {
             setIsOwner(true);
           } else if (dealer_user_id == current_user_id) {
             setIsOwner(true);
+          } else {
+            setIsOwner(false);
           }
 
           const auctionId = carsData.id;
@@ -425,10 +431,10 @@ export default function CarDetailPage() {
                   <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <p className="text-2xl font-bold text-blue-600">
                       السعر الحالي:{" "}
-                      {item && item.active_auction
+                      <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || item?.car?.max_price?.toLocaleString()} />
+                     {/*  {item && item.active_auction
                         ? item.active_auction?.current_bid?.toLocaleString()
-                        : item?.car?.max_price?.toLocaleString()}{" "}
-                      ريال
+                        : item?.car?.max_price?.toLocaleString()}{" "} */}
                     </p>
                     {item?.auction_result && (
                       <p className="text-lg text-green-600 mt-2">
@@ -439,14 +445,40 @@ export default function CarDetailPage() {
                 </div>
               </div>
               {!isOwner && item?.active_auction && (
+                !showBid ? (
+                  <button
+                    hidden={isOwner}
+                    onClick={() => setShowBid(!isOwner)}
+                    className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 mt-2"
+                  >
+                    <span className="flex items-center justify-center">
+                      <Plus className="h-5 w-5 mr-1.5" />
+                      قدم عرضك
+                    </span>
+                  </button>
+                ) : (
                 <div
-                  className="max-w-md mx-auto bg-white p-6 rounded-3xl shadow-lg border"
+                  className="max-w-md mx-auto mt-2 bg-white p-6 rounded-3xl shadow-lg border"
                   dir="rtl"
                 >
-                  <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">
+                  <BidForm
+                    auction_id={parseInt(item.active_auction.id)}
+                    bid_amount={parseInt(
+                      (item.active_auction.current_bid == 0
+                        ? item.active_auction.opening_price || 0
+                        : item.active_auction.current_bid || 0
+                      )
+                        .toString()
+                        .replace(/,/g, "")
+                    )}
+                    onSuccess={() => {
+                      toast.success("تم تقديم العرض بنجاح");
+                    }}
+                  />
+                  {/*<h2 className="text-2xl font-bold text-center mb-4 text-gray-800">
                     تقديم عرض على السيارة
                   </h2>
-                  <form onSubmit={handleSubmit}>
+                   <form onSubmit={handleSubmit}>
                     <label className="block mb-2 font-semibold text-gray-700">
                       قيمة العرض (ريال سعودي):
                     </label>
@@ -474,7 +506,7 @@ export default function CarDetailPage() {
                     </button>
                   </form>
 
-                  {/* Confirmation Dialog */}
+                  {/* Confirmation Dialog /}
                   {showConfirm && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div
@@ -507,8 +539,9 @@ export default function CarDetailPage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
+                )
               )}
 
               {!isOwner && !item?.active_auction && (
@@ -533,9 +566,7 @@ export default function CarDetailPage() {
                 <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
                   <p className="text-2xl font-bold text-blue-600">
                     آخر سعر:{" "}
-                    {item?.active_auction?.current_bid?.toLocaleString() ||
-                      "-"}{" "}
-                    ريال
+                    <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || "-"} />
                   </p>
                   {item?.active_auction?.current_bid && (
                     <p className="text-lg text-green-600 mt-2">
@@ -634,22 +665,19 @@ export default function CarDetailPage() {
                       <div>
                         <p className="text-gray-500 text-sm">سعر الإفتتاح</p>
                         <p className="font-semibold">
-                          {item?.active_auction?.minimum_bid?.toLocaleString() || "-"}{" "}
-                          ريال
+                          <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">أقل سعر</p>
                         <p className="font-semibold">
-                          {item?.active_auction?.minimum_bid?.toLocaleString() || "-"}{" "}
-                          ريال
+                          <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-500 text-sm">أعلى سعر</p>
                         <p className="font-semibold">
-                          {item?.active_auction?.maximum_bid?.toLocaleString() || "-"}{" "}
-                          ريال
+                          <PriceWithIcon price={item?.active_auction?.maximum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>
