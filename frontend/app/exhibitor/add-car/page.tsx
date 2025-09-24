@@ -11,12 +11,9 @@ export default function ExhibitorDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // 🔹 التأكد أننا في الكلاينت (لحل مشكلة الهيدرات)
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // التأكد أننا في الكلاينت
+  useEffect(() => { setIsClient(true); }, []);
 
-  // 🔹 منع العرض حتى يبدأ الكلاينت
   if (!isClient) {
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -46,7 +43,6 @@ export default function ExhibitorDashboard() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-40 md:hidden flex"
           >
-            {/* الخلفية الشفافة */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.6 }}
@@ -54,7 +50,6 @@ export default function ExhibitorDashboard() {
               className="absolute inset-0 bg-black"
               onClick={() => setIsSidebarOpen(false)}
             />
-            {/* الشريط نفسه */}
             <motion.div className="relative w-72 bg-gradient-to-b from-slate-900 via-indigo-900 to-indigo-950 shadow-2xl">
               <Sidebar />
             </motion.div>
@@ -65,7 +60,9 @@ export default function ExhibitorDashboard() {
       {/* المحتوى الرئيسي */}
       <div className="flex-1 flex flex-col w-0">
         <Header />
+
         <main className="p-4 md:p-6 flex-1 overflow-auto bg-gray-50">
+          {/* محتوى الصفحة */}
           <AddCar />
         </main>
       </div>

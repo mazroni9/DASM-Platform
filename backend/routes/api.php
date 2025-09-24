@@ -30,6 +30,8 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\AuctionSessionController;
+use App\Http\Controllers\UploadController;
+use App\Http\Controllers\CarSimilarityController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -45,6 +47,9 @@ Route::post('/public-event', function (Request $request) {
 })->middleware('throttle:60,1');
 
 
+Route::middleware(['auth:sanctum'])->post('/upload-image', [UploadController::class, 'store']);
+
+Route::get('/cars/similar', [CarSimilarityController::class, 'suggest']);
 
 Route::get('/check-time', function (Request $request) {
     $page = $request->query('page');

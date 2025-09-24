@@ -1,3 +1,4 @@
+// src/store/authStore.ts
 import { create } from "zustand";
 import axios from "axios";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -15,19 +16,21 @@ interface User {
   is_active?: boolean;
   status?: string;
 
-  // حقول صاحب المعرض
+  // صاحب المعرض
   venue_name?: string;
-  venue_address?: string; // ✅ اسم الحقل كما يرجعه الـ API
+  venue_address?: string;
   description?: string;
   rating?: number | string;
 
-  // حقول أخرى محتملة
+  // أخرى
   address?: string;
   company_name?: string;
   trade_license?: string;
 
   created_at?: string;
   updated_at?: string;
+
+  [key: string]: any;
 }
 
 interface AuthState {
@@ -57,8 +60,17 @@ interface AuthState {
   refreshToken: () => Promise<boolean>;
 }
 
-// قلل الكاش أو استعمل force لجلب فوري
 const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
+
+// ✅ موحّد شكل المستخدم من أي رد (يدعم {success,data} و {data:{}} و {…user})
+const extractUser = (respOrObj: any): User | null => {
+  const root = respOrObj?.data ?? respOrObj;
+  if (!root) return null;
+  if (root.data && typeof root.data === "object") return root.data as User;
+  if (root.success && root.data) return root.data as User;
+  if (typeof root === "object") return root as User;
+  return null;
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -84,21 +96,18 @@ export const useAuthStore = create<AuthState>()(
 
         // ضع التوكن في الرؤوس
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        if (api.defaults) {
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        }
+        if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-        // Don't block first interaction: mark as logged-in optimistically
         set({ token, isLoggedIn: true });
-        // Kick off profile fetch in background
+
         get().fetchProfile({ force: true, silent: true }).finally(() => {
           set({ loading: false, initialized: true });
         });
+
         return true;
       },
 
-      // جلب بروفايل المستخدم مع خيار force لتجاهل الكاش
-      fetchProfile: async (opts?: { force?: boolean; silent?: boolean }) => {
+      fetchProfile: async (opts) => {
         const force = opts?.force ?? false;
         const silent = opts?.silent ?? false;
 
@@ -112,33 +121,43 @@ export const useAuthStore = create<AuthState>()(
             now - state.lastProfileFetch < PROFILE_CACHE_DURATION;
 
           if (cacheValid) return true;
-
           if (!silent) set({ loading: true });
 
-          // Use cached API request for better performance
-          const { cachedApiRequest } = await import('@/lib/request-cache');
-          const res = await cachedApiRequest('/api/user/profile', undefined, PROFILE_CACHE_DURATION);
-          const userData: User = res?.data || res || null;
+          let resp: any;
+          if (force) {
+            resp = await api.get("/api/user/profile"); // تخطّي الكاش
+          } else {
+            const { cachedApiRequest } = await import("@/lib/request-cache");
+            resp = await cachedApiRequest(
+              "/api/user/profile",
+              { headers: api.defaults?.headers?.common },
+              PROFILE_CACHE_DURATION
+            );
+          }
 
-          set({
-            user: userData,
+          const userData = extractUser(resp);
+          if (!userData) {
+            set({ loading: false, error: "لم يتم العثور على بيانات المستخدم" });
+            return false;
+          }
+
+          // ✅ دمج بدل الاستبدال
+          set((s) => ({
+            user: { ...(s.user ?? {}), ...userData },
             isLoggedIn: true,
             lastProfileFetch: now,
             loading: false,
             error: null,
-          });
+          }));
 
           return true;
         } catch (error: any) {
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === "development") {
             console.error("fetchProfile error:", error?.response?.data || error);
           }
 
           if (error?.response?.status === 401) {
-            // توكن غير صالح
-            if (typeof window !== "undefined") {
-              localStorage.removeItem("token");
-            }
+            if (typeof window !== "undefined") localStorage.removeItem("token");
             delete axios.defaults.headers.common["Authorization"];
             if (api.defaults) delete api.defaults.headers.common["Authorization"];
 
@@ -174,40 +193,28 @@ export const useAuthStore = create<AuthState>()(
             return { success: false, needsVerification: true };
           }
 
-          // خزّن التوكن
-          if (typeof window !== "undefined") {
-            localStorage.setItem("token", data.access_token);
+          const token = data.access_token;
+          if (typeof window !== "undefined" && token) {
+            localStorage.setItem("token", token);
+          }
+          if (token) {
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           }
 
-          // ضع التوكن في الرؤوس
-          axios.defaults.headers.common["Authorization"] = `Bearer ${data.access_token}`;
-          if (api.defaults) {
-            api.defaults.headers.common["Authorization"] = `Bearer ${data.access_token}`;
-          }
-
-          // عيّن بيانات المستخدم من رد تسجيل الدخول (إن وُجدت)
-          const loginUser: User =
-            (data.user && data.user.data ? data.user.data : data.user) || null;
-
+          const loginUser = extractUser(data);
           if (loginUser) {
-            set({
-              user: loginUser,
-              token: data.access_token,
+            set((s) => ({
+              user: { ...(s.user ?? {}), ...loginUser },
+              token,
               isLoggedIn: true,
               error: null,
-              // هنفترض أنها لسه قديمة لنجبر fetchProfile يجلب المحدث فورًا
               lastProfileFetch: 0,
-            });
+            }));
           } else {
-            set({
-              token: data.access_token,
-              isLoggedIn: true,
-              error: null,
-              lastProfileFetch: 0,
-            });
+            set({ token, isLoggedIn: true, error: null, lastProfileFetch: 0 });
           }
 
-          // ✅ جلب فوري للبروفايل الكامل (مع venue_owner) بعد اللوجين
           await get().fetchProfile({ force: true, silent: true });
 
           set({ loading: false });
@@ -221,27 +228,18 @@ export const useAuthStore = create<AuthState>()(
 
             if (err.response.status === 403 && responseData.message) {
               set({ loading: false });
-              return {
-                success: false,
-                pendingApproval: true,
-                error: responseData.message,
-              };
+              return { success: false, pendingApproval: true, error: responseData.message };
             }
-
             if (err.response.status === 401 && responseData.message === "Email not verified") {
               set({ loading: false });
               return { success: false, needsVerification: true };
             }
-
             if (err.response.status === 422) {
               if (responseData.error) errorMessage = responseData.error;
               else if (responseData.message) errorMessage = responseData.message;
               else if (responseData.first_error) errorMessage = responseData.first_error;
-            } else if (responseData.message) {
-              errorMessage = responseData.message;
-            } else if (responseData.error) {
-              errorMessage = responseData.error;
-            }
+            } else if (responseData.message) errorMessage = responseData.message;
+            else if (responseData.error) errorMessage = responseData.error;
           } else if (err.request) {
             errorMessage = "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
           }
@@ -257,19 +255,11 @@ export const useAuthStore = create<AuthState>()(
             console.error("Logout API error:", error);
           });
         } finally {
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("token");
-          }
+          if (typeof window !== "undefined") localStorage.removeItem("token");
           delete axios.defaults.headers.common["Authorization"];
-          if (api.defaults) {
-            delete api.defaults.headers.common["Authorization"];
-          }
-          set({
-            user: null,
-            token: null,
-            isLoggedIn: false,
-            lastProfileFetch: 0,
-          });
+          if (api.defaults) delete api.defaults.headers.common["Authorization"];
+
+          set({ user: null, token: null, isLoggedIn: false, lastProfileFetch: 0 });
 
           if (typeof window !== "undefined") {
             window.location.href = "/auth/login";
@@ -279,49 +269,40 @@ export const useAuthStore = create<AuthState>()(
 
       refreshToken: async () => {
         try {
-          const currentToken = get().token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+          const currentToken =
+            get().token ||
+            (typeof window !== "undefined" ? localStorage.getItem("token") : null);
 
           const response = await api.post(
             `/api/refresh`,
             {},
             {
               withCredentials: true,
-              headers: {
-                ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
-              },
+              headers: { ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}) },
             }
           );
 
           if (response.data && response.data.access_token) {
             const { access_token } = response.data;
 
-            if (typeof window !== "undefined") {
-              localStorage.setItem("token", access_token);
-            }
+            if (typeof window !== "undefined") localStorage.setItem("token", access_token);
             axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
-            if (api.defaults) {
-              api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
-            }
+            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
 
             const state = get();
             const now = Date.now();
-            const needsUserData = !state.user || now - state.lastProfileFetch > PROFILE_CACHE_DURATION;
+            const needsUserData =
+              !state.user || now - state.lastProfileFetch > PROFILE_CACHE_DURATION;
 
             if (needsUserData) {
               try {
                 await get().fetchProfile({ force: true, silent: true });
               } catch (userError) {
                 console.error("Failed to get user data after token refresh:", userError);
-                set({
-                  token: access_token,
-                  isLoggedIn: true,
-                });
+                set({ token: access_token, isLoggedIn: true });
               }
             } else {
-              set({
-                token: access_token,
-                isLoggedIn: true,
-              });
+              set({ token: access_token, isLoggedIn: true });
             }
             return true;
           } else {
@@ -334,16 +315,9 @@ export const useAuthStore = create<AuthState>()(
           if (error?.response?.status === 401) {
             if (typeof window !== "undefined") localStorage.removeItem("token");
             delete axios.defaults.headers.common["Authorization"];
-            if (api.defaults) {
-              delete api.defaults.headers.common["Authorization"];
-            }
+            if (api.defaults) delete api.defaults.headers.common["Authorization"];
 
-            set({
-              user: null,
-              token: null,
-              isLoggedIn: false,
-              lastProfileFetch: 0,
-            });
+            set({ user: null, token: null, isLoggedIn: false, lastProfileFetch: 0 });
           }
 
           return false;
@@ -359,6 +333,21 @@ export const useAuthStore = create<AuthState>()(
         isLoggedIn: state.isLoggedIn,
         lastProfileFetch: state.lastProfileFetch,
       }),
+      // 🔁 مهم جدًا: زودنا version + migrate لتنظيف الشكل القديم بالفلاتة
+      version: 2,
+      migrate: (persisted: any, _version) => {
+        try {
+          if (!persisted) return persisted;
+          const u = persisted.user;
+          if (!u) return persisted;
+
+          // دعم أي لفّافات سابقة
+          const flattened = extractUser(u) || u;
+          return { ...persisted, user: flattened };
+        } catch {
+          return persisted;
+        }
+      },
     }
   )
 );
