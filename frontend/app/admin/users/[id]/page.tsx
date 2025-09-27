@@ -42,7 +42,7 @@ interface UserDetail {
     updated_at: string;
     dealer?: {
         id: number;
-        is_active: string;
+        is_active: boolean;
         status: string; // 'active', 'pending', 'rejected'
         company_name: string;
         commercial_registry: string;
@@ -599,7 +599,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
             {/* Edit User Form Modal */}
             {user && (
                 <EditUserForm
-                    user={user}
+                    user_id={user.id}
                     isOpen={showEditForm}
                     onClose={() => setShowEditForm(false)}
                     onUserUpdated={handleUserUpdated}
