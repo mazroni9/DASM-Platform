@@ -30,7 +30,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password_reset_token',
         'password_reset_expires_at',
         'is_active',
-        'status'
+        'status',
+        'keycloak_uuid'
     ];
 
     // Casts for automatic type conversion

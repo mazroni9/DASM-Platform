@@ -13,7 +13,7 @@ function LoginForm() {
   
     const searchParams = useSearchParams();
     const returnUrl = searchParams?.get("returnUrl") || "/dashboard";
-    const { login, verifyCode } = useAuthStore();
+    const { login, verifyCode, loginWithKeycloak } = useAuthStore();
 
     // Form states
     const [email, setEmail] = useState("");
@@ -60,7 +60,7 @@ function LoginForm() {
         setIsSubmitting(true);
 
         try {
-            const result = await login(email, password);
+            const result = await loginWithKeycloak(email, password);
 
             if (result.success) {
                 setSuccess("تم تسجيل الدخول بنجاح");
@@ -68,23 +68,11 @@ function LoginForm() {
                 router.push(
                     returnUrl.startsWith("/auth") ? "/dashboard" : returnUrl
                 );
-            } else if (result.pendingApproval) {
+            } else {
                 setError(
                     result.error ||
-                        "حسابك في انتظار موافقة المسؤول. سيتم إشعارك عندما يتم تفعيل حسابك."
+                        "فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور."
                 );
-            } else {
-                if (result.needsVerification) {
-                    setSuccess(
-                        "يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني"
-                    );
-                    setShowVerification(true);
-                } else {
-                    setError(
-                        result.error ||
-                            "فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور."
-                    );
-                }
             }
         } catch (err: any) {
             console.error("خطأ في تسجيل الدخول:", err);
