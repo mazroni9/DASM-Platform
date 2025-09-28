@@ -15,6 +15,7 @@ interface User {
   kyc_status?: string;
   is_active?: boolean;
   status?: string;
+  keycloak_roles?: string[];
 
   // حقول صاحب المعرض
   venue_name?: string;
@@ -427,6 +428,11 @@ export const useAuthStore = create<AuthState>()(
                 api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
               }
               
+              // Manually set token in localStorage to be picked up by axios instance
+              if (typeof window !== "undefined") {
+                localStorage.setItem("token", token);
+              }
+
               // Validate token with backend and get user info
               const isValid = await get().validateKeycloakToken();
               if (isValid) {
@@ -496,6 +502,14 @@ export const useAuthStore = create<AuthState>()(
 
           if (response.data.status === 'success') {
             const userData: User = response.data.user;
+            
+            // Log Keycloak roles for debugging
+            if (userData.keycloak_roles && userData.keycloak_roles.length > 0) {
+              console.log('🔐 Keycloak Roles for user:', userData.email);
+              console.log('📋 Roles:', userData.keycloak_roles);
+              console.log('🎭 Application Role:', userData.role);
+            }
+            
             set({
               user: userData,
               isLoggedIn: true,

@@ -35,12 +35,11 @@ class KeycloakService {
     }
 
     try {
-      // Initialize Keycloak without SSO checks for ROPC flow
+      // Simple initialization for ROPC flow - no SSO checks needed
       const authenticated = await this.keycloak.init({
         onLoad: 'check-sso',
         checkLoginIframe: false,
         enableLogging: true,
-        flow: 'standard',
         // Disable silent SSO to avoid CSP frame-ancestor violations
         silentCheckSsoRedirectUri: false,
       });
@@ -50,13 +49,6 @@ class KeycloakService {
     } catch (error: any) {
       console.error('Keycloak initialization failed:', error);
       console.error('Keycloak config:', keycloakConfig);
-      console.error('Error details:', {
-        message: error.message,
-        error: error.error,
-        error_description: error.error_description,
-        status: error.status,
-        statusText: error.statusText
-      });
       
       // Mark as initialized even if failed to prevent retry loops
       this.isInitialized = true;
@@ -69,35 +61,53 @@ class KeycloakService {
    */
   public async loginWithPassword(username: string, password: string): Promise<boolean> {
     try {
-      // Ensure Keycloak is initialized before attempting login
-      if (!this.isInitialized) {
-        const initResult = await this.init();
-        if (!initResult && !this.keycloak) {
-          throw new Error('Keycloak initialization failed. Please check your configuration and try again.');
+      // Use direct HTTP request for ROPC flow instead of Keycloak JS library
+      const tokenUrl = `${keycloakConfig.url}/realms/${keycloakConfig.realm}/protocol/openid-connect/token`;
+      
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'password',
+          client_id: keycloakConfig.clientId,
+          username: username,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error_description || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const tokenData = await response.json();
+      
+      // Store tokens in Keycloak instance for compatibility
+      if (this.keycloak) {
+        this.keycloak.token = tokenData.access_token;
+        this.keycloak.refreshToken = tokenData.refresh_token;
+        this.keycloak.idToken = tokenData.id_token;
+        this.keycloak.authenticated = true;
+        
+        // Parse token for user info
+        if (tokenData.access_token) {
+          try {
+            const payload = JSON.parse(atob(tokenData.access_token.split('.')[1]));
+            this.keycloak.tokenParsed = payload;
+          } catch (e) {
+            console.warn('Failed to parse access token:', e);
+          }
         }
       }
 
-      // Check if adapter is available
-      if (!this.keycloak || !this.keycloak.login) {
-        throw new Error('Keycloak adapter is not properly initialized. Please refresh the page and try again.');
-      }
-
-      const authenticated = await this.keycloak.login({
-        username,
-        password,
-        grantType: 'password',
-      });
-
-      return authenticated;
+      return true;
     } catch (error: any) {
       console.error('Keycloak login failed:', error);
       
       // Provide more specific error information
-      if (error.error_description) {
-        throw new Error(error.error_description);
-      } else if (error.error) {
-        throw new Error(error.error);
-      } else if (error.message) {
+      if (error.message) {
         throw new Error(error.message);
       } else {
         throw new Error('فشل في تسجيل الدخول. يرجى التحقق من البيانات والمحاولة مرة أخرى.');
