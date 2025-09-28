@@ -109,6 +109,14 @@ class KeycloakJwtGuard implements Guard
             $appRole = $this->jwtService->mapRoles($keycloakRoles);
             $name = $this->jwtService->getName($claims);
             
+            // Generate unique phone number for Keycloak users
+            $uniquePhone = '0000000000';
+            $counter = 1;
+            while (User::where('phone', $uniquePhone)->exists()) {
+                $uniquePhone = '000000000' . $counter;
+                $counter++;
+            }
+            
             $user = User::create([
                 'keycloak_uuid' => $this->jwtService->getUserId($claims),
                 'email' => $this->jwtService->getEmail($claims),
@@ -118,7 +126,7 @@ class KeycloakJwtGuard implements Guard
                 'status' => 'active', // Assume active for Keycloak users
                 'email_verified_at' => now(), // Assume verified for Keycloak users
                 'is_active' => true,
-                'phone' => '0000000000', // Dummy phone for Keycloak users
+                'phone' => $uniquePhone, // Unique dummy phone for Keycloak users
                 'password_hash' => 'keycloak-user', // Dummy password hash for Keycloak users
             ]);
 

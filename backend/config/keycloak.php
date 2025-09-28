@@ -12,7 +12,7 @@ return [
 
     'server_url' => env('KEYCLOAK_SERVER_URL', 'http://localhost:8080'),
     'realm' => env('KEYCLOAK_REALM', 'dasm-platform'),
-    'client_id' => env('KEYCLOAK_CLIENT_ID', 'dasm-backend'),
+    'client_id' => env('KEYCLOAK_CLIENT_ID', 'dasm-frontend'),
     'client_secret' => env('KEYCLOAK_CLIENT_SECRET', ''),
     
     // OIDC Discovery endpoint

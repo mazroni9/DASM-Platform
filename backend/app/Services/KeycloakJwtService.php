@@ -191,18 +191,20 @@ class KeycloakJwtService
             return false;
         }
         
-        // Check audience (client ID) - be flexible with realm suffix
+        // Check audience (client ID) - be flexible with realm suffix and account audience
         if (isset($claims['aud'])) {
             $audiences = (array)$claims['aud'];
             $expectedClientId = $this->config['client_id'];
             $expectedWithRealm = $expectedClientId . '-realm';
             
+            // Accept tokens from the configured client, realm-suffixed client, or default 'account' audience
             $isValidAudience = in_array($expectedClientId, $audiences) || 
-                              in_array($expectedWithRealm, $audiences);
+                              in_array($expectedWithRealm, $audiences) ||
+                              in_array('account', $audiences);
             
             if (!$isValidAudience) {
                 Log::warning('Keycloak JWT: Invalid audience', [
-                    'expected' => [$expectedClientId, $expectedWithRealm],
+                    'expected' => [$expectedClientId, $expectedWithRealm, 'account'],
                     'actual' => $audiences
                 ]);
                 return false;
