@@ -116,26 +116,6 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 // Keycloak token validation route
 Route::post('/validate-keycloak-token', [AuthController::class, 'validateKeycloakToken']);
 
-// Debug endpoint to test Keycloak configuration
-Route::get('/debug-keycloak-config', function () {
-    try {
-        $keycloakService = app(\App\Services\KeycloakJwtService::class);
-        return response()->json([
-            'keycloak_config' => config('keycloak'),
-            'auth_guard' => config('auth.defaults.guard'),
-            'keycloak_guard' => config('auth.guards.keycloak'),
-            'keycloak_service_loaded' => true,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'keycloak_config' => config('keycloak'),
-            'auth_guard' => config('auth.defaults.guard'),
-            'keycloak_guard' => config('auth.guards.keycloak'),
-            'keycloak_service_loaded' => false,
-        ]);
-    }
-});
 
 
 
