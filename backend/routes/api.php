@@ -131,7 +131,7 @@ Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
 
 // Removed venue routes as YouTube is the only streaming platform
 
-// Protected routes - for all authenticated users
+// Protected routes - for all authenticated users 
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
