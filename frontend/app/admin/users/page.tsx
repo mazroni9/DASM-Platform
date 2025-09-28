@@ -24,6 +24,12 @@ import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 import Switch from '@mui/material/Switch';
 import EditUserForm from "@/components/admin/EditUserForm";
+import Pagination from '@components/Pagination';
+import PaginationItem from '@mui/material/PaginationItem';
+
+import { log } from "console";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 // Toggle Switch Component using Material UI
 const ToggleSwitch = ({ 
     checked, 
@@ -85,7 +91,9 @@ export default function UsersManagementPage() {
     );
     const [initialLoad, setInitialLoad] = useState(true);
     const [showEditForm, setShowEditForm] = useState(false);
-
+    const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10; // or allow user to change it
     const handleUserUpdated = (updatedUser: any) => {
         setProcessingUserId(null);
         setShowEditForm(false);
@@ -97,7 +105,7 @@ export default function UsersManagementPage() {
             fetchUsers();
             setInitialLoad(false);
         }
-    }, [initialLoad]);
+    }, [currentPage]);
 
     useEffect(() => {
         // Apply filters whenever filter settings or search term changes
@@ -108,7 +116,7 @@ export default function UsersManagementPage() {
 
     const fetchUsers = async () => {
         try {
-            const response = await api.get("/api/admin/users");
+            const response = await api.get(`/api/admin/users?page=${currentPage}`);
 
             if (response.data && response.data.status === "success") {
                 console.log("Fetched users:", response.data);
@@ -117,6 +125,7 @@ export default function UsersManagementPage() {
                     // Handle paginated data
                     setUsers(response.data.data.data);
                     setFilteredUsers(response.data.data.data);
+                    setTotalCount(response.data.data.last_page)
                 } else {
                     // Handle non-paginated data
                     setUsers(response.data.data);
@@ -686,7 +695,16 @@ export default function UsersManagementPage() {
                             )}
                         </tbody>
                     </table>
+                   
                 </div>
+                <Pagination
+                    totalPages={totalCount}
+                    page={currentPage}
+                    onPageChange={(event,page) => {
+                        setInitialLoad(true);
+                        setCurrentPage(page)
+                    }}
+                />
             </div>
             <EditUserForm
                     user_id={processingUserId}

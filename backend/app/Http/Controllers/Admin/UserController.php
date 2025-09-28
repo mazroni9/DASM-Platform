@@ -41,7 +41,7 @@ class UserController extends Controller
             });
         }
 
-        $users = $query->with('dealer')->paginate(15);
+        $users = $query->with('dealer')->paginate(20);
 
         return response()->json([
             'status' => 'success',
