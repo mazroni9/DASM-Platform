@@ -13,6 +13,7 @@ use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use App\Models\CommissionTier;
 use App\Events\PublicMessageEvent;
+use App\Models\BidEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\NewBidNotification;
@@ -342,9 +343,10 @@ class BidController extends Controller
      */
     public function placeBid(Request $request)
     {
+        DB::beginTransaction();
         try {
             $user = Auth::user();
-            
+
             // Enhanced validation rules
             $data = $request->validate([
                 'auction_id' => 'required|integer|exists:auctions,id',
@@ -436,7 +438,7 @@ class BidController extends Controller
             // $user->wallet->save();
             // Enhanced bid amount validation
             $minBidAmount = max($auction->current_bid, $auction->minimum_bid, $auction->starting_bid);
-            
+
             if ($data['bid_amount'] <= $minBidAmount) {
                 return response()->json([
                     'status' => 'error',
@@ -485,6 +487,24 @@ class BidController extends Controller
             $auction->maximum_bid=Bid::where('auction_id',$data['auction_id'])->max('bid_amount');
             $auction->save();
 
+            BidEvent::create(
+           [
+            'auction_id' =>  $auction->id,
+            'bid_id' =>  $bid->id,
+            'bidder_id' => $user->id,
+            'bid_amount' => $bid->bid_amount,
+            'currency' => 'SAR',
+            'channel' => "web",
+            'event_type' => 'bid_placed',
+            'reason_code' => '',
+            'client_ts' => 'client_ts',
+            'server_nano_seq',
+            'ip_addr' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'session_id',
+            'hash_prev',
+            'hash_curr',
+        ]);
             // Log successful bid placement
             AuctionLoggingService::logBidSuccess($bid, $auction, $user, $request);
 
@@ -529,7 +549,7 @@ class BidController extends Controller
             ->toArray();
 
             $users = User::whereIn('id',$users_ids)->get();
-            
+
             // Log notification to other bidders
             \Illuminate\Support\Facades\Log::info('Sending notifications to other bidders', [
                 'auction_id' => $auction->id,
@@ -540,6 +560,7 @@ class BidController extends Controller
             ]);
 
             Notification::sendNow($users, new HigherBidNotification($auction));
+            DB::commit();
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',
@@ -560,7 +581,7 @@ class BidController extends Controller
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات غير صالحة',
@@ -575,7 +596,7 @@ class BidController extends Controller
                 'bindings' => $e->getBindings(),
                 'ip' => $request->ip()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى'
@@ -587,7 +608,7 @@ class BidController extends Controller
                 'error' => $e->getMessage(),
                 'ip' => $request->ip()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'المزاد أو المستخدم غير موجود'
@@ -601,7 +622,7 @@ class BidController extends Controller
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى'

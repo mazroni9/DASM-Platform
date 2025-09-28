@@ -20,7 +20,7 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { Button } from "@mui/material";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/OldPagination";
 
 
 interface Auction {

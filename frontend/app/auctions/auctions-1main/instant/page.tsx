@@ -30,7 +30,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 
 import Countdown from "@/components/Countdown";
 import Pusher from 'pusher-js';
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/OldPagination";
 
 interface FilterOptions {
     brand: string;
