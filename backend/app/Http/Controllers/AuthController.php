@@ -597,9 +597,16 @@ public function register(Request $request)
                 ], 401);
             }
 
+            // Get the JWT service to extract roles from the token
+            $jwtService = app(\App\Services\KeycloakJwtService::class);
+            $token = $request->bearerToken();
+            $claims = $jwtService->validateToken($token);
+            $keycloakRoles = $jwtService->extractRoles((array) $claims);
+
             \Log::info('Keycloak token validation successful', [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'keycloak_roles' => $keycloakRoles
             ]);
 
             return response()->json([
@@ -611,6 +618,7 @@ public function register(Request $request)
                     'email' => $user->email,
                     'role' => $user->role,
                     'keycloak_uuid' => $user->keycloak_uuid,
+                    'keycloak_roles' => $keycloakRoles,
                 ]
             ]);
         } catch (\Exception $e) {
