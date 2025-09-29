@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\AuctionSessionController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\CarSimilarityController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
