@@ -1,16 +1,21 @@
+// app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
-import { Tajawal } from "next/font/google";
+import localFont from "next/font/local";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Providers from "./providers";
 import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import ClientProviders from "@/components/ClientProviders";
 import GlobalLoader from "@/components/GlobalLoader";
-const tajawal = Tajawal({
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "700", "800"],
-  variable: "--font-tajawal",
+
+const lamaSans = localFont({
+  src: [
+    { path: "../public/fonts/lama-sans/LamaSans-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/lama-sans/LamaSans-Bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-lama",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -24,19 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" className={lamaSans.variable}>
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${tajawal.className} min-h-screen bg-gray-50`}>
+      <body className={`${lamaSans.className} min-h-screen bg-slate-950 text-slate-100`}>
         <LoadingProvider>
           <Providers>
             <ProtectedRoute>
               <ClientProviders>
                 <Navbar />
-                <div className="min-h-screen bg-gray-50">
-                  <main>{children}</main>
-                </div>
+                <main>{children}</main>
               </ClientProviders>
             </ProtectedRoute>
             <GlobalLoader />

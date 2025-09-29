@@ -1,193 +1,332 @@
 // =============================================================
-// 🏗️ الملف: الصفحة الرئيسية لأسواق المزادات الرقمية المتخصصة
-// 📁 المسار: Frontend/app/page.tsx
-// -------------------------------------------------------------
-// ✅ الوظيفة:
-//   - عرض العنوان الرئيسي للمنصة والعداد التنازلي لانطلاقة الأسواق.
-//   - تضمين شريط تنقل الأسواق (MarketTypeNav).
-//   - واجهة اختيار السوق عبر AuctionDropdown.
-//   - زر إدخال سيارة جديدة إلى نظام المزاد.
-// 🔗 يرتبط مع:
-//   - Navbar.tsx و Footer.tsx لهيكل الصفحة العام.
-//   - MarketTypeNav.tsx لقائمة الأسواق الرقمية.
-//   - CountdownTimer (مضمن داخليًا) للعد التنازلي.
-//   - مزادات السيارات: https://mazbrothers.com/auctions
-// 🧠 ملاحظات:
-//   - يتم التحكم في وقت الانطلاق عبر المتغير `targetDate`.
-//   - التصميم يعكس رؤية منصة "دسام" كسوق وطني رقمي شامل.
-// ✍️ المطورون : محمد احمد الزهراني المؤسس والمالك للمنصة ويساعدة برمجيا كل من جاسم الحجاب وضياء الدين العزيز
+// 🏗️ الصفحة الرئيسية – DASM-e | Digital Auctions Specialists Markets
+// ✨ تصميم احترافي عالمي – متوافق مع-navbar الجديد + تسلسل كتابة مضبوط
 // =============================================================
 
 "use client";
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import {
-  Typography,
-  Box,
-  Container,
-} from "@mui/material";
-import {
-  Clock,
-} from "lucide-react";
 
+import React, { useState, useEffect } from "react";
+import { Clock } from "lucide-react";
+import { motion } from "framer-motion";
 import Footer from "@/components/shared/Footer";
 import AuctionDropdown from "@/components/shared/AuctionDropdown";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
-import api from "@/lib/axios";
-const CountdownTimer = ({ targetDate }) => {
-  const [timeLeft, setTimeLeft] = useState(null);
-  const [mounted, setMounted] = useState(false);
+
+// ========== typing effect للعنوان الرئيسي (مرة واحدة) ==========
+const TypingMainTitle = ({
+  text,
+  speed = 60,
+  onDone,
+}: {
+  text: string;
+  speed?: number;
+  onDone: () => void;
+}) => {
+  const [charIndex, setCharIndex] = useState(0);
 
   useEffect(() => {
-    setMounted(true);
-    const calculateTimeLeft = () => {
-      const difference = +new Date(targetDate) - +new Date();
-      let timeLeft = {};
+    if (charIndex < text.length) {
+      const id = setTimeout(() => setCharIndex((i) => i + 1), speed);
+      return () => clearTimeout(id);
+    } else {
+      // انتهى العنوان
+      onDone?.();
+    }
+  }, [charIndex, text, speed, onDone]);
 
-      if (difference > 0) {
-        timeLeft = {
-          أيام: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          ساعات: Math.floor((difference / (1000 * 60 * 60)) % 24),
-          دقائق: Math.floor((difference / 1000 / 60) % 60),
-          ثواني: Math.floor((difference / 1000) % 60),
-        };
-      }
+  const displayed = text.slice(0, charIndex);
 
-      return timeLeft;
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [targetDate]);
-
-  if (!mounted) return <div className="flex items-center justify-center"><span className="text-xl font-bold">...</span></div>;
-  if (!timeLeft) return <div className="flex items-center justify-center"><span>انتهى الوقت!</span></div>;
-
-  const timerComponents = Object.keys(timeLeft).flatMap((interval, index) => [
-    <span key={index} className="flex flex-col items-center mx-1">
-      <span className="text-xl font-bold">{timeLeft[interval]}</span>
-      <span className="text-xs">{interval}</span>
-    </span>,
-    index < Object.keys(timeLeft).length - 1 && <span key={`sep-${index}`} className="mx-1 text-xl">:</span>
-  ]);
-
-  return <div className="flex items-center justify-center">{timerComponents}</div>;
+  return (
+    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-cyan-300 via-cyan-400 to-blue-400 bg-clip-text text-transparent leading-tight">
+      {displayed}
+      {charIndex < text.length ? (
+        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-cyan-300" />
+      ) : null}
+    </h1>
+  );
 };
 
-export default function Page() {
-  const [auctions, setAuctions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const targetDate = "July 1, 2025 01:00:00";
+// ========== typing & deleting loop للجمل الدوّارة (تبدأ بعد انتهاء العنوان) ==========
+const RotatingSentences = ({
+  start,
+  sentences = [
+    "اخترنا لك نخبة من الأسواق الرقمية التي تلبي احتياجاتك.",
+    "نمنحك فرصًا لا تجدها في مكان آخر.",
+    "كل ما تبحث عنه من أصول ومنتجات مستعملة ومجددة.",
+  ],
+}: {
+  start: boolean;
+  sentences?: string[];
+}) => {
+  const [sentenceIndex, setSentenceIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // إعادة الضبط عند بدء التشغيل بعد العنوان
+  useEffect(() => {
+    if (!start) return;
+    setSentenceIndex(0);
+    setCharIndex(0);
+    setIsDeleting(false);
+  }, [start]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setAuctions([]);
-      } catch (err) {
-        console.error("Error fetching auctions:", err);
-        setError(true);
-      } finally {
-        setLoading(false);
+    if (!start) return;
+
+    const current = sentences[sentenceIndex];
+    const typingSpeed = 50;
+    const deletingSpeed = 40;
+    const pauseAtEnd = 1400;
+
+    let delay = isDeleting ? deletingSpeed : typingSpeed;
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        if (charIndex < current.length) {
+          setCharIndex((i) => i + 1);
+        } else {
+          // توقف بسيط ثم ابدأ الحذف
+          setTimeout(() => setIsDeleting(true), pauseAtEnd);
+        }
+      } else {
+        if (charIndex > 0) {
+          setCharIndex((i) => i - 1);
+        } else {
+          setIsDeleting(false);
+          setSentenceIndex((i) => (i + 1) % sentences.length);
+        }
       }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [start, charIndex, isDeleting, sentenceIndex, sentences]);
+
+  if (!start) return null;
+
+  const current = sentences[sentenceIndex];
+  const text = current.slice(0, charIndex);
+
+  return (
+    <p className="text-slate-300 text-lg md:text-xl max-w-3xl mx-auto mt-6 leading-relaxed">
+      {text}
+      {!isDeleting && charIndex === current.length ? (
+        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-cyan-300" />
+      ) : null}
+    </p>
+  );
+};
+
+// ========== العد التنازلي (تصميم فاخر) ==========
+const CountdownUnit = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col items-center">
+    <div className="relative w-16 h-16 md:w-20 md:h-20">
+      <motion.div
+        key={value}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shadow-lg"
+      >
+        <span className="text-slate-900 text-2xl md:text-3xl font-bold">{value}</span>
+      </motion.div>
+    </div>
+    <span className="mt-2 text-xs md:text-sm text-slate-400 font-medium">{label}</span>
+  </div>
+);
+
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState<{ أيام: number; ساعات: number; دقائق: number; ثواني: number } | null>(null);
+
+  useEffect(() => {
+    const calculate = () => {
+      const diff = new Date(targetDate).getTime() - Date.now();
+      if (diff <= 0) return null;
+      return {
+        أيام: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        ساعات: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        دقائق: Math.floor((diff / 1000 / 60) % 60),
+        ثواني: Math.floor((diff / 1000) % 60),
+      };
     };
-    fetchData();
-  }, []);
+
+    setTimeLeft(calculate());
+    const id = setInterval(() => setTimeLeft(calculate()), 1000);
+    return () => clearInterval(id);
+  }, [targetDate]);
+
+  if (!timeLeft) return <div className="text-amber-400 font-bold">الانطلاقة قريبة!</div>;
+
+  return (
+    <div className="flex items-center gap-4 md:gap-6">
+      <CountdownUnit value={timeLeft.أيام} label="أيام" />
+      <span className="text-slate-500">:</span>
+      <CountdownUnit value={timeLeft.ساعات} label="ساعات" />
+      <span className="text-slate-500">:</span>
+      <CountdownUnit value={timeLeft.دقائق} label="دقائق" />
+      <span className="text-slate-500">:</span>
+      <CountdownUnit value={timeLeft.ثواني} label="ثواني" />
+    </div>
+  );
+};
+
+// ========== الفيديو (بدون autoplay – تجربة مستخدم أفضل) ==========
+const VideoSection = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  return (
+    <div className="relative w-full max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-slate-900 aspect-video">
+      {!isPlaying ? (
+        <button
+          onClick={() => setIsPlaying(true)}
+          className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900/90 to-slate-800/80 hover:from-slate-800/90 hover:to-slate-700/80 transition-all duration-300 group"
+          aria-label="تشغيل فيديو مقدمة المنصة"
+        >
+          <img
+            src="https://img.youtube.com/vi/ZSxZeM9Mcwk/maxresdefault.jpg"
+            alt="مقدمة منصة DASM-e"
+            className="absolute inset-0 w-full h-full object-cover opacity-60"
+            loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://placehold.co/800x450/1e293b/64748b?text=Video+Thumbnail";
+            }}
+          />
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <svg className="w-8 h-8 text-white ml-1" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <span className="mt-4 text-slate-200 font-medium">شاهد مقدمة المنصة</span>
+          </div>
+        </button>
+      ) : (
+        <iframe
+          src="https://www.youtube.com/embed/ZSxZeM9Mcwk?autoplay=1&mute=0"
+          title="DASM Platform Introduction"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          className="w-full h-full"
+        />
+      )}
+    </div>
+  );
+};
+
+// ========== الصفحة الرئيسية ==========
+export default function Page() {
+  const targetDate = "July 1, 2025 01:00:00";
+  const [titleDone, setTitleDone] = useState(false);
 
   return (
     <>
-      <Box sx={{ bgcolor: "#f5f6fa", minHeight: "100vh" }}>
-        <Box sx={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=1200&q=80')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          position: "relative",
-          py: 7,
-          mb: 4,
-          textAlign: "center"
-        }}>
-          <Box sx={{ position: "absolute", inset: 0, bgcolor: "rgba(25, 118, 210, 0.7)", zIndex: 1 }} />
-          <Container sx={{ position: "relative", zIndex: 2 }}>
-            <Typography variant="h3" sx={{ color: "#ffffff", fontWeight: 700, textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
-              Digital Auctions specialists Markets & e-Commerce
-            </Typography>
-            <Typography variant="h5" fontWeight="medium" gutterBottom>
-              اخترنا لك نخبة من الأسواق الرقمية التي تلبي احتياجاتك وتمنحك فرصًا لا تجدها في مكان آخر.
-            </Typography>
-            <Typography variant="h6" sx={{ mb: 3 }}>
-              كل ما تبحث عنه من الأصول والمنتجات المستعملة والمجددة – في منصة واحدة.!
-            </Typography>
-            <div className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-5 rounded inline-flex items-center justify-center mx-auto" style={{ minWidth: "220px" }}>
-              <Clock className="w-5 h-5 mr-2" />
-              <CountdownTimer targetDate={targetDate} />
-            </div>
-          </Container>
-        </Box>
+      {/* Hero Section – فاخر وغامر */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: "radial-gradient(circle, #25B4D8 1px, transparent 1px)",
+            backgroundSize: "30px 30px",
+          }}
+        ></div>
 
-        <Container sx={{ mb: 5 }}>
-          <MarketTypeNav />
-        </Container>
-
-        <Container sx={{ mb: 6, maxWidth: 'lg' }}>
-          <Box textAlign="center" mb={4}>
-            <Typography variant="h5" sx={{ color: '#1976d2', fontWeight: 'bold', mb: 1 }}>
-              القناة الرئيسية لمنصة DASM-e
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#8e24aa', fontSize: '18px', mb: 1 }}>
-              في قناتنا خيط رفيع يفصل بين الترفيه والمتعة... وبين البزنس الجاد والمزادات الرقمية الدقيقة.
-            </Typography>
-          </Box>
-
-          <Box sx={{
-            position: 'relative',
-            width: '100%',
-            height: { xs: '225px', sm: '315px', md: '360px', lg: '405px', xl: '450px' },
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            mx: 'auto',
-            maxWidth: '900px',
-            mb: 5
-          }}>
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/ZSxZeM9Mcwk?autoplay=1"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+        <div className="container mx-auto px-4 py-24 md:py-32 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            {/* العنوان يُكتب أولًا */}
+            <TypingMainTitle
+              text="Digital Auctions Specialists Markets"
+              speed={60}
+              onDone={() => setTitleDone(true)}
             />
-          </Box>
 
-          <Typography variant="body1" sx={{ color: '#2e2e2e', fontSize: '18px', mb: 6, textAlign: 'center' }}>
-            نقدم لكم تجارب مباشرة من قلب السوق الكبير – حيث تُعرض المنتجات، وتُعقد الصفقات، وتُكشف الفرص. تابعنا لتفهم الفارق، وتحجز مكانك في مستقبل التجارة التفاعلية.
-          </Typography>
-        </Container>
+            {/* الجمل الدوارة — تظهر بعد انتهاء العنوان، وأعلى النص العربي الثابت */}
+            <RotatingSentences start={titleDone} />
 
-        <Container sx={{ mb: 4 }} maxWidth="md">
-          <div className="mt-16 mb-10 border-t pt-10 relative">
-            <div className="relative -top-3 left-0 right-0 text-center">
-              <span className="bg-white px-4 py-1 text-xl font-bold text-blue-700"></span>
-            </div>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 mt-8">
-              <div className="w-full md:w-auto flex justify-center">
-                <div className="relative">
-                  <AuctionDropdown />
-                </div>
+            {/* النص العربي الثابت */}
+            <p className="text-slate-300 text-lg md:text-xl max-w-3xl mx-auto mt-6 leading-relaxed">
+              منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات ذكية، شفافية مطلقة، ووصول عالمي.
+            </p>
+          </motion.div>
+
+          {/* العد التنازلي – مركز فخم */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-12 flex justify-center"
+          >
+            <div className="bg-slate-800 px-6 py-4 rounded-2xl border border-slate-700 shadow-xl">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-amber-400" />
+                <span className="text-slate-300 font-medium">الانطلاقة في:</span>
               </div>
-              <a href="/add/Car" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition text-center whitespace-nowrap w-64 md:w-auto">
-                ادخل بيانات سيارتك
-              </a>
+              <div className="mt-3">
+                <CountdownTimer targetDate={targetDate} />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* أنواع الأسواق — ✅ تم إصلاح الخلفية هنا */}
+      <section className="py-12 bg-slate-900 border-y border-slate-800/40">
+        <div className="container mx-auto px-4">
+          <MarketTypeNav />
+        </div>
+      </section>
+
+      {/* قسم الفيديو – تجربة غامرة */}
+      <section className="py-20 bg-slate-950">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <motion.h2
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-3xl font-bold text-cyan-400 mb-4"
+            >
+              القناة الرسمية لـ DASM-e
+            </motion.h2>
+            <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+              حيث يلتقي البزنس الجاد مع الابتكار الرقمي — تجارب حقيقية من قلب السوق.
+            </p>
+          </div>
+          <VideoSection />
+          <p className="text-slate-400 text-center mt-10 max-w-3xl mx-auto text-lg leading-relaxed">
+            تابعنا لتفهم الفارق، وتحجز مكانك في مستقبل التجارة التفاعلية.
+          </p>
+        </div>
+      </section>
+
+      {/* CTA – تحويل فعّال */}
+      <section className="py-24 bg-slate-900">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="text-center">
+            <div className="inline-block px-6 py-2 bg-slate-800 border border-slate-700 rounded-full mb-10">
+              <h3 className="text-2xl font-bold text-cyan-400">ابدأ رحلتك اليوم</h3>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+              <div className="w-full max-w-xs">
+                <AuctionDropdown />
+              </div>
+              <motion.a
+                href="/add/Car"
+                whileHover={{ scale: 1.03, boxShadow: "0 10px 30px -10px rgba(37, 180, 216, 0.4)" }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg overflow-hidden w-full md:w-auto flex items-center justify-center"
+              >
+                <span className="relative z-10">أدخل بيانات سيارتك</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </motion.a>
             </div>
           </div>
-        </Container>
-      </Box>
+        </div>
+      </section>
+
       <Footer />
     </>
   );

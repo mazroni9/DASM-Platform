@@ -2,8 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 👇 لو حابب تبقي على خلفية الـlayout، مافيش مشكلة */
 body {
-  font-family: sans-serif;
+  font-family: var(--font-lama), sans-serif;
   margin: 0;
   padding: 0;
   background: #f5f5f5;
@@ -37,6 +38,7 @@ body {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -63,28 +65,31 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+
+  /* ✅ خليه يطبّق ألوان الخلفية/النص بناءً على المتغيّرات */
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* تحسينات تيبوغرافيا خفيفة */
+  h1, h2, h3, h4, h5, h6 { @apply font-bold tracking-tight; }
+  h1 { @apply text-3xl md:text-4xl; }
+  h2 { @apply text-2xl md:text-3xl; }
+  h3 { @apply text-xl md:text-2xl; }
+
+  a { @apply transition-colors; }
+  a:hover { @apply text-primary; }
 }
 
 @layer components {
-  .bg-background {
-    @apply bg-white;
-  }
-  .text-foreground {
-    @apply text-gray-900;
-  }
+  .bg-background { @apply bg-white; }
+  .text-foreground { @apply text-gray-900; }
 }
 
-@layer base {
-  * {
-    @apply border-0;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-
-/* Container styles */
+/* ---------------- Pagination styles (كما هي مع تحسين RTL) ---------------- */
 .pagination-container {
   display: flex;
   list-style: none;
@@ -92,13 +97,7 @@ body {
   justify-content: center;
   margin: 20px 0;
 }
-
-/* Individual page items */
-.page-item {
-  margin: 0 5px;
-}
-
-/* Page link styles */
+.page-item { margin: 0 5px; }
 .page-link {
   display: block;
   padding: 8px 14px;
@@ -108,34 +107,22 @@ body {
   border-radius: 4px;
   transition: background-color 0.2s, color 0.2s;
 }
-
-/* Hover effect */
 .page-link:hover {
   background-color: #e9ecef;
   color: #0056b3;
 }
-
-/* Active page styling */
 .page-item.active .page-link {
   background-color: #007bff;
   color: white;
   border-color: #007bff;
   cursor: default;
 }
-
-/* Disabled or unclickable state (optional) */
 .page-item.disabled .page-link {
   color: #6c757d;
   pointer-events: none;
   background-color: #f8f9fa;
   border-color: #dee2e6;
 }
+html[dir="rtl"] .pagination-container { flex-direction: row-reverse; }
 
-html[dir="rtl"] .pagination-container {
-  flex-direction: row-reverse;
-}
-
-
-/* .bg-gradient-to-br{
-  opacity: 0.3 !important;
-} */
+/* .bg-gradient-to-br{ opacity: 0.3 !important; } */
