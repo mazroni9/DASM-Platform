@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
 import GlobalLoader from "@/components/GlobalLoader";
+import UserRolesDisplay from "@/components/UserRolesDisplay";
 
 
 export default function DashboardTabs() {
@@ -246,6 +247,9 @@ export default function DashboardTabs() {
                         </div>
                     </div>
                 </div>
+
+                {/* Keycloak Roles Display */}
+                <UserRolesDisplay className="mb-6" />
 
                 {/* المحتوى الإضافي */}
                 {loading ? (

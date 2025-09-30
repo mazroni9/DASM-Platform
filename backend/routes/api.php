@@ -114,6 +114,11 @@ Route::post('/resend-verification', [AuthController::class, 'resendVerification'
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+// Keycloak token validation route
+Route::post('/validate-keycloak-token', [AuthController::class, 'validateKeycloakToken']);
+
+
+
 
 
 // Cloudinary test endpoints removed for security
@@ -135,7 +140,7 @@ Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
 // Removed venue routes as YouTube is the only streaming platform
 
 // Protected routes - for all authenticated users
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:keycloak')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
     // User routes
@@ -221,7 +226,7 @@ Route::get('/wallet/error', [WalletController::class, 'handleError'])->name('wal
 
 
 // Dealer-only routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])->group(function () {
+Route::middleware(['auth:keycloak', \App\Http\Middleware\DealerMiddleware::class])->group(function () {
     // Dealer dashboard
     Route::get('/dealer/dashboard', [DealerController::class, 'dashboard']);
 
@@ -239,7 +244,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
 });
 
 // Moderator routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::class])->group(function () {
+Route::middleware(['auth:keycloak', \App\Http\Middleware\ModeratorMiddleware::class])->group(function () {
     // Moderator dashboard
     Route::get('/moderator/dashboard', [ModeratorController::class, 'dashboard']);
 
@@ -253,7 +258,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 });
 
 // Admin routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
+Route::middleware(['auth:keycloak', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
     // Admin dashboard
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
     Route::get('admin/settings', [SettingsController::class, 'index']);

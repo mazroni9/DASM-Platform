@@ -577,6 +577,64 @@ public function register(Request $request)
     }
 
     /**
+     * Validate Keycloak JWT token and return user info
+     */
+    public function validateKeycloakToken(Request $request)
+    {
+        try {
+            \Log::info('Keycloak token validation attempt', [
+                'has_auth_header' => $request->hasHeader('Authorization'),
+                'user_agent' => $request->userAgent()
+            ]);
+
+            $user = Auth::guard('keycloak')->user();
+            
+            if (!$user) {
+                \Log::warning('Keycloak token validation failed - no user found');
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid or expired token'
+                ], 401);
+            }
+
+            // Get the JWT service to extract roles from the token
+            $jwtService = app(\App\Services\KeycloakJwtService::class);
+            $token = $request->bearerToken();
+            $claims = $jwtService->validateToken($token);
+            $keycloakRoles = $jwtService->extractRoles((array) $claims);
+
+            \Log::info('Keycloak token validation successful', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'keycloak_roles' => $keycloakRoles
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'keycloak_uuid' => $user->keycloak_uuid,
+                    'keycloak_roles' => $keycloakRoles,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Keycloak token validation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token validation failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Send a reset password link to the user's email.
      */
     public function forgotPassword(Request $request)

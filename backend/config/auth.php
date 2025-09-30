@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'keycloak' => [
+            'driver' => 'keycloak-jwt',
+            'provider' => 'keycloak-users',
+        ],
     ],
 
     /*
@@ -62,6 +66,10 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
+            'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+        'keycloak-users' => [
+            'driver' => 'keycloak',
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 

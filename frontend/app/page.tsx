@@ -33,6 +33,7 @@ import {
 import Footer from "@/components/shared/Footer";
 import AuctionDropdown from "@/components/shared/AuctionDropdown";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
+import TestKcRolesWidget from "@/components/TestKcRolesWidget";
 import api from "@/lib/axios";
 const CountdownTimer = ({ targetDate }) => {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -128,6 +129,12 @@ export default function Page() {
             </div>
           </Container>
         </Box>
+
+        {/* Test KC Roles Widget - Only visible to users with 'test-kc-roles' role */}
+        {/* This widget demonstrates role-based access control using Keycloak roles */}
+        <Container sx={{ mb: 5 }}>
+          <TestKcRolesWidget />
+        </Container>
 
         <Container sx={{ mb: 5 }}>
           <MarketTypeNav />

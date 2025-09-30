@@ -25,6 +25,11 @@ const GlobalLoader = dynamic(() => import("@/components/GlobalLoader"), {
   loading: () => null
 });
 
+const KeycloakProvider = dynamic(() => import("@/components/KeycloakProvider"), {
+  ssr: false,
+  loading: () => null
+});
+
 interface ClientProvidersProps {
   children: React.ReactNode;
 }
@@ -45,11 +50,13 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
         />
       </Suspense>
       <Suspense fallback={null}>
-        <NotificationProvider>
-          <FirebaseMessagingProvider>
-            {children}
-          </FirebaseMessagingProvider>
-        </NotificationProvider>
+        <KeycloakProvider>
+          <NotificationProvider>
+            <FirebaseMessagingProvider>
+              {children}
+            </FirebaseMessagingProvider>
+          </NotificationProvider>
+        </KeycloakProvider>
       </Suspense>
       <Suspense fallback={null}>
         <GlobalLoader />

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import axios from "axios";
 import { persist, createJSONStorage } from "zustand/middleware";
 import api from "@/lib/axios";
+import keycloakService from "@/lib/keycloak";
 
 interface User {
   id: number;
@@ -14,6 +15,7 @@ interface User {
   kyc_status?: string;
   is_active?: boolean;
   status?: string;
+  keycloak_roles?: string[];
 
   // حقول صاحب المعرض
   venue_name?: string;
@@ -52,6 +54,15 @@ interface AuthState {
     needsVerification?: boolean;
     pendingApproval?: boolean;
   }>;
+
+  // Keycloak methods
+  initializeKeycloak: () => Promise<boolean>;
+  loginWithKeycloak: (email: string, password: string) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  loginWithKeycloakRedirect: () => Promise<void>;
+  validateKeycloakToken: () => Promise<boolean>;
 
   logout: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
@@ -253,10 +264,11 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          api.post(`/api/logout`).catch((error) => {
-            console.error("Logout API error:", error);
-          });
-        } finally {
+          // Use Keycloak logout
+          await keycloakService.logout();
+        } catch (error) {
+          console.error("Keycloak logout error:", error);
+          // Fallback to local logout
           if (typeof window !== "undefined") {
             localStorage.removeItem("token");
           }
@@ -346,6 +358,169 @@ export const useAuthStore = create<AuthState>()(
             });
           }
 
+          return false;
+        }
+      },
+
+      // Keycloak methods
+      initializeKeycloak: async () => {
+        try {
+          // Check if we're on client side
+          if (typeof window === 'undefined') {
+            return false;
+          }
+
+          set({ loading: true });
+          const authenticated = await keycloakService.init();
+          
+          if (authenticated) {
+            const token = keycloakService.getAccessToken();
+            if (token) {
+              // Set token in axios headers
+              axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+              if (api.defaults) {
+                api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+              }
+              
+              // Validate token with backend and get user info
+              const isValid = await get().validateKeycloakToken();
+              if (isValid) {
+                set({ 
+                  token, 
+                  isLoggedIn: true, 
+                  loading: false 
+                });
+                return true;
+              }
+            }
+          }
+          
+          set({ loading: false });
+          return false;
+        } catch (error) {
+          console.error("Keycloak initialization failed:", error);
+          set({ loading: false, error: "Failed to initialize authentication" });
+          return false;
+        }
+      },
+
+      loginWithKeycloak: async (email: string, password: string) => {
+        try {
+          set({ loading: true, error: null });
+          
+          // Ensure Keycloak is ready before attempting login
+          if (!keycloakService.isReady()) {
+            const initialized = await keycloakService.init();
+            if (!initialized) {
+              set({ loading: false });
+              return { success: false, error: "فشل في تهيئة نظام المصادقة. يرجى تحديث الصفحة والمحاولة مرة أخرى." };
+            }
+          }
+          
+          const authenticated = await keycloakService.loginWithPassword(email, password);
+          
+          if (authenticated) {
+            const token = keycloakService.getAccessToken();
+            if (token) {
+              // Set token in axios headers
+              axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+              if (api.defaults) {
+                api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+              }
+              
+              // Manually set token in localStorage to be picked up by axios instance
+              if (typeof window !== "undefined") {
+                localStorage.setItem("token", token);
+              }
+
+              // Validate token with backend and get user info
+              const isValid = await get().validateKeycloakToken();
+              if (isValid) {
+                set({ 
+                  token, 
+                  isLoggedIn: true, 
+                  loading: false 
+                });
+                return { success: true };
+              } else {
+                set({ loading: false });
+                return { success: false, error: "فشل في التحقق من صحة البيانات. يرجى المحاولة مرة أخرى." };
+              }
+            } else {
+              set({ loading: false });
+              return { success: false, error: "فشل في الحصول على رمز الوصول. يرجى المحاولة مرة أخرى." };
+            }
+          } else {
+            set({ loading: false });
+            return { success: false, error: "فشل في تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور." };
+          }
+        } catch (error: any) {
+          console.error("Keycloak login failed:", error);
+          set({ loading: false });
+          
+          // Provide more specific error messages
+          let errorMessage = "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.";
+          
+          if (error.message) {
+            if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+              errorMessage = "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+            } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+              errorMessage = "ليس لديك صلاحية للوصول إلى هذا الحساب.";
+            } else if (error.message.includes('404') || error.message.includes('Not Found')) {
+              errorMessage = "المستخدم غير موجود في النظام. يرجى التأكد من إنشاء الحساب في Keycloak أولاً.";
+            } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+              errorMessage = "خطأ في الاتصال. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.";
+            }
+          }
+          
+          return { 
+            success: false, 
+            error: errorMessage
+          };
+        }
+      },
+
+      loginWithKeycloakRedirect: async () => {
+        try {
+          await keycloakService.loginWithRedirect();
+        } catch (error) {
+          console.error("Keycloak redirect login failed:", error);
+          throw error;
+        }
+      },
+
+      validateKeycloakToken: async () => {
+        try {
+          const token = keycloakService.getAccessToken();
+          if (!token) return false;
+
+          const response = await api.post('/api/validate-keycloak-token', {}, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          if (response.data.status === 'success') {
+            const userData: User = response.data.user;
+            
+            // Log Keycloak roles for debugging
+            if (userData.keycloak_roles && userData.keycloak_roles.length > 0) {
+              console.log('🔐 Keycloak Roles for user:', userData.email);
+              console.log('📋 Roles:', userData.keycloak_roles);
+              console.log('🎭 Application Role:', userData.role);
+            }
+            
+            set({
+              user: userData,
+              isLoggedIn: true,
+              lastProfileFetch: Date.now(),
+            });
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error("Keycloak token validation failed:", error);
           return false;
         }
       },

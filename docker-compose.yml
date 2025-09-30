@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Keycloak
+  keycloak-db:
+    image: postgres:15-alpine
+    container_name: dasm-keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_password}
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts with local PostgreSQL
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.5
+    container_name: dasm-keycloak
+    environment:
+      # Database configuration
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_password}
+      
+      # Keycloak configuration
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      
+      # Admin configuration
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin123}
+      
+      # Proxy configuration for local development
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: true
+      
+      # Health check
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      
+      # Development settings
+      KC_LOG_LEVEL: ${KEYCLOAK_LOG_LEVEL:-INFO}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    restart: unless-stopped
+    command: start-dev
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  keycloak_db_data:
+    driver: local
