@@ -9,7 +9,7 @@
  * Usage: php artisan migrate:users-to-keycloak [--dry-run] [--batch-size=50]
  */
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Models\User;
 use App\Enums\UserRole;

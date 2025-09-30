@@ -9,7 +9,7 @@
  * Usage: php artisan verify:migration
  */
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Models\User;
 use GuzzleHttp\Client;

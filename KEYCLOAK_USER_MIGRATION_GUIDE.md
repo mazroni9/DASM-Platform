@@ -1,5 +1,221 @@
 # Keycloak User Migration Guide
 
+This guide explains how to migrate users from your local database to Keycloak.
+
+## Fresh Keycloak Setup
+
+If you're setting up Keycloak from scratch, follow these steps:
+
+### Step 1: Install and Start Keycloak
+
+#### Using Docker
+```bash
+# Create a docker-compose.yml file
+cat > docker-compose.keycloak.yml << 'EOF'
+version: '3.8'
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+    ports:
+      - "8080:8080"
+    command: start-dev
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+EOF
+
+# Start Keycloak
+docker-compose -f docker-compose.keycloak.yml up -d
+```
+
+### Step 2: Initial Keycloak Configuration
+
+1. **Access Keycloak Admin Console**:
+   - Go to `http://localhost:8080`
+   - Click "Administration Console"
+   - Login with `admin` / `admin123` (or your custom admin credentials)
+
+2. **Create the DASM Platform Realm**:
+   - Click the dropdown in the top-left corner (currently shows "Master")
+   - Click "Create Realm"
+   - Enter realm name: `dasm-platform`
+   - Click "Create"
+
+3. **Configure Realm Settings**:
+   - Go to "Realm Settings" → "General"
+   - Set "Display name": `DASM Platform`
+   - Set "HTML Display name": `DASM Platform`
+   - Click "Save"
+
+### Step 3: Create the Backend Client
+
+1. **Navigate to Clients**:
+   - Go to "Clients" in the left sidebar
+   - Click "Create client"
+
+2. **Configure Client**:
+   - **Client type**: `OpenID Connect`
+   - **Client ID**: `dasm-backend`
+   - Click "Next"
+
+3. **Client Settings**:
+   - **Client authentication**: `ON` (Confidential)
+   - **Authorization**: `OFF`
+   - **Authentication flow**: `Standard flow`, `Direct access grants`, `Service accounts roles`
+   - Click "Next"
+
+4. **Login Settings**:
+   - Leave default settings
+   - Click "Save"
+
+5. **Get Client Secret**:
+   - Go to "Credentials" tab
+   - Copy the "Client secret" value
+   - Update your backend `.env` file:
+     ```env
+     KEYCLOAK_CLIENT_SECRET=your-copied-secret-here
+     ```
+
+### Step 4: Create Client Roles
+
+1. **Navigate to Client Roles**:
+   - Go to "Clients" → `dasm-backend` → "Roles"
+   - Click "Create role"
+
+2. **Create Required Roles**:
+   Create each of these roles:
+   - **Role name**: `admin`, **Description**: `Administrator role with full system access`
+   - **Role name**: `moderator`, **Description**: `Moderator role for auction management`
+   - **Role name**: `venue_owner`, **Description**: `Venue owner role for venue management`
+   - **Role name**: `investor`, **Description**: `Investor role for investment features`
+   - **Role name**: `dealer`, **Description**: `Dealer role for car trading`
+   - **Role name**: `user`, **Description**: `Basic user role`
+
+### Step 5: Create Frontend Client (Optional)
+
+If you need a separate frontend client:
+
+1. **Create Frontend Client**:
+   - Go to "Clients" → "Create client"
+   - **Client ID**: `dasm-frontend`
+   - **Client type**: `OpenID Connect`
+   - Click "Next"
+
+2. **Frontend Client Settings**:
+   - **Client authentication**: `OFF` (Public)
+   - **Standard flow**: `ON`
+   - **Direct access grants**: `ON`
+   - **Valid redirect URIs**: `http://localhost:3000/*`
+   - **Web origins**: `http://localhost:3000`
+   - Click "Save"
+
+### Step 6: Test the Setup
+
+1. **Test Realm Access**:
+   ```bash
+   # Test if realm is accessible
+   curl http://localhost:8080/realms/dasm-platform
+   ```
+
+2. **Test Client Authentication**:
+   ```bash
+   # Test client credentials flow
+   curl -X POST http://localhost:8080/realms/dasm-platform/protocol/openid-connect/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "grant_type=client_credentials&client_id=dasm-backend&client_secret=YOUR_CLIENT_SECRET"
+   ```
+
+3. **Verify Backend Configuration**:
+   ```bash
+   cd backend
+   php artisan migrate:users-to-keycloak --dry-run
+   ```
+
+### Step 7: Create Test Users (Optional)
+
+1. **Create Test Users**:
+   - Go to "Users" → "Create new user"
+   - **Username**: `admin@dasm-platform.com`
+   - **Email**: `admin@dasm-platform.com`
+   - **First name**: `Admin`
+   - **Last name**: `User`
+   - **Email verified**: `ON`
+   - Click "Create"
+
+2. **Set Password**:
+   - Go to "Credentials" tab
+   - Click "Set password"
+   - **Password**: `TempPassword123!`
+   - **Temporary**: `ON`
+   - Click "Save"
+
+3. **Assign Roles**:
+   - Go to "Role mapping" tab
+   - Click "Assign role"
+   - Select "Filter by clients"
+   - Select `dasm-backend`
+   - Assign the `admin` role
+   - Click "Assign"
+
+### Troubleshooting Fresh Setup
+
+#### Common Issues:
+
+1. **Keycloak Won't Start**:
+   ```bash
+   # Check if port 8080 is in use
+   netstat -an | findstr :8080
+   
+   # Kill process using port 8080
+   taskkill /PID <PID_NUMBER> /F
+   ```
+
+2. **Client Secret Not Working**:
+   - Verify the client secret is copied correctly
+   - Check that client authentication is set to "ON"
+   - Ensure service accounts are enabled
+
+3. **Realm Not Found**:
+   - Verify the realm name is exactly `dasm-platform`
+   - Check that the realm is enabled
+   - Ensure you're accessing the correct Keycloak instance
+
+4. **Roles Not Found**:
+   - Verify roles are created under the correct client (`dasm-backend`)
+   - Check that role names match exactly: `admin`, `moderator`, `venue_owner`, `investor`, `dealer`, `user`
+
+#### Verification Commands:
+
+```bash
+# Check if Keycloak is running
+curl http://localhost:8080/health
+
+# Check if realm exists
+curl http://localhost:8080/realms/dasm-platform
+
+# Check if client exists (requires admin token)
+curl -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  http://localhost:8080/admin/realms/dasm-platform/clients?clientId=dasm-backend
+```
+
 ## Prerequisites
 
 1. **Keycloak Server Running**: Ensure Keycloak is running at `http://localhost:8080`
