@@ -28,7 +28,7 @@ class KeycloakJwtService
         try {
             // Decode token header to get key ID
             $header = JWT::jsonDecode(JWT::urlsafeB64Decode(explode('.', $token)[0]));
-            
+
             if (!isset($header->kid)) {
                 Log::error('Keycloak JWT: Missing key ID in token header');
                 return null;
@@ -97,14 +97,14 @@ class KeycloakJwtService
     private function getJwks(): ?array
     {
         $cacheKey = 'keycloak_jwks';
-        
+
         return Cache::remember($cacheKey, $this->config['jwt']['cache_ttl'], function () {
             try {
                 // Use the proper JWKS endpoint
                 $jwksUrl = $this->config['server_url'] . '/realms/' . $this->config['realm'] . '/protocol/openid-connect/certs';
-                
+
                 $response = Http::timeout(10)->get($jwksUrl);
-                
+
                 if ($response->successful()) {
                     $jwks = $response->json();
                     Log::info('Keycloak JWT: Successfully fetched JWKS', [
@@ -112,12 +112,12 @@ class KeycloakJwtService
                     ]);
                     return $jwks;
                 }
-                
+
                 Log::error('Keycloak JWT: Failed to fetch JWKS', [
                     'status' => $response->status(),
                     'url' => $jwksUrl
                 ]);
-                
+
                 return null;
             } catch (\Exception $e) {
                 Log::error('Keycloak JWT: Exception fetching JWKS', [
@@ -136,21 +136,21 @@ class KeycloakJwtService
     {
         // Remove PEM headers and decode
         $publicKey = str_replace(['-----BEGIN PUBLIC KEY-----', '-----END PUBLIC KEY-----', "\n", "\r"], '', $publicKey);
-        
+
         // Parse the ASN.1 structure to extract RSA components
         $rsa = openssl_pkey_get_public("-----BEGIN PUBLIC KEY-----\n" . chunk_split($publicKey, 64, "\n") . "-----END PUBLIC KEY-----");
         $details = openssl_pkey_get_details($rsa);
-        
+
         if (!$details || !isset($details['rsa'])) {
             throw new \Exception('Failed to parse RSA public key');
         }
-        
+
         $rsa = $details['rsa'];
-        
+
         // Generate a consistent key ID based on the public key
         $keyId = hash('sha256', $publicKey);
         $keyId = substr($keyId, 0, 16); // Use first 16 characters
-        
+
         // Convert to JWK format
         return [
             'kty' => 'RSA',
@@ -168,19 +168,19 @@ class KeycloakJwtService
     private function validateClaims(array $claims): bool
     {
         $now = time();
-        
+
         // Check expiration
         if (isset($claims['exp']) && $claims['exp'] < $now) {
             Log::warning('Keycloak JWT: Token expired');
             return false;
         }
-        
+
         // Check not before
         if (isset($claims['nbf']) && $claims['nbf'] > $now) {
             Log::warning('Keycloak JWT: Token not yet valid');
             return false;
         }
-        
+
         // Check issuer
         $expectedIssuer = $this->config['discovery_url'];
         if (isset($claims['iss']) && $claims['iss'] !== $expectedIssuer) {
@@ -190,18 +190,18 @@ class KeycloakJwtService
             ]);
             return false;
         }
-        
+
         // Check audience (client ID) - be flexible with realm suffix and account audience
         if (isset($claims['aud'])) {
             $audiences = (array)$claims['aud'];
             $expectedClientId = $this->config['client_id'];
             $expectedWithRealm = $expectedClientId . '-realm';
-            
+
             // Accept tokens from the configured client, realm-suffixed client, or default 'account' audience
-            $isValidAudience = in_array($expectedClientId, $audiences) || 
+            $isValidAudience = in_array($expectedClientId, $audiences) ||
                               in_array($expectedWithRealm, $audiences) ||
                               in_array('account', $audiences);
-            
+
             if (!$isValidAudience) {
                 Log::warning('Keycloak JWT: Invalid audience', [
                     'expected' => [$expectedClientId, $expectedWithRealm, 'account'],
@@ -210,7 +210,7 @@ class KeycloakJwtService
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -220,7 +220,7 @@ class KeycloakJwtService
     public function extractRoles(array $claims): array
     {
         $roles = [];
-        
+
         // Extract realm roles
         if (isset($claims['realm_access'])) {
             $realmAccess = $claims['realm_access'];
@@ -231,7 +231,7 @@ class KeycloakJwtService
                 $roles = array_merge($roles, $realmAccess['roles']);
             }
         }
-        
+
         // Extract client roles
         if (isset($claims['resource_access'])) {
             $resourceAccess = $claims['resource_access'];
@@ -248,7 +248,7 @@ class KeycloakJwtService
                 }
             }
         }
-        
+
         return array_unique($roles);
     }
 
@@ -258,14 +258,14 @@ class KeycloakJwtService
     public function mapRoles(array $keycloakRoles): string
     {
         $roleMapping = $this->config['role_mapping'];
-        
+
         // Check for exact matches first
         foreach ($keycloakRoles as $role) {
             if (isset($roleMapping[$role])) {
                 return $roleMapping[$role];
             }
         }
-        
+
         // Return default role if no match found
         return $this->config['default_role'];
     }
@@ -284,16 +284,16 @@ class KeycloakJwtService
     public function getEmail(array $claims): ?string
     {
         // Try to get email from various possible fields
-        $email = $claims['email'] ?? 
-                 $claims['preferred_username'] ?? 
-                 $claims['username'] ?? 
+        $email = $claims['email'] ??
+                 $claims['preferred_username'] ??
+                 $claims['username'] ??
                  null;
-        
+
         // If we have a username but no email, create a dummy email
         if (!$email && isset($claims['preferred_username'])) {
             $email = $claims['preferred_username'] . '@keycloak.local';
         }
-        
+
         return $email;
     }
 

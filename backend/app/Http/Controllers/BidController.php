@@ -7,20 +7,23 @@ use App\Models\Bid;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Auction;
+use App\Models\BidEvent;
 use App\Events\NewBidEvent;
-use App\Events\LiveMarketBidEvent;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use App\Models\CommissionTier;
+use App\Services\BidEventService;
+use App\Events\LiveMarketBidEvent;
 use App\Events\PublicMessageEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuctionLoggingService;
 use App\Notifications\NewBidNotification;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\UserBidLogResource;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
-use App\Services\AuctionLoggingService;
 
 class BidController extends Controller
 {
@@ -202,12 +205,23 @@ class BidController extends Controller
         }
     }
 
+    public function UserBidHistory()
+    {
+        $userId = Auth::id();
+        $bid_events = BidEvent::with('auction')->where('bidder_id', $userId)->orderBy('created_at', 'desc')
+        ->paginate(15);
+       $data  = UserBidLogResource::collection($bid_events);
+       return response()->json([
+            'status' => 'success',
+            'data' => $data,
+        ]);
+    }
     /**
      * Get a user's bidding history
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function myBidHistory()
+   /*  public function myBidHistory()
     {
         $userId = Auth::id();
 
@@ -254,7 +268,7 @@ class BidController extends Controller
             ]
         ]);
     }
-
+ */
     /**
      * Get a leaderboard of top bidders for an auction
      *
@@ -340,11 +354,11 @@ class BidController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function placeBid(Request $request)
+    public function placeBid(Request $request, BidEventService $bidEventService)
     {
         try {
             $user = Auth::user();
-            
+
             // Enhanced validation rules
             $data = $request->validate([
                 'auction_id' => 'required|integer|exists:auctions,id',
@@ -436,7 +450,7 @@ class BidController extends Controller
             // $user->wallet->save();
             // Enhanced bid amount validation
             $minBidAmount = max($auction->current_bid, $auction->minimum_bid, $auction->starting_bid);
-            
+
             if ($data['bid_amount'] <= $minBidAmount) {
                 return response()->json([
                     'status' => 'error',
@@ -469,21 +483,35 @@ class BidController extends Controller
 
             // Log bid attempt
             AuctionLoggingService::logBidAttempt($user, $auction, $data['bid_amount'], $request);
-
+            $last_bid = $auction->bids()->latest()->first();
             // Create the bid
-            $bid = new Bid();
-            $bid->auction_id = $auction->id;
-            $bid->user_id = $user->id;
-            $bid->bid_amount = $data['bid_amount'];
-            $bid->increment =  $data['bid_amount'] - $auction->current_bid;
-            $bid->save();
+            $bid = Bid::create([
+                'auction_id' => $auction->id,
+                'user_id' => $user->id,
+                'bid_amount' => $data['bid_amount'],
+                'increment' =>  $data['bid_amount'] - $auction->current_bid
+            ]);
 
             // Update the auction's current price
-            $auction->current_bid = $data['bid_amount'];
-            $auction->last_bid_time = Carbon::now()->toDateTimeString();
-            $auction->minimum_bid=Bid::where('auction_id',$data['auction_id'])->min('bid_amount');
-            $auction->maximum_bid=Bid::where('auction_id',$data['auction_id'])->max('bid_amount');
-            $auction->save();
+            $auction->update([
+                'current_bid' => $data['bid_amount'],
+                'last_bid_time' => Carbon::now()->toDateTimeString(),
+                'minimum_bid' => Bid::where('auction_id',$data['auction_id'])->min('bid_amount'),
+                'maximum_bid' => Bid::where('auction_id',$data['auction_id'])->max('bid_amount')
+            ]);
+
+            //bid logs
+            $bidEventService->log('bid_placed', $auction, $request, ['bid' => $bid, 'user' => $user]);
+
+            if ($last_bid) {
+                $bidEventService->log('outbid', $auction, $request, [
+                    'last_bid' => $last_bid,
+                    'new_bid' => $bid
+                ]);
+            }
+
+
+
 
             // Log successful bid placement
             AuctionLoggingService::logBidSuccess($bid, $auction, $user, $request);
@@ -529,7 +557,7 @@ class BidController extends Controller
             ->toArray();
 
             $users = User::whereIn('id',$users_ids)->get();
-            
+
             // Log notification to other bidders
             \Illuminate\Support\Facades\Log::info('Sending notifications to other bidders', [
                 'auction_id' => $auction->id,
@@ -560,7 +588,7 @@ class BidController extends Controller
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات غير صالحة',
@@ -575,7 +603,7 @@ class BidController extends Controller
                 'bindings' => $e->getBindings(),
                 'ip' => $request->ip()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى'
@@ -587,7 +615,7 @@ class BidController extends Controller
                 'error' => $e->getMessage(),
                 'ip' => $request->ip()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'المزاد أو المستخدم غير موجود'
@@ -601,7 +629,7 @@ class BidController extends Controller
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى'
