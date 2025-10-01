@@ -7,67 +7,73 @@ import LoadingLink from "@/components/LoadingLink";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function RegisterPage() {
-    const router = useLoadingRouter();
-  
-    const { user, isLoading } = useAuth();
+  const router = useLoadingRouter();
+  const { user, isLoading: authLoading } = useAuth();
 
-    useEffect(() => {
-        if (user) {
-            router.push("/dashboard");
-        }
-    }, [user, router]);
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-        );
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
     }
+  }, [user, router]);
 
+  if (authLoading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4 md:p-6">
-            <div className="bg-white lg:p-8 p-6 relative z-10">
-                <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-                    <div className="flex flex-col space-y-2 text-center">
-                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                            إنشاء حساب جديد
-                        </h1>
-                        <p className="text-sm text-gray-500">
-                            انضم إلى مجتمعنا وابدأ رحلتك في عالم المزادات
-                            الرقمية
-                        </p>
-                    </div>
-                    <div className="bg-white rounded-lg p-4">
-                        <RegisterForm />
-                    </div>
-                    <div className="text-center text-sm text-gray-500 mt-2">
-                        <span>لديك حساب بالفعل؟</span>
-                        <LoadingLink
-                            href="/auth/login"
-                            className="text-indigo-600 hover:text-indigo-500 font-medium mr-2"
-                        >
-                            تسجيل الدخول
-                        </LoadingLink>
-                    </div>
-                    <p className="text-center text-xs text-gray-500 border-t border-gray-100 pt-4">
-                        بإنشاء حساب، أنت توافق على{" "}
-                        <a
-                            href="/terms"
-                            className="text-indigo-600 hover:underline underline-offset-4"
-                        >
-                            شروط الخدمة
-                        </a>{" "}
-                        و{" "}
-                        <a
-                            href="/privacy"
-                            className="text-indigo-600 hover:underline underline-offset-4"
-                        >
-                            سياسة الخصوصية
-                        </a>
-                    </p>
-                </div>
-            </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-950 to-black">
+        <div
+          aria-label="جاري التحميل"
+          className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
+        />
+      </div>
     );
+  }
+
+  return (
+    <main
+      dir="rtl"
+      lang="ar"
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black"
+    >
+      <div className="mx-auto w-full max-w-md px-4 sm:px-6 py-10 sm:py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+            إنشاء حساب جديد
+          </h1>
+          <p className="mt-2 text-gray-400 text-sm">
+            انضم إلى مجتمعنا وابدأ رحلتك في عالم المزادات الرقمية
+          </p>
+        </div>
+
+        <div className="bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-5 sm:p-8 border border-gray-700/50 overflow-visible">
+          <RegisterForm />
+        </div>
+
+        <div className="text-center text-sm text-gray-400 mt-6">
+          <span>لديك حساب بالفعل؟</span>
+          <LoadingLink
+            href="/auth/login"
+            className="text-blue-400 hover:text-blue-300 font-medium ml-1"
+          >
+            تسجيل الدخول
+          </LoadingLink>
+        </div>
+
+        <p className="text-center text-xs text-gray-500 mt-6">
+          بإنشاء حساب، أنت توافق على{" "}
+          <a
+            href="/terms"
+            className="text-blue-400 hover:underline underline-offset-4"
+          >
+            شروط الخدمة
+          </a>{" "}
+          و{" "}
+          <a
+            href="/privacy"
+            className="text-blue-400 hover:underline underline-offset-4"
+          >
+            سياسة الخصوصية
+          </a>
+        </p>
+      </div>
+    </main>
+  );
 }

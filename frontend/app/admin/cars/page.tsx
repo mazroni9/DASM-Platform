@@ -24,7 +24,7 @@ import api from "@/lib/axios";
 import { redirect } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/OldPagination";
 import { MoveToLiveDialog } from "@/components/admin/MoveToLiveDialog";
 
 interface CarFormData {

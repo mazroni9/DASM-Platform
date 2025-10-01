@@ -1,10 +1,10 @@
+// app/auth/register/Form.tsx
 "use client";
 
 import { useState } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import { z } from "zod";
 import {
   AlertCircle,
@@ -30,12 +30,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import axios, { AxiosError } from "axios";
 import LoadingLink from "@/components/LoadingLink";
-import { UserRole } from "@/types/types";
-
-interface RegisterResponse {
-  status: string;
-  message: string;
-}
 
 const registerSchema = z
   .object({
@@ -84,7 +78,7 @@ const registerSchema = z
     company_name: z.string().optional(),
     commercial_registry: z.string().optional(),
     description: z.string().optional(),
-    address: z.string().optional(), // عنوان المعرض (خاص بمالك المعرض)
+    address: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -120,7 +114,6 @@ const registerSchema = z
   )
   .refine(
     (data) => {
-      // العنوان مطلوب فقط لمالك المعرض
       if (data.account_type === "venue_owner") {
         return !!data.address && data.address.trim().length >= 5;
       }
@@ -167,7 +160,7 @@ export default function RegisterForm() {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
 
     try {
-      const response = await axios.post<RegisterResponse>(url, data, {
+      const response = await axios.post(url, data, {
         timeout: 15000,
         headers: {
           "Content-Type": "application/json",
@@ -227,293 +220,309 @@ export default function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid gap-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 w-full">
+      <div className="space-y-4">
         {error && (
-          <Alert variant="destructive" className="bg-red-50 text-red-700 border border-red-200">
-            <AlertCircle className="h-4 w-4" />
+          <Alert
+            variant="destructive"
+            className="bg-red-900/30 border-red-800 text-red-200"
+          >
+            <AlertCircle className="h-4 w-4 text-red-300" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {success && (
-          <Alert className="bg-green-50 text-green-700 border border-green-200">
-            <AlertCircle className="h-4 w-4" />
+          <Alert className="bg-emerald-900/30 border-emerald-800 text-emerald-200">
+            <AlertCircle className="h-4 w-4 text-emerald-300" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         {/* الاسم الأول */}
-        <div className="grid gap-2">
-          <Label htmlFor="first_name" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="first_name" className="text-gray-200 font-medium">
             الاسم الأول
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <User className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-500" />
             </div>
             <Input
               id="first_name"
-              className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
               {...register("first_name")}
               disabled={isLoading}
+              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
-          {errors.first_name && <p className="text-sm text-red-500">{errors.first_name.message}</p>}
+          {errors.first_name && (
+            <p className="text-sm text-red-400">{errors.first_name.message}</p>
+          )}
         </div>
 
         {/* الاسم الأخير */}
-        <div className="grid gap-2">
-          <Label htmlFor="last_name" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="last_name" className="text-gray-200 font-medium">
             الاسم الأخير
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <User className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-500" />
             </div>
             <Input
               id="last_name"
-              className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
               {...register("last_name")}
               disabled={isLoading}
+              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
-          {errors.last_name && <p className="text-sm text-red-500">{errors.last_name.message}</p>}
+          {errors.last_name && (
+            <p className="text-sm text-red-400">{errors.last_name.message}</p>
+          )}
         </div>
 
         {/* البريد الإلكتروني */}
-        <div className="grid gap-2">
-          <Label htmlFor="email" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-gray-200 font-medium">
             البريد الإلكتروني
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Mail className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Mail className="h-5 w-5 text-gray-500" />
             </div>
             <Input
               id="email"
               type="email"
-              className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              dir="ltr"
               {...register("email")}
               disabled={isLoading}
-              dir="ltr"
+              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
-          {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+          {errors.email && (
+            <p className="text-sm text-red-400">{errors.email.message}</p>
+          )}
         </div>
 
         {/* رقم الهاتف */}
-        <div className="grid gap-2">
-          <Label htmlFor="phone" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="phone" className="text-gray-200 font-medium">
             رقم الهاتف
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Phone className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Phone className="h-5 w-5 text-gray-500" />
             </div>
             <Input
               id="phone"
               type="tel"
-              className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              dir="ltr"
               {...register("phone")}
               disabled={isLoading}
-              dir="ltr"
+              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
-          {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
+          {errors.phone && (
+            <p className="text-sm text-red-400">{errors.phone.message}</p>
+          )}
         </div>
 
         {/* كلمة المرور */}
-        <div className="grid gap-2">
-          <Label htmlFor="password" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-gray-200 font-medium">
             كلمة المرور
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-gray-500" />
             </div>
             <Input
               id="password"
               type="password"
-              className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              dir="ltr"
               {...register("password")}
               disabled={isLoading}
-              dir="ltr"
+              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
-          {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+          {errors.password && (
+            <p className="text-sm text-red-400">{errors.password.message}</p>
+          )}
         </div>
 
         {/* تأكيد كلمة المرور */}
-        <div className="grid gap-2">
-          <Label htmlFor="password_confirmation" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="password_confirmation" className="text-gray-200 font-medium">
             تأكيد كلمة المرور
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-gray-500" />
             </div>
             <Input
               id="password_confirmation"
               type="password"
-              className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              dir="ltr"
               {...register("password_confirmation")}
               disabled={isLoading}
-              dir="ltr"
+              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
           {errors.password_confirmation && (
-            <p className="text-sm text-red-500">{errors.password_confirmation.message}</p>
+            <p className="text-sm text-red-400">
+              {errors.password_confirmation.message}
+            </p>
           )}
         </div>
 
         {/* نوع الحساب */}
-        <div className="grid gap-2">
-          <Label htmlFor="account_type" className="text-gray-700 font-medium">
+        <div className="space-y-2">
+          <Label htmlFor="account_type" className="text-gray-200 font-medium">
             نوع الحساب
           </Label>
           <Select
-            onValueChange={(value: "user" | "dealer" | "venue_owner" | "investor") => {
-              setAccountType(value);
-              setValue("account_type", value);
+            onValueChange={(value) => {
+              setAccountType(value as any);
+              setValue("account_type", value as any);
             }}
             defaultValue="user"
           >
-            <SelectTrigger className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
+            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
               <SelectValue placeholder="اختر نوع الحساب" />
             </SelectTrigger>
-            <SelectContent className="z-50 bg-white">
-              <SelectItem value="user">مستخدم</SelectItem>
-              <SelectItem value="dealer">تاجر</SelectItem>
-              <SelectItem value="venue_owner">مالك المعرض</SelectItem>
-              <SelectItem value="investor">مستثمر</SelectItem>
+            <SelectContent className="bg-gray-800 border-gray-700 text-white z-50">
+              <SelectItem value="user" className="focus:bg-gray-700">مستخدم</SelectItem>
+              <SelectItem value="dealer" className="focus:bg-gray-700">تاجر</SelectItem>
+              <SelectItem value="venue_owner" className="focus:bg-gray-700">مالك المعرض</SelectItem>
+              <SelectItem value="investor" className="focus:bg-gray-700">مستثمر</SelectItem>
             </SelectContent>
           </Select>
-          {/* تأكيد تسجيل الحقل في RHF */}
           <input type="hidden" {...register("account_type")} />
         </div>
 
-        {/* حقول خاصة بكل نوع */}
+        {/* الحقول الديناميكية */}
         {accountType === "dealer" && (
           <>
-            <div className="grid gap-2">
-              <Label htmlFor="company_name" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="company_name" className="text-gray-200 font-medium">
                 اسم الشركة
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="company_name"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("company_name")}
                   disabled={isLoading}
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+                <p className="text-sm text-red-400">{errors.company_name.message}</p>
               )}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="commercial_registry" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="commercial_registry" className="text-gray-200 font-medium">
                 السجل التجاري
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ClipboardList className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="commercial_registry"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("commercial_registry")}
                   disabled={isLoading}
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               {errors.commercial_registry && (
-                <p className="text-sm text-red-500">{errors.commercial_registry.message}</p>
+                <p className="text-sm text-red-400">
+                  {errors.commercial_registry.message}
+                </p>
               )}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-gray-200 font-medium">
                 وصف النشاط التجاري (اختياري)
               </Label>
               <Textarea
                 id="description"
-                className="pr-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 {...register("description")}
                 disabled={isLoading}
                 rows={3}
+                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 placeholder="اكتب وصفاً مختصراً عن نشاطك التجاري..."
               />
-              {errors.description && (
-                <p className="text-sm text-red-500">{errors.description.message}</p>
-              )}
             </div>
           </>
         )}
 
         {accountType === "venue_owner" && (
           <>
-            <div className="grid gap-2">
-              <Label htmlFor="company_name" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="company_name" className="text-gray-200 font-medium">
                 اسم المعرض
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="company_name"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("company_name")}
                   disabled={isLoading}
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+                <p className="text-sm text-red-400">{errors.company_name.message}</p>
               )}
             </div>
 
-            {/* عنوان المعرض */}
-            <div className="grid gap-2">
-              <Label htmlFor="address" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="address" className="text-gray-200 font-medium">
                 عنوان المعرض
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <MapPin className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <MapPin className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="address"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("address")}
                   disabled={isLoading}
-                  placeholder="مثال: القاهرة، مدينة نصر، شارع عباس العقاد..."
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  placeholder="مثال: القاهرة، مدينة نصر..."
                 />
               </div>
-              {errors.address && <p className="text-sm text-red-500">{errors.address.message}</p>}
+              {errors.address && (
+                <p className="text-sm text-red-400">{errors.address.message}</p>
+              )}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="commercial_registry" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="commercial_registry" className="text-gray-200 font-medium">
                 السجل التجاري
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ClipboardList className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="commercial_registry"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("commercial_registry")}
                   disabled={isLoading}
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               {errors.commercial_registry && (
-                <p className="text-sm text-red-500">{errors.commercial_registry.message}</p>
+                <p className="text-sm text-red-400">
+                  {errors.commercial_registry.message}
+                </p>
               )}
             </div>
           </>
@@ -521,43 +530,45 @@ export default function RegisterForm() {
 
         {accountType === "investor" && (
           <>
-            <div className="grid gap-2">
-              <Label htmlFor="company_name" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="company_name" className="text-gray-200 font-medium">
                 اسم الشركة الاستثمارية
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="company_name"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("company_name")}
                   disabled={isLoading}
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+                <p className="text-sm text-red-400">{errors.company_name.message}</p>
               )}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="commercial_registry" className="text-gray-700 font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="commercial_registry" className="text-gray-200 font-medium">
                 السجل التجاري
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ClipboardList className="h-5 w-5 text-gray-500" />
                 </div>
                 <Input
                   id="commercial_registry"
-                  className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                   {...register("commercial_registry")}
                   disabled={isLoading}
+                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               {errors.commercial_registry && (
-                <p className="text-sm text-red-500">{errors.commercial_registry.message}</p>
+                <p className="text-sm text-red-400">
+                  {errors.commercial_registry.message}
+                </p>
               )}
             </div>
           </>
@@ -565,14 +576,14 @@ export default function RegisterForm() {
 
         <Button
           type="submit"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
           disabled={isLoading}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 transition-all duration-200 active:scale-[0.98]"
         >
           {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin ml-2"></div>
+            <span className="flex items-center justify-center">
+              <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
               جاري التسجيل...
-            </div>
+            </span>
           ) : (
             "إنشاء حساب"
           )}

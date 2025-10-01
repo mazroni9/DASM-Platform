@@ -14,12 +14,50 @@ import {
     User,
     Building,
     Loader2,
+    Eye,
+    Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
+import Switch from '@mui/material/Switch';
+import EditUserForm from "@/components/admin/EditUserForm";
+import Pagination from '@components/Pagination';
+import PaginationItem from '@mui/material/PaginationItem';
+
+import { log } from "console";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+// Toggle Switch Component using Material UI
+const ToggleSwitch = ({ 
+    checked, 
+    onChange, 
+    disabled = false 
+}: { 
+    checked: boolean; 
+    onChange: (checked: boolean) => void; 
+    disabled?: boolean;
+}) => {
+    return (
+        <Switch
+            checked={checked}
+            onChange={(event) => onChange(event.target.checked)}
+            disabled={disabled}
+            color="primary"
+            size="small"
+            sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#2563eb', // blue-600
+                },
+                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#2563eb', // blue-600
+                },
+            }}
+        />
+    );
+};
 
 // Types
 interface UserData {
@@ -52,13 +90,22 @@ export default function UsersManagementPage() {
         null
     );
     const [initialLoad, setInitialLoad] = useState(true);
+    const [showEditForm, setShowEditForm] = useState(false);
+    const [totalCount, setTotalCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10; // or allow user to change it
+    const handleUserUpdated = (updatedUser: any) => {
+        setProcessingUserId(null);
+        setShowEditForm(false);
+        //setUser(updatedUser);
+    };
 
     useEffect(() => {
         if (initialLoad) {
             fetchUsers();
             setInitialLoad(false);
         }
-    }, [initialLoad]);
+    }, [currentPage]);
 
     useEffect(() => {
         // Apply filters whenever filter settings or search term changes
@@ -69,7 +116,7 @@ export default function UsersManagementPage() {
 
     const fetchUsers = async () => {
         try {
-            const response = await api.get("/api/admin/users");
+            const response = await api.get(`/api/admin/users?page=${currentPage}`);
 
             if (response.data && response.data.status === "success") {
                 console.log("Fetched users:", response.data);
@@ -78,6 +125,7 @@ export default function UsersManagementPage() {
                     // Handle paginated data
                     setUsers(response.data.data.data);
                     setFilteredUsers(response.data.data.data);
+                    setTotalCount(response.data.data.last_page)
                 } else {
                     // Handle non-paginated data
                     setUsers(response.data.data);
@@ -220,6 +268,35 @@ export default function UsersManagementPage() {
         }
     };
 
+    const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
+        setProcessingUserId(userId);
+        try {
+            const response = await api.post(`api/admin/users/${userId}/toggle-status`, {
+                is_active: !currentStatus,
+            });
+
+            if (response.data && response.data.status === "success") {
+                
+                toast.success(response.data.message);
+
+                // Update user in the local state
+                setUsers((prevUsers) =>
+                    prevUsers.map((user) =>
+                        user.id === userId
+                            ? { ...user, is_active: !currentStatus,status:response.data.data.status}
+                            : user
+                    )
+                );
+            }
+        } catch (error) {
+            console.error("Error toggling moderator status:", error);
+            toast.error("فشل في تحديث حالة المشرف");
+        } finally {
+            setProcessingUserId(null);
+        }
+    };
+
+
     const handleApproveDealerVerification = async (userId: number) => {
         setProcessingUserId(userId);
         try {
@@ -275,6 +352,10 @@ export default function UsersManagementPage() {
         }
     };
 
+    const handleOpenEditFrom = (user_id:number) => {
+        setShowEditForm(true)
+        setProcessingUserId(user_id)
+    }
     // Format date to a readable string
     const formatDate = (dateString) => {
         if (!dateString) return "غير متوفر";
@@ -490,7 +571,7 @@ export default function UsersManagementPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatDate(user.created_at)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center">
                                             {user.status === "pending" && (
                                                 <div className="flex space-x-2 space-x-reverse">
                                                     <Button
@@ -535,58 +616,19 @@ export default function UsersManagementPage() {
                                                 </div>
                                             )}
 
-                                            {user.status === "active" && (
-                                                <Button
-                                                    onClick={() =>
-                                                        handleRejectUser(
-                                                            user.id
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        processingUserId ===
-                                                        user.id
-                                                    }
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="border-red-300 text-red-600 hover:bg-red-50"
-                                                >
-                                                    {processingUserId ===
-                                                    user.id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <X className="w-4 h-4 ml-1" />
-                                                            إلغاء التفعيل
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            )}
-
-                                            {user.status === "rejected" && (
-                                                <Button
-                                                    onClick={() =>
-                                                        handleApproveUser(
-                                                            user.id
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        processingUserId ===
-                                                        user.id
-                                                    }
-                                                    size="sm"
-                                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                                >
-                                                    {processingUserId ===
-                                                    user.id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <Check className="w-4 h-4 ml-1" />
-                                                            تفعيل
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            )}
+                                           {(user.status === "active" || user.status === "rejected" ) &&( <div className="flex items-center">
+                                                <ToggleSwitch
+                                                    checked={user.is_active}
+                                                    onChange={() => handleToggleStatus(user.id, user.is_active)}
+                                                    disabled={processingUserId === user.id}
+                                                />
+                                                <span className={`mr-2 text-sm ${user.is_active ? 'text-green-600' : 'text-gray-600'}`}>
+                                                    {user.is_active ? 'مفعل' : 'غير مفعل'}
+                                                </span>
+                                                {processingUserId === user.id && (
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin text-blue-500" />
+                                                )}
+                                            </div>)}
 
                                             {user.role === "dealer" &&
                                                 user.dealer &&
@@ -618,15 +660,24 @@ export default function UsersManagementPage() {
                                                 )}
 
                                             <Button
+                                                onClick={() => handleOpenEditFrom(user.id)}
+                                                variant="ghost"
+                                                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                                            >
+                                                <Edit className="w-4 h-4 ml-2" />
+                                                تعديل
+                                            </Button>    
+                                            <Button
                                                 asChild
                                                 variant="ghost"
                                                 size="sm"
-                                                className="mt-2"
+                                                className="border-blue-500 text-blue-500 hover:bg-blue-50"
                                             >
                                                 <LoadingLink
                                                     href={`/admin/users/${user.id}`}
                                                 >
-                                                    عرض التفاصيل
+                                                    <Eye className="w-4 h-4 ml-1" />
+                                                    عرض 
                                                 </LoadingLink>
                                             </Button>
                                         </td>
@@ -644,8 +695,23 @@ export default function UsersManagementPage() {
                             )}
                         </tbody>
                     </table>
+                   
                 </div>
+                <Pagination
+                    totalPages={totalCount}
+                    page={currentPage}
+                    onPageChange={(event,page) => {
+                        setInitialLoad(true);
+                        setCurrentPage(page)
+                    }}
+                />
             </div>
+            <EditUserForm
+                    user_id={processingUserId}
+                    isOpen={showEditForm}
+                    onClose={() => {setShowEditForm(false);  setProcessingUserId(null)}}
+                    onUserUpdated={handleUserUpdated}
+                />
         </div>
     );
 }

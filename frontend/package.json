@@ -27,7 +27,7 @@
         "dayjs": "^1.11.13",
         "embla-carousel-react": "^8.6.0",
         "firebase": "^12.1.0",
-        "framer-motion": "^12.23.12",
+        "framer-motion": "^12.23.22",
         "js-confetti": "^0.12.0",
         "js-cookie": "^3.0.5",
         "lucide-react": "^0.503.0",
@@ -41,7 +41,6 @@
         "react-icons": "^5.5.0",
         "react-laravel-paginex": "^2.0.8",
         "recharts": "^3.1.2",
-        "sass": "^1.93.0",
         "tailwind-merge": "^2.1.0",
         "zod": "^3.25.64",
         "zustand": "^5.0.3"
@@ -64,6 +63,7 @@
         "eslint-config-next": "15.3.1",
         "postcss": "^8.4.24",
         "pusher-js": "^8.4.0",
+        "sass": "^1.93.2",
         "tailwindcss": "^3.3.0",
         "typescript": "5.8.3"
     },

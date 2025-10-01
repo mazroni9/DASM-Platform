@@ -1,9 +1,10 @@
+// app/auth/verify-code/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-
 import LoadingLink from "@/components/LoadingLink";
+import { AlertCircle } from "lucide-react";
 
 export default function VerifyCodePage() {
   const router = useLoadingRouter();
@@ -111,59 +112,97 @@ export default function VerifyCodePage() {
     }
   };
 
+  // معالجة إدخال الرمز (أرقام فقط، 6 أحرف كحد أقصى)
+  const handleCodeChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, '').substring(0, 6);
+    setCode(numericValue);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-full">
-          <h2 className="text-2xl font-bold mb-6 text-center">التحقق من الحساب</h2>
-
-          {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
-
-          <p className="text-gray-600 mb-6 text-center">
-            أدخل رمز التحقق المرسل إلى بريدك الإلكتروني:
-            <br />
-            {email && <span className="font-medium text-black">{email}</span>}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white">
+            التحقق من الحساب
+          </h1>
+          <p className="mt-2 text-gray-400 text-sm">
+            أدخل رمز التحقق المرسل إلى بريدك الإلكتروني
           </p>
+        </div>
 
-          <label className="block mb-2 text-sm">رمز التحقق</label>
-          <input
-            type="text"
-            className="w-full px-4 py-2 border rounded mb-6 text-center text-xl tracking-widest"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
-            maxLength={6}
-            required
-          />
+        <div className="bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-700/50">
+          {error && (
+            <div className="mb-5 p-3 rounded-lg bg-red-900/30 border border-red-800 text-red-200 flex items-start">
+              <AlertCircle className="h-5 w-5 mt-0.5 ml-2 flex-shrink-0 text-red-300" />
+              <span>{error}</span>
+            </div>
+          )}
 
-          <button
-            type="submit"
-            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
-            disabled={loading}
-          >
-            {loading ? '...جاري التحقق' : 'تحقق من الرمز'}
-          </button>
+          {email && (
+            <p className="text-gray-300 mb-6 text-center text-sm">
+              <span className="font-medium text-white">{email}</span>
+            </p>
+          )}
 
-          <div className="mt-6 text-center">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-200 mb-2">
+                رمز التحقق
+              </label>
+              <input
+                id="verificationCode"
+                type="text"
+                inputMode="numeric"
+                value={code}
+                onChange={(e) => handleCodeChange(e.target.value)}
+                maxLength={6}
+                required
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="••••••"
+              />
+            </div>
+
             <button
-              type="button"
-              onClick={handleResendCode}
-              className={`text-sm ${canResend ? 'text-blue-600 hover:underline' : 'text-gray-400'} font-medium`}
-              disabled={!canResend || loading}
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 px-4 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
             >
-              {canResend
-                ? 'إعادة إرسال الرمز'
-                : `إعادة الإرسال بعد (${countdown} ثانية)`
-              }
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
+                  جاري التحقق...
+                </span>
+              ) : (
+                "تحقق من الرمز"
+              )}
             </button>
 
-            <LoadingLink
-              href="/auth/login"
-              className="block mt-4 text-black font-medium hover:underline"
-            >
-              العودة إلى تسجيل الدخول
-            </LoadingLink>
-          </div>
-        </form>
+            <div className="text-center space-y-4">
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={!canResend || loading}
+                className={`text-sm font-medium transition-colors ${
+                  canResend 
+                    ? 'text-blue-400 hover:text-blue-300' 
+                    : 'text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {canResend
+                  ? 'إعادة إرسال الرمز'
+                  : `إعادة الإرسال بعد (${countdown} ثانية)`
+                }
+              </button>
+
+              <LoadingLink
+                href="/auth/login"
+                className="block text-gray-400 hover:text-gray-300 font-medium transition-colors"
+              >
+                العودة إلى تسجيل الدخول
+              </LoadingLink>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

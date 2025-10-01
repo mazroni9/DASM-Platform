@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,19 +44,41 @@ interface User {
 }
 
 interface EditUserFormProps {
-    user: User;
+    user_id : string | number;
     isOpen: boolean;
     onClose: () => void;
     onUserUpdated: (updatedUser: User) => void;
 }
 
+
+
 export default function EditUserForm({
-    user,
+    user_id,
     isOpen,
     onClose,
     onUserUpdated,
 }: EditUserFormProps) {
+    
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState({  
+        id: "",
+        first_name:"",
+        last_name: "string",
+        email:"",
+        phone:"",
+        role:"",
+        status:"",
+        is_active: false,
+        dealer: {
+                id: "",
+            company_name: "",
+            commercial_registry: "",
+            description:"",
+            status:"",
+            is_active: false,
+        },
+    });
     const [formData, setFormData] = useState({
         first_name: user.first_name || "",
         last_name: user.last_name || "",
@@ -71,6 +93,55 @@ export default function EditUserForm({
         description: user.dealer?.description || "",
         dealer_status: user.dealer?.status || "pending",
     });
+
+    const fetchUserDetails = async () => {
+        try {
+            // Fetch user details from backend
+            const response = await api.get(`/api/admin/users/${user_id}`);
+            if (response.data && response.data.status === "success") {
+                let user = response.data.data.user;
+                //check if user role
+                if (user.role == "admin") {
+                    response.data.data.user.role = "user";
+                }
+                if (user.role == "dealer") {
+                    //check rating if it is null or assign default value
+                    let rating = response.data.data.dealer?.rating || 4.5;
+                    response.data.data.dealer = {rating:rating};
+                    
+                    
+                }
+                setUser(response.data.data.user);
+                setFormData({
+                    first_name: user.first_name || "",
+                    last_name: user.last_name || "",
+                    email: user.email || "",
+                    phone: user.phone || "",
+                    role: user.role || "user",
+                    status: user.status || "pending",
+                    is_active: user.is_active || false,
+                    // Dealer fields
+                    company_name: user.dealer?.company_name || "",
+                    commercial_registry: user.dealer?.commercial_registry || "",
+                    description: user.dealer?.description || "",
+                    dealer_status: user.dealer?.status || "pending",
+                });
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error("Error fetching user details:", error);
+            toast.error("فشل في تحميل بيانات المستخدم");
+            
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user_id) {
+        fetchUserDetails();
+        }
+    }, [user_id]);
 
     const handleInputChange = (field: string, value: any) => {
         setFormData((prev) => ({
@@ -104,7 +175,7 @@ export default function EditUserForm({
             }
 
             const response = await api.put(
-                `/api/admin/users/${user.id}`,
+                `/api/admin/users/${user_id}`,
                 dataToSend
             );
 
@@ -258,7 +329,7 @@ export default function EditUserForm({
                                         <SelectItem value="investor">
                                             مستثمر
                                         </SelectItem>
-                                        {user.role === UserRole.ADMIN && (
+                                        {(user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR) && (
                                             <SelectItem value="admin">
                                                 مدير
                                             </SelectItem>

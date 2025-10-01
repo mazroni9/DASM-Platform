@@ -14,7 +14,7 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Countdown from '@/components/Countdown';
 import Pusher from 'pusher-js';
 import toast from 'react-hot-toast';
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/OldPagination";
 import {
     Car,
     Search,

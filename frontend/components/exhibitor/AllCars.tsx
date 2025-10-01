@@ -127,6 +127,15 @@ const conditionOptions = [
   { value: 'poor', label: 'ضعيفة' },
 ]
 
+// price parser (يتعامل مع الفواصل والنقاط)
+const toNumberSafe = (v?: string | number | null) => {
+  if (v === null || v === undefined) return 0
+  if (typeof v === 'number') return isFinite(v) ? v : 0
+  const cleaned = v.replace(/\s/g, '').replace(/,/g, '')
+  const n = Number(cleaned)
+  return isFinite(n) ? n : 0
+}
+
 /** ===== UI Modals ===== */
 
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
@@ -293,7 +302,7 @@ function EditCarModal({
         const v = form[k]
         if (v !== undefined && v !== null && String(v).trim() !== '') {
           if (['year','odometer'].includes(k)) payload[k] = Number(v)
-          else if (['evaluation_price','min_price','max_price'].includes(k)) payload[k] = Number(String(v).replace(',', '.'))
+          else if (['evaluation_price','min_price','max_price'].includes(k)) payload[k] = toNumberSafe(v)
           else payload[k] = v
         }
       })
@@ -315,7 +324,7 @@ function EditCarModal({
       }
       if (res.status === 422) {
         const j = await res.json().catch(() => null)
-        const firstErr = j?.errors && Object.values(j.errors as Record<string, string[]>)[0]?.[0]
+        const firstErr = j?.errors && (Object.values(j.errors as Record<string, string[]>)[0]?.[0] as string | undefined)
         throw new Error(firstErr || 'بيانات غير صالحة.')
       }
       if (!res.ok) {
@@ -338,7 +347,7 @@ function EditCarModal({
         <Backdrop onClose={onClose}>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">تعديل السيارة</h2>
           {!form ? (
-            <div className="text-gray-500">جاري التحميل...</div>
+            <div className="text-gray-500">جارى التحميل...</div>
           ) : (
             <>
               {error && (
@@ -358,7 +367,7 @@ function EditCarModal({
                   <input type="number" className="input" value={form.odometer} onChange={(e)=>updateField('odometer', e.target.value)} />
                 </Field>
                 <Field label="السعر التقييمي (ر.س)">
-                  <input type="number" className="input" value={form.evaluation_price} onChange={(e)=>updateField('evaluation_price', e.target.value)} />
+                  <input type="text" className="input" value={form.evaluation_price} onChange={(e)=>updateField('evaluation_price', e.target.value)} />
                 </Field>
                 <Field label="اللون">
                   <input className="input" value={form.color} onChange={(e)=>updateField('color', e.target.value)} />
@@ -388,10 +397,10 @@ function EditCarModal({
                   <input className="input" value={form.plate} onChange={(e)=>updateField('plate', e.target.value)} />
                 </Field>
                 <Field label="أقل سعر (ر.س)">
-                  <input type="number" className="input" value={form.min_price} onChange={(e)=>updateField('min_price', e.target.value)} />
+                  <input type="text" className="input" value={form.min_price} onChange={(e)=>updateField('min_price', e.target.value)} />
                 </Field>
                 <Field label="أعلى سعر (ر.س)">
-                  <input type="number" className="input" value={form.max_price} onChange={(e)=>updateField('max_price', e.target.value)} />
+                  <input type="text" className="input" value={form.max_price} onChange={(e)=>updateField('max_price', e.target.value)} />
                 </Field>
                 <div className="md:col-span-2">
                   <label className="block text-gray-700 mb-1">الوصف</label>
@@ -458,7 +467,7 @@ function DeleteConfirmModal({
   )
 }
 
-/** ===== Filter Panel (New, responsive & polished) ===== */
+/** ===== Filter Panel ===== */
 type Filters = { status: string; brand: string; minPrice: string; maxPrice: string; yearFrom: string; yearTo: string }
 
 function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
@@ -500,7 +509,6 @@ function FilterPanel({
 
   const body = (
     <>
-      {/* Active chips */}
       {activeChips.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {activeChips.map((c, i) => (
@@ -515,9 +523,7 @@ function FilterPanel({
         </div>
       )}
 
-      {/* Content grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Status pills */}
         <div>
           <p className="block text-gray-700 mb-2">حالة الإعلان</p>
           <div className="flex flex-wrap gap-2">
@@ -538,7 +544,6 @@ function FilterPanel({
           </div>
         </div>
 
-        {/* Brand */}
         <div>
           <label className="block text-gray-700 mb-2">العلامة التجارية</label>
           <select
@@ -553,7 +558,6 @@ function FilterPanel({
           </select>
         </div>
 
-        {/* Price range */}
         <div>
           <label className="block text-gray-700 mb-2">السعر من</label>
           <div className="relative">
@@ -583,7 +587,6 @@ function FilterPanel({
           </div>
         </div>
 
-        {/* Year range */}
         <div>
           <label className="block text-gray-700 mb-2">سنة الصنع من</label>
           <div className="relative">
@@ -632,7 +635,6 @@ function FilterPanel({
 
               {body}
 
-              {/* Drawer footer */}
               <div className="sticky bottom-0 bg-white pt-4 border-t mt-6">
                 <div className="flex gap-3">
                   <button onClick={onReset} className="flex-1 px-4 py-2 rounded-lg border">إعادة تعيين</button>
@@ -722,6 +724,7 @@ export default function ExhibitorCars() {
       const params = new URLSearchParams()
       params.set('page', String(page))
 
+      // sorting
       if (sortKey === 'latest') {
         params.set('sort_by', 'created_at'); params.set('sort_dir', 'desc')
       } else if (sortKey === 'oldest') {
@@ -732,10 +735,8 @@ export default function ExhibitorCars() {
         params.set('sort_by', 'evaluation_price'); params.set('sort_dir', 'asc')
       }
 
-      if (searchTerm.trim()) {
-        params.set('make', searchTerm.trim())
-        params.set('model', searchTerm.trim())
-      }
+      // DON'T send searchTerm as make+model together (يسبب AND ويصفّر النتائج)
+      // سنخلي البحث عميل-سايد ونرسل فقط الفلاتر المؤكدة من اللوحة
       if (filters.status) {
         const backendStatus =
           filters.status === 'معلن' ? 'available' :
@@ -749,11 +750,12 @@ export default function ExhibitorCars() {
         headers: {
           Accept: 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
+        },
+        cache: 'no-store'
       })
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
       if (!res.ok) {
-        const txt = await res.text().catch(()=>'')
+        const txt = await res.text().catch(()=> '')
         throw new Error(`تعذر جلب البيانات (${res.status}) ${txt}`)
       }
       const json: CarsApiResponse = await res.json()
@@ -764,7 +766,7 @@ export default function ExhibitorCars() {
         brand: c.make ?? '',
         model: c.model ?? '',
         year: c.year ?? 0,
-        price: c.evaluation_price ? Number(c.evaluation_price) : 0,
+        price: toNumberSafe(c.evaluation_price),
         mileage: c.odometer ?? 0,
         transmission: mapTransmissionLabel(c.transmission ?? ''),
         status: mapStatusToArabic(c.auction_status),
@@ -792,25 +794,40 @@ export default function ExhibitorCars() {
   useEffect(() => {
     fetchCars(currentPage)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortKey, currentPage])
+  }, [sortKey, currentPage, /* purposely not searchTerm/filters (نطبقهم محلياً) */])
 
+  // فلترة وبحث عميل-سايد (يشمل نص البحث)
   const filteredCars = useMemo(() => {
     let results = [...cars]
+
+    const term = searchTerm.trim().toLowerCase()
+    if (term) {
+      results = results.filter((c) =>
+        c.title.toLowerCase().includes(term) ||
+        c.brand.toLowerCase().includes(term) ||
+        c.model.toLowerCase().includes(term) ||
+        String(c.year).includes(term)
+      )
+    }
+
     if (filters.yearFrom) results = results.filter((c) => c.year >= Number(filters.yearFrom))
     if (filters.yearTo) results = results.filter((c) => c.year <= Number(filters.yearTo))
     if (filters.minPrice) results = results.filter((c) => c.price >= Number(filters.minPrice))
     if (filters.maxPrice) results = results.filter((c) => c.price <= Number(filters.maxPrice))
+
     return results
-  }, [cars, filters])
+  }, [cars, filters, searchTerm])
 
   const brands = useMemo(
-    () => Array.from(new Set(cars.map((c) => c.brand).filter(Boolean))),
+    () => Array.from(new Set(cars.map((c) => c.brand).filter(Boolean))).sort(),
     [cars]
   )
 
   const activeFilterCount = useMemo(() => {
-    return Object.values(filters).filter(Boolean).length
-  }, [filters])
+    const countFilters = Object.values(filters).filter(Boolean).length
+    const countSearch = searchTerm.trim() ? 1 : 0
+    return countFilters + countSearch
+  }, [filters, searchTerm])
 
   const resetFilters = () => {
     setFilters({ status: '', brand: '', minPrice: '', maxPrice: '', yearFrom: '', yearTo: '' })
@@ -829,7 +846,7 @@ export default function ExhibitorCars() {
       })
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
       if (!res.ok) {
-        const txt = await res.text().catch(()=>'')
+        const txt = await res.text().catch(()=> '')
         throw new Error(`تعذر جلب بيانات السيارة (${res.status}) ${txt}`)
       }
       const j: ShowCarApiResponse = await res.json()
@@ -848,7 +865,7 @@ export default function ExhibitorCars() {
       })
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
       if (!res.ok) {
-        const txt = await res.text().catch(()=>'')
+        const txt = await res.text().catch(()=> '')
         throw new Error(`تعذر جلب بيانات السيارة (${res.status}) ${txt}`)
       }
       const j: ShowCarApiResponse = await res.json()
@@ -871,7 +888,7 @@ export default function ExhibitorCars() {
               brand: updated.make ?? '',
               model: updated.model ?? '',
               year: updated.year ?? 0,
-              price: updated.evaluation_price ? Number(updated.evaluation_price) : 0,
+              price: toNumberSafe(updated.evaluation_price),
               mileage: updated.odometer ?? 0,
               transmission: mapTransmissionLabel(updated.transmission ?? ''),
               status: mapStatusToArabic(updated.auction_status),
@@ -897,7 +914,7 @@ export default function ExhibitorCars() {
         throw new Error(j?.message || 'لا يمكن حذف السيارة لوجود مزاد نشط/مجدول.')
       }
       if (!res.ok) {
-        const txt = await res.text().catch(()=>'')
+        const txt = await res.text().catch(()=> '')
         throw new Error(`فشل الحذف (${res.status}) ${txt}`)
       }
       setCars((prev) => prev.filter((c) => c.id !== selectedId))
@@ -942,7 +959,7 @@ export default function ExhibitorCars() {
               </div>
               <input
                 type="text"
-                placeholder="ابحث عن سيارة (ماركة أو موديل)"
+                placeholder="ابحث عن سيارة (ماركة أو موديل أو سنة)"
                 className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -953,7 +970,7 @@ export default function ExhibitorCars() {
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={() => { setCurrentPage(1); fetchCars(1) }}
               className="flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              بحث
+              تحديث
             </motion.button>
 
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -978,7 +995,7 @@ export default function ExhibitorCars() {
           </div>
         )}
 
-        {/* New Filters Panel */}
+        {/* Filters Panel */}
         <FilterPanel
           open={showFilters}
           onClose={() => setShowFilters(false)}
@@ -991,10 +1008,10 @@ export default function ExhibitorCars() {
 
         {/* Quick stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatCard title="إجمالي الصفحة الحالية" color="indigo" value={cars.length} />
-          <StatCard title="معلن" color="green" value={cars.filter(c => c.status === 'معلن').length} />
-          <StatCard title="محجوز" color="yellow" value={cars.filter(c => c.status === 'محجوز').length} />
-          <StatCard title="مباع" color="red" value={cars.filter(c => c.status === 'مباع').length} />
+          <StatCard title="إجمالي الصفحة الحالية" color="indigo" value={filteredCars.length} />
+          <StatCard title="معلن" color="green" value={filteredCars.filter(c => c.status === 'معلن').length} />
+          <StatCard title="محجوز" color="yellow" value={filteredCars.filter(c => c.status === 'محجوز').length} />
+          <StatCard title="مباع" color="red" value={filteredCars.filter(c => c.status === 'مباع').length} />
         </div>
 
         {/* Toolbar */}
@@ -1060,12 +1077,12 @@ export default function ExhibitorCars() {
                           </div>
                           <div className="mr-4">
                             <div className="text-sm font-medium text-gray-900">{car.title}</div>
-                            <div className="text-sm text-gray-500">{car.year} • {car.mileage.toLocaleString()} كم</div>
+                            <div className="text-sm text-gray-500">{car.year} • {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-indigo-600">{car.price.toLocaleString()} ر.س</div>
+                        <div className="text-sm font-bold text-indigo-600">{Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س</div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

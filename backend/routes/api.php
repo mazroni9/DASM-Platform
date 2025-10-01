@@ -30,6 +30,8 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\AuctionSessionController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\CarSimilarityController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -45,6 +47,9 @@ Route::post('/public-event', function (Request $request) {
 })->middleware('throttle:60,1');
 
 
+Route::middleware(['auth:sanctum'])->post('/upload-image', [UploadController::class, 'store']);
+
+Route::get('/cars/similar', [CarSimilarityController::class, 'suggest']);
 
 Route::get('/check-time', function (Request $request) {
     $page = $request->query('page');
@@ -259,15 +264,17 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('admin/settings', [SettingsController::class, 'update']);
     Route::post('admin/settings', [SettingsController::class, 'update']); // Keep POST for backward compatibility
     Route::get('admin/settings/{key}', [SettingsController::class, 'getSetting']);
+
     // Admin user management
-    Route::get('/admin/users', [AdminController::class, 'users']);
-    Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);
-    Route::put('/admin/users/{userId}', [AdminController::class, 'updateUser']);
-    Route::post('/admin/users/{userId}/activate', [AdminController::class, 'approveUser']);
-    Route::post('/admin/users/{userId}/reject', [AdminController::class, 'rejectUser']);
-    Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
-    Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
-    Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
+    Route::get('/admin/users', [AdminUserController::class, 'index']);
+    Route::get('/admin/users/{userId}', [AdminUserController::class, 'show']);
+    Route::put('/admin/users/{userId}', [AdminUserController::class, 'update']);
+    Route::post('/admin/users/{userId}/activate', [AdminUserController::class, 'approveUser']);
+    Route::post('/admin/users/{userId}/reject', [AdminUserController::class, 'rejectUser']);
+    Route::post('/admin/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus']);
+    Route::get('/admin/pending-verifications', [AdminUserController::class, 'getPendingVerifications']);
+    Route::post('/admin/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification']);
+    Route::post('/admin/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification']);
 
     // Admin moderator management
     Route::get('/admin/moderators', [AdminModeratorController::class, 'index']);

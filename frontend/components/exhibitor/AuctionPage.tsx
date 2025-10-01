@@ -233,8 +233,7 @@ async function fetchPublicSessions(): Promise<AuctionSession[]> {
     const js: any = await fetchJSON(`${API_BASE}/sessions/active-scheduled?with_counts=1`)
     const arr = extractArray<AuctionSession>(js, 'data') ?? extractArray<AuctionSession>(js, 'sessions') ?? js
     return Array.isArray(arr) ? arr : []
-  } catch (e: any) {
-    // رجّع مصفوفة فاضية وتتحكم الواجهة بالرسالة
+  } catch {
     return []
   }
 }
@@ -288,7 +287,7 @@ function StartLiveModal({
 
           const [mine, sess] = await Promise.all([
             fetchMyCarsOnly(),
-            fetchPublicSessions(), // 👈 المسار الجديد
+            fetchPublicSessions(),
           ])
 
           setCars(Array.isArray(mine) ? mine : [])
@@ -340,7 +339,7 @@ function StartLiveModal({
         starting_bid: Number(form.starting_bid),
         min_price: Number(form.min_price),
         max_price: Number(form.max_price),
-        session_id: Number(form.session_id), // 👈 إرسال session_id
+        session_id: Number(form.session_id),
       }
 
       const res = await api.post('/api/auction', payload)
@@ -518,6 +517,7 @@ function StartLiveModal({
 export default function DealerAuctionsPage() {
   const [list, setList] = useState<UiAuction[]>([])
   const [loading, setLoading] = useState(true)
+  const [bgLoading, setBgLoading] = useState(false) // تحميل صامت أثناء الـ polling
   const [error, setError] = useState<string | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -533,15 +533,24 @@ export default function DealerAuctionsPage() {
 
   // تحديث تلقائي للمزادات النشطة
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const inflightRef = useRef<AbortController | null>(null)
 
-  const fetchAuctions = async (opts?: { page?: number; status?: string }) => {
+  const fetchAuctions = async (opts?: { page?: number; status?: string; silent?: boolean }) => {
     const p = opts?.page ?? page
     const s = opts?.status ?? statusFilter
-    setLoading(true)
+    const silent = opts?.silent ?? false
+
+    if (!silent) setLoading(true); else setBgLoading(true)
     setError(null)
+
     try {
       const token = getToken()
       if (!token) throw new Error('غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.')
+
+      // أوقف أي طلب سابق لتفادي سباقات الردود
+      if (inflightRef.current) inflightRef.current.abort()
+      const ac = new AbortController()
+      inflightRef.current = ac
 
       const qs = new URLSearchParams()
       qs.set('sort_by', 'created_at')
@@ -551,7 +560,8 @@ export default function DealerAuctionsPage() {
       qs.set('page', String(p))
 
       const js = await fetchJSON<{ status: string; data: Paged<AuctionApi> }>(
-        `${API_BASE}/my-auctions?${qs.toString()}`
+        `${API_BASE}/my-auctions?${qs.toString()}`,
+        { signal: ac.signal }
       )
 
       const pg: Paged<AuctionApi> = js.data
@@ -575,35 +585,44 @@ export default function DealerAuctionsPage() {
       })
 
       setList(transformed)
-      setPage(pg.current_page)
-      setPerPage(pg.per_page)
-      setTotal(pg.total)
-      setLastPage(pg.last_page)
+      setPage(prev => (prev !== pg.current_page ? pg.current_page : prev))
+      setPerPage(prev => (prev !== pg.per_page ? pg.per_page : prev))
+      setTotal(prev => (prev !== pg.total ? pg.total : prev))
+      setLastPage(prev => (prev !== pg.last_page ? pg.last_page : prev))
     } catch (e: any) {
-      setError(e.message || 'حدث خطأ')
-      setList([])
+      if (e?.name === 'AbortError') {
+        // تجاهل الخطأ لأننا ألغينا الطلب السابق عمدًا
+      } else {
+        setError(e.message || 'حدث خطأ')
+        setList([])
+      }
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false); else setBgLoading(false)
+      inflightRef.current = null
     }
   }
 
   // أول تحميل
-  useEffect(() => { fetchAuctions({ page: 1 }) /* eslint-disable-next-line */ }, [])
+  useEffect(() => { fetchAuctions({ page: 1, silent: false }) /* eslint-disable-next-line */ }, [])
 
   // إعادة الجلب عند تغيير الفلاتر/الصفحة
-  useEffect(() => { fetchAuctions({ page, status: statusFilter }) /* eslint-disable-next-line */ }, [statusFilter, page])
+  useEffect(() => { fetchAuctions({ page, status: statusFilter, silent: false }) /* eslint-disable-next-line */ }, [statusFilter, page])
 
-  // Polling للمزادات النشطة فقط
+  // هل لدينا مزادات لايف؟
+  const hasLive = useMemo(() => list.some(a => a.statusApi === 'live'), [list])
+
+  // Polling للمزادات النشطة فقط (بدون فليكر)
   useEffect(() => {
-    if (pollRef.current) { clearInterval(pollRef.current) }
-    const hasLive = list.some(a => a.statusApi === 'live')
-    if (hasLive) {
-      pollRef.current = setInterval(() => {
-        fetchAuctions({ page, status: statusFilter })
-      }, 5000)
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [list, page, statusFilter])
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+    if (!hasLive) return
+
+    pollRef.current = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      fetchAuctions({ page, status: statusFilter, silent: true })
+    }, 5000)
+
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null } }
+  }, [hasLive, page, statusFilter]) // مش مرتبط بـ list مباشرة لتقليل resets
 
   // بحث محلي باسم السيارة/الحالة
   const filtered = useMemo(() => {
@@ -646,12 +665,12 @@ export default function DealerAuctionsPage() {
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               className="flex items-center justify-center px-5 py-3 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
-              onClick={() => fetchAuctions({ page })}
+              onClick={() => fetchAuctions({ page, status: statusFilter, silent: false })}
               aria-label="تحديث"
               title="تحديث"
             >
-              <FiRefreshCw className="ml-2" />
-              تحديث
+              <FiRefreshCw className={`ml-2 ${bgLoading ? 'animate-spin' : ''}`} />
+              {bgLoading ? 'جارٍ التحديث...' : 'تحديث'}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -759,7 +778,7 @@ export default function DealerAuctionsPage() {
           <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg whitespace-pre-wrap">{error}</div>
         )}
 
-        {/* التحميل */}
+        {/* التحميل (فقط للجلب الرئيسي غير الصامت) */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
@@ -776,7 +795,7 @@ export default function DealerAuctionsPage() {
             <p className="text-gray-500 mb-6">أضف مزادًا جديدًا أو غيّر الفلاتر.</p>
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              onClick={() => { setStatusFilter(''); setSearchTerm(''); fetchAuctions({ page: 1, status: '' }) }}
+              onClick={() => { setStatusFilter(''); setSearchTerm(''); fetchAuctions({ page: 1, status: '', silent: false }) }}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               عرض الكل
