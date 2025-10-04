@@ -148,7 +148,7 @@ export default function UserMenu() {
         {
           label: "لوحة المعارض",
           icon: <Building2 className="w-4 h-4" />,
-          onClick: () => navigateTo("/admin/venues"),
+          onClick: () => navigateTo("/exhibitor"),
         }
       );
     }
