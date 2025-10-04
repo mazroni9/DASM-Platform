@@ -16,6 +16,17 @@ import {
     Loader2,
     Eye,
     Edit,
+    MoreVertical,
+    Download,
+    Mail,
+    Phone,
+    Calendar,
+    Shield,
+    Crown,
+    BadgeCheck,
+    AlertCircle,
+    ChevronDown,
+    UserPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +41,7 @@ import PaginationItem from '@mui/material/PaginationItem';
 import { log } from "console";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+
 // Toggle Switch Component using Material UI
 const ToggleSwitch = ({ 
     checked, 
@@ -49,10 +61,10 @@ const ToggleSwitch = ({
             size="small"
             sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#2563eb', // blue-600
+                    color: '#22d3ee', // cyan-400
                 },
                 '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#2563eb', // blue-600
+                    backgroundColor: '#22d3ee', // cyan-400
                 },
             }}
         />
@@ -84,21 +96,15 @@ export default function UsersManagementPage() {
     const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("all"); // all, pending, active, rejected
-    const [roleFilter, setRoleFilter] = useState("all"); // all, user, dealer
-    const [processingUserId, setProcessingUserId] = useState<number | null>(
-        null
-    );
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [roleFilter, setRoleFilter] = useState("all");
+    const [processingUserId, setProcessingUserId] = useState<number | null>(null);
     const [initialLoad, setInitialLoad] = useState(true);
     const [showEditForm, setShowEditForm] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10; // or allow user to change it
-    const handleUserUpdated = (updatedUser: any) => {
-        setProcessingUserId(null);
-        setShowEditForm(false);
-        //setUser(updatedUser);
-    };
+    const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+    const pageSize = 10;
 
     useEffect(() => {
         if (initialLoad) {
@@ -108,7 +114,6 @@ export default function UsersManagementPage() {
     }, [currentPage]);
 
     useEffect(() => {
-        // Apply filters whenever filter settings or search term changes
         if (!initialLoad) {
             filterUsers();
         }
@@ -116,18 +121,16 @@ export default function UsersManagementPage() {
 
     const fetchUsers = async () => {
         try {
+            setLoading(true);
             const response = await api.get(`/api/admin/users?page=${currentPage}`);
 
             if (response.data && response.data.status === "success") {
                 console.log("Fetched users:", response.data);
-                // Check if data is paginated
                 if (response.data.data && response.data.data.data) {
-                    // Handle paginated data
                     setUsers(response.data.data.data);
                     setFilteredUsers(response.data.data.data);
                     setTotalCount(response.data.data.last_page)
                 } else {
-                    // Handle non-paginated data
                     setUsers(response.data.data);
                     setFilteredUsers(response.data.data);
                 }
@@ -135,7 +138,6 @@ export default function UsersManagementPage() {
         } catch (error) {
             console.error("Error fetching users:", error);
             toast.error("فشل في تحميل بيانات المستخدمين");
-
             setUsers([]);
             setFilteredUsers([]);
         } finally {
@@ -144,7 +146,6 @@ export default function UsersManagementPage() {
     };
 
     const filterUsers = () => {
-        // Guard against users not being an array
         if (!Array.isArray(users)) {
             console.warn("Users data is not an array:", users);
             setFilteredUsers([]);
@@ -153,7 +154,6 @@ export default function UsersManagementPage() {
 
         let result = [...users];
 
-        // Apply search filter
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             result = result.filter(
@@ -168,12 +168,10 @@ export default function UsersManagementPage() {
             );
         }
 
-        // Apply role filter
         if (roleFilter !== "all") {
             result = result.filter((user) => user.role === roleFilter);
         }
 
-        // Apply status filter
         if (statusFilter !== "all") {
             if (statusFilter === "pending") {
                 result = result.filter((user) => user.status === "pending");
@@ -197,15 +195,12 @@ export default function UsersManagementPage() {
     const handleApproveUser = async (userId: number) => {
         setProcessingUserId(userId);
         try {
-            // Call the API to approve the user
             const response = await api.post(
                 `/api/admin/users/${userId}/activate`
             );
 
             if (response.data && response.data.status === "success") {
                 toast.success("تم تفعيل المستخدم بنجاح");
-
-                // Update user in the local state
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
                         user.id === userId
@@ -217,8 +212,6 @@ export default function UsersManagementPage() {
         } catch (error) {
             console.error("Error approving user:", error);
             toast.error("فشل في تفعيل المستخدم");
-
-            // For development, update the state anyway
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
                     user.id === userId
@@ -234,15 +227,12 @@ export default function UsersManagementPage() {
     const handleRejectUser = async (userId: number) => {
         setProcessingUserId(userId);
         try {
-            // Call the API to reject the user
             const response = await api.post(
                 `/api/admin/users/${userId}/deactivate`
             );
 
             if (response.data && response.data.status === "success") {
                 toast.success("تم رفض المستخدم بنجاح");
-
-                // Update user in the local state with rejected status
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
                         user.id === userId
@@ -254,8 +244,6 @@ export default function UsersManagementPage() {
         } catch (error) {
             console.error("Error rejecting user:", error);
             toast.error("فشل في رفض المستخدم");
-
-            // For development, update the state anyway
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
                     user.id === userId
@@ -276,10 +264,7 @@ export default function UsersManagementPage() {
             });
 
             if (response.data && response.data.status === "success") {
-                
                 toast.success(response.data.message);
-
-                // Update user in the local state
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
                         user.id === userId
@@ -296,19 +281,15 @@ export default function UsersManagementPage() {
         }
     };
 
-
     const handleApproveDealerVerification = async (userId: number) => {
         setProcessingUserId(userId);
         try {
-            // Call the API to approve dealer verification
             const response = await api.post(
                 `/api/admin/dealers/${userId}/approve-verification`
             );
 
             if (response.data && response.data.status === "success") {
                 toast.success("تمت الموافقة على طلب التحقق بنجاح");
-
-                // Update dealer status in the local state
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
                         user.id === userId && user.dealer
@@ -329,8 +310,6 @@ export default function UsersManagementPage() {
         } catch (error) {
             console.error("Error approving dealer verification:", error);
             toast.error("فشل في الموافقة على طلب التحقق");
-
-            // For development, update the state anyway
             setUsers((prevUsers) =>
                 prevUsers.map((user) =>
                     user.id === userId && user.dealer
@@ -352,11 +331,19 @@ export default function UsersManagementPage() {
         }
     };
 
-    const handleOpenEditFrom = (user_id:number) => {
-        setShowEditForm(true)
-        setProcessingUserId(user_id)
-    }
-    // Format date to a readable string
+    const handleOpenEditFrom = (user: UserData) => {
+        setSelectedUser(user);
+        setShowEditForm(true);
+        setProcessingUserId(user.id);
+    };
+
+    const handleUserUpdated = (updatedUser: any) => {
+        setProcessingUserId(null);
+        setShowEditForm(false);
+        setSelectedUser(null);
+        fetchUsers(); // Refresh the list
+    };
+
     const formatDate = (dateString) => {
         if (!dateString) return "غير متوفر";
         const date = new Date(dateString);
@@ -367,351 +354,421 @@ export default function UsersManagementPage() {
         });
     };
 
+    const getRoleIcon = (role: string) => {
+        switch (role) {
+            case "admin":
+                return <Crown className="w-4 h-4 text-purple-400" />;
+            case "moderator":
+                return <Shield className="w-4 h-4 text-orange-400" />;
+            case "dealer":
+                return <Building className="w-4 h-4 text-blue-400" />;
+            default:
+                return <User className="w-4 h-4 text-gray-400" />;
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "active":
+                return "bg-green-500/20 text-green-400 border-green-500/30";
+            case "pending":
+                return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+            case "rejected":
+                return "bg-red-500/20 text-red-400 border-red-500/30";
+            default:
+                return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+        }
+    };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800">
-                    إدارة المستخدمين
-                </h1>
-                <Button onClick={fetchUsers} variant="outline" size="sm">
-                    <RefreshCw className="w-4 h-4 ml-2" />
-                    تحديث
-                </Button>
-            </div>
-
-            {/* Filters and search */}
-            <div className="bg-white p-4 rounded-lg shadow border flex flex-col md:flex-row gap-4">
-                <div className="relative flex-grow">
-                    <Search
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                        size={18}
-                    />
-                    <Input
-                        type="text"
-                        placeholder="بحث بالاسم، البريد الإلكتروني، أو اسم الشركة"
-                        className="pr-10 w-full"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                        إدارة المستخدمين
+                    </h1>
+                    <p className="text-gray-400 mt-2">
+                        إدارة وتنظيم حسابات المستخدمين في النظام
+                    </p>
                 </div>
-
-                <div className="flex gap-2 flex-wrap">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="p-2 border border-gray-300 rounded-md bg-white text-sm"
+                
+                <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
+                    <Button 
+                        onClick={fetchUsers} 
+                        variant="outline" 
+                        size="sm"
+                        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
                     >
-                        <option value="all">جميع الحالات</option>
-                        <option value="pending">في انتظار التفعيل</option>
-                        <option value="active">مفعل</option>
-                        <option value="dealer_pending">
-                            تجار في انتظار التحقق
-                        </option>
-                    </select>
-
-                    <select
-                        value={roleFilter}
-                        onChange={(e) => setRoleFilter(e.target.value)}
-                        className="p-2 border border-gray-300 rounded-md bg-white text-sm"
+                        <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
+                        تحديث البيانات
+                    </Button>
+                    <Button 
+                        size="sm"
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
                     >
-                        <option value="all">جميع الأدوار</option>
-                        <option value="user">مستخدم</option>
-                        <option value="dealer">تاجر</option>
-                        <option value="moderator">مشرف</option>
-                        <option value="admin">مدير</option>
-                    </select>
+                        <UserPlus className="w-4 h-4 ml-2" />
+                        إضافة مستخدم
+                    </Button>
                 </div>
             </div>
 
-            {/* Users table */}
-            <div className="bg-white rounded-lg shadow border overflow-hidden">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-400 text-sm">إجمالي المستخدمين</p>
+                            <p className="text-2xl font-bold text-white mt-1">{users.length}</p>
+                        </div>
+                        <div className="bg-blue-500/10 p-3 rounded-xl">
+                            <Users className="w-6 h-6 text-blue-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-400 text-sm">المستخدمين النشطين</p>
+                            <p className="text-2xl font-bold text-white mt-1">
+                                {users.filter(u => u.status === 'active').length}
+                            </p>
+                        </div>
+                        <div className="bg-green-500/10 p-3 rounded-xl">
+                            <CheckCircle className="w-6 h-6 text-green-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-400 text-sm">في انتظار التفعيل</p>
+                            <p className="text-2xl font-bold text-white mt-1">
+                                {users.filter(u => u.status === 'pending').length}
+                            </p>
+                        </div>
+                        <div className="bg-amber-500/10 p-3 rounded-xl">
+                            <Clock className="w-6 h-6 text-amber-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-400 text-sm">المستخدمين المرفوضين</p>
+                            <p className="text-2xl font-bold text-white mt-1">
+                                {users.filter(u => u.status === 'rejected').length}
+                            </p>
+                        </div>
+                        <div className="bg-red-500/10 p-3 rounded-xl">
+                            <XCircle className="w-6 h-6 text-red-400" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filters and Search Section */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+                <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+                    {/* Search Input */}
+                    <div className="relative flex-grow">
+                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Input
+                            type="text"
+                            placeholder="ابحث بالاسم، البريد الإلكتروني، أو اسم الشركة..."
+                            className="pr-12 w-full bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-3">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                            <option value="all">جميع الحالات</option>
+                            <option value="pending">في انتظار التفعيل</option>
+                            <option value="active">مفعل</option>
+                            <option value="dealer_pending">تجار في انتظار التحقق</option>
+                        </select>
+
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                            className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        >
+                            <option value="all">جميع الأدوار</option>
+                            <option value="user">مستخدم</option>
+                            <option value="dealer">تاجر</option>
+                            <option value="moderator">مشرف</option>
+                            <option value="admin">مدير</option>
+                        </select>
+
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                        >
+                            <Filter className="w-4 h-4 ml-2" />
+                            المزيد من الفلاتر
+                            <ChevronDown className="w-4 h-4 mr-2" />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+                {/* Table Header */}
+                <div className="p-6 border-b border-gray-700/50">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-lg font-semibold text-white">
+                            قائمة المستخدمين ({filteredUsers.length})
+                        </h2>
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                        >
+                            <Download className="w-4 h-4 ml-2" />
+                            تصدير التقرير
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Table Content */}
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                    المستخدم
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                    معلومات الاتصال
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                    الدور
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                    الحالة
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                    تاريخ التسجيل
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                >
-                                    الإجراءات
-                                </th>
+                    <table className="w-full">
+                        <thead>
+                            <tr className="bg-gray-750 border-b border-gray-700/50">
+                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المستخدم</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">معلومات الاتصال</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الدور</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">تاريخ التسجيل</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-700/50">
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map((user) => (
                                     <tr
                                         key={user.id}
-                                        className="hover:bg-gray-50"
+                                        className="hover:bg-gray-750/50 transition-colors duration-200 group"
                                     >
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        {/* User Info */}
+                                        <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                    <span className="text-blue-600 font-semibold text-lg">
-                                                        {user.first_name
-                                                            .charAt(0)
-                                                            .toUpperCase()}
+                                                <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
+                                                    <span className="text-white font-semibold text-sm">
+                                                        {user.first_name.charAt(0).toUpperCase()}
                                                     </span>
                                                 </div>
                                                 <div className="mr-4">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {user.first_name}{" "}
-                                                        {user.last_name}
+                                                    <div className="text-sm font-medium text-white">
+                                                        {user.first_name} {user.last_name}
                                                     </div>
                                                     {user.dealer && (
-                                                        <div className="text-xs text-gray-500">
-                                                            {
-                                                                user.dealer
-                                                                    .company_name
-                                                            }
+                                                        <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                            <Building className="w-3 h-3 ml-1" />
+                                                            {user.dealer.company_name}
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+
+                                        {/* Contact Info */}
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-white flex items-center">
+                                                <Mail className="w-3 h-3 ml-1 text-gray-400" />
                                                 {user.email}
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {user.phone}
+                                            {user.phone && (
+                                                <div className="text-sm text-gray-400 flex items-center mt-1">
+                                                    <Phone className="w-3 h-3 ml-1" />
+                                                    {user.phone}
+                                                </div>
+                                            )}
+                                        </td>
+
+                                        {/* Role */}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center">
+                                                {getRoleIcon(user.role)}
+                                                <span className={`text-sm mr-2 ${
+                                                    user.role === 'admin' ? 'text-purple-400' :
+                                                    user.role === 'moderator' ? 'text-orange-400' :
+                                                    user.role === 'dealer' ? 'text-blue-400' : 'text-gray-400'
+                                                }`}>
+                                                    {user.role === 'dealer' ? 'تاجر' :
+                                                     user.role === 'admin' ? 'مدير' :
+                                                     user.role === 'moderator' ? 'مشرف' : 'مستخدم'}
+                                                </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {user.role === "dealer" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                    <Building className="w-3 h-3 ml-1" />
-                                                    تاجر
-                                                </span>
-                                            ) : user.role === "admin" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                                    <Users className="w-3 h-3 ml-1" />
-                                                    مدير
-                                                </span>
-                                            ) : user.role === "moderator" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
-                                                    <Filter className="w-3 h-3 ml-1" />
-                                                    مشرف
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                    <User className="w-3 h-3 ml-1" />
-                                                    مستخدم
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            {user.status === "active" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                    <CheckCircle className="w-3 h-3 ml-1" />
-                                                    مفعل
-                                                </span>
-                                            ) : user.status === "rejected" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                    <XCircle className="w-3 h-3 ml-1" />
-                                                    مرفوض
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
-                                                    <Clock className="w-3 h-3 ml-1" />
-                                                    في الانتظار
-                                                </span>
-                                            )}
 
-                                            {user.role === "dealer" &&
-                                                user.dealer && (
-                                                    <div className="mt-1">
-                                                        {user.dealer
-                                                            .is_active ? (
-                                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                                <CheckCircle className="w-3 h-3 ml-1" />
+                                        {/* Status */}
+                                        <td className="px-6 py-4">
+                                            <div className="space-y-2">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
+                                                    {user.status === "active" && <CheckCircle className="w-3 h-3 ml-1" />}
+                                                    {user.status === "pending" && <Clock className="w-3 h-3 ml-1" />}
+                                                    {user.status === "rejected" && <XCircle className="w-3 h-3 ml-1" />}
+                                                    {user.status === "active" ? "مفعل" : user.status === "pending" ? "في الانتظار" : "مرفوض"}
+                                                </span>
+
+                                                {user.role === "dealer" && user.dealer && (
+                                                    <div>
+                                                        {user.dealer.is_active ? (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                                                <BadgeCheck className="w-3 h-3 ml-1" />
                                                                 تاجر مُصدّق
                                                             </span>
                                                         ) : (
-                                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
-                                                                <Clock className="w-3 h-3 ml-1" />
-                                                                التحقق في
-                                                                الانتظار
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                                                <AlertCircle className="w-3 h-3 ml-1" />
+                                                                التحقق في الانتظار
                                                             </span>
                                                         )}
                                                     </div>
                                                 )}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDate(user.created_at)}
+
+                                        {/* Registration Date */}
+                                        <td className="px-6 py-4 text-sm text-gray-400">
+                                            <div className="flex items-center">
+                                                <Calendar className="w-3 h-3 ml-1" />
+                                                {formatDate(user.created_at)}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center">
-                                            {user.status === "pending" && (
-                                                <div className="flex space-x-2 space-x-reverse">
-                                                    <Button
-                                                        onClick={() =>
-                                                            handleApproveUser(
-                                                                user.id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            processingUserId ===
-                                                            user.id
-                                                        }
-                                                        size="sm"
-                                                        className="bg-green-600 hover:bg-green-700 text-white"
-                                                    >
-                                                        {processingUserId ===
-                                                        user.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <>
-                                                                <Check className="w-4 h-4 ml-1" />
-                                                                تفعيل
-                                                            </>
+
+                                        {/* Actions */}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center space-x-2 space-x-reverse">
+                                                {/* Status Toggle */}
+                                                {(user.status === "active" || user.status === "rejected") && (
+                                                    <div className="flex items-center">
+                                                        <ToggleSwitch
+                                                            checked={user.is_active}
+                                                            onChange={() => handleToggleStatus(user.id, user.is_active)}
+                                                            disabled={processingUserId === user.id}
+                                                        />
+                                                        {processingUserId === user.id && (
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin text-cyan-500" />
                                                         )}
-                                                    </Button>
+                                                    </div>
+                                                )}
+
+                                                {/* Action Buttons */}
+                                                <div className="flex items-center space-x-1 space-x-reverse">
+                                                    {user.status === "pending" && (
+                                                        <>
+                                                            <Button
+                                                                onClick={() => handleApproveUser(user.id)}
+                                                                disabled={processingUserId === user.id}
+                                                                size="sm"
+                                                                className="bg-green-600 hover:bg-green-700 text-white px-3"
+                                                            >
+                                                                {processingUserId === user.id ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : (
+                                                                    <Check className="w-4 h-4" />
+                                                                )}
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => handleRejectUser(user.id)}
+                                                                disabled={processingUserId === user.id}
+                                                                size="sm"
+                                                                className="bg-red-600 hover:bg-red-700 text-white px-3"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+
+                                                    {user.role === "dealer" && user.dealer && user.dealer.status === "pending" && (
+                                                        <Button
+                                                            onClick={() => handleApproveDealerVerification(user.id)}
+                                                            disabled={processingUserId === user.id}
+                                                            size="sm"
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3"
+                                                        >
+                                                            {processingUserId === user.id ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                            ) : (
+                                                                <BadgeCheck className="w-4 h-4" />
+                                                            )}
+                                                        </Button>
+                                                    )}
+
                                                     <Button
-                                                        onClick={() =>
-                                                            handleRejectUser(
-                                                                user.id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            processingUserId ===
-                                                            user.id
-                                                        }
+                                                        onClick={() => handleOpenEditFrom(user)}
+                                                        variant="ghost"
                                                         size="sm"
-                                                        variant="destructive"
+                                                        className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 px-3"
                                                     >
-                                                        <X className="w-4 h-4 ml-1" />
-                                                        رفض
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+
+                                                    <Button
+                                                        asChild
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-gray-400 hover:text-white hover:bg-gray-700/50 px-3"
+                                                    >
+                                                        <LoadingLink href={`/admin/users/${user.id}`}>
+                                                            <Eye className="w-4 h-4" />
+                                                        </LoadingLink>
                                                     </Button>
                                                 </div>
-                                            )}
-
-                                           {(user.status === "active" || user.status === "rejected" ) &&( <div className="flex items-center">
-                                                <ToggleSwitch
-                                                    checked={user.is_active}
-                                                    onChange={() => handleToggleStatus(user.id, user.is_active)}
-                                                    disabled={processingUserId === user.id}
-                                                />
-                                                <span className={`mr-2 text-sm ${user.is_active ? 'text-green-600' : 'text-gray-600'}`}>
-                                                    {user.is_active ? 'مفعل' : 'غير مفعل'}
-                                                </span>
-                                                {processingUserId === user.id && (
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin text-blue-500" />
-                                                )}
-                                            </div>)}
-
-                                            {user.role === "dealer" &&
-                                                user.dealer &&
-                                                user.dealer.status ===
-                                                    "pending" && (
-                                                    <Button
-                                                        onClick={() =>
-                                                            handleApproveDealerVerification(
-                                                                user.id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            processingUserId ===
-                                                            user.id
-                                                        }
-                                                        size="sm"
-                                                        className="bg-blue-600 hover:bg-blue-700 text-white mt-2"
-                                                    >
-                                                        {processingUserId ===
-                                                        user.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <>
-                                                                <CheckCircle className="w-4 h-4 ml-1" />
-                                                                تصديق التاجر
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                )}
-
-                                            <Button
-                                                onClick={() => handleOpenEditFrom(user.id)}
-                                                variant="ghost"
-                                                className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                                            >
-                                                <Edit className="w-4 h-4 ml-2" />
-                                                تعديل
-                                            </Button>    
-                                            <Button
-                                                asChild
-                                                variant="ghost"
-                                                size="sm"
-                                                className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                                            >
-                                                <LoadingLink
-                                                    href={`/admin/users/${user.id}`}
-                                                >
-                                                    <Eye className="w-4 h-4 ml-1" />
-                                                    عرض 
-                                                </LoadingLink>
-                                            </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-6 py-4 text-center text-gray-500"
-                                    >
-                                        لا توجد نتائج مطابقة للبحث
+                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                        <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                                        <p>لا توجد نتائج مطابقة للبحث</p>
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
-                   
                 </div>
-                <Pagination
-                    totalPages={totalCount}
-                    page={currentPage}
-                    onPageChange={(event,page) => {
-                        setInitialLoad(true);
-                        setCurrentPage(page)
-                    }}
-                />
+
+                {/* Pagination */}
+                <div className="p-6 border-t border-gray-700/50">
+                    <Pagination
+                        totalPages={totalCount}
+                        page={currentPage}
+                        onPageChange={(event, page) => {
+                            setInitialLoad(true);
+                            setCurrentPage(page);
+                        }}
+                    />
+                </div>
             </div>
+
+            {/* Edit User Form Modal */}
             <EditUserForm
-                    user_id={processingUserId}
-                    isOpen={showEditForm}
-                    onClose={() => {setShowEditForm(false);  setProcessingUserId(null)}}
-                    onUserUpdated={handleUserUpdated}
-                />
+                user_id={processingUserId}
+                isOpen={showEditForm}
+                onClose={() => {
+                    setShowEditForm(false);
+                    setProcessingUserId(null);
+                    setSelectedUser(null);
+                }}
+                onUserUpdated={handleUserUpdated}
+            />
         </div>
     );
 }

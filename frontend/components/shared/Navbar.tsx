@@ -169,30 +169,26 @@ const Navbar = () => {
                 <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
               </Button>
             )}
-
-            {user ? (
-              <>
-                {/* ✅ فرض ألوان واضحة على الرقم والآيكون داخل قائمة التنبيهات */}
-                <div className={forceBright}>
-                  <NotificationMenu />
-                </div>
-
-                {/* ✅ فرض ألوان واضحة على اسم المستخدم والآيكون داخل قائمة المستخدم */}
-                <div className={forceBright}>
-                  <UserMenu />
-                </div>
-              </>
-            ) : (
-              <LoadingLink href="/auth/login">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-slate-900 transition-all duration-200"
-                >
-                  تسجيل الدخول
-                </Button>
-              </LoadingLink>
-            )}
+{user ? (
+  <>
+    <div className={forceBright}>
+      <NotificationMenu />
+    </div>
+    <div className={forceBright}>
+      <UserMenu />
+    </div>
+  </>
+) : (
+  <LoadingLink href="/auth/login">
+    <Button
+      variant="outline"
+      size="sm"
+      className="bg-transparent border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all duration-200"
+    >
+      تسجيل الدخول
+    </Button>
+  </LoadingLink>
+)}
           </div>
 
           {/* Mobile Menu Toggle */}

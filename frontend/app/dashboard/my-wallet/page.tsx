@@ -1,13 +1,30 @@
 "use client";
 
-import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Plus, ArrowDownLeft } from "lucide-react";
+import { 
+  Loader2, 
+  Plus, 
+  ArrowDownLeft, 
+  Wallet,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Search,
+  Calendar,
+  DollarSign,
+  CreditCard,
+  ArrowUpRight,
+  Sparkles
+} from "lucide-react";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
-import { log } from "console";
+import LoadingLink from "@/components/LoadingLink";
 
 // Interface for the transaction data
 interface Transaction {
@@ -30,6 +47,9 @@ export default function MyWalletPage() {
         funded: 0,
         total: 0,
     });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const router = useLoadingRouter();
     const { isLoggedIn } = useAuth();
 
@@ -76,7 +96,7 @@ export default function MyWalletPage() {
                 ) {
                     // Format transactions for display
                     const transactionData = transactionsResponse.data.data.data;
-                    console.log(`transactionData`, transactionData);
+                    
                     if (Array.isArray(transactionData)) {
                         // Create a copy to manipulate
                         let formattedTransactions = [...transactionData];
@@ -103,7 +123,7 @@ export default function MyWalletPage() {
                                     "ar-SA",
                                     {
                                         year: "numeric",
-                                        month: "numeric",
+                                        month: "long",
                                         day: "numeric",
                                     }
                                 );
@@ -113,7 +133,6 @@ export default function MyWalletPage() {
                                     runningBalance =
                                         runningBalance - transaction.amount;
                                 }
-                                
                                 
                                 return {
                                     ...transaction,
@@ -133,7 +152,6 @@ export default function MyWalletPage() {
             } catch (error) {
                 console.error("Error fetching wallet data:", error);
                 toast.error("حدث خطأ أثناء تحميل بيانات المحفظة");
-                // Fallback to empty data
                 setTransactions([]);
             } finally {
                 setIsLoading(false);
@@ -142,6 +160,16 @@ export default function MyWalletPage() {
 
         fetchWalletData();
     }, [isLoggedIn]);
+
+    // Filter transactions
+    const filteredTransactions = transactions.filter(transaction => {
+        const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             getTransactionTypeArabic(transaction.type).toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesType = typeFilter === 'all' || transaction.type === typeFilter;
+        const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
+        
+        return matchesSearch && matchesType && matchesStatus;
+    });
 
     // Navigate to deposit/withdraw pages
     const handleDeposit = () => {
@@ -154,197 +182,406 @@ export default function MyWalletPage() {
 
     // Function to get transaction type in Arabic
     const getTransactionTypeArabic = (type: string) => {
-        switch (type) {
-            case "deposit":
-                return "إيداع";
-            case "withdrawal":
-                return "سحب";
-            case "purchase":
-                return "شراء";
-            case "sale":
-                return "تحويل مبيعات";
-            case "commission":
-                return "عمولة";
-            case "refund":
-                return "استرداد";
-            case "bid":
-                return "مزايدة";
-            default:
-                return type;
-        }
+        const typeMap = {
+            "deposit": "إيداع",
+            "withdrawal": "سحب",
+            "purchase": "شراء",
+            "sale": "تحويل مبيعات",
+            "commission": "عمولة",
+            "refund": "استرداد",
+            "bid": "مزايدة",
+            "transfer": "تحويل"
+        };
+        
+        return typeMap[type] || type;
+    };
+
+    // Get transaction type config
+    const getTransactionTypeConfig = (type: string) => {
+        const typeMap = {
+            "deposit": { 
+                color: "text-emerald-400",
+                bg: "bg-emerald-500/20",
+                border: "border-emerald-500/30",
+                icon: Plus
+            },
+            "withdrawal": { 
+                color: "text-rose-400",
+                bg: "bg-rose-500/20", 
+                border: "border-rose-500/30",
+                icon: ArrowDownLeft
+            },
+            "purchase": { 
+                color: "text-blue-400",
+                bg: "bg-blue-500/20",
+                border: "border-blue-500/30",
+                icon: CreditCard
+            },
+            "sale": { 
+                color: "text-amber-400",
+                bg: "bg-amber-500/20",
+                border: "border-amber-500/30",
+                icon: TrendingUp
+            },
+            "commission": { 
+                color: "text-purple-400",
+                bg: "bg-purple-500/20",
+                border: "border-purple-500/30",
+                icon: DollarSign
+            },
+            "refund": { 
+                color: "text-cyan-400",
+                bg: "bg-cyan-500/20",
+                border: "border-cyan-500/30",
+                icon: ArrowUpRight
+            },
+            "bid": { 
+                color: "text-indigo-400",
+                bg: "bg-indigo-500/20",
+                border: "border-indigo-500/30",
+                icon: Wallet
+            }
+        };
+        
+        return typeMap[type] || { 
+            color: "text-gray-400",
+            bg: "bg-gray-500/20",
+            border: "border-gray-500/30",
+            icon: DollarSign
+        };
+    };
+
+    // Get status config
+    const getStatusConfig = (status: string) => {
+        const statusMap = {
+            "completed": {
+                color: "text-emerald-400",
+                bg: "bg-emerald-500/20",
+                border: "border-emerald-500/30",
+                icon: CheckCircle
+            },
+            "pending": {
+                color: "text-amber-400",
+                bg: "bg-amber-500/20",
+                border: "border-amber-500/30",
+                icon: Clock
+            },
+            "failed": {
+                color: "text-rose-400",
+                bg: "bg-rose-500/20",
+                border: "border-rose-500/30",
+                icon: XCircle
+            }
+        };
+        
+        return statusMap[status] || {
+            color: "text-gray-400",
+            bg: "bg-gray-500/20",
+            border: "border-gray-500/30",
+            icon: Clock
+        };
+    };
+
+    // Calculate transaction stats
+    const transactionStats = {
+        total: transactions.length,
+        deposits: transactions.filter(t => t.type === 'deposit').length,
+        withdrawals: transactions.filter(t => t.type === 'withdrawal').length,
+        totalAmount: transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
     };
 
     return (
-        <main
-            className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen"
-            dir="rtl"
-        >
-            {/* زر العودة */}
-            <BackToDashboard />
-
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-                محفظتي
-            </h1>
-
-            {/* رصيد المحفظة */}
-            <section className="bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-lg shadow-lg p-8 mb-10 text-center">
-                <h2 className="text-lg font-semibold mb-2">الرصيد الحالي</h2>
-
-                {isLoading ? (
-                    <div className="flex justify-center items-center py-4">
-                        <Loader2 className="w-8 h-8 animate-spin" />
-                    </div>
-                ) : (
-                    <>
-                        <p className="text-4xl font-bold">
-                            {walletBalance.total.toLocaleString()} ريال
-                        </p>
-
-                        <div className="flex justify-center gap-6 mt-4 text-sm">
-                            <div>
-                                <span className="opacity-80">
-                                    الرصيد المتاح:
-                                </span>{" "}
-                                <span className="font-bold">
-                                    {walletBalance.available.toLocaleString()}{" "}
-                                    ريال
-                                </span>
+        <div className="space-y-6" dir="rtl">
+            {/* Header Section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+            >
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-xl">
+                                <Wallet className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <span className="opacity-80">
-                                    الرصيد المحجوز:
-                                </span>{" "}
-                                <span className="font-bold">
+                                <h1 className="text-2xl font-bold text-white">
+                                    محفظتي <span className="bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">({walletBalance.total.toLocaleString()} ريال)</span>
+                                </h1>
+                                <p className="text-gray-400 text-sm mt-1">إدارة رصيدك المالي ومعاملاتك</p>
+                            </div>
+                        </div>
+
+                        {/* Balance Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Total Balance */}
+                            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl p-4 border border-amber-500/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Wallet className="w-4 h-4 text-amber-400" />
+                                    <span className="text-sm text-gray-300">الرصيد الكلي</span>
+                                </div>
+                                <p className="text-2xl font-bold text-amber-300">
+                                    {walletBalance.total.toLocaleString()} ريال
+                                </p>
+                            </div>
+
+                            {/* Available Balance */}
+                            <div className="bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-xl p-4 border border-emerald-500/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                    <span className="text-sm text-gray-300">المتاح</span>
+                                </div>
+                                <p className="text-2xl font-bold text-emerald-300">
+                                    {walletBalance.available.toLocaleString()} ريال
+                                </p>
+                            </div>
+
+                            {/* Funded Balance */}
+                            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Clock className="w-4 h-4 text-blue-400" />
+                                    <span className="text-sm text-gray-300">المحجوز</span>
+                                </div>
+                                <p className="text-2xl font-bold text-blue-300">
                                     {walletBalance.funded.toLocaleString()} ريال
-                                </span>
+                                </p>
                             </div>
                         </div>
-
-                        <div className="mt-6 flex justify-center gap-4">
-                            <button
-                                onClick={handleDeposit}
-                                className="bg-white text-sky-600 hover:bg-gray-100 font-bold py-2 px-6 rounded-full transition flex items-center"
-                            >
-                                <Plus className="w-4 h-4 ml-1" />
-                                إيداع
-                            </button>
-                            <button
-                                onClick={handleWithdraw}
-                                className="bg-white text-sky-600 hover:bg-gray-100 font-bold py-2 px-6 rounded-full transition flex items-center"
-                            >
-                                <ArrowDownLeft className="w-4 h-4 ml-1" />
-                                سحب
-                            </button>
-                        </div>
-                    </>
-                )}
-            </section>
-
-            {/* سجل المعاملات */}
-            <section className="bg-white p-6 rounded-lg shadow border">
-                <h2 className="text-xl font-semibold mb-4 text-gray-700">
-                    تاريخ المعاملات
-                </h2>
-
-                {isLoading ? (
-                    <div className="flex justify-center items-center py-8">
-                        <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
-                        <span className="mr-2 text-gray-500">
-                            جاري تحميل تاريخ المعاملات...
-                        </span>
                     </div>
-                ) : transactions.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">
-                        لا توجد معاملات في محفظتك حتى الآن
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={handleDeposit}
+                            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl border border-emerald-400/30 hover:scale-105 transition-all duration-300 group"
+                        >
+                            <Plus className="w-4 h-4 text-white transition-transform group-hover:scale-110" />
+                            <span className="text-white font-medium">إيداع</span>
+                        </button>
+                        <button
+                            onClick={handleWithdraw}
+                            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-rose-500 to-pink-500 rounded-xl border border-rose-400/30 hover:scale-105 transition-all duration-300 group"
+                        >
+                            <ArrowDownLeft className="w-4 h-4 text-white transition-transform group-hover:scale-110" />
+                            <span className="text-white font-medium">سحب</span>
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Transaction Stats */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+            >
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                        <div className="text-2xl font-bold text-white">{transactionStats.total}</div>
+                        <div className="text-sm text-gray-400">إجمالي المعاملات</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-2xl font-bold text-emerald-400">{transactionStats.deposits}</div>
+                        <div className="text-sm text-gray-400">عملية إيداع</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-2xl font-bold text-rose-400">{transactionStats.withdrawals}</div>
+                        <div className="text-sm text-gray-400">عملية سحب</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-2xl font-bold text-cyan-400">
+                            {transactionStats.totalAmount.toLocaleString('ar-EG')}
+                        </div>
+                        <div className="text-sm text-gray-400">إجمالي المبالغ</div>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Filters Section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+            >
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                        {/* Search Input */}
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="ابحث في المعاملات..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                            />
+                        </div>
+
+                        {/* Type Filter */}
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => setTypeFilter(e.target.value)}
+                            className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                        >
+                            <option value="all">جميع الأنواع</option>
+                            <option value="deposit">إيداع</option>
+                            <option value="withdrawal">سحب</option>
+                            <option value="purchase">شراء</option>
+                            <option value="sale">مبيعات</option>
+                            <option value="commission">عمولة</option>
+                            <option value="refund">استرداد</option>
+                        </select>
+
+                        {/* Status Filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                        >
+                            <option value="all">جميع الحالات</option>
+                            <option value="completed">مكتملة</option>
+                            <option value="pending">قيد المعالجة</option>
+                            <option value="failed">فاشلة</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Filter className="w-4 h-4" />
+                        <span>عرض {filteredTransactions.length} من {transactions.length} معاملة</span>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Transactions List */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-4"
+            >
+                {isLoading ? (
+                    <div className="text-center py-16">
+                        <div className="relative w-16 h-16 mx-auto mb-4">
+                            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
+                            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+                        </div>
+                        <p className="text-lg text-gray-400 font-medium">جاري تحميل بيانات المحفظة...</p>
+                    </div>
+                ) : filteredTransactions.length === 0 ? (
+                    <div className="text-center py-16">
+                        <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md mx-auto">
+                            <Wallet className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-400 mb-2">
+                                {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
+                                    ? 'لا توجد نتائج' 
+                                    : 'لا توجد معاملات'
+                                }
+                            </h3>
+                            <p className="text-gray-500 text-sm mb-4">
+                                {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
+                                    ? 'لم نتمكن من العثور على معاملات تطابق معايير البحث'
+                                    : 'لم تقم بأي معاملات في محفظتك حتى الآن'
+                                }
+                            </p>
+                            {(searchTerm || typeFilter !== 'all' || statusFilter !== 'all') ? (
+                                <button
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setTypeFilter('all');
+                                        setStatusFilter('all');
+                                    }}
+                                    className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                                >
+                                    إعادة تعيين الفلتر
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleDeposit}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg text-white hover:scale-105 transition-all duration-300"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    إيداع أول مبلغ
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-right text-gray-600">
-                            <thead className="text-xs text-gray-500 uppercase bg-gray-100">
-                                <tr>
-                                    <th scope="col" className="px-4 py-3">
-                                        التاريخ
-                                    </th>
-                                    <th scope="col" className="px-4 py-3">
-                                        النوع
-                                    </th>
-                                    <th scope="col" className="px-4 py-3">
-                                        المبلغ
-                                    </th>
-                                    {/* <th scope="col" className="px-4 py-3">
-                                        الرصيد
-                                    </th> */}
-                                    <th scope="col" className="px-4 py-3">
-                                        الوصف
-                                    </th>
-                                    {/* Add status column if transactions have status */}
-                                    {transactions.some((t) => t.status) && (
-                                        <th scope="col" className="px-4 py-3">
-                                            الحالة
-                                        </th>
-                                    )}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {transactions.map((t) => (
-                                    <tr
-                                        key={t.id}
-                                        className="border-b hover:bg-gray-50"
-                                    >
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            {t.date}
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            {getTransactionTypeArabic(t.type)}
-                                        </td>
-                                        <td
-                                            className={`px-4 py-3 whitespace-nowrap ${
-                                                t.amount > 0
-                                                    ? "text-green-600"
-                                                    : "text-red-600"
-                                            }`}
-                                        >
-                                            {t.amount > 0
-                                                ? `+${t.amount.toLocaleString()}`
-                                                : `${t.amount.toLocaleString()}`}{" "}
-                                            ريال
-                                        </td>
-                                        {/* <td className="px-4 py-3 whitespace-nowrap">
-                                            {t.balance?.toLocaleString() || "-"}{" "}
-                                            ريال
-                                        </td> */}
-                                        <td className="px-4 py-3">
-                                            {t.description}
-                                        </td>
-                                        {/* Add status column if transactions have status */}
-                                        {transactions.some(
-                                            (tx) => tx.status
-                                        ) && (
-                                            <td className="px-4 py-3">
-                                                {t.status === "completed" ? (
-                                                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
-                                                        مكتمل
-                                                    </span>
-                                                ) : t.status === "pending" ? (
-                                                    <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">
-                                                        قيد المعالجة
-                                                    </span>
-                                                ) : t.status === "failed" ? (
-                                                    <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">
-                                                        فشل
-                                                    </span>
-                                                ) : (
-                                                    t.status
+                    filteredTransactions.map((transaction, index) => {
+                        const typeConfig = getTransactionTypeConfig(transaction.type);
+                        const TypeIcon = typeConfig.icon;
+                        const statusConfig = getStatusConfig(transaction.status || 'completed');
+                        const StatusIcon = statusConfig.icon;
+                        
+                        return (
+                            <motion.div
+                                key={transaction.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 hover:border-gray-700/70 hover:shadow-xl transition-all duration-300 group"
+                            >
+                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                    <div className="flex items-start gap-4 flex-1">
+                                        <div className={cn(
+                                            "p-3 rounded-xl border backdrop-blur-sm transition-transform duration-300 group-hover:scale-110",
+                                            typeConfig.bg,
+                                            typeConfig.border
+                                        )}>
+                                            <TypeIcon className={cn("w-5 h-5", typeConfig.color)} />
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                                <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors">
+                                                    {getTransactionTypeArabic(transaction.type)}
+                                                </h3>
+                                                <div className={cn(
+                                                    "text-xl font-bold",
+                                                    transaction.amount > 0 ? "text-emerald-400" : "text-rose-400"
+                                                )}>
+                                                    {transaction.amount > 0 ? '+' : ''}{transaction.amount.toLocaleString('ar-EG')} ريال
+                                                </div>
+                                            </div>
+
+                                            <p className="text-gray-400 text-sm mb-3 leading-relaxed">
+                                                {transaction.description}
+                                            </p>
+
+                                            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                                                <div className="flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" />
+                                                    <span>{transaction.date}</span>
+                                                </div>
+                                                {transaction.balance && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Wallet className="w-3 h-3" />
+                                                        <span>الرصيد: {transaction.balance.toLocaleString('ar-EG')} ريال</span>
+                                                    </div>
                                                 )}
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
+                                            statusConfig.bg,
+                                            statusConfig.border,
+                                            statusConfig.color
+                                        )}>
+                                            <StatusIcon className="w-3 h-3" />
+                                            {transaction.status === 'completed' ? 'مكتمل' : 
+                                             transaction.status === 'pending' ? 'قيد المعالجة' : 
+                                             transaction.status === 'failed' ? 'فشل' : 'مكتمل'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })
                 )}
-            </section>
-        </main>
+            </motion.div>
+        </div>
     );
 }

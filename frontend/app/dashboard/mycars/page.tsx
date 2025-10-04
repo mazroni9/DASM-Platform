@@ -1,50 +1,56 @@
 'use client';
 
-import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useMemo, useState } from 'react';
-import { Package, DollarSign, Truck, CheckCircle, MessageSquare, Loader2, Route } from 'lucide-react';
+import { 
+  Package, 
+  DollarSign, 
+  Truck, 
+  CheckCircle, 
+  MessageSquare, 
+  Loader2, 
+  Route,
+  Car as CarIcon,
+  Edit,
+  Eye,
+  Plus,
+  Filter,
+  Search,
+  Calendar,
+  Gauge,
+  Settings,
+  Sparkles
+} from 'lucide-react';
 import { useAuth } from "@/hooks/useAuth";
-import { redirect } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import {Pagination} from 'react-laravel-paginex'
+import { Pagination } from 'react-laravel-paginex';
 import axios from "axios";
-import { PagesOutlined } from "@mui/icons-material";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-import { Button } from "@/components/ui/button";
 import LoadingLink from "@/components/LoadingLink";
 import { Car } from "@/types/types";
 
 export default function MyCarsPage() {
-  const getAuctionStatusTextAndIcon = (status: string) => {
-    switch (status) {
-      case 'available':
-        return { text: 'متوفر', color: 'text-orange-600', icon: <DollarSign size={16} /> };
-      case 'in_auction':
-        return { text: 'في المزاد', color: 'text-orange-600', icon: <DollarSign size={16} /> };
-      default:
-        return { text: status, color: 'text-gray-500', icon: null };
-    }
-  }
-
   const [loading, setLoading] = useState(true);
-  const [PaginationData, setPagination] = useState([]);
+  const [paginationData, setPagination] = useState([]);
   const [cars, setCars] = useState<Car[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const { user, isLoggedIn } = useAuth();
   const [processingCarId, setProcessingCarId] = useState<number | null>(null);
   const router = useLoadingRouter();
   
-  
-  let options = {
+  const options = {
     containerClass: "pagination-container",
     prevButtonClass: "prev-button-class",
     nextButtonText: "التالي",
     prevButtonText: "السابق"
   }
 
-  const getData = (PaginationData) => {
-    axios.get('/api/cars?page=' + PaginationData.page).then(response => {
+  const getData = (paginationData) => {
+    axios.get('/api/cars?page=' + paginationData.page).then(response => {
       const carsData = response.data.data.data || response.data.data;
       setPagination(response.data.data)
       setCars(carsData);
@@ -54,11 +60,11 @@ export default function MyCarsPage() {
   // Verify user is authenticated
   useEffect(() => {
     if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/dashboard/profile");
+      router.push("/auth/login?returnUrl=/dashboard/mycars");
     }
   }, [isLoggedIn, router]);
 
-  // Fetch user profile data
+  // Fetch user cars data
   useEffect(() => {
     async function fetchCars() {
       if (!isLoggedIn) return;
@@ -70,106 +76,355 @@ export default function MyCarsPage() {
           setCars(carsData);
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("حدث خطأ أثناء تحميل بيانات الملف الشخصي");
+        console.error("Error fetching cars:", error);
+        toast.error("حدث خطأ أثناء تحميل بيانات السيارات");
       } finally {
         setLoading(false);
       }
     }
 
     fetchCars();
-  }, []);
+  }, [isLoggedIn]);
 
-
-  // استبدال دالة حالة السيارة بنصوص واضحة
+  // دالة حالة السيارة
   const getStatusLabel = (car) => {
-    if (car.status === 'pending') return 'بانتظار موافقة الإشراف';
-    if (car.status === 'processing') return 'تحت المعالجة';
-    if (car.status === 'approved') return 'تم الاعتماد';
-    if (car.status === 'rejected') return 'مرفوضة';
-    if (car.status === 'auction') return 'معروضة في المزاد';
-    if (car.status === 'sold') return 'مباعة';
-    if (car.status === 'withdrawn') return 'مسحوبة';
-    if (car.status === 'archived') return 'مؤرشفة';
-    return car.status || 'غير معروف';
+    const statusMap = {
+      'pending': { text: 'بانتظار الموافقة', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
+      'processing': { text: 'تحت المعالجة', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
+      'approved': { text: 'تم الاعتماد', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
+      'rejected': { text: 'مرفوضة', color: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-500/30' },
+      'auction': { text: 'في المزاد', color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
+      'sold': { text: 'مباعة', color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
+      'withdrawn': { text: 'مسحوبة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
+      'archived': { text: 'مؤرشفة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' }
+    };
+    
+    return statusMap[car.status] || { text: car.status || 'غير معروف', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' };
   };
 
+  // فلترة السيارات
+  const filteredCars = useMemo(() => {
+    return cars.filter(car => {
+      const matchesSearch = car.make?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           car.model?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || car.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [cars, searchTerm, statusFilter]);
+
+  // إحصائيات سريعة
+  const stats = useMemo(() => {
+    return {
+      total: cars.length,
+      inAuction: cars.filter(car => car.status === 'auction').length,
+      pending: cars.filter(car => car.status === 'pending').length,
+      approved: cars.filter(car => car.status === 'approved').length,
+    };
+  }, [cars]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
+            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+          </div>
+          <p className="text-lg text-gray-400 font-medium">جاري تحميل سياراتك...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen" dir="rtl">
-      <BackToDashboard />
-      <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">سيارتي ({cars.length})</h1>
-
-      {cars.length === 0 ? (
-        <p className="text-center text-gray-500">لم تقم بإضافة أي عناصر بعد.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cars.map((car) => (
-            <div
-              key={car.id}
-              className="bg-white rounded-lg shadow border border-gray-200 p-4 flex flex-col cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => router.push(`/dashboard/mycars/${car.id}`)}
-            >
-              <div className="h-40 bg-gray-100 rounded mb-4 flex items-center justify-center overflow-hidden">
-                <img
-                  src={
-                    (car.images && car.images.length > 0)
-                      ? car.images[0]
-                      : "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg"
-                  }
-                  alt={`${car.make} ${car.year}`}
-                  className="object-cover h-full w-full"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = "https://via.placeholder.com/300x200?text=No+Image";
-                  }}
-                />
+    <div className="space-y-6" dir="rtl">
+      {/* Header Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                <CarIcon className="w-6 h-6 text-white" />
               </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  سياراتي <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">({stats.total})</span>
+                </h1>
+                <p className="text-gray-400 text-sm mt-1">إدارة وعرض جميع سياراتك المعروضة</p>
+              </div>
+            </div>
 
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                {car.make} - {car.year}
-              </h2>
-              <p className="text-sm text-gray-500 mb-1">العداد: {car.odometer}</p>
-              <p className="text-sm text-gray-500 mb-1">المحرك: {car.engine}</p>
-              <p className="text-sm text-gray-500 mb-1">القير: {car.transmission}</p>
-              <p className="text-gray-500">
-                هل تمت الموافقة ؟
-                {car.auctions && car.auctions[0] && car.auctions[0].control_room_approved ? (
-                  <span className="text-green-600">تمت الموافقة للمزاد </span>
-                ) : (
-                  <span className="text-red-600">تحت المعالجة </span>
-                )}
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-blue-500/20 rounded">
+                    <CarIcon className="w-3 h-3 text-blue-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">المجموع</span>
+                </div>
+                <p className="text-lg font-bold text-white mt-1">{stats.total}</p>
+              </div>
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-purple-500/20 rounded">
+                    <Gauge className="w-3 h-3 text-purple-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">في المزاد</span>
+                </div>
+                <p className="text-lg font-bold text-purple-400 mt-1">{stats.inAuction}</p>
+              </div>
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-amber-500/20 rounded">
+                    <Loader2 className="w-3 h-3 text-amber-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">بانتظار الموافقة</span>
+                </div>
+                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
+              </div>
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-emerald-500/20 rounded">
+                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">معتمدة</span>
+                </div>
+                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.approved}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <LoadingLink
+              href="/dashboard/add-car"
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border border-green-400/30 hover:scale-105 transition-all duration-300 group"
+            >
+              <Plus className="w-4 h-4 text-white transition-transform group-hover:rotate-90" />
+              <span className="text-white font-medium">إضافة سيارة جديدة</span>
+            </LoadingLink>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Filters and Search Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="ابحث عن سيارة..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+            >
+              <option value="all">جميع الحالات</option>
+              <option value="pending">بانتظار الموافقة</option>
+              <option value="processing">تحت المعالجة</option>
+              <option value="approved">معتمدة</option>
+              <option value="auction">في المزاد</option>
+              <option value="sold">مباعة</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Filter className="w-4 h-4" />
+            <span>عرض {filteredCars.length} من {cars.length} سيارة</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Cars Grid */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+      >
+        {filteredCars.length === 0 ? (
+          <div className="col-span-full text-center py-16">
+            <div className="p-4 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md mx-auto">
+              <CarIcon className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-400 mb-2">لا توجد سيارات</h3>
+              <p className="text-gray-500 text-sm mb-4">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'لم نتمكن من العثور على سيارات تطابق معايير البحث'
+                  : 'لم تقم بإضافة أي سيارات بعد'
+                }
               </p>
-              <p className="text-sm text-gray-500 mb-1 font-bold">الحالة: {getStatusLabel(car)}</p>
-              <p className="text-sm text-gray-500 mb-1">الوصف: {car.description}</p>
-              <p className="text-sm font-medium mt-2">
-                سعر التقييم: <span className="text-blue-600">{car.evaluation_price.toLocaleString('ar-EG')} ريال</span>
-              </p>
-              <br />
-              {/* زر تعديل فقط إذا كانت السيارة بانتظار الموافقة أو تحت المعالجة */}
-              {(car.status === 'pending' || car.status === 'processing') && (
-                <LoadingLink
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded text-center inline-block mt-2"
-                  href={`/dashboard/mycars/${car.id}?edit=1`}
-                  onClick={(e) => e.stopPropagation()}
+              {(searchTerm || statusFilter !== 'all') ? (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                  }}
+                  className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
                 >
-                  تعديل البيانات
+                  إعادة تعيين الفلتر
+                </button>
+              ) : (
+                <LoadingLink
+                  href="/dashboard/add-car"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white hover:scale-105 transition-all duration-300"
+                >
+                  <Plus className="w-4 h-4" />
+                  إضافة أول سيارة
                 </LoadingLink>
               )}
-              {/* زر عرض السيارة متاح دائماً */}
-              <LoadingLink
-                target="_blank"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-center inline-block mt-2"
-                href={`/carDetails/${car.id}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                عرض السيارة
-              </LoadingLink>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ) : (
+          filteredCars.map((car, index) => {
+            const statusInfo = getStatusLabel(car);
+            const isApproved = car.auctions && car.auctions[0] && car.auctions[0].control_room_approved;
+            
+            return (
+              <motion.div
+                key={car.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="group cursor-pointer"
+                onClick={() => router.push(`/dashboard/mycars/${car.id}`)}
+              >
+                <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl overflow-hidden hover:border-gray-700/70 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                  {/* Car Image */}
+                  <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
+                    <img
+                      src={
+                        (car.images && car.images.length > 0)
+                          ? car.images[0]
+                          : "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg"
+                      }
+                      alt={`${car.make} ${car.year}`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
+                      }}
+                    />
+                    
+                    {/* Status Badge */}
+                    <div className={cn(
+                      "absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
+                      statusInfo.bg,
+                      statusInfo.border,
+                      statusInfo.color
+                    )}>
+                      {statusInfo.text}
+                    </div>
 
-      <Pagination data={PaginationData} options={options} page={PaginationData} pageSize={PaginationData} changePage={getData} />
+                    {/* Approval Badge */}
+                    {isApproved && (
+                      <div className="absolute top-3 right-3 px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-medium border border-emerald-500/30 backdrop-blur-sm">
+                        <CheckCircle className="w-3 h-3 inline ml-1" />
+                        معتمدة
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Car Details */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors">
+                        {car.make} {car.model} - {car.year}
+                      </h3>
+                      <div className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
+                        {car.evaluation_price?.toLocaleString('ar-EG')}
+                      </div>
+                    </div>
+
+                    {/* Car Specs */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Gauge className="w-4 h-4 text-blue-400" />
+                        <span>العداد: {car.odometer} كم</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Settings className="w-4 h-4 text-purple-400" />
+                        <span>المحرك: {car.engine}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <Route className="w-4 h-4 text-emerald-400" />
+                        <span>القير: {car.transmission}</span>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    {car.description && (
+                      <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
+                        {car.description}
+                      </p>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-4 border-t border-gray-800/50">
+                      {(car.status === 'pending' || car.status === 'processing') && (
+                        <LoadingLink
+                          href={`/dashboard/mycars/${car.id}?edit=1`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-amber-500/20 text-amber-300 rounded-lg border border-amber-500/30 hover:bg-amber-500/30 transition-all duration-300 group/edit"
+                        >
+                          <Edit className="w-3 h-3 transition-transform group-hover/edit:scale-110" />
+                          <span className="text-xs font-medium">تعديل</span>
+                        </LoadingLink>
+                      )}
+                      
+                      <LoadingLink
+                        target="_blank"
+                        href={`/carDetails/${car.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300 group/view"
+                      >
+                        <Eye className="w-3 h-3 transition-transform group-hover/view:scale-110" />
+                        <span className="text-xs font-medium">عرض</span>
+                      </LoadingLink>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </motion.div>
+
+      {/* Pagination */}
+      {filteredCars.length > 0 && paginationData && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex justify-center"
+        >
+          <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-4">
+            <Pagination 
+              data={paginationData} 
+              options={options} 
+              changePage={getData} 
+            />
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

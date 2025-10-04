@@ -132,16 +132,16 @@ export default function UserMenu() {
 
     if (role === UserRole.ADMIN || role === UserRole.MODERATOR) {
       list.push({
-        label: "بوابة العارضين",
+        label: "لوحه الكنترول رووم",
         icon: <Building2 className="w-4 h-4" />,
-        onClick: () => navigateTo("/exhibitor"),
+        onClick: () => navigateTo("https://control.dasm.com.sa/dashboard"),
       });
     }
 
     if (role === UserRole.ADMIN) {
       list.push(
         {
-          label: "لوحة المسؤول",
+          label: " المسؤول",
           icon: <ShieldCheck className="w-4 h-4" />,
           onClick: () => navigateTo("/admin"),
         },

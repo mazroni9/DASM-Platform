@@ -81,7 +81,7 @@ body {
   h3 { @apply text-xl md:text-2xl; }
 
   a { @apply transition-colors; }
-  a:hover { @apply text-primary; }
+  a:hover { color: rgb(34 211 238 / var(--tw-text-opacity, 1)); }
 }
 
 @layer components {

@@ -49,7 +49,7 @@ const Footer = () => {
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-cyan-400" />
               <span className="text-slate-300 hover:text-cyan-300 transition-colors break-all">
-                zahrma0p@yahoo.com
+                mazroni@dasm.host
               </span>
             </div>
           </div>
@@ -93,7 +93,7 @@ const Footer = () => {
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-cyan-400" />
               <span className="text-slate-300 hover:text-cyan-300 transition-colors text-xs sm:text-sm break-all">
-                zahrma0p@yahoo.com
+                mazroni@dasm.host
               </span>
             </div>
           </div>
@@ -131,7 +131,7 @@ const Footer = () => {
           <div className="flex justify-center items-center gap-2 py-2 border-t border-slate-800/40">
             <Mail className="h-4 w-4 text-cyan-400 flex-shrink-0" />
             <span className="text-slate-300 text-xs break-all">
-              zahrma0p@yahoo.com
+              mazroni@dasm.host
             </span>
           </div>
 

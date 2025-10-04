@@ -5,7 +5,28 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import LoadingLink from '@/components/LoadingLink';
-import { Trash2, Edit, Plus, Calendar, Users, Eye } from 'lucide-react';
+import { 
+    Trash2, 
+    Edit, 
+    Plus, 
+    Calendar, 
+    Users, 
+    Eye, 
+    RefreshCw,
+    Search,
+    Filter,
+    Download,
+    Clock,
+    Zap,
+    Volume2,
+    MoreVertical,
+    AlertTriangle,
+    CheckCircle,
+    XCircle,
+    PlayCircle,
+    ChevronDown,
+    Sparkles
+} from 'lucide-react';
 
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -22,10 +43,10 @@ interface AuctionSession {
 }
 
 const statusColors = {
-  scheduled: 'bg-blue-100 text-blue-800',
-  active: 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-800',
-  cancelled: 'bg-red-100 text-red-800',
+  scheduled: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  active: 'bg-green-500/20 text-green-400 border-green-500/30',
+  completed: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
 const statusLabels = {
@@ -36,9 +57,15 @@ const statusLabels = {
 };
 
 const typeLabels = {
-  live: 'الحراج المباشر',
-  instant: 'مزاد فوري',
-  silent: 'مزاد صامت',
+  live: 'مباشر',
+  instant: 'فوري',
+  silent: 'صامت',
+};
+
+const typeIcons = {
+  live: Volume2,
+  instant: Zap,
+  silent: Clock,
 };
 
 export default function SessionsListPage() {
@@ -46,6 +73,9 @@ export default function SessionsListPage() {
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<AuctionSession | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const router = useRouter();
 
   useEffect(() => {
@@ -54,6 +84,7 @@ export default function SessionsListPage() {
 
   const fetchSessions = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/api/admin/sessions');
       if (response.data.success) {
         setSessions(response.data.data);
@@ -96,109 +127,308 @@ export default function SessionsListPage() {
     setSessionToDelete(null);
   };
 
+  // Filter sessions based on search and filters
+  const filteredSessions = sessions.filter(session => {
+    const matchesSearch = session.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || session.status === statusFilter;
+    const matchesType = typeFilter === 'all' || session.type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  // Calculate statistics
+  const stats = {
+    total: sessions.length,
+    scheduled: sessions.filter(s => s.status === 'scheduled').length,
+    active: sessions.filter(s => s.status === 'active').length,
+    completed: sessions.filter(s => s.status === 'completed').length,
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">إدارة جلسات المزاد</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            إدارة جلسات المزاد
+          </h1>
+          <p className="text-gray-400 mt-2">
+            إدارة وتنظيم جلسات المزادات المختلفة في النظام
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
+          <button 
+            onClick={fetchSessions}
+            className="bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+          >
+            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
+            تحديث
+          </button>
           <LoadingLink
             href="/admin/sessions/new"
-            className="text-white px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
           >
-            <Plus size={20} />
+            <Plus className="w-4 h-4 ml-2" />
             إضافة جلسة جديدة
           </LoadingLink>
         </div>
+      </div>
 
-        {sessions.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 text-lg">لا توجد جلسات مزاد حتى الآن</p>
-            <LoadingLink
-              href="/admin/sessions/new"
-              className="text-primary hover:text-primary-dark mt-2 inline-block"
+      {/* Statistics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">إجمالي الجلسات</p>
+              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+            </div>
+            <div className="bg-blue-500/10 p-3 rounded-xl">
+              <Calendar className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">جلسات مجدولة</p>
+              <p className="text-2xl font-bold text-white mt-1">{stats.scheduled}</p>
+            </div>
+            <div className="bg-amber-500/10 p-3 rounded-xl">
+              <Clock className="w-6 h-6 text-amber-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">جلسات نشطة</p>
+              <p className="text-2xl font-bold text-white mt-1">{stats.active}</p>
+            </div>
+            <div className="bg-green-500/10 p-3 rounded-xl">
+              <PlayCircle className="w-6 h-6 text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">جلسات مكتملة</p>
+              <p className="text-2xl font-bold text-white mt-1">{stats.completed}</p>
+            </div>
+            <div className="bg-gray-500/10 p-3 rounded-xl">
+              <CheckCircle className="w-6 h-6 text-gray-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Search Section */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          {/* Search Input */}
+          <div className="relative flex-grow">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="ابحث باسم الجلسة..."
+              className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-2 pr-10 pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
             >
-              أضف أول جلسة
-            </LoadingLink>
+              <option value="all">كل الحالات</option>
+              <option value="scheduled">مجدولة</option>
+              <option value="active">نشطة</option>
+              <option value="completed">مكتملة</option>
+              <option value="cancelled">ملغاة</option>
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            >
+              <option value="all">كل الأنواع</option>
+              <option value="live">مباشر</option>
+              <option value="instant">فوري</option>
+              <option value="silent">صامت</option>
+            </select>
+
+            <button className="bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300 px-3 py-2 rounded-lg flex items-center text-sm">
+              <Filter className="w-4 h-4 ml-2" />
+              المزيد من الفلاتر
+              <ChevronDown className="w-4 h-4 mr-2" />
+            </button>
+
+            <button className="bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300 px-3 py-2 rounded-lg flex items-center text-sm">
+              <Download className="w-4 h-4 ml-2" />
+              تصدير التقرير
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sessions Table */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+        {/* Table Header */}
+        <div className="p-6 border-b border-gray-700/50">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-white">
+              قائمة جلسات المزاد ({filteredSessions.length})
+            </h2>
+            <div className="text-sm text-gray-400">
+              إجمالي {sessions.length} جلسة
+            </div>
+          </div>
+        </div>
+
+        {/* Table Content */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <RefreshCw className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
+              <p className="text-gray-400">جاري تحميل الجلسات...</p>
+            </div>
+          </div>
+        ) : filteredSessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Calendar className="w-16 h-16 text-gray-600 mb-4" />
+            <p className="text-gray-400 text-lg mb-2">
+              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                ? "لا توجد نتائج مطابقة للبحث"
+                : "لا توجد جلسات مزاد حتى الآن"
+              }
+            </p>
+            <p className="text-gray-500 text-sm mb-6">
+              {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && 
+               "ابدأ بإضافة جلسات مزاد جديدة إلى النظام"}
+            </p>
+            {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
+              <LoadingLink
+                href="/admin/sessions/new"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-300 flex items-center"
+              >
+                <Plus className="w-4 h-4 ml-2" />
+                إضافة أول جلسة
+              </LoadingLink>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    الاسم
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    التاريخ
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    الحالة
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    النوع
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    عدد المزادات
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    إجراءات
-                  </th>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-750 border-b border-gray-700/50">
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الجلسة</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">التاريخ</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">النوع</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">عدد المزادات</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {session.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(session.session_date), 'dd MMMM yyyy', { locale: ar })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[session.status]}`}>
-                        {statusLabels[session.status]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {typeLabels[session.type]}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Users size={16} />
-                        {session.auctions_count}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <LoadingLink 
-                          href={`/admin/sessions/view/${session.id}`}
-                          className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1"
-                        >
-                          <Eye size={16} />
-                          
-                        </LoadingLink>
+              <tbody className="divide-y divide-gray-700/50">
+                {filteredSessions.map((session) => {
+                  const TypeIcon = typeIcons[session.type];
+                  return (
+                    <tr
+                      key={session.id}
+                      className="hover:bg-gray-750/50 transition-colors duration-200 group"
+                    >
+                      {/* Session Name */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
+                            <Calendar className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="mr-4">
+                            <div className="text-sm font-medium text-white">
+                              {session.name}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              ID: {session.id}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
 
-                        <LoadingLink
-                          href={`/admin/sessions/edit/${session.id}`}
-                          className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1"
-                        >
-                          <Edit size={16} />
+                      {/* Date */}
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        {format(new Date(session.session_date), 'dd MMMM yyyy', { locale: ar })}
+                      </td>
 
-                        </LoadingLink>
-                        <button
-                          onClick={() => openDeleteModal(session)}
-                          className="text-red-600 hover:text-red-900 flex items-center gap-1"
-                          disabled={session.auctions_count > 0}
-                        >
-                          <Trash2 size={16} />
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[session.status]}`}>
+                          {session.status === 'active' && <PlayCircle className="w-3 h-3 ml-1" />}
+                          {session.status === 'scheduled' && <Clock className="w-3 h-3 ml-1" />}
+                          {session.status === 'completed' && <CheckCircle className="w-3 h-3 ml-1" />}
+                          {session.status === 'cancelled' && <XCircle className="w-3 h-3 ml-1" />}
+                          {statusLabels[session.status]}
+                        </span>
+                      </td>
 
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Type */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-sm text-gray-300">
+                          <TypeIcon className="w-4 h-4 ml-1" />
+                          {typeLabels[session.type]}
+                        </div>
+                      </td>
+
+                      {/* Auctions Count */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-sm text-cyan-400">
+                          <Users className="w-4 h-4 ml-1" />
+                          {session.auctions_count}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <LoadingLink 
+                            href={`/admin/sessions/view/${session.id}`}
+                            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 p-2 rounded-lg transition-all duration-300"
+                          >
+                            <Eye size={16} />
+                          </LoadingLink>
+
+                          <LoadingLink
+                            href={`/admin/sessions/edit/${session.id}`}
+                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 p-2 rounded-lg transition-all duration-300"
+                          >
+                            <Edit size={16} />
+                          </LoadingLink>
+
+                          <button
+                            onClick={() => openDeleteModal(session)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={session.auctions_count > 0}
+                            title={session.auctions_count > 0 ? "لا يمكن حذف جلسة تحتوي على مزادات" : "حذف الجلسة"}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+
+                          <button className="text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-300">
+                            <MoreVertical size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -207,34 +437,49 @@ export default function SessionsListPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && sessionToDelete && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3 text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <Trash2 className="h-6 w-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center space-x-3 space-x-reverse mb-4">
+              <div className="bg-red-500/20 p-2 rounded-xl">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mt-4">
-                تأكيد حذف الجلسة
-              </h3>
-              <div className="mt-2 px-7 py-3">
-                <p className="text-sm text-gray-500">
-                  هل أنت متأكد من رغبتك في حذف جلسة "{sessionToDelete.name}"؟
-                </p>
+              <div>
+                <h2 className="text-lg font-semibold text-white">تأكيد حذف الجلسة</h2>
+                <p className="text-gray-400 text-sm">هل أنت متأكد من حذف هذه الجلسة؟</p>
               </div>
-              <div className="items-center px-4 py-3 flex justify-between">
-                <button
-                  onClick={closeDeleteModal}
-                  className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
-                >
-                  حذف
-                </button>
+            </div>
+            
+            <div className="bg-gray-700/30 rounded-xl p-4 mb-6">
+              <div className="text-white font-medium">{sessionToDelete.name}</div>
+              <div className="text-gray-400 text-sm mt-1">
+                التاريخ: {format(new Date(sessionToDelete.session_date), 'dd MMMM yyyy', { locale: ar })}
               </div>
+              <div className="text-gray-400 text-sm">
+                النوع: {typeLabels[sessionToDelete.type]}
+              </div>
+              {sessionToDelete.auctions_count > 0 && (
+                <div className="text-amber-400 text-sm mt-2 flex items-center">
+                  <AlertTriangle className="w-3 h-3 ml-1" />
+                  تحتوي على {sessionToDelete.auctions_count} مزاد
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 space-x-reverse">
+              <button
+                onClick={closeDeleteModal}
+                className="bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300 px-4 py-2 rounded-xl"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={sessionToDelete.auctions_count > 0}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                حذف الجلسة
+              </button>
             </div>
           </div>
         </div>
