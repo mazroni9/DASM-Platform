@@ -146,7 +146,7 @@ export default function UserMenu() {
           onClick: () => navigateTo("/admin"),
         },
         {
-          label: "لوحة المعارض",
+          label: "لوحة المعرض",
           icon: <Building2 className="w-4 h-4" />,
           onClick: () => navigateTo("/exhibitor"),
         }
