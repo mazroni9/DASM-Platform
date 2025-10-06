@@ -1,9 +1,26 @@
 'use client';
 
-import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
-import { Package, DollarSign, Truck, CheckCircle, MessageSquare } from 'lucide-react';
+import { 
+  Package, 
+  DollarSign, 
+  Truck, 
+  CheckCircle, 
+  MessageSquare,
+  Filter,
+  Search,
+  Calendar,
+  User,
+  TrendingUp,
+  CreditCard,
+  Clock,
+  Eye,
+  Sparkles,
+  ArrowLeft
+} from 'lucide-react';
 
 // Mock data for sales
 const mockSales = [
@@ -15,8 +32,12 @@ const mockSales = [
     salePrice: 1500,
     endDate: '2024-10-26',
     status: 'paid_pending_delivery',
-    buyerUsername: 'Ahmed Ali',
-    commissionRate: 0.10
+    buyerUsername: 'أحمد علي',
+    buyerRating: 4.8,
+    commissionRate: 0.10,
+    category: 'أجهزة مكتبية',
+    bidCount: 12,
+    saleDate: '2024-10-25'
   },
   {
     id: 's2',
@@ -26,8 +47,12 @@ const mockSales = [
     salePrice: 8500,
     endDate: '2024-10-25',
     status: 'completed',
-    buyerUsername: 'Fatima Saad',
-    commissionRate: 0.08
+    buyerUsername: 'فاطمة سعد',
+    buyerRating: 4.9,
+    commissionRate: 0.08,
+    category: 'سيرفرات',
+    bidCount: 8,
+    saleDate: '2024-10-24'
   },
   {
     id: 's3',
@@ -37,93 +62,456 @@ const mockSales = [
     salePrice: 3200,
     endDate: '2024-10-24',
     status: 'payment_pending',
-    buyerUsername: 'Khalid Fahd',
-    commissionRate: 0.12
+    buyerUsername: 'خالد فهد',
+    buyerRating: 4.5,
+    commissionRate: 0.12,
+    category: 'أجهزة طبية',
+    bidCount: 15,
+    saleDate: '2024-10-23'
+  },
+  {
+    id: 's4',
+    itemId: 'car001',
+    itemName: 'تويوتا كامري 2023',
+    imageUrl: '/car-placeholder.png',
+    salePrice: 55000,
+    endDate: '2024-10-23',
+    status: 'shipped',
+    buyerUsername: 'محمد عبدالله',
+    buyerRating: 4.7,
+    commissionRate: 0.05,
+    category: 'سيارات',
+    bidCount: 23,
+    saleDate: '2024-10-22'
   },
 ];
 
 // Helper function
-const getSellerStatusInfo = (status: string) => {
-  switch (status) {
-    case 'payment_pending':
-      return { text: 'بانتظار دفع المشتري', color: 'text-orange-600', icon: <DollarSign size={16} /> };
-    case 'paid_pending_delivery':
-      return { text: 'تم الدفع - بانتظار التسليم/الشحن', color: 'text-blue-600', icon: <Package size={16} /> };
-    case 'shipped':
-      return { text: 'تم الشحن', color: 'text-cyan-600', icon: <Truck size={16} /> };
-    case 'delivered_pending_confirmation':
-      return { text: 'تم التسليم - بانتظار تأكيد المشتري', color: 'text-purple-600', icon: <Truck size={16} /> };
-    case 'completed':
-      return { text: 'اكتملت (تم تحويل المبلغ)', color: 'text-green-600', icon: <CheckCircle size={16} /> };
-    default:
-      return { text: status, color: 'text-gray-500', icon: null };
-  }
+const getSellerStatusConfig = (status: string) => {
+  const statusMap = {
+    'payment_pending': { 
+      text: 'بانتظار دفع المشتري', 
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/20',
+      border: 'border-amber-500/30',
+      icon: Clock
+    },
+    'paid_pending_delivery': { 
+      text: 'تم الدفع - بانتظار التسليم', 
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/20',
+      border: 'border-blue-500/30',
+      icon: Package
+    },
+    'shipped': { 
+      text: 'تم الشحن', 
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-500/20',
+      border: 'border-cyan-500/30',
+      icon: Truck
+    },
+    'delivered_pending_confirmation': { 
+      text: 'بانتظار تأكيد المشتري', 
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/20',
+      border: 'border-purple-500/30',
+      icon: Truck
+    },
+    'completed': { 
+      text: 'مكتملة (تم التحويل)', 
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/20',
+      border: 'border-emerald-500/30',
+      icon: CheckCircle
+    }
+  };
+  
+  return statusMap[status] || { 
+    text: status, 
+    color: 'text-gray-400',
+    bg: 'bg-gray-500/20',
+    border: 'border-gray-500/30',
+    icon: Package
+  };
 };
 
 export default function MySalesPage() {
-  const [sales, setSales] = useState([]);
+  const [sales, setSales] = useState(mockSales);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Filter sales
+  const filteredSales = useMemo(() => {
+    return sales.filter(sale => {
+      const matchesSearch = sale.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           sale.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || sale.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || sale.category === categoryFilter;
+      
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [sales, searchTerm, statusFilter, categoryFilter]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalRevenue = sales.reduce((sum, sale) => sum + sale.salePrice, 0);
+    const totalCommission = sales.reduce((sum, sale) => sum + (sale.salePrice * sale.commissionRate), 0);
+    const netRevenue = totalRevenue - totalCommission;
+    
+    return {
+      total: sales.length,
+      completed: sales.filter(s => s.status === 'completed').length,
+      pending: sales.filter(s => s.status === 'payment_pending').length,
+      totalRevenue: totalRevenue,
+      netRevenue: netRevenue,
+      totalCommission: totalCommission
+    };
+  }, [sales]);
 
   const handleArrangeDelivery = (saleId: string) => {
-    alert('يمكنك الآن التواصل مع المشتري (محاكاة).');
-    setSales(sales.map(s => s.id === saleId ? { ...s, status: 'shipped' } : s));
+    // Simulate delivery arrangement
+    setSales(sales.map(s => 
+      s.id === saleId ? { ...s, status: 'shipped' } : s
+    ));
   };
 
   const handleConfirmShipment = (saleId: string) => {
-    alert('تم تأكيد الشحن (محاكاة).');
-    setSales(sales.map(s => s.id === saleId ? { ...s, status: 'delivered_pending_confirmation' } : s));
+    // Simulate shipment confirmation
+    setSales(sales.map(s => 
+      s.id === saleId ? { ...s, status: 'delivered_pending_confirmation' } : s
+    ));
+  };
+
+  const getCategories = () => {
+    return [...new Set(sales.map(s => s.category))];
   };
 
   return (
-    <main className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen" dir="rtl">
-      
-      {/* زر العودة إلى لوحة التحكم */}
-      <BackToDashboard />
+    <div className="space-y-6" dir="rtl">
+      {/* Header Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  مبيعاتي <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">({stats.total})</span>
+                </h1>
+                <p className="text-gray-400 text-sm mt-1">إدارة وتتبع جميع مبيعاتك في المزادات</p>
+              </div>
+            </div>
 
-      <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">مبيعاتي</h1>
-
-      {sales.length === 0 ? (
-        <p className="text-center text-gray-500">لم تقم ببيع أي عناصر بعد.</p>
-      ) : (
-        <div className="space-y-6">
-          {sales.map((sale) => {
-            const statusInfo = getSellerStatusInfo(sale.status);
-            const netAmount = sale.salePrice * (1 - sale.commissionRate);
-            return (
-              <div key={sale.id} className="bg-white p-4 sm:p-6 rounded-lg shadow border border-gray-200 flex flex-col sm:flex-row gap-4">
-                {/* Image */}
-                <div className="w-full sm:w-32 h-32 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
-                  <img src={sale.imageUrl} alt={sale.itemName} className="w-full h-full object-contain p-2" onError={(e) => e.currentTarget.src='/placeholder-icon.png'} />
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-blue-500/20 rounded">
+                    <Package className="w-3 h-3 text-blue-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">المجموع</span>
                 </div>
+                <p className="text-lg font-bold text-white mt-1">{stats.total}</p>
+              </div>
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-emerald-500/20 rounded">
+                    <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">مكتملة</span>
+                </div>
+                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.completed}</p>
+              </div>
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-amber-500/20 rounded">
+                    <Clock className="w-3 h-3 text-amber-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">بانتظار الدفع</span>
+                </div>
+                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
+              </div>
+              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-cyan-500/20 rounded">
+                    <DollarSign className="w-3 h-3 text-cyan-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">صافي الإيرادات</span>
+                </div>
+                <p className="text-lg font-bold text-cyan-400 mt-1">
+                  {stats.netRevenue.toLocaleString('ar-EG')}
+                </p>
+              </div>
+            </div>
 
-                {/* Details */}
-                <div className="flex-grow space-y-2">
-                  <h2 className="text-lg font-semibold text-gray-800">{sale.itemName}</h2>
-                  <p className="text-sm text-gray-500">تاريخ البيع: {sale.endDate}</p>
-                  <p className="text-sm text-gray-500">المشتري: {sale.buyerUsername}</p>
-                  <p className="text-sm font-medium">سعر البيع: <span className="text-blue-600">{sale.salePrice.toLocaleString()} ريال</span></p>
-                  <p className="text-sm font-medium">المبلغ الصافي المستحق (تقريبي): <span className="text-green-600">{netAmount.toLocaleString()} ريال</span></p>
-                  <div className={`text-sm font-medium inline-flex items-center gap-1 px-2 py-1 rounded ${statusInfo.color.replace('text-', 'bg-').replace('-600', '-100')}`}>
-                    {statusInfo.icon}
-                    <span className={statusInfo.color}>{statusInfo.text}</span>
+            {/* Revenue Breakdown */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/30">
+              <div className="text-sm">
+                <span className="text-gray-400">إجمالي المبيعات: </span>
+                <span className="text-white font-medium">{stats.totalRevenue.toLocaleString('ar-EG')} ريال</span>
+              </div>
+              <div className="text-sm">
+                <span className="text-gray-400">عمولة المنصة: </span>
+                <span className="text-rose-400 font-medium">-{stats.totalCommission.toLocaleString('ar-EG')} ريال</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <LoadingLink
+              href="/dashboard/mycars"
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl border border-green-400/30 hover:scale-105 transition-all duration-300 group"
+            >
+              <Package className="w-4 h-4 text-white transition-transform group-hover:scale-110" />
+              <span className="text-white font-medium">إضافة عنصر جديد</span>
+            </LoadingLink>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Filters and Search Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="ابحث في المبيعات..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+            >
+              <option value="all">جميع الحالات</option>
+              <option value="payment_pending">بانتظار الدفع</option>
+              <option value="paid_pending_delivery">تم الدفع</option>
+              <option value="shipped">تم الشحن</option>
+              <option value="delivered_pending_confirmation">بانتظار التأكيد</option>
+              <option value="completed">مكتملة</option>
+            </select>
+
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+            >
+              <option value="all">جميع الفئات</option>
+              {getCategories().map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Filter className="w-4 h-4" />
+            <span>عرض {filteredSales.length} من {sales.length} عملية بيع</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Sales List */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="space-y-4"
+      >
+        {filteredSales.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md mx-auto">
+              <TrendingUp className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-400 mb-2">
+                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' 
+                  ? 'لا توجد نتائج' 
+                  : 'لا توجد مبيعات'
+                }
+              </h3>
+              <p className="text-gray-500 text-sm mb-4">
+                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
+                  ? 'لم نتمكن من العثور على مبيعات تطابق معايير البحث'
+                  : 'لم تقم ببيع أي عناصر في المزادات بعد'
+                }
+              </p>
+              {(searchTerm || statusFilter !== 'all' || categoryFilter !== 'all') ? (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                    setCategoryFilter('all');
+                  }}
+                  className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                >
+                  إعادة تعيين الفلتر
+                </button>
+              ) : (
+                <LoadingLink
+                  href="/dashboard/mycars"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white hover:scale-105 transition-all duration-300"
+                >
+                  <Package className="w-4 h-4" />
+                  إضافة أول عنصر للبيع
+                </LoadingLink>
+              )}
+            </div>
+          </div>
+        ) : (
+          filteredSales.map((sale, index) => {
+            const statusConfig = getSellerStatusConfig(sale.status);
+            const StatusIcon = statusConfig.icon;
+            const netAmount = sale.salePrice * (1 - sale.commissionRate);
+            const commissionAmount = sale.salePrice * sale.commissionRate;
+            
+            return (
+              <motion.div
+                key={sale.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 hover:border-gray-700/70 hover:shadow-xl transition-all duration-300 group"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                  {/* Product Image */}
+                  <div className="flex-shrink-0">
+                    <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
+                      <img 
+                        src={sale.imageUrl} 
+                        alt={sale.itemName}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "https://via.placeholder.com/200x200?text=No+Image";
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors mb-2">
+                          {sale.itemName}
+                        </h3>
+                        
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-400 mb-3">
+                          <div className="flex items-center gap-1">
+                            <Package className="w-3 h-3" />
+                            <span>{sale.category}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>بيعت في {sale.saleDate}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            <span>{sale.bidCount} مزايدة</span>
+                          </div>
+                        </div>
+
+                        {/* Buyer Info */}
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <User className="w-4 h-4" />
+                            <span>المشتري:</span>
+                            <span className="text-blue-300">{sale.buyerUsername}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-amber-400">
+                            <span>⭐ {sale.buyerRating}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-start lg:items-end gap-3">
+                        {/* Price Info */}
+                        <div className="text-right">
+                          <div className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
+                            {sale.salePrice.toLocaleString('ar-EG')} ريال
+                          </div>
+                          <div className="text-sm text-gray-400 mt-1">
+                            صافي: <span className="text-emerald-400">{netAmount.toLocaleString('ar-EG')} ريال</span>
+                          </div>
+                          <div className="text-xs text-rose-400">
+                            عمولة: -{commissionAmount.toLocaleString('ar-EG')} ريال
+                          </div>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        <div className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
+                          statusConfig.bg,
+                          statusConfig.border,
+                          statusConfig.color
+                        )}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusConfig.text}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-800/50">
+                      {sale.status === 'paid_pending_delivery' && (
+                        <button 
+                          onClick={() => handleArrangeDelivery(sale.id)}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30 hover:bg-indigo-500/30 transition-all duration-300 group/delivery"
+                        >
+                          <MessageSquare className="w-4 h-4 transition-transform group-hover/delivery:scale-110" />
+                          <span className="font-medium">تواصل مع المشتري للتسليم</span>
+                        </button>
+                      )}
+                      
+                      {sale.status === 'shipped' && (
+                        <button 
+                          onClick={() => handleConfirmShipment(sale.id)}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/30 transition-all duration-300 group/ship"
+                        >
+                          <Truck className="w-4 h-4 transition-transform group-hover/ship:scale-110" />
+                          <span className="font-medium">تأكيد الشحن</span>
+                        </button>
+                      )}
+
+                      <LoadingLink
+                        href={`/auctions/item/${sale.itemId}`}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300 group/view"
+                      >
+                        <Eye className="w-4 h-4 transition-transform group-hover/view:scale-110" />
+                        <span className="font-medium">عرض تفاصيل العنصر</span>
+                      </LoadingLink>
+
+                      <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-500/20 text-gray-300 rounded-lg border border-gray-500/30 hover:bg-gray-500/30 transition-all duration-300 group/contact">
+                        <MessageSquare className="w-4 h-4 transition-transform group-hover/contact:scale-110" />
+                        <span className="font-medium">مراسلة المشتري</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div className="flex flex-col justify-start items-stretch sm:items-end gap-2 pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-r sm:pr-4 sm:w-52">
-                  {sale.status === 'paid_pending_delivery' && (
-                    <button onClick={() => handleArrangeDelivery(sale.id)} className="w-full sm:w-auto text-center bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold py-2 px-4 rounded transition">
-                      <MessageSquare size={16} className="inline ml-1" /> تواصل مع المشتري للتسليم
-                    </button>
-                  )}
-                  <LoadingLink href={`/auctions/item/${sale.itemId}`} className="w-full sm:w-auto text-center text-sky-600 hover:text-sky-800 text-sm font-medium py-2 px-4 rounded border border-sky-200 hover:bg-sky-50 transition">
-                    عرض تفاصيل العنصر
-                  </LoadingLink>
-                </div>
-              </div>
+              </motion.div>
             );
-          })}
-        </div>
-      )}
-    </main>
+          })
+        )}
+      </motion.div>
+    </div>
   );
 }

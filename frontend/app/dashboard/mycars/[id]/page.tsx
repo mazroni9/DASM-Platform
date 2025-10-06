@@ -1,68 +1,103 @@
-"use client";
+'use client';
 
-import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Edit, Save, X, Upload, Trash2 } from "lucide-react";
+    Loader2, 
+    Edit, 
+    Save, 
+    X, 
+    Upload, 
+    Trash2,
+    ArrowRight,
+    Car,
+    Calendar,
+    Gauge,
+    Settings,
+    Palette,
+    FileText,
+    DollarSign,
+    CheckCircle,
+    Clock,
+    AlertCircle,
+    Image as ImageIcon
+} from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
-import { Car } from "@/types/types";
-
+import { Car as CarType } from "@/types/types";
 
 export default function CarDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [editing, setEditing] = useState(false);
-    const [car, setCar] = useState<Car | null>(null);
-    const [editedCar, setEditedCar] = useState<Partial<Car>>({});
+    const [car, setCar] = useState<CarType | null>(null);
+    const [editedCar, setEditedCar] = useState<Partial<CarType>>({});
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const { user, isLoggedIn } = useAuth();
     const router = useLoadingRouter();
     
     const params = useParams();
     const carId = params.id as string;
 
-    const getAuctionStatusTextAndColor = (status: string) => {
-        switch (status) {
-            case "pending":
-                return {
-                    text: "في انتظار المراجعة",
-                    color: "text-yellow-600 bg-yellow-100",
-                };
-            case "approved":
-                return { text: "معتمد", color: "text-green-600 bg-green-100" };
-            case "rejected":
-                return { text: "مرفوض", color: "text-red-600 bg-red-100" };
-            case "available":
-                return {
-                    text: "متوفر للمزاد",
-                    color: "text-blue-600 bg-blue-100",
-                };
-            case "in_auction":
-                return {
-                    text: "في المزاد",
-                    color: "text-orange-600 bg-orange-100",
-                };
-            case "sold":
-                return { text: "مباع", color: "text-gray-600 bg-gray-100" };
-            default:
-                return { text: status, color: "text-gray-500 bg-gray-100" };
-        }
+    const getAuctionStatusConfig = (status: string) => {
+        const statusMap = {
+            "pending": {
+                text: "في انتظار المراجعة",
+                color: "text-amber-400",
+                bg: "bg-amber-500/20",
+                border: "border-amber-500/30",
+                icon: Clock
+            },
+            "approved": { 
+                text: "معتمد", 
+                color: "text-emerald-400",
+                bg: "bg-emerald-500/20", 
+                border: "border-emerald-500/30",
+                icon: CheckCircle
+            },
+            "rejected": { 
+                text: "مرفوض", 
+                color: "text-rose-400",
+                bg: "bg-rose-500/20", 
+                border: "border-rose-500/30",
+                icon: AlertCircle
+            },
+            "available": {
+                text: "متوفر للمزاد",
+                color: "text-blue-400",
+                bg: "bg-blue-500/20",
+                border: "border-blue-500/30",
+                icon: DollarSign
+            },
+            "in_auction": {
+                text: "في المزاد",
+                color: "text-purple-400",
+                bg: "bg-purple-500/20",
+                border: "border-purple-500/30",
+                icon: Gauge
+            },
+            "sold": { 
+                text: "مباع", 
+                color: "text-gray-400",
+                bg: "bg-gray-500/20", 
+                border: "border-gray-500/30",
+                icon: CheckCircle
+            }
+        };
+        
+        return statusMap[status] || { 
+            text: status, 
+            color: "text-gray-400",
+            bg: "bg-gray-500/20", 
+            border: "border-gray-500/30",
+            icon: FileText
+        };
     };
 
     // Verify user is authenticated
@@ -102,7 +137,19 @@ export default function CarDetailsPage() {
         fetchCarDetails();
     }, [isLoggedIn, carId, router]);
 
-    const handleInputChange = (field: keyof Car, value: any) => {
+    // Handle image previews
+    useEffect(() => {
+        if (selectedImages.length > 0) {
+            const previews = selectedImages.map(file => URL.createObjectURL(file));
+            setImagePreviews(previews);
+            
+            return () => {
+                previews.forEach(url => URL.revokeObjectURL(url));
+            };
+        }
+    }, [selectedImages]);
+
+    const handleInputChange = (field: keyof CarType, value: any) => {
         setEditedCar((prev) => ({
             ...prev,
             [field]: value,
@@ -115,6 +162,12 @@ export default function CarDetailsPage() {
             setSelectedImages(filesArray);
         }
     };
+
+    const removeSelectedImage = (index: number) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+        setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSave = async () => {
         if (!car) return;
 
@@ -129,11 +182,13 @@ export default function CarDetailsPage() {
                     key !== "id" &&
                     key !== "created_at" &&
                     key !== "updated_at" &&
-                    editedCar[key as keyof Car] !== undefined
+                    editedCar[key as keyof CarType] !== undefined
                 ) {
-                    formData.append(key, String(editedCar[key as keyof Car]));
+                    formData.append(key, String(editedCar[key as keyof CarType]));
                 }
-            }); // Add images if selected
+            });
+
+            // Add images if selected
             if (selectedImages.length > 0) {
                 selectedImages.forEach((image) => {
                     formData.append("images[]", image);
@@ -154,6 +209,7 @@ export default function CarDetailsPage() {
                 setEditedCar(response.data.data);
                 setEditing(false);
                 setSelectedImages([]);
+                setImagePreviews([]);
                 toast.success("تم تحديث بيانات السيارة بنجاح");
             }
         } catch (error: any) {
@@ -176,505 +232,514 @@ export default function CarDetailsPage() {
     const handleCancel = () => {
         setEditedCar(car || {});
         setSelectedImages([]);
+        setImagePreviews([]);
         setEditing(false);
     };
 
-
-
-    if (!car) {
+    if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
+            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                        السيارة غير موجودة
-                    </h2>
-                    <LoadingLink
-                        href="/dashboard/mycars"
-                        className="text-blue-600 hover:underline"
-                    >
-                        العودة إلى قائمة السيارات
-                    </LoadingLink>
+                    <div className="relative w-16 h-16 mx-auto mb-4">
+                        <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
+                        <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+                    </div>
+                    <p className="text-lg text-gray-400 font-medium">جاري تحميل بيانات السيارة...</p>
                 </div>
             </div>
         );
     }
 
-    const statusInfo = getAuctionStatusTextAndColor(car.auction_status);
-    const canEdit = !["scheduled", "active", "in_auction"].includes(
-        car.auction_status
-    );
+    if (!car) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
+                <div className="text-center">
+                    <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md">
+                        <AlertCircle className="w-16 h-16 text-rose-400 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-white mb-4">السيارة غير موجودة</h2>
+                        <LoadingLink
+                            href="/dashboard/mycars"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white hover:scale-105 transition-all duration-300"
+                        >
+                            العودة إلى قائمة السيارات
+                            <ArrowRight className="w-4 h-4" />
+                        </LoadingLink>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const statusConfig = getAuctionStatusConfig(car.auction_status);
+    const StatusIcon = statusConfig.icon;
+    const canEdit = !["scheduled", "active", "in_auction"].includes(car.auction_status);
 
     return (
-        <main
-            className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen"
-            dir="rtl"
-        >
-            <BackToDashboard />
+        <div className="space-y-6" dir="rtl">
+            {/* Header Section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+            >
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                                <Car className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">
+                                    {car.make} {car.model} - {car.year}
+                                </h1>
+                                <p className="text-gray-400 text-sm mt-1">تفاصيل السيارة المعروضة</p>
+                            </div>
+                        </div>
 
-            <div className="max-w-6xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold text-gray-800">
-                        تفاصيل السيارة - {car.make} {car.model} {car.year}
-                    </h1>
+                        <div className="flex flex-wrap gap-3">
+                            <div className={cn(
+                                "flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-sm",
+                                statusConfig.bg,
+                                statusConfig.border,
+                                statusConfig.color
+                            )}>
+                                <StatusIcon className="w-4 h-4" />
+                                <span className="text-sm font-medium">{statusConfig.text}</span>
+                            </div>
+                            
+                            {car.auctions?.[0]?.control_room_approved && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/20 text-emerald-300 rounded-lg border border-emerald-500/30 backdrop-blur-sm">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span className="text-sm font-medium">معتمدة للمزاد</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         {canEdit && !editing && (
-                            <Button
+                            <button
                                 onClick={() => setEditing(true)}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 px-4 py-3 bg-amber-500/20 text-amber-300 rounded-xl border border-amber-500/30 hover:bg-amber-500/30 hover:scale-105 transition-all duration-300"
                             >
-                                <Edit size={16} />
-                                تعديل
-                            </Button>
+                                <Edit className="w-4 h-4" />
+                                <span className="font-medium">تعديل البيانات</span>
+                            </button>
                         )}
 
                         {editing && (
                             <>
-                                <Button
+                                <button
                                     onClick={handleSave}
                                     disabled={saving}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 px-4 py-3 bg-emerald-500/20 text-emerald-300 rounded-xl border border-emerald-500/30 hover:bg-emerald-500/30 hover:scale-105 transition-all duration-300 disabled:opacity-50"
                                 >
                                     {saving ? (
-                                        <Loader2
-                                            size={16}
-                                            className="animate-spin"
-                                        />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
-                                        <Save size={16} />
+                                        <Save className="w-4 h-4" />
                                     )}
-                                    حفظ
-                                </Button>
-                                <Button
+                                    <span className="font-medium">حفظ التغييرات</span>
+                                </button>
+                                <button
                                     onClick={handleCancel}
-                                    variant="outline"
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 px-4 py-3 bg-gray-500/20 text-gray-300 rounded-xl border border-gray-500/30 hover:bg-gray-500/30 hover:scale-105 transition-all duration-300"
                                 >
-                                    <X size={16} />
-                                    إلغاء
-                                </Button>
+                                    <X className="w-4 h-4" />
+                                    <span className="font-medium">إلغاء</span>
+                                </button>
                             </>
                         )}
+
+                        <LoadingLink
+                            href="/dashboard/mycars"
+                            className="flex items-center gap-2 px-4 py-3 bg-blue-500/20 text-blue-300 rounded-xl border border-blue-500/30 hover:bg-blue-500/30 hover:scale-105 transition-all duration-300"
+                        >
+                            <ArrowRight className="w-4 h-4" />
+                            <span className="font-medium">العودة للقائمة</span>
+                        </LoadingLink>
                     </div>
                 </div>
+            </motion.div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Car Images */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>صور السيارة</CardTitle>
-                        </CardHeader>
-                        <CardContent>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Car Images Section */}
+                <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+                >
+                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-purple-400" />
+                        معرض الصور
+                    </h2>
+
+                    <div className="space-y-4">
+                        {car.images && car.images.length > 0 ? (
                             <div className="grid grid-cols-1 gap-4">
-                                {car.images && car.images.length > 0 ? (
-                                    car.images.map((image, index) => (
-                                        <div key={index} className="relative">
-                                            <img
-                                                src={image}
-                                                alt={`${car.make} ${
-                                                    car.model
-                                                } - صورة ${index + 1}`}
-                                                className="w-full h-64 object-cover rounded-lg"
-                                                onError={(e) => {
-                                                    e.currentTarget.onerror =
-                                                        null;
-                                                    e.currentTarget.src =
-                                                        "https://via.placeholder.com/400x300?text=No+Image";
-                                                }}
-                                            />
+                                {car.images.map((image, index) => (
+                                    <div key={index} className="relative group">
+                                        <img
+                                            src={image}
+                                            alt={`${car.make} ${car.model} - صورة ${index + 1}`}
+                                            className="w-full h-64 object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                                            onError={(e) => {
+                                                e.currentTarget.onerror = null;
+                                                e.currentTarget.src = "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl flex items-center justify-center">
+                                            <span className="text-white text-sm">صورة {index + 1}</span>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                                        <span className="text-gray-500">
-                                            لا توجد صور متاحة
-                                        </span>
                                     </div>
-                                )}
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <ImageIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                                <p className="text-gray-400">لا توجد صور متاحة للسيارة</p>
+                            </div>
+                        )}
 
-                                {editing && (
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                                        <label
-                                            htmlFor="images"
-                                            className="cursor-pointer flex flex-col items-center"
-                                        >
-                                            <Upload
-                                                size={32}
-                                                className="text-gray-400 mb-2"
-                                            />
-                                            <span className="text-sm text-gray-600">
-                                                اختر صور جديدة للسيارة
+                        {editing && (
+                            <div className="border-2 border-dashed border-gray-700/50 rounded-xl p-6 transition-all duration-300 hover:border-purple-500/50">
+                                <label className="cursor-pointer flex flex-col items-center">
+                                    <Upload className="w-8 h-8 text-gray-400 mb-3" />
+                                    <span className="text-gray-300 font-medium mb-2">اختر صور جديدة</span>
+                                    <span className="text-gray-500 text-sm text-center">
+                                        يمكنك اختيار عدة صور مرة واحدة
+                                        <br />
+                                        الصور المدعومة: JPG, PNG, GIF
+                                    </span>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageSelect}
+                                    />
+                                </label>
+
+                                {selectedImages.length > 0 && (
+                                    <div className="mt-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-gray-300 font-medium">
+                                                الصور المختارة ({selectedImages.length})
                                             </span>
-                                            <input
-                                                id="images"
-                                                type="file"
-                                                multiple
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleImageSelect}
-                                            />
-                                        </label>
-                                        {selectedImages.length > 0 && (
-                                            <div className="mt-2">
-                                                <p className="text-sm text-gray-600">
-                                                    تم اختيار{" "}
-                                                    {selectedImages.length} صورة
-                                                </p>
-                                            </div>
-                                        )}
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedImages([]);
+                                                    setImagePreviews([]);
+                                                }}
+                                                className="text-rose-400 hover:text-rose-300 transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {imagePreviews.map((preview, index) => (
+                                                <div key={index} className="relative group">
+                                                    <img
+                                                        src={preview}
+                                                        alt={`Preview ${index + 1}`}
+                                                        className="w-full h-20 object-cover rounded-lg"
+                                                    />
+                                                    <button
+                                                        onClick={() => removeSelectedImage(index)}
+                                                        className="absolute -top-2 -left-2 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                                    >
+                                                        <X className="w-3 h-3 text-white" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
-                        </CardContent>
-                    </Card>
+                        )}
+                    </div>
+                </motion.div>
 
-                    {/* Car Details */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span>تفاصيل السيارة</span>
-                                <span
-                                    className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}
-                                >
-                                    {statusInfo.text}
-                                </span>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="make">الماركة</Label>
-                                    {editing ? (
-                                        <Input
-                                            id="make"
-                                            value={editedCar.make || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "make",
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.make}
-                                        </p>
-                                    )}
-                                </div>
+                {/* Car Details Section */}
+                <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-6"
+                >
+                    {/* Basic Information */}
+                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-400" />
+                            المعلومات الأساسية
+                        </h2>
 
-                                <div>
-                                    <Label htmlFor="model">الموديل</Label>
-                                    {editing ? (
-                                        <Input
-                                            id="model"
-                                            value={editedCar.model || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "model",
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.model}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="year">سنة الصنع</Label>
-                                    {editing ? (
-                                        <Input
-                                            id="year"
-                                            type="number"
-                                            value={editedCar.year || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "year",
-                                                    parseInt(e.target.value)
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.year}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="color">اللون</Label>
-                                    {editing ? (
-                                        <Input
-                                            id="color"
-                                            value={editedCar.color || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "color",
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.color || "غير محدد"}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="odometer">
-                                        العداد (كم)
-                                    </Label>
-                                    {editing ? (
-                                        <Input
-                                            id="odometer"
-                                            type="number"
-                                            value={editedCar.odometer || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "odometer",
-                                                    parseInt(e.target.value)
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.odometer?.toLocaleString(
-                                                "ar-EG"
-                                            )}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="engine">المحرك</Label>
-                                    {editing ? (
-                                        <Input
-                                            id="engine"
-                                            value={editedCar.engine || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "engine",
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.engine || "غير محدد"}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="transmission">
-                                        ناقل الحركة
-                                    </Label>
-                                    {editing ? (
-                                        <Select
-                                            value={editedCar.transmission || ""}
-                                            onValueChange={(value) =>
-                                                handleInputChange(
-                                                    "transmission",
-                                                    value
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="اختر نوع ناقل الحركة" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="automatic">
-                                                    أوتوماتيك
-                                                </SelectItem>
-                                                <SelectItem value="manual">
-                                                    يدوي
-                                                </SelectItem>
-                                                <SelectItem value="cvt">
-                                                    CVT
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.transmission === "automatic"
-                                                ? "أوتوماتيك"
-                                                : car.transmission === "manual"
-                                                ? "يدوي"
-                                                : car.transmission === "cvt"
-                                                ? "CVT"
-                                                : "غير محدد"}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="condition">الحالة</Label>
-                                    {editing ? (
-                                        <Select
-                                            value={editedCar.condition || ""}
-                                            onValueChange={(value) =>
-                                                handleInputChange(
-                                                    "condition",
-                                                    value
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="اختر حالة السيارة" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="excellent">
-                                                    ممتازة
-                                                </SelectItem>
-                                                <SelectItem value="good">
-                                                    جيدة
-                                                </SelectItem>
-                                                <SelectItem value="fair">
-                                                    متوسطة
-                                                </SelectItem>
-                                                <SelectItem value="poor">
-                                                    ضعيفة
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.condition === "excellent"
-                                                ? "ممتازة"
-                                                : car.condition === "good"
-                                                ? "جيدة"
-                                                : car.condition === "fair"
-                                                ? "متوسطة"
-                                                : car.condition === "poor"
-                                                ? "ضعيفة"
-                                                : "غير محدد"}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="vin">
-                                        رقم الهيكل (VIN)
-                                    </Label>
-                                    {editing ? (
-                                        <Input
-                                            id="vin"
-                                            value={editedCar.vin || ""}
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "vin",
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="text-gray-800 font-medium">
-                                            {car.vin}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="evaluation_price">
-                                        سعر التقييم (ريال)
-                                    </Label>
-                                    {editing ? (
-                                        <Input
-                                            id="evaluation_price"
-                                            type="number"
-                                            step="0.01"
-                                            value={
-                                                editedCar.evaluation_price || ""
-                                            }
-                                            onChange={(e) =>
-                                                handleInputChange(
-                                                    "evaluation_price",
-                                                    parseFloat(e.target.value)
-                                                )
-                                            }
-                                        />
-                                    ) : (
-                                        <p className="font-medium text-blue-600">
-                                            {car.evaluation_price?.toLocaleString(
-                                                "ar-EG"
-                                            )}{" "}
-                                            ريال
-                                        </p>
-                                    )}
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Make */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">الماركة</label>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={editedCar.make || ""}
+                                        onChange={(e) => handleInputChange("make", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.make}</p>
+                                )}
                             </div>
 
+                            {/* Model */}
                             <div>
-                                <Label htmlFor="description">الوصف</Label>
+                                <label className="text-sm text-gray-400 mb-2 block">الموديل</label>
                                 {editing ? (
-                                    <Textarea
-                                        id="description"
+                                    <input
+                                        type="text"
+                                        value={editedCar.model || ""}
+                                        onChange={(e) => handleInputChange("model", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.model}</p>
+                                )}
+                            </div>
+
+                            {/* Year */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">سنة الصنع</label>
+                                {editing ? (
+                                    <input
+                                        type="number"
+                                        value={editedCar.year || ""}
+                                        onChange={(e) => handleInputChange("year", parseInt(e.target.value))}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.year}</p>
+                                )}
+                            </div>
+
+                            {/* Color */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">اللون</label>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={editedCar.color || ""}
+                                        onChange={(e) => handleInputChange("color", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.color || "غير محدد"}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Technical Specifications */}
+                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Settings className="w-5 h-5 text-purple-400" />
+                            المواصفات الفنية
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Odometer */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">العداد (كم)</label>
+                                {editing ? (
+                                    <input
+                                        type="number"
+                                        value={editedCar.odometer || ""}
+                                        onChange={(e) => handleInputChange("odometer", parseInt(e.target.value))}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.odometer?.toLocaleString("ar-EG")}</p>
+                                )}
+                            </div>
+
+                            {/* Engine */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">المحرك</label>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={editedCar.engine || ""}
+                                        onChange={(e) => handleInputChange("engine", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.engine || "غير محدد"}</p>
+                                )}
+                            </div>
+
+                            {/* Transmission */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">ناقل الحركة</label>
+                                {editing ? (
+                                    <select
+                                        value={editedCar.transmission || ""}
+                                        onChange={(e) => handleInputChange("transmission", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    >
+                                        <option value="">اختر نوع ناقل الحركة</option>
+                                        <option value="automatic">أوتوماتيك</option>
+                                        <option value="manual">يدوي</option>
+                                        <option value="cvt">CVT</option>
+                                    </select>
+                                ) : (
+                                    <p className="text-white font-medium">
+                                        {car.transmission === "automatic" ? "أوتوماتيك" :
+                                         car.transmission === "manual" ? "يدوي" :
+                                         car.transmission === "cvt" ? "CVT" : "غير محدد"}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Condition */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">الحالة</label>
+                                {editing ? (
+                                    <select
+                                        value={editedCar.condition || ""}
+                                        onChange={(e) => handleInputChange("condition", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    >
+                                        <option value="">اختر حالة السيارة</option>
+                                        <option value="excellent">ممتازة</option>
+                                        <option value="good">جيدة</option>
+                                        <option value="fair">متوسطة</option>
+                                        <option value="poor">ضعيفة</option>
+                                    </select>
+                                ) : (
+                                    <p className="text-white font-medium">
+                                        {car.condition === "excellent" ? "ممتازة" :
+                                         car.condition === "good" ? "جيدة" :
+                                         car.condition === "fair" ? "متوسطة" :
+                                         car.condition === "poor" ? "ضعيفة" : "غير محدد"}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* VIN */}
+                            <div className="md:col-span-2">
+                                <label className="text-sm text-gray-400 mb-2 block">رقم الهيكل (VIN)</label>
+                                {editing ? (
+                                    <input
+                                        type="text"
+                                        value={editedCar.vin || ""}
+                                        onChange={(e) => handleInputChange("vin", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-white font-medium">{car.vin}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Price & Description */}
+                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <DollarSign className="w-5 h-5 text-amber-400" />
+                            السعر والوصف
+                        </h2>
+
+                        <div className="space-y-4">
+                            {/* Evaluation Price */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">سعر التقييم (ريال)</label>
+                                {editing ? (
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editedCar.evaluation_price || ""}
+                                        onChange={(e) => handleInputChange("evaluation_price", parseFloat(e.target.value))}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                    />
+                                ) : (
+                                    <p className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
+                                        {car.evaluation_price?.toLocaleString("ar-EG")} ريال
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="text-sm text-gray-400 mb-2 block">الوصف</label>
+                                {editing ? (
+                                    <textarea
                                         rows={4}
                                         value={editedCar.description || ""}
-                                        onChange={(e) =>
-                                            handleInputChange(
-                                                "description",
-                                                e.target.value
-                                            )
-                                        }
+                                        onChange={(e) => handleInputChange("description", e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors resize-none"
                                         placeholder="اكتب وصفاً مفصلاً للسيارة..."
                                     />
                                 ) : (
-                                    <p className="text-gray-800 leading-relaxed">
+                                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
                                         {car.description || "لا يوجد وصف متاح"}
                                     </p>
                                 )}
                             </div>
-
-                            {!canEdit && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <p className="text-yellow-800 text-sm">
-                                        لا يمكن تعديل بيانات السيارة لأنها في
-                                        حالة مزاد نشط أو مجدول
-                                    </p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Creation and Update Info */}
-                <Card className="mt-6">
-                    <CardContent className="pt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                            <div>
-                                <strong>تاريخ الإضافة:</strong>{" "}
-                                {new Date(car.created_at).toLocaleDateString(
-                                    "ar-EG",
-                                    {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    }
-                                )}
-                            </div>
-                            <div>
-                                <strong>آخر تحديث:</strong>{" "}
-                                {new Date(car.updated_at).toLocaleDateString(
-                                    "ar-EG",
-                                    {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    }
-                                )}
-                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </motion.div>
             </div>
-        </main>
+
+            {/* Timestamps */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-gray-400">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                            <strong>تاريخ الإضافة:</strong>{" "}
+                            {new Date(car.created_at).toLocaleDateString("ar-EG", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-400">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                            <strong>آخر تحديث:</strong>{" "}
+                            {new Date(car.updated_at).toLocaleDateString("ar-EG", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            })}
+                        </span>
+                    </div>
+                </div>
+            </motion.div>
+
+            {!canEdit && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-amber-500/20 border border-amber-500/30 rounded-2xl p-4 backdrop-blur-sm"
+                >
+                    <div className="flex items-center gap-2 text-amber-300">
+                        <AlertCircle className="w-4 h-4" />
+                        <p className="text-sm">
+                            لا يمكن تعديل بيانات السيارة لأنها في حالة مزاد نشط أو مجدول
+                        </p>
+                    </div>
+                </motion.div>
+            )}
+        </div>
     );
 }

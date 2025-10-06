@@ -301,16 +301,15 @@ export default function LoginForm() {
           )}
         </Button>
       </div>
-
-      <div className="text-center text-sm text-gray-400">
-        ليس لديك حساب؟{" "}
-        <LoadingLink
-          href="/auth/register"
-          className="text-blue-400 hover:text-blue-300 font-medium"
-        >
-          إنشاء حساب جديد
-        </LoadingLink>
-      </div>
+<div className="text-center text-sm text-gray-400">
+  ليس لديك حساب؟
+  <LoadingLink
+    href="/auth/register"
+    className="text-blue-400 hover:text-blue-300 font-medium mr-1"
+  >
+    إنشاء حساب جديد
+  </LoadingLink>
+</div>
     </form>
   );
 }

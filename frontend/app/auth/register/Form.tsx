@@ -374,32 +374,42 @@ export default function RegisterForm() {
             </p>
           )}
         </div>
-
-        {/* نوع الحساب */}
-        <div className="space-y-2">
-          <Label htmlFor="account_type" className="text-gray-200 font-medium">
-            نوع الحساب
-          </Label>
-          <Select
-            onValueChange={(value) => {
-              setAccountType(value as any);
-              setValue("account_type", value as any);
-            }}
-            defaultValue="user"
-          >
-            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-              <SelectValue placeholder="اختر نوع الحساب" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 text-white z-50">
-              <SelectItem value="user" className="focus:bg-gray-700">مستخدم</SelectItem>
-              <SelectItem value="dealer" className="focus:bg-gray-700">تاجر</SelectItem>
-              <SelectItem value="venue_owner" className="focus:bg-gray-700">مالك المعرض</SelectItem>
-              <SelectItem value="investor" className="focus:bg-gray-700">مستثمر</SelectItem>
-            </SelectContent>
-          </Select>
-          <input type="hidden" {...register("account_type")} />
-        </div>
-
+          {/* نوع الحساب */}
+<div className="space-y-2">
+  <Label htmlFor="account_type" className="text-gray-200 font-medium">
+    نوع الحساب
+  </Label>
+  <div className="relative">
+    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+      <User className="h-5 w-5 text-gray-500" />
+    </div>
+    <Select
+      onValueChange={(value) => {
+        const typedValue = value as "user" | "dealer" | "venue_owner" | "investor";
+        setAccountType(typedValue);
+        setValue("account_type", typedValue);
+      }}
+      value={accountType}
+    >
+      <SelectTrigger
+        id="account_type"
+        className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+      >
+        <SelectValue placeholder="اختر نوع الحساب" />
+      </SelectTrigger>
+      <SelectContent
+        className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+        dir="rtl"
+        align="end"
+      >
+        <SelectItem value="user">مستخدم</SelectItem>
+        <SelectItem value="dealer">تاجر</SelectItem>
+        <SelectItem value="venue_owner">مالك المعرض</SelectItem>
+        <SelectItem value="investor">مستثمر</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+</div>
         {/* الحقول الديناميكية */}
         {accountType === "dealer" && (
           <>

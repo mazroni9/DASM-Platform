@@ -51,7 +51,7 @@ export default function RegisterPage() {
           <span>لديك حساب بالفعل؟</span>
           <LoadingLink
             href="/auth/login"
-            className="text-blue-400 hover:text-blue-300 font-medium ml-1"
+            className="text-blue-400 hover:text-blue-300 font-medium mr-1"
           >
             تسجيل الدخول
           </LoadingLink>
@@ -61,14 +61,14 @@ export default function RegisterPage() {
           بإنشاء حساب، أنت توافق على{" "}
           <a
             href="/terms"
-            className="text-blue-400 hover:underline underline-offset-4"
+            className="text-blue-400 hover:text-blue-300 hover:underline underline-offset-4"
           >
             شروط الخدمة
           </a>{" "}
           و{" "}
           <a
             href="/privacy"
-            className="text-blue-400 hover:underline underline-offset-4"
+            className="text-blue-400 hover:text-blue-300 hover:underline underline-offset-4"
           >
             سياسة الخصوصية
           </a>

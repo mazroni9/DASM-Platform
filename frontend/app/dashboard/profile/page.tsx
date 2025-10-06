@@ -1,30 +1,35 @@
 "use client";
 
-import { BackToDashboard } from "@/components/dashboard/BackToDashboard";
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import {
-    User,
-    Phone,
-    MapPin,
-    Shield,
-    Bell,
-    Loader2,
-    CheckCircle,
-    AlertCircle,
-    Building,
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { 
+    User, 
+    Phone, 
+    MapPin, 
+    Shield, 
+    Bell, 
+    Loader2, 
+    CheckCircle, 
+    AlertCircle, 
+    Building,
+    Mail,
+    Calendar,
+    Key,
+    Eye,
+    EyeOff,
+    Sparkles,
+    ArrowLeft,
+    BadgeCheck,
+    Star,
+    Clock
+} from "lucide-react";
+import LoadingLink from "@/components/LoadingLink";
 import { UserRole } from "@/types/types";
-import { Textarea } from "@/components/ui/textarea";
-
 
 interface UserProfile {
     id: number;
@@ -44,7 +49,6 @@ interface UserProfile {
     email_verified_at: string | null;
     is_active?: boolean;
     kyc_status?: string;
-    // Notification settings
     notification_email?: boolean;
     notification_sms?: boolean;
     two_factor_auth?: boolean;
@@ -60,11 +64,9 @@ interface ProfileFormData {
     company_name: string;
     trade_license: string;
     description: string;
-    // For security tab
     currentPassword: string;
     password: string;
     confirmPassword: string;
-    // For notification tab
     notifyEmail: boolean;
     notifySMS: boolean;
     twoFactorAuth: boolean;
@@ -93,6 +95,9 @@ export default function ProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState("personal");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [tabStatus, setTabStatus] = useState({
         personal: { status: "", message: "" },
         security: { status: "", message: "" },
@@ -101,7 +106,6 @@ export default function ProfilePage() {
 
     const { user, isLoggedIn } = useAuth();
     const router = useLoadingRouter();
-    
 
     // Verify user is authenticated
     useEffect(() => {
@@ -120,10 +124,8 @@ export default function ProfilePage() {
                 const response = await api.get("/api/user/profile");
                 if (response.data && (response.data.data || response.data)) {
                     const profileData = response.data.data || response.data;
-                    console.log(profileData);
                     setProfile(profileData);
 
-                    // Initialize form data with profile data
                     setFormData({
                         first_name: profileData.first_name || "",
                         last_name: profileData.last_name || "",
@@ -197,7 +199,6 @@ export default function ProfilePage() {
                 city: formData.city,
             };
 
-            // Add dealer-specific data if user is a dealer
             if (profile?.role === UserRole.DEALER) {
                 Object.assign(personalData, {
                     company_name: formData.company_name,
@@ -218,7 +219,6 @@ export default function ProfilePage() {
                 });
                 toast.success("تم تحديث المعلومات الشخصية بنجاح");
 
-                // Update profile data
                 if (response.data.data) {
                     setProfile({
                         ...profile!,
@@ -256,11 +256,7 @@ export default function ProfilePage() {
             security: { status: "", message: "" },
         });
 
-        // Validate passwords
-        if (
-            formData.password &&
-            formData.password !== formData.confirmPassword
-        ) {
+        if (formData.password && formData.password !== formData.confirmPassword) {
             setTabStatus({
                 ...tabStatus,
                 security: {
@@ -272,7 +268,6 @@ export default function ProfilePage() {
             return;
         }
 
-        // Validate current password exists if changing password
         if (formData.password && !formData.currentPassword) {
             setTabStatus({
                 ...tabStatus,
@@ -286,7 +281,6 @@ export default function ProfilePage() {
         }
 
         try {
-            // Only send password update if actually changing password
             if (formData.password && formData.currentPassword) {
                 const securityData = {
                     current_password: formData.currentPassword,
@@ -295,11 +289,7 @@ export default function ProfilePage() {
                     two_factor_auth: formData.twoFactorAuth,
                 };
 
-                // Using the appropriate endpoint for password update
-                const response = await api.put(
-                    "/api/user/password",
-                    securityData
-                );
+                const response = await api.put("/api/user/password", securityData);
 
                 if (response.data && response.data.success) {
                     setTabStatus({
@@ -311,7 +301,6 @@ export default function ProfilePage() {
                     });
                     toast.success("تم تحديث إعدادات الأمان بنجاح");
 
-                    // Clear password fields
                     setFormData({
                         ...formData,
                         currentPassword: "",
@@ -320,18 +309,13 @@ export default function ProfilePage() {
                     });
                 } else {
                     throw new Error(
-                        response.data?.message ||
-                            "حدث خطأ أثناء تحديث إعدادات الأمان"
+                        response.data?.message || "حدث خطأ أثناء تحديث إعدادات الأمان"
                     );
                 }
             } else if (profile?.two_factor_auth !== formData.twoFactorAuth) {
-                // Only update 2FA setting
-                const twoFAResponse = await api.put(
-                    "/api/user/security-settings",
-                    {
-                        two_factor_auth: formData.twoFactorAuth,
-                    }
-                );
+                const twoFAResponse = await api.put("/api/user/security-settings", {
+                    two_factor_auth: formData.twoFactorAuth,
+                });
 
                 if (twoFAResponse.data && twoFAResponse.data.success) {
                     setTabStatus({
@@ -343,14 +327,12 @@ export default function ProfilePage() {
                     });
                     toast.success("تم تحديث إعدادات المصادقة الثنائية بنجاح");
 
-                    // Update profile
                     setProfile({
                         ...profile!,
                         two_factor_auth: formData.twoFactorAuth,
                     });
                 }
             } else {
-                // No changes were made
                 setTabStatus({
                     ...tabStatus,
                     security: {
@@ -365,9 +347,7 @@ export default function ProfilePage() {
                 ...tabStatus,
                 security: {
                     status: "error",
-                    message:
-                        error.response?.data?.message ||
-                        "حدث خطأ أثناء تحديث إعدادات الأمان",
+                    message: error.response?.data?.message || "حدث خطأ أثناء تحديث إعدادات الأمان",
                 },
             });
             toast.error("حدث خطأ أثناء تحديث إعدادات الأمان");
@@ -391,11 +371,7 @@ export default function ProfilePage() {
                 notification_sms: formData.notifySMS,
             };
 
-            // Using the appropriate endpoint for notification settings
-            const response = await api.put(
-                "/api/user/notification-settings",
-                notificationData
-            );
+            const response = await api.put("/api/user/notification-settings", notificationData);
 
             if (response.data && response.data.success) {
                 setTabStatus({
@@ -407,7 +383,6 @@ export default function ProfilePage() {
                 });
                 toast.success("تم تحديث إعدادات الإشعارات بنجاح");
 
-                // Update profile
                 setProfile({
                     ...profile!,
                     notification_email: formData.notifyEmail,
@@ -415,8 +390,7 @@ export default function ProfilePage() {
                 });
             } else {
                 throw new Error(
-                    response.data?.message ||
-                        "حدث خطأ أثناء تحديث إعدادات الإشعارات"
+                    response.data?.message || "حدث خطأ أثناء تحديث إعدادات الإشعارات"
                 );
             }
         } catch (error: any) {
@@ -425,9 +399,7 @@ export default function ProfilePage() {
                 ...tabStatus,
                 notifications: {
                     status: "error",
-                    message:
-                        error.response?.data?.message ||
-                        "حدث خطأ أثناء تحديث إعدادات الإشعارات",
+                    message: error.response?.data?.message || "حدث خطأ أثناء تحديث إعدادات الإشعارات",
                 },
             });
             toast.error("حدث خطأ أثناء تحديث إعدادات الإشعارات");
@@ -436,597 +408,680 @@ export default function ProfilePage() {
         }
     };
 
+    const getRoleConfig = (role: string) => {
+        const roleMap = {
+            [UserRole.DEALER]: { 
+                name: "تاجر", 
+                color: "text-purple-400",
+                bg: "bg-purple-500/20",
+                border: "border-purple-500/30"
+            },
+            [UserRole.ADMIN]: { 
+                name: "مدير", 
+                color: "text-red-400",
+                bg: "bg-red-500/20", 
+                border: "border-red-500/30"
+            },
+            [UserRole.USER]: { 
+                name: "مستخدم", 
+                color: "text-blue-400",
+                bg: "bg-blue-500/20",
+                border: "border-blue-500/30"
+            }
+        };
+        
+        return roleMap[role] || { 
+            name: role, 
+            color: "text-gray-400",
+            bg: "bg-gray-500/20",
+            border: "border-gray-500/30"
+        };
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
+                <div className="text-center">
+                    <div className="relative w-16 h-16 mx-auto mb-4">
+                        <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
+                        <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+                    </div>
+                    <p className="text-lg text-gray-400 font-medium">جاري تحميل بيانات الملف الشخصي...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
+                <div className="text-center">
+                    <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md">
+                        <AlertCircle className="w-16 h-16 text-rose-400 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-white mb-4">لم يتم العثور على بيانات الملف الشخصي</h2>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white hover:scale-105 transition-all duration-300"
+                        >
+                            إعادة تحميل الصفحة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const roleConfig = getRoleConfig(profile.role);
+
     return (
-        <main
-            className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen"
-            dir="rtl"
-        >
-            {/* زر العودة للوحة التحكم */}
-            <BackToDashboard />
+        <div className="space-y-6" dir="rtl">
+            {/* Header Section */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+            >
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                                <User className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">
+                                    الملف الشخصي
+                                </h1>
+                                <p className="text-gray-400 text-sm mt-1">إدارة معلومات حسابك وإعداداته</p>
+                            </div>
+                        </div>
 
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-                الملف الشخصي
-            </h1>
-
-            {isLoading ? (
-                <div className="flex items-center justify-center p-10">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                    <span className="mr-2 text-gray-600">
-                        جاري تحميل بيانات الملف الشخصي...
-                    </span>
-                </div>
-            ) : !profile ? (
-                <div className="text-center py-10 text-gray-500">
-                    <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-500" />
-                    <p>لم يتم العثور على بيانات الملف الشخصي</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
-                    >
-                        إعادة تحميل الصفحة
-                    </button>
-                </div>
-            ) : (
-                <div className="max-w-4xl mx-auto">
-                    {/* بطاقة معلومات العضوية */}
-                    <div className="mb-8 bg-white p-6 rounded-lg shadow-md border">
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                            <div className="relative">
-                                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                    <User size={36} />
+                        {/* User Info Card */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                        <User className="w-8 h-8 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white text-lg">
+                                            {profile.first_name} {profile.last_name}
+                                        </h3>
+                                        <p className="text-gray-300 text-sm">{profile.email}</p>
+                                    </div>
                                 </div>
-                                {/* Disable avatar upload for now */}
-                                {/* <button className="absolute -bottom-1 -left-1 bg-gray-100 rounded-full p-1 shadow-sm hover:bg-gray-200 border">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                  </svg>
-                </button> */}
                             </div>
 
-                            <div className="flex-grow text-center sm:text-right">
-                                <h2 className="text-xl font-bold text-gray-800">
-                                    {profile.first_name} {profile.last_name}
-                                </h2>
-                                <p className="text-gray-500 mb-2">
-                                    {profile.email}
-                                </p>
-
-                                <div className="flex flex-wrap justify-center sm:justify-start gap-3 mb-2">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-sm font-medium text-sky-700">
-                                        <span>
-                                            {profile.role === UserRole.DEALER
-                                                ? "تاجر"
-                                                : profile.role === UserRole.ADMIN
-                                                ? "مدير"
-                                                : "مستخدم"}
-                                        </span>
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-                                        <span>
-                                            الحالة:{" "}
-                                            {profile.is_active
-                                                ? "مفعل ✅"
-                                                : "غير مفعل ❌"}
-                                        </span>
-                                    </span>
+                            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <BadgeCheck className="w-4 h-4 text-blue-400" />
+                                    <span className="text-sm text-gray-300">الحالة</span>
                                 </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <div className={cn(
+                                        "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
+                                        roleConfig.bg,
+                                        roleConfig.border,
+                                        roleConfig.color
+                                    )}>
+                                        {roleConfig.name}
+                                    </div>
+                                    <div className={cn(
+                                        "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
+                                        profile.is_active 
+                                            ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
+                                            : "bg-rose-500/20 border-rose-500/30 text-rose-400"
+                                    )}>
+                                        {profile.is_active ? "مفعل ✅" : "غير مفعل ❌"}
+                                    </div>
+                                </div>
+                            </div>
 
-                                <p className="text-gray-500 text-sm">
-                                    تاريخ الانضمام:{" "}
-                                    {formatDate(profile.created_at)}
-                                </p>
+                            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl p-4 border border-amber-500/30 backdrop-blur-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Calendar className="w-4 h-4 text-amber-400" />
+                                    <span className="text-sm text-gray-300">تاريخ الانضمام</span>
+                                </div>
+                                <p className="text-amber-300 font-medium">{formatDate(profile.created_at)}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* تبويبات الإعدادات */}
-                    <Tabs
-                        defaultValue="personal"
-                        className="bg-white rounded-lg shadow border"
-                        value={activeTab}
-                        onValueChange={setActiveTab}
-                    >
-                        <TabsList className="w-full p-0 bg-gray-50 rounded-t-lg border-b">
-                            <TabsTrigger
-                                value="personal"
-                                className="flex-1 py-3 rounded-none rounded-tl-lg data-[state=active]:bg-white"
-                            >
-                                <User className="w-4 h-4 ml-1.5" />
-                                المعلومات الشخصية
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="security"
-                                className="flex-1 py-3 rounded-none data-[state=active]:bg-white"
-                            >
-                                <Shield className="w-4 h-4 ml-1.5" />
-                                الأمان
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="notifications"
-                                className="flex-1 py-3 rounded-none rounded-tr-lg data-[state=active]:bg-white"
-                            >
-                                <Bell className="w-4 h-4 ml-1.5" />
-                                الإشعارات
-                            </TabsTrigger>
-                        </TabsList>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <LoadingLink
+                            href="/dashboard"
+                            className="flex items-center gap-2 px-4 py-3 bg-gray-500/20 text-gray-300 rounded-xl border border-gray-500/30 hover:bg-gray-500/30 hover:scale-105 transition-all duration-300"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="font-medium">العودة للرئيسية</span>
+                        </LoadingLink>
+                    </div>
+                </div>
+            </motion.div>
 
-                        {/* معلومات شخصية */}
-                        <TabsContent value="personal" className="p-6 space-y-6">
-                            {tabStatus.personal.status && (
-                                <div
-                                    className={`p-4 rounded-md mb-4 ${
-                                        tabStatus.personal.status === "success"
-                                            ? "bg-green-50 border border-green-200 text-green-700"
-                                            : "bg-red-50 border border-red-200 text-red-700"
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        {tabStatus.personal.status ===
-                                        "success" ? (
-                                            <CheckCircle className="h-5 w-5 mr-2" />
+            {/* Tabs Section */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                {/* Tabs Navigation */}
+                <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="xl:col-span-1"
+                >
+                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-purple-400" />
+                            الإعدادات
+                        </h2>
+                        
+                        <div className="space-y-3">
+                            {[
+                                { id: "personal", label: "المعلومات الشخصية", icon: User, color: "blue" },
+                                { id: "security", label: "الأمان", icon: Shield, color: "emerald" },
+                                { id: "notifications", label: "الإشعارات", icon: Bell, color: "amber" }
+                            ].map((tab) => {
+                                const TabIcon = tab.icon;
+                                const isActive = activeTab === tab.id;
+                                
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "w-full p-4 rounded-xl border transition-all duration-300 text-right flex items-center gap-3 group",
+                                            isActive 
+                                                ? `bg-${tab.color}-500/20 border-${tab.color}-500/30 text-${tab.color}-300 shadow-lg` 
+                                                : "bg-gray-800/30 border-gray-700/30 text-gray-400 hover:bg-gray-700/30 hover:border-gray-600/50"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
+                                            isActive 
+                                                ? `bg-${tab.color}-500/20` 
+                                                : "bg-gray-700/30"
+                                        )}>
+                                            <TabIcon className={cn(
+                                                "w-5 h-5",
+                                                isActive ? `text-${tab.color}-400` : "text-gray-400"
+                                            )} />
+                                        </div>
+                                        <div className="flex-1 text-right">
+                                            <div className="font-bold text-lg">{tab.label}</div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Account Status */}
+                        <div className="mt-6 space-y-3">
+                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                                <div className="flex items-center gap-2 text-blue-400 text-sm">
+                                    <Star className="w-4 h-4" />
+                                    <span className="font-medium">حالة الحساب</span>
+                                </div>
+                                <p className="text-blue-300 text-xs mt-1">
+                                    {profile.email_verified_at ? "البريد الإلكتروني موثق" : "يرجى توثيق البريد الإلكتروني"}
+                                </p>
+                            </div>
+                            
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                                <div className="flex items-center gap-2 text-emerald-400 text-sm">
+                                    <Clock className="w-4 h-4" />
+                                    <span className="font-medium">آخر تحديث</span>
+                                </div>
+                                <p className="text-emerald-300 text-xs mt-1">
+                                    {formatDate(profile.updated_at)}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Tab Content */}
+                <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="xl:col-span-3"
+                >
+                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+                        {/* Personal Information Tab */}
+                        {activeTab === "personal" && (
+                            <div className="space-y-6">
+                                {tabStatus.personal.status && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className={cn(
+                                            "p-4 rounded-xl border backdrop-blur-sm flex items-center gap-3",
+                                            tabStatus.personal.status === "success"
+                                                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                                                : "bg-rose-500/20 border-rose-500/30 text-rose-300"
+                                        )}
+                                    >
+                                        {tabStatus.personal.status === "success" ? (
+                                            <CheckCircle className="w-5 h-5" />
                                         ) : (
-                                            <AlertCircle className="h-5 w-5 mr-2" />
+                                            <AlertCircle className="w-5 h-5" />
                                         )}
                                         <p>{tabStatus.personal.message}</p>
-                                    </div>
-                                </div>
-                            )}
+                                    </motion.div>
+                                )}
 
-                            <form
-                                onSubmit={handlePersonalInfoSubmit}
-                                className="space-y-5"
-                            >
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div>
-                                        <Label
-                                            htmlFor="first_name"
-                                            className="mb-1.5"
-                                        >
-                                            الاسم الأول
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="first_name"
-                                                name="first_name"
-                                                value={formData.first_name}
+                                <motion.form
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onSubmit={handlePersonalInfoSubmit}
+                                    className="space-y-6"
+                                >
+                                    <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                        <User className="w-5 h-5 text-blue-400" />
+                                        المعلومات الأساسية
+                                    </h2>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">الاسم الأول</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="first_name"
+                                                    value={formData.first_name}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    required
+                                                />
+                                                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">الاسم الأخير</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="last_name"
+                                                    value={formData.last_name}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    required
+                                                />
+                                                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">البريد الإلكتروني</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="email"
+                                                    type="email"
+                                                    value={formData.email}
+                                                    disabled
+                                                    className="w-full bg-gray-800/30 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-gray-400 cursor-not-allowed"
+                                                />
+                                                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">لا يمكن تغيير البريد الإلكتروني</p>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">رقم الهاتف</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    required
+                                                />
+                                                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">المدينة</label>
+                                            <input
+                                                name="city"
+                                                value={formData.city}
                                                 onChange={handleInputChange}
-                                                className="pr-9"
-                                                required
+                                                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
                                             />
-                                            <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">العنوان</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="address"
+                                                    value={formData.address}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                />
+                                                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <Label
-                                            htmlFor="last_name"
-                                            className="mb-1.5"
-                                        >
-                                            الاسم الأخير
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="last_name"
-                                                name="last_name"
-                                                value={formData.last_name}
-                                                onChange={handleInputChange}
-                                                className="pr-9"
-                                                required
-                                            />
-                                            <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        </div>
-                                    </div>
+                                    {/* Dealer-specific fields */}
+                                    {profile.role === UserRole.DEALER && (
+                                        <div className="mt-8 pt-6 border-t border-gray-700/50">
+                                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                                <Building className="w-5 h-5 text-purple-400" />
+                                                معلومات التاجر
+                                            </h3>
 
-                                    <div>
-                                        <Label
-                                            htmlFor="email"
-                                            className="mb-1.5"
-                                        >
-                                            البريد الإلكتروني
-                                        </Label>
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            value={formData.email}
-                                            disabled={true}
-                                            className="bg-gray-50"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            لا يمكن تغيير البريد الإلكتروني
-                                        </p>
-                                    </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="text-sm text-gray-300 mb-2 block">اسم الشركة</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            name="company_name"
+                                                            value={formData.company_name}
+                                                            onChange={handleInputChange}
+                                                            className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                                                        />
+                                                        <Building className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    </div>
+                                                </div>
 
-                                    <div>
-                                        <Label
-                                            htmlFor="phone"
-                                            className="mb-1.5"
-                                        >
-                                            رقم الهاتف
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="phone"
-                                                name="phone"
-                                                value={formData.phone}
-                                                onChange={handleInputChange}
-                                                className="pr-9"
-                                                required
-                                            />
-                                            <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <Label
-                                            htmlFor="city"
-                                            className="mb-1.5"
-                                        >
-                                            المدينة
-                                        </Label>
-                                        <Input
-                                            id="city"
-                                            name="city"
-                                            value={formData.city}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label
-                                            htmlFor="address"
-                                            className="mb-1.5"
-                                        >
-                                            العنوان
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="address"
-                                                name="address"
-                                                value={formData.address}
-                                                onChange={handleInputChange}
-                                                className="pr-9"
-                                            />
-                                            <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Dealer-specific fields */}
-                                {profile.role === UserRole.DEALER && (
-                                    <div className="mt-6 space-y-5 border-t pt-5">
-                                        <h3 className="text-lg font-semibold text-gray-700">
-                                            معلومات التاجر
-                                        </h3>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <div>
-                                                <Label
-                                                    htmlFor="company_name"
-                                                    className="mb-1.5"
-                                                >
-                                                    اسم الشركة
-                                                </Label>
-                                                <div className="relative">
-                                                    <Input
-                                                        id="company_name"
-                                                        name="company_name"
-                                                        value={
-                                                            formData.company_name
-                                                        }
-                                                        onChange={
-                                                            handleInputChange
-                                                        }
-                                                        className="pr-9"
+                                                <div>
+                                                    <label className="text-sm text-gray-300 mb-2 block">رقم السجل التجاري</label>
+                                                    <input
+                                                        name="trade_license"
+                                                        value={formData.trade_license}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
                                                     />
-                                                    <Building className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    <label className="text-sm text-gray-300 mb-2 block">وصف الشركة</label>
+                                                    <textarea
+                                                        name="description"
+                                                        value={formData.description}
+                                                        onChange={handleInputChange}
+                                                        rows={4}
+                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors resize-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end pt-4">
+                                        <button
+                                            type="submit"
+                                            disabled={submitting}
+                                            className={cn(
+                                                "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
+                                                submitting
+                                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                                    : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white hover:scale-105"
+                                            )}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    جاري الحفظ...
+                                                </>
+                                            ) : (
+                                                "حفظ التعديلات"
+                                            )}
+                                        </button>
+                                    </div>
+                                </motion.form>
+                            </div>
+                        )}
+
+                        {/* Security Tab */}
+                        {activeTab === "security" && (
+                            <div className="space-y-6">
+                                {tabStatus.security.status && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className={cn(
+                                            "p-4 rounded-xl border backdrop-blur-sm flex items-center gap-3",
+                                            tabStatus.security.status === "success"
+                                                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                                                : tabStatus.security.status === "info"
+                                                ? "bg-blue-500/20 border-blue-500/30 text-blue-300"
+                                                : "bg-rose-500/20 border-rose-500/30 text-rose-300"
+                                        )}
+                                    >
+                                        {tabStatus.security.status === "success" ? (
+                                            <CheckCircle className="w-5 h-5" />
+                                        ) : tabStatus.security.status === "info" ? (
+                                            <Shield className="w-5 h-5" />
+                                        ) : (
+                                            <AlertCircle className="w-5 h-5" />
+                                        )}
+                                        <p>{tabStatus.security.message}</p>
+                                    </motion.div>
+                                )}
+
+                                <motion.form
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onSubmit={handleSecuritySubmit}
+                                    className="space-y-6"
+                                >
+                                    <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                        <Shield className="w-5 h-5 text-emerald-400" />
+                                        إعدادات الأمان
+                                    </h2>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-sm text-gray-300 mb-2 block">كلمة المرور الحالية</label>
+                                            <div className="relative">
+                                                <input
+                                                    name="currentPassword"
+                                                    type={showCurrentPassword ? "text" : "password"}
+                                                    value={formData.currentPassword}
+                                                    onChange={handleInputChange}
+                                                    placeholder="أدخل كلمة المرور الحالية"
+                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                                />
+                                                <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                                                >
+                                                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm text-gray-300 mb-2 block">كلمة المرور الجديدة</label>
+                                                <div className="relative">
+                                                    <input
+                                                        name="password"
+                                                        type={showPassword ? "text" : "password"}
+                                                        value={formData.password}
+                                                        onChange={handleInputChange}
+                                                        placeholder="أدخل كلمة المرور الجديدة"
+                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                                    />
+                                                    <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                                                    >
+                                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <Label
-                                                    htmlFor="trade_license"
-                                                    className="mb-1.5"
-                                                >
-                                                    رقم السجل التجاري
-                                                </Label>
-                                                <Input
-                                                    id="trade_license"
-                                                    name="trade_license"
-                                                    value={
-                                                        formData.trade_license
-                                                    }
-                                                    onChange={handleInputChange}
-                                                />
+                                                <label className="text-sm text-gray-300 mb-2 block">تأكيد كلمة المرور</label>
+                                                <div className="relative">
+                                                    <input
+                                                        name="confirmPassword"
+                                                        type={showConfirmPassword ? "text" : "password"}
+                                                        value={formData.confirmPassword}
+                                                        onChange={handleInputChange}
+                                                        placeholder="أعد إدخال كلمة المرور الجديدة"
+                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                                    />
+                                                    <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                                                    >
+                                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                </div>
                                             </div>
+                                        </div>
 
-                                            <div className="md:col-span-2">
-                                                <Label
-                                                    htmlFor="description"
-                                                    className="mb-1.5"
-                                                >
-                                                    وصف الشركة
-                                                </Label>
-                                                <Textarea
-                                                    id="description"
-                                                    name="description"
-                                                    value={formData.description}
-                                                    onChange={handleInputChange}
-                                                    rows={4}
-                                                />
+                                        <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                                            <input
+                                                type="checkbox"
+                                                id="twoFactorAuth"
+                                                checked={formData.twoFactorAuth}
+                                                onChange={(e) => handleCheckboxChange("twoFactorAuth", e.target.checked)}
+                                                className="mt-1"
+                                            />
+                                            <div>
+                                                <label htmlFor="twoFactorAuth" className="text-base font-medium text-white">
+                                                    المصادقة الثنائية
+                                                </label>
+                                                <p className="text-sm text-gray-400 mt-1">
+                                                    تأمين حسابك بشكل أفضل باستخدام رمز إضافي عند تسجيل الدخول
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
-                                )}
 
-                                <div className="flex justify-end pt-4">
-                                    <Button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className={
-                                            submitting
-                                                ? "opacity-70 cursor-not-allowed"
-                                                : ""
-                                        }
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                جاري الحفظ...
-                                            </>
-                                        ) : (
-                                            "حفظ التعديلات"
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
-                        </TabsContent>
-
-                        {/* إعدادات الأمان */}
-                        <TabsContent value="security" className="p-6 space-y-6">
-                            {tabStatus.security.status && (
-                                <div
-                                    className={`p-4 rounded-md mb-4 ${
-                                        tabStatus.security.status === "success"
-                                            ? "bg-green-50 border border-green-200 text-green-700"
-                                            : tabStatus.security.status ===
-                                              "info"
-                                            ? "bg-blue-50 border border-blue-200 text-blue-700"
-                                            : "bg-red-50 border border-red-200 text-red-700"
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        {tabStatus.security.status ===
-                                        "success" ? (
-                                            <CheckCircle className="h-5 w-5 mr-2" />
-                                        ) : tabStatus.security.status ===
-                                          "info" ? (
-                                            <Shield className="h-5 w-5 mr-2" />
-                                        ) : (
-                                            <AlertCircle className="h-5 w-5 mr-2" />
-                                        )}
-                                        <p>{tabStatus.security.message}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            <form
-                                onSubmit={handleSecuritySubmit}
-                                className="space-y-5"
-                            >
-                                <div>
-                                    <Label
-                                        htmlFor="currentPassword"
-                                        className="mb-1.5"
-                                    >
-                                        كلمة المرور الحالية
-                                    </Label>
-                                    <Input
-                                        id="currentPassword"
-                                        name="currentPassword"
-                                        type="password"
-                                        value={formData.currentPassword}
-                                        onChange={handleInputChange}
-                                        placeholder="أدخل كلمة المرور الحالية"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div>
-                                        <Label
-                                            htmlFor="password"
-                                            className="mb-1.5"
+                                    <div className="flex justify-end pt-4">
+                                        <button
+                                            type="submit"
+                                            disabled={submitting}
+                                            className={cn(
+                                                "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
+                                                submitting
+                                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                                    : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white hover:scale-105"
+                                            )}
                                         >
-                                            كلمة المرور الجديدة
-                                        </Label>
-                                        <Input
-                                            id="password"
-                                            name="password"
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={handleInputChange}
-                                            placeholder="أدخل كلمة المرور الجديدة"
-                                        />
+                                            {submitting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    جاري الحفظ...
+                                                </>
+                                            ) : (
+                                                "تحديث إعدادات الأمان"
+                                            )}
+                                        </button>
                                     </div>
+                                </motion.form>
+                            </div>
+                        )}
 
-                                    <div>
-                                        <Label
-                                            htmlFor="confirmPassword"
-                                            className="mb-1.5"
-                                        >
-                                            تأكيد كلمة المرور
-                                        </Label>
-                                        <Input
-                                            id="confirmPassword"
-                                            name="confirmPassword"
-                                            type="password"
-                                            value={formData.confirmPassword}
-                                            onChange={handleInputChange}
-                                            placeholder="أعد إدخال كلمة المرور الجديدة"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start space-x-2 space-x-reverse">
-                                    <Checkbox
-                                        id="twoFactorAuth"
-                                        checked={formData.twoFactorAuth}
-                                        onCheckedChange={(checked) =>
-                                            handleCheckboxChange(
-                                                "twoFactorAuth",
-                                                checked === true
-                                            )
-                                        }
-                                        className="mt-1 mr-1"
-                                    />
-                                    <div>
-                                        <Label
-                                            htmlFor="twoFactorAuth"
-                                            className="text-base font-medium"
-                                        >
-                                            المصادقة الثنائية
-                                        </Label>
-                                        <p className="text-sm text-gray-500">
-                                            تأمين حسابك بشكل أفضل باستخدام رمز
-                                            إضافي عند تسجيل الدخول
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end pt-4">
-                                    <Button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className={
-                                            submitting
-                                                ? "opacity-70 cursor-not-allowed"
-                                                : ""
-                                        }
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                جاري الحفظ...
-                                            </>
-                                        ) : (
-                                            "تحديث إعدادات الأمان"
+                        {/* Notifications Tab */}
+                        {activeTab === "notifications" && (
+                            <div className="space-y-6">
+                                {tabStatus.notifications.status && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className={cn(
+                                            "p-4 rounded-xl border backdrop-blur-sm flex items-center gap-3",
+                                            tabStatus.notifications.status === "success"
+                                                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                                                : "bg-rose-500/20 border-rose-500/30 text-rose-300"
                                         )}
-                                    </Button>
-                                </div>
-                            </form>
-                        </TabsContent>
-
-                        {/* إعدادات الإشعارات */}
-                        <TabsContent
-                            value="notifications"
-                            className="p-6 space-y-6"
-                        >
-                            {tabStatus.notifications.status && (
-                                <div
-                                    className={`p-4 rounded-md mb-4 ${
-                                        tabStatus.notifications.status ===
-                                        "success"
-                                            ? "bg-green-50 border border-green-200 text-green-700"
-                                            : "bg-red-50 border border-red-200 text-red-700"
-                                    }`}
-                                >
-                                    <div className="flex items-center">
-                                        {tabStatus.notifications.status ===
-                                        "success" ? (
-                                            <CheckCircle className="h-5 w-5 mr-2" />
+                                    >
+                                        {tabStatus.notifications.status === "success" ? (
+                                            <CheckCircle className="w-5 h-5" />
                                         ) : (
-                                            <AlertCircle className="h-5 w-5 mr-2" />
+                                            <AlertCircle className="w-5 h-5" />
                                         )}
                                         <p>{tabStatus.notifications.message}</p>
-                                    </div>
-                                </div>
-                            )}
+                                    </motion.div>
+                                )}
 
-                            <form
-                                onSubmit={handleNotificationsSubmit}
-                                className="space-y-5"
-                            >
-                                <div className="space-y-4">
-                                    <div className="flex items-start space-x-2 space-x-reverse">
-                                        <Checkbox
-                                            id="notifyEmail"
-                                            checked={formData.notifyEmail}
-                                            onCheckedChange={(checked) =>
-                                                handleCheckboxChange(
-                                                    "notifyEmail",
-                                                    checked === true
-                                                )
-                                            }
-                                            className="mt-1 mr-1"
-                                        />
-                                        <div>
-                                            <Label
-                                                htmlFor="notifyEmail"
-                                                className="text-base font-medium"
-                                            >
-                                                إشعارات البريد الإلكتروني
-                                            </Label>
-                                            <p className="text-sm text-gray-500">
-                                                استلام إشعارات عبر البريد
-                                                الإلكتروني عند حدوث نشاط في
-                                                حسابك
-                                            </p>
+                                <motion.form
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onSubmit={handleNotificationsSubmit}
+                                    className="space-y-6"
+                                >
+                                    <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                        <Bell className="w-5 h-5 text-amber-400" />
+                                        إعدادات الإشعارات
+                                    </h2>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                                            <input
+                                                type="checkbox"
+                                                id="notifyEmail"
+                                                checked={formData.notifyEmail}
+                                                onChange={(e) => handleCheckboxChange("notifyEmail", e.target.checked)}
+                                                className="mt-1"
+                                            />
+                                            <div>
+                                                <label htmlFor="notifyEmail" className="text-base font-medium text-white">
+                                                    إشعارات البريد الإلكتروني
+                                                </label>
+                                                <p className="text-sm text-gray-400 mt-1">
+                                                    استلام إشعارات عبر البريد الإلكتروني عند حدوث نشاط في حسابك
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                                            <input
+                                                type="checkbox"
+                                                id="notifySMS"
+                                                checked={formData.notifySMS}
+                                                onChange={(e) => handleCheckboxChange("notifySMS", e.target.checked)}
+                                                className="mt-1"
+                                            />
+                                            <div>
+                                                <label htmlFor="notifySMS" className="text-base font-medium text-white">
+                                                    إشعارات الرسائل النصية
+                                                </label>
+                                                <p className="text-sm text-gray-400 mt-1">
+                                                    استلام إشعارات عبر الرسائل النصية عند حدوث نشاط في حسابك
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start space-x-2 space-x-reverse">
-                                        <Checkbox
-                                            id="notifySMS"
-                                            checked={formData.notifySMS}
-                                            onCheckedChange={(checked) =>
-                                                handleCheckboxChange(
-                                                    "notifySMS",
-                                                    checked === true
-                                                )
-                                            }
-                                            className="mt-1 mr-1"
-                                        />
-                                        <div>
-                                            <Label
-                                                htmlFor="notifySMS"
-                                                className="text-base font-medium"
-                                            >
-                                                إشعارات الرسائل النصية
-                                            </Label>
-                                            <p className="text-sm text-gray-500">
-                                                استلام إشعارات عبر الرسائل
-                                                النصية عند حدوث نشاط في حسابك
-                                            </p>
-                                        </div>
+                                    <div className="flex justify-end pt-4">
+                                        <button
+                                            type="submit"
+                                            disabled={submitting}
+                                            className={cn(
+                                                "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
+                                                submitting
+                                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                                                    : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white hover:scale-105"
+                                            )}
+                                        >
+                                            {submitting ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    جاري الحفظ...
+                                                </>
+                                            ) : (
+                                                "حفظ تفضيلات الإشعارات"
+                                            )}
+                                        </button>
                                     </div>
-                                </div>
-
-                                <div className="flex justify-end pt-4">
-                                    <Button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className={
-                                            submitting
-                                                ? "opacity-70 cursor-not-allowed"
-                                                : ""
-                                        }
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                جاري الحفظ...
-                                            </>
-                                        ) : (
-                                            "حفظ تفضيلات الإشعارات"
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            )}
-        </main>
+                                </motion.form>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            </div>
+        </div>
     );
 }
