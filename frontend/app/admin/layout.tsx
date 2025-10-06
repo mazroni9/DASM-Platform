@@ -124,6 +124,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             badge: "7"
         },
         { 
+            name: "سجلات المزايدات", 
+            href: "/admin/bids-logs", 
+            icon: FileText,
+            badge: null
+        },
+        { 
             name: "السيارات", 
             href: "/admin/cars", 
             icon: Car,

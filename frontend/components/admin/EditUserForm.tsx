@@ -224,7 +224,7 @@ export default function EditUserForm({
                             المعلومات الأساسية
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 color-gray-800">
                             <div>
                                 <Label htmlFor="first_name">الاسم الأول</Label>
                                 <Input
@@ -329,7 +329,7 @@ export default function EditUserForm({
                                         <SelectItem value="investor">
                                             مستثمر
                                         </SelectItem>
-                                        {(user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR) && (
+                                        {(user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR || user.role === UserRole.USER) && (
                                             <SelectItem value="admin">
                                                 مدير
                                             </SelectItem>

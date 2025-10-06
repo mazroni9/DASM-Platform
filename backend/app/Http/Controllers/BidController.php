@@ -7,21 +7,24 @@ use App\Models\Bid;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Auction;
+use App\Models\BidEvent;
 use App\Events\NewBidEvent;
-use App\Events\LiveMarketBidEvent;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use App\Models\CommissionTier;
+use App\Services\BidEventService;
+use App\Events\LiveMarketBidEvent;
 use App\Events\PublicMessageEvent;
-use App\Models\BidEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuctionLoggingService;
 use App\Notifications\NewBidNotification;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\UserBidLogResource;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
-use App\Services\AuctionLoggingService;
+use function Laravel\Prompts\select;
 
 class BidController extends Controller
 {
@@ -192,7 +195,6 @@ class BidController extends Controller
                     ]
                 ]
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -201,6 +203,53 @@ class BidController extends Controller
                 'message' => 'Error placing bid: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+    public function UserBidHistory(Request $request)
+    {
+        $userId = Auth::id();
+
+        $bidEventsQuery = BidEvent::with('auction')
+            ->where('bidder_id', $userId)
+            ->orderBy('server_ts_utc', 'desc');
+
+        // Clone the query for stats calculation to avoid affecting the main query
+        $statsQuery = (clone $bidEventsQuery);
+
+        $stats = [
+            'total'      => $statsQuery->count(),
+            'bid_placed'     => (clone $statsQuery)->where('event_type', 'bid_placed')->count(),
+            'outbid'     => (clone $statsQuery)->where('event_type', 'outbid')->count(),
+        ];
+        $auctions_ids = (clone $bidEventsQuery)->pluck('auction_id')->unique()->toArray();
+
+        $bid_events = $bidEventsQuery
+        ->when($request->filter, function ($query, $filter) {
+            if ($filter === 'all') {
+                return $query;
+            }
+            return $query->where('event_type', $filter);
+        })
+        ->when($request->auction_id, function ($query, $auctionId) {
+            return $query->where('auction_id', $auctionId);
+        })
+        ->paginate(3);
+
+        $data  = UserBidLogResource::collection($bid_events);
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $data,
+            'pagination' => [
+                'total' => $bid_events->total(),
+                'per_page' => $bid_events->perPage(),
+                'current_page' => $bid_events->currentPage(),
+                'last_page' => $bid_events->lastPage()
+            ],
+            'stats' => $stats,
+            'auctions_ids' => (array)$auctions_ids
+        ]);
     }
 
     /**
@@ -231,8 +280,8 @@ class BidController extends Controller
                     'current_bid' => $auction->current_bid,
                     'end_time' => $auction->end_time,
                     'won' => $auction->status === AuctionStatus::ENDED &&
-                             $auction->highestBidder() &&
-                             $auction->highestBidder()->id === $userId,
+                        $auction->highestBidder() &&
+                        $auction->highestBidder()->id === $userId,
                     'bids' => []
                 ];
             }
@@ -280,7 +329,7 @@ class BidController extends Controller
             ->with('user:id,name')
             ->take(10)
             ->get()
-            ->map(function($bid) use ($auction) {
+            ->map(function ($bid) use ($auction) {
                 return [
                     'user_id' => $bid->user_id,
                     'name' => $bid->user->name,
@@ -341,8 +390,13 @@ class BidController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function placeBid(Request $request)
+    public function placeBid(Request $request, BidEventService $bidEventService)
     {
+        // return response()->json([
+        //     'status' => 'success',
+        //     'message' => $request->9osession()->getId()
+        // ]);
+
         DB::beginTransaction();
         try {
             $user = Auth::user();
@@ -370,11 +424,11 @@ class BidController extends Controller
                 'user_id.exists' => 'المستخدم غير موجود'
             ]);
 
-            $auction = Auction::select('id','car_id','current_bid','minimum_bid','maximum_bid','last_bid_time','status','start_time','end_time','starting_bid','auction_type','reserve_price','opening_price')
-            ->with(['car'])
-            ->withCount('bids')
-            ->with('car:id,dealer_id,user_id')
-            ->find($data['auction_id']);
+            $auction = Auction::select('id', 'car_id', 'current_bid', 'minimum_bid', 'maximum_bid', 'last_bid_time', 'status', 'start_time', 'end_time', 'starting_bid', 'auction_type', 'reserve_price', 'opening_price')
+                ->with(['car'])
+                ->withCount('bids')
+                ->with('car:id,dealer_id,user_id')
+                ->find($data['auction_id']);
 
             // Validate auction exists
             if (!$auction) {
@@ -473,38 +527,34 @@ class BidController extends Controller
             AuctionLoggingService::logBidAttempt($user, $auction, $data['bid_amount'], $request);
 
             // Create the bid
-            $bid = new Bid();
-            $bid->auction_id = $auction->id;
-            $bid->user_id = $user->id;
-            $bid->bid_amount = $data['bid_amount'];
-            $bid->increment =  $data['bid_amount'] - $auction->current_bid;
-            $bid->save();
+            $last_bid = $auction->bids()->latest()->first();
+            // Create the bid
+            $bid = Bid::create([
+                'auction_id' => $auction->id,
+                'user_id' => $user->id,
+                'bid_amount' => $data['bid_amount'],
+                'increment' =>  $data['bid_amount'] - $auction->current_bid
+            ]);
 
             // Update the auction's current price
-            $auction->current_bid = $data['bid_amount'];
-            $auction->last_bid_time = Carbon::now()->toDateTimeString();
-            $auction->minimum_bid=Bid::where('auction_id',$data['auction_id'])->min('bid_amount');
-            $auction->maximum_bid=Bid::where('auction_id',$data['auction_id'])->max('bid_amount');
-            $auction->save();
+            $auction->update([
+                'current_bid' => $data['bid_amount'],
+                'last_bid_time' => Carbon::now()->toDateTimeString(),
+                'minimum_bid' => Bid::where('auction_id', $data['auction_id'])->min('bid_amount'),
+                'maximum_bid' => Bid::where('auction_id', $data['auction_id'])->max('bid_amount')
+            ]);
 
-            BidEvent::create(
-           [
-            'auction_id' =>  $auction->id,
-            'bid_id' =>  $bid->id,
-            'bidder_id' => $user->id,
-            'bid_amount' => $bid->bid_amount,
-            'currency' => 'SAR',
-            'channel' => "web",
-            'event_type' => 'bid_placed',
-            'reason_code' => '',
-            'client_ts' => 'client_ts',
-            'server_nano_seq',
-            'ip_addr' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'session_id',
-            'hash_prev',
-            'hash_curr',
-        ]);
+            //bid logs
+            if ($last_bid) {
+                $bidEventService->log('outbid', $auction, $request, [
+                    'last_bid' => $last_bid,
+                    'new_bid' => $bid
+                ]);
+            }
+
+            $bidEventService->log('bid_placed', $auction, $request, ['bid' => $bid, 'user' => $user]);
+
+
             // Log successful bid placement
             AuctionLoggingService::logBidSuccess($bid, $auction, $user, $request);
 
@@ -543,12 +593,12 @@ class BidController extends Controller
 
             $owner->notify(new NewBidNotification($auction));
 
-            $users_ids = $auction->bids()->where('user_id','!=',$user->id)
-            ->select('user_id')
-            ->groupBy('user_id')->pluck('user_id')
-            ->toArray();
+            $users_ids = $auction->bids()->where('user_id', '!=', $user->id)
+                ->select('user_id')
+                ->groupBy('user_id')->pluck('user_id')
+                ->toArray();
 
-            $users = User::whereIn('id',$users_ids)->get();
+            $users = User::whereIn('id', $users_ids)->get();
 
             // Log notification to other bidders
             \Illuminate\Support\Facades\Log::info('Sending notifications to other bidders', [
@@ -572,7 +622,6 @@ class BidController extends Controller
                     'current_bid' => $auction->current_bid
                 ]
             ]);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Illuminate\Support\Facades\Log::warning('Bid validation failed', [
                 'user_id' => Auth::id(),

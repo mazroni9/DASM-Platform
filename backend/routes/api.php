@@ -1,9 +1,9 @@
 <?php
 
-use App\Events\MyEvent;
 use Carbon\Carbon;
 use App\Models\Car;
 use Inertia\Inertia;
+use App\Events\MyEvent;
 use Illuminate\Http\Request;
 use App\Events\PublicMessageEvent;
 use Illuminate\Support\Facades\Route;
@@ -20,18 +20,19 @@ use App\Http\Controllers\WalletController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BroadcastController;
-use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\ModeratorController;
-use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\CarSimilarityController;
+use App\Http\Controllers\ExhibitorAuthController;
+use App\Http\Controllers\Admin\BidEventController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\AuctionSessionController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
-use App\Http\Controllers\Admin\AuctionSessionController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\CarSimilarityController;
+use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -190,7 +191,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
-
+    Route::get('/bids-history', [BidController::class, 'UserBidHistory']);
     // New standardized bid API for the unified frontend
     Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids']);
@@ -254,65 +255,105 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 
     // Offline bid management
     Route::post('/moderator/bids/offline', [ModeratorController::class, 'addOfflineBid']);
+
+    // Admin bid event management
 });
 
 // Admin routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
+->prefix('admin')->group(function () {
     // Admin dashboard
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-    Route::get('admin/settings', [SettingsController::class, 'index']);
-    Route::put('admin/settings', [SettingsController::class, 'update']);
-    Route::post('admin/settings', [SettingsController::class, 'update']); // Keep POST for backward compatibility
-    Route::get('admin/settings/{key}', [SettingsController::class, 'getSetting']);
+    Route::get('dashboard', [AdminController::class, 'dashboard']);
+    Route::get('settings', [SettingsController::class, 'index']);
+    Route::put('settings', [SettingsController::class, 'update']);
+    Route::post('settings', [SettingsController::class, 'update']); // Keep POST for backward compatibility
+    Route::get('settings/{key}', [SettingsController::class, 'getSetting']);
 
     // Admin user management
-    Route::get('/admin/users', [AdminUserController::class, 'index']);
-    Route::get('/admin/users/{userId}', [AdminUserController::class, 'show']);
-    Route::put('/admin/users/{userId}', [AdminUserController::class, 'update']);
-    Route::post('/admin/users/{userId}/activate', [AdminUserController::class, 'approveUser']);
-    Route::post('/admin/users/{userId}/reject', [AdminUserController::class, 'rejectUser']);
-    Route::post('/admin/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus']);
-    Route::get('/admin/pending-verifications', [AdminUserController::class, 'getPendingVerifications']);
-    Route::post('/admin/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification']);
-    Route::post('/admin/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification']);
+    Route::get('/users', [AdminUserController::class, 'index']);
+    Route::get('/users/{userId}', [AdminUserController::class, 'show']);
+    Route::put('/users/{userId}', [AdminUserController::class, 'update']);
+    Route::post('/users/{userId}/activate', [AdminUserController::class, 'approveUser']);
+    Route::post('/users/{userId}/reject', [AdminUserController::class, 'rejectUser']);
+    Route::post('/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus']);
+    Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications']);
+    Route::post('/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification']);
+    Route::post('/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification']);
 
     // Admin moderator management
-    Route::get('/admin/moderators', [AdminModeratorController::class, 'index']);
-    Route::post('/admin/moderators', [AdminModeratorController::class, 'store']);
-    Route::get('/admin/moderators/{id}', [AdminModeratorController::class, 'show']);
-    Route::put('/admin/moderators/{id}', [AdminModeratorController::class, 'update']);
-    Route::delete('/admin/moderators/{id}', [AdminModeratorController::class, 'destroy']);
-    Route::patch('/admin/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus']);
+    Route::get('/moderators', [AdminModeratorController::class, 'index']);
+    Route::post('/moderators', [AdminModeratorController::class, 'store']);
+    Route::get('/moderators/{id}', [AdminModeratorController::class, 'show']);
+    Route::put('/moderators/{id}', [AdminModeratorController::class, 'update']);
+    Route::delete('/moderators/{id}', [AdminModeratorController::class, 'destroy']);
+    Route::patch('/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus']);
 
     // Admin auction management
-    Route::get('/admin/auctions', [AdminController::class, 'auctions']);
-    Route::get('/admin/auctions/{id}', [AdminController::class, 'getAuction']);
-    Route::put('/admin/auctions/{id}', [AdminController::class, 'updateAuction']);
-    Route::post('/admin/auctions/{id}/approve', [AdminController::class, 'approveAuction']);
-    Route::post('/admin/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
-    Route::put('/admin/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
-    Route::put('/admin/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
-    Route::post('/admin/auctions/bulk-status', [AuctionController::class, 'bulkUpdateStatus']);
-    Route::put('/admin/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
-    Route::put('/admin/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
-    Route::put('/admin/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
+    Route::get('/auctions', [AdminController::class, 'auctions']);
+    Route::get('/auctions/{id}', [AdminController::class, 'getAuction']);
+    Route::put('/auctions/{id}', [AdminController::class, 'updateAuction']);
+    Route::post('/auctions/{id}/approve', [AdminController::class, 'approveAuction']);
+    Route::post('/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
+    Route::put('/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
+    Route::put('/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
+    Route::post('/auctions/bulk-status', [AuctionController::class, 'bulkUpdateStatus']);
+    Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
+    Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
+    Route::put('/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
+
+    Route::get('/bids/events', [BidEventController::class, 'index']);
+    Route::get('/bids/events/{id}', [BidEventController::class, 'show']);
 
     // Admin car management
-    Route::get('/admin/cars', [AdminController::class, 'getAllCars']);
-    Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);
-    Route::put('/admin/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
-    Route::delete('/admin/cars/{id}', [AdminController::class, 'deleteCar']);
+    Route::get('/cars', [AdminController::class, 'getAllCars']);
+    Route::put('/cars/{id}', [AdminController::class, 'updateCar']);
+    Route::put('/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
+    Route::delete('/cars/{id}', [AdminController::class, 'deleteCar']);
 
 
     // Admin blog management
-    Route::get('/admin/blogs', [AdminController::class, 'blogs']);
-    Route::post('/admin/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);
-    Route::post('/admin/blog-tags', [AdminController::class, 'manageTags']);
-    Route::get('/admin/blogs/tags', [AdminController::class, 'getBlogTags']);
+    Route::get('/blogs', [AdminController::class, 'blogs']);
+    Route::post('/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);
+    Route::post('/blog-tags', [AdminController::class, 'manageTags']);
+    Route::get('/blogs/tags', [AdminController::class, 'getBlogTags']);
 
     // Admin financial management
-    Route::get('/admin/transactions', [AdminController::class, 'getTransactions']);
-    Route::get('/admin/settlements', [AdminController::class, 'getSettlements']);
+    Route::get('/transactions', [AdminController::class, 'getTransactions']);
+    Route::get('/settlements', [AdminController::class, 'getSettlements']);
+
+
+    // Admin broadcast management
+
+    Route::get('/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
+    Route::get('/broadcast', [BroadcastController::class, 'show']);
+    Route::post('/broadcast', [BroadcastController::class, 'store']);
+    Route::put('/broadcast', [BroadcastController::class, 'update']);
+    Route::put('/broadcast/status', [BroadcastController::class, 'updateStatus']);
+    Route::delete('/broadcast/{id}', [BroadcastController::class, 'destroy']);
+    // Admin commission tiers management
+    Route::get('/commission-tiers', [CommissionTierController::class, 'index']);
+    Route::post('/commission-tiers', [CommissionTierController::class, 'store']);
+    Route::get('/commission-tiers/{id}', [CommissionTierController::class, 'show']);
+    Route::put('/commission-tiers/{id}', [CommissionTierController::class, 'update']);
+    Route::delete('/commission-tiers/{id}', [CommissionTierController::class, 'destroy']);
+    Route::post('/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
+
+    // Admin subscription plans management
+    Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
+    Route::post('/subscription-plans', [SubscriptionPlanController::class, 'store']);
+    Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show']);
+    Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
+    Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
+    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
+
+    // Admin auction sessions management
+    Route::get('/sessions', [AuctionSessionController::class, 'index']);
+    Route::get('/sessions/active-scheduled', [AuctionSessionController::class, 'getActiveAndScheduledSessions']);
+    Route::post('/sessions', [AuctionSessionController::class, 'store']);
+    Route::get('/sessions/{id}', [AuctionSessionController::class, 'show']);
+    Route::put('/sessions/{id}', [AuctionSessionController::class, 'update']);
+    Route::post('/sessions/{id}/status', [AuctionSessionController::class, 'updateStatus']);
+    Route::delete('/sessions/{id}', [AuctionSessionController::class, 'destroy']);
 
     // Blog CRUD operations (admin only)
     Route::post('/blog', [BlogController::class, 'store']);
@@ -324,39 +365,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/venues/{id}', [VenueController::class, 'update']);
     Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
 
-    // Admin broadcast management
-
-    Route::get('/admin/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
-    Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
-    Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
-    Route::put('/admin/broadcast', [BroadcastController::class, 'update']);
-    Route::put('/admin/broadcast/status', [BroadcastController::class, 'updateStatus']);
-    Route::delete('/admin/broadcast/{id}', [BroadcastController::class, 'destroy']);
-    // Admin commission tiers management
-    Route::get('/admin/commission-tiers', [CommissionTierController::class, 'index']);
-    Route::post('/admin/commission-tiers', [CommissionTierController::class, 'store']);
-    Route::get('/admin/commission-tiers/{id}', [CommissionTierController::class, 'show']);
-    Route::put('/admin/commission-tiers/{id}', [CommissionTierController::class, 'update']);
-    Route::delete('/admin/commission-tiers/{id}', [CommissionTierController::class, 'destroy']);
-    Route::post('/admin/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
-
-    // Admin subscription plans management
-    Route::get('/admin/subscription-plans', [SubscriptionPlanController::class, 'index']);
-    Route::post('/admin/subscription-plans', [SubscriptionPlanController::class, 'store']);
-    Route::get('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'show']);
-    Route::put('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'update']);
-    Route::delete('/admin/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
-    Route::post('/admin/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
-
-    // Admin auction sessions management
-    Route::get('/admin/sessions', [AuctionSessionController::class, 'index']);
-    Route::get('/admin/sessions/active-scheduled', [AuctionSessionController::class, 'getActiveAndScheduledSessions']);
-    Route::post('/admin/sessions', [AuctionSessionController::class, 'store']);
-    Route::get('/admin/sessions/{id}', [AuctionSessionController::class, 'show']);
-    Route::put('/admin/sessions/{id}', [AuctionSessionController::class, 'update']);
-    Route::post('/admin/sessions/{id}/status', [AuctionSessionController::class, 'updateStatus']);
-    Route::delete('/admin/sessions/{id}', [AuctionSessionController::class, 'destroy']);
 });
+
+
 
 // Public subscription plans routes
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
