@@ -33,7 +33,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${lamaSans.className} min-h-screen bg-slate-950 text-slate-100`}>
+      <body className={`${lamaSans.className} min-h-screen bg-slate-950`}>
         <LoadingProvider>
           <Providers>
             <ProtectedRoute>
