@@ -1,32 +1,61 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import { Clock, TrendingUp, TrendingDown, AlertCircle, CheckCircle, XCircle, Zap } from 'lucide-react';
+import api from '@/lib/axios';
+import { PriceWithIcon } from '@/components/ui/priceWithIcon';
+import * as dayjs from 'dayjs'
+import 'dayjs/locale/ar'
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
 
-const BidLogsTimeline = ({ auctionId }) => {
+const BidLogsTimeline = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [auctionIds, setAuctionIds] = useState([]);
+  const [selectedAuctionId, setSelectedAuctionId] = useState('');
   const [stats, setStats] = useState({
     total: 0,
-    active: 0,
+    bid_placed: 0,
     outbid: 0
   });
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    fetchBidLogs();
-  }, [auctionId, filter]);
+    setLogs([]);
+    setPage(1);
+    fetchBidLogs(1, true);
+  }, [selectedAuctionId, filter]);
 
-  const fetchBidLogs = async () => {
-    try {
+  const fetchBidLogs = async (pageNum, isNewFilter = false) => {
+    if (isNewFilter) {
       setLoading(true);
-      const res = await fetch(`/api/bids-history?filter=${filter}`);
-      const data = await res.json();
-      setLogs(data.data || []);
-      setStats(data.stats || { total: 0, active: 0, outbid: 0 });
+    } else {
+      setLoadingMore(true);
+    }
+    try {
+      let url = `/api/bids-history?filter=${filter}&page=${pageNum}`;
+      if (selectedAuctionId) {
+        url += `&auction_id=${selectedAuctionId}`;
+      }
+      const res = await api.get(url);
+      const data = await res.data;
+      setLogs(prev => isNewFilter ? (data.data || []) : [...prev, ...(data.data || [])]);
+      setPagination(data.pagination);
+      if (isNewFilter) {
+        setAuctionIds(Object.values(data.auctions_ids) || []);
+        setStats(data.stats || { total: 0, bid_placed: 0, outbid: 0 });
+      }
     } catch (err) {
       console.error('Error fetching logs:', err);
     } finally {
-      setLoading(false);
+      if (isNewFilter) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
   };
 
@@ -99,7 +128,7 @@ const BidLogsTimeline = ({ auctionId }) => {
 
   const getEventBadge = (eventType) => {
     const badges = {
-      bid_placed: 'مزايدة نشطة',
+      bid_placed: 'تمت المزايدة',
       outbid: 'تم التجاوز',
       autobid_fired: 'مزايدة تلقائية',
       bid_rejected: 'مرفوضة',
@@ -118,39 +147,72 @@ const BidLogsTimeline = ({ auctionId }) => {
     };
     return channels[channel] || channel;
   };
+  const relativeTime = require("dayjs/plugin/relativeTime");
+  // import relativeTime from 'dayjs/plugin/relativeTime' // ES 2015
+  dayjs.extend(relativeTime);
 
   const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = Math.floor((now - date) / 1000);
+    const date = dayjs(timestamp).locale('ar').fromNow();
+    return date;
 
-    if (diff < 60) return 'منذ لحظات';
-    if (diff < 3600) return `منذ ${Math.floor(diff / 60)} دقيقة`;
-    if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} ساعة`;
-    return date.toLocaleString('ar-SA', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      day: '2-digit',
-      month: 'short'
-    });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const handleScroll = () => {
+    if (window.innerHeight + document.documentElement.scrollTop < document.documentElement.offsetHeight - 100 || loading || loadingMore) {
+      return;
+    }
+    if (pagination && pagination.current_page < pagination.last_page) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
+
+  useEffect(() => {
+    if (page > 1) {
+      fetchBidLogs(page);
+    }
+  }, [page]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, loadingMore, pagination]);
+
+  const SkeletonCard = () => (
+    <div className="relative pr-16 mb-8">
+        <div className="absolute right-0 top-0">
+            <Skeleton variant="circular" width={48} height={48} />
+        </div>
+        <div className="absolute right-6 top-12 bottom-0 w-0.5 bg-gray-200" />
+        <div className="bg-white rounded-lg shadow-sm p-5 border-r-4 border-gray-200">
+            <div className="flex items-start justify-between mb-3">
+                <div>
+                    <Skeleton variant="text" width={150} sx={{ fontSize: '1rem' }} />
+                    <Skeleton variant="text" width={100} sx={{ fontSize: '0.75rem' }} />
+                </div>
+                <Skeleton variant="rectangular" width={80} height={24} className="rounded-full" />
+            </div>
+            <div className="flex items-center justify-between">
+                <div>
+                    <Skeleton variant="text" width={120} sx={{ fontSize: '1.5rem' }} />
+                </div>
+                <div className="text-left">
+                    <Skeleton variant="text" width={80} sx={{ fontSize: '0.875rem' }} />
+                    <Skeleton variant="text" width={60} sx={{ fontSize: '0.75rem' }} />
+                </div>
+            </div>
+            <Skeleton variant="text" width={100} sx={{ fontSize: '0.875rem' }} className="mt-1" />
+        </div>
+    </div>
+);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto mt-4">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold">سجل المزايدات</h1>
-            <p className="text-gray-600 mt-1">رقم المزاد #{auctionId}</p>
+            <h1 className="text-2xl font-bold text-gray-800">سجل المزايدات</h1>
+            {/* <p className="text-gray-600 mt-1">رقم المزاد #{auctionId}</p> */}
           </div>
         </div>
         
@@ -161,8 +223,8 @@ const BidLogsTimeline = ({ auctionId }) => {
             <div className="text-sm text-gray-600">إجمالي المزايدات</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            <div className="text-sm text-gray-600">مزايدات نشطة</div>
+            <div className="text-2xl font-bold text-green-600">{stats.bid_placed}</div>
+            <div className="text-sm text-gray-600">مزايدات تمت</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-400">{stats.outbid}</div>
@@ -184,7 +246,7 @@ const BidLogsTimeline = ({ auctionId }) => {
             onClick={() => setFilter('bid_placed')}
             className={`px-4 py-2 rounded-lg text-sm ${filter === 'bid_placed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
           >
-            نشطة
+            مزايدات تمت
           </button>
           <button 
             onClick={() => setFilter('outbid')}
@@ -192,15 +254,34 @@ const BidLogsTimeline = ({ auctionId }) => {
           >
             متجاوزة
           </button>
+          <select
+            value={selectedAuctionId}
+            onChange={(e) => setSelectedAuctionId(e.target.value)}
+            className="px-4 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            <option value="">كل المزادات</option>
+            {auctionIds.map((id) => (
+              <option key={id} value={id}>
+                مزاد #{id}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Timeline */}
       <div className="relative">
-        {logs.map((log, i) => {
-          const style = getEventStyle(log.event_type);
-          
-          return (
+         {
+         loading ? (
+           // عرض skeleton cards أثناء التحميل
+           Array.from(new Array(5)).map((_, index) => (
+            <SkeletonCard key={index} />
+           ))
+         ) :
+         logs.map((log, i) => {
+           const style = getEventStyle(log.event_type);
+           
+           return (
             <div key={log.bid_id} className="relative pr-16 mb-8">
               {/* Timeline Icon */}
               <div className={`absolute right-0 top-0 w-12 h-12 bg-gradient-to-br ${style.bgGradient} rounded-full flex items-center justify-center shadow-lg ${style.pulse ? 'animate-pulse' : ''}`}>
@@ -236,43 +317,39 @@ const BidLogsTimeline = ({ auctionId }) => {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`text-2xl font-bold ${log.event_type === 'outbid' ? 'text-gray-600 line-through' : 'text-gray-800'}`}>
-                      {parseFloat(log.bid_amount).toLocaleString('ar-SA')} {log.currency}
+                    <div className={`text-2xl font-bold ${log.event_type === 'outbid' ? 'text-gray-600 ' : 'text-gray-800'}`}>
+                      <PriceWithIcon price={log.bid_amount} />
                     </div>
                   </div>
+                  
                   <div className="text-left">
                     <div className="text-sm text-gray-600 flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      {formatTime(log.server_ts_utc)}
+                      {formatTime(log.client_ts)}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      {new Date(log.server_ts_utc).toLocaleString('ar-SA', {
+                      {new Date(log.client_ts).toLocaleString('ar-SA', {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
                     </div>
                   </div>
                 </div>
-
-                {/* Warning for outbid */}
-                {log.event_type === 'outbid' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-sm text-yellow-800">
-                        <strong>تنبيه:</strong> تم تجاوز مزايدتك. قم بزيادة عرضك للبقاء في المنافسة.
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <p className="text-gray-600 mt-1">رقم المزاد #{log.auction_id}</p>
+          
               </div>
             </div>
           );
         })}
-      </div>
-
-      {logs.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+        {loadingMore && (
+          Array.from(new Array(2)).map((_, index) => (
+            <SkeletonCard key={index} />
+           ))
+        )}
+       </div>
+ 
+       {logs.length === 0 && !loading &&(
+         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="text-gray-400 mb-2">
             <TrendingUp className="w-16 h-16 mx-auto" />
           </div>

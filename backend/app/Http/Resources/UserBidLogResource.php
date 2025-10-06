@@ -36,13 +36,14 @@ class UserBidLogResource extends JsonResource
     {
         $event_type = $this->event_type;
         $event = '';
+        $bid_amount = number_format($this->bid_amount, 1);
         //['bid_placed', 'bid_rejected', 'outbid', 'autobid_fired', 'bid_withdrawn']
         switch ($event_type) {
             case 'bid_placed':
-                $event = "لقد قمت بالمزايدة بملغ " . $this->bid_amount;
+                $event = "لقد قمت بالمزايدة بملغ " . $bid_amount . " ريال";
                 break;
             case 'outbid':
-                $event = "تم تجاوز مزايدتك بملغ جديد قيمته :" . $this->bid_amount;
+                $event = "تم تجاوز مزايدتك بملغ جديد قيمته :" . $bid_amount . " ريال";
                 break;
             default:
                 $event = $event_type;
@@ -52,7 +53,7 @@ class UserBidLogResource extends JsonResource
             'auction_id' => $this->auction_id,
             'bid_id' => $this->bid_id,
             'bidder_id' => $this->bidder_id,
-            'bid_amount' => $this->bid_amount,
+            'bid_amount' => $bid_amount,
             'currency' => $this->currency,
             'channel' => $this->channel,
             'event_type' => $this->event_type,

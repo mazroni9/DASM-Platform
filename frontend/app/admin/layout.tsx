@@ -52,6 +52,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
         { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
         { name: "المزادات", href: "/admin/auctions", icon: Car },
+        { name: "سجلات المزايدات", href: "/admin/bids-logs", icon: FileText },
         { name: "السيارات", href: "/admin/cars", icon: Car },
         { name: "التقارير", href: "/admin/reports", icon: BarChart },
         { name: "الإعدادات", href: "/admin/settings", icon: Settings },

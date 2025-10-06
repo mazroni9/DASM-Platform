@@ -108,6 +108,10 @@ class BidEventService
      */
     private function getBaseData(Request $request): array
     {
+        $user = $request->user('sanctum');
+        $currentToken = $user->currentAccessToken();
+        // استخدم الـ id الخاص بالتوكن كـ session_id
+        $tokenId = $currentToken ? $currentToken->id : null;
         return [
             'currency' => 'SAR',
             'channel' => 'web',
@@ -117,7 +121,7 @@ class BidEventService
             'server_nano_seq' => hrtime(true),
             'ip_addr' => $request->ip(),
             'user_agent' => $request->userAgent(),
-            'session_id' => $request->session()->getId(),
+            'session_id' => $tokenId,
         ];
     }
 }

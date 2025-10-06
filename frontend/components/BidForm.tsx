@@ -197,12 +197,13 @@ export default function BidForm({ auction_id, bid_amount, onSuccess }: BidFormPr
 
         setError(null);
         setIsSubmitting(true);
-
+        const client_ts = new Date().toISOString();
         try {
             const response = await api.post("/api/auctions/bid", {
                 auction_id,
                 user_id: user?.id,
                 bid_amount: numericBid,
+                client_ts: client_ts
             });
 
             if (response.data.status === "success") {
