@@ -11,6 +11,7 @@ interface RequestCacheOptions {
   ttl?: number; // Time to live in milliseconds
   maxSize?: number; // Maximum cache size
   staleWhileRevalidate?: boolean; // Return stale data while revalidating
+  enabled?: boolean; // Enable/disable caching
 }
 
 class RequestCache {
@@ -18,10 +19,12 @@ class RequestCache {
   private pendingRequests = new Map<string, Promise<any>>();
   private maxSize: number;
   private defaultTTL: number;
+  private enabled: boolean;
 
   constructor(options: RequestCacheOptions = {}) {
     this.maxSize = options.maxSize || 100;
     this.defaultTTL = options.ttl || 5 * 60 * 1000; // 5 minutes default
+    this.enabled = options.enabled !== false; // Default to true, but allow disabling
   }
 
   private generateKey(url: string, options?: RequestInit): string {
@@ -48,6 +51,11 @@ class RequestCache {
   }
 
   async get<T>(url: string, options?: RequestInit, ttl?: number): Promise<T> {
+    // If caching is disabled, make direct request
+    if (!this.enabled) {
+      return this.fetchDirect<T>(url, options);
+    }
+
     const key = this.generateKey(url, options);
     const entry = this.cache.get(key);
     
@@ -72,6 +80,14 @@ class RequestCache {
     return this.fetchAndCache(url, options, ttl);
   }
 
+  private async fetchDirect<T>(url: string, options?: RequestInit): Promise<T> {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
   private async fetchAndCache<T>(url: string, options?: RequestInit, ttl?: number): Promise<T> {
     const key = this.generateKey(url, options);
     
@@ -83,14 +99,16 @@ class RequestCache {
         return response.json();
       })
       .then(data => {
-        // Cache the response
-        this.cache.set(key, {
-          data,
-          timestamp: Date.now(),
-          expiresAt: Date.now() + (ttl || this.defaultTTL)
-        });
-        
-        this.evictOldEntries();
+        // Cache the response only if caching is enabled
+        if (this.enabled) {
+          this.cache.set(key, {
+            data,
+            timestamp: Date.now(),
+            expiresAt: Date.now() + (ttl || this.defaultTTL)
+          });
+          
+          this.evictOldEntries();
+        }
         this.pendingRequests.delete(key);
         
         return data;
@@ -109,6 +127,19 @@ class RequestCache {
     this.pendingRequests.clear();
   }
 
+  // Enable or disable caching
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) {
+      this.clear(); // Clear cache when disabling
+    }
+  }
+
+  // Check if caching is enabled
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
   delete(url: string, options?: RequestInit): boolean {
     const key = this.generateKey(url, options);
     return this.cache.delete(key);
@@ -121,11 +152,12 @@ class RequestCache {
   }
 }
 
-// Global cache instance
+// Global cache instance - DISABLED by default to prevent unwanted API caching
 export const requestCache = new RequestCache({
   ttl: 5 * 60 * 1000, // 5 minutes
   maxSize: 100,
-  staleWhileRevalidate: true
+  staleWhileRevalidate: true,
+  enabled: false // Disable caching to prevent unwanted API caching
 });
 
 // React hook for cached requests

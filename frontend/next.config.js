@@ -13,6 +13,14 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' },
+        ],
+      },
+      {
         source: '/:all*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=60, s-maxage=300, stale-while-revalidate=600' },
