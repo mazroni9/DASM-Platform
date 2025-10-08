@@ -51,6 +51,7 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
   },
   output: 'standalone',
+  outputFileTracingRoot: __dirname,
   experimental: {
     forceSwcTransforms: true,
     optimizePackageImports: ['lucide-react', 'react-icons'],
