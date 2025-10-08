@@ -22,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // API middleware
         $middleware->api(append: [
-            \App\Http\Middleware\ApiCacheMiddleware::class,
+            // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
             \App\Http\Middleware\ResponseOptimizationMiddleware::class,
         ]);

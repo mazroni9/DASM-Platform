@@ -34,8 +34,8 @@ class SecurityHeadersMiddleware
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }
 
-        // Cache control for sensitive pages
-        if ($this->isSensitivePage($request)) {
+        // Cache control for sensitive pages and API routes
+        if ($this->isSensitivePage($request) || $request->is('api/*')) {
             $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
             $response->headers->set('Pragma', 'no-cache');
             $response->headers->set('Expires', '0');
