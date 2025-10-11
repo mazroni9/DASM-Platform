@@ -1,187 +1,187 @@
 'use client';
 
-// ✅ صفحة عرض السوق الصامت مع رابط للتفاصيل السيارة
-// المسار: /pages/silent/page.tsx
-
-import React, { useEffect, useState, Fragment, useRef } from 'react'; // + useRef
+import React, { useEffect, useState, Fragment, useRef, useCallback } from 'react';
 import LoadingLink from "@/components/LoadingLink";
 import BidTimer from '@/components/BidTimer';
-import PriceInfoDashboard from '@/components/PriceInfoDashboard';
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/axios';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Countdown from '@/components/Countdown';
 import Pusher from 'pusher-js';
 import toast from 'react-hot-toast';
-import Pagination from "@/components/OldPagination";
 import {
-    Car,
-    Search,
-    Filter,
-    CheckSquare,
-    Square,
-    MoreVertical,
-    Eye,
-    Edit3,
-    Trash2,
-    Play,
-    Pause,
-    Archive,
-    RotateCcw,
-    Loader2,
-    ChevronDown,
-    X,
-    MoveVertical,
-    ChevronRight,
-    Clock,
-    ChevronUp,
+  Car,
+  Search,
+  Filter,
+  Eye,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  AlertCircle,
+  Loader2,
+  TrendingUp,
+  Minus,
+  Plus,
 } from "lucide-react";
-interface FilterOptions {
-    brand: string;
+
+// =============== أنواع TypeScript ===============
+interface Car {
+  id: number;
+  city: string;
+  make: string;
+  model: string;
+  year: number;
+  odometer: string;
+  condition: string;
+  color: string;
+  engine: string;
+  auction_status: string;
+  user_id?: number;
 }
+
+interface Bid {
+  bid_amount: number;
+  increment: number;
+}
+
+interface SilentAuctionItem {
+  id: number;
+  car_id: number;
+  car: Car;
+  auction_type: string;
+  minimum_bid: number;
+  maximum_bid: number;
+  current_bid: number;
+  bids: Bid[];
+  status?: string;
+}
+
+interface FilterOptions {
+  brand: string;
+}
+
 async function isWithinAllowedTime(page: string): Promise<boolean> {
+  try {
     const response = await api.get(`api/check-time?page=${page}`);
     return response.data.allowed;
-}
-
-
-// دالة للحصول على نوع المزاد الحالي
-function getCurrentAuctionType(time: Date = new Date()): { label: string, isLive: boolean } {
-  const h = time.getHours();
-
-  if (h >= 16 && h < 19) {
-    return { label: 'الحراج المباشر', isLive: true };
-  } else if (h >= 19 && h < 22) {
-    return { label: 'السوق الفوري المباشر', isLive: true };
-  } else {
-    return { label: 'السوق المتأخر', isLive: true };
+  } catch {
+    return false;
   }
 }
 
-export default function SilentAuctionPage() {
-      const [carsTotal,setCarsTotal]=useState(0);
+function getCurrentAuctionType(time: Date = new Date()): { label: string; isLive: boolean } {
+  const h = time.getHours();
+  if (h >= 16 && h < 19) return { label: "الحراج المباشر", isLive: true };
+  if (h >= 19 && h < 22) return { label: "السوق الفوري المباشر", isLive: true };
+  return { label: "السوق المتأخر", isLive: true };
+}
 
+export default function SilentAuctionPage() {
+  const [carsTotal, setCarsTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [carsBrands,setCarsBrands]=useState<[]>();
+  const [carsBrands, setCarsBrands] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({ brand: "" });
-  const [isAllowed,setIsAllowed]=useState(true);
-  const [cars, setCars] = useState<any[]>([]);
+  const [isAllowed, setIsAllowed] = useState(true);
+  const [cars, setCars] = useState<SilentAuctionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [expandedRows, setExpandedRows] = useState<{[key: number]: boolean}>({});
+  const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50; // or allow user to change it
+  const pageSize = 50;
   const { user, isLoggedIn } = useAuth();
   const router = useLoadingRouter();
 
-  // === إضافات Infinity Scroll ===
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null); // الحاوية ذات overflow-auto
-  const sentryRef = useRef<HTMLDivElement | null>(null);          // الحارس بأسفل القائمة
-  const loadingGateRef = useRef(false);                           // منع الطلبات المتوازية
+  // === Infinity Scroll ===
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const sentryRef = useRef<HTMLDivElement | null>(null);
+  const loadingGateRef = useRef(false);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 
-  // Verify user is authenticated
+  // تحقق من التوثيق
   useEffect(() => {
-      if (!isLoggedIn) {
-          router.push("/auth/login?returnUrl=/dashboard/profile");
-      }
-    }, [isLoggedIn, router]);
+    if (!isLoggedIn) {
+      router.push("/auth/login?returnUrl=/auctions/auctions-1main/silent");
+    }
+  }, [isLoggedIn, router]);
 
-  // تحديث الوقت كل ثانية
+  // تحديث الوقت
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch user profile data
-  useEffect(() => {
-      async function fetchAuctions() {
-           if (!isLoggedIn) return;
-          try {
-            loadingGateRef.current = true; // قفل منع الطلبات المتوازية
+  // جلب البيانات
+  const fetchAuctions = useCallback(async () => {
+    if (!isLoggedIn || loadingGateRef.current) return;
+    
+    loadingGateRef.current = true;
+    setLoading(currentPage === 1);
 
-            setIsAllowed(await isWithinAllowedTime('late_auction'));
-            setIsAllowed(true);
+    try {
+      // ✅ إصلاح: إزالة السطر الزائد setIsAllowed(true)
+      const allowed = await isWithinAllowedTime('late_auction');
+      setIsAllowed(allowed);
 
-            const params = new URLSearchParams();
-            if (searchTerm) params.append("search", searchTerm);
-            if (filters.brand) params.append("brand", filters.brand);
-            const response = await api.get(`/api/approved-auctions/silent_instant?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
-              {
-                headers: {
-                  "Content-Type": "application/json; charset=UTF-8",
-                  "Accept": "application/json; charset=UTF-8"
-                }
-              });
-            if (response.data.data || response.data.data) {
-                const carsData =response.data.data.data || response.data.data;
-                setCarsBrands(response.data.brands || []);
-                setTotalCount(response.data.data.total);
-                setCarsTotal(response.data.total);
-                // 👇 سطر واحد: لو الصفحة > 1 نلحق النتائج (append) بدلاً من الاستبدال
-                setCars(prev => currentPage > 1 ? [...prev, ...carsData] : carsData);
-            }
-                  
-          } catch (error) {
-              console.error('فشل تحميل بيانات المزاد المتأخر', error);
-              if (currentPage === 1) setCars([]); // أول صفحة فشلت
-              setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
-              setLoading(false);
-          } finally {
-              setLoading(false);
-              loadingGateRef.current = false; // فك القفل
-          }
+      const params = new URLSearchParams();
+      if (searchTerm) params.append("search", searchTerm);
+      if (filters.brand) params.append("brand", filters.brand);
+
+      const response = await api.get(
+        `/api/approved-auctions/silent_instant?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
+        { headers: { "Accept": "application/json; charset=UTF-8" } }
+      );
+
+      const data = response.data.data;
+      if (data) {
+        setCarsBrands(response.data.brands || []);
+        setTotalCount(data.total);
+        setCarsTotal(response.data.total?.total || 0);
+        setCars(prev => currentPage > 1 ? [...prev, ...data.data] : data.data);
       }
+    } catch (err) {
+      console.error('فشل تحميل بيانات المزاد المتأخر', err);
+      setError("تعذر الاتصال بالخادم. يرجى المحاولة لاحقًا.");
+      if (currentPage === 1) setCars([]);
+    } finally {
+      setLoading(false);
+      loadingGateRef.current = false;
+    }
+  }, [currentPage, searchTerm, filters, isLoggedIn]);
+
+  // تأثير جلب البيانات وPusher
+  useEffect(() => {
+    fetchAuctions();
+
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+    });
+
+    const channel = pusher.subscribe('auction.silent');
+    channel.bind('CarMovedBetweenAuctionsEvent', () => fetchAuctions());
+    channel.bind('AuctionStatusChangedEvent', (data: any) => {
       fetchAuctions();
-
-      // Setup Pusher listener for real-time auction updates
-      const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
-      });
-
-      const channel = pusher.subscribe('auction.silent');
-      channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
-          console.log('Car moved to auction:', data);
-          // Refresh auction data when cars are moved
-          fetchAuctions();
-          // toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
-      });
-
-      // Listen for auction status changes
-      channel.bind('AuctionStatusChangedEvent', (data: any) => {
-          console.log('Auction status changed:', data);
-          // Refresh auction data when status changes
-          fetchAuctions();
-          const statusLabels = {
-              'live': 'مباشر',
-              'ended': 'منتهي',
-              'completed': 'مكتمل',
-              'cancelled': 'ملغي',
-              'failed': 'فاشل',
-              'scheduled': 'مجدول'
-          };
-          const oldStatusLabel = statusLabels[data.old_status] || data.old_status;
-          const newStatusLabel = statusLabels[data.new_status] || data.new_status;
-          toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
-      });
-
-      // Cleanup function
-      return () => {
-          pusher.unsubscribe('auction.silent');
-          pusher.disconnect();
+      const statusLabels: Record<string, string> = {
+        live: 'مباشر', ended: 'منتهي', completed: 'مكتمل',
+        cancelled: 'ملغي', failed: 'فاشل', scheduled: 'مجدول'
       };
-  }, [currentPage,searchTerm, filters, isLoggedIn, pageSize]);
+      const oldLabel = statusLabels[data.old_status] || data.old_status;
+      const newLabel = statusLabels[data.new_status] || data.new_status;
+      toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldLabel} إلى ${newLabel}`);
+    });
 
-  // 🔭 مراقبة الحارس لتفعيل التحميل التلقائي
+    return () => {
+      pusher.unsubscribe('auction.silent');
+      pusher.disconnect();
+    };
+  }, [fetchAuctions]);
+
+  // Infinity Scroll
   useEffect(() => {
     const rootEl = scrollContainerRef.current;
     const sentryEl = sentryRef.current;
@@ -190,317 +190,314 @@ export default function SilentAuctionPage() {
     const io = new IntersectionObserver(
       (entries) => {
         const ent = entries[0];
-        if (!ent.isIntersecting) return;
-        if (loadingGateRef.current) return;
-        if (!isAllowed) return;
-        if (currentPage >= totalPages) return;
-
-        setCurrentPage((p) => p + 1); // هذا سيستدعي fetchAuctions عبر useEffect أعلاه
+        if (ent.isIntersecting && !loadingGateRef.current && isAllowed && currentPage < totalPages) {
+          setCurrentPage(p => p + 1);
+        }
       },
-      {
-        root: rootEl,           // نراقب داخل الحاوية القابلة للتمرير
-        rootMargin: "600px 0px",// ابدأ قبل الوصول للنهاية
-        threshold: 0,
-      }
+      { root: rootEl, rootMargin: "800px 0px", threshold: 0 }
     );
 
     io.observe(sentryEl);
     return () => io.disconnect();
   }, [loading, currentPage, totalPages, isAllowed]);
 
-  // تبديل حالة التوسيع للصف
   const toggleRowExpansion = (id: number) => {
-    setExpandedRows(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const filteredCars = cars.filter((car) => {
-    if (filters.brand == (car as any).make) return false;
-    return true
+  const filteredCars = cars.filter(car => {
+    if (filters.brand && filters.brand !== car.car.make) return false;
+    return true;
   });
 
+  // مكون لعرض التغيير في السعر
+  const PriceChangeBadge = ({ increment, bidAmount }: { increment: number; bidAmount: number }) => {
+    const isPositive = increment > 0;
+    const percentage = bidAmount ? ((increment / bidAmount) * 100).toFixed(2) : "0.00";
+    
+    return (
+      <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold border min-w-[90px] ${
+        isPositive 
+          ? "bg-emerald-900/30 text-emerald-300 border-emerald-700/50" 
+          : "bg-rose-900/30 text-rose-300 border-rose-700/50"
+      }`}>
+        {isPositive ? <Plus className="w-3 h-3 mr-1" /> : <Minus className="w-3 h-3 mr-1" />}
+        {formatCurrency(increment)} ({percentage}%)
+      </span>
+    );
+  };
+
   return (
-  <div className="p-4">
-    {/* زر العودة */}
-    <div className="flex justify-end mb-4">
-      <LoadingLink
-        href="/auctions/auctions-1main"
-        className="inline-flex items-center text-purple-600 hover:text-purple-700 transition-colors px-3 py-1 text-sm rounded-full border border-purple-200 hover:border-purple-300 bg-purple-50 hover:bg-purple-100"
-      >
-        <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
-        <span>العودة</span>
-      </LoadingLink>
-    </div>
-
-    {/* الهيدر */}
-    <div className="grid grid-cols-12 items-center mb-6 gap-4">
-      <div className="col-span-3 flex justify-start">
-        <div className="bg-white border-r-4 border-purple-500 rounded-lg shadow-sm px-3 py-1.5 flex items-center justify-between">
-          <div className="text-sm font-medium text-gray-800 ml-2">
-            <div>{auctionType} - جارٍ الآن</div>
-          </div>
-          <div className="flex items-center gap-2 mr-2">
-            <Clock className="text-purple-500 h-4 w-4" />
-            <div className="text-base font-mono font-semibold text-purple-800 dir-ltr">
-              <BidTimer showLabel={false} showProgress={false} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="col-span-6 text-center relative">
-        <h1 className="text-2xl font-bold relative z-10">السوق المتأخر</h1>
-        <div className="text-sm text-purple-600 mt-1 relative z-10">
-          وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي
-        </div>
-        <p className="text-gray-600 mt-1 text-sm relative z-10">
-          مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر
-          وصاحب العرض يستطيع أن يغير سعر بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري
-        </p>
-      </div>
-    </div>
-
-    {/* تحميل / خطأ */}
-    {loading && (
-      <div className="flex justify-center items-center h-40">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    )}
-
-    {error && (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <p>{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-        >
-          إعادة تحميل الصفحة
-        </button>
-      </div>
-    )}
-
-    {!loading && !error && cars.length === 0 && (
-      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-        <p>لا توجد سيارات متاحة في السوق المتأخر حالياً</p>
-      </div>
-    )}
-
-    {!isAllowed && (
-      <div className="mt-4">
-        <p>السوق ليس مفتوح الان سوف يفتح كما موضح في الوقت الأعلى</p>
-      </div>
-    )}
-
-    <div className="flex flex-col md:flex-row gap-4 mb-4">
-      <div className="flex-1">
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            size={20}
-          />
-          <input
-            type="text"
-            placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-      </div>
-      <button
-        onClick={() => setShowFilters(!showFilters)}
-        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-      >
-        <Filter size={20} />
-        فلاتر
-        <ChevronDown
-          className={`transition-transform ${showFilters ? "rotate-180" : ""}`}
-          size={16}
-        />
-      </button>
-    </div>
-
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-md">
-          <select
-            value={filters.brand}
-            onChange={(e) =>
-              setFilters((prev) => ({
-                ...prev,
-                brand: e.target.value,
-              }))
-            }
-            className="p-2 border border-gray-300 rounded-md"
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-gray-100 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* زر العودة */}
+        <div className="flex justify-end mb-6">
+          <LoadingLink
+            href="/auctions/auctions-1main"
+            className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors px-4 py-2.5 text-sm rounded-xl border border-purple-800/50 hover:border-purple-700 bg-gray-800/50 hover:bg-gray-800 backdrop-blur-sm"
           >
-            <option value="">كل السيارات</option>
-            {carsBrands.map((val,index)=>{
-                return <option key={index} value={val}>{val}</option>
-            })}
-           
-          </select>
+            <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+            العودة
+          </LoadingLink>
         </div>
-      )}
-    </div>
-    {!loading && !error && cars.length > 0 && isAllowed && (
-      <>
-        <br />
-       
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-lg font-bold text-gray-800">
-              المزاد المتأخر - السيارات المتاحة
-            </div>
-            <div className="text-sm text-gray-600"> 
-              عدد السيارات
-               {filteredCars.length} 
-              من
-               {carsTotal['total']}
+
+        {/* الهيدر */}
+        <div className="grid grid-cols-12 items-center mb-8 gap-4">
+          <div className="col-span-3">
+            <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl px-4 py-2.5 flex items-center justify-between border border-purple-800/30">
+              <div className="text-sm font-medium text-purple-300">
+                {auctionType} - جارٍ الآن
               </div>
+              <div className="flex items-center gap-2">
+                <Clock className="text-purple-400 w-4 h-4" />
+                <div className="font-mono font-semibold text-purple-300">
+                  <BidTimer showLabel={false} showProgress={false} />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="w-full border-b border-gray-300 my-4"></div>
-          <p className="text-gray-600 mb-4">
-            🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى المزاد المتأخر. الأسعار أدناه هي أسعار المزاد المتأخر.
-          </p>
+          <div className="col-span-6 text-center relative">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              السوق المتأخر
+            </h1>
+            <div className="mt-2 text-sm text-purple-400/80">
+              وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي
+            </div>
+            <p className="mt-3 text-gray-400 text-sm max-w-2xl mx-auto">
+              مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر، وصاحب العرض يستطيع أن يغير سعره بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري.
+            </p>
+          </div>
+        </div>
 
-          {/* الجدول */}
-          <div className="overflow-x-auto rounded-lg shadow-md border border-gray-200 mt-6">
-            <div className="max-h-[70vh] overflow-auto" ref={scrollContainerRef}>
-              <table className="min-w-full text-sm text-gray-700 border border-gray-200 border-collapse">
-                <thead className="sticky top-0 z-10">
-                <tr className="bg-gradient-to-r from-blue-50 to-blue-100 text-gray-800 text-xs uppercase tracking-wide">
-                    {[
-                      "", // زر التوسيع
-                      "المدينة",
-                      "الماركة",
-                      "الموديل",
-                      "سنة الصنع",
-                      "سعر الافتتاح",
-                      "اخر سعر",
-                      "التغير",
-                      "تفاصيل",
-                    ].map((header, idx) => (
-                      <th
-                        key={idx}
-                      className="px-4 py-3 text-center font-semibold border border-gray-200 whitespace-nowrap bg-blue-50/95 backdrop-blur-sm"
-                      >
-                        {header}
-                      </th>
+        {/* رسائل الحالة */}
+        {error && (
+          <div className="bg-red-900/20 border border-red-800/40 text-red-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {!isAllowed && (
+          <div className="bg-amber-900/20 border border-amber-800/40 text-amber-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>السوق غير مفتوح حاليًا. يفتح يوميًا من 10 مساءً إلى 4 عصراً اليوم التالي.</span>
+          </div>
+        )}
+
+        {!loading && !error && filteredCars.length === 0 && isAllowed && (
+          <div className="bg-purple-900/10 border border-purple-800/30 text-purple-300 rounded-2xl p-8 text-center backdrop-blur-sm mb-6">
+            <Car className="w-14 h-14 mx-auto mb-4 text-purple-400" />
+            <p className="font-semibold text-lg">لا توجد سيارات متاحة في السوق المتأخر حاليًا</p>
+          </div>
+        )}
+
+        {/* شريط البحث والفلاتر */}
+        <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-5 mb-6 shadow-2xl">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            <div className="relative flex-1 max-w-2xl">
+              <Search className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="ابحث بالماركة، الموديل، أو رقم الشاصي..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pr-11 pl-4 py-3 bg-gray-900/70 border border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-gray-100 placeholder-gray-500 backdrop-blur-sm"
+              />
+            </div>
+
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="text-sm text-gray-300 bg-gray-900/60 px-4.5 py-2.5 rounded-xl border border-gray-700/50">
+                <span className="font-semibold text-white">{filteredCars.length}</span> من <span className="font-semibold text-white">{carsTotal}</span> سيارة
+              </div>
+
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2.5 px-4.5 py-2.5 border border-gray-700/50 rounded-xl hover:bg-gray-800/70 transition-colors text-gray-300 hover:text-white backdrop-blur-sm"
+              >
+                <Filter className="w-4.5 h-4.5" />
+                فلاتر
+                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showFilters ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="mt-5 pt-5 border-t border-gray-700/40">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">ماركة السيارة</label>
+                  <select
+                    value={filters.brand}
+                    onChange={(e) => {
+                      setFilters(prev => ({ ...prev, brand: e.target.value }));
+                      setCurrentPage(1);
+                    }}
+                    className="w-full p-3 bg-gray-900/70 border border-gray-700 rounded-xl focus:ring-purple-500/50 focus:border-purple-500/50 text-gray-100 backdrop-blur-sm"
+                  >
+                    <option value="" className="bg-gray-800 text-gray-300">جميع الماركات</option>
+                    {carsBrands.map((brand, idx) => (
+                      <option key={idx} value={brand} className="bg-gray-800 text-gray-200">{brand}</option>
                     ))}
-                  </tr>
-                </thead>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-                <tbody>
-                  {filteredCars.map((car: any, idx: number) => (
-                    <Fragment key={idx}>
-                      {car.auction_type !== "live" &&
-                        car["car"].auction_status === "in_auction" && (
+        {/* جدول السيارات */}
+        {isAllowed && filteredCars.length > 0 && (
+          <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-gray-700/50">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-purple-300">السيارات المتاحة في المزاد المتأخر</h2>
+                <div className="text-sm text-gray-400">
+                  🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى المزاد المتأخر
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="max-h-[70vh] overflow-auto" ref={scrollContainerRef}>
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="bg-gray-900/70 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-700/50">
+                      {["", "المدينة", "الماركة", "الموديل", "السنة", "سعر الافتتاح", "آخر سعر", "التغير", "التفاصيل"].map((header, i) => (
+                        <th key={i} className="px-4 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/50">
+                    {filteredCars.map((car, idx) => (
+                      <Fragment key={car.id}>
+                        {car.auction_type !== "live" && car.car.auction_status === "in_auction" && (
                           <>
-                            <tr className="hover:bg-blue-50 transition-colors duration-150">
-                              <td className="px-2 py-3 text-center border border-gray-200">
+                            <tr className="hover:bg-gray-800/60 transition-colors">
+                              <td className="px-4 py-4 text-center">
                                 <button
-                                  onClick={() => toggleRowExpansion(idx)}
-                                  className="inline-flex items-center justify-center text-gray-500 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300 rounded"
-                                  aria-label={expandedRows[idx] ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+                                  onClick={() => toggleRowExpansion(car.id)}
+                                  className="inline-flex items-center justify-center text-gray-500 hover:text-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded-lg p-1.5 hover:bg-gray-700/50 transition-colors"
+                                  aria-label={expandedRows[car.id] ? "إخفاء التفاصيل" : "عرض التفاصيل"}
                                 >
-                                  {expandedRows[idx] ? (
-                                    <ChevronUp className="h-5 w-5" />
+                                  {expandedRows[car.id] ? (
+                                    <ChevronUp className="w-5 h-5" />
                                   ) : (
-                                    <ChevronDown className="h-5 w-5" />
+                                    <ChevronDown className="w-5 h-5" />
                                   )}
                                 </button>
                               </td>
-
-                              <td className="px-4 py-3 text-center border border-gray-200">{car["car"].city}</td>
-                              <td className="px-4 py-3 text-center border border-gray-200">{car["car"].make}</td>
-                              <td className="px-4 py-3 text-center border border-gray-200">{car["car"].model}</td>
-                              <td className="px-4 py-3 text-center border border-gray-200">{car["car"].year}</td>
-
-                              <td className="px-4 py-3 text-center border border-gray-200 font-medium text-gray-800">
-                                {formatCurrency(car["minimum_bid"] || 0)}
+                              <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.city}</td>
+                              <td className="px-4 py-4 text-center text-sm font-medium text-white">{car.car.make}</td>
+                              <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.model}</td>
+                              <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.year}</td>
+                              <td className="px-4 py-4 text-center text-sm text-amber-300">{formatCurrency(car.minimum_bid)}</td>
+                              <td className="px-4 py-4 text-center text-sm font-medium text-emerald-300">{formatCurrency(car.current_bid)}</td>
+                              <td className="px-4 py-4 text-center">
+                                {car.bids.length > 0 ? (
+                                  <PriceChangeBadge 
+                                    increment={car.bids[car.bids.length - 1].increment} 
+                                    bidAmount={car.bids[car.bids.length - 1].bid_amount} 
+                                  />
+                                ) : (
+                                  <span className="text-gray-500">—</span>
+                                )}
                               </td>
-
-                              <td className="px-4 py-3 text-center border border-gray-200 font-medium text-gray-800">
-                                {formatCurrency(car["current_bid"] || 0)}
-                              </td>
-
-                              <td className="px-4 py-3 text-center border border-gray-200">
-                                {(() => {
-                                  const last = car["bids"][car["bids"].length - 1];
-                                  const inc = last ? last.increment : 0;
-                                  const pct = last ? ((inc / last.bid_amount) * 100).toFixed(2) : "0.00";
-                                  const up = inc > 0;
-                                  return (
-                                    <span
-                                      className={[
-                                        "inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-semibold border min-w-[90px]",
-                                        up
-                                          ? "bg-green-50 text-green-700 border-green-200"
-                                          : "bg-gray-50 text-gray-700 border-gray-200",
-                                      ].join(" ")}
-                                    >
-                                      {formatCurrency(inc)} ({pct}%)
-                                    </span>
-                                  );
-                                })()}
-                              </td>
-
-                              <td className="px-4 py-3 text-center border border-gray-200">
+                              <td className="px-4 py-4 text-center">
                                 <a
-                                  href={`../../carDetails/${car.car_id}`}
+                                  href={`/carDetails/${car.car_id}`}
                                   target="_blank"
-                                  className="text-purple-600 hover:text-purple-800 underline"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 transition-all shadow-lg hover:shadow-xl border border-purple-500/30"
                                 >
-                                  عرض
+                                  <Eye className="w-4 h-4" />
                                 </a>
                               </td>
                             </tr>
 
-                            {expandedRows[idx] && (
-                              <tr className="bg-gray-50">
-                                <td colSpan={9} className="px-4 py-4 border border-gray-200">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="rounded-md border border-gray-200 p-3">
-                                      <h4 className="font-semibold text-gray-700 mb-2">معلومات السيارة</h4>
-                                      <ul className="space-y-1 text-sm">
-                                        <li><span className="font-medium">العداد:</span> {car["car"].odometer} كم</li>
-                                        <li><span className="font-medium">حالة السيارة:</span> {car["car"].condition || "جيدة"}</li>
-                                        <li><span className="font-medium">اللون:</span> {car["car"].color}</li>
-                                        <li><span className="font-medium">نوع الوقود:</span> {car["car"].engine}</li>
-                                      </ul>
-                                    </div>
-
-                                    <div className="rounded-md border border-gray-200 p-3">
-                                      <h4 className="font-semibold text-gray-700 mb-2">معلومات المزايدة</h4>
-                                      <ul className="space-y-1 text-sm">
-                                        <li><span className="font-medium">المزايدات المقدمة:</span> {car["bids"].length}</li>
-                                        <li><span className="font-medium">حالة المزايدة:</span> {car["status"] || "مغلق"}</li>
-                                        <li><span className="font-medium">نتيجة المزايدة:</span> {car["car"].auction_status}</li>
-                                      </ul>
-                                    </div>
-
-                                    <div className="rounded-md border border-gray-200 p-3">
-                                      <h4 className="font-semibold text-gray-700 mb-2">معلومات الأسعار</h4>
-                                      <ul className="space-y-1 text-sm">
-                                        <li><span className="font-medium">سعر الافتتاح:</span> {formatCurrency(car["minimum_bid"] || 0)}</li>
-                                        <li><span className="font-medium">أقل سعر:</span> {formatCurrency(car["minimum_bid"] || 0)}</li>
-                                        <li><span className="font-medium">أعلى سعر:</span> {formatCurrency(car["maximum_bid"] || 0)}</li>
-                                        <li><span className="font-medium">آخر سعر:</span> {formatCurrency(car["current_bid"] || 0)}</li>
-                                        <li>
-                                          <span className="font-medium">التغيّر:</span>{" "}
-                                          {car["bids"][car["bids"].length - 1]
-                                            ? `${formatCurrency(car["bids"][car["bids"].length - 1].increment)} (${
-                                                (
-                                                  (car["bids"][car["bids"].length - 1].increment /
-                                                    car["bids"][car["bids"].length - 1].bid_amount) *
-                                                  100
-                                                ).toFixed(2)
-                                              }%)`
-                                            : "0 (0%)"}
+                            {expandedRows[car.id] && (
+                              <tr className="bg-gray-900/30">
+                                <td colSpan={9} className="px-6 py-5 border-t border-gray-800/50">
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                      <h4 className="font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                                        <Car className="w-4 h-4" />
+                                        معلومات السيارة
+                                      </h4>
+                                      <ul className="space-y-2 text-sm">
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">العداد:</span>
+                                          <span className="text-gray-200">{car.car.odometer} كم</span>
                                         </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">الحالة:</span>
+                                          <span className="text-gray-200">{car.car.condition || "جيدة"}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">اللون:</span>
+                                          <span className="text-gray-200">{car.car.color}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">الوقود:</span>
+                                          <span className="text-gray-200">{car.car.engine}</span>
+                                        </li>
+                                      </ul>
+                                    </div>
+
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                      <h4 className="font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                                        <TrendingUp className="w-4 h-4" />
+                                        معلومات المزايدة
+                                      </h4>
+                                      <ul className="space-y-2 text-sm">
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">المزايدات:</span>
+                                          <span className="text-gray-200">{car.bids.length}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">الحالة:</span>
+                                          <span className="text-gray-200">{car.status || "مغلق"}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">نتيجة المزايدة:</span>
+                                          <span className="text-gray-200">{car.car.auction_status}</span>
+                                        </li>
+                                      </ul>
+                                    </div>
+
+                                    <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                                      <h4 className="font-semibold text-purple-300 mb-3">معلومات الأسعار</h4>
+                                      <ul className="space-y-2 text-sm">
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">سعر الافتتاح:</span>
+                                          <span className="text-amber-300">{formatCurrency(car.minimum_bid)}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">أقل سعر:</span>
+                                          <span className="text-amber-300">{formatCurrency(car.minimum_bid)}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">أعلى سعر:</span>
+                                          <span className="text-rose-300">{formatCurrency(car.maximum_bid)}</span>
+                                        </li>
+                                        <li className="flex justify-between">
+                                          <span className="text-gray-400">آخر سعر:</span>
+                                          <span className="text-emerald-300">{formatCurrency(car.current_bid)}</span>
+                                        </li>
+                                        {car.bids.length > 0 && (
+                                          <li className="flex justify-between">
+                                            <span className="text-gray-400">التغيّر:</span>
+                                            <PriceChangeBadge 
+                                              increment={car.bids[car.bids.length - 1].increment} 
+                                              bidAmount={car.bids[car.bids.length - 1].bid_amount} 
+                                            />
+                                          </li>
+                                        )}
                                       </ul>
                                     </div>
                                   </div>
@@ -509,34 +506,35 @@ export default function SilentAuctionPage() {
                             )}
                           </>
                         )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
 
-              {/* حارس السحب اللامتناهي */}
-              <div ref={sentryRef} className="py-4 text-center text-sm text-gray-500">
-                {loading
-                  ? "تحميل المزيد…"
-                  : (currentPage >= totalPages && cars.length > 0)
-                  ? "لا مزيد من النتائج"
-                  : ""}
+                {/* حارس السحب اللامتناهي */}
+                <div ref={sentryRef} className="py-6 text-center">
+                  {loading && currentPage > 1 && (
+                    <div className="flex justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                    </div>
+                  )}
+                  {!loading && currentPage >= totalPages && filteredCars.length > 0 && (
+                    <p className="text-sm text-gray-500">تم عرض جميع السيارات</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-{/*
-          <Pagination
-            className="pagination-bar mt-4"
-            currentPage={currentPage}
-            totalCount={totalCount}
-            pageSize={pageSize}
-            onPageChange={(page) => setCurrentPage(page)}
-          />
-           */}
-        </div>
-      </>
-    )}
-  </div>
-);
+        )}
 
+        {/* حالة التحميل الأولي */}
+        {loading && currentPage === 1 && (
+          <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-10 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto mb-4" />
+            <p className="text-gray-400">جارٍ تحميل بيانات السوق المتأخر...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
