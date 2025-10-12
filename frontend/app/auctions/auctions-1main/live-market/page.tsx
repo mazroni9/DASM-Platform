@@ -26,7 +26,7 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Pusher from 'pusher-js';
 import LiveYouTubeEmbed from "@/components/LiveYouTubeEmbed";
 
-// =============== أنواع TypeScript ===============
+
 interface Car {
   id: number;
   make: string;
