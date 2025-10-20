@@ -9,36 +9,59 @@ import {
 } from 'react-icons/fi'
 import { FaCar } from 'react-icons/fa'
 
-/** ===== API base & helpers (Vercel-safe) ===== */
+/** ===== API base & helpers (تشخيص + آمن للإنتاج) ===== */
 /**
- * التعديل الأهم هنا:
- * - السماح بالـ fallback إلى نفس الدومين /api حتى في الإنتاج.
- * - استخدام NEXT_PUBLIC_API_BASE_URL إن وُجد.
+ * السبب الأصلي: الإنتاج كان يتطلب وجود NEXT_PUBLIC_API_BASE_URL وإلا تتوقف الطلبات.
+ * الإصلاح: السماح بالـfallback إلى نفس الدومين /api حتى في الإنتاج + تشخيص واضح.
  */
 const ENV_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
 
 const sanitizeBase = (s: string) => s.replace(/\/+$/, '')
 const sameOriginApi = () => {
-  // نفس الدومين على المسار /api (عند وجود بروكسي/ري رايت)
   if (typeof window !== 'undefined') return `${window.location.origin}/api`
   return '/api'
 }
-
 const resolveApiBase = () => {
   const base = sanitizeBase(ENV_BASE)
   if (base) return base
-  // تحذير فقط للمساعدة في اكتشاف الإعداد الناقص، لكن لا نوقف التطبيق
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
     // eslint-disable-next-line no-console
     console.warn(
       '[WARN] NEXT_PUBLIC_API_BASE_URL غير معرّف في الإنتاج. سيتم استخدام نفس الدومين /api كحل بديل. ' +
-      'لو ما عندك بروكسي على /api فعرّف NEXT_PUBLIC_API_BASE_URL مثلاً: https://your-laravel.com/api'
+      'لو ما عندك بروكسي/Rewrite على /api فعرّف NEXT_PUBLIC_API_BASE_URL مثل: https://your-laravel.com/api'
     )
   }
   return sanitizeBase(sameOriginApi())
 }
-
 const API_BASE = resolveApiBase()
+
+/** تشخيص فوري في المتصفح لمعرفة سبب العطل بدقة */
+const __DIAG = (() => {
+  const envProvided = ENV_BASE.length > 0
+  const nodeEnv = process.env.NODE_ENV
+  let origin = ''
+  let crossOrigin = false
+  if (typeof window !== 'undefined') {
+    origin = window.location.origin
+    try {
+      crossOrigin = API_BASE.startsWith('http') && new URL(API_BASE).origin !== origin
+    } catch { /* ignore */ }
+    // eslint-disable-next-line no-console
+    console.info('[API DIAG]', {
+      nodeEnv, envProvided, API_BASE, origin, crossOrigin,
+      note: envProvided ? 'Using NEXT_PUBLIC_API_BASE_URL' : 'Using fallback /api on same origin'
+    })
+    // تحذير شائع: قيمة BASE بدون /api
+    try {
+      const baseUrl = new URL(API_BASE, origin)
+      if (!/\/api(\/|$)/.test(baseUrl.pathname)) {
+        // eslint-disable-next-line no-console
+        console.warn('[API DIAG] يبدو أن NEXT_PUBLIC_API_BASE_URL لا يحتوي على المسار /api. تأكد أن المسار صحيح أو ضف rewrite من /api إلى باك-إند Laravel.')
+      }
+    } catch { /* ignore */ }
+  }
+  return { envProvided, nodeEnv, crossOrigin }
+})()
 
 const buildApiUrl = (path: string) => {
   const clean = path.replace(/^\//, '')
@@ -50,18 +73,24 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-// wrapper موحّد للطلبات مع رسائل خطأ محسّنة
+// wrapper موحّد مع تشخيص أسباب فشل الشبكة/CORS/DNS
 async function apiFetch(path: string, init?: RequestInit) {
   const url = buildApiUrl(path)
-
-  const res = await fetch(url, {
-    cache: 'no-store',
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      ...(init?.headers || {}),
-    },
-  })
+  let res: Response
+  try {
+    res = await fetch(url, {
+      cache: 'no-store',
+      ...init,
+      headers: {
+        Accept: 'application/json',
+        ...(init?.headers || {}),
+      },
+    })
+  } catch (err: any) {
+    const maybeCors = __DIAG.crossOrigin ? ' (محتمل CORS: الدومين مختلف ولم يُصرّح به في Laravel/CORS)' : ''
+    const hintSameOrigin = !__DIAG.crossOrigin ? ' (محتمل غياب rewrite /api في Next/Vercel أو عنوان BASE غير صحيح)' : ''
+    throw new Error(`تعذر الاتصال بالخادم عند ${url}.${maybeCors}${hintSameOrigin}\nالتفاصيل: ${err?.message || err}`)
+  }
 
   // أخطاء شائعة مع توضيح
   if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
