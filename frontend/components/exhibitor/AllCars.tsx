@@ -9,46 +9,43 @@ import {
 } from 'react-icons/fi'
 import { FaCar } from 'react-icons/fa'
 
-/** ===== API base & helpers (آمن في الإنتاج + تشخيص واضح) ===== */
+/**
+ * ===== API base & helpers =====
+ * اضبط NEXT_PUBLIC_API_URL على "جذر" سيرفر Laravel (بدون /api)
+ * أمثلة صحيحة:
+ *  NEXT_PUBLIC_API_URL=https://dasm-development-branch.onrender.com
+ *  NEXT_PUBLIC_API_URL=https://dasm.com.sa/public
+ */
 const IS_PROD = process.env.NODE_ENV === 'production'
-const RAW_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
+const RAW_ROOT = (process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/+$/, '')
 
-const stripTrailingSlash = (s: string) => s.replace(/\/+$/, '')
-const sameOriginApi = () => {
-  if (typeof window !== 'undefined') return `${window.location.origin}/api`
-  return '/api'
+const getSameOrigin = () =>
+  (typeof window !== 'undefined' ? window.location.origin : '')
+
+function resolveApiRoot() {
+  if (RAW_ROOT) return { root: RAW_ROOT, source: 'env' as const }
+  if (!IS_PROD) return { root: getSameOrigin(), source: 'dev-fallback' as const }
+  throw new Error(
+    [
+      'Production misconfigured: NEXT_PUBLIC_API_URL is missing.',
+      'Set it to your Laravel host ROOT (WITHOUT /api).',
+      'Example: https://dasm-development-branch.onrender.com OR https://dasm.com.sa/public'
+    ].join(' ')
+  )
 }
 
-function resolveApiBase() {
-  const envBase = stripTrailingSlash(RAW_BASE)
-  if (envBase) return { base: envBase, source: 'env' as const }
-
-  // 👇 بدل ما نرمي خطأ في الإنتاج، نستخدم fallback آمن ويظهر تحذير في الـ console
-  const fallback = stripTrailingSlash(sameOriginApi())
-  if (IS_PROD) {
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-console
-      console.warn(
-        '[API CONFIG] لم يتم ضبط NEXT_PUBLIC_API_BASE_URL. سيتم استخدام نفس المصدر كـ Fallback:',
-        fallback
-      )
-    }
-    return { base: fallback, source: 'prod-fallback' as const }
-  }
-  return { base: fallback, source: 'dev-fallback' as const }
-}
-
-const { base: API_BASE, source: API_SOURCE } = resolveApiBase()
+const { root: API_ROOT, source: API_SOURCE } = resolveApiRoot()
 
 const buildApiUrl = (path: string) => {
   const clean = path.replace(/^\//, '')
-  return `${API_BASE}/${clean}`
+  // نضيف /api هنا — لذلك NEXT_PUBLIC_API_URL يجب أن يكون بدون /api
+  return `${API_ROOT}/api/${clean}`
 }
 
 const authHeaders = () => {
   try {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-    return token ? { Authorization: `Bearer ${token}` } : {}
+    return token ? { Authorization: `Bearer ${token.replace(/^"(.+)"$/, '$1')}` } : {}
   } catch {
     return {}
   }
@@ -64,15 +61,15 @@ async function apiFetch(path: string, init?: RequestInit) {
       ...init,
       headers: {
         Accept: 'application/json',
-        ...authHeaders(), // 👈 أضفنا التوكن هنا افتراضياً
+        ...authHeaders(),
         ...(init?.headers || {}),
       },
     })
   } catch (err: any) {
     const hint =
       API_SOURCE === 'dev-fallback'
-        ? 'يبدو أنك تستخدم fallback /api محلياً.'
-        : 'تحقق من عنوان NEXT_PUBLIC_API_BASE_URL أو إعدادات CORS على Laravel أو الـ Rewrite.'
+        ? 'تستخدم نفس الدومين محليًا (dev-fallback).'
+        : 'تحقق من NEXT_PUBLIC_API_URL أو CORS على Laravel.'
     throw new Error(`تعذر الاتصال بالخادم: ${url}\n${hint}\nالتفاصيل: ${err?.message || err}`)
   }
 
@@ -82,10 +79,10 @@ async function apiFetch(path: string, init?: RequestInit) {
     const body = await res.text().catch(() => '')
     const isNext404 = /The page could not be found/i.test(body)
     const advice = isNext404
-      ? `يبدو أن الطلب وصل إلى Next.js بدل Laravel (لا يوجد Rewrite للمسار /api).
-- إمّا عرّف NEXT_PUBLIC_API_BASE_URL ليشير مباشرةً إلى خادوم Laravel (مثال: https://api.dasm.com.sa/api أو https://dasm.com.sa/public/api).
-- أو أضف rewrite في الاستضافة:
-  من /api/(.*) إلى https://<laravel-host>/api/$1`
+      ? `الطلب وصل إلى Next.js بدل Laravel.
+- يجب ضبط NEXT_PUBLIC_API_URL ليشير إلى جذر Laravel (بدون /api).
+  مثال: https://dasm-development-branch.onrender.com أو https://dasm.com.sa/public
+- لاحظ أن الكود يضيف /api تلقائيًا.`
       : 'تحقق من مسار Laravel (route) أو البارامترات.'
     throw new Error(`تعذر جلب البيانات (404) من: ${url}\n${advice}\n${body}`)
   }
@@ -178,6 +175,7 @@ const mapStatusToArabic = (s?: string): UiCar['status'] => {
     case 'active':
       return 'معلن'
     case 'scheduled':
+    case 'reserved':
       return 'محجوز'
     case 'sold':
       return 'مباع'
@@ -220,7 +218,7 @@ const toNumberSafe = (v?: string | number | null) => {
   return isFinite(n) ? n : 0
 }
 
-/** ===== Small UI primitives (توحيد التصميم الداكن) ===== */
+/** ===== Small UI primitives ===== */
 const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-800 ${className}`}>
     {children}
@@ -241,7 +239,7 @@ const SubtleBtn = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
   />
 )
 
-/** ===== UI Modals (داكن) ===== */
+/** ===== UI Modals ===== */
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <motion.div
@@ -411,7 +409,7 @@ function EditCarModal({
         }
       })
 
-      const res = await apiFetch(`/cars/${car.id}`, {
+      const res = await apiFetch(`cars/${car.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -565,7 +563,7 @@ function DeleteConfirmModal({
   )
 }
 
-/** ===== Filter Panel (داكن) ===== */
+/** ===== Filter Panel ===== */
 type Filters = { status: string; brand: string; minPrice: string; maxPrice: string; yearFrom: string; yearTo: string }
 
 function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
@@ -779,7 +777,7 @@ function FilterPanel({
   )
 }
 
-/** ===== Main Component (داكن موحّد) ===== */
+/** ===== Main Component ===== */
 export default function ExhibitorCars() {
   const router = useRouter()
 
@@ -840,7 +838,7 @@ export default function ExhibitorCars() {
       }
       if (filters.brand) params.set('make', filters.brand)
 
-      const res = await apiFetch(`/cars?${params.toString()}`)
+      const res = await apiFetch(`cars?${params.toString()}`)
       const json: CarsApiResponse = await res.json()
 
       const mapped: UiCar[] = (json.data.data || []).map((c) => ([
@@ -928,11 +926,11 @@ export default function ExhibitorCars() {
 
   const goToAddCar = () => router.push('/exhibitor/add-car')
 
-  /** ===== Actions: open modals ===== */
+  /** ===== Actions ===== */
   const openView = async (id: number) => {
     setSelectedId(id); setViewOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const res = await apiFetch(`/cars/${id}`)
+      const res = await apiFetch(`cars/${id}`)
       const j: ShowCarApiResponse = await res.json()
       setSelectedCarData(j.data.car)
     } catch (e: any) {
@@ -943,7 +941,7 @@ export default function ExhibitorCars() {
   const openEdit = async (id: number) => {
     setSelectedId(id); setEditOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const res = await apiFetch(`/cars/${id}`)
+      const res = await apiFetch(`cars/${id}`)
       const j: ShowCarApiResponse = await res.json()
       setSelectedCarData(j.data.car)
     } catch (e: any) {
@@ -953,7 +951,6 @@ export default function ExhibitorCars() {
 
   const openDelete = (id: number) => { setSelectedId(id); setDeleteOpen(true); setActionError(null) }
 
-  /** ===== Action handlers (PUT / DELETE) ===== */
   const handleSaved = (updated: CarFromApi) => {
     setCars((prev) =>
       prev.map((c) =>
@@ -979,7 +976,7 @@ export default function ExhibitorCars() {
     if (!selectedId) return
     setActionLoading(true); setActionError(null)
     try {
-      await apiFetch(`/cars/${selectedId}`, { method: 'DELETE' })
+      await apiFetch(`cars/${selectedId}`, { method: 'DELETE' })
       setCars((prev) => prev.filter((c) => c.id !== selectedId))
       setDeleteOpen(false)
     } catch (e: any) {
@@ -1224,7 +1221,7 @@ export default function ExhibitorCars() {
   )
 }
 
-/** ===== Small UI helpers (داكن) ===== */
+/** ===== Small UI helpers ===== */
 function StatCard({ title, value, color }: { title: string; value: number | string; color: 'indigo'|'green'|'yellow'|'red' }) {
   const ringMap: Record<'indigo'|'green'|'yellow'|'red', string> = {
     indigo: 'from-violet-600 to-indigo-600',
