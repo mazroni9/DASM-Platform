@@ -9,58 +9,39 @@ import {
 } from 'react-icons/fi'
 import { FaCar } from 'react-icons/fa'
 
-/** ===== API base & helpers (تشخيص + آمن للإنتاج) ===== */
-/**
- * السبب الأصلي: الإنتاج كان يتطلب وجود NEXT_PUBLIC_API_BASE_URL وإلا تتوقف الطلبات.
- * الإصلاح: السماح بالـfallback إلى نفس الدومين /api حتى في الإنتاج + تشخيص واضح.
- */
-const ENV_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
+/** ===== API base & helpers (إنتاج صارم + تشخيص واضح) ===== */
+const IS_PROD = process.env.NODE_ENV === 'production'
+const RAW_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
 
-const sanitizeBase = (s: string) => s.replace(/\/+$/, '')
+const stripTrailingSlash = (s: string) => s.replace(/\/+$/, '')
 const sameOriginApi = () => {
   if (typeof window !== 'undefined') return `${window.location.origin}/api`
   return '/api'
 }
-const resolveApiBase = () => {
-  const base = sanitizeBase(ENV_BASE)
-  if (base) return base
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[WARN] NEXT_PUBLIC_API_BASE_URL غير معرّف في الإنتاج. سيتم استخدام نفس الدومين /api كحل بديل. ' +
-      'لو ما عندك بروكسي/Rewrite على /api فعرّف NEXT_PUBLIC_API_BASE_URL مثل: https://your-laravel.com/api'
-    )
-  }
-  return sanitizeBase(sameOriginApi())
-}
-const API_BASE = resolveApiBase()
 
-/** تشخيص فوري في المتصفح لمعرفة سبب العطل بدقة */
-const __DIAG = (() => {
-  const envProvided = ENV_BASE.length > 0
-  const nodeEnv = process.env.NODE_ENV
-  let origin = ''
-  let crossOrigin = false
-  if (typeof window !== 'undefined') {
-    origin = window.location.origin
-    try {
-      crossOrigin = API_BASE.startsWith('http') && new URL(API_BASE).origin !== origin
-    } catch { /* ignore */ }
-    // eslint-disable-next-line no-console
-    console.info('[API DIAG]', {
-      nodeEnv, envProvided, API_BASE, origin, crossOrigin,
-      note: envProvided ? 'Using NEXT_PUBLIC_API_BASE_URL' : 'Using fallback /api on same origin'
-    })
-    // تحذير شائع: قيمة BASE بدون /api
-    try {
-      const baseUrl = new URL(API_BASE, origin)
-      if (!/\/api(\/|$)/.test(baseUrl.pathname)) {
-        // eslint-disable-next-line no-console
-        console.warn('[API DIAG] يبدو أن NEXT_PUBLIC_API_BASE_URL لا يحتوي على المسار /api. تأكد أن المسار صحيح أو ضف rewrite من /api إلى باك-إند Laravel.')
-      }
-    } catch { /* ignore */ }
+function resolveApiBase() {
+  const envBase = stripTrailingSlash(RAW_BASE)
+  if (envBase) {
+    return { base: envBase, source: 'env' as const }
   }
-  return { envProvided, nodeEnv, crossOrigin }
+  if (!IS_PROD) {
+    return { base: stripTrailingSlash(sameOriginApi()), source: 'dev-fallback' as const }
+  }
+  throw new Error(
+    'إعدادات الخادم غير مكتملة في الإنتاج: يجب ضبط NEXT_PUBLIC_API_BASE_URL ليشير إلى Laravel (مثال: https://api.dasm.com.sa/api).'
+  )
+}
+
+const { base: API_BASE, source: API_SOURCE } = (() => {
+  try {
+    return resolveApiBase()
+  } catch (e) {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.error('[API CONFIG ERROR]', e)
+    }
+    throw e
+  }
 })()
 
 const buildApiUrl = (path: string) => {
@@ -73,9 +54,9 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-// wrapper موحّد مع تشخيص أسباب فشل الشبكة/CORS/DNS
 async function apiFetch(path: string, init?: RequestInit) {
   const url = buildApiUrl(path)
+
   let res: Response
   try {
     res = await fetch(url, {
@@ -87,25 +68,35 @@ async function apiFetch(path: string, init?: RequestInit) {
       },
     })
   } catch (err: any) {
-    const maybeCors = __DIAG.crossOrigin ? ' (محتمل CORS: الدومين مختلف ولم يُصرّح به في Laravel/CORS)' : ''
-    const hintSameOrigin = !__DIAG.crossOrigin ? ' (محتمل غياب rewrite /api في Next/Vercel أو عنوان BASE غير صحيح)' : ''
-    throw new Error(`تعذر الاتصال بالخادم عند ${url}.${maybeCors}${hintSameOrigin}\nالتفاصيل: ${err?.message || err}`)
+    const hint = API_SOURCE === 'dev-fallback'
+      ? 'يبدو أنك تستخدم fallback /api. لو هذا في الإنتاج فغالباً مفقود rewrite يوجّه /api إلى Laravel.'
+      : 'تحقق من عنوان NEXT_PUBLIC_API_BASE_URL أو إعدادات CORS على Laravel.'
+    throw new Error(`تعذر الاتصال بالخادم: ${url}\n${hint}\nالتفاصيل: ${err?.message || err}`)
   }
 
-  // أخطاء شائعة مع توضيح
   if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
+
   if (res.status === 404) {
     const body = await res.text().catch(() => '')
-    throw new Error(`تعذر جلب البيانات (404). تحقق من المسار على الخادم: ${url}\n${body}`)
+    const isNext404 = /The page could not be found/i.test(body)
+    const advice = isNext404
+      ? `يبدو أن الطلب وصل إلى Next.js بدل Laravel (لا يوجد Rewrite للمسار /api).
+- إمّا عرّف NEXT_PUBLIC_API_BASE_URL ليشير مباشرةً إلى خادوم Laravel (مثال: https://api.dasm.com.sa/api أو https://dasm.com.sa/public/api).
+- أو أضف rewrite في الاستضافة:
+  من /api/(.*) إلى https://<laravel-host>/api/$1`
+      : 'تحقق من مسار Laravel (route) أو البارامترات.'
+    throw new Error(`تعذر جلب البيانات (404) من: ${url}\n${advice}\n${body}`)
   }
+
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     throw new Error(`فشل الطلب (${res.status}). ${body}`)
   }
+
   return res
 }
 
-/** ===== Types coming from backend (Laravel paginator) ===== */
+/** ===== Types (Laravel) ===== */
 type CarFromApi = {
   id: number
   dealer_id: number | null
@@ -219,7 +210,6 @@ const conditionOptions = [
   { value: 'poor', label: 'ضعيفة' },
 ]
 
-// price parser
 const toNumberSafe = (v?: string | number | null) => {
   if (v === null || v === undefined) return 0
   if (typeof v === 'number') return isFinite(v) ? v : 0
@@ -228,31 +218,53 @@ const toNumberSafe = (v?: string | number | null) => {
   return isFinite(n) ? n : 0
 }
 
-/** ===== UI Modals ===== */
+/** ===== Small UI primitives (توحيد التصميم الداكن) ===== */
+const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={`bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-800 ${className}`}>
+    {children}
+  </div>
+)
 
+const PrimaryBtn = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button
+    {...props}
+    className={`px-5 py-3 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50 ${props.className || ''}`}
+  />
+)
+
+const SubtleBtn = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button
+    {...props}
+    className={`px-5 py-3 rounded-xl bg-slate-900/60 text-slate-200 border border-slate-700 hover:bg-slate-800/60 transition-colors ${props.className || ''}`}
+  />
+)
+
+/** ===== UI Modals (داكن) ===== */
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <motion.div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onMouseDown={onClose}
     >
       <motion.div
-        className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative"
-        initial={{ scale: 0.95, opacity: 0, y: 40 }}
+        className="w-full max-w-3xl relative"
+        initial={{ scale: 0.97, opacity: 0, y: 30 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 40 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        exit={{ scale: 0.97, opacity: 0, y: 30 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute left-4 top-4 text-gray-400 hover:text-gray-700"
-          aria-label="إغلاق"
-        >
-          <FiX size={22} />
-        </button>
-        {children}
+        <Panel className="p-6">
+          <button
+            onClick={onClose}
+            className="absolute left-4 top-4 text-slate-400 hover:text-slate-200"
+            aria-label="إغلاق"
+          >
+            <FiX size={22} />
+          </button>
+          {children}
+        </Panel>
       </motion.div>
     </motion.div>
   )
@@ -263,11 +275,11 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
     <AnimatePresence>
       {open && (
         <Backdrop onClose={onClose}>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">تفاصيل السيارة</h2>
+          <h2 className="text-2xl font-bold text-slate-100 mb-4">تفاصيل السيارة</h2>
           {!car ? (
-            <div className="text-gray-500">جاري التحميل...</div>
+            <div className="text-slate-400">جاري التحميل...</div>
           ) : (
-            <div className="space-y-3 text-gray-800">
+            <div className="space-y-4 text-slate-200">
               <div className="grid grid-cols-2 gap-3">
                 <Info label="الماركة" value={car.make} />
                 <Info label="الموديل" value={car.model} />
@@ -285,19 +297,19 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
                 <Info label="فئة السوق" value={car.market_category ?? ''} />
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-1">الوصف</p>
-                <p className="bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">{car.description || '—'}</p>
+                <p className="text-sm text-slate-400 mb-1">الوصف</p>
+                <p className="bg-slate-800/60 rounded-lg p-3 whitespace-pre-wrap text-slate-200">{car.description || '—'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-2">الصور</p>
+                <p className="text-sm text-slate-400 mb-2">الصور</p>
                 {Array.isArray(car.images) && car.images.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2">
                     {car.images.map((src, i) => (
-                      <img key={`img-${i}-${src}`} src={src} alt={`image-${i}`} className="w-full h-24 object-cover rounded" />
+                      <img key={`img-${i}-${src}`} src={src} alt={`image-${i}`} className="w-full h-24 object-cover rounded-lg border border-slate-800" />
                     ))}
                   </div>
                 ) : (
-                  <div className="text-gray-500">لا توجد صور</div>
+                  <div className="text-slate-400">لا توجد صور</div>
                 )}
               </div>
             </div>
@@ -310,9 +322,9 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-50 p-3 rounded-lg">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="font-medium">{value || '—'}</p>
+    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-800">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="font-medium text-slate-100">{value || '—'}</p>
     </div>
   )
 }
@@ -417,13 +429,13 @@ function EditCarModal({
     <AnimatePresence>
       {open && (
         <Backdrop onClose={onClose}>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">تعديل السيارة</h2>
+          <h2 className="text-2xl font-bold text-slate-100 mb-4">تعديل السيارة</h2>
           {!form ? (
-            <div className="text-gray-500">جارى التحميل...</div>
+            <div className="text-slate-400">جارى التحميل...</div>
           ) : (
             <>
               {error && (
-                <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">{error}</div>
+                <div className="mb-3 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-3 whitespace-pre-wrap">{error}</div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="الماركة">
@@ -475,16 +487,15 @@ function EditCarModal({
                   <input type="text" className="input" value={form.max_price} onChange={(e)=>updateField('max_price', e.target.value)} />
                 </Field>
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-1">الوصف</label>
+                  <label className="block text-slate-300 mb-1">الوصف</label>
                   <textarea className="input h-24" value={form.description} onChange={(e)=>updateField('description', e.target.value)} />
                 </div>
               </div>
-              <div className="mt-5 flex justify-end gap-3">
-                <button onClick={onClose} className="px-5 py-2 border rounded-lg">إلغاء</button>
-                <button onClick={submit} disabled={saving}
-                        className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+              <div className="mt-6 flex justify-end gap-3">
+                <SubtleBtn onClick={onClose}>إلغاء</SubtleBtn>
+                <PrimaryBtn onClick={submit} disabled={saving}>
                   {saving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
-                </button>
+                </PrimaryBtn>
               </div>
             </>
           )}
@@ -497,11 +508,24 @@ function EditCarModal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-gray-700 mb-1">{label}</label>
+      <label className="block text-slate-300 mb-1">{label}</label>
       {children}
       <style jsx>{`
-        .input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none }
-        .input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, .2) }
+        .input {
+          width: 100%;
+          padding: 0.6rem 0.8rem;
+          border: 1px solid rgb(51 65 85 / 1);
+          border-radius: 0.75rem;
+          outline: none;
+          background: rgba(15, 23, 42, .7);
+          color: #e5e7eb;
+        }
+        .input::placeholder { color: #94a3b8; }
+        .input:focus {
+          border-color: #7c3aed;
+          box-shadow: 0 0 0 4px rgba(124, 58, 237, .2);
+        }
+        select.input option { color: #0f172a; }
       `}</style>
     </div>
   )
@@ -520,15 +544,15 @@ function DeleteConfirmModal({
     <AnimatePresence>
       {open && (
         <Backdrop onClose={onClose}>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">حذف السيارة</h2>
-          <p className="text-gray-700">هل أنت متأكد من حذف هذه السيارة؟ هذا الإجراء لا يمكن التراجع عنه.</p>
-          {error && <div className="mt-3 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3">{error}</div>}
-          <div className="mt-5 flex justify-end gap-3">
-            <button onClick={onClose} className="px-5 py-2 border rounded-lg">إلغاء</button>
+          <h2 className="text-2xl font-bold text-slate-100 mb-3">حذف السيارة</h2>
+          <p className="text-slate-300">هل أنت متأكد من حذف هذه السيارة؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+          {error && <div className="mt-3 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-3 whitespace-pre-wrap">{error}</div>}
+          <div className="mt-6 flex justify-end gap-3">
+            <SubtleBtn onClick={onClose}>إلغاء</SubtleBtn>
             <button
               onClick={onConfirm}
               disabled={loading}
-              className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              className="px-5 py-3 rounded-xl bg-rose-600 text-white hover:bg-rose-700 transition-colors disabled:opacity-50"
             >
               {loading ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
             </button>
@@ -539,14 +563,14 @@ function DeleteConfirmModal({
   )
 }
 
-/** ===== Filter Panel ===== */
+/** ===== Filter Panel (داكن) ===== */
 type Filters = { status: string; brand: string; minPrice: string; maxPrice: string; yearFrom: string; yearTo: string }
 
 function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
   return (
-    <span className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs">
+    <span className="inline-flex items-center gap-2 bg-violet-500/15 text-violet-300 px-3 py-1 rounded-full text-xs border border-violet-600/30">
       {label}
-      <button onClick={onClear} className="hover:text-indigo-900" aria-label="إزالة">
+      <button onClick={onClear} className="hover:text-violet-200" aria-label="إزالة">
         <FiX size={14} />
       </button>
     </span>
@@ -588,7 +612,7 @@ function FilterPanel({
           ))}
           <button
             onClick={onReset}
-            className="text-xs text-gray-600 hover:text-gray-900 underline decoration-dotted"
+            className="text-xs text-slate-400 hover:text-slate-200 underline decoration-dotted"
           >
             مسح الكل
           </button>
@@ -597,7 +621,7 @@ function FilterPanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
-          <p className="block text-gray-700 mb-2">حالة الإعلان</p>
+          <p className="block text-slate-300 mb-2">حالة الإعلان</p>
           <div className="flex flex-wrap gap-2">
             {(['', ...statuses] as string[]).map((s) => {
               const selected = filters.status === s || (s === '' && !filters.status)
@@ -606,7 +630,9 @@ function FilterPanel({
                   key={`status-${s || 'all'}`}
                   onClick={() => handle('status', s)}
                   className={`px-3 py-1.5 rounded-full text-xs border transition ${
-                    selected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    selected
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-slate-900/60 text-slate-200 border-slate-700 hover:bg-slate-800/60'
                   }`}
                 >
                   {s || 'الكل'}
@@ -617,11 +643,11 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-gray-700 mb-2">العلامة التجارية</label>
+          <label className="block text-slate-300 mb-2">العلامة التجارية</label>
           <select
             value={filters.brand}
             onChange={(e) => handle('brand', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+            className="w-full px-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
           >
             <option value="">الكل</option>
             {brands.map((b) => (
@@ -631,12 +657,12 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-gray-700 mb-2">السعر من</label>
+          <label className="block text-slate-300 mb-2">السعر من</label>
           <div className="relative">
-            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiDollarSign /></span>
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiDollarSign /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
               placeholder="أدنى سعر"
               value={filters.minPrice}
               onChange={(e) => handle('minPrice', e.target.value)}
@@ -645,12 +671,12 @@ function FilterPanel({
           </div>
         </div>
         <div>
-          <label className="block text-gray-700 mb-2">السعر إلى</label>
+          <label className="block text-slate-300 mb-2">السعر إلى</label>
           <div className="relative">
-            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiDollarSign /></span>
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiDollarSign /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
               placeholder="أعلى سعر"
               value={filters.maxPrice}
               onChange={(e) => handle('maxPrice', e.target.value)}
@@ -660,12 +686,12 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-gray-700 mb-2">سنة الصنع من</label>
+          <label className="block text-slate-300 mb-2">سنة الصنع من</label>
           <div className="relative">
-            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiCalendar /></span>
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiCalendar /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
               placeholder="أقدم سنة"
               value={filters.yearFrom}
               onChange={(e) => handle('yearFrom', e.target.value)}
@@ -673,12 +699,12 @@ function FilterPanel({
           </div>
         </div>
         <div>
-          <label className="block text-gray-700 mb-2">سنة الصنع إلى</label>
+          <label className="block text-slate-300 mb-2">سنة الصنع إلى</label>
           <div className="relative">
-            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"><FiCalendar /></span>
+            <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiCalendar /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
               placeholder="أحدث سنة"
               value={filters.yearTo}
               onChange={(e) => handle('yearTo', e.target.value)}
@@ -695,24 +721,26 @@ function FilterPanel({
       <AnimatePresence>
         {open && (
           <motion.div className="fixed inset-0 z-50 md:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/60" onClick={onClose} />
             <motion.div
-              className="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-xl p-6 overflow-y-auto rounded-l-2xl"
+              className="absolute inset-y-0 right-0 w-full max-w-md p-3"
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">الفلاتر</h3>
-                <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><FiX size={22} /></button>
-              </div>
-
-              {body}
-
-              <div className="sticky bottom-0 bg-white pt-4 border-t mt-6">
-                <div className="flex gap-3">
-                  <button onClick={onReset} className="flex-1 px-4 py-2 rounded-lg border">إعادة تعيين</button>
-                  <button onClick={onApply} className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">تطبيق</button>
+              <Panel className="p-6 h-full overflow-y-auto rounded-l-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-slate-100">الفلاتر</h3>
+                  <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><FiX size={22} /></button>
                 </div>
-              </div>
+
+                {body}
+
+                <div className="sticky bottom-0 bg-slate-900/80 backdrop-blur pt-4 border-t border-slate-800 mt-6">
+                  <div className="flex gap-3">
+                    <SubtleBtn onClick={onReset} className="flex-1">إعادة تعيين</SubtleBtn>
+                    <PrimaryBtn onClick={onApply} className="flex-1">تطبيق</PrimaryBtn>
+                  </div>
+                </div>
+              </Panel>
             </motion.div>
           </motion.div>
         )}
@@ -723,24 +751,25 @@ function FilterPanel({
         {open && (
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="hidden md:block bg-white p-6 rounded-xl shadow-xl border mb-8"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">الفلاتر المتقدمة</h3>
-              <div className="flex items-center gap-2">
-                {activeChips.slice(0, 4).map((c, i) => (
-                  <FilterChip key={`chip-head-${c.key}-${i}`} label={c.label} onClear={() => handle(c.key, '')} />
-                ))}
-                {activeChips.length > 4 && <span className="text-xs text-gray-500">+{activeChips.length - 4}</span>}
+            <Panel className="p-6 mb-8 hidden md:block">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-100">الفلاتر المتقدمة</h3>
+                <div className="flex items-center gap-2">
+                  {activeChips.slice(0, 4).map((c, i) => (
+                    <FilterChip key={`chip-head-${c.key}-${i}`} label={c.label} onClear={() => handle(c.key, '')} />
+                  ))}
+                  {activeChips.length > 4 && <span className="text-xs text-slate-400">+{activeChips.length - 4}</span>}
+                </div>
               </div>
-            </div>
 
-            {body}
+              {body}
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={onReset} className="px-5 py-2 border rounded-lg">إعادة تعيين</button>
-              <button onClick={onApply} className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">تطبيق الفلاتر</button>
-            </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <SubtleBtn onClick={onReset}>إعادة تعيين</SubtleBtn>
+                <PrimaryBtn onClick={onApply}>تطبيق الفلاتر</PrimaryBtn>
+              </div>
+            </Panel>
           </motion.div>
         )}
       </AnimatePresence>
@@ -748,7 +777,7 @@ function FilterPanel({
   )
 }
 
-/** ===== Main Component ===== */
+/** ===== Main Component (داكن موحّد) ===== */
 export default function ExhibitorCars() {
   const router = useRouter()
 
@@ -951,7 +980,7 @@ export default function ExhibitorCars() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div dir="rtl" className="min-h-screen bg-slate-950 py-8 px-4 sm:px-6 lg:px-8">
       {/* Modals */}
       <ViewCarModal open={viewOpen} onClose={()=>setViewOpen(false)} car={selectedCarData} />
       <EditCarModal open={editOpen} onClose={()=>setEditOpen(false)} car={selectedCarData} onSaved={handleSaved} />
@@ -963,58 +992,54 @@ export default function ExhibitorCars() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                className="text-3xl font-bold text-gray-900 mb-2">
+                className="text-3xl font-bold text-slate-100 mb-2">
                 سيارات المعرض
               </motion.h1>
-              <p className="text-gray-600">إدارة السيارات المضافة إلى معرضك</p>
+              <p className="text-slate-400">إدارة السيارات المضافة إلى معرضك</p>
             </div>
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              onClick={goToAddCar} aria-label="إضافة سيارة جديدة">
+            <PrimaryBtn onClick={goToAddCar} aria-label="إضافة سيارة جديدة" className="inline-flex items-center gap-2">
               <FiPlus className="ml-2" />
               <span>إضافة سيارة جديدة</span>
-            </motion.button>
+            </PrimaryBtn>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4">
             <motion.div className="relative flex-grow" whileHover={{ scale: 1.005 }}>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <FiSearch className="text-gray-400" />
+                <FiSearch className="text-slate-500" />
               </div>
               <input
                 type="text"
                 placeholder="ابحث عن سيارة (ماركة أو موديل أو سنة)"
-                className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full pr-10 pl-4 py-3 rounded-xl bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchCars(1) } }}
               />
             </motion.div>
 
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              onClick={() => { setCurrentPage(1); fetchCars(1) }}
-              className="flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <SubtleBtn onClick={() => { setCurrentPage(1); fetchCars(1) }}>
               تحديث
-            </motion.button>
+            </SubtleBtn>
 
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => setShowFilters(true)}
-              className="relative flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="relative inline-flex items-center justify-center px-6 py-3 rounded-xl bg-slate-900/60 text-slate-200 border border-slate-700 hover:bg-slate-800/60 transition-colors"
             >
               <FiFilter className="ml-2" />
               <span>الفلاتر</span>
               {activeFilterCount > 0 && (
-                <span className="absolute -top-2 -left-2 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-2 -left-2 bg-violet-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
-            </motion.button>
+            </button>
           </div>
         </div>
 
         {/* Error */}
         {errorMsg && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 whitespace-pre-wrap">
+          <div className="mb-6 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-4 whitespace-pre-wrap">
             {errorMsg}
           </div>
         )}
@@ -1040,11 +1065,11 @@ export default function ExhibitorCars() {
 
         {/* Toolbar */}
         <div className="mb-6 flex justify-between items-center">
-          <div className="text-gray-600"><span className="font-medium">{total}</span> إجمالي السيارات</div>
+          <div className="text-slate-400"><span className="font-medium text-slate-200">{total}</span> إجمالي السيارات</div>
           <div className="flex items-center">
-            <span className="text-gray-600 mr-2">ترتيب حسب:</span>
+            <span className="text-slate-400 mr-2">ترتيب حسب:</span>
             <select
-              className="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="px-3 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
               value={sortKey}
               onChange={(e) => { setSortKey(e.target.value as any); setCurrentPage(1) }}
             >
@@ -1061,102 +1086,101 @@ export default function ExhibitorCars() {
 
         {/* No results */}
         {!loading && filteredCars.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-md p-12 text-center">
-            <div className="text-gray-400 mb-4"><FiSearch size={48} className="mx-auto" /></div>
-            <h3 className="text-xl font-medium text-gray-700 mb-2">لا توجد سيارات متطابقة</h3>
-            <p className="text-gray-500 mb-6">عدّل الفلاتر أو أعد البحث.</p>
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              onClick={() => { resetFilters(); setCurrentPage(1); fetchCars(1) }}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <Panel className="p-12 text-center">
+            <div className="text-slate-500 mb-4"><FiSearch size={48} className="mx-auto" /></div>
+            <h3 className="text-xl font-medium text-slate-100 mb-2">لا توجد سيارات متطابقة</h3>
+            <p className="text-slate-400 mb-6">عدّل الفلاتر أو أعد البحث.</p>
+            <PrimaryBtn onClick={() => { resetFilters(); setCurrentPage(1); fetchCars(1) }}>
               عرض جميع السيارات
-            </motion.button>
-          </motion.div>
+            </PrimaryBtn>
+          </Panel>
         )}
 
         {/* Table */}
         {!loading && filteredCars.length > 0 && (
           <>
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <Th>السيارة</Th>
-                    <Th>السعر</Th>
-                    <Th>الحالة</Th>
-                    <Th>المشاهدات</Th>
-                    <Th>الاستفسارات</Th>
-                    <Th>الإجراءات</Th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredCars.map((car, index) => (
-                    <motion.tr key={`car-${car.id}`} initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                      className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <FaCar className="text-indigo-600" />
+            <Panel className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-800">
+                  <thead className="bg-slate-900/60">
+                    <tr>
+                      <Th>السيارة</Th>
+                      <Th>السعر</Th>
+                      <Th>الحالة</Th>
+                      <Th>المشاهدات</Th>
+                      <Th>الاستفسارات</Th>
+                      <Th>الإجراءات</Th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {filteredCars.map((car, index) => (
+                      <motion.tr key={`car-${car.id}`} initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
+                        className="hover:bg-slate-800/40">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 bg-violet-500/15 rounded-full flex items-center justify-center border border-violet-600/30">
+                              <FaCar className="text-violet-400" />
+                            </div>
+                            <div className="mr-4">
+                              <div className="text-sm font-semibold text-slate-100">{car.title}</div>
+                              <div className="text-sm text-slate-400">{car.year} • {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم</div>
+                            </div>
                           </div>
-                          <div className="mr-4">
-                            <div className="text-sm font-medium text-gray-900">{car.title}</div>
-                            <div className="text-sm text-gray-500">{car.year} • {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-violet-300">{Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            car.status === 'معلن' ? 'bg-green-500/15 text-green-300 border border-green-600/30' :
+                            car.status === 'محجوز' ? 'bg-amber-500/15 text-amber-200 border border-amber-600/30' :
+                            car.status === 'مباع' ? 'bg-rose-500/15 text-rose-300 border border-rose-600/30' :
+                            'bg-slate-700/30 text-slate-300 border border-slate-600/30'
+                          }`}>
+                            {car.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-400">
+                          <div className="flex items-center gap-1"><FiEye className="text-slate-500" />{car.views.toLocaleString()}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-400">
+                          {car.inquiries.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className="flex justify-end gap-3">
+                            <button className="text-violet-300 hover:text-violet-200" aria-label="تعديل" type="button"
+                                    onClick={() => openEdit(car.id)}>
+                              <FiEdit size={18} />
+                            </button>
+                            <button className="text-slate-300 hover:text-slate-100" aria-label="عرض التفاصيل" type="button"
+                                    onClick={() => openView(car.id)}>
+                              <FiEye size={18} />
+                            </button>
+                            <button className="text-rose-400 hover:text-rose-300" aria-label="حذف" type="button"
+                                    onClick={() => openDelete(car.id)}>
+                              <FiTrash2 size={18} />
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-bold text-indigo-600">{Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          car.status === 'معلن' ? 'bg-green-100 text-green-800' :
-                          car.status === 'محجوز' ? 'bg-yellow-100 text-yellow-800' :
-                          car.status === 'مباع' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {car.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        <div className="flex items-center"><FiEye className="ml-1" />{car.views.toLocaleString()}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {car.inquiries.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium">
-                        <div className="flex justify-end gap-3">
-                          <button className="text-indigo-600 hover:text-indigo-900" aria-label="تعديل" type="button"
-                                  onClick={() => openEdit(car.id)}>
-                            <FiEdit size={18} />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-900" aria-label="عرض التفاصيل" type="button"
-                                  onClick={() => openView(car.id)}>
-                            <FiEye size={18} />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900" aria-label="حذف" type="button"
-                                  onClick={() => openDelete(car.id)}>
-                            <FiTrash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
 
             {/* Pagination */}
             {lastPage > 1 && (
               <div className="mt-8 flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                  صفحة <span className="font-medium">{currentPage}</span> من <span className="font-medium">{lastPage}</span> — إجمالي <span className="font-medium">{total}</span>
+                <div className="text-sm text-slate-400">
+                  صفحة <span className="font-medium text-slate-200">{currentPage}</span> من <span className="font-medium text-slate-200">{lastPage}</span> — إجمالي <span className="font-medium text-slate-200">{total}</span>
                 </div>
                 <nav className="flex items-center gap-1">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiChevronLeft />
                   </button>
@@ -1164,10 +1188,10 @@ export default function ExhibitorCars() {
                     <button
                       key={`page-${number}`}
                       onClick={() => setCurrentPage(number)}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
                         currentPage === number
-                          ? 'bg-indigo-600 text-white'
-                          : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'border-slate-700 text-slate-200 hover:bg-slate-800/60'
                       }`}
                     >
                       {number}
@@ -1176,7 +1200,7 @@ export default function ExhibitorCars() {
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(lastPage, p + 1))}
                     disabled={currentPage === lastPage}
-                    className="p-2 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiChevronRight />
                   </button>
@@ -1190,48 +1214,50 @@ export default function ExhibitorCars() {
   )
 }
 
-/** ===== Small UI helpers ===== */
+/** ===== Small UI helpers (داكن) ===== */
 function StatCard({ title, value, color }: { title: string; value: number | string; color: 'indigo'|'green'|'yellow'|'red' }) {
-  const colorMap: any = {
-    indigo: 'border-l-4 border-indigo-500',
-    green: 'border-l-4 border-green-500',
-    yellow: 'border-l-4 border-yellow-500',
-    red: 'border-l-4 border-red-500',
-  }
+  const ringMap: Record<typeof color, string> = {
+    indigo: 'from-violet-600 to-indigo-600',
+    green: 'from-emerald-600 to-green-600',
+    yellow: 'from-amber-500 to-yellow-600',
+    red: 'from-rose-600 to-red-600',
+  } as any
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className={`bg-white p-6 rounded-xl shadow-md ${colorMap[color]}`}>
-      <h3 className="text-gray-500 mb-2">{title}</h3>
-      <p className="text-3xl font-bold">{value}</p>
-    </motion.div>
+    <Panel className="p-6 relative overflow-hidden">
+      <div className={`absolute -top-12 -left-12 w-32 h-32 rounded-full bg-gradient-to-br opacity-20 ${ringMap[color]}`} />
+      <h3 className="text-slate-400 mb-2">{title}</h3>
+      <p className="text-3xl font-bold text-slate-100">{value}</p>
+    </Panel>
   )
 }
 
 function SkeletonTable() {
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <Panel className="overflow-hidden">
+      <table className="min-w-full divide-y divide-slate-800">
+        <thead className="bg-slate-900/60">
           <tr>
             <Th>السيارة</Th><Th>السعر</Th><Th>الحالة</Th><Th>المشاهدات</Th><Th>الاستفسارات</Th><Th>الإجراءات</Th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-slate-800">
           {[...Array(5)].map((_, i) => (
             <tr key={`skrow-${i}`}>
               {Array.from({length:6}).map((_,j)=>(
-                <td key={`skcell-${i}-${j}`} className="px-6 py-4 animate-pulse"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
+                <td key={`skcell-${i}-${j}`} className="px-6 py-4">
+                  <div className="h-4 bg-slate-800 rounded w-3/4 animate-pulse" />
+                </td>
               ))}
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </Panel>
   )
 }
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>
+    <th className="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">{children}</th>
   )
 }

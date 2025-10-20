@@ -10,7 +10,7 @@ import api from '@/lib/axios'
 import { format } from 'date-fns'
 import { ar } from 'date-fns/locale'
 
-/** ========= الإعدادات ========= **/
+/** ========= الإعدادات (بدون تعديل على المنطق) ========= **/
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
 const API_BASE = `${API_ROOT}/api`
 const TOKEN_KEY = 'token'
@@ -29,7 +29,7 @@ function authHeaders() {
   return h
 }
 
-// جلب JSON مع رسائل أخطاء واضحة
+// جلب JSON مع رسائل أخطاء واضحة (كما هي)
 async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -63,11 +63,12 @@ function arStatusLabel(s: string) {
   }
 }
 
+// ألوان الشارة — تحسين بصري فقط
 function statusChipColor(s: string) {
-  return s === 'live' ? 'bg-green-600 text-white'
-    : s === 'scheduled' ? 'bg-yellow-500 text-white'
-    : s === 'ended' ? 'bg-red-600 text-white'
-    : 'bg-gray-500 text-white'
+  return s === 'live' ? 'bg-emerald-600 text-white'
+    : s === 'scheduled' ? 'bg-amber-500 text-white'
+    : s === 'ended' ? 'bg-rose-600 text-white'
+    : 'bg-slate-600 text-white'
 }
 
 type AuctionStatusApi = 'scheduled' | 'live' | 'ended' | 'canceled' | 'failed' | 'completed'
@@ -130,7 +131,7 @@ interface UiAuction {
   owner?: string
 }
 
-/** شكل الجلسة طبقًا لمسار الباك الجديد **/
+/** شكل الجلسة طبقًا لمسار الباك الجديد (بدون تغيير) **/
 interface AuctionSession {
   id: number
   name: string
@@ -245,7 +246,7 @@ function sessionLabel(s: AuctionSession) {
   return `${s.name}${dateTxt}`
 }
 
-/** ========= مودال إنشاء مزاد فوري الآن ========= **/
+/** ========= مودال إنشاء مزاد فوري الآن (تحسينات شكل فقط) ========= **/
 function StartLiveModal({
   open, onClose, onCreated
 }: {
@@ -388,7 +389,7 @@ function StartLiveModal({
         <motion.div
           ref={backdropRef}
           onMouseDown={closeOnBackdrop}
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           aria-modal="true" role="dialog"
         >
@@ -397,23 +398,23 @@ function StartLiveModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: .95, opacity: 0, y: 20 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-            className="bg-white w-full max-w-xl rounded-2xl shadow-2xl p-6 relative"
+            className="bg-slate-900/95 text-slate-100 w-full max-w-xl rounded-2xl shadow-2xl p-6 relative border border-slate-800"
             onMouseDown={e => e.stopPropagation()}
           >
-            <button onClick={onClose} className="absolute left-4 top-4 text-gray-400 hover:text-gray-700">
+            <button onClick={onClose} className="absolute left-4 top-4 text-slate-400 hover:text-slate-200" aria-label="إغلاق">
               <FiX size={22} />
             </button>
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 text-center">بدء حراج مباشر الآن</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center">بدء حراج مباشر الآن</h2>
 
-            {errors.global && <div className="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm whitespace-pre-wrap">{errors.global}</div>}
+            {errors.global && <div className="mb-3 p-3 rounded-lg bg-rose-900/30 border border-rose-700 text-rose-200 text-sm whitespace-pre-wrap">{errors.global}</div>}
 
             <form onSubmit={submit} className="space-y-4">
               {/* السيارة */}
               <div>
-                <label className="block mb-1 text-gray-700">السيارة</label>
+                <label className="block mb-1 text-slate-300">السيارة</label>
                 <select
                   ref={firstInputRef}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.car_id ? 'border-red-400' : 'border-gray-300'}`}
+                  className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.car_id ? 'border-rose-600' : 'border-slate-700'}`}
                   value={form.car_id}
                   onChange={e => onSelectCar(e.target.value)}
                 >
@@ -424,15 +425,15 @@ function StartLiveModal({
                     <option key={c.id} value={c.id}>{`${c.make} ${c.model} ${c.year}`}</option>
                   ))}
                 </select>
-                {errors.car_id && <div className="text-red-500 text-xs mt-1">{errors.car_id}</div>}
-                {errors.carsEmpty && !loadingCars && <div className="text-gray-500 text-xs mt-1">{errors.carsEmpty}</div>}
+                {errors.car_id && <div className="text-rose-400 text-xs mt-1">{errors.car_id}</div>}
+                {errors.carsEmpty && !loadingCars && <div className="text-slate-400 text-xs mt-1">{errors.carsEmpty}</div>}
               </div>
 
               {/* الجلسة */}
               <div>
-                <label className="block mb-1 text-gray-700">الجلسة</label>
+                <label className="block mb-1 text-slate-300">الجلسة</label>
                 <select
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.session_id ? 'border-red-400' : 'border-gray-300'}`}
+                  className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.session_id ? 'border-rose-600' : 'border-slate-700'}`}
                   value={form.session_id}
                   onChange={e => setForm(f => ({ ...f, session_id: e.target.value }))}
                 >
@@ -447,16 +448,16 @@ function StartLiveModal({
                     <option key={s.id} value={s.id}>{sessionLabel(s)}</option>
                   ))}
                 </select>
-                {sessionsError && !loadingSessions && <div className="text-red-500 text-xs mt-1">{sessionsError}</div>}
-                {errors.session_id && <div className="text-red-500 text-xs mt-1">{errors.session_id}</div>}
+                {sessionsError && !loadingSessions && <div className="text-rose-400 text-xs mt-1">{sessionsError}</div>}
+                {errors.session_id && <div className="text-rose-400 text-xs mt-1">{errors.session_id}</div>}
               </div>
 
               {/* سعر السيارة (عرض فقط) */}
               <div>
-                <label className="block mb-1 text-gray-700">سعر السيارة (تقييم)</label>
+                <label className="block mb-1 text-slate-300">سعر السيارة (تقييم)</label>
                 <input
                   type="number"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 border-gray-300 bg-gray-50"
+                  className="w-full px-4 py-2 rounded-lg outline-none bg-slate-900/60 text-slate-200 border border-slate-700"
                   value={form.car_price}
                   readOnly
                   placeholder="يُملأ تلقائيًا من تقييم السيارة"
@@ -465,43 +466,43 @@ function StartLiveModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-gray-700">سعر البدء (ر.س)</label>
+                  <label className="block mb-1 text-slate-300">سعر البدء (ر.س)</label>
                   <input
                     type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.starting_bid ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.starting_bid ? 'border-rose-600' : 'border-slate-700'}`}
                     value={form.starting_bid}
                     onChange={e => setForm(f => ({ ...f, starting_bid: e.target.value }))}
                     min={1000}
                   />
-                  {errors.starting_bid && <div className="text-red-500 text-xs mt-1">{errors.starting_bid}</div>}
+                  {errors.starting_bid && <div className="text-rose-400 text-xs mt-1">{errors.starting_bid}</div>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-gray-700">حد أدنى موصى به</label>
-                  <input
+                  <label className="block mb-1 text-slate-300">حد أدنى موصى به</label>
+                <input
                     type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.minmax ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.minmax ? 'border-rose-600' : 'border-slate-700'}`}
                     value={form.min_price}
                     onChange={e => setForm(f => ({ ...f, min_price: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-gray-700">حد أقصى موصى به</label>
+                  <label className="block mb-1 text-slate-300">حد أقصى موصى به</label>
                   <input
                     type="number"
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 ${errors.minmax ? 'border-red-400' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.minmax ? 'border-rose-600' : 'border-slate-700'}`}
                     value={form.max_price}
                     onChange={e => setForm(f => ({ ...f, max_price: e.target.value }))}
                   />
                 </div>
               </div>
-              {errors.minmax && <div className="text-red-500 text-xs mt-1">{errors.minmax}</div>}
+              {errors.minmax && <div className="text-rose-400 text-xs mt-1">{errors.minmax}</div>}
 
               <button
                 type="submit"
-                className="w-full py-3 mt-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors text-lg"
+                className="w-full py-3 mt-2 rounded-lg font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 transition-colors text-lg"
               >
                 بدء الحراج الآن
               </button>
@@ -513,7 +514,7 @@ function StartLiveModal({
   )
 }
 
-/** ========= الصفحة الرئيسية ========= **/
+/** ========= الصفحة الرئيسية (تحسينات شكل فقط) ========= **/
 export default function DealerAuctionsPage() {
   const [list, setList] = useState<UiAuction[]>([])
   const [loading, setLoading] = useState(true)
@@ -644,7 +645,7 @@ export default function DealerAuctionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-8 px-4 sm:px-6 lg:px-8">
+    <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
       <StartLiveModal open={showModal} onClose={() => setShowModal(false)} onCreated={onCreated} />
       <div className="max-w-7xl mx-auto">
         {/* العنوان */}
@@ -654,17 +655,17 @@ export default function DealerAuctionsPage() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-4xl font-extrabold text-indigo-800 mb-2 flex items-center gap-2"
+              className="text-3xl font-extrabold mb-2 flex items-center gap-2"
             >
-              <FaGavel className="text-indigo-600" />
+              <FaGavel className="text-violet-400" />
               حراج المعرض
             </motion.h1>
-            <p className="text-gray-600">إدارة مزاداتك الحيّة والفورية من مكان واحد.</p>
+            <p className="text-slate-400">إدارة مزاداتك الحيّة والفورية من مكان واحد.</p>
           </div>
           <div className="flex gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center px-5 py-3 bg-white border border-gray-300 rounded-xl hover:bg-gray-50"
+              className="flex items-center justify-center px-5 py-3 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors"
               onClick={() => fetchAuctions({ page, status: statusFilter, silent: false })}
               aria-label="تحديث"
               title="تحديث"
@@ -674,7 +675,7 @@ export default function DealerAuctionsPage() {
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:from-indigo-700 hover:to-purple-700 transition-colors font-bold text-lg"
+              className="flex items-center justify-center px-6 py-3 rounded-xl text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg"
               onClick={() => setShowModal(true)}
               aria-label="بدء حراج مباشر"
             >
@@ -688,12 +689,12 @@ export default function DealerAuctionsPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <motion.div className="relative flex-grow" whileHover={{ scale: 1.01 }}>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <FiSearch className="text-gray-400" />
+              <FiSearch className="text-slate-400" />
             </div>
             <input
               type="text"
               placeholder="ابحث باسم السيارة..."
-              className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pr-10 pl-4 py-3 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -702,7 +703,7 @@ export default function DealerAuctionsPage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center justify-center px-6 py-3 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors"
           >
             <FiFilter className="ml-2" />
             <span>الفلاتر</span>
@@ -717,15 +718,15 @@ export default function DealerAuctionsPage() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="bg-white p-6 rounded-xl shadow-md mb-6 overflow-hidden"
+              className="bg-slate-900/70 text-slate-100 p-6 rounded-xl shadow-xl border border-slate-800 mb-6 overflow-hidden"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-gray-700 mb-2">حالة المزاد</label>
+                  <label className="block text-slate-300 mb-2">حالة المزاد</label>
                   <select
                     value={statusFilter}
                     onChange={e => { setStatusFilter(e.target.value as any); setPage(1) }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
                   >
                     <option value="">الكل</option>
                     <option value="live">جاري</option>
@@ -739,7 +740,7 @@ export default function DealerAuctionsPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => { setStatusFilter(''); setShowFilters(false); setPage(1) }}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="px-6 py-2 rounded-lg text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
                 >
                   تطبيق
                 </motion.button>
@@ -752,51 +753,51 @@ export default function DealerAuctionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500"
+            className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800"
           >
-            <h3 className="text-gray-500 mb-2">إجمالي (صفحة حالية)</h3>
-            <p className="text-3xl font-bold">{filtered.length}</p>
+            <h3 className="text-slate-400 mb-2">إجمالي (صفحة حالية)</h3>
+            <p className="text-3xl font-bold text-slate-100">{filtered.length}</p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500"
+            className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800"
           >
-            <h3 className="text-gray-500 mb-2">جارية</h3>
-            <p className="text-3xl font-bold">{liveCount}</p>
+            <h3 className="text-slate-400 mb-2">جارية</h3>
+            <p className="text-3xl font-bold text-emerald-400">{liveCount}</p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-            className="bg-white p-6 rounded-xl shadow-md border-l-4 border-red-500"
+            className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800"
           >
-            <h3 className="text-gray-500 mb-2">منتهية</h3>
-            <p className="text-3xl font-bold">{endedCount}</p>
+            <h3 className="text-slate-400 mb-2">منتهية</h3>
+            <p className="text-3xl font-bold text-rose-400">{endedCount}</p>
           </motion.div>
         </div>
 
         {/* رسائل الحالة */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg whitespace-pre-wrap">{error}</div>
+          <div className="mb-6 p-4 bg-rose-900/30 border border-rose-700 text-rose-200 rounded-lg whitespace-pre-wrap">{error}</div>
         )}
 
         {/* التحميل (فقط للجلب الرئيسي غير الصامت) */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-md p-8 animate-pulse h-64" />
+              <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-xl shadow-xl p-8 animate-pulse h-64" />
             ))}
           </div>
         )}
 
         {/* لا توجد نتائج */}
         {!loading && filtered.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-xl shadow-md p-12 text-center">
-            <div className="text-gray-400 mb-4"><FaGavel size={48} className="mx-auto" /></div>
-            <h3 className="text-xl font-medium text-gray-700 mb-2">لا توجد مزادات</h3>
-            <p className="text-gray-500 mb-6">أضف مزادًا جديدًا أو غيّر الفلاتر.</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-xl p-12 text-center">
+            <div className="text-slate-500 mb-4"><FaGavel size={48} className="mx-auto" /></div>
+            <h3 className="text-xl font-medium text-slate-100 mb-2">لا توجد مزادات</h3>
+            <p className="text-slate-400 mb-6">أضف مزادًا جديدًا أو غيّر الفلاتر.</p>
             <motion.button
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={() => { setStatusFilter(''); setSearchTerm(''); fetchAuctions({ page: 1, status: '', silent: false }) }}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              className="px-6 py-2 rounded-lg text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
             >
               عرض الكل
             </motion.button>
@@ -811,13 +812,12 @@ export default function DealerAuctionsPage() {
                 <motion.div
                   key={auction.id}
                   initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                  className={`relative group bg-white rounded-2xl shadow-xl overflow-hidden border-2 ${
-                    auction.statusApi === 'ended'
-                      ? 'border-red-200'
+                  className={`relative group rounded-2xl overflow-hidden shadow-2xl border
+                    ${auction.statusApi === 'ended'
+                      ? 'border-rose-700/40'
                       : auction.statusApi === 'live'
-                      ? 'border-green-200'
-                      : 'border-yellow-200'
-                  }`}
+                      ? 'border-emerald-700/40'
+                      : 'border-amber-700/40'} bg-slate-900/70`}
                 >
                   <div className="relative h-48 w-full overflow-hidden">
                     <img
@@ -831,38 +831,38 @@ export default function DealerAuctionsPage() {
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-2 mb-2">
-                      <FaCar className="text-indigo-400" />
-                      <span className="text-lg font-bold text-indigo-800">{auction.carLabel}</span>
+                      <FaCar className="text-violet-400" />
+                      <span className="text-lg font-bold text-slate-100">{auction.carLabel}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-500 mb-3">
+                    <div className="flex items-center gap-2 text-slate-400 mb-3">
                       <FiUser />
                       <span className="text-sm">معرضك</span>
                     </div>
-                    <div className="flex items-center gap-4 mb-2">
-                      <div className="flex items-center gap-1 text-gray-700">
-                        <FiClock className="text-indigo-500" />
+                    <div className="flex items-center gap-4 mb-2 text-slate-200">
+                      <div className="flex items-center gap-1">
+                        <FiClock className="text-violet-400" />
                         {auction.statusApi === 'live'
                           ? <Countdown endIso={auction.endTimeIso} />
                           : <span className="font-mono text-sm">{auction.statusApi === 'scheduled' ? 'قريبًا' : 'انتهى'}</span>
                         }
                       </div>
-                      <div className="flex items-center gap-1 text-gray-700">
-                        <FaGavel className="text-yellow-500" />
+                      <div className="flex items-center gap-1">
+                        <FaGavel className="text-amber-400" />
                         <span className="font-mono text-sm">{auction.bidsCount} مزايدة</span>
                       </div>
-                      <div className="flex items-center gap-1 text-gray-700">
-                        <FiEye className="text-blue-400" />
+                      <div className="flex items-center gap-1">
+                        <FiEye className="text-sky-400" />
                         <span className="font-mono text-sm">{auction.watchers} متابع</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-6 mt-3">
                       <div>
-                        <span className="text-xs text-gray-500">سعر البدء</span>
-                        <div className="font-bold text-indigo-700">{auction.startPrice.toLocaleString()} ر.س</div>
+                        <span className="text-xs text-slate-400">سعر البدء</span>
+                        <div className="font-bold text-violet-300">{auction.startPrice.toLocaleString()} ر.س</div>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500">أعلى مزايدة</span>
-                        <div className="font-bold text-green-600">{auction.currentBid.toLocaleString()} ر.س</div>
+                        <span className="text-xs text-slate-400">أعلى مزايدة</span>
+                        <div className="font-bold text-emerald-400">{auction.currentBid.toLocaleString()} ر.س</div>
                       </div>
                     </div>
                   </div>
@@ -873,14 +873,14 @@ export default function DealerAuctionsPage() {
             {/* ترقيم الصفحات من الباك-إند */}
             {lastPage > 1 && (
               <div className="mt-8 flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                  صفحة <span className="font-medium">{page}</span> من <span className="font-medium">{lastPage}</span> — إجمالي <span className="font-medium">{total}</span>
+                <div className="text-sm text-slate-400">
+                  صفحة <span className="font-medium text-slate-200">{page}</span> من <span className="font-medium text-slate-200">{lastPage}</span> — إجمالي <span className="font-medium text-slate-200">{total}</span>
                 </div>
                 <nav className="flex items-center gap-1">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="p-2 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiChevronLeft />
                   </button>
@@ -891,7 +891,9 @@ export default function DealerAuctionsPage() {
                         key={n}
                         onClick={() => setPage(n)}
                         className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          page === n ? 'bg-indigo-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                          page === n
+                            ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white'
+                            : 'border border-slate-700 text-slate-300 hover:bg-slate-800'
                         }`}
                       >
                         {n}
@@ -900,7 +902,7 @@ export default function DealerAuctionsPage() {
                   <button
                     onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                     disabled={page === lastPage}
-                    className="p-2 rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiChevronRight />
                   </button>
