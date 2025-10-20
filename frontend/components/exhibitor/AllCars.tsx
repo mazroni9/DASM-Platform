@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fi'
 import { FaCar } from 'react-icons/fa'
 
-/** ===== API base & helpers (إنتاج صارم + تشخيص واضح) ===== */
+/** ===== API base & helpers (آمن في الإنتاج + تشخيص واضح) ===== */
 const IS_PROD = process.env.NODE_ENV === 'production'
 const RAW_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
 
@@ -21,28 +21,24 @@ const sameOriginApi = () => {
 
 function resolveApiBase() {
   const envBase = stripTrailingSlash(RAW_BASE)
-  if (envBase) {
-    return { base: envBase, source: 'env' as const }
-  }
-  if (!IS_PROD) {
-    return { base: stripTrailingSlash(sameOriginApi()), source: 'dev-fallback' as const }
-  }
-  throw new Error(
-    'إعدادات الخادم غير مكتملة في الإنتاج: يجب ضبط NEXT_PUBLIC_API_BASE_URL ليشير إلى Laravel (مثال: https://api.dasm.com.sa/api).'
-  )
-}
+  if (envBase) return { base: envBase, source: 'env' as const }
 
-const { base: API_BASE, source: API_SOURCE } = (() => {
-  try {
-    return resolveApiBase()
-  } catch (e) {
+  // 👇 بدل ما نرمي خطأ في الإنتاج، نستخدم fallback آمن ويظهر تحذير في الـ console
+  const fallback = stripTrailingSlash(sameOriginApi())
+  if (IS_PROD) {
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line no-console
-      console.error('[API CONFIG ERROR]', e)
+      console.warn(
+        '[API CONFIG] لم يتم ضبط NEXT_PUBLIC_API_BASE_URL. سيتم استخدام نفس المصدر كـ Fallback:',
+        fallback
+      )
     }
-    throw e
+    return { base: fallback, source: 'prod-fallback' as const }
   }
-})()
+  return { base: fallback, source: 'dev-fallback' as const }
+}
+
+const { base: API_BASE, source: API_SOURCE } = resolveApiBase()
 
 const buildApiUrl = (path: string) => {
   const clean = path.replace(/^\//, '')
@@ -50,8 +46,12 @@ const buildApiUrl = (path: string) => {
 }
 
 const authHeaders = () => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  } catch {
+    return {}
+  }
 }
 
 async function apiFetch(path: string, init?: RequestInit) {
@@ -64,13 +64,15 @@ async function apiFetch(path: string, init?: RequestInit) {
       ...init,
       headers: {
         Accept: 'application/json',
+        ...authHeaders(), // 👈 أضفنا التوكن هنا افتراضياً
         ...(init?.headers || {}),
       },
     })
   } catch (err: any) {
-    const hint = API_SOURCE === 'dev-fallback'
-      ? 'يبدو أنك تستخدم fallback /api. لو هذا في الإنتاج فغالباً مفقود rewrite يوجّه /api إلى Laravel.'
-      : 'تحقق من عنوان NEXT_PUBLIC_API_BASE_URL أو إعدادات CORS على Laravel.'
+    const hint =
+      API_SOURCE === 'dev-fallback'
+        ? 'يبدو أنك تستخدم fallback /api محلياً.'
+        : 'تحقق من عنوان NEXT_PUBLIC_API_BASE_URL أو إعدادات CORS على Laravel أو الـ Rewrite.'
     throw new Error(`تعذر الاتصال بالخادم: ${url}\n${hint}\nالتفاصيل: ${err?.message || err}`)
   }
 
@@ -411,7 +413,7 @@ function EditCarModal({
 
       const res = await apiFetch(`/cars/${car.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
@@ -838,24 +840,35 @@ export default function ExhibitorCars() {
       }
       if (filters.brand) params.set('make', filters.brand)
 
-      const res = await apiFetch(`/cars?${params.toString()}`, {
-        headers: { ...authHeaders() }
-      })
+      const res = await apiFetch(`/cars?${params.toString()}`)
       const json: CarsApiResponse = await res.json()
 
-      const mapped: UiCar[] = (json.data.data || []).map((c) => ({
-        id: c.id,
-        title: `${c.make ?? ''} ${c.model ?? ''}`.trim(),
-        brand: c.make ?? '',
-        model: c.model ?? '',
-        year: c.year ?? 0,
-        price: toNumberSafe(c.evaluation_price),
-        mileage: c.odometer ?? 0,
-        transmission: mapTransmissionLabel(c.transmission ?? ''),
-        status: mapStatusToArabic(c.auction_status),
-        addedDate: c.created_at?.slice(0, 10) ?? '',
-        views: 0,
-        inquiries: 0
+      const mapped: UiCar[] = (json.data.data || []).map((c) => ([
+        c.id,
+        `${c.make ?? ''} ${c.model ?? ''}`.trim(),
+        c.make ?? '',
+        c.model ?? '',
+        c.year ?? 0,
+        toNumberSafe(c.evaluation_price),
+        c.odometer ?? 0,
+        mapTransmissionLabel(c.transmission ?? ''),
+        mapStatusToArabic(c.auction_status),
+        c.created_at?.slice(0, 10) ?? '',
+        0,
+        0
+      ])).map(([id, title, brand, model, year, price, mileage, transmission, status, addedDate, views, inquiries]) => ({
+        id: id as number,
+        title: title as string,
+        brand: brand as string,
+        model: model as string,
+        year: year as number,
+        price: price as number,
+        mileage: mileage as number,
+        transmission: transmission as string,
+        status: status as UiCar['status'],
+        addedDate: addedDate as string,
+        views: views as number,
+        inquiries: inquiries as number
       }))
 
       setCars(mapped)
@@ -919,7 +932,7 @@ export default function ExhibitorCars() {
   const openView = async (id: number) => {
     setSelectedId(id); setViewOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const res = await apiFetch(`/cars/${id}`, { headers: { ...authHeaders() } })
+      const res = await apiFetch(`/cars/${id}`)
       const j: ShowCarApiResponse = await res.json()
       setSelectedCarData(j.data.car)
     } catch (e: any) {
@@ -930,7 +943,7 @@ export default function ExhibitorCars() {
   const openEdit = async (id: number) => {
     setSelectedId(id); setEditOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const res = await apiFetch(`/cars/${id}`, { headers: { ...authHeaders() } })
+      const res = await apiFetch(`/cars/${id}`)
       const j: ShowCarApiResponse = await res.json()
       setSelectedCarData(j.data.car)
     } catch (e: any) {
@@ -966,10 +979,7 @@ export default function ExhibitorCars() {
     if (!selectedId) return
     setActionLoading(true); setActionError(null)
     try {
-      await apiFetch(`/cars/${selectedId}`, {
-        method: 'DELETE',
-        headers: { ...authHeaders() }
-      })
+      await apiFetch(`/cars/${selectedId}`, { method: 'DELETE' })
       setCars((prev) => prev.filter((c) => c.id !== selectedId))
       setDeleteOpen(false)
     } catch (e: any) {
@@ -1142,10 +1152,10 @@ export default function ExhibitorCars() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-400">
-                          <div className="flex items-center gap-1"><FiEye className="text-slate-500" />{car.views.toLocaleString()}</div>
+                          <div className="flex items-center gap-1"><FiEye className="text-slate-500" />{(car.views ?? 0).toLocaleString()}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-400">
-                          {car.inquiries.toLocaleString()}
+                          {(car.inquiries ?? 0).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium">
                           <div className="flex justify-end gap-3">
@@ -1216,12 +1226,12 @@ export default function ExhibitorCars() {
 
 /** ===== Small UI helpers (داكن) ===== */
 function StatCard({ title, value, color }: { title: string; value: number | string; color: 'indigo'|'green'|'yellow'|'red' }) {
-  const ringMap: Record<typeof color, string> = {
+  const ringMap: Record<'indigo'|'green'|'yellow'|'red', string> = {
     indigo: 'from-violet-600 to-indigo-600',
     green: 'from-emerald-600 to-green-600',
     yellow: 'from-amber-500 to-yellow-600',
     red: 'from-rose-600 to-red-600',
-  } as any
+  }
   return (
     <Panel className="p-6 relative overflow-hidden">
       <div className={`absolute -top-12 -left-12 w-32 h-32 rounded-full bg-gradient-to-br opacity-20 ${ringMap[color]}`} />
