@@ -34,7 +34,9 @@ const MenuItem = ({
 }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) => (
   <button
     onClick={onClick}
-    className={`w-full text-right px-4 py-2.5 flex items-center gap-3 text-sm transition-colors ${danger ? 'text-rose-400 hover:bg-rose-500/10' : 'text-slate-200 hover:bg-slate-800/60'}`}
+    className={`w-full text-right px-4 py-2.5 flex items-center gap-3 text-sm transition-colors ${
+      danger ? 'text-rose-400 hover:bg-rose-500/10' : 'text-slate-200 hover:bg-slate-800/60'
+    }`}
   >
     <span className={danger ? 'text-rose-400' : 'text-slate-400'}>{icon}</span>
     <span className="truncate">{label}</span>
@@ -121,7 +123,10 @@ export function Header() {
       </div>
       <div className="max-h-64 overflow-y-auto">
         {notifications.map((n) => (
-          <div key={n.id} className="p-4 hover:bg-slate-800/60 border-b border-slate-800 last:border-0 cursor-pointer transition-colors">
+          <div
+            key={n.id}
+            className="p-4 hover:bg-slate-800/60 border-b border-slate-800 last:border-0 cursor-pointer transition-colors"
+          >
             <p className="font-semibold text-slate-100 text-sm">{n.title}</p>
             <p className="text-xs text-slate-400 mt-1 line-clamp-2">{n.description}</p>
             <p className="text-[11px] text-slate-500 mt-1">منذ ساعتين</p>
@@ -129,7 +134,9 @@ export function Header() {
         ))}
       </div>
       <div className="text-center py-3 border-t border-slate-800 bg-slate-900/60">
-        <button className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">عرض جميع الإشعارات</button>
+        <button className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
+          عرض جميع الإشعارات
+        </button>
       </div>
     </Panel>
   );
@@ -165,7 +172,12 @@ export function Header() {
               </div>
             ) : (
               <AnimatePresence initial={false}>
-                <motion.div key="inline-search" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                <motion.div
+                  key="inline-search"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                >
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                       <FiSearch size={18} />
@@ -175,13 +187,18 @@ export function Header() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-                      onBlur={() => { if (!searchQuery) setOpenInlineSearch(false); }}
+                      onBlur={() => {
+                        if (!searchQuery) setOpenInlineSearch(false);
+                      }}
                       placeholder="ابحث عن سيارة، عميل، طلب..."
                       className="h-10 w-full rounded-xl bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none pr-4 pl-10"
                     />
                     <button
                       aria-label="إغلاق"
-                      onClick={() => { setOpenInlineSearch(false); setSearchQuery(''); }}
+                      onClick={() => {
+                        setOpenInlineSearch(false);
+                        setSearchQuery('');
+                      }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
                     >
                       <FiX size={16} />
@@ -195,18 +212,28 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center gap-2">
             <Dropdown trigger={['click']} placement="bottomLeft" dropdownRender={() => notificationMenu}>
-              <button aria-label="الإشعارات" className="relative inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-800 text-slate-300 hover:bg-slate-900/60 transition-colors">
+              <button
+                aria-label="الإشعارات"
+                className="relative inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-800 text-slate-300 hover:bg-slate-900/60 transition-colors"
+              >
                 <Badge count={notifications.length} offset={[-4, 4]} size="small" color="#7c3aed">
-                  <FiBell size={20} />
+                  {/* ✅ إبقاء الجرس أبيض دائماً */}
+                  <FiBell size={20} className="text-white" />
                 </Badge>
               </button>
             </Dropdown>
 
             <Dropdown trigger={['click']} placement="bottomLeft" dropdownRender={() => userMenu}>
               <button aria-label="قائمة المستخدم" className="flex items-center gap-2 group rounded-full">
-                <Avatar size="large" src="https://saraahah.com/images/profile.png" className="border border-slate-700 shadow-md transition-transform group-hover:scale-[1.02]" />
+                <Avatar
+                  size="large"
+                  src="https://saraahah.com/images/profile.png"
+                  className="border border-slate-700 shadow-md transition-transform group-hover:scale-[1.02]"
+                />
                 <div className="hidden md:flex flex-col text-right">
-                  <p className="font-semibold text-sm text-slate-100 truncate max-w-[140px]">{user?.venue_name || 'معرض السيارات'}</p>
+                  <p className="font-semibold text-sm text-slate-100 truncate max-w-[140px]">
+                    {user?.venue_name || 'معرض السيارات'}
+                  </p>
                   <p className="text-xs text-slate-400">مرحباً، {user?.first_name || 'زائر'}</p>
                 </div>
               </button>
@@ -218,7 +245,13 @@ export function Header() {
       {/* Mobile Search Overlay */}
       <AnimatePresence>
         {openOverlaySearch && (
-          <motion.div dir="rtl" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60">
+          <motion.div
+            dir="rtl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60"
+          >
             <div className="absolute inset-x-0 top-0 p-3">
               <Panel className="max-w-2xl mx-auto">
                 <div className="p-3 flex items-center gap-2">
@@ -235,14 +268,22 @@ export function Header() {
                   />
                   <button
                     aria-label="إغلاق البحث"
-                    onClick={() => { setOpenOverlaySearch(false); setSearchQuery(''); }}
+                    onClick={() => {
+                      setOpenOverlaySearch(false);
+                      setSearchQuery('');
+                    }}
                     className="w-11 h-11 inline-flex items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800/60 transition-colors"
                   >
                     <FiX size={18} />
                   </button>
                 </div>
                 <div className="px-3 pb-3 flex justify-end">
-                  <button onClick={runSearch} className="px-4 h-10 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">بحث</button>
+                  <button
+                    onClick={runSearch}
+                    className="px-4 h-10 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+                  >
+                    بحث
+                  </button>
                 </div>
               </Panel>
             </div>
