@@ -10,17 +10,58 @@ import {
 import { FaCar } from 'react-icons/fa'
 
 /** ===== API base & helpers (Vercel-safe) ===== */
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '' // مثال: https://your-laravel.com/api
+const IS_PROD = process.env.NODE_ENV === 'production'
+const RAW_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
+// في التطوير فقط نسمح بالمسار النسبي /api (لو عامل بروكسي محلي)
+// في الإنتاج لازم تحدد NEXT_PUBLIC_API_BASE_URL وإلّا هنوقف الطلبات برسالة واضحة
+const USE_LOCAL_FALLBACK = !IS_PROD && !RAW_BASE
+const API_BASE = RAW_BASE.replace(/\/$/, '')
 
 const buildApiUrl = (path: string) => {
-  // لو محددتش NEXT_PUBLIC_API_BASE_URL هنرجع نسقط على /api علشان يشتغل محلي
-  if (!API_BASE) return `/api/${path.replace(/^\//, '')}`
-  return `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
+  const clean = path.replace(/^\//, '')
+  if (USE_LOCAL_FALLBACK) return `/api/${clean}`
+  if (!API_BASE) throw new Error('MISSING_API_BASE')
+  return `${API_BASE}/${clean}`
 }
 
 const authHeaders = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+// wrapper موحّد للطلبات مع رسائل خطأ محسّنة
+async function apiFetch(path: string, init?: RequestInit) {
+  let url: string
+  try {
+    url = buildApiUrl(path)
+  } catch (e: any) {
+    if (e?.message === 'MISSING_API_BASE') {
+      const hint = 'بيئة الإنتاج تحتاج متغير NEXT_PUBLIC_API_BASE_URL (مثل https://your-laravel.com/api).'
+      throw new Error(`إعدادات الخادم غير مكتملة. ${hint}`)
+    }
+    throw e
+  }
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    ...init,
+    headers: {
+      Accept: 'application/json',
+      ...(init?.headers || {}),
+    },
+  })
+
+  // أخطاء شائعة مع توضيح
+  if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
+  if (res.status === 404) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`تعذر جلب البيانات (404). تحقق من المسار على الخادم: ${url}\n${body}`)
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`فشل الطلب (${res.status}). ${body}`)
+  }
+  return res
 }
 
 /** ===== Types coming from backend (Laravel paginator) ===== */
@@ -97,8 +138,6 @@ type UiCar = {
 }
 
 /** ===== Helpers & Mappers ===== */
-
-// auction_status → Arabic
 const mapStatusToArabic = (s?: string): UiCar['status'] => {
   switch ((s || '').toLowerCase()) {
     case 'available':
@@ -116,7 +155,6 @@ const mapStatusToArabic = (s?: string): UiCar['status'] => {
   }
 }
 
-// transmission label
 const mapTransmissionLabel = (t?: string) => {
   const v = (t || '').toLowerCase()
   if (v === 'automatic') return 'أوتوماتيك'
@@ -127,7 +165,6 @@ const mapTransmissionLabel = (t?: string) => {
 
 const statuses = ['معلن', 'محجوز', 'مباع'] as const
 
-// backend enums for update
 const transmissionOptions = [
   { value: 'automatic', label: 'أوتوماتيك' },
   { value: 'manual', label: 'عادي' },
@@ -141,7 +178,7 @@ const conditionOptions = [
   { value: 'poor', label: 'ضعيفة' },
 ]
 
-// price parser (يتعامل مع الفواصل والنقاط)
+// price parser
 const toNumberSafe = (v?: string | number | null) => {
   if (v === null || v === undefined) return 0
   if (typeof v === 'number') return isFinite(v) ? v : 0
@@ -319,31 +356,13 @@ function EditCarModal({
         }
       })
 
-      const res = await fetch(buildApiUrl(`/cars/${car.id}`), {
+      const res = await apiFetch(`/cars/${car.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...authHeaders(),
-        },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(payload)
       })
 
-      if (res.status === 401) throw new Error('غير مصرح: يُرجى تسجيل الدخول.')
-      if (res.status === 400) {
-        const j = await res.json().catch(() => null)
-        throw new Error(j?.message || 'لا يمكن التعديل أثناء وجود مزاد نشط/مجدول.')
-      }
-      if (res.status === 422) {
-        const j = await res.json().catch(() => null)
-        const firstErr = j?.errors && (Object.values(j.errors as Record<string, string[]>)[0]?.[0] as string | undefined)
-        throw new Error(firstErr || 'بيانات غير صالحة.')
-      }
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '')
-        throw new Error(`فشل الحفظ (${res.status}) ${txt}`)
-      }
-      const j = await res.json()
+      const j = await res.json().catch(() => ({}))
       onSaved((j.data || j) as CarFromApi)
       onClose()
     } catch (e: any) {
@@ -692,7 +711,6 @@ function FilterPanel({
 export default function ExhibitorCars() {
   const router = useRouter()
 
-  // list + paging meta
   const [cars, setCars] = useState<UiCar[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -704,7 +722,6 @@ export default function ExhibitorCars() {
 
   const [sortKey, setSortKey] = useState<'latest' | 'oldest' | 'price_desc' | 'price_asc'>('latest')
 
-  // search & filters
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<Filters>({
@@ -716,7 +733,6 @@ export default function ExhibitorCars() {
     yearTo: ''
   })
 
-  // modals
   const [viewOpen, setViewOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -733,7 +749,6 @@ export default function ExhibitorCars() {
       const params = new URLSearchParams()
       params.set('page', String(page))
 
-      // sorting
       if (sortKey === 'latest') {
         params.set('sort_by', 'created_at'); params.set('sort_dir', 'desc')
       } else if (sortKey === 'oldest') {
@@ -744,7 +759,6 @@ export default function ExhibitorCars() {
         params.set('sort_by', 'evaluation_price'); params.set('sort_dir', 'asc')
       }
 
-      // search client-side فقط، الفلاتر المؤكدة بس
       if (filters.status) {
         const backendStatus =
           filters.status === 'معلن' ? 'available' :
@@ -754,16 +768,9 @@ export default function ExhibitorCars() {
       }
       if (filters.brand) params.set('make', filters.brand)
 
-      const res = await fetch(buildApiUrl(`/cars?${params.toString()}`), {
-        headers: { Accept: 'application/json', ...authHeaders() },
-        cache: 'no-store'
+      const res = await apiFetch(`/cars?${params.toString()}`, {
+        headers: { ...authHeaders() }
       })
-
-      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
-      if (!res.ok) {
-        const txt = await res.text().catch(()=> '')
-        throw new Error(`تعذر جلب البيانات (${res.status}) ${txt}`)
-      }
       const json: CarsApiResponse = await res.json()
 
       const mapped: UiCar[] = (json.data.data || []).map((c) => ({
@@ -802,10 +809,8 @@ export default function ExhibitorCars() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortKey, currentPage])
 
-  // فلترة وبحث عميل-سايد (يشمل نص البحث)
   const filteredCars = useMemo(() => {
     let results = [...cars]
-
     const term = searchTerm.trim().toLowerCase()
     if (term) {
       results = results.filter((c) =>
@@ -815,12 +820,10 @@ export default function ExhibitorCars() {
         String(c.year).includes(term)
       )
     }
-
     if (filters.yearFrom) results = results.filter((c) => c.year >= Number(filters.yearFrom))
     if (filters.yearTo) results = results.filter((c) => c.year <= Number(filters.yearTo))
     if (filters.minPrice) results = results.filter((c) => c.price >= Number(filters.minPrice))
     if (filters.maxPrice) results = results.filter((c) => c.price <= Number(filters.maxPrice))
-
     return results
   }, [cars, filters, searchTerm])
 
@@ -846,14 +849,7 @@ export default function ExhibitorCars() {
   const openView = async (id: number) => {
     setSelectedId(id); setViewOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const res = await fetch(buildApiUrl(`/cars/${id}`), {
-        headers: { Accept: 'application/json', ...authHeaders() }
-      })
-      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
-      if (!res.ok) {
-        const txt = await res.text().catch(()=> '')
-        throw new Error(`تعذر جلب بيانات السيارة (${res.status}) ${txt}`)
-      }
+      const res = await apiFetch(`/cars/${id}`, { headers: { ...authHeaders() } })
       const j: ShowCarApiResponse = await res.json()
       setSelectedCarData(j.data.car)
     } catch (e: any) {
@@ -864,14 +860,7 @@ export default function ExhibitorCars() {
   const openEdit = async (id: number) => {
     setSelectedId(id); setEditOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const res = await fetch(buildApiUrl(`/cars/${id}`), {
-        headers: { Accept: 'application/json', ...authHeaders() }
-      })
-      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
-      if (!res.ok) {
-        const txt = await res.text().catch(()=> '')
-        throw new Error(`تعذر جلب بيانات السيارة (${res.status}) ${txt}`)
-      }
+      const res = await apiFetch(`/cars/${id}`, { headers: { ...authHeaders() } })
       const j: ShowCarApiResponse = await res.json()
       setSelectedCarData(j.data.car)
     } catch (e: any) {
@@ -907,19 +896,10 @@ export default function ExhibitorCars() {
     if (!selectedId) return
     setActionLoading(true); setActionError(null)
     try {
-      const res = await fetch(buildApiUrl(`/cars/${selectedId}`), {
+      await apiFetch(`/cars/${selectedId}`, {
         method: 'DELETE',
-        headers: { Accept: 'application/json', ...authHeaders() }
+        headers: { ...authHeaders() }
       })
-      if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
-      if (res.status === 400) {
-        const j = await res.json().catch(() => null)
-        throw new Error(j?.message || 'لا يمكن حذف السيارة لوجود مزاد نشط/مجدول.')
-      }
-      if (!res.ok) {
-        const txt = await res.text().catch(()=> '')
-        throw new Error(`فشل الحذف (${res.status}) ${txt}`)
-      }
       setCars((prev) => prev.filter((c) => c.id !== selectedId))
       setDeleteOpen(false)
     } catch (e: any) {
@@ -993,7 +973,7 @@ export default function ExhibitorCars() {
 
         {/* Error */}
         {errorMsg && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 whitespace-pre-wrap">
             {errorMsg}
           </div>
         )}
