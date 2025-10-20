@@ -4,7 +4,7 @@ import LoadingLink from "@/components/LoadingLink";
 
 
 import { motion } from 'framer-motion';
-import {
+import {FiRadio,
   FiHome,
   FiPlusSquare,
   FiLayers,
@@ -31,17 +31,17 @@ const navItems = [
   { href: '/exhibitor/add-car', icon: FiPlusSquare, label: 'إضافة سيارة' },
   { href: '/exhibitor/all-cars', icon: FiLayers, label: 'جميع السيارات' },
   { href: '/exhibitor/auctions', icon: FiDollarSign, label: 'المزادات' },
-  { href: '/exhibitor/requests', icon: FiShoppingCart, label: 'الطلبات' },
-  { href: '/exhibitor/analytics', icon: FiBarChart2, label: 'التحليلات' },
-  { href: '/exhibitor/wallet', icon: FaWallet, label: 'رصيد المحفظة' },
-  { href: '/exhibitor/ratings', icon: FiStar, label: 'التقييمات' },
-  { href: '/exhibitor/shipping', icon: FiTruck, label: 'الشحن' },
-  { href: '/exhibitor/commission', icon: FaMoneyCheckAlt, label: 'خانة السعي' },
-  { href: '/exhibitor/extra-services', icon: FiGift, label: 'خدمات إضافية' },
-  { href: '/exhibitor/financial', icon: FaChartBar, label: 'العمليات المالية' },
-  { href: '/exhibitor/cars-data', icon: FiDatabase, label: 'بيانات السيارات' },
-  { href: '/exhibitor/profile', icon: FiUser, label: 'الملف الشخصي' },
-  { href: '/exhibitor/settings', icon: FiSettings, label: 'الإعدادات' },
+  { href: '#', icon: FiRadio, label: 'جلسات البث المباشر' },
+  { href: '#', icon: FiBarChart2, label: 'التحليلات' },
+  { href: '#', icon: FaWallet, label: 'رصيد المحفظة' },
+  { href: '#', icon: FiStar, label: 'التقييمات' },
+  { href: '#', icon: FiTruck, label: 'الشحن' },
+  { href: '#', icon: FaMoneyCheckAlt, label: 'خانة السعي' },
+  { href: '#', icon: FiGift, label: 'خدمات إضافية' },
+  { href: '#', icon: FaChartBar, label: 'العمليات المالية' },
+  { href: '#', icon: FiDatabase, label: 'بيانات السيارات' },
+  { href: '#', icon: FiUser, label: 'الملف الشخصي' },
+  { href: '#', icon: FiSettings, label: 'الإعدادات' },
 ];
 
 export function Sidebar() {
