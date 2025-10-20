@@ -10,17 +10,38 @@ import {
 import { FaCar } from 'react-icons/fa'
 
 /** ===== API base & helpers (Vercel-safe) ===== */
-const IS_PROD = process.env.NODE_ENV === 'production'
-const RAW_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
-// في التطوير فقط نسمح بالمسار النسبي /api (لو عامل بروكسي محلي)
-// في الإنتاج لازم تحدد NEXT_PUBLIC_API_BASE_URL وإلّا هنوقف الطلبات برسالة واضحة
-const USE_LOCAL_FALLBACK = !IS_PROD && !RAW_BASE
-const API_BASE = RAW_BASE.replace(/\/$/, '')
+/**
+ * التعديل الأهم هنا:
+ * - السماح بالـ fallback إلى نفس الدومين /api حتى في الإنتاج.
+ * - استخدام NEXT_PUBLIC_API_BASE_URL إن وُجد.
+ */
+const ENV_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || '').trim()
+
+const sanitizeBase = (s: string) => s.replace(/\/+$/, '')
+const sameOriginApi = () => {
+  // نفس الدومين على المسار /api (عند وجود بروكسي/ري رايت)
+  if (typeof window !== 'undefined') return `${window.location.origin}/api`
+  return '/api'
+}
+
+const resolveApiBase = () => {
+  const base = sanitizeBase(ENV_BASE)
+  if (base) return base
+  // تحذير فقط للمساعدة في اكتشاف الإعداد الناقص، لكن لا نوقف التطبيق
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[WARN] NEXT_PUBLIC_API_BASE_URL غير معرّف في الإنتاج. سيتم استخدام نفس الدومين /api كحل بديل. ' +
+      'لو ما عندك بروكسي على /api فعرّف NEXT_PUBLIC_API_BASE_URL مثلاً: https://your-laravel.com/api'
+    )
+  }
+  return sanitizeBase(sameOriginApi())
+}
+
+const API_BASE = resolveApiBase()
 
 const buildApiUrl = (path: string) => {
   const clean = path.replace(/^\//, '')
-  if (USE_LOCAL_FALLBACK) return `/api/${clean}`
-  if (!API_BASE) throw new Error('MISSING_API_BASE')
   return `${API_BASE}/${clean}`
 }
 
@@ -31,16 +52,7 @@ const authHeaders = () => {
 
 // wrapper موحّد للطلبات مع رسائل خطأ محسّنة
 async function apiFetch(path: string, init?: RequestInit) {
-  let url: string
-  try {
-    url = buildApiUrl(path)
-  } catch (e: any) {
-    if (e?.message === 'MISSING_API_BASE') {
-      const hint = 'بيئة الإنتاج تحتاج متغير NEXT_PUBLIC_API_BASE_URL (مثل https://your-laravel.com/api).'
-      throw new Error(`إعدادات الخادم غير مكتملة. ${hint}`)
-    }
-    throw e
-  }
+  const url = buildApiUrl(path)
 
   const res = await fetch(url, {
     cache: 'no-store',
