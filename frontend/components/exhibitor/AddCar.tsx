@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import type React from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import {
   FiUpload, FiInfo, FiCheckCircle, FiX, FiChevronDown, FiTrendingUp, FiRefreshCw,
+  FiDollarSign, FiCalendar, FiMapPin, FiHash, FiTag
 } from 'react-icons/fi'
 import { FaTachometerAlt, FaCarSide } from 'react-icons/fa'
 import { GiGearStick } from 'react-icons/gi'
@@ -15,11 +17,28 @@ type MarketCategory = 'luxuryCars' | 'classic' | 'caravan' | 'busesTrucks' | 'co
 type AuctionStatus = 'available' | 'in_auction' | 'sold' | 'reserved' | 'pending_approval'
 
 const DEFAULT_AUCTION_STATUS: AuctionStatus = 'available'
-const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '') // قد تكون فاضية لو نفس الدومين
-const SUGGEST_URL = (q: URLSearchParams) => `${API_ROOT}/api/cars/similar?${q.toString()}`
-const PLACEHOLDER_IMG =
-  'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=800&auto=format&fit=crop'
 
+/** ========= API Base (مع fallback لنفس الدومين) ========= */
+const rawBase = (process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/+$/, '')
+const API_ROOT = rawBase || (typeof window !== 'undefined' ? `${window.location.origin}` : '')
+const SUGGEST_URL = (q: URLSearchParams) => `${API_ROOT}/api/cars/similar?${q.toString()}`
+
+/** ========= Helpers ========= */
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null
+  const raw = localStorage.getItem('token')
+  if (!raw) return null
+  return raw.replace(/^"(.+)"$/, '$1')
+}
+function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)) }
+
+/** ========= Theme ========= */
+const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1]
+const CARD = 'bg-slate-900/70 border border-slate-800 backdrop-blur'
+const PANEL = 'bg-slate-900/50 border border-slate-800'
+const TXT = { main: 'text-slate-100', sub: 'text-slate-400' }
+
+/** ================== النماذج ================== **/
 interface FormData {
   make: string
   model: string
@@ -54,23 +73,151 @@ interface OcrData {
   engine?: string
 }
 
-/** ================== مساعدات ================== **/
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null
-  const raw = localStorage.getItem('token')
-  if (!raw) return null
-  return raw.replace(/^"(.+)"$/, '$1')
+interface AiStats {
+  min?: number
+  p25?: number
+  median?: number
+  p75?: number
+  max?: number
 }
-function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)) }
+interface AiSuggestion {
+  id?: string | number
+  label?: string
+  evaluation_price?: number
+  odometer?: number
+  images?: string[]
+  price_diff?: number
+}
 
-/** ================== كومبوننت شريط النطاق السعري ================== **/
+/** ================== حقول موحّدة ================== **/
+type BaseFieldProps = {
+  name: keyof FormData | string
+  label: string
+  value?: any
+  onChange?: (e: React.ChangeEvent<any>) => void
+  placeholder?: string
+  icon?: React.ReactNode
+  error?: boolean
+  hint?: string
+  required?: boolean
+}
+
+function FieldRow({
+  label, name, children, error, hint
+}: { label: string; name: string; children: React.ReactNode; error?: boolean; hint?: string }) {
+  return (
+    <div className="w-full">
+      <label htmlFor={name} className={`mb-1.5 block text-sm ${error ? 'text-rose-300' : TXT.sub}`}>
+        {label}
+      </label>
+      {children}
+      {hint && (
+        <p className={`mt-1 text-xs ${error ? 'text-rose-300' : 'text-slate-500'}`}>
+          {hint}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function InputField({
+  name, label, value, onChange, placeholder, icon, error, hint, required, ...props
+}: BaseFieldProps & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <FieldRow label={label} name={String(name)} error={error} hint={hint}>
+      <div className="relative">
+        {icon && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+            {icon}
+          </span>
+        )}
+        <input
+          id={String(name)}
+          name={String(name)}
+          value={value as any}
+          onChange={onChange}
+          placeholder={placeholder || ''}
+          aria-invalid={!!error}
+          aria-required={!!required}
+          className={`
+            w-full rounded-xl bg-slate-950/60 ${TXT.main}
+            border ${error ? 'border-rose-500' : 'border-slate-700'}
+            focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20
+            outline-none transition px-4 py-3
+            ${icon ? 'pl-10 pr-4' : 'px-4'}
+          `}
+          {...props}
+        />
+      </div>
+    </FieldRow>
+  )
+}
+
+function SelectField({
+  name, label, value, onChange, icon, error, hint, required, children
+}: BaseFieldProps & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <FieldRow label={label} name={String(name)} error={error} hint={hint}>
+      <div className="relative">
+        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          <FiChevronDown />
+        </span>
+        <select
+          id={String(name)}
+          name={String(name)}
+          value={value as any}
+          onChange={onChange}
+          aria-invalid={!!error}
+          aria-required={!!required}
+          className={`
+            w-full appearance-none rounded-xl bg-slate-950/60 ${TXT.main}
+            border ${error ? 'border-rose-500' : 'border-slate-700'}
+            focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20
+            outline-none transition py-3
+            ${icon ? 'pl-10 pr-10' : 'px-10'}
+          `}
+        >
+          {children}
+        </select>
+      </div>
+    </FieldRow>
+  )
+}
+
+function TextareaField({
+  name, label, value, onChange, placeholder, error, hint, required, rows = 4
+}: BaseFieldProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <FieldRow label={label} name={String(name)} error={error} hint={hint}>
+      <textarea
+        id={String(name)}
+        name={String(name)}
+        value={value as any}
+        onChange={onChange}
+        placeholder={placeholder || ''}
+        aria-invalid={!!error}
+        aria-required={!!required}
+        rows={rows}
+        className={`
+          w-full rounded-xl bg-slate-950/60 ${TXT.main}
+          border ${error ? 'border-rose-500' : 'border-slate-700'}
+          focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20
+          outline-none transition px-4 py-3
+        `}
+      />
+    </FieldRow>
+  )
+}
+
+/** ================== شريط النطاق السعري ================== **/
 function PriceRangeBar({
   min, p25, median, p75, max, value
-}: { min?: number|null, p25?:number|null, median?:number|null, p75?:number|null, max?:number|null, value?:number }) {
+}: { min?: number | null, p25?: number | null, median?: number | null, p75?: number | null, max?: number | null, value?: number }) {
   const ok = typeof min === 'number' && typeof max === 'number' && max! > min!
   if (!ok) return null
   const span = (max! - min!)
-  const toPct = (v?: number|null) => typeof v === 'number' ? clamp(((v - min!) / span) * 100, 0, 100) : undefined
+  const toPct = (v?: number | null) => typeof v === 'number' ? clamp(((v - min!) / span) * 100, 0, 100) : undefined
   const pMin = 0
   const pP25 = toPct(p25)
   const pMedian = toPct(median)
@@ -80,34 +227,28 @@ function PriceRangeBar({
 
   return (
     <div className="mt-3">
-      <div className="relative h-3 rounded-full bg-gray-200 overflow-hidden">
-        {/* نطاق interquartile */}
+      <div className="relative h-3 rounded-full overflow-hidden bg-slate-800">
         {pP25 != null && pP75 != null && (
-          <div className="absolute top-0 h-full bg-indigo-200" style={{ left: `${pP25}%`, width: `${pP75 - pP25}%` }} />
+          <div className="absolute top-0 h-full bg-violet-500/35" style={{ left: `${pP25}%`, width: `${pP75 - pP25}%` }} />
         )}
-        {/* شريط كامل */}
-        <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-yellow-200 to-red-200 opacity-50" />
-        {/* مؤشرات */}
-        {[['min', pMin], ['p25', pP25], ['median', pMedian], ['p75', pP75], ['max', pMax]]
-          .map(([k, p], i) => p != null && (
-            <div key={k as string}
-              className={`absolute -top-1 w-0.5 h-5 ${k==='median' ? 'bg-indigo-600' : 'bg-gray-400'}`}
-              style={{ left: `${p}%` }} />
+        <div className="absolute inset-0 opacity-40 bg-gradient-to-r from-emerald-500/30 via-amber-500/30 to-rose-500/30" />
+        {[['min', pMin], ['p25', pP25], ['median', pMedian], ['p75', pP75], ['max', pMax] as const]
+          .map(([k, p]) => p != null && (
+            <div
+              key={String(k)}
+              className={`absolute -top-1 w-0.5 h-5 ${k === 'median' ? 'bg-violet-400' : 'bg-slate-500'}`}
+              style={{ left: `${p}%` }}
+            />
           ))
         }
-        {/* قيمة المستخدم */}
         {pVal != null && (
           <div className="absolute -top-2" style={{ left: `calc(${pVal}% - 8px)` }}>
-            <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[12px] border-transparent border-b-emerald-600 mx-auto" />
+            <div className="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[12px] border-transparent border-b-emerald-500" />
           </div>
         )}
       </div>
-      <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-        <span>أدنى</span>
-        <span>ربع أول</span>
-        <span>وسيط</span>
-        <span>ربع ثالث</span>
-        <span>أعلى</span>
+      <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+        <span>أدنى</span><span>ربع أول</span><span>وسيط</span><span>ربع ثالث</span><span>أعلى</span>
       </div>
     </div>
   )
@@ -122,13 +263,12 @@ export default function AddCarForm() {
     transmission: '', market_category: '', description: '',
     min_price: '', max_price: '', province: '', city: '', plate: ''
   })
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [serverMsg, setServerMsg] = useState<string | null>(null)
 
-  // صور (عرض فقط حالياً)
+  // صور
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewImages, setPreviewImages] = useState<PreviewImage[]>([])
 
@@ -136,16 +276,28 @@ export default function AddCarForm() {
   const [ocrFile, setOcrFile] = useState<File | null>(null)
   const [ocrData, setOcrData] = useState<OcrData | null>(null)
 
-  // ======== AI price suggestions state ========
+  // لوحة الذكاء الاصطناعي
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
-  const [aiSuggestions, setAiSuggestions] = useState<any[]>([])
-  const [aiStats, setAiStats] = useState<any | null>(null)
-  const [aiOpen, setAiOpen] = useState(true) // اللوحة مفتوحة افتراضياً
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([])
+  const [aiStats, setAiStats] = useState<AiStats | null>(null)
+  const [aiOpen, setAiOpen] = useState(true)
   const abortRef = useRef<AbortController | null>(null)
   const lastKeyRef = useRef<string>('')
 
-  // ============ صور ============
+  // إبراز الحقول الناقصة
+  const [missing, setMissing] = useState<Set<keyof FormData>>(new Set())
+
+  useEffect(() => () => abortRef.current?.abort(), [])
+
+  /** ========= Variants ========= */
+  const fadeSlideIn: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE_OUT } },
+    exit: { opacity: 0, y: -10, transition: { duration: 0.25, ease: EASE_OUT } },
+  }
+
+  /** ============ صور ============ */
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
     const files = Array.from(e.target.files)
@@ -164,7 +316,7 @@ export default function AddCarForm() {
     setPreviewImages(prev => prev.filter((_, i) => i !== index))
   }
 
-  // ============ OCR ============
+  /** ============ OCR ============ */
   const handleOcrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
     const file = e.target.files[0]
@@ -172,22 +324,25 @@ export default function AddCarForm() {
     setTimeout(() => {
       const mocked: OcrData = { make: 'Toyota', model: 'Camry', year: '2020', vin: '1HGCM82633A123456', engine: '2.5L' }
       setOcrData(mocked)
-    }, 1200)
+    }, 1000)
   }
 
-  // ============ Inputs ============
+  /** ============ Inputs ============ */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    if (missing.has(name as keyof FormData) && String(value).trim() !== '') {
+      const m = new Set(missing); m.delete(name as keyof FormData); setMissing(m)
+    }
   }
-  const nextStep = () => setStep(prev => prev + 1)
-  const prevStep = () => setStep(prev => prev - 1)
+  const nextStep = () => setStep(prev => Math.min(prev + 1, 3))
+  const prevStep = () => setStep(prev => Math.max(prev - 1, 1))
 
-  // ============ Validate ============
+  /** ============ Validate ============ */
   const requiredFields: (keyof FormData)[] = [
-    'make','model','year','vin','odometer','condition','evaluation_price',
-    'color','engine','transmission','market_category',
-    'min_price','max_price','province','city','plate'
+    'make', 'model', 'year', 'vin', 'odometer', 'condition', 'evaluation_price',
+    'color', 'engine', 'transmission', 'market_category',
+    'min_price', 'max_price', 'province', 'city', 'plate'
   ]
   const labelFor = (key: keyof FormData): string => {
     const map: Record<keyof FormData, string> = {
@@ -199,68 +354,70 @@ export default function AddCarForm() {
     }
     return map[key]
   }
-  const validate = (): string | null => {
+
+  const buildEffectiveData = (): FormData => ({ ...formData, ...(ocrData || {}) }) as FormData
+
+  const validate = (data: FormData): string | null => {
+    const miss = new Set<keyof FormData>()
     for (const key of requiredFields) {
-      const v = formData[key]
-      if (v === '' || v === null || v === undefined) return `الرجاء تعبئة الحقل المطلوب: ${labelFor(key)}`
+      const v = data[key]
+      if (v === '' || v === null || v === undefined) miss.add(key)
     }
-    const allowedConditions: Condition[] = ['excellent','good','fair','poor']
-    if (!allowedConditions.includes(formData.condition as Condition)) return 'قيمة "condition" غير صحيحة'
-    const allowedTransmissions: Transmission[] = ['automatic','manual','cvt']
-    if (!allowedTransmissions.includes(formData.transmission as Transmission)) return 'قيمة "transmission" غير صحيحة'
-    const allowedCategories: MarketCategory[] = ['luxuryCars','classic','caravan','busesTrucks','companiesCars','government']
-    if (!allowedCategories.includes(formData.market_category as MarketCategory)) return 'قيمة "market_category" غير صحيحة'
-    const y = Number(formData.year)
+    setMissing(miss)
+    if (miss.size) {
+      const k = Array.from(miss)[0]
+      return `الرجاء تعبئة الحقل المطلوب: ${labelFor(k)}`
+    }
+
+    const allowedConditions: Condition[] = ['excellent', 'good', 'fair', 'poor']
+    if (!allowedConditions.includes(data.condition as Condition)) return 'قيمة "condition" غير صحيحة'
+    const allowedTransmissions: Transmission[] = ['automatic', 'manual', 'cvt']
+    if (!allowedTransmissions.includes(data.transmission as Transmission)) return 'قيمة "transmission" غير صحيحة'
+    const allowedCategories: MarketCategory[] = ['luxuryCars', 'classic', 'caravan', 'busesTrucks', 'companiesCars', 'government']
+    if (!allowedCategories.includes(data.market_category as MarketCategory)) return 'قيمة "market_category" غير صحيحة'
+
+    const y = Number(data.year)
     const thisYearPlusOne = new Date().getFullYear() + 1
     if (isNaN(y) || y < 1900 || y > thisYearPlusOne) return `سنة الصنع يجب أن تكون بين 1900 و ${thisYearPlusOne}`
-    const od = Number(formData.odometer); if (isNaN(od) || od < 0) return 'العداد (odometer) غير صحيح'
-    const evalPrice = Number(formData.evaluation_price); if (isNaN(evalPrice) || evalPrice < 0) return 'evaluation_price غير صحيح'
-    const minP = Number(formData.min_price); const maxP = Number(formData.max_price)
+
+    const od = Number(data.odometer); if (isNaN(od) || od < 0) return 'العداد (odometer) غير صحيح'
+    const evalPrice = Number(data.evaluation_price); if (isNaN(evalPrice) || evalPrice < 0) return 'evaluation_price غير صحيح'
+    const minP = Number(data.min_price); const maxP = Number(data.max_price)
     if (isNaN(minP) || isNaN(maxP) || minP < 0 || maxP < 0) return 'min_price/max_price غير صحيح'
     if (minP > maxP) return 'min_price يجب أن يكون أقل من أو يساوي max_price'
-    if (!/^[A-Za-z0-9]{1,17}$/.test(String(formData.vin || ''))) return 'رقم الهيكل (VIN) يجب أن يكون من حروف/أرقام بطول حتى 17'
+    if (!/^[A-Za-z0-9]{1,17}$/.test(String(data.vin || ''))) return 'رقم الهيكل (VIN) يجب أن يكون من حروف/أرقام بطول حتى 17'
     return null
   }
 
-  // ============ إرسال الإنشاء ============
+  /** ============ إرسال الإنشاء ============ */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setErrorMsg(null)
     setServerMsg(null)
 
-    if (ocrData) {
-      setFormData(prev => ({
-        ...prev,
-        make: prev.make || ocrData.make || '',
-        model: prev.model || ocrData.model || '',
-        year: prev.year || ocrData.year || '',
-        vin: prev.vin || ocrData.vin || '',
-        engine: prev.engine || ocrData.engine || ''
-      }))
-    }
-
-    const validationError = validate()
+    const effective = buildEffectiveData()
+    const validationError = validate(effective)
     if (validationError) { setErrorMsg(validationError); setIsSubmitting(false); return }
 
     const payload = {
-      make: String(formData.make).trim(),
-      model: String(formData.model).trim(),
-      year: Number(formData.year),
-      vin: String(formData.vin).trim(),
-      odometer: Number(formData.odometer),
-      condition: formData.condition,
-      evaluation_price: Number(formData.evaluation_price),
-      color: String(formData.color).trim(),
-      engine: String(formData.engine).trim(),
-      transmission: formData.transmission,
-      market_category: formData.market_category,
-      description: String(formData.description || ''),
-      min_price: Number(formData.min_price),
-      max_price: Number(formData.max_price),
-      province: String(formData.province).trim(),
-      city: String(formData.city).trim(),
-      plate: String(formData.plate).trim(),
+      make: String(effective.make).trim(),
+      model: String(effective.model).trim(),
+      year: Number(effective.year),
+      vin: String(effective.vin).trim(),
+      odometer: Number(effective.odometer),
+      condition: effective.condition,
+      evaluation_price: Number(effective.evaluation_price),
+      color: String(effective.color).trim(),
+      engine: String(effective.engine).trim(),
+      transmission: effective.transmission,
+      market_category: effective.market_category,
+      description: String(effective.description || ''),
+      min_price: Number(effective.min_price),
+      max_price: Number(effective.max_price),
+      province: String(effective.province).trim(),
+      city: String(effective.city).trim(),
+      plate: String(effective.plate).trim(),
       auction_status: DEFAULT_AUCTION_STATUS
     }
 
@@ -273,7 +430,7 @@ export default function AddCarForm() {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         if (data?.errors) {
           const firstKey = Object.keys(data.errors)[0]
@@ -287,12 +444,7 @@ export default function AddCarForm() {
       }
 
       setServerMsg(data?.message || 'تمت الإضافة بنجاح')
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) { clearInterval(interval); setIsSubmitting(false); setIsSuccess(true); return 100 }
-          return prev + 20
-        })
-      }, 150)
+      setTimeout(() => { setIsSubmitting(false); setIsSuccess(true) }, 350)
 
     } catch (err: any) {
       setErrorMsg(err?.message || 'تعذّر الاتصال بالخادم')
@@ -302,16 +454,15 @@ export default function AddCarForm() {
 
   /** ============ جلب اقتراحات السعر الذكية ============ **/
   const debouncedKey = useMemo(() => {
-    const m = String(formData.make || '').trim().toLowerCase()
-    const md = String(formData.model || '').trim().toLowerCase()
-    const y = Number(formData.year || 0)
+    const m = String(formData.make || ocrData?.make || '').trim().toLowerCase()
+    const md = String(formData.model || ocrData?.model || '').trim().toLowerCase()
+    const y = Number(formData.year || ocrData?.year || 0)
     const p = Number(formData.evaluation_price || 0)
     const od = Number(formData.odometer || 0)
     return JSON.stringify({ m, md, y, p, od })
-  }, [formData.make, formData.model, formData.year, formData.evaluation_price, formData.odometer])
+  }, [formData.make, formData.model, formData.year, formData.evaluation_price, formData.odometer, ocrData])
 
   useEffect(() => {
-    // لو البيانات الأساسية ناقصة لا تجلب
     const parsed = JSON.parse(debouncedKey) as { m: string; md: string; y: number; p: number; od: number }
     if (!parsed.m || !parsed.md || !parsed.y || !parsed.p) {
       setAiSuggestions([]); setAiStats(null); setAiError(null); setAiLoading(false)
@@ -319,7 +470,6 @@ export default function AddCarForm() {
     }
 
     const t = setTimeout(async () => {
-      // منع تكرار الطلب لنفس المعطيات
       if (lastKeyRef.current === debouncedKey) return
       lastKeyRef.current = debouncedKey
 
@@ -362,88 +512,103 @@ export default function AddCarForm() {
       } finally {
         setAiLoading(false)
       }
-    }, 400) // ديبونس
+    }, 400)
 
     return () => clearTimeout(t)
   }, [debouncedKey])
 
-  // ---------- UI ----------
+  /** ============================ UI ============================ */
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div dir="rtl" className="min-h-screen w-full p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
 
         {/* شريط التقدم */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            {[1, 2, 3].map((stepNumber) => (
-              <div key={stepNumber} className="flex flex-col items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center 
-                    ${step === stepNumber ? 'bg-indigo-600 text-white' :
-                    step > stepNumber ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}
-                >
-                  {step > stepNumber ? <FiCheckCircle size={20} /> : stepNumber}
+        <div className="mb-6">
+          <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-3">
+            {[1, 2, 3].map((n) => {
+              const state = step === n ? 'current' : step > n ? 'done' : 'todo'
+              return (
+                <div key={n} className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-lg grid place-items-center border shrink-0
+                    ${state === 'current' ? 'border-violet-500 bg-violet-600 text-white'
+                      : state === 'done' ? 'border-emerald-600 bg-emerald-500 text-white'
+                      : 'border-slate-800 bg-slate-900 text-slate-400'}`}
+                  >
+                    {state === 'done' ? <FiCheckCircle size={18} /> : n}
+                  </div>
+                  <span className={`text-sm ${TXT.sub}`}>
+                    {n === 1 ? 'البيانات الأساسية' : n === 2 ? 'التفاصيل + تحليل السعر' : 'المرفقات'}
+                  </span>
                 </div>
-                <span className="text-sm mt-1 text-gray-600">
-                  {stepNumber === 1 ? 'البيانات الأساسية' :
-                   stepNumber === 2 ? 'التفاصيل + تحليل السعر' : 'المرفقات (بدون ربط)'}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
             <motion.div
-              className="bg-indigo-600 h-2 rounded-full"
-              initial={{ width: `${(step - 1) * 50}%` }}
+              className="h-2 bg-violet-500"
+              initial={false}
               animate={{ width: `${(step - 1) * 50}%` }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.4, ease: EASE_OUT }}
+              style={{ borderRadius: 999 }}
             />
           </div>
         </div>
 
         {/* تنبيهات */}
         {errorMsg && (
-          <div className="mb-4 bg-red-100 border border-red-300 text-red-700 rounded-lg p-3">{errorMsg}</div>
+          <motion.div
+            variants={fadeSlideIn} initial="hidden" animate="visible"
+            className="mb-4 rounded-lg p-3 border border-rose-900/40 bg-rose-900/20 text-rose-200"
+          >
+            {errorMsg}
+          </motion.div>
         )}
         {serverMsg && !isSuccess && (
-          <div className="mb-4 bg-green-100 border border-green-300 text-green-700 rounded-lg p-3">{serverMsg}</div>
+          <motion.div
+            variants={fadeSlideIn} initial="hidden" animate="visible"
+            className="mb-4 rounded-lg p-3 border border-emerald-900/40 bg-emerald-900/20 text-emerald-200"
+          >
+            {serverMsg}
+          </motion.div>
         )}
 
         {/* البطاقة */}
-        <motion.div
+        <motion.form
+          onSubmit={handleSubmit}
           key={step}
-          initial={{ opacity: 0, x: step > 1 ? 50 : -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: step > 1 ? -50 : 50 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-xl shadow-lg overflow-hidden"
+          initial={{ opacity: 0, x: step > 1 ? 40 : -40 }}
+          animate={{ opacity: 1, x: 0, transition: { duration: 0.35, ease: EASE_OUT } }}
+          exit={{ opacity: 0, x: step > 1 ? -40 : 40 }}
+          className={`rounded-2xl shadow-xl overflow-hidden ${CARD}`}
         >
           {/* العنوان */}
-          <div className="border-b border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-gray-800">إضافة سيارة جديدة</h2>
-            <p className="text-gray-600 mt-1">املأ التفاصيل أدناه لإضافة سيارة</p>
+          <div className="p-6 border-b border-slate-800">
+            <h2 className={`text-2xl font-bold ${TXT.main}`}>إضافة سيارة جديدة</h2>
+            <p className={`mt-1 ${TXT.sub}`}>املأ التفاصيل أدناه لإضافة سيارة</p>
           </div>
 
           {/* الخطوة 1 */}
           {step === 1 && (
-            <div className="p-6">
+            <div className="p-6 space-y-6">
               {ocrData && (
-                <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center text-blue-800 mb-2">
+                <div className={`rounded-xl p-4 ${PANEL}`}>
+                  <div className={`flex items-center mb-2 ${TXT.main}`}>
                     <FiInfo className="ml-2" />
                     <h3 className="font-medium">تم استخراج بيانات مبدئية من الاستمارة (محاكاة)</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     {Object.entries(ocrData).map(([k, v]) => (
-                      <div key={k} className="bg-white p-3 rounded-lg border border-blue-100">
-                        <p className="text-xs text-blue-600">{k}</p>
-                        <p className="font-medium">{v}</p>
+                      <div key={k} className={`p-3 rounded-lg ${CARD}`}>
+                        <p className="text-[11px] text-slate-400">{k}</p>
+                        <p className={`font-medium ${TXT.main}`}>{v as string}</p>
                       </div>
                     ))}
                   </div>
                   <button
-                    onClick={() => setFormData(prev => ({ ...prev, ...ocrData }))}
-                    className="mt-3 text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition"
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, ...ocrData } as FormData))}
+                    className="mt-3 text-sm px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition"
                   >
                     تعبئة تلقائية
                   </button>
@@ -451,204 +616,132 @@ export default function AddCarForm() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-700 mb-2">الشركة المصنعة *</label>
-                  <input
-                    type="text" name="make" value={formData.make} onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Toyota"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">الموديل *</label>
-                  <input
-                    type="text" name="model" value={formData.model} onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Camry"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">سنة الصنع *</label>
-                  <input
-                    type="number" name="year" value={formData.year} onChange={handleInputChange} min={1900} max={new Date().getFullYear()+1}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="2020"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">رقم الهيكل (VIN) *</label>
-                  <input
-                    type="text" name="vin" value={formData.vin} onChange={handleInputChange} maxLength={17}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="1HGCM82633A123456"
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">عدد الكيلومترات *</label>
-                  <div className="relative">
-                    <input
-                      type="number" name="odometer" value={formData.odometer} onChange={handleInputChange}
-                      className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="45000"
-                    />
-                    <div className="absolute left-3 top-2.5 text-gray-400"><FaTachometerAlt /></div>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-2">حالة السيارة *</label>
-                  <select
-                    name="condition" value={formData.condition} onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">اختر الحالة</option>
-                    <option value="excellent">ممتازة</option>
-                    <option value="good">جيدة</option>
-                    <option value="fair">متوسطة</option>
-                    <option value="poor">ضعيفة</option>
-                  </select>
-                </div>
+                <InputField
+                  name="make" label="الشركة المصنعة *" value={formData.make} onChange={handleInputChange}
+                  icon={<FaCarSide />} error={missing.has('make')} autoComplete="off"
+                />
+                <InputField
+                  name="model" label="الموديل *" value={formData.model} onChange={handleInputChange}
+                  icon={<FaCarSide />} error={missing.has('model')} autoComplete="off"
+                />
+                <InputField
+                  name="year" type="number" label="سنة الصنع *" value={formData.year} onChange={handleInputChange}
+                  icon={<FiCalendar />} error={missing.has('year')} min={1900} max={new Date().getFullYear() + 1}
+                />
+                <InputField
+                  name="vin" label="رقم الهيكل (VIN) *" value={formData.vin} onChange={handleInputChange} maxLength={17}
+                  icon={<FiHash />} error={missing.has('vin')} autoComplete="off"
+                />
+                <InputField
+                  name="odometer" type="number" label="عدد الكيلومترات *" value={formData.odometer} onChange={handleInputChange}
+                  icon={<FaTachometerAlt />} error={missing.has('odometer')}
+                />
+                <SelectField
+                  name="condition" label="حالة السيارة *" value={formData.condition} onChange={handleInputChange}
+                  icon={<FiTag />} error={missing.has('condition')}
+                >
+                  <option value="">اختر الحالة</option>
+                  <option value="excellent">ممتازة</option>
+                  <option value="good">جيدة</option>
+                  <option value="fair">متوسطة</option>
+                  <option value="poor">ضعيفة</option>
+                </SelectField>
               </div>
 
-              <div className="mt-6">
-                <label className="block text-gray-700 mb-2">الوصف</label>
-                <textarea
-                  name="description" value={formData.description} onChange={handleInputChange} rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="أدخل وصفًا تفصيليًا للسيارة..."
-                />
-              </div>
+              <TextareaField
+                name="description" label="الوصف" value={formData.description}
+                onChange={handleInputChange} rows={4}
+                placeholder="أدخل وصفًا تفصيليًا للسيارة..."
+              />
             </div>
           )}
 
-          {/* الخطوة 2: التفاصيل + AI التحليل */}
+          {/* الخطوة 2 */}
           {step === 2 && (
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* العمود الأيسر: الحقول */}
+                {/* العمود الأيسر */}
                 <div className="lg:col-span-2 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-gray-700 mb-2">سعر السيارة *</label>
-                      <div className="relative">
-                        <input
-                          type="number" name="evaluation_price" value={formData.evaluation_price} onChange={handleInputChange}
-                          className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="80000"
-                        />
-                        <div className="absolute left-3 top-2.5 text-gray-400"><FiTrendingUp /></div>
+                    <InputField
+                      name="evaluation_price" type="number" label="سعر السيارة *" value={formData.evaluation_price}
+                      onChange={handleInputChange} icon={<FiDollarSign />} error={missing.has('evaluation_price')}
+                    />
+                    <InputField
+                      name="color" label="اللون *" value={formData.color} onChange={handleInputChange}
+                      icon={<FiTag />} error={missing.has('color')}
+                    />
+                    <SelectField
+                      name="transmission" label="ناقل الحركة *" value={formData.transmission} onChange={handleInputChange}
+                      icon={<GiGearStick />} error={missing.has('transmission')}
+                    >
+                      <option value="">اختر ناقل الحركة</option>
+                      <option value="automatic">أوتوماتيك</option>
+                      <option value="manual">يدوي</option>
+                      <option value="cvt">CVT</option>
+                    </SelectField>
+                    <InputField
+                      name="engine" label="سعة/نوع المحرك *" value={formData.engine} onChange={handleInputChange}
+                      icon={<GiGearStick />} error={missing.has('engine')}
+                    />
+                    <SelectField
+                      name="market_category" label="فئة السوق *" value={formData.market_category} onChange={handleInputChange}
+                      error={missing.has('market_category')}
+                    >
+                      <option value="">اختر الفئة</option>
+                      <option value="luxuryCars">سوق السيارات الفارهة</option>
+                      <option value="classic">سوق السيارات الكلاسيكية</option>
+                      <option value="caravan">سوق الكرافانات</option>
+                      <option value="busesTrucks">سوق الشاحنات والحافلات</option>
+                      <option value="companiesCars">سوق سيارات الشركات</option>
+                      <option value="government">سوق سيارات الجهات الحكومية</option>
+                    </SelectField>
+                    <InputField
+                      name="min_price" type="number" label="الحد الأدنى للسعر *" value={formData.min_price} onChange={handleInputChange}
+                      icon={<FiDollarSign />} error={missing.has('min_price')}
+                    />
+                    <InputField
+                      name="max_price" type="number" label="الحد الأعلى للسعر *" value={formData.max_price} onChange={handleInputChange}
+                      icon={<FiDollarSign />} error={missing.has('max_price')}
+                    />
+                    <InputField
+                      name="province" label="المحافظة *" value={formData.province} onChange={handleInputChange}
+                      icon={<FiMapPin />} error={missing.has('province')}
+                    />
+                    <InputField
+                      name="city" label="المدينة *" value={formData.city} onChange={handleInputChange}
+                      icon={<FiMapPin />} error={missing.has('city')}
+                    />
+                    <InputField
+                      name="plate" label="رقم اللوحة *" value={formData.plate} onChange={handleInputChange}
+                      icon={<FiHash />} error={missing.has('plate')}
+                    />
+                  </div>
+
+                  <div className={`rounded-xl p-4 ${PANEL}`}>
+                    <PriceRangeBar
+                      min={aiStats?.min} p25={aiStats?.p25} median={aiStats?.median} p75={aiStats?.p75} max={aiStats?.max}
+                      value={Number(formData.evaluation_price || 0)}
+                    />
+                    {!!aiStats?.median && (
+                      <div className="mt-2 text-xs text-slate-400">
+                        نطاق مقترح: {aiStats?.p25?.toLocaleString?.()} – {aiStats?.p75?.toLocaleString?.()} • الوسيط: {aiStats?.median?.toLocaleString?.()}
                       </div>
-                      {/* شريط النطاق السعري بناءً على aiStats */}
-                      <PriceRangeBar
-                        min={aiStats?.min} p25={aiStats?.p25} median={aiStats?.median} p75={aiStats?.p75} max={aiStats?.max}
-                        value={Number(formData.evaluation_price || 0)}
-                      />
-                      {!!aiStats?.median && (
-                        <div className="mt-2 text-xs text-gray-600">
-                          نطاق مقترح: {aiStats?.p25?.toLocaleString()} – {aiStats?.p75?.toLocaleString()} • الوسيط: {aiStats?.median?.toLocaleString()}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-2">اللون *</label>
-                      <input
-                        type="text" name="color" value={formData.color} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="أبيض"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">ناقل الحركة *</label>
-                      <div className="relative">
-                        <select
-                          name="transmission" value={formData.transmission} onChange={handleInputChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
-                        >
-                          <option value="">اختر ناقل الحركة</option>
-                          <option value="automatic">أوتوماتيك</option>
-                          <option value="manual">يدوي</option>
-                          <option value="cvt">CVT</option>
-                        </select>
-                        <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none"><FiChevronDown /></div>
-                        <div className="absolute left-3 top-2.5 text-gray-400"><GiGearStick /></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">سعة/نوع المحرك *</label>
-                      <input
-                        type="text" name="engine" value={formData.engine} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="2.5L"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">فئة السوق *</label>
-                      <select
-                        name="market_category" value={formData.market_category} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      >
-                        <option value="">اختر الفئة</option>
-                        <option value="luxuryCars">سوق السيارات الفارهة</option>
-                        <option value="classic">سوق السيارات الكلاسيكية</option>
-                        <option value="caravan">سوق الكرافانات</option>
-                        <option value="busesTrucks">سوق الشاحنات والحافلات</option>
-                        <option value="companiesCars">سوق سيارات الشركات</option>
-                        <option value="government">سوق سيارات الجهات الحكومية</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">الحد الأدنى للسعر *</label>
-                      <input
-                        type="number" name="min_price" value={formData.min_price} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="75000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">الحد الأعلى للسعر *</label>
-                      <input
-                        type="number" name="max_price" value={formData.max_price} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="85000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">المحافظة *</label>
-                      <input
-                        type="text" name="province" value={formData.province} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="الرياض"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-gray-700 mb-2">المدينة *</label>
-                      <input
-                        type="text" name="city" value={formData.city} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="الرياض"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-gray-700 mb-2">رقم اللوحة *</label>
-                      <input
-                        type="text" name="plate" value={formData.plate} onChange={handleInputChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="1234 ABC"
-                      />
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 {/* العمود الأيمن: لوحة الذكاء الاصطناعي */}
                 <div className="lg:col-span-1">
-                  <div className="rounded-xl border border-gray-200 shadow-sm">
-                    <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+                  <div className={`rounded-xl overflow-hidden ${PANEL}`}>
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/40">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                          <FiTrendingUp className="text-indigo-600" />
+                        <div className="w-8 h-8 rounded-full grid place-items-center bg-violet-500/20 border border-slate-800">
+                          <FiTrendingUp className="text-violet-400" />
                         </div>
-                        <h3 className="font-semibold text-gray-800">تحليل السعر الذكي</h3>
+                        <h3 className={`font-semibold ${TXT.main}`}>تحليل السعر الذكي</h3>
                       </div>
-                      <button
-                        onClick={() => setAiOpen(v => !v)}
-                        className="text-sm text-indigo-600 hover:text-indigo-800"
-                      >
+                      <button type="button" onClick={() => setAiOpen(v => !v)} className="text-sm text-violet-400 hover:text-violet-300">
                         {aiOpen ? 'إخفاء' : 'عرض'}
                       </button>
                     </div>
@@ -656,63 +749,48 @@ export default function AddCarForm() {
                     <AnimatePresence initial={false}>
                       {aiOpen && (
                         <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25 }}
+                          key="ai-panel"
+                          variants={fadeSlideIn}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
                           className="p-4"
                         >
-                          {/* وصف صغير */}
-                          <p className="text-xs text-gray-500 mb-3">
-                            أدخل <b>الماركة</b> و<b>الموديل</b> و<b>السنة</b> و<b>سعر التقييم</b> (والممشى اختياري) لاقتراح أسعار سيارات مشابهة من قاعدة بياناتنا.
+                          <p className="text-xs text-slate-400 mb-3">
+                            أدخل <b>الماركة</b> و<b>الموديل</b> و<b>السنة</b> و<b>سعر التقييم</b> (والممشى اختياري) لاقتراح أسعار سيارات مشابهة.
                           </p>
 
-                          {/* حالة التحميل/الخطأ */}
                           {aiLoading && (
                             <div className="animate-pulse space-y-3">
-                              <div className="h-3 bg-gray-200 rounded" />
-                              <div className="h-3 bg-gray-200 rounded w-5/6" />
-                              <div className="h-24 bg-gray-100 rounded" />
+                              <div className="h-3 bg-slate-800 rounded" />
+                              <div className="h-3 bg-slate-800 rounded w-5/6" />
+                              <div className="h-24 bg-slate-900 rounded" />
                             </div>
                           )}
                           {aiError && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 rounded p-2 text-xs mb-2">
+                            <div className="bg-rose-900/20 border border-rose-900/40 text-rose-200 rounded p-2 text-xs mb-2">
                               {aiError}
                             </div>
                           )}
 
-                          {/* الإحصائيات */}
                           {aiStats && !aiLoading && (
                             <div className="mb-3">
-                              <div className="text-xs text-gray-600">
+                              <div className="text-xs text-slate-400">
                                 نتائج متقاربة لنفس الموديل ± سنة:
                                 <div className="mt-1 grid grid-cols-5 gap-2 text-center">
-                                  <div className="bg-gray-50 rounded p-1">
-                                    <div className="text-[10px] text-gray-500">أدنى</div>
-                                    <div className="font-semibold">{aiStats.min?.toLocaleString?.()}</div>
-                                  </div>
-                                  <div className="bg-gray-50 rounded p-1">
-                                    <div className="text-[10px] text-gray-500">ربع أول</div>
-                                    <div className="font-semibold">{aiStats.p25?.toLocaleString?.()}</div>
-                                  </div>
-                                  <div className="bg-gray-50 rounded p-1">
-                                    <div className="text-[10px] text-gray-500">وسيط</div>
-                                    <div className="font-semibold">{aiStats.median?.toLocaleString?.()}</div>
-                                  </div>
-                                  <div className="bg-gray-50 rounded p-1">
-                                    <div className="text-[10px] text-gray-500">ربع ثالث</div>
-                                    <div className="font-semibold">{aiStats.p75?.toLocaleString?.()}</div>
-                                  </div>
-                                  <div className="bg-gray-50 rounded p-1">
-                                    <div className="text-[10px] text-gray-500">أعلى</div>
-                                    <div className="font-semibold">{aiStats.max?.toLocaleString?.()}</div>
-                                  </div>
+                                  {(['min', 'p25', 'median', 'p75', 'max'] as const).map((k) => (
+                                    <div key={k} className={`rounded p-1 ${CARD}`}>
+                                      <div className="text-[10px] text-slate-400">
+                                        {k === 'min' ? 'أدنى' : k === 'p25' ? 'ربع أول' : k === 'median' ? 'وسيط' : k === 'p75' ? 'ربع ثالث' : 'أعلى'}
+                                      </div>
+                                      <div className={`font-semibold ${TXT.main}`}>{(aiStats as any)[k]?.toLocaleString?.()}</div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             </div>
                           )}
 
-                          {/* الاقتراحات */}
                           {!aiLoading && aiSuggestions.length > 0 && (
                             <div className="space-y-2">
                               {aiSuggestions.map((s, i) => {
@@ -722,25 +800,24 @@ export default function AddCarForm() {
                                   <motion.div
                                     key={s.id || i}
                                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                                    className="flex gap-3 items-center border rounded-lg p-2 hover:shadow-sm"
+                                    transition={{ duration: 0.25, ease: EASE_OUT }}
+                                    className={`flex gap-3 items-center rounded-lg p-2 border border-slate-800 bg-slate-900/50 hover:bg-slate-900/70`}
                                   >
-                                    <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    <div className="w-16 h-16 rounded-md overflow-hidden grid place-items-center bg-slate-950 border border-slate-800">
                                       {Array.isArray(s?.images) && s.images[0] ? (
-                                        <img src={s.images[0]} alt={s.label} className="w-full h-full object-cover" />
+                                        <img src={s.images[0] as string} alt={s.label || 'صورة'} className="w-full h-full object-cover" />
                                       ) : (
-                                        <FaCarSide className="text-gray-400" />
+                                        <FaCarSide className="text-slate-500" />
                                       )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-sm font-semibold text-gray-800 truncate">{s.label}</div>
-                                      <div className="text-xs text-gray-600">
-                                        سعرها: <b>{Number(s.evaluation_price || 0).toLocaleString()}</b>
-                                        {typeof s.odometer === 'number' && (
-                                          <> • ممشى: {s.odometer.toLocaleString()} كم</>
-                                        )}
+                                      <div className={`text-sm font-semibold truncate ${TXT.main}`}>{s.label}</div>
+                                      <div className="text-xs text-slate-400">
+                                        سعرها: <b className={TXT.main}>{Number(s.evaluation_price || 0).toLocaleString()}</b>
+                                        {typeof s.odometer === 'number' && <> • ممشى: {s.odometer.toLocaleString()} كم</>}
                                       </div>
                                     </div>
-                                    <div className={`text-xs font-bold ${more ? 'text-red-600' : 'text-green-600'}`}>
+                                    <div className={`text-xs font-bold ${more ? 'text-rose-400' : 'text-emerald-400'}`}>
                                       {more ? '+' : ''}{diff.toLocaleString()}
                                     </div>
                                   </motion.div>
@@ -749,23 +826,21 @@ export default function AddCarForm() {
                             </div>
                           )}
 
-                          {/* خالي */}
                           {!aiLoading && !aiError && aiSuggestions.length === 0 && (
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-slate-400">
                               لا توجد اقتراحات حتى الآن. تأكد من إدخال الماركة والموديل والسنة وسعر التقييم.
                             </div>
                           )}
 
-                          {/* أزرار */}
                           <div className="mt-3 flex items-center justify-end">
                             <button
+                              type="button"
                               onClick={() => {
-                                // إعادة الجلب يدويًا بنفس القيم الحالية عبر تغيير المفتاح
                                 lastKeyRef.current = ''
                                 const n = Number(formData.evaluation_price || 0)
-                                setFormData(prev => ({ ...prev, evaluation_price: n + 0 })) // trigger
+                                setFormData(prev => ({ ...prev, evaluation_price: n + 0 }))
                               }}
-                              className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800"
+                              className="text-xs flex items-center gap-1 text-violet-400 hover:text-violet-300"
                             >
                               <FiRefreshCw /> تحديث التحليل
                             </button>
@@ -779,22 +854,23 @@ export default function AddCarForm() {
             </div>
           )}
 
-          {/* الخطوة 3: الصور والمستندات — عرض فقط حالياً */}
+          {/* الخطوة 3 */}
           {step === 3 && (
-            <div className="p-6">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">رفع صور السيارة (بدون ربط حاليًا)</h3>
-                <p className="text-gray-600 mb-4">الحد الأقصى 10 صور</p>
+            <div className="p-6 space-y-8">
+              <div>
+                <h3 className={`text-lg font-medium ${TXT.main} mb-2`}>رفع صور السيارة (بدون ربط حاليًا)</h3>
+                <p className={`${TXT.sub} mb-4`}>الحد الأقصى 10 صور</p>
 
                 <input type="file" ref={fileInputRef} onChange={handleImageUpload} multiple accept="image/*" className="hidden" />
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-12 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className={`w-full py-12 rounded-xl border-2 border-dashed border-slate-800 bg-slate-900/40 hover:bg-slate-900/60 transition`}
                 >
-                  <div className="flex flex-col items-center justify-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center text-slate-400">
                     <FiUpload size={40} className="mb-3" />
-                    <p className="text-lg">انقر أو اسحب الصور هنا</p>
+                    <p className={`text-lg ${TXT.main}`}>انقر أو اسحب الصور هنا</p>
                     <p className="text-sm mt-1">JPEG, PNG (5MB كحد أقصى لكل صورة)</p>
                   </div>
                 </motion.button>
@@ -802,14 +878,16 @@ export default function AddCarForm() {
 
               {previewImages.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">الصور المرفوعة</h3>
+                  <h3 className={`text-lg font-medium ${TXT.main} mb-3`}>الصور المرفوعة</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {previewImages.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <img src={image.url} alt={`Preview ${index}`} className="w-full h-32 object-cover rounded-lg" />
+                      <div key={index} className="relative group rounded-lg overflow-hidden bg-slate-900/60 border border-slate-800">
+                        <img src={image.url} alt={`Preview ${index}`} className="w-full h-32 object-cover" />
                         <button
+                          type="button"
                           onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 bg-rose-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="حذف الصورة"
                         >
                           <FiX size={16} />
                         </button>
@@ -819,32 +897,32 @@ export default function AddCarForm() {
                 </div>
               )}
 
-              {/* رفع استمارة (OCR) */}
-              <div className="mt-8">
-                <h3 className="text-lg font-medium text-gray-800 mb-2">رفع استمارة السيارة (بدون ربط)</h3>
-                <p className="text-gray-600 mb-4">سيتم استخدامها لاحقًا للتحقق عبر OCR</p>
+              <div>
+                <h3 className={`text-lg font-medium ${TXT.main} mb-2`}>رفع استمارة السيارة (بدون ربط)</h3>
+                <p className={`${TXT.sub} mb-4`}>سيتم استخدامها لاحقًا للتحقق عبر OCR</p>
                 <input type="file" accept="image/*,application/pdf" onChange={handleOcrUpload} className="hidden" id="ocr-upload" />
                 <label htmlFor="ocr-upload">
-                  <motion.button
+                  <motion.span
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition cursor-pointer"
+                    className="inline-block mt-3 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition cursor-pointer"
                   >
                     اختر ملف الاستمارة
-                  </motion.button>
+                  </motion.span>
                 </label>
-                {ocrFile && <div className="mt-3 text-sm text-gray-700">تم اختيار الملف: {ocrFile.name}</div>}
+                {ocrFile && <div className="mt-3 text-sm text-slate-400">تم اختيار الملف: <span className={TXT.main}>{ocrFile.name}</span></div>}
               </div>
             </div>
           )}
 
           {/* أزرار التنقل / الإرسال */}
-          <div className="border-t border-gray-200 p-6 bg-gray-50">
-            <div className="flex justify-between">
+          <div className="p-6 border-t border-slate-800 bg-slate-900/40">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between">
               {step > 1 ? (
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={prevStep}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                  className="px-6 py-2 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-100 hover:bg-slate-900/80 transition"
                 >
                   السابق
                 </motion.button>
@@ -852,24 +930,25 @@ export default function AddCarForm() {
 
               {step < 3 ? (
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={nextStep}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                  className="px-6 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition"
                 >
                   التالي
                 </motion.button>
               ) : (
                 <motion.button
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  onClick={handleSubmit} disabled={isSubmitting}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:bg-green-400"
+                  type="submit" disabled={isSubmitting}
+                  className="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition disabled:opacity-60"
                 >
                   {isSubmitting ? 'جاري الإرسال...' : 'إضافة السيارة'}
                 </motion.button>
               )}
             </div>
           </div>
-        </motion.div>
+        </motion.form>
       </div>
 
       {/* رسالة النجاح */}
@@ -877,15 +956,18 @@ export default function AddCarForm() {
         {isSuccess && (
           <motion.div
             initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+            className="fixed inset-0 flex items-center justify-center z-50 bg-black/50"
           >
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiCheckCircle size={40} className="text-green-600" />
+            <motion.div
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE_OUT }}
+              className={`p-8 max-w-md w-full mx-4 text-center rounded-2xl shadow-xl ${CARD}`}
+            >
+              <div className="w-20 h-20 rounded-full grid place-items-center mx-auto mb-4 bg-emerald-500/15 border border-slate-800">
+                <FiCheckCircle size={40} className="text-emerald-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">تمت الإضافة بنجاح!</h3>
-              <p className="text-gray-600 mb-6">تمت إضافة السيارة وسيتم مراجعتها قبل النشر.</p>
-              <div className="space-x-3">
+              <h3 className={`text-2xl font-bold ${TXT.main} mb-2`}>تمت الإضافة بنجاح!</h3>
+              <p className={`${TXT.sub} mb-6`}>تمت إضافة السيارة وسيتم مراجعتها قبل النشر.</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -900,19 +982,19 @@ export default function AddCarForm() {
                     setPreviewImages([])
                     setOcrFile(null)
                     setOcrData(null)
-                    setUploadProgress(0)
                     setServerMsg(null)
                     setErrorMsg(null)
                     setAiSuggestions([]); setAiStats(null); setAiError(null)
+                    setMissing(new Set())
                   }}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                  className="px-6 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition"
                 >
                   إضافة سيارة جديدة
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                   onClick={() => setIsSuccess(false)}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                  className="px-6 py-2 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-100 hover:bg-slate-900/80 transition"
                 >
                   إغلاق
                 </motion.button>
@@ -921,6 +1003,13 @@ export default function AddCarForm() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Global font only (تم حذف خلفية سوداء عامة) */}
+      <style jsx global>{`
+        body {
+          font-family: Lama, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Noto Sans Arabic', Cairo, Tahoma, Arial, sans-serif;
+        }
+      `}</style>
     </div>
   )
 }
