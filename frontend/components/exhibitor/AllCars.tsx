@@ -9,6 +9,20 @@ import {
 } from 'react-icons/fi'
 import { FaCar } from 'react-icons/fa'
 
+/** ===== API base & helpers (Vercel-safe) ===== */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '' // مثال: https://your-laravel.com/api
+
+const buildApiUrl = (path: string) => {
+  // لو محددتش NEXT_PUBLIC_API_BASE_URL هنرجع نسقط على /api علشان يشتغل محلي
+  if (!API_BASE) return `/api/${path.replace(/^\//, '')}`
+  return `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
+}
+
+const authHeaders = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 /** ===== Types coming from backend (Laravel paginator) ===== */
 type CarFromApi = {
   id: number
@@ -201,7 +215,7 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
                 {Array.isArray(car.images) && car.images.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2">
                     {car.images.map((src, i) => (
-                      <img key={i} src={src} alt={`image-${i}`} className="w-full h-24 object-cover rounded" />
+                      <img key={`img-${i}-${src}`} src={src} alt={`image-${i}`} className="w-full h-24 object-cover rounded" />
                     ))}
                   </div>
                 ) : (
@@ -289,9 +303,7 @@ function EditCarModal({
     setSaving(true)
     setError(null)
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       const payload: any = {}
-
       ;(
         [
           'make','model','year','odometer','evaluation_price','color',
@@ -307,12 +319,12 @@ function EditCarModal({
         }
       })
 
-      const res = await fetch(`/api/cars/${car.id}`, {
+      const res = await fetch(buildApiUrl(`/cars/${car.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          ...authHeaders(),
         },
         body: JSON.stringify(payload)
       })
@@ -332,7 +344,7 @@ function EditCarModal({
         throw new Error(`فشل الحفظ (${res.status}) ${txt}`)
       }
       const j = await res.json()
-      onSaved(j.data as CarFromApi)
+      onSaved((j.data || j) as CarFromApi)
       onClose()
     } catch (e: any) {
       setError(e?.message || 'حدث خطأ غير متوقع.')
@@ -378,13 +390,13 @@ function EditCarModal({
                 <Field label="القير">
                   <select className="input" value={form.transmission} onChange={(e)=>updateField('transmission', e.target.value)}>
                     <option value="">اختر</option>
-                    {transmissionOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    {transmissionOptions.map(o => <option key={`tr-${o.value}`} value={o.value}>{o.label}</option>)}
                   </select>
                 </Field>
                 <Field label="الحالة الفنية">
                   <select className="input" value={form.condition} onChange={(e)=>updateField('condition', e.target.value)}>
                     <option value="">اختر</option>
-                    {conditionOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    {conditionOptions.map(o => <option key={`cond-${o.value}`} value={o.value}>{o.label}</option>)}
                   </select>
                 </Field>
                 <Field label="المنطقة">
@@ -512,7 +524,7 @@ function FilterPanel({
       {activeChips.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {activeChips.map((c, i) => (
-            <FilterChip key={i} label={c.label} onClear={() => handle(c.key, '')} />
+            <FilterChip key={`chip-${c.key}-${i}`} label={c.label} onClear={() => handle(c.key, '')} />
           ))}
           <button
             onClick={onReset}
@@ -531,7 +543,7 @@ function FilterPanel({
               const selected = filters.status === s || (s === '' && !filters.status)
               return (
                 <button
-                  key={s || 'الكل'}
+                  key={`status-${s || 'all'}`}
                   onClick={() => handle('status', s)}
                   className={`px-3 py-1.5 rounded-full text-xs border transition ${
                     selected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -553,7 +565,7 @@ function FilterPanel({
           >
             <option value="">الكل</option>
             {brands.map((b) => (
-              <option key={b} value={b}>{b}</option>
+              <option key={`brand-${b}`} value={b}>{b}</option>
             ))}
           </select>
         </div>
@@ -657,7 +669,7 @@ function FilterPanel({
               <h3 className="text-lg font-bold text-gray-900">الفلاتر المتقدمة</h3>
               <div className="flex items-center gap-2">
                 {activeChips.slice(0, 4).map((c, i) => (
-                  <FilterChip key={i} label={c.label} onClear={() => handle(c.key, '')} />
+                  <FilterChip key={`chip-head-${c.key}-${i}`} label={c.label} onClear={() => handle(c.key, '')} />
                 ))}
                 {activeChips.length > 4 && <span className="text-xs text-gray-500">+{activeChips.length - 4}</span>}
               </div>
@@ -713,14 +725,11 @@ export default function ExhibitorCars() {
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
-
   const fetchCars = async (page = 1) => {
     try {
       setLoading(true)
       setErrorMsg(null)
 
-      const token = getToken()
       const params = new URLSearchParams()
       params.set('page', String(page))
 
@@ -735,8 +744,7 @@ export default function ExhibitorCars() {
         params.set('sort_by', 'evaluation_price'); params.set('sort_dir', 'asc')
       }
 
-      // DON'T send searchTerm as make+model together (يسبب AND ويصفّر النتائج)
-      // سنخلي البحث عميل-سايد ونرسل فقط الفلاتر المؤكدة من اللوحة
+      // search client-side فقط، الفلاتر المؤكدة بس
       if (filters.status) {
         const backendStatus =
           filters.status === 'معلن' ? 'available' :
@@ -746,13 +754,11 @@ export default function ExhibitorCars() {
       }
       if (filters.brand) params.set('make', filters.brand)
 
-      const res = await fetch(`/api/cars?${params.toString()}`, {
-        headers: {
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+      const res = await fetch(buildApiUrl(`/cars?${params.toString()}`), {
+        headers: { Accept: 'application/json', ...authHeaders() },
         cache: 'no-store'
       })
+
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول (رمز مفقود أو منتهي).')
       if (!res.ok) {
         const txt = await res.text().catch(()=> '')
@@ -794,7 +800,7 @@ export default function ExhibitorCars() {
   useEffect(() => {
     fetchCars(currentPage)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortKey, currentPage, /* purposely not searchTerm/filters (نطبقهم محلياً) */])
+  }, [sortKey, currentPage])
 
   // فلترة وبحث عميل-سايد (يشمل نص البحث)
   const filteredCars = useMemo(() => {
@@ -840,9 +846,8 @@ export default function ExhibitorCars() {
   const openView = async (id: number) => {
     setSelectedId(id); setViewOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const token = getToken()
-      const res = await fetch(`/api/cars/${id}`, {
-        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      const res = await fetch(buildApiUrl(`/cars/${id}`), {
+        headers: { Accept: 'application/json', ...authHeaders() }
       })
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
       if (!res.ok) {
@@ -859,9 +864,8 @@ export default function ExhibitorCars() {
   const openEdit = async (id: number) => {
     setSelectedId(id); setEditOpen(true); setSelectedCarData(null); setActionError(null)
     try {
-      const token = getToken()
-      const res = await fetch(`/api/cars/${id}`, {
-        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      const res = await fetch(buildApiUrl(`/cars/${id}`), {
+        headers: { Accept: 'application/json', ...authHeaders() }
       })
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
       if (!res.ok) {
@@ -903,10 +907,9 @@ export default function ExhibitorCars() {
     if (!selectedId) return
     setActionLoading(true); setActionError(null)
     try {
-      const token = getToken()
-      const res = await fetch(`/api/cars/${selectedId}`, {
+      const res = await fetch(buildApiUrl(`/cars/${selectedId}`), {
         method: 'DELETE',
-        headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        headers: { Accept: 'application/json', ...authHeaders() }
       })
       if (res.status === 401) throw new Error('غير مصرح: يرجى تسجيل الدخول.')
       if (res.status === 400) {
@@ -1067,7 +1070,7 @@ export default function ExhibitorCars() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredCars.map((car, index) => (
-                    <motion.tr key={car.id} initial={{ opacity: 0, y: 20 }}
+                    <motion.tr key={`car-${car.id}`} initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
                       className="hover:bg-gray-50">
                       <td className="px-6 py-4">
@@ -1138,7 +1141,7 @@ export default function ExhibitorCars() {
                   </button>
                   {Array.from({ length: lastPage }, (_, i) => i + 1).map(number => (
                     <button
-                      key={number}
+                      key={`page-${number}`}
                       onClick={() => setCurrentPage(number)}
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         currentPage === number
@@ -1194,9 +1197,9 @@ function SkeletonTable() {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {[...Array(5)].map((_, i) => (
-            <tr key={i}>
+            <tr key={`skrow-${i}`}>
               {Array.from({length:6}).map((_,j)=>(
-                <td key={j} className="px-6 py-4 animate-pulse"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
+                <td key={`skcell-${i}-${j}`} className="px-6 py-4 animate-pulse"><div className="h-4 bg-gray-200 rounded w-3/4" /></td>
               ))}
             </tr>
           ))}
