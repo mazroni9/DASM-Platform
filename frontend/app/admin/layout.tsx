@@ -17,7 +17,6 @@ import {
     Radio,
     BarChart,
     LogOut,
-    Loader,
     Home,
     HandCoins,
     CreditCard,
@@ -50,9 +49,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     // Handle scroll effect for header
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 10);
-        };
+        const handleScroll = () => setScrolled(window.scrollY > 10);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
@@ -63,90 +60,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     };
 
     const navigation = [
-        { 
-            name: "الرئيسية", 
-            href: "/", 
-            icon: Home,
-            badge: null
-        },
-        { 
-            name: "لوحة القيادة", 
-            href: "/admin", 
-            icon: LayoutDashboard,
-            badge: null
-        },
-        { 
-            name: "إدارة المستخدمين", 
-            href: "/admin/users", 
-            icon: Users,
-            badge: "12"
-        },
-        { 
-            name: "إدارة المشرفين", 
-            href: "/admin/moderators", 
-            icon: Shield,
-            badge: null
-        },
-        { 
-            name: "إدارة العمولات", 
-            href: "/admin/commission-tiers", 
-            icon: HandCoins,
-            badge: "3"
-        },
-        { 
-            name: "خطط الاشتراك", 
-            href: "/admin/subscription-plans", 
-            icon: CreditCard,
-            badge: null
-        },
-        { 
-            name: "إدارة الجلسات", 
-            href: "/admin/sessions", 
-            icon: Calendar,
-            badge: "5"
-        },
-        { 
-            name: "إدارة البث", 
-            href: "/admin/live-stream", 
-            icon: Youtube,
-            badge: "2"
-        },
-        { 
-            name: "قنوات YouTube", 
-            href: "/admin/youtube-channels", 
-            icon: Radio,
-            badge: null
-        },
-        { 
-            name: "المزادات", 
-            href: "/admin/auctions", 
-            icon: Car,
-            badge: "7"
-        },
-        { 
-            name: "سجلات المزايدات", 
-            href: "/admin/bids-logs", 
-            icon: FileText,
-            badge: null
-        },
-        { 
-            name: "السيارات", 
-            href: "/admin/cars", 
-            icon: Car,
-            badge: "15"
-        },
-        { 
-            name: "التقارير", 
-            href: "/admin/reports", 
-            icon: BarChart,
-            badge: null
-        },
-        { 
-            name: "الإعدادات", 
-            href: "/admin/settings", 
-            icon: Settings,
-            badge: null
-        },
+        { name: "الرئيسية", href: "/", icon: Home },
+        { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
+        { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
+        { name: "إدارة المشرفين", href: "/admin/moderators", icon: Shield },
+        { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
+        { name: "خطط الاشتراك", href: "/admin/subscription-plans", icon: CreditCard },
+        { name: "إدارة الجلسات", href: "/admin/sessions", icon: Calendar },
+        { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
+        { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
+        { name: "المزادات", href: "/admin/auctions", icon: Car },
+        { name: "سجلات المزايدات", href: "/admin/bids-logs", icon: FileText },
+        { name: "السيارات", href: "/admin/cars", icon: Car },
+        { name: "التقارير", href: "/admin/reports", icon: BarChart },
+        { name: "الإعدادات", href: "/admin/settings", icon: Settings },
     ];
 
     const isActive = (path: string) => {
@@ -155,10 +82,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         return pathname === path;
     };
 
-    const toggleDarkMode = () => {
-        setIsDarkMode(!isDarkMode);
-        // Here you can add logic to persist dark mode preference
-    };
+    const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
     return (
         <div className={`min-h-screen flex transition-colors duration-300 ${isDarkMode ? 'dark bg-gradient-to-br from-gray-900 to-gray-950' : 'bg-gray-50'}`} dir="rtl">
@@ -231,7 +155,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         {navigation.map((item) => {
                             const Icon = item.icon;
                             const active = isActive(item.href);
-                            
                             return (
                                 <li key={item.name}>
                                     <LoadingLink
@@ -248,11 +171,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                     >
                                         <div className="relative">
                                             <Icon className={`w-5 h-5 ${isCollapsed ? '' : 'ml-3'} ${active ? 'text-cyan-400' : 'text-gray-400 group-hover:text-white'}`} />
-                                            {item.badge && (
-                                                <span className="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                                    {item.badge}
-                                                </span>
-                                            )}
+                                            {/* 🔇 تم إزالة شارة الأرقام الحمراء من السايدبار */}
                                         </div>
                                         
                                         {!isCollapsed && (
@@ -353,12 +272,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                 {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                             </button>
 
-                            {/* Notifications */}
+                            {/* Notifications (بدون رقم) */}
                             <button className="relative text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700/50 transition-colors">
                                 <Bell size={20} />
-                                <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                                    3
-                                </span>
+                                {/* شيلنا الرقم الأحمر هنا أيضاً لو حابب تسيبه رجّعه */}
                             </button>
 
                             {/* User Menu */}

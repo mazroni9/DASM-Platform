@@ -34,7 +34,7 @@ const navItems = [
   { href: '/exhibitor/add-car', icon: FiPlusSquare, label: 'إضافة سيارة' },
   { href: '/exhibitor/all-cars', icon: FiLayers, label: 'جميع السيارات' },
   { href: '/exhibitor/auctions', icon: FiDollarSign, label: 'المزادات' },
-  { href: '#', icon: FiRadio, label: 'جلسات البث المباشر' },
+  { href: '/exhibitor/live-sessions', icon: FiRadio, label: 'جلسات البث المباشر' },
   { href: '#', icon: FiBarChart2, label: 'التحليلات' },
   { href: '#', icon: FaWallet, label: 'رصيد المحفظة' },
   { href: '#', icon: FiStar, label: 'التقييمات' },

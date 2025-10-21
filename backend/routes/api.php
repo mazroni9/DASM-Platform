@@ -25,7 +25,6 @@ use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CarSimilarityController;
-use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\Admin\BidEventController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\AuctionSessionController;
@@ -300,6 +299,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
     Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
     Route::put('/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
+    Route::post('/auctions/bulk-approve', [AdminController::class, 'bulkApprove']);
+    Route::post('/auctions/bulk-reject',  [AdminController::class, 'bulkReject']);
 
     Route::get('/bids/events', [BidEventController::class, 'index']);
     Route::get('/bids/events/{id}', [BidEventController::class, 'show']);
