@@ -4,35 +4,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuctionSession extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'session_date',
         'status',
         'type',
+        'description',
+        'user_id',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
-        'session_date' => 'date',
+        'session_date' => 'datetime',
+        'user_id'      => 'integer',
     ];
 
-    /**
-     * Get the auctions for the session.
-     */
     public function auctions(): HasMany
     {
         return $this->hasMany(Auction::class, 'session_id');
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

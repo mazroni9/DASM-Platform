@@ -16,6 +16,7 @@ import {
   FiGift,
   FiDatabase,
   FiLogOut,
+  FiCalendar,           // ✅ تمت إضافته
 } from 'react-icons/fi';
 import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
@@ -30,21 +31,25 @@ function cx(...classes: Array<string | false | null | undefined>) {
 
 /* ===== عناصر القائمة ===== */
 const navItems = [
-  { href: '/exhibitor', icon: FiHome, label: 'الرئيسية' },
-  { href: '/exhibitor/add-car', icon: FiPlusSquare, label: 'إضافة سيارة' },
-  { href: '/exhibitor/all-cars', icon: FiLayers, label: 'جميع السيارات' },
-  { href: '/exhibitor/auctions', icon: FiDollarSign, label: 'المزادات' },
-  { href: '/exhibitor/live-sessions', icon: FiRadio, label: 'جلسات البث المباشر' },
-  { href: '#', icon: FiBarChart2, label: 'التحليلات' },
-  { href: '#', icon: FaWallet, label: 'رصيد المحفظة' },
-  { href: '#', icon: FiStar, label: 'التقييمات' },
-  { href: '#', icon: FiTruck, label: 'الشحن' },
-  { href: '#', icon: FaMoneyCheckAlt, label: 'خانة السعي' },
-  { href: '#', icon: FiGift, label: 'خدمات إضافية' },
-  { href: '#', icon: FaChartBar, label: 'العمليات المالية' },
-  { href: '#', icon: FiDatabase, label: 'بيانات السيارات' },
-  { href: '#', icon: FiUser, label: 'الملف الشخصي' },
-  { href: '#', icon: FiSettings, label: 'الإعدادات' },
+  { href: '/exhibitor',                 icon: FiHome,       label: 'الرئيسية' },
+  { href: '/exhibitor/add-car',         icon: FiPlusSquare, label: 'إضافة سيارة' },
+  { href: '/exhibitor/all-cars',        icon: FiLayers,     label: 'جميع السيارات' },
+  { href: '/exhibitor/auctions',        icon: FiDollarSign, label: 'المزادات' },
+
+  // ✅ العنصر الجديد: جلسات المزاد
+  { href: '/exhibitor/sessions',        icon: FiCalendar,   label: 'جلسات المزاد' },
+
+  { href: '/exhibitor/live-sessions',   icon: FiRadio,      label: 'جلسات البث المباشر' },
+  { href: '#',                          icon: FiBarChart2,  label: 'التحليلات' },
+  { href: '#',                          icon: FaWallet,     label: 'رصيد المحفظة' },
+  { href: '#',                          icon: FiStar,       label: 'التقييمات' },
+  { href: '#',                          icon: FiTruck,      label: 'الشحن' },
+  { href: '#',                          icon: FaMoneyCheckAlt, label: 'خانة السعي' },
+  { href: '#',                          icon: FiGift,       label: 'خدمات إضافية' },
+  { href: '#',                          icon: FaChartBar,   label: 'العمليات المالية' },
+  { href: '#',                          icon: FiDatabase,   label: 'بيانات السيارات' },
+  { href: '#',                          icon: FiUser,       label: 'الملف الشخصي' },
+  { href: '#',                          icon: FiSettings,   label: 'الإعدادات' },
 ];
 
 export function Sidebar() {
@@ -77,7 +82,6 @@ export function Sidebar() {
           className="border border-slate-700 shadow-md transition-transform hover:scale-[1.03]"
         />
         <div className="min-w-0">
-          {/* 👇 ثابتة زي ما طلبت */}
           <h2 className="font-bold text-sm md:text-base text-slate-100 truncate">
             {user?.venue_name || 'معرض السيارات'}
           </h2>

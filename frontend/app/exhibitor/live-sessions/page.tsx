@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "../../../components/exhibitor/Header";
 import { Sidebar } from "../../../components/exhibitor/sidebar";
 import api from "@/lib/axios";
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 /** ========= الأنواع ========= **/
 interface CarLite {
@@ -23,16 +24,15 @@ interface CarLite {
   make?: string;
   model?: string;
   year?: number;
-  user_id?: number | null;
-  owner_id?: number | null;
 }
 
 interface AuctionLite {
   id: number;
   car?: CarLite | null;
+  broadcasts?: BroadcastLite[] | null;
 }
 
-interface Broadcast {
+interface BroadcastLite {
   id: number;
   title: string;
   description?: string | null;
@@ -43,18 +43,31 @@ interface Broadcast {
   scheduled_start_time?: string | null;
   created_at?: string | null;
   created_by?: number | null;
-  auction_id?: number;
-  auction?: AuctionLite | null;
 }
 
+type UiBroadcast = {
+  id: number;
+  title: string;
+  description?: string | null;
+  is_live: boolean;
+  stream_url?: string | null;
+  youtube_embed_url?: string | null;
+  youtube_chat_embed_url?: string | null;
+  scheduled_start_time?: string | null;
+  created_at?: string | null;
+  created_by?: number | null;
+  auction_id: number;
+  auction?: AuctionLite | null;
+};
+
 /** ========= أدوات مساعدة ========= **/
-function extractArray<T = any>(js: any, key?: string): T[] {
-  if (key && Array.isArray(js?.[key])) return js[key];
-  if (key && Array.isArray(js?.data?.[key])) return js.data[key];
-  if (Array.isArray(js?.data?.data)) return js.data.data;
-  if (Array.isArray(js?.data)) return js.data;
-  if (Array.isArray(js)) return js;
-  return [];
+function extractPaged(js: any) {
+  // يدعم أشكال استجابة Laravel الشائعة
+  const data = js?.data?.data ?? js?.data ?? js;
+  const last_page =
+    js?.data?.last_page ?? js?.last_page ?? data?.last_page ?? 1;
+  const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  return { rows, last_page: Number(last_page || 1) };
 }
 
 function parseYouTubeId(url?: string | null): string | null {
@@ -74,7 +87,7 @@ function parseYouTubeId(url?: string | null): string | null {
   return null;
 }
 
-function toEmbedUrl(b: Broadcast): string | null {
+function toEmbedUrl(b: UiBroadcast): string | null {
   if (b.youtube_embed_url) return b.youtube_embed_url;
   const vid = parseYouTubeId(b.stream_url);
   return vid ? `https://www.youtube.com/embed/${vid}` : null;
@@ -82,59 +95,86 @@ function toEmbedUrl(b: Broadcast): string | null {
 
 /** ========= الصفحة ========= **/
 export default function ExhibitorLiveSessionsPage() {
+  const { user } = useAuth();
+  const role = (user?.role || "").toString().toLowerCase();
+  const canModerate = role === "admin" || role === "moderator";
+
   const [loading, setLoading] = useState(true);
   const [bgLoading, setBgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [allBroadcasts, setAllBroadcasts] = useState<Broadcast[]>([]);
-  const [myAuctionIds, setMyAuctionIds] = useState<number[]>([]);
+  const [broadcasts, setBroadcasts] = useState<UiBroadcast[]>([]);
   const [search, setSearch] = useState("");
 
-  // جلب كل البثوث
-  const fetchAllBroadcasts = async () => {
-    const res = await api.get("/api/admin/all-broadcasts");
-    const rows = extractArray<Broadcast>(res.data, "data");
-    return Array.isArray(rows) ? rows : [];
-  };
-
-  // جلب كل مزاداتي (بكل الصفحات)
-  const fetchAllMyAuctionIds = async (): Promise<number[]> => {
-    let page = 1;
+  /** ===== جلب مزاداتي مع البثوث وتهيئتها لقائمة موحدة ===== **/
+  const fetchMyAuctionsBroadcasts = async (): Promise<UiBroadcast[]> => {
     const perPage = 50;
-    const ids: number[] = [];
 
-    // نجلب أول صفحة لمعرفة last_page
+    // الصفحة الأولى لمعرفة عدد الصفحات
     const first = await api.get("/api/my-auctions", {
-      params: { page, per_page: perPage, sort_by: "created_at", sort_dir: "desc" },
+      params: {
+        page: 1,
+        per_page: perPage,
+        sort_by: "created_at",
+        sort_dir: "desc",
+      },
     });
 
-    const pg = first?.data?.data;
-    const rows = Array.isArray(pg?.data) ? pg.data : [];
-    rows.forEach((a: any) => ids.push(a.id));
+    const { rows: firstRows, last_page } = extractPaged(first.data);
 
-    const lastPage = pg?.last_page || 1;
+    const allAuctions: AuctionLite[] = [...firstRows];
 
-    // بقية الصفحات
-    const promises: Promise<any>[] = [];
-    for (let p = 2; p <= lastPage; p++) {
-      promises.push(
-        api
-          .get("/api/my-auctions", {
-            params: { page: p, per_page: perPage, sort_by: "created_at", sort_dir: "desc" },
-          })
-          .then((r) => {
-            const pg2 = r?.data?.data;
-            const rws = Array.isArray(pg2?.data) ? pg2.data : [];
-            rws.forEach((a: any) => ids.push(a.id));
-          })
-          .catch(() => {
-            /* تخطي صفحة فاشلة */
-          })
-      );
+    // باقي الصفحات (لو موجود)
+    if (last_page > 1) {
+      const jobs = [];
+      for (let p = 2; p <= last_page; p++) {
+        jobs.push(
+          api
+            .get("/api/my-auctions", {
+              params: {
+                page: p,
+                per_page: perPage,
+                sort_by: "created_at",
+                sort_dir: "desc",
+              },
+            })
+            .then((res) => {
+              const { rows } = extractPaged(res.data);
+              allAuctions.push(...rows);
+            })
+            .catch(() => {
+              /* تجاهل صفحة فاشلة */
+            })
+        );
+      }
+      if (jobs.length) await Promise.all(jobs);
     }
-    if (promises.length) await Promise.all(promises);
 
-    return Array.from(new Set(ids));
+    // نفكّ البثوث من كل مزاد ونحوّلها لشكل موحد
+    const flattened: UiBroadcast[] = [];
+    for (const a of allAuctions) {
+      const list = (a?.broadcasts || []) as BroadcastLite[];
+      if (Array.isArray(list) && list.length) {
+        for (const b of list) {
+          flattened.push({
+            ...b,
+            auction_id: a.id,
+            auction: { id: a.id, car: a.car ?? null, broadcasts: null },
+          });
+        }
+      }
+    }
+
+    // ترتيب أحدث أولاً
+    flattened.sort((x, y) => {
+      const t1 =
+        new Date(x.scheduled_start_time || x.created_at || 0).getTime() || 0;
+      const t2 =
+        new Date(y.scheduled_start_time || y.created_at || 0).getTime() || 0;
+      return t2 - t1;
+    });
+
+    return flattened;
   };
 
   // تحميل أولي
@@ -143,11 +183,13 @@ export default function ExhibitorLiveSessionsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [bcasts, myIds] = await Promise.all([fetchAllBroadcasts(), fetchAllMyAuctionIds()]);
-        setAllBroadcasts(bcasts);
-        setMyAuctionIds(myIds);
+        const list = await fetchMyAuctionsBroadcasts();
+        setBroadcasts(list);
       } catch (e: any) {
-        setError(e?.response?.data?.message || e?.message || "تعذر تحميل الجلسات");
+        setError(
+          e?.response?.data?.message || e?.message || "تعذر تحميل الجلسات"
+        );
+        setBroadcasts([]);
       } finally {
         setLoading(false);
       }
@@ -159,9 +201,8 @@ export default function ExhibitorLiveSessionsPage() {
     setBgLoading(true);
     setError(null);
     try {
-      const [bcasts, myIds] = await Promise.all([fetchAllBroadcasts(), fetchAllMyAuctionIds()]);
-      setAllBroadcasts(bcasts);
-      setMyAuctionIds(myIds);
+      const list = await fetchMyAuctionsBroadcasts();
+      setBroadcasts(list);
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || "تعذر تحديث القائمة");
     } finally {
@@ -169,20 +210,11 @@ export default function ExhibitorLiveSessionsPage() {
     }
   };
 
-  // فلترة: بثوث تخص مزاداتي فقط
-  const mine = useMemo(() => {
-    if (!myAuctionIds.length) return [];
-    return (allBroadcasts || []).filter((b) => {
-      const aid = b?.auction_id ?? b?.auction?.id;
-      return typeof aid === "number" && myAuctionIds.includes(aid);
-    });
-  }, [allBroadcasts, myAuctionIds]);
-
   // بحث بالنص
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return mine;
-    return mine.filter((b) => {
+    if (!q) return broadcasts;
+    return broadcasts.filter((b) => {
       const title = (b.title || "").toLowerCase();
       const desc = (b.description || "").toLowerCase();
       const carTxt = `${b.auction?.car?.make || ""} ${b.auction?.car?.model || ""} ${
@@ -190,12 +222,15 @@ export default function ExhibitorLiveSessionsPage() {
       }`.toLowerCase();
       return title.includes(q) || desc.includes(q) || carTxt.includes(q);
     });
-  }, [mine, search]);
+  }, [broadcasts, search]);
 
   const liveCount = filtered.filter((b) => b.is_live).length;
 
-  // إيقاف البث — (المسار العام لديك يوقِف Current/First)
+  // إيقاف البث (مسموح فقط للمشرفين/الأدمن لأن الروت Admin)
   const stopBroadcast = async () => {
+    if (!canModerate) {
+      return toast("لا تملك صلاحية إيقاف البث. تواصل مع الإدارة.", { icon: "ℹ️" });
+    }
     try {
       const ok = window.confirm("هل تريد إيقاف البث المباشر؟");
       if (!ok) return;
@@ -211,8 +246,11 @@ export default function ExhibitorLiveSessionsPage() {
     }
   };
 
-  // حذف جلسة معيّنة
-  const deleteBroadcast = async (b: Broadcast) => {
+  // حذف جلسة بث محددة (مسموح فقط للمشرفين/الأدمن)
+  const deleteBroadcast = async (b: UiBroadcast) => {
+    if (!canModerate) {
+      return toast("لا تملك صلاحية حذف البث. تواصل مع الإدارة.", { icon: "ℹ️" });
+    }
     try {
       const ok = window.confirm("هل أنت متأكد من حذف هذه الجلسة؟ لا يمكن التراجع.");
       if (!ok) return;
@@ -228,11 +266,11 @@ export default function ExhibitorLiveSessionsPage() {
     }
   };
 
-  // فتح البث
-  const openStream = (b: Broadcast) => {
+  // فتح رابط البث
+  const openStream = (b: UiBroadcast) => {
     const url = b.stream_url || b.youtube_embed_url;
     if (!url) return toast("لا يوجد رابط بث متاح", { icon: "ℹ️" });
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -249,7 +287,7 @@ export default function ExhibitorLiveSessionsPage() {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-extrabold">جلسات البث المباشر</h1>
-                <p className="text-slate-400">تعرض البثوث المرتبطة بمزادات سياراتك فقط.</p>
+                <p className="text-slate-400">تعرض فقط البثوث المرتبطة بمزادات سياراتك.</p>
               </div>
             </div>
 
@@ -346,7 +384,7 @@ export default function ExhibitorLiveSessionsPage() {
                 const embed = toEmbedUrl(b);
                 const carTxt = b?.auction?.car
                   ? `${b.auction.car.make || ""} ${b.auction.car.model || ""} ${b.auction.car.year || ""}`.trim()
-                  : `#${b.auction_id ?? b.auction?.id ?? ""}`;
+                  : `#${b.auction_id}`;
 
                 return (
                   <motion.div
@@ -384,7 +422,9 @@ export default function ExhibitorLiveSessionsPage() {
                     {/* المحتوى */}
                     <div className="p-5 space-y-3">
                       <h3 className="text-lg font-bold text-slate-100">{b.title}</h3>
-                      <p className="text-slate-300 text-sm">السيارة: <span className="text-slate-100">{carTxt}</span></p>
+                      <p className="text-slate-300 text-sm">
+                        السيارة: <span className="text-slate-100">{carTxt}</span>
+                      </p>
                       {b.description && <p className="text-slate-400 text-sm line-clamp-3">{b.description}</p>}
 
                       {/* معاينة */}
@@ -416,8 +456,13 @@ export default function ExhibitorLiveSessionsPage() {
                         {b.is_live ? (
                           <button
                             onClick={stopBroadcast}
-                            className="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-2"
-                            title="إيقاف البث"
+                            disabled={!canModerate}
+                            className={`px-3 py-2 rounded-lg text-white flex items-center gap-2 ${
+                              canModerate
+                                ? "bg-rose-600 hover:bg-rose-700"
+                                : "bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed"
+                            }`}
+                            title={canModerate ? "إيقاف البث" : "غير متاح — يتطلب صلاحيات مشرف"}
                           >
                             <Pause size={16} />
                             إيقاف
@@ -435,8 +480,13 @@ export default function ExhibitorLiveSessionsPage() {
 
                         <button
                           onClick={() => deleteBroadcast(b)}
-                          className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-rose-300 hover:text-rose-200 flex items-center gap-2"
-                          title="حذف الجلسة"
+                          disabled={!canModerate}
+                          className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
+                            canModerate
+                              ? "bg-slate-900 border border-slate-800 hover:bg-slate-800 text-rose-300 hover:text-rose-200"
+                              : "bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed"
+                          }`}
+                          title={canModerate ? "حذف الجلسة" : "غير متاح — يتطلب صلاحيات مشرف"}
                         >
                           <Trash2 size={16} />
                           حذف
