@@ -25,7 +25,6 @@ use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CarSimilarityController;
-use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\Admin\BidEventController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\ActivityLogController;
@@ -35,6 +34,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\AuctionSessionController;
+use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -304,6 +304,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
     Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
     Route::put('/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
+    Route::post('/auctions/bulk-approve', [AdminController::class, 'bulkApprove']);
+    Route::post('/auctions/bulk-reject',  [AdminController::class, 'bulkReject']);
 
     Route::get('/bids/events', [BidEventController::class, 'index']);
     Route::get('/bids/events/{id}', [BidEventController::class, 'show']);
@@ -371,6 +373,17 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
 });
 
+
+Route::prefix('exhibitor')
+    ->middleware(['auth:sanctum','role:admin,venue_owner,dealer'])
+    ->group(function () {
+        Route::get   ('/sessions',                 [ExhibitorAuctionSessionController::class, 'index']);
+        Route::post  ('/sessions',                 [ExhibitorAuctionSessionController::class, 'store']);
+        Route::get   ('/sessions/{id}',            [ExhibitorAuctionSessionController::class, 'show']);
+        Route::put   ('/sessions/{id}',            [ExhibitorAuctionSessionController::class, 'update']);
+        Route::post  ('/sessions/{id}/status',     [ExhibitorAuctionSessionController::class, 'updateStatus']);
+        Route::delete('/sessions/{id}',            [ExhibitorAuctionSessionController::class, 'destroy']);
+    });
 
 
 // Public subscription plans routes

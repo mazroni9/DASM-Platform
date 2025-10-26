@@ -11,34 +11,53 @@ export default function ExhibitorDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // 🔹 التأكد أننا في الكلاينت (لحل مشكلة الهيدرات)
+  // ✅ نتأكد إننا على الكلاينت (حل مشاكل الهيدرشن)
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // 🔹 منع العرض حتى يبدأ الكلاينت
+  // ✅ قفل/إرجاع سكرول الصفحة في وضع السايدبار بالجوال
+  useEffect(() => {
+    if (!isClient) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = isSidebarOpen ? 'hidden' : prev || '';
+    return () => {
+      document.body.style.overflow = prev || '';
+    };
+  }, [isSidebarOpen, isClient]);
+
+  // ✅ إغلاق بالق клавиш Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // ⏳ Placeholder أثناء التحميل الأول (داكن وموحّد)
   if (!isClient) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        {/* تحميل وهمي للـ Sidebar */}
-        <div className="hidden md:block w-72 bg-gray-900 animate-pulse"></div>
-        {/* تحميل وهمي للـ Header والـ Main */}
+      <div dir="rtl" className="flex min-h-screen bg-slate-950 text-slate-100">
+        {/* Sidebar skeleton */}
+        <div className="hidden md:block w-72 bg-slate-900/80 border-r border-slate-800 animate-pulse" />
+        {/* Header & Main skeleton */}
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-white animate-pulse"></div>
-          <main className="p-6 flex-1 bg-gray-50"></main>
+          <div className="h-16 bg-slate-900/80 border-b border-slate-800 animate-pulse" />
+          <main className="p-6 flex-1 bg-slate-950" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 relative">
-      {/* الشريط الجانبي - يظهر فقط على الشاشات المتوسطة فأكبر */}
+    <div dir="rtl" className="flex min-h-screen bg-slate-950 text-slate-100 relative">
+      {/* Sidebar (Desktop) */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
       </div>
 
-      {/* الشريط الجانبي - نسخة الجوال (Drawer) */}
+      {/* Sidebar (Mobile Drawer) */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
@@ -46,40 +65,43 @@ export default function ExhibitorDashboard() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed inset-0 z-40 md:hidden flex"
+            className="fixed inset-0 z-[60] md:hidden flex"
+            aria-modal="true"
+            role="dialog"
           >
-            {/* الخلفية الشفافة */}
-            <motion.div
+            {/* Overlay */}
+            <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.6 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black"
               onClick={() => setIsSidebarOpen(false)}
+              aria-label="إغلاق القائمة"
             />
-            {/* الشريط نفسه */}
-            <motion.div className="relative w-72 bg-gradient-to-b from-slate-900 via-indigo-900 to-indigo-950 shadow-2xl">
+            {/* Drawer */}
+            <motion.div className="relative w-72 h-full">
               <Sidebar />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* المحتوى الرئيسي */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col w-0">
         <Header />
-        <main className="p-4 md:p-6 flex-1 overflow-auto bg-gray-50">
+        <main className="p-4 md:p-6 flex-1 overflow-auto">
           <AuctionPage />
         </main>
       </div>
 
-      {/* زر القائمة - يظهر فقط على الجوال */}
+      {/* Mobile FAB */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed bottom-6 left-6 bg-gradient-to-r from-indigo-600 to-fuchsia-500 text-white p-4 rounded-full shadow-xl z-30 hover:from-indigo-700 hover:to-fuchsia-600 transition-all duration-200 flex items-center justify-center"
-        style={{ boxShadow: '0 10px 15px -3px rgba(147, 51, 234, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3)' }}
+        className="md:hidden fixed bottom-6 left-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-4 rounded-full shadow-xl z-50 hover:from-violet-700 hover:to-fuchsia-700 transition-all duration-200"
+        style={{ boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.4)' }}
         aria-label="فتح القائمة"
       >
-        <FiMenu size={24} />
+        <FiMenu size={22} />
       </button>
     </div>
   );

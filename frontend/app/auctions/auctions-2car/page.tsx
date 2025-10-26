@@ -1,40 +1,22 @@
-/**
- * 📝 الصفحة: عرض مزادات السيارات
- * 📁 المسار: Frontend-local/app/auctions/auctions-2car/page.tsx
- *
- * ✅ الوظيفة:
- * - تعرض هذه الصفحة جميع أنواع أسواق السيارات التخصصية
- * - تُظهر روابط لكل نوع من أنواع أسواق السيارات مع صور ووصف مختصر
- *
- * 🔄 الارتباطات:
- * - ترتبط مع: الصفحة الرئيسية للمزادات (/auctions)
- * - تؤدي إلى: صفحات قطاعات السيارات المختلفة (luxuryCars, companiesCars, government, etc.)
- * 
- * ✅ الفائدة:
- * - تُستخدم من قبل جميع المستخدمين لتصفح أنواع أسواق السيارات المختلفة
- * - توفر وصولاً سهلاً لجميع الأسواق التخصصية للسيارات
- */
-
 'use client';
 
 import React from 'react';
 import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
-import { ArrowLeft, Car, Building, Building2, Truck, Home, ChevronRight } from 'lucide-react';
+import { ChevronRight, Car, Building, Building2, Truck, Home } from 'lucide-react';
 
 export default function CarAuctionsPage() {
-  // قائمة بجميع أسواق السيارات التخصصية بترتيب الأرقام: 1, 2, 3, ...
   const carMarkets = [
-    // الصف الأول كما هو مطلوب: الفارهة (1) ثم الكلاسيكية (2) ثم الكرافانات (3)
+    // الصف الأول
     {
       id: 'luxury',
       title: 'سوق السيارات الفارهة',
       description: 'سيارات فارهة مميزة بأسعار منافسة',
       image: '/showroom.png',
-      color: 'from-orange-500 to-orange-700',
-      bgColor: 'bg-white',
-      hoverColor: 'bg-gray-50',
-      textColor: 'text-orange-600',
+      color: 'from-amber-500 to-amber-700',
+      bgColor: 'bg-gray-800/40',
+      hoverColor: 'bg-gray-800/60',
+      textColor: 'text-amber-400',
       icon: Car,
       path: '/auctions/auctions-2car/luxuryCars',
       row: 1
@@ -44,10 +26,10 @@ export default function CarAuctionsPage() {
       title: 'سوق السيارات الكلاسيكية',
       description: 'سيارات كلاسيكية نادرة وقطع مميزة للهواة والمقتنين',
       image: '/1970 Plum Crazy Dodge Dart Swinger.png',
-      color: 'from-orange-500 to-orange-700',
-      bgColor: 'bg-white',
-      hoverColor: 'bg-gray-50',
-      textColor: 'text-orange-600',
+      color: 'from-amber-500 to-amber-700',
+      bgColor: 'bg-gray-800/40',
+      hoverColor: 'bg-gray-800/60',
+      textColor: 'text-amber-400',
       icon: Car,
       path: '/auctions/auctions-2car/classic',
       row: 1
@@ -57,10 +39,10 @@ export default function CarAuctionsPage() {
       title: 'سوق الكرافانات',
       description: 'كرافانات ومنازل متنقلة لمحبي السفر والرحلات',
       image: '/caravan.png',
-      color: 'from-orange-500 to-orange-700',
-      bgColor: 'bg-white',
-      hoverColor: 'bg-gray-50',
-      textColor: 'text-orange-600',
+      color: 'from-amber-500 to-amber-700',
+      bgColor: 'bg-gray-800/40',
+      hoverColor: 'bg-gray-800/60',
+      textColor: 'text-amber-400',
       icon: Home,
       path: '/auctions/auctions-2car/caravan',
       row: 1
@@ -73,9 +55,9 @@ export default function CarAuctionsPage() {
       description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة',
       image: '/trucks.jpg',
       color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-white',
-      hoverColor: 'bg-gray-50',
-      textColor: 'text-blue-600',
+      bgColor: 'bg-gray-800/40',
+      hoverColor: 'bg-gray-800/60',
+      textColor: 'text-blue-400',
       icon: Truck,
       path: '/auctions/auctions-2car/busesTrucks',
       row: 2
@@ -86,9 +68,9 @@ export default function CarAuctionsPage() {
       description: 'سيارات شركات بأسعار تصفية مخزون',
       image: '/company-fleet.jpg',
       color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-white',
-      hoverColor: 'bg-gray-50',
-      textColor: 'text-blue-600',
+      bgColor: 'bg-gray-800/40',
+      hoverColor: 'bg-gray-800/60',
+      textColor: 'text-blue-400',
       icon: Building2,
       path: '/auctions/auctions-2car/companiesCars',
       row: 2
@@ -99,9 +81,9 @@ export default function CarAuctionsPage() {
       description: 'سيارات من الجهات الحكومية بحالة جيدة',
       image: '/gov-cars.jpg',
       color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-white',
-      hoverColor: 'bg-gray-50',
-      textColor: 'text-blue-600',
+      bgColor: 'bg-gray-800/40',
+      hoverColor: 'bg-gray-800/60',
+      textColor: 'text-blue-400',
       icon: Building,
       path: '/auctions/auctions-2car/government',
       row: 2
@@ -109,30 +91,32 @@ export default function CarAuctionsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-gray-100">
       {/* رأس الصفحة */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 py-8 md:py-12 px-4 md:px-6 text-white">
-        <div className="container mx-auto">
-          {/* زر العودة إلى السوق الرئيسي */}
-          <div className="mb-6">
+      <div className="bg-gradient-to-r from-blue-700 to-blue-900 py-10 md:py-14 px-4 md:px-6">
+        <div className="max-w-7xl mx-auto">
+          {/* زر العودة */}
+          <div className="mb-8">
             <LoadingLink 
               href="/auctions" 
-              className="inline-flex items-center text-white/90 hover:text-white transition-colors group"
+              className="inline-flex items-center text-blue-200 hover:text-white transition-colors group backdrop-blur-sm"
             >
-              <ChevronRight className="ml-1 transform group-hover:-translate-x-1 transition-transform" size={20} />
-              <span>العودة للسوق الرئيسي</span>
+              <ChevronRight className="ml-2 rtl:rotate-180 transform group-hover:-translate-x-1 transition-transform" size={20} />
+              <span className="font-medium">العودة للسوق الرئيسي</span>
             </LoadingLink>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-center">قطاع السيارات المختلفة</h1>
-          <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto text-center">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center text-white">
+            قطاع السيارات المختلفة
+          </h1>
+          <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto text-center text-blue-100">
             تصفح مجموعة متنوعة من أسواق السيارات المتخصصة، من الكلاسيكية إلى الفاخرة والشاحنات والكرفانات
           </p>
         </div>
       </div>
 
       {/* قائمة الأسواق */}
-      <div className="container mx-auto py-8 md:py-16 px-4 md:px-6">
+      <div className="max-w-7xl mx-auto py-10 md:py-16 px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {carMarkets.map((market) => {
             const Icon = market.icon;
@@ -140,34 +124,39 @@ export default function CarAuctionsPage() {
               <LoadingLink 
                 key={market.id}
                 href={market.path}
-                className={`group flex flex-col h-full rounded-xl shadow-md border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg ${market.bgColor} hover:${market.hoverColor} transform hover:-translate-y-1`}
+                className={`group flex flex-col h-full rounded-2xl border border-gray-700/50 overflow-hidden transition-all duration-300 hover:border-gray-600/70 backdrop-blur-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 ${market.bgColor} hover:${market.hoverColor}`}
               >
-                <div className="p-6">
-                  <div className="flex items-center mb-3">
-                    <div className={`p-3 rounded-full mr-3 ${market.textColor} bg-white`}>
+                <div className="p-6 flex flex-col h-full">
+                  <div className="flex items-center mb-4">
+                    <div className={`p-3 rounded-xl mr-3 ${market.textColor} bg-gray-900/60 backdrop-blur-sm border border-gray-700/50`}>
                       <Icon size={24} />
                     </div>
                     <h3 className={`text-xl font-bold ${market.textColor}`}>{market.title}</h3>
                   </div>
                   
-                  <div className="relative h-40 mb-4 overflow-hidden rounded-lg">
-                    {market.image && (
+                  <div className="relative h-48 mb-5 overflow-hidden rounded-xl flex-shrink-0">
+                    {market.image ? (
                       <Image 
                         src={market.image}
                         alt={market.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
+                    ) : (
+                      <div className="w-full h-full bg-gray-900/50 flex items-center justify-center">
+                        <Car className="w-12 h-12 text-gray-600" />
+                      </div>
                     )}
-                    <div className={`absolute inset-0 bg-gradient-to-t ${market.color} opacity-20`}></div>
+                    <div className={`absolute inset-0 bg-gradient-to-t ${market.color} opacity-15`}></div>
                   </div>
                   
-                  <p className="text-gray-600 mb-4">{market.description}</p>
+                  <p className="text-gray-400 mb-5 flex-grow">{market.description}</p>
                   
                   <div className="mt-auto pt-3">
-                    <span className={`inline-flex items-center text-sm font-medium rounded-full px-4 py-2 bg-white/80 group-hover:bg-white group-hover:${market.textColor} text-gray-700 transition-colors`}>
-                      اضغط للدخول
-                      <ChevronRight className="mr-1 opacity-0 group-hover:opacity-100 transition-opacity" size={14} />
+                    <span className={`inline-flex items-center justify-between w-full px-4 py-2.5 rounded-xl border border-gray-700/50 bg-gray-900/50 backdrop-blur-sm text-gray-300 group-hover:text-white group-hover:border-gray-600/70 transition-all`}>
+                      <span className="font-medium">ابدأ التصفح</span>
+                      <ChevronRight className="w-4 h-4 rtl:rotate-180 opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-1 transition-all duration-300" />
                     </span>
                   </div>
                 </div>
