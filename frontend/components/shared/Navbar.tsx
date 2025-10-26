@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Book,
+  TvMinimalPlay,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
@@ -38,8 +39,9 @@ const Navbar = () => {
   const isAdmin = user?.role === UserRole.ADMIN;
 
   const navigationItems: NavigationItem[] = [
-    { href: "/auctions", label: "الأسواق", icon: Store },
-    { href: "/auction-archive", label: "أرشيف المزادات", icon: Archive },
+    // { href: "/auctions", label: "الأسواق", icon: Store },
+    { href: "/auctions/live-auctions", label: "الأسواق المباشرة", icon: Store },
+    // { href: "/auction-archive", label: "أرشيف المزادات", icon: Archive },
   ];
 
   const isActive = (path: string) => {
@@ -121,15 +123,15 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6 font-medium" dir="rtl">
             <LoadingLink
-              href="/auctions"
+              href="/auctions/live-auctions"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                isActive("/auctions")
+                isActive("/auctions/live-auctions")
                   ? "bg-cyan-900/30 text-cyan-300"
                   : "hover:bg-slate-800 hover:text-cyan-300"
               }`}
             >
-              <Store size={18} />
-              <span>الأسواق</span>
+              <TvMinimalPlay size={18} />
+              <span>الأسواق المباشرة</span>
             </LoadingLink>
 
             <LoadingLink
@@ -141,17 +143,7 @@ const Navbar = () => {
               <span>المدونة</span>
             </LoadingLink>
 
-            <LoadingLink
-              href="/auction-archive"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                isActive("/auction-archive")
-                  ? "bg-cyan-900/30 text-cyan-300"
-                  : "hover:bg-slate-800 hover:text-cyan-300"
-              }`}
-            >
-              <Archive size={18} />
-              <span>الأرشيف</span>
-            </LoadingLink>
+           
           </div>
 
           {/* Desktop Auth & Actions */}
