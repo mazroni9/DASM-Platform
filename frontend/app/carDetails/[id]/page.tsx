@@ -26,8 +26,14 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
 import Pusher from "pusher-js";
 import BidForm from "@/components/BidForm";
+import Box from '@mui/material/Box';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import { motion } from "framer-motion";
 
 import { useEcho } from "@laravel/echo-react";
+import { List, ListSubheader } from "@mui/material";
 
 // تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getCurrentAuctionType(): string {
@@ -47,6 +53,64 @@ interface BidingData {
   auction_id: number;
   user_id: number;
   bid_amount: number;
+}
+
+// ========== قسم السيارات المميزة ==========
+const FeaturedCars = ({cars}) => {
+ 
+  return (
+    <section className="bg-gray-100 min-h-screen mt-10">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center ">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-right text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 md:mb-4"
+          >
+           سيارات مشابهة
+          </motion.h2>
+          
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 py-10">
+          {cars && cars.map((car, index) => (
+            <motion.div
+              key={car.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+            >
+              <div className="relative  h-40 sm:h-48 overflow-hidden">
+                <img
+                  src={car.images[0]}
+                  alt={car.make + " " + car.model + " " + car.year}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                />
+               
+              </div>
+              <div className="p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold  mb-2 line-clamp-2">{car.make + " " + car.model + " " + car.year}</h3>
+                <div className="flex justify-between items-center mb-3 sm:mb-4">
+                  <span className="text-amber-400 font-bold text-base sm:text-lg">{car.active_auction.current_bid} ر.س</span>
+                  <span className="text-slate-400 text-xs sm:text-sm">{car.total_bids} مزايدة</span>
+                </div>
+                <LoadingLink href={`/carDetails/${car.id}`} className="w-full">
+                  <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-2 sm:py-3 rounded-lg font-medium hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 text-sm sm:text-base">
+                    شارك في المزاد
+                  </button>
+                </LoadingLink>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+       
+      </div>
+    </section>
+  );
 }
 
 export default function CarDetailPage() {
@@ -248,7 +312,7 @@ export default function CarDetailPage() {
 
   console.log("item", item);
 
-  const images = item ? item["car"]?.images : [];
+  const images = item ? item["car"]?.images?.length > 0 ? item["car"]?.images : [] : [];
   // الصورة الحالية المختارة
   const currentImage = images[selectedImageIndex];
 
@@ -266,6 +330,7 @@ export default function CarDetailPage() {
 
   // عرض بيانات السيارة إذا تم العثور عليها
   return (
+    <>
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       {showImageModal && (
         <div
@@ -429,13 +494,13 @@ export default function CarDetailPage() {
                 {/* معلومات السعر للشاشات الصغيرة */}
                 <div className="mt-6 block lg:hidden">
                   <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-blue-600">
                       السعر الحالي:{" "}
-                      <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || item?.car?.max_price?.toLocaleString()} />
+                      <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || 0} />
                      {/*  {item && item.active_auction
-                        ? item.active_auction?.current_bid?.toLocaleString()
-                        : item?.car?.max_price?.toLocaleString()}{" "} */}
-                    </p>
+                       ? item.active_auction?.current_bid?.toLocaleString()
+                       : item?.car?.max_price?.toLocaleString()}{" "} */}
+                    </div>
                     {item?.auction_result && (
                       <p className="text-lg text-green-600 mt-2">
                         {item.auction_result}
@@ -544,6 +609,31 @@ export default function CarDetailPage() {
                 )
               )}
 
+              {item?.active_auction && (
+                <div  className="mt-3 border-t border-gray-200 pt-3">
+                  <h4 className="text-lg font-bold text-gray-600 mb-2">آخر المزايدين</h4>
+                  <List dir="rtl" sx={{width: '100%',
+                      maxWidth: 460,
+                      bgcolor: 'background.paper',
+                      position: 'relative',
+                      overflow: 'auto',
+                      maxHeight: 400,
+                      }}>
+                   
+                      {item.active_auction.bids.map((bid)=>{
+                        return (  
+                        <ListItem key={bid.id} component="div" disablePadding>
+                          <ListItemButton>
+                            <ListItemText dir="rtl" sx={{textAlign:"right" }} primary={`#${ bid.user_id }`} />
+                            <ListItemText dir="rtl" sx={{textAlign:"right" }} primary={bid.created_at} />
+                            <PriceWithIcon className="text-right font-bold" price={bid.bid_amount}/>
+                          </ListItemButton>
+                      </ListItem>)
+                      })}
+                  </List>
+                </div>
+            )}
+
               {!isOwner && !item?.active_auction && (
                 <div
                   className="max-w-md mx-auto bg-gray-50 p-6 rounded-3xl shadow-lg border border-gray-200"
@@ -564,15 +654,10 @@ export default function CarDetailPage() {
             <div>
               {item?.active_auction ? (
                 <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <p className="text-2xl font-bold text-blue-600">
-                    آخر سعر:{" "}
+                  <p className="text-gray-500">  آخر سعر:</p>
+                  <div className="text-2xl font-bold text-blue-600">
                     <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || "-"} />
-                  </p>
-                  {item?.active_auction?.current_bid && (
-                    <p className="text-lg text-green-600 mt-2">
-                      {item.active_auction.current_bid}
-                    </p>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <div className="mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
@@ -716,7 +801,9 @@ export default function CarDetailPage() {
             </div>
           </div>
         </div>
+          <FeaturedCars cars={item?.similar_cars}/>
       </div>
     </div>
+    </>
   );
 }

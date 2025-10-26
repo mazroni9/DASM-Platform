@@ -11,9 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
 class Auction extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'car_id',
@@ -32,6 +35,28 @@ class Auction extends Model
         'extended_until', // For auction extensions
         'last_bid_time', // Track when the last bid was placed
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        //events: created, updated, deleted
+        return LogOptions::defaults()
+        ->setDescriptionForEvent(function(string $eventName) {
+            switch ($eventName) {
+                case 'created':
+                    return "تم إنشاء المزاد رقم {$this->id}";
+                case 'updated':
+                    return "تم تحديث المزاد رقم {$this->id}";
+                case 'deleted':
+                    return "تم حذف المزاد رقم {$this->id}";
+            }
+            return "Auction {$eventName}";
+        })->logFillable()
+        //->logOnlyDirty()
+        ->useLogName('auction_log');
+        //->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}");
+    }
+
+
 
     protected $casts = [
         'status' => AuctionStatus::class,

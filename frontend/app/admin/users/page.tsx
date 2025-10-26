@@ -82,6 +82,7 @@ interface UserData {
     is_active: boolean;
     email_verified_at: string | null;
     created_at: string;
+    user_code:string;
     status: "pending" | "active" | "rejected";
     dealer?: {
         id: number;
@@ -580,8 +581,13 @@ export default function UsersManagementPage() {
                                                             {user.dealer.company_name}
                                                         </div>
                                                     )}
+                                                    <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                    {user.user_code}
+                                                    </div>
                                                 </div>
+                                                
                                             </div>
+                                            
                                         </td>
 
                                         {/* Contact Info */}

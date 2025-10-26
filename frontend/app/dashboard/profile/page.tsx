@@ -7,6 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
     User, 
     Phone, 
@@ -26,7 +34,8 @@ import {
     ArrowLeft,
     BadgeCheck,
     Star,
-    Clock
+    Clock,
+    Map
 } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import { UserRole } from "@/types/types";
@@ -39,7 +48,7 @@ interface UserProfile {
     email: string;
     phone: string;
     role: string;
-    city?: string;
+    area_id?: string;
     address?: string;
     company_name?: string;
     trade_license?: string;
@@ -59,7 +68,7 @@ interface ProfileFormData {
     last_name: string;
     email: string;
     phone: string;
-    city: string;
+    area_id: string;
     address: string;
     company_name: string;
     trade_license: string;
@@ -79,7 +88,7 @@ export default function ProfilePage() {
         last_name: "",
         email: "",
         phone: "",
-        city: "",
+        area_id: "",
         address: "",
         company_name: "",
         trade_license: "",
@@ -131,7 +140,7 @@ export default function ProfilePage() {
                         last_name: profileData.last_name || "",
                         email: profileData.email || "",
                         phone: profileData.phone || "",
-                        city: profileData.city || "",
+                        area_id: profileData.area_id || "",
                         address: profileData.address || "",
                         company_name: profileData.company_name || "",
                         trade_license: profileData.trade_license || "",
@@ -196,7 +205,7 @@ export default function ProfilePage() {
                 last_name: formData.last_name,
                 phone: formData.phone,
                 address: formData.address,
-                city: formData.city,
+                area_id: formData.area_id,
             };
 
             if (profile?.role === UserRole.DEALER) {
@@ -737,14 +746,47 @@ export default function ProfilePage() {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">المدينة</label>
-                                            <input
-                                                name="city"
-                                                value={formData.city}
-                                                onChange={handleInputChange}
-                                                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
-                                            />
+                                       
+                                        {/* المنطقة */}
+                                        <div className="space-y-2">
+                                        <Label htmlFor="area_id" className="text-gray-200 font-medium">
+                                            المنطقة
+                                        </Label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                                            <Map className="h-5 w-5 text-gray-500" />
+                                            </div>
+                                            <Select
+                                            onValueChange={(value) => {
+                                                setFormData({ ...formData, area_id:value });
+                                            }}
+                                            
+                                            value={formData.area_id}
+                                            >
+                                            <SelectTrigger
+                                                id="area_id"
+                                                className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+                                            >
+                                                <SelectValue placeholder="اختر المنطقة" />
+                                            </SelectTrigger>
+                                            <SelectContent
+                                                className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+                                                dir="rtl"
+                                                align="end"
+                                            >
+                                                <SelectItem value="1">منطقة الرياض</SelectItem>
+                                                <SelectItem value="2">منطقة مكة المكرمة</SelectItem>
+                                                <SelectItem value="3">المنطقة الشرقية</SelectItem>
+                                                <SelectItem value="4">منطقة تبوك</SelectItem>
+                                                <SelectItem value="5">منطقة المدينة المنورة</SelectItem>
+                                                <SelectItem value="6">منطقة الحدود الشمالية</SelectItem>
+                                                <SelectItem value="7">منطقة القصيم</SelectItem>
+                                                <SelectItem value="8">منطقة المجمعة</SelectItem>
+                                                <SelectItem value="9">منطقة حائل</SelectItem>
+                                                <SelectItem value="10">منطقة عسير</SelectItem>
+                                            </SelectContent>
+                                            </Select>
+                                        </div>
                                         </div>
 
                                         <div>

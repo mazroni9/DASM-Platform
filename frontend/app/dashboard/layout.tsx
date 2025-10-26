@@ -1,7 +1,7 @@
 // app/dashboard/layout.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { UserRole } from "@/types/types";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -39,10 +40,16 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const router = useLoadingRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/auth/login?returnUrl=/dashboard");
+    }
+  }, [isLoggedIn, router]);
+  
   // ألوان مخصصة لكل تبويب مع تحسينات للـ hover
   const tabColors = {
     "/dashboard": { 
@@ -148,7 +155,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // استخدام Plus من lucide-react مباشرة
   const quickActions = [
-    { name: "إضافة سيارة", icon: Plus, href: "/dashboard/add-car", color: "from-green-500 to-emerald-600", hoverColor: "from-green-600 to-emerald-700" },
+    { name: "إضافة سيارة", icon: Plus, href: "/add/Car", color: "from-green-500 to-emerald-600", hoverColor: "from-green-600 to-emerald-700" },
     { name: "عرض المزادات", icon: Eye, href: "/auctions", color: "from-blue-500 to-cyan-600", hoverColor: "from-blue-600 to-cyan-700" },
     { name: "التقارير", icon: BarChart3, href: "/dashboard/reports", color: "from-purple-500 to-pink-600", hoverColor: "from-purple-600 to-pink-700" },
     { name: "الدعم", icon: MessageCircle, href: "/support", color: "from-orange-500 to-red-600", hoverColor: "from-orange-600 to-red-700" },
@@ -161,6 +168,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const handleLogout = () => {
     // إضافة منطق تسجيل الخروج هنا
     router.push("/auth/login");
+  };
+
+  const roleLabel = (r?: UserRole | string) => {
+    const role = user.role;
+    switch (role) {
+      case UserRole.ADMIN:
+        return "مسؤول";
+      case UserRole.MODERATOR:
+        return "مشرف";
+      case UserRole.VENUE_OWNER:
+        return "مالك معرض";
+      case UserRole.INVESTOR:
+        return "مستثمر";
+      default:
+        return "مستخدم";
+    }
   };
 
   return (
@@ -231,16 +254,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   {userName}
                 </p>
                 <p className="text-xs text-gray-400 leading-tight">
-                  {user?.role === "user" ? "مستخدم" : user?.role === "dealer" ? "تاجر" : "زائر"}
+                 {roleLabel(user?.role)}
                 </p>
               </div>
             </div>
 
             {/* Settings & Logout */}
             <div className="flex gap-1">
+              <LoadingLink href="/dashboard/profile">
               <button className="p-2 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-700/60 hover:border-gray-600 transition-all duration-300">
                 <Settings className="w-4 h-4 text-gray-400" />
               </button>
+              </LoadingLink>
               <button 
                 onClick={handleLogout}
                 className="p-2 rounded-xl bg-red-500/20 border border-red-500/30 hover:bg-red-500/30 hover:border-red-400/50 transition-all duration-300"

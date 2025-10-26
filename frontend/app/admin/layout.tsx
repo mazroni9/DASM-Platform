@@ -31,7 +31,8 @@ import {
     Bell,
     Search,
     Moon,
-    Sun
+    Sun,
+    History,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -127,6 +128,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             name: "سجلات المزايدات", 
             href: "/admin/bids-logs", 
             icon: FileText,
+            badge: null
+        },
+        { 
+            name: "سجلات النشاط", 
+            href: "/admin/activity-logs", 
+            icon: History,
             badge: null
         },
         { 

@@ -4,10 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Bid extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+        ->setDescriptionForEvent(function(string $eventName) {
+            switch ($eventName) {
+                case 'created':
+                    return "تم إنشاء المزايدة رقم {$this->id}";
+                case 'updated':
+                    return "تم تحديث المزايدة رقم {$this->id}";
+                case 'deleted':
+                    return "تم حذف المزايدة رقم {$this->id}";
+            }
+            return "Bid {$eventName}";
+        })->logFillable()
+        ->useLogName('bid_log');
+    }
 
     protected $fillable = [
         'auction_id',

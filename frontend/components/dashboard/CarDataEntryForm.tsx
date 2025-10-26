@@ -99,6 +99,7 @@ interface CarFormData {
   city: string;
   province: string;
   market_category: string;
+  main_auction_duration: string;
 }
 
 let carOjbect = {
@@ -122,6 +123,7 @@ let carOjbect = {
   city: "",
   province: "",
   market_category: "",
+  main_auction_duration: "",
 };
 
 interface AiAnalysis {
@@ -881,6 +883,25 @@ export default function CarDataEntryForm() {
                 </option>
               ))}
               
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="main_auction_duration"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              مدة البقاء في المزادات الرئيسية
+            </label>
+            <select
+              id="main_auction_duration"
+              name="main_auction_duration"
+              value={formData.main_auction_duration}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">اختر مدة</option>
+              <option value="5">5 أيام</option>
+              <option value="7">7 أيام</option>
             </select>
           </div>
         </div>

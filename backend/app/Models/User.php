@@ -2,20 +2,40 @@
 
 namespace App\Models;
 
-use App\Enums\UserStatus;
 use App\Enums\UserRole;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Enums\UserStatus;
+use App\Models\DeviceToken;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Spatie\Activitylog\Traits\CausesActivity;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
-use App\Models\DeviceToken;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, CausesActivity, LogsActivity;
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+        ->setDescriptionForEvent(function(string $eventName) {
+            switch ($eventName) {
+                case 'created':
+                    return "تم إنشاء المستخدم رقم {$this->id}";
+                case 'updated':
+                    return "تم تحديث المستخدم رقم {$this->id}";
+                case 'deleted':
+                    return "تم حذف المستخدم رقم {$this->id}";
+            }
+            return "User {$eventName}";
+        })->logFillable()
+        ->useLogName('user_log');
+    }
 
     protected $fillable = [
         'first_name',
@@ -30,7 +50,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'password_reset_token',
         'password_reset_expires_at',
         'is_active',
-        'status'
+        'status',
+        'area_id',
+        'user_code'
     ];
 
     // Casts for automatic type conversion
@@ -42,7 +64,51 @@ class User extends Authenticatable implements MustVerifyEmail
         'role' => UserRole::class,
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+
+        static::created(function ($user) {
+            if ($user->role == UserRole::USER) {
+                $user_code = 'Usr_'.$user->area?->code.'_0'.$user->id;
+            }elseif ($user->role == UserRole::DEALER) {
+                $user_code = 'Dlr_'.$user->area?->code.'_0'.$user->id;
+            }elseif ($user->role == UserRole::VENUE_OWNER) {
+                $user_code = 'Csr_'.$user->area?->code.'_0'.$user->id;
+            }elseif ($user->role == UserRole::INVESTOR) {
+                $user_code = 'Inv_'.$user->area?->code.'_0'.$user->id;
+            }
+            else{
+                $user_code = Str::limit((ucfirst($user->role)),3,'').$user->area?->code.'_0'.$user->id;
+            }
+            $user->user_code = $user_code;
+            $user->saveQuietly();
+        });
+
+        static::updating(function ($user) {
+            if ($user->role == UserRole::USER) {
+                $user_code = 'Usr_'.$user->area?->code.'_0'.$user->id;
+            }elseif ($user->role == UserRole::DEALER) {
+                $user_code = 'Dlr_'.$user->area?->code.'_0'.$user->id;
+            }elseif ($user->role == UserRole::VENUE_OWNER) {
+                $user_code = 'Csr_'.$user->area?->code.'_0'.$user->id;
+            }elseif ($user->role == UserRole::INVESTOR) {
+                $user_code = 'Inv_'.$user->area?->code.'_0'.$user->id;
+            }
+            else{
+                $role = $user->role->value;
+                $user_code = Str::limit((ucfirst($role)),3,'_').$user->area?->code.'_0'.$user->id;
+            }
+            $user->user_code = $user_code;
+        });
+    }
+
     // Relationships
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
+    }
 
     // A User may have many bids.
     public function bids()

@@ -180,11 +180,11 @@ export default function DashboardPage() {
                 {user?.role === "user" || user?.role === "dealer" ? "الاشتراك: مجاني" : ""}
               </span>
               <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs border border-blue-500/30">
-                عضو منذ 2024
+                عضو منذ {user?.created_at ? new Date(user.created_at).getFullYear() : ""}
               </span>
-              <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs border border-purple-500/30">
+             {/*  <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs border border-purple-500/30">
                 {user?.verified ? "حساب موثق" : "حساب غير موثق"}
-              </span>
+              </span> */}
             </div>
 
             <p className="text-gray-300 text-sm leading-relaxed">
@@ -194,9 +194,11 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex gap-2">
+            <LoadingLink href="/dashboard/profile">
             <button className="p-2 bg-gray-800/60 rounded-xl border border-gray-700 hover:bg-gray-700/60 transition-all duration-300 hover:scale-105">
               <Settings className="w-4 h-4 text-purple-400" />
             </button>
+            </LoadingLink>
             <LoadingLink
               href="/auctions"
               className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl border border-purple-400/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"

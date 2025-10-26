@@ -161,10 +161,25 @@ export default function MyWalletPage() {
         fetchWalletData();
     }, [isLoggedIn]);
 
+      // Function to get transaction type in Arabic
+      const getTransactionTypeArabic = (type: string) => {
+        const typeMap = {
+            "deposit": "إيداع",
+            "withdrawal": "سحب",
+            "purchase": "شراء",
+            "sale": "تحويل مبيعات",
+            "commission": "عمولة",
+            "refund": "استرداد",
+            "bid": "مزايدة",
+            "transfer": "تحويل"
+        };
+        
+        return typeMap[type] || type;
+    };
     // Filter transactions
     const filteredTransactions = transactions.filter(transaction => {
-        const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             getTransactionTypeArabic(transaction.type).toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             getTransactionTypeArabic(transaction.type || "")?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = typeFilter === 'all' || transaction.type === typeFilter;
         const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
         
@@ -180,21 +195,7 @@ export default function MyWalletPage() {
         router.push("/dashboard/my-transfers?action=withdraw");
     };
 
-    // Function to get transaction type in Arabic
-    const getTransactionTypeArabic = (type: string) => {
-        const typeMap = {
-            "deposit": "إيداع",
-            "withdrawal": "سحب",
-            "purchase": "شراء",
-            "sale": "تحويل مبيعات",
-            "commission": "عمولة",
-            "refund": "استرداد",
-            "bid": "مزايدة",
-            "transfer": "تحويل"
-        };
-        
-        return typeMap[type] || type;
-    };
+  
 
     // Get transaction type config
     const getTransactionTypeConfig = (type: string) => {

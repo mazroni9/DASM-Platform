@@ -102,14 +102,15 @@ export default function ConfirmPurchasePage({ params }: { params: Promise<{ auct
   }
 
   // Calculate financial details for buyer
-  const auctionPrice = Number(item?.auction?.current_bid || 0);
+  const auctionPrice = Number(item?.auction_price|| 0);
   const platformFee = item?.platformFee || 0;
-  const trafficManagementFee = item?. trafficManagementFee || 0;
+  const muroorFee = item?.muroorFee || 0;
+  
   const tamFee = item?.tamFee || 0;
 
-  const totalFees = platformFee + trafficManagementFee + tamFee;
-  const totalAmount = auctionPrice + totalFees;
-
+  const totalFees = platformFee + muroorFee + tamFee;
+  const totalAmount = item?.net_amount || auctionPrice + totalFees;
+  
   return (
     <div className="min-h-screen bg-gray-50 py-8" dir="rtl">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -188,15 +189,22 @@ export default function ConfirmPurchasePage({ params }: { params: Promise<{ auct
             <div className="flex justify-between items-center py-2 pr-4">
               <span className="text-gray-600">رسوم المرور</span>
               <span className="text-orange-600 font-medium flex items-center gap-1">
-                + {trafficManagementFee.toLocaleString()}
+                + {muroorFee.toLocaleString()}
                 <SaudiRiyal className="w-4 h-4" />
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 pr-4">
-              <span className="text-gray-600">رسوم تام</span>
+              <span className="text-gray-600">رسوم تم (شركة علم)</span>
               <span className="text-orange-600 font-medium flex items-center gap-1">
                 + {tamFee.toLocaleString()}
+                <SaudiRiyal className="w-4 h-4" />
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 pr-4">
+              <span className="text-gray-600">رسوم نقل الملكية</span>
+              <span className="text-orange-600 font-medium flex items-center gap-1">
+                + {200}
                 <SaudiRiyal className="w-4 h-4" />
               </span>
             </div>

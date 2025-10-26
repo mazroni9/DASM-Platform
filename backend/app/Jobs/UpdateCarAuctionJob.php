@@ -35,7 +35,7 @@ class UpdateCarAuctionJob implements ShouldQueue
             switch ($this->status) {
                 case "instant":
                     // Update silent instant auctions to live instant auctions
-                    $affectedRows = Auction::where('auction_type', AuctionType::LIVE->value)
+                    $affectedRows = Auction::whereIn('auction_type', [AuctionType::LIVE->value, AuctionType::SILENT_INSTANT->value])
                         ->where('status', AuctionStatus::ACTIVE->value)
                         ->update([
                             'control_room_approved' => true,
@@ -46,18 +46,18 @@ class UpdateCarAuctionJob implements ShouldQueue
 
                     Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE_INSTANT (status: {$this->status})");
                     break;
-                case "live":
-                    // Update silent instant auctions to live instant auctions
-                    $affectedRows = Auction::where('auction_type', AuctionType::SILENT_INSTANT->value)
-                        ->where('status', AuctionStatus::ACTIVE->value)
-                        ->update([
-                            'control_room_approved' => true,
-                            'status' => AuctionStatus::ACTIVE->value,
-                            'auction_type' => AuctionType::LIVE->value,
-                        ]);
+                // case "live":
+                //     // Update silent instant auctions to live instant auctions
+                //     $affectedRows = Auction::where('auction_type', AuctionType::SILENT_INSTANT->value)
+                //         ->where('status', AuctionStatus::ACTIVE->value)
+                //         ->update([
+                //             'control_room_approved' => true,
+                //             'status' => AuctionStatus::ACTIVE->value,
+                //             'auction_type' => AuctionType::LIVE->value,
+                //         ]);
 
-                    Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE (status: {$this->status})");
-                    break;
+                //     Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE (status: {$this->status})");
+                //     break;
 
                 case "late":
                     // Update live instant auctions to silent instant auctions

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AuctionSession extends Model
@@ -13,6 +14,7 @@ class AuctionSession extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'user_id',
         'name',
         'session_date',
         'status',
@@ -27,6 +29,14 @@ class AuctionSession extends Model
     protected $casts = [
         'session_date' => 'date',
     ];
+
+    /**
+     * Get the owner of the session.
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     /**
      * Get the auctions for the session.

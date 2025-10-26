@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
@@ -20,63 +20,14 @@ import {
   ArrowLeft,
   Sparkles
 } from 'lucide-react';
-
-// Mock data for purchases
-const mockPurchases = [
-  {
-    id: 'p1',
-    itemId: 'item123',
-    itemName: 'طابعة ليزر HP M404dn',
-    imageUrl: '/office-placeholder.png',
-    winningBid: 1500,
-    endDate: '2024-10-26',
-    status: 'pending_payment',
-    category: 'أجهزة مكتبية',
-    seller: 'شركة التقنية المتطورة',
-    bidCount: 12,
-  },
-  {
-    id: 'p2',
-    itemId: 'server456',
-    itemName: 'سيرفر Dell PowerEdge R730',
-    imageUrl: '/server-placeholder.png',
-    winningBid: 8500,
-    endDate: '2024-10-25',
-    status: 'paid_pending_delivery',
-    category: 'سيرفرات',
-    seller: 'مركز بيانات الرياض',
-    bidCount: 8,
-  },
-  {
-    id: 'p3',
-    itemId: 'medical789',
-    itemName: 'جهاز أشعة Siemens Mobilett',
-    imageUrl: '/medical-placeholder.png',
-    winningBid: 3200,
-    endDate: '2024-10-24',
-    status: 'delivered_pending_confirmation',
-    category: 'أجهزة طبية',
-    seller: 'المستشفى التخصصي',
-    bidCount: 15,
-  },
-  {
-    id: 'p4',
-    itemId: 'car001',
-    itemName: 'تويوتا كامري 2023',
-    imageUrl: '/car-placeholder.png',
-    winningBid: 55000,
-    endDate: '2024-10-23',
-    status: 'completed',
-    category: 'سيارات',
-    seller: 'معرض السيارات المتحدة',
-    bidCount: 23,
-  },
-];
+import api from '@/lib/axios';
+import { useAuth } from '@/hooks/useAuth';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 // Helper to get status text and color
 const getStatusConfig = (status: string) => {
-  const statusMap = {
-    'pending_payment': { 
+  const statusMap: { [key: string]: { text: string; color: string; bg: string; border: string; icon: React.ElementType } } = {
+    'pending': { 
       text: 'بانتظار الدفع', 
       color: 'text-amber-400',
       bg: 'bg-amber-500/20',
@@ -130,18 +81,56 @@ const getStatusConfig = (status: string) => {
 };
 
 export default function MyPurchasesPage() {
-  const [purchases, setPurchases] = useState(mockPurchases);
+    const [purchases, setPurchases] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const { isLoggedIn } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const router = useLoadingRouter();
+  
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/auth/login?returnUrl=/dashboard/my-purchases");
+    }
+  }, [isLoggedIn, router]);
+
+    useEffect(() => {
+        async function fetchPurchases() {
+            if (!isLoggedIn) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const response = await api.get('/api/settlements');
+                if (response.data.status === 'success') {
+                    setPurchases(response.data.data.data); 
+                    console.log('purchases', response.data.data.data);
+                    console.log('purchases', purchases);
+                } else {
+                    setError("Failed to fetch purchases.");
+                }
+            } catch (err) {
+                setError("An error occurred while fetching purchases.");
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchPurchases();
+    }, [isLoggedIn]);
 
   // Filter purchases
   const filteredPurchases = useMemo(() => {
-    return purchases.filter(purchase => {
-      const matchesSearch = purchase.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           purchase.category.toLowerCase().includes(searchTerm.toLowerCase());
+    return purchases.filter((purchase: any) => {
+        const itemName = `${purchase.car.make} ${purchase.car.model}`;
+        const category = purchase.car.market_category || 'سيارات';
+      const matchesSearch = itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           category.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || purchase.status === statusFilter;
-      const matchesCategory = categoryFilter === 'all' || purchase.category === categoryFilter;
+      const matchesCategory = categoryFilter === 'all' || category === categoryFilter;
       
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -149,25 +138,25 @@ export default function MyPurchasesPage() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const totalAmount = purchases.reduce((sum, purchase) => sum + purchase.winningBid, 0);
+    const totalAmount = purchases.reduce((sum, purchase: any) => sum + purchase.buyer_net_amount, 0);
     return {
       total: purchases.length,
-      completed: purchases.filter(p => p.status === 'completed').length,
-      pending: purchases.filter(p => p.status === 'pending_payment').length,
+      completed: purchases.filter((p: any) => p.status === 'completed').length,
+      pending: purchases.filter((p: any) => p.status === 'pending').length,
       totalAmount: totalAmount,
     };
   }, [purchases]);
 
   const handlePayNow = (purchaseId: string) => {
     // Simulate payment process
-    setPurchases(purchases.map(p => 
+    setPurchases(purchases.map((p: any) => 
       p.id === purchaseId ? { ...p, status: 'paid_pending_delivery' } : p
     ));
   };
 
   const handleConfirmReceipt = (purchaseId: string) => {
     // Simulate receipt confirmation
-    setPurchases(purchases.map(p => 
+    setPurchases(purchases.map((p: any) => 
       p.id === purchaseId ? { ...p, status: 'completed' } : p
     ));
   };
@@ -178,8 +167,16 @@ export default function MyPurchasesPage() {
   };
 
   const getCategories = () => {
-    return [...new Set(purchases.map(p => p.category))];
+    return [...new Set(purchases.map((p: any) => p.car.market_category || 'سيارات'))];
   };
+
+    if (loading) {
+        return <div className="text-center py-10">جاري تحميل مشترياتك...</div>
+    }
+
+    if (error) {
+        return <div className="text-center py-10 text-red-600">{error}</div>
+    }
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -286,7 +283,7 @@ export default function MyPurchasesPage() {
               className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
             >
               <option value="all">جميع الحالات</option>
-              <option value="pending_payment">بانتظار الدفع</option>
+              <option value="pending">بانتظار الدفع</option>
               <option value="paid_pending_delivery">تم الدفع</option>
               <option value="shipped">جاري الشحن</option>
               <option value="delivered_pending_confirmation">بانتظار التأكيد</option>
@@ -360,7 +357,7 @@ export default function MyPurchasesPage() {
             </div>
           </div>
         ) : (
-          filteredPurchases.map((purchase, index) => {
+          filteredPurchases.map((purchase: any, index) => {
             const statusConfig = getStatusConfig(purchase.status);
             const StatusIcon = statusConfig.icon;
             
@@ -377,8 +374,8 @@ export default function MyPurchasesPage() {
                   <div className="flex-shrink-0">
                     <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
                       <img 
-                        src={purchase.imageUrl} 
-                        alt={purchase.itemName}
+                        src={purchase.car.images?.[0] || '/placeholder-car.jpg'} 
+                        alt={`${purchase.car.make} ${purchase.car.model}`}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
@@ -393,33 +390,33 @@ export default function MyPurchasesPage() {
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
                       <div className="flex-1">
                         <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors mb-2">
-                          {purchase.itemName}
+                          {purchase.car.make} {purchase.car.model}
                         </h3>
                         
                         <div className="flex flex-wrap gap-3 text-sm text-gray-400 mb-3">
                           <div className="flex items-center gap-1">
                             <Package className="w-3 h-3" />
-                            <span>{purchase.category}</span>
+                            <span>{purchase.car.market_category || 'سيارات'}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            <span>انتهى في {purchase.endDate}</span>
+                            <span>انتهى في {new Date(purchase.created_at).toLocaleDateString("ar-SA")}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
-                            <span>{purchase.bidCount} مزايدة</span>
+                            <span>{purchase.auction?.bids_count || 0} مزايدة</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <span>البائع:</span>
-                          <span className="text-blue-300">{purchase.seller}</span>
+                          <span className="text-blue-300">{purchase.seller.name}</span>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-start lg:items-end gap-2">
                         <div className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
-                          {purchase.winningBid.toLocaleString('ar-EG')} ريال
+                          {purchase.buyer_net_amount} ريال
                         </div>
                         
                         <div className={cn(
@@ -436,9 +433,9 @@ export default function MyPurchasesPage() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-800/50">
-                      {purchase.status === 'pending_payment' && (
+                      {purchase.status === 'pending' && (
                         <LoadingLink
-                          href={`/dashboard/my-transfers?purchaseId=${purchase.id}&amount=${purchase.winningBid}`}
+                          href={`/auctions/purchase-confirmation/${purchase.auction_id}`}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/20 text-emerald-300 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30 transition-all duration-300 group/pay"
                         >
                           <CreditCard className="w-4 h-4 transition-transform group-hover/pay:scale-110" />
@@ -457,7 +454,7 @@ export default function MyPurchasesPage() {
                       )}
 
                       <LoadingLink
-                        href={`/auctions/item/${purchase.itemId}`}
+                        href={`/carDetails/${purchase.car.id}`}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300 group/view"
                       >
                         <Eye className="w-4 h-4 transition-transform group-hover/view:scale-110" />

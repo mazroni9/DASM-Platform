@@ -24,6 +24,7 @@ import {
     CheckCircle,
     XCircle
 } from "lucide-react";
+import { PriceWithIcon } from "@/components/ui/priceWithIcon";
 
 export default function Page() {
   const r = useLoadingRouter();
@@ -287,22 +288,24 @@ export default function Page() {
 
                     {/* Min Price */}
                     <td className="px-6 py-4 text-sm text-white">
-                      {formatCurrency(t.minPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <PriceWithIcon 
+                        price={t.minPrice}
+                      />
                     </td>
 
                     {/* Max Price */}
                     <td className="px-6 py-4 text-sm text-white">
-                      {t.maxPrice === null ? (
-                        <span className="text-gray-400">غير محدد</span>
-                      ) : (
-                        formatCurrency(t.maxPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                      )}
+                      <PriceWithIcon
+                        price={t.maxPrice}
+                      />
                     </td>
 
                     {/* Commission Amount */}
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-cyan-400">
-                        {formatCurrency(t.commissionAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <PriceWithIcon
+                          price={t.commissionAmount}
+                        />
                       </div>
                     </td>
 

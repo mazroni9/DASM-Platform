@@ -35,7 +35,7 @@ interface SystemSettings {
     supportEmail: string;
     platformFee: number;
     tamFee: number;
-    trafficManagementFee: number;
+    muroorFee: number;
     CarEntryFees: number;
     auctionDuration: number;
     emailNotifications: boolean;
@@ -55,7 +55,7 @@ export default function AdminSettingsPage() {
         platformFee: 0,
         tamFee: 0,
         CarEntryFees: 0,
-        trafficManagementFee: 0,
+        muroorFee: 0,
         auctionDuration: 24,
         emailNotifications: true,
         smsNotifications: false,
@@ -488,9 +488,9 @@ export default function AdminSettingsPage() {
                                 <input
                                     type="number"
                                     step="0.1"
-                                    value={settings.trafficManagementFee}
+                                    value={settings.muroorFee}
                                     onChange={(e) =>
-                                        handleInputChange("trafficManagementFee", parseFloat(e.target.value))
+                                        handleInputChange("muroorFee", parseFloat(e.target.value))
                                     }
                                     className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
                                 />

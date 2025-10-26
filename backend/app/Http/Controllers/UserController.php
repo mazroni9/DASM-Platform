@@ -229,6 +229,7 @@ public function profile(Request $request)
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
+            'area_id' => 'sometimes|exists:areas,id'
         ];
 
         if ($user->isDealer()) {
@@ -251,7 +252,7 @@ public function profile(Request $request)
 
         // تحديث بيانات المستخدم الأساسية
         $userFields = array_intersect_key($data, array_flip([
-            'first_name', 'last_name', 'email', 'phone'
+            'first_name', 'last_name', 'email', 'phone','area_id'
         ]));
 
         if (!empty($userFields)) {

@@ -23,7 +23,12 @@ class NewBidEvent implements ShouldBroadcast
      */
     public function __construct(public $auction)
     {
-        $this->channelName = 'auction.' . $auction->car_id;
+        if ($auction->auction_type === \App\Enums\AuctionType::FIXED) {
+            $this->channelName = 'auction.fixed';
+        } else {
+            $this->channelName = 'auction.' . $auction->car_id;
+        }
+        
         $this->data = [
             'active_auction' => $auction,
             'total_bids' => $auction ? $auction->bids_count : 0
@@ -46,7 +51,7 @@ class NewBidEvent implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return [new Channel('auction.' . $this->auction->car_id)];
+        return [new Channel($this->channelName)];
     }
 
     public function broadcastWith()

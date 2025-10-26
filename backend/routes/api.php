@@ -28,24 +28,20 @@ use App\Http\Controllers\CarSimilarityController;
 use App\Http\Controllers\ExhibitorAuthController;
 use App\Http\Controllers\Admin\BidEventController;
 use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Admin\AuctionSessionController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
+use App\Http\Controllers\AuctionSessionController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
-Route::post('/public-event', function (Request $request) {
-    $channelName = $request->post('channelName');
-    $message = $request->post('message');
-    //event(new MyEvent('hello world'));
-    broadcast(new MyEvent( "hello world"));
-    return config('broadcasting.connections.pusher');
-})->middleware('throttle:60,1');
+
 
 
 Route::middleware(['auth:sanctum'])->post('/upload-image', [UploadController::class, 'store']);
@@ -125,7 +121,11 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Public auction browsing
 Route::get('/auctions', [AuctionController::class, 'index']);
+Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
+
+Route::get('/sessions/live', [AuctionSessionController::class, 'getActiveLiveSessions']);
+Route::get('/sessions/live/{id}', [AuctionSessionController::class, 'getLiveSession']);
 
 // Public blog routes
 Route::get('/blog', [BlogController::class, 'index']);
@@ -214,10 +214,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
     Route::post('/wallet/recharge', [WalletController::class, 'recharge']);
     //confirm sales
+    Route::get('/auctions/calculate-settlement/{car_id}', [SettlementController::class, 'calculateSettlement']);
     Route::post('/auctions/confirm-sale', [SettlementController::class, 'confirmSale']);
     // Notification routes
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+    Route::get('/settlements', [SettlementController::class, 'index']);
 });
 
 Route::post('/wallet/initiate-recharge', [WalletController::class, 'initiateRecharge'])->name('wallet.recharge');
@@ -262,6 +264,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 // Admin routes
 Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 ->prefix('admin')->group(function () {
+    // Activity Log
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     // Admin dashboard
     Route::get('dashboard', [AdminController::class, 'dashboard']);
     Route::get('settings', [SettingsController::class, 'index']);
@@ -347,13 +351,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
 
     // Admin auction sessions management
-    Route::get('/sessions', [AuctionSessionController::class, 'index']);
-    Route::get('/sessions/active-scheduled', [AuctionSessionController::class, 'getActiveAndScheduledSessions']);
-    Route::post('/sessions', [AuctionSessionController::class, 'store']);
-    Route::get('/sessions/{id}', [AuctionSessionController::class, 'show']);
-    Route::put('/sessions/{id}', [AuctionSessionController::class, 'update']);
-    Route::post('/sessions/{id}/status', [AuctionSessionController::class, 'updateStatus']);
-    Route::delete('/sessions/{id}', [AuctionSessionController::class, 'destroy']);
+    Route::get('/sessions', [AdminAuctionSessionController::class, 'index']);
+    Route::get('/sessions/active-scheduled', [AdminAuctionSessionController::class, 'getActiveAndScheduledSessions']);
+    Route::post('/sessions', [AdminAuctionSessionController::class, 'store']);
+    Route::get('/sessions/{id}', [AdminAuctionSessionController::class, 'show']);
+    Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update']);
+    Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus']);
+    Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy']);
 
     // Blog CRUD operations (admin only)
     Route::post('/blog', [BlogController::class, 'store']);

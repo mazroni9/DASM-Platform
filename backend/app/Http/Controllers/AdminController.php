@@ -9,6 +9,7 @@ use App\Models\BlogPost;
 use App\Models\BlogTag;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Models\Car;
@@ -506,7 +507,7 @@ class AdminController extends Controller
             // Broadcast event for real-time updates
         }
         event(new CarApprovedForLiveEvent($auction, $car));
-
+        Cache::flush();
         return response()->json([
             'status' => 'success',
             'message' => 'Auction status updated successfully',

@@ -18,6 +18,8 @@ class Settlement extends Model
         'platform_fee',
         'tam_fee',
         'net_amount',
+        'muroor_fee',
+        'buyer_net_amount',
         'status'
     ];
 
@@ -40,6 +42,11 @@ class Settlement extends Model
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id');
+    }
+
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
     }
 
     // A Settlement belongs to a Car.
