@@ -7,13 +7,15 @@ enum AuctionType: string
     case LIVE = 'live';
     case LIVE_INSTANT = 'live_instant';
     case SILENT_INSTANT = 'silent_instant';
+    case FIXED = 'fixed';
 
-    public function label(): string
+    public function getLabel(): string
     {
         return match($this) {
-            self::LIVE => 'Live Auction',
+            self::LIVE => 'Live',
             self::LIVE_INSTANT => 'Live Instant Auction',
             self::SILENT_INSTANT => 'Silent Instant Auction',
+            self::FIXED => 'Fixed',
         };
     }
 
@@ -23,9 +25,10 @@ enum AuctionType: string
             self::LIVE => 'الحراج المباشر',
             self::LIVE_INSTANT => 'المزاد الفوري المباشر',
             self::SILENT_INSTANT => 'المزاد الفوري الصامت',
+            self::FIXED => 'المزاد الثابت',
         };
     }
-    
+
     public function requiresLivestream(): bool
     {
         return match($this) {
@@ -33,7 +36,7 @@ enum AuctionType: string
             default => false,
         };
     }
-    
+
     public function allowsAutoExtension(): bool
     {
         return match($this) {
@@ -41,7 +44,7 @@ enum AuctionType: string
             default => false,
         };
     }
-    
+
     public function allowsAutoAcceptance(): bool
     {
         return match($this) {

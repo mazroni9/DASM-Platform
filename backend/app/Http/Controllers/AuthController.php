@@ -37,6 +37,7 @@ public function register(Request $request)
         'phone'        => ['required','string','max:15','unique:users','regex:/^[\+]?[0-9\s\-\(\)]{10,15}$/'],
         'password'     => 'required|string|min:8',
         'account_type' => 'nullable|string|in:user,dealer,venue_owner,investor',
+        'area_id'      => 'nullable|string|exists:areas,id',
     ], [
         'first_name.required' => 'الاسم الأول مطلوب',
         'first_name.string'   => 'الاسم الأول يجب أن يكون نصًا',
@@ -62,6 +63,8 @@ public function register(Request $request)
         'password.min'        => 'كلمة المرور يجب أن تكون على الأقل 8 أحرف',
 
         'account_type.in'     => 'نوع الحساب غير صالح',
+
+        'area_id.exists'      => 'المنطقة غير صالحة',
     ]);
 
     if ($validator->fails()) {
@@ -147,6 +150,7 @@ public function register(Request $request)
                 'role'                     => $request->account_type ?? 'user',
                 'email_verification_token' => $verificationToken,
                 'is_active'                => false,
+                'area_id'                  => $request->area_id,
             ];
 
             if (Schema::hasColumn('users', 'status') && empty($userData['status'])) {
@@ -172,6 +176,7 @@ public function register(Request $request)
                     'commercial_registry' => $request->commercial_registry,
                     'description'         => $request->description,
                     'address'             => $request->address,
+                    'area_id'             => $request->area_id,
                 ]);
 
                 switch ($request->account_type) {
@@ -183,6 +188,7 @@ public function register(Request $request)
                             'description'         => $request->description ?? null,
                             'status'              => 'pending',
                             'is_active'           => false,
+
                         ]);
                         break;
 
@@ -195,6 +201,7 @@ public function register(Request $request)
                             'address'             => $request->address,
                             'status'              => 'pending',
                             'is_active'           => false,
+
                         ]);
                         break;
 
@@ -207,6 +214,7 @@ public function register(Request $request)
                             'investment_capacity'    => null,
                             'status'                 => 'pending',
                             'is_active'              => false,
+                            
                         ]);
                         break;
                 }
@@ -214,11 +222,12 @@ public function register(Request $request)
                 Log::info('Business account record created', [
                     'user_id' => $user->id,
                     'type'    => $request->account_type,
+                    'area_id' => $request->area_id,
                 ]);
             }
         });
 
-        Log::info('Attempting to send verification email', ['email' => $user->email]);
+        Log::info('Attempting to send verification email', ['email' => $user->email, 'area_id' => $request->area_id]);
         $this->sendVerificationEmail($user);
 
         return response()->json([
@@ -232,6 +241,7 @@ public function register(Request $request)
                 'last_name'  => $user->last_name,
                 'email'      => $user->email,
                 'role'       => $user->role,
+                'area_id'    => $user->area_id,
             ],
         ], 201);
 
@@ -245,6 +255,7 @@ public function register(Request $request)
             'message'  => $msg,
             'errorInfo'=> $info,
             'email'    => $request->email,
+            'area_id'  => $request->area_id,
         ]);
 
         if ($sqlState === '23505') {
@@ -315,6 +326,7 @@ public function register(Request $request)
         Log::error('Runtime error during registration', [
             'message' => $e->getMessage(),
             'email'   => $request->email,
+            'area_id' => $request->area_id,
         ]);
         return response()->json([
             'status'  => 'error',

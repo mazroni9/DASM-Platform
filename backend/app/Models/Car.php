@@ -9,10 +9,29 @@ use App\Models\CarReportImage;
 use App\Enums\CarsMarketsCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Car extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+        ->setDescriptionForEvent(function(string $eventName) {
+            switch ($eventName) {
+                case 'created':
+                    return "تم إنشاء السيارة رقم {$this->id}";
+                case 'updated':
+                    return "تم تحديث السيارة رقم {$this->id}";
+                case 'deleted':
+                    return "تم حذف السيارة رقم {$this->id}";
+            }
+            return "Car {$eventName}";
+        })->logFillable()
+        ->useLogName('car_log');
+    }
 
     protected $fillable = [
         'dealer_id',
@@ -31,7 +50,8 @@ class Car extends Model
         'transmission',
         'description',
         'registration_card_image',
-        'images'
+        'images',
+        'main_auction_duration'
     ];
 
     protected $casts = [
@@ -85,5 +105,11 @@ class Car extends Model
     public function reportImages()
     {
         return $this->hasMany(CarReportImage::class);
+    }
+
+    public function activeAuctionBids()
+    {
+        return $this->hasManyThrough(Bid::class, Auction::class)
+            ->where('auctions.status', AuctionStatus::ACTIVE);
     }
 }

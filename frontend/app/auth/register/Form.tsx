@@ -15,6 +15,7 @@ import {
   Building,
   ClipboardList,
   MapPin,
+  Map
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ const registerSchema = z
     commercial_registry: z.string().optional(),
     description: z.string().optional(),
     address: z.string().optional(),
+    area_id: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -139,7 +141,7 @@ export default function RegisterForm() {
   const [accountType, setAccountType] = useState<
     "user" | "dealer" | "venue_owner" | "investor"
   >("user");
-
+  const [areaId, setAreaId] = useState<string | undefined>(undefined);
   const {
     register,
     handleSubmit,
@@ -327,6 +329,49 @@ export default function RegisterForm() {
           )}
         </div>
 
+          {/* المنطقة */}
+          <div className="space-y-2">
+          <Label htmlFor="area_id" className="text-gray-200 font-medium">
+            المنطقة
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Map className="h-5 w-5 text-gray-500" />
+            </div>
+            <Select
+              onValueChange={(value) => {
+                const typedValue = value ;
+                setAreaId(typedValue);
+                setValue("area_id", typedValue);
+              }}
+              value={areaId}
+            >
+              <SelectTrigger
+                id="area_id"
+                className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+              >
+                <SelectValue placeholder="اختر المنطقة" />
+              </SelectTrigger>
+              <SelectContent
+                className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+                dir="rtl"
+                align="end"
+              >
+                <SelectItem value="1">منطقة الرياض</SelectItem>
+                <SelectItem value="2">منطقة مكة المكرمة</SelectItem>
+                <SelectItem value="3">المنطقة الشرقية</SelectItem>
+                <SelectItem value="4">منطقة تبوك</SelectItem>
+                <SelectItem value="5">منطقة المدينة المنورة</SelectItem>
+                <SelectItem value="6">منطقة الحدود الشمالية</SelectItem>
+                <SelectItem value="7">منطقة القصيم</SelectItem>
+                <SelectItem value="8">منطقة المجمعة</SelectItem>
+                <SelectItem value="9">منطقة حائل</SelectItem>
+                <SelectItem value="10">منطقة عسير</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* كلمة المرور */}
         <div className="space-y-2">
           <Label htmlFor="password" className="text-gray-200 font-medium">
@@ -375,41 +420,42 @@ export default function RegisterForm() {
           )}
         </div>
           {/* نوع الحساب */}
-<div className="space-y-2">
-  <Label htmlFor="account_type" className="text-gray-200 font-medium">
-    نوع الحساب
-  </Label>
-  <div className="relative">
-    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-      <User className="h-5 w-5 text-gray-500" />
-    </div>
-    <Select
-      onValueChange={(value) => {
-        const typedValue = value as "user" | "dealer" | "venue_owner" | "investor";
-        setAccountType(typedValue);
-        setValue("account_type", typedValue);
-      }}
-      value={accountType}
-    >
-      <SelectTrigger
-        id="account_type"
-        className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
-      >
-        <SelectValue placeholder="اختر نوع الحساب" />
-      </SelectTrigger>
-      <SelectContent
-        className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
-        dir="rtl"
-        align="end"
-      >
-        <SelectItem value="user">مستخدم</SelectItem>
-        <SelectItem value="dealer">تاجر</SelectItem>
-        <SelectItem value="venue_owner">مالك المعرض</SelectItem>
-        <SelectItem value="investor">مستثمر</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-</div>
+        <div className="space-y-2">
+          <Label htmlFor="account_type" className="text-gray-200 font-medium">
+            نوع الحساب
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-500" />
+            </div>
+            <Select
+              onValueChange={(value) => {
+                const typedValue = value as "user" | "dealer" | "venue_owner" | "investor";
+                setAccountType(typedValue);
+                setValue("account_type", typedValue);
+              }}
+              value={accountType}
+            >
+              <SelectTrigger
+                id="account_type"
+                className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+              >
+                <SelectValue placeholder="اختر نوع الحساب" />
+              </SelectTrigger>
+              <SelectContent
+                className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+                dir="rtl"
+                align="end"
+              >
+                <SelectItem value="user">مستخدم</SelectItem>
+                <SelectItem value="dealer">تاجر</SelectItem>
+                <SelectItem value="venue_owner">مالك المعرض</SelectItem>
+                <SelectItem value="investor">مستثمر</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* الحقول الديناميكية */}
         {accountType === "dealer" && (
           <>

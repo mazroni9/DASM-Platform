@@ -20,7 +20,8 @@ class CarApprovedForLiveEvent implements ShouldBroadcast
      */
     public function __construct(public $auction, public $car)
     {
-        $this->channelName = 'auction.live.approved';
+        $session_id = $auction->session_id;
+        $this->channelName = 'session.' . $session_id;
         $this->data = [
             'auction' => $auction,
             'car' => $car,
@@ -34,11 +35,17 @@ class CarApprovedForLiveEvent implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return [
-            new Channel('auction.live.approved'),
-            new Channel('auction.live'),
-            new Channel('auction.updates')
-        ];
+        if ($this->auction->session_id) {
+            return [
+                new Channel('session.' . $this->auction->session_id),
+            ];
+        } else {
+            return [
+                new Channel('auction.live.approved'),
+                new Channel('auction.live'),
+                new Channel('auction.updates')
+            ];
+        }
     }
 
     /**

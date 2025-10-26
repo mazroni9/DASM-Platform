@@ -30,7 +30,8 @@ import {
     Bell,
     Search,
     Moon,
-    Sun
+    Sun,
+    History,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -71,6 +72,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
         { name: "المزادات", href: "/admin/auctions", icon: Car },
         { name: "سجلات المزايدات", href: "/admin/bids-logs", icon: FileText },
+        { name: "سجلات النشاط", href: "/admin/activity-logs", icon: History,},
         { name: "السيارات", href: "/admin/cars", icon: Car },
         { name: "التقارير", href: "/admin/reports", icon: BarChart },
         { name: "الإعدادات", href: "/admin/settings", icon: Settings },

@@ -1,10 +1,17 @@
 import { SaudiRiyal } from "lucide-react";
 
-export function PriceWithIcon({ price }: { price: number }) {
+interface PriceWithIconProps {
+    price: number;
+    className?: string;
+}
+
+export function PriceWithIcon({ price, className = "" }: PriceWithIconProps) {
+    const defaultClass = "flex items-center gap-1";
+    const combinedClass = `${defaultClass}${className ? " " + className : ""}`;
     return (
-        <div className="flex items-center gap-1">
+        <div className={combinedClass}>
             {price}
             <SaudiRiyal />
         </div>
-    )
+    );
 }

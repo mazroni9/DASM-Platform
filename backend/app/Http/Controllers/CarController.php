@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\CarCardResource;
 use App\Http\Resources\CarCollection;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class CarController extends Controller
 {
@@ -131,7 +132,7 @@ class CarController extends Controller
     public function store(Request $request)
     {
         // لوج توضيحي
-        \Log::info('Car store request data:', [
+        Log::info('Car store request data:', [
             'all_data' => $request->all(),
             'files' => $request->allFiles(),
             'images_exists' => $request->has('images'),
@@ -142,7 +143,7 @@ class CarController extends Controller
 
         // تطبيع القيم العشرية: استبدال الفاصلة بنقطة
         $normalized = $request->all();
-        foreach (['evaluation_price','min_price','max_price'] as $key) {
+        foreach (['evaluation_price', 'min_price', 'max_price'] as $key) {
             if (isset($normalized[$key]) && is_string($normalized[$key])) {
                 $normalized[$key] = str_replace(',', '.', $normalized[$key]);
             }
@@ -156,7 +157,8 @@ class CarController extends Controller
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'vin' => 'required|string|unique:cars,vin|max:17',
             'odometer' => 'required|integer|min:0|max:2147483647',
-            'condition' => ['required','string', Rule::in(CarCondition::values())],
+            'condition' => ['required', 'string', Rule::in(CarCondition::values())],
+            'main_auction_duration' => 'nullable|integer|in:5,7',
 
             // تمنع Overflow
             'evaluation_price' => 'required|numeric|min:0|max:9999999999.99',
@@ -169,13 +171,13 @@ class CarController extends Controller
             'city' => 'nullable|string|max:100',
             'engine' => 'nullable|string|max:50',
 
-            'transmission' => ['nullable','string', Rule::in(CarTransmission::values())],
-            'market_category' => ['required','string', Rule::in(CarsMarketsCategory::values())],
+            'transmission' => ['nullable', 'string', Rule::in(CarTransmission::values())],
+            'market_category' => ['required', 'string', Rule::in(CarsMarketsCategory::values())],
             'description' => 'nullable|string',
 
             // صور اختيارية
             'images' => 'sometimes|array|max:10',
-            'images.*' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120',
+            //'images.*' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120',
         ];
 
         [$messages, $attributes] = $this->arabicValidation();
@@ -183,8 +185,8 @@ class CarController extends Controller
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
 
         // تحقق منطقي إضافي
-        $validator->after(function($v) use ($request) {
-            if ($request->filled(['min_price','max_price']) && (float)$request->min_price > (float)$request->max_price) {
+        $validator->after(function ($v) use ($request) {
+            if ($request->filled(['min_price', 'max_price']) && (float)$request->min_price > (float)$request->max_price) {
                 $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
             }
         });
@@ -199,12 +201,12 @@ class CarController extends Controller
         $user = Auth::user();
         $car = new Car();
 
-        // ربط بالمالك
+
         if ($user->role === 'dealer' && $user->dealer) {
             $car->dealer_id = $user->dealer->id;
-        } else {
-            $car->user_id = $user->id;
         }
+
+        $car->user_id = $user->id;
 
         // حفظ القيم
         $car->make = $request->make;
@@ -225,6 +227,7 @@ class CarController extends Controller
         $car->min_price = $request->min_price;
         $car->max_price = $request->max_price;
         $car->market_category = $request->market_category;
+        $car->main_auction_duration = $request->main_auction_duration;
         $car->save();
 
         // صور (اختياري)
@@ -312,16 +315,38 @@ class CarController extends Controller
             ], 404);
         }
 
-        $activeAuction = $car->auctions()
-            ->whereIn('status', [AuctionStatus::SCHEDULED->value, AuctionStatus::ACTIVE->value])
-            ->with('bids')
+        $activeAuction = $car->activeAuction()
+            ->with(['bids' => function ($q) {
+                $q->select('id', 'bid_amount', 'created_at', 'user_id', 'auction_id')
+                    ->orderBy('created_at', 'desc');
+            }])
             ->first();
+
+        // $similar_cars = Car::select('id','make','model','year','images')
+        // ->with('activeAuction')
+        // ->withCount('activeAuctionBids as total_bids')
+        // ->where('make' ,"LIKE", "%$car->make%")
+        // ->where('model' ,"LIKE", "%$car->model%")
+        // ->where('id', '!=', $car->id)
+        // ->whereHas('activeAuction')
+        // ->take(4)
+        // ->get();
+        $similar_cars = Car::where('make', $car->make)
+            ->where('id', '!=', $car->id)
+            ->whereHas('activeAuction')
+            ->with('activeAuction')
+            ->withCount('activeAuctionBids as total_bids')
+            ->orderByRaw('model = ? DESC', [$car->model])
+            ->orderBy('year', 'DESC')
+            ->limit(4)
+            ->get();
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'car' => $car,
                 'active_auction' => $activeAuction,
+                'similar_cars' => $similar_cars,
                 'total_bids' => $activeAuction ? $activeAuction->bids->count() : 0
             ]
         ]);
@@ -357,7 +382,7 @@ class CarController extends Controller
 
         // تطبيع الأرقام
         $normalized = $request->all();
-        foreach (['evaluation_price','min_price','max_price'] as $key) {
+        foreach (['evaluation_price', 'min_price', 'max_price'] as $key) {
             if (isset($normalized[$key]) && is_string($normalized[$key])) {
                 $normalized[$key] = str_replace(',', '.', $normalized[$key]);
             }
@@ -383,15 +408,15 @@ class CarController extends Controller
             'province' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:100',
             'plate' => 'nullable|string|max:20',
-            'market_category' => ['sometimes','string', Rule::in(CarsMarketsCategory::values())],
+            'market_category' => ['sometimes', 'string', Rule::in(CarsMarketsCategory::values())],
         ];
 
         [$messages, $attributes] = $this->arabicValidation();
 
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
 
-        $validator->after(function($v) use ($request) {
-            if ($request->filled(['min_price','max_price']) && (float)$request->min_price > (float)$request->max_price) {
+        $validator->after(function ($v) use ($request) {
+            if ($request->filled(['min_price', 'max_price']) && (float)$request->min_price > (float)$request->max_price) {
                 $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
             }
         });
@@ -431,7 +456,7 @@ class CarController extends Controller
                     $imageUrl = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
                     $uploadedImages[] = $imageUrl;
                 } catch (\Exception $e) {
-                    \Log::error('Error uploading image: ' . $e->getMessage());
+                    Log::error('Error uploading image: ' . $e->getMessage());
                     $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
                 }
             }
@@ -445,6 +470,8 @@ class CarController extends Controller
         }
 
         $car->save();
+
+        Cache::flush();
 
         return response()->json([
             'status' => 'success',
@@ -543,7 +570,7 @@ class CarController extends Controller
      */
     private function logImageDebugInfo(Request $request)
     {
-        \Log::info('Image request information:', [
+        Log::info('Image request information:', [
             'has_images_field' => $request->has('images'),
             'has_images_file' => $request->hasFile('images'),
             'has_images_array_field' => $request->has('images[]'),
@@ -554,7 +581,7 @@ class CarController extends Controller
         ]);
 
         if ($request->hasFile('images')) {
-            \Log::info('Images detected', [
+            Log::info('Images detected', [
                 'count' => is_array($request->file('images')) ? count($request->file('images')) : '1 (not array)'
             ]);
         }
@@ -570,21 +597,21 @@ class CarController extends Controller
             $apiKey = config('cloudinary.api_key');
             $apiSecret = config('cloudinary.api_secret');
 
-            \Log::info('Cloudinary credentials check:', [
+            Log::info('Cloudinary credentials check:', [
                 'cloud_name' => $cloudName ?? 'not set',
                 'api_key_exists' => !empty($apiKey) ? 'yes' : 'no',
                 'api_secret_exists' => !empty($apiSecret) ? 'yes' : 'no',
             ]);
 
             if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
-                \Log::error('Cloudinary credentials missing, using fallback');
+                Log::error('Cloudinary credentials missing, using fallback');
                 return '/temp/car_' . $carId . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
             }
 
             // في حال تفعيل الرفع الحقيقي، ضع منطق الرفع هنا وأعد رابط الصورة
             return '/temp/car_' . $carId . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
         } catch (\Exception $e) {
-            \Log::error('Cloudinary upload failed: ' . $e->getMessage(), [
+            Log::error('Cloudinary upload failed: ' . $e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
@@ -602,11 +629,11 @@ class CarController extends Controller
         $uploadedImages = [];
 
         if (!$request->hasFile('images')) {
-            \Log::info('No images to upload for car', ['car_id' => $car->id]);
+            Log::info('No images to upload for car', ['car_id' => $car->id]);
             return $uploadedImages;
         }
 
-        \Log::info('Processing images for car', [
+        Log::info('Processing images for car', [
             'car_id' => $car->id,
             'image_count' => count($request->file('images'))
         ]);
@@ -616,7 +643,7 @@ class CarController extends Controller
             $imageUrl = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
             $uploadedImages[] = $imageUrl;
 
-            \Log::info('Image processed for car', [
+            Log::info('Image processed for car', [
                 'car_id' => $car->id,
                 'image_url' => $imageUrl,
                 'original_name' => $image->getClientOriginalName()
@@ -634,7 +661,7 @@ class CarController extends Controller
         $uploadedImages = [];
 
         if (!$request->hasFile('reports_images')) {
-            \Log::info('No report images to upload for car', ['car_id' => $car->id]);
+            Log::info('No report images to upload for car', ['car_id' => $car->id]);
             return $uploadedImages;
         }
 

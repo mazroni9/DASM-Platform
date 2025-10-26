@@ -654,7 +654,7 @@ function MoneyTransfersContent() {
                                                                     <SelectItem 
                                                                         key={method} 
                                                                         value={method} 
-                                                                        className="focus:bg-gray-700 focus:text-white text-white"
+                                                                        className="focus:bg-gray-700 focus:text-white text-black"
                                                                     >
                                                                         <div className="flex items-center gap-2">
                                                                             <Icon className="w-4 h-4" />

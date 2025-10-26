@@ -3,8 +3,11 @@
 import api from "@/lib/axios";
 import { useState, useEffect,use } from "react";
 import { CheckCircle, Car, SaudiRiyal, Settings } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 export default function ConfirmSalePage({ params }) {
+  const router = useLoadingRouter();
   const roundToNearest5or0 = (number: number): number => {
     return Math.round(number / 5) * 5;
   };
@@ -31,13 +34,15 @@ export default function ConfirmSalePage({ params }) {
           final_price: item.active_auction.current_bid
         });
         
-        if (response.data.success) {
+        if (response.data.status === 'success') {
           // Handle successful confirmation
-          alert('تم تأكيد البيع بنجاح!');
+          toast.success('تم تأكيد البيع بنجاح!');
+          router.push(`/dashboard/carDetails/${car_id}`);
         }
       } catch (error) {
         console.error('Error confirming sale:', error);
-        alert('حدث خطأ في تأكيد البيع. يرجى المحاولة مرة أخرى.');
+        
+        toast.error('حدث خطأ في تأكيد البيع. يرجى المحاولة مرة أخرى.');
       }
       console.log(`Sale confirmed for auction ID: ${item.active_auction.id}, Final price: ${item.active_auction.current_bid} SAR`);
     }
@@ -46,30 +51,17 @@ export default function ConfirmSalePage({ params }) {
     async function fetchCarData() {
       console.log("car_id",car_id);
       try {
-        const response = await api.get(`/api/car/${car_id}`);
-        if (response.data.data || response.data.data) {
-          const carsData = response.data.data.data || response.data.data;
-          setCar(carsData.car);
-          
-          setLastBid(
-            roundToNearest5or0(carsData.active_auction?.current_bid || 0) + 100
-          );
-          // تعامل مع هيكل البيانات من API
-          setItem(carsData);
-
-          // Check if car has an active auction before setting auction_id
-          if (carsData.active_auction && carsData.active_auction.id) {
-            setFormData((prev) => ({
-              ...prev,
-              auction_id: carsData.active_auction.id,
-              user_id: null, // Remove reference to undefined 'user'
-            }));
-          } else {
-            setFormData((prev) => ({
-              ...prev,
-              user_id: null, // Remove reference to undefined 'user'
-            }));
-          }
+        const response = await api.get(`/api/auctions/calculate-settlement/${car_id}`);
+        if (response.data.data) {
+          const responseData = response.data.data.data || response.data.data;
+          setCar(responseData.car);
+          setLastBid(roundToNearest5or0(responseData.auction_price || 0));
+          setItem(responseData);
+          setFormData((prev) => ({
+            ...prev,
+            auction_id: responseData.auction_id,
+            user_id: null, // Remove reference to undefined 'user'
+          }));
         }
       } catch (error) {
         console.error("Error fetching car data:", error);
@@ -102,12 +94,11 @@ export default function ConfirmSalePage({ params }) {
   }
 
   // Calculate financial details
-  const finalSalePrice = item.active_auction?.current_bid || 0;
+  const finalSalePrice = item.auction_price;
   //const platformFee = Math.round(finalSalePrice * 0.025); // 2.5%
-  const platformFee = Math.round(350); 
-  const ownershipTransferFee = 50; // Fixed 300 SAR
-  const totalDeductions = platformFee + ownershipTransferFee;
-  const netAmount = finalSalePrice - totalDeductions;
+  const platformFee = item.platform_fee; 
+  const myfatoorahFee = item.myfatoorah_fee;
+  const netAmount = item.net_amount;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8" dir="rtl">
@@ -145,7 +136,7 @@ export default function ConfirmSalePage({ params }) {
                 <div className="text-lg text-gray-600">
                   <span className="font-medium">سعر البيع النهائي:</span>
                   <span className="text-2xl font-bold text-blue-600 mr-2 flex items-center gap-1">
-                    {finalSalePrice.toLocaleString()}
+                    {item.auction_price.toLocaleString()}
                     <SaudiRiyal className="w-5 h-5" />
                   </span>
                 </div>
@@ -170,7 +161,7 @@ export default function ConfirmSalePage({ params }) {
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
               <span className="text-lg font-medium text-gray-700">سعر البيع النهائي</span>
               <span className="text-lg font-bold text-gray-900 flex items-center gap-1">
-                {finalSalePrice.toLocaleString()}
+                {item.auction_price.toLocaleString()}
                 <SaudiRiyal className="w-4 h-4" />
               </span>
             </div>
@@ -184,39 +175,14 @@ export default function ConfirmSalePage({ params }) {
                 <SaudiRiyal className="w-4 h-4" />
               </span>
             </div>
-
             <div className="flex justify-between items-center py-2 pr-4">
-              <span className="text-gray-600">عمولة المعرض</span>
+              <span className="text-gray-600">رسوم بوابة الدفع</span>
               <span className="text-red-600 font-medium flex items-center gap-1">
-                - 150
+                - {myfatoorahFee.toLocaleString()}
                 <SaudiRiyal className="w-4 h-4" />
               </span>
             </div>
 
-            <div className="flex justify-between items-center py-2 pr-4">
-              <span className="text-gray-600">عمولة المرور</span>
-              <span className="text-red-600 font-medium flex items-center gap-1">
-                - 150
-                <SaudiRiyal className="w-4 h-4" />
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-center py-2 pr-4 border-b border-gray-200">
-              <span className="text-gray-600">رسوم نقل الملكية (تام)</span>
-              <span className="text-red-600 font-medium flex items-center gap-1">
-                - {ownershipTransferFee.toLocaleString()}
-                <SaudiRiyal className="w-4 h-4" />
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-center py-2 border-b border-gray-300">
-              <span className="text-lg font-medium text-gray-700">إجمالي الخصومات</span>
-              <span className="text-lg font-bold text-red-600 flex items-center gap-1">
-                - {totalDeductions.toLocaleString()}
-                <SaudiRiyal className="w-4 h-4" />
-              </span>
-            </div>
-            
             <div className="flex justify-between items-center py-4 bg-green-50 rounded-lg px-4">
               <span className="text-xl font-bold text-gray-900">المبلغ الصافي المستحق لك</span>
               <span className="text-2xl font-bold text-green-600 flex items-center gap-1">

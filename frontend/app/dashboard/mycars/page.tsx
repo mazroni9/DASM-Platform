@@ -201,7 +201,7 @@ export default function MyCarsPage() {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <LoadingLink
-              href="/dashboard/add-car"
+              href="/add/Car"
               className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border border-green-400/30 hover:scale-105 transition-all duration-300 group"
             >
               <Plus className="w-4 h-4 text-white transition-transform group-hover:rotate-90" />
@@ -284,7 +284,7 @@ export default function MyCarsPage() {
                 </button>
               ) : (
                 <LoadingLink
-                  href="/dashboard/add-car"
+                  href="/add/Car"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white hover:scale-105 transition-all duration-300"
                 >
                   <Plus className="w-4 h-4" />
@@ -376,6 +376,8 @@ export default function MyCarsPage() {
                         {car.description}
                       </p>
                     )}
+
+                   
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-4 border-t border-gray-800/50">

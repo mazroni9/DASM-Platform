@@ -25,6 +25,7 @@ use App\Http\Resources\UserBidLogResource;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
 use function Laravel\Prompts\select;
+use Illuminate\Support\Facades\Cache;
 
 class BidController extends Controller
 {
@@ -178,6 +179,7 @@ class BidController extends Controller
             }
 
             DB::commit();
+            Cache::flush();
             $user = $auction->car->owner;
 
             // Notify dealer of new bid (could be done with events)
@@ -237,7 +239,7 @@ class BidController extends Controller
         ->paginate(3);
 
         $data  = UserBidLogResource::collection($bid_events);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $data,
@@ -611,6 +613,7 @@ class BidController extends Controller
 
             Notification::sendNow($users, new HigherBidNotification($auction));
             DB::commit();
+            Cache::flush();
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',

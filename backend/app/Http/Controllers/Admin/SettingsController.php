@@ -28,7 +28,7 @@ class SettingsController extends Controller
                 'supportEmail' => $settings['supportEmail'] ?? 'support@mazbrothers.com',
                 'platformFee' => (float) ($settings['platformFee'] ?? 5.0),
                 'tamFee' => (float) ($settings['tamFee'] ?? 0),
-                'trafficManagementFee' => (float) ($settings['trafficManagementFee'] ?? 0),
+                'muroorFee' => (float) ($settings['muroorFee'] ?? 0),
                 'CarEntryFees' => (float) ($settings['CarEntryFees'] ?? 0),
                 'auctionDuration' => (int) ($settings['auctionDuration'] ?? 24),
                 'emailNotifications' => filter_var($settings['emailNotifications'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -67,7 +67,7 @@ class SettingsController extends Controller
                 'supportEmail' => 'sometimes|email|max:255',
                 'platformFee' => 'sometimes|numeric|min:0|max:100',
                 'tamFee' => 'sometimes|numeric|min:0',
-                'trafficManagementFee' => 'sometimes|numeric|min:0',
+                'muroorFee' => 'sometimes|numeric|min:0',
                 'auctionDuration' => 'sometimes|integer|min:1|max:168', // max 1 week
                 'emailNotifications' => 'sometimes|boolean',
                 'smsNotifications' => 'sometimes|boolean',

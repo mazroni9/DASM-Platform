@@ -67,6 +67,19 @@ export default function AuctionsPage() {
       featured: true,
       stats: { users: '1.2K+', success: '92%' }
     },
+    {
+      currentPage:'fixed_auction', 
+      name: 'السوق الثابت', 
+      slug: 'auctions-1main/fixed', 
+      description: 'فرصتك الأخيرة لصفقات سريعة. أعلى سعر يفوز عند انتهاء الوقت.', 
+      icon: Clock, 
+      color: 'text-yellow-400', 
+      bgColor: 'bg-gradient-to-br from-gray-800 to-gray-900',
+      borderColor: 'border-yellow-800',
+      category: 'main',
+      featured: true,
+      stats: { users: '1.2K+', success: '92%' }
+    }
   ];
 
   const auctionsCar = [

@@ -81,6 +81,35 @@ class AuctionController extends Controller
         ]);
     }
 
+    /**
+     * Display a listing of fixed auctions.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFixedAuctions(Request $request)
+    {
+        $query = Auction::with(['car', 'bids'])
+            ->where('auction_type', AuctionType::FIXED->value)
+            ->where('status', AuctionStatus::ACTIVE->value);
+
+        // Sort options
+        $sortField = $request->input('sort_by', 'end_time');
+        $sortDirection = $request->input('sort_dir', 'asc');
+        $allowedSortFields = ['created_at', 'start_time', 'end_time', 'current_bid', 'starting_bid'];
+
+        if (in_array($sortField, $allowedSortFields)) {
+            $query->orderBy($sortField, $sortDirection);
+        }
+
+        $auctions = $query->paginate(10);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $auctions
+        ]);
+    }
+
 
     public function getAllAuctionsIds(Request $request)
     {
@@ -135,7 +164,7 @@ class AuctionController extends Controller
     public function auctionByType(Request $request)
     {
 
-        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])->where('auction_type',$request->auction_type);
+        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])->where('auction_type', $request->auction_type);
         $brands = Auction::query()
             ->where('auction_type', $request->auction_type)
             ->where('control_room_approved', true)
@@ -158,20 +187,20 @@ class AuctionController extends Controller
                 ->where('status', AuctionStatus::ACTIVE->value);
         }
 
-                            // Search by name or email
+        // Search by name or email
         if ($request->has('brand')) {
             $brand = $request->brand;
-            $query->whereHas('car',function($q) use ($brand) {
+            $query->whereHas('car', function ($q) use ($brand) {
                 $q->where('make', 'like', "%{$brand}%");
             });
         }
-                       // Search by name or email
+        // Search by name or email
         if ($request->has('search')) {
             $search = $request->search;
-            $query->whereHas('car',function($q) use ($search) {
+            $query->whereHas('car', function ($q) use ($search) {
                 $q->where('year', 'like', "%{$search}%")
-                 ->orWhere('plate', 'like', "%{$search}%")
-                 ->orWhere('make', 'like', "%{$search}%");
+                    ->orWhere('plate', 'like', "%{$search}%")
+                    ->orWhere('make', 'like', "%{$search}%");
             });
         }
 
@@ -190,11 +219,9 @@ class AuctionController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $auctions,
-            'brands'=>$brands,
-            'total'=> $auctions
+            'brands' => $brands,
+            'total' => $auctions
         ]);
-
-
     }
 
     public function AuctionsLive()
@@ -205,11 +232,11 @@ class AuctionController extends Controller
             approved_for_live
         */
         $live_session = AuctionSession::where('status', 'active')
-        ->where('type', 'live')
-        ->with('auctions.car')
-        ->with('auctions.bids')
-        ->with('auctions.car.dealer')
-        ->first();
+            ->where('type', 'live')
+            ->with('auctions.car')
+            ->with('auctions.bids')
+            ->with('auctions.car.dealer')
+            ->first();
         if (! $live_session) {
             return response()->json([
                 'status' => 'error',
@@ -222,7 +249,7 @@ class AuctionController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' =>$session_data
+            'data' => $session_data
         ]);
     }
 
@@ -244,375 +271,375 @@ class AuctionController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-   public function store(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'car_id'        => 'required|integer|exists:cars,id',
-        'starting_bid'  => 'required|numeric|min:1|max:999999999.99',
-        'reserve_price' => 'nullable|numeric|min:0|max:999999999.99',
-        'start_time'    => 'required|date|after_or_equal:today',
-        'end_time'      => 'required|date|after:start_time',
-        'description'   => 'nullable|string|max:1000',
-        'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
-    ], [
-        'session_id.required' => 'الجلسة مطلوبة',
-        'session_id.exists'   => 'الجلسة غير موجودة',
-        // باقي الرسائل كما هي…
-    ]);
-
-    if ($validator->fails()) {
-        \Log::warning('Auction creation validation failed', [
-            'user_id' => Auth::id(),
-            'errors'  => $validator->errors(),
-            'ip'      => $request->ip(),
-            'ua'      => $request->userAgent()
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'car_id'        => 'required|integer|exists:cars,id',
+            'starting_bid'  => 'required|numeric|min:1|max:999999999.99',
+            'reserve_price' => 'nullable|numeric|min:0|max:999999999.99',
+            'start_time'    => 'required|date|after_or_equal:today',
+            'end_time'      => 'required|date|after:start_time',
+            'description'   => 'nullable|string|max:1000',
+            'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
+        ], [
+            'session_id.required' => 'الجلسة مطلوبة',
+            'session_id.exists'   => 'الجلسة غير موجودة',
+            // باقي الرسائل كما هي…
         ]);
 
+        if ($validator->fails()) {
+            \Log::warning('Auction creation validation failed', [
+                'user_id' => Auth::id(),
+                'errors'  => $validator->errors(),
+                'ip'      => $request->ip(),
+                'ua'      => $request->userAgent()
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'بيانات المزاد غير صالحة',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        // تأكد أن السيارة تابعة للمستخدم
+        $user = Auth::user();
+        $car  = Car::find($request->car_id);
+        $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
+            || ($car->user_id === $user->id);
+
+        if (!$isOwner) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'You can only create auctions for your own cars'
+            ], 403);
+        }
+
+        if ($car->auction_status !== 'available') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'This car is not available for auction'
+            ], 400);
+        }
+
+        $auction = new Auction();
+        $auction->car_id        = $request->car_id;
+        $auction->starting_bid  = $request->starting_bid;
+        $auction->current_bid   = $request->starting_bid;
+        $auction->reserve_price = $request->reserve_price ?? 0;
+        $auction->start_time    = $request->start_time;
+        $auction->end_time      = $request->end_time;
+        $auction->description   = $request->description;
+        $auction->session_id    = $request->session_id; // 👈 يحفظ الجلسة
+
+        $now = Carbon::now();
+        $auction->status = (Carbon::parse($request->start_time) <= $now)
+            ? AuctionStatus::ACTIVE
+            : AuctionStatus::SCHEDULED;
+
+        $auction->save();
+
+        // تحديث حالة السيارة
+        $car->auction_status = 'in_auction';
+        $car->save();
+
         return response()->json([
-            'status'  => 'error',
-            'message' => 'بيانات المزاد غير صالحة',
-            'errors'  => $validator->errors()
-        ], 422);
+            'status'  => 'success',
+            'message' => 'Auction created successfully',
+            'data'    => $auction->load('session')
+        ], 201);
     }
-
-    // تأكد أن السيارة تابعة للمستخدم
-    $user = Auth::user();
-    $car  = Car::find($request->car_id);
-    $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
-        || ($car->user_id === $user->id);
-
-    if (!$isOwner) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'You can only create auctions for your own cars'
-        ], 403);
-    }
-
-    if ($car->auction_status !== 'available') {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'This car is not available for auction'
-        ], 400);
-    }
-
-    $auction = new Auction();
-    $auction->car_id        = $request->car_id;
-    $auction->starting_bid  = $request->starting_bid;
-    $auction->current_bid   = $request->starting_bid;
-    $auction->reserve_price = $request->reserve_price ?? 0;
-    $auction->start_time    = $request->start_time;
-    $auction->end_time      = $request->end_time;
-    $auction->description   = $request->description;
-    $auction->session_id    = $request->session_id; // 👈 يحفظ الجلسة
-
-    $now = Carbon::now();
-    $auction->status = (Carbon::parse($request->start_time) <= $now)
-        ? AuctionStatus::ACTIVE
-        : AuctionStatus::SCHEDULED;
-
-    $auction->save();
-
-    // تحديث حالة السيارة
-    $car->auction_status = 'in_auction';
-    $car->save();
-
-    return response()->json([
-        'status'  => 'success',
-        'message' => 'Auction created successfully',
-        'data'    => $auction->load('session')
-    ], 201);
-}
 
 
     public function addToAuction(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'car_id'        => 'required|integer|exists:cars,id',
-        'starting_bid'  => 'required|numeric|min:0',
-        'reserve_price' => 'nullable|numeric|min:0',
-        'min_price'     => 'required|numeric|min:0',
-        'max_price'     => 'required|numeric|min:0|gte:min_price',
-        'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
-        'duration_minutes' => 'nullable|integer|min:1|max:1440',          // اختياري
-    ]);
+    {
+        $validator = Validator::make($request->all(), [
+            'car_id'        => 'required|integer|exists:cars,id',
+            'starting_bid'  => 'required|numeric|min:0',
+            'reserve_price' => 'nullable|numeric|min:0',
+            'min_price'     => 'required|numeric|min:0',
+            'max_price'     => 'required|numeric|min:0|gte:min_price',
+            'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
+            'duration_minutes' => 'nullable|integer|min:1|max:1440',          // اختياري
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 'error',
-            'errors' => $validator->errors()
-        ], 422);
-    }
-
-    $user = Auth::user();
-    $car  = Car::findOrFail($request->car_id);
-
-    $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
-        || ($car->user_id === $user->id);
-
-    if (!$isOwner) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'You can only create auctions for your own cars'
-        ], 403);
-    }
-
-    if ($car->auction_status !== 'available') {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'This car is not available for auction'
-        ], 400);
-    }
-
-    $now      = Carbon::now();
-    $duration = (int) ($request->duration_minutes ?? 60);
-
-    $auction = new Auction();
-    $auction->car_id        = $request->car_id;
-    $auction->starting_bid  = $request->starting_bid;
-    $auction->current_bid   = $request->starting_bid;
-    $auction->reserve_price = $request->reserve_price ?? 0;
-    $auction->min_price     = $request->min_price;
-    $auction->max_price     = $request->max_price;
-    $auction->start_time    = $now;                      // يبدأ الآن
-    $auction->end_time      = (clone $now)->addMinutes($duration);
-    $auction->status        = AuctionStatus::ACTIVE;     // فوري = نشط
-    $auction->session_id    = $request->session_id;      // 👈 يحفظ الجلسة
-    $auction->save();
-
-    $car->auction_status = 'in_auction';
-    $car->save();
-
-    return response()->json([
-        'status'  => 'success',
-        'message' => 'Auction created successfully',
-        'data'    => $auction->load('session')
-    ], 201);
-}
-
-public function approveRejectAuctionBulk(Request $request)
-{
-    $user = Auth::user();
-
-    if (!$user || !$user->isAdmin()) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'You are not authorized to create auctions'
-        ], 403);
-    }
-
-    // --- Validate & normalize input ---
-    $request->validate([
-        'action' => ['required'],             // true/false (قد تأتي كسلسلة)
-        'ids'    => ['required','array','min:1'],
-        'ids.*'  => ['integer'],
-    ]);
-
-    // حوّل action لبوول بأمان (تتعامل مع 'true'/'false' كسترنج)
-    $approve = filter_var($request->action, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-    if ($approve === null) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'Invalid action value. Expected boolean.'
-        ], 422);
-    }
-
-    // حافظ على ترتيب الإدخال مع إزالة التكرارات
-    $inputIds = $request->ids;
-    $seen = [];
-    $ids = [];
-    foreach ($inputIds as $id) {
-        if (!isset($seen[$id])) {
-            $seen[$id] = true;
-            $ids[] = (int) $id;
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        $user = Auth::user();
+        $car  = Car::findOrFail($request->car_id);
+
+        $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
+            || ($car->user_id === $user->id);
+
+        if (!$isOwner) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'You can only create auctions for your own cars'
+            ], 403);
+        }
+
+        if ($car->auction_status !== 'available') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'This car is not available for auction'
+            ], 400);
+        }
+
+        $now      = Carbon::now();
+        $duration = (int) ($request->duration_minutes ?? 60);
+
+        $auction = new Auction();
+        $auction->car_id        = $request->car_id;
+        $auction->starting_bid  = $request->starting_bid;
+        $auction->current_bid   = $request->starting_bid;
+        $auction->reserve_price = $request->reserve_price ?? 0;
+        $auction->min_price     = $request->min_price;
+        $auction->max_price     = $request->max_price;
+        $auction->start_time    = $now;                      // يبدأ الآن
+        $auction->end_time      = (clone $now)->addMinutes($duration);
+        $auction->status        = AuctionStatus::ACTIVE;     // فوري = نشط
+        $auction->session_id    = $request->session_id;      // 👈 يحفظ الجلسة
+        $auction->save();
+
+        $car->auction_status = 'in_auction';
+        $car->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Auction created successfully',
+            'data'    => $auction->load('session')
+        ], 201);
     }
 
-    $tracking = []; // front-end-only per-id results
-    $now = Carbon::now();
+    public function approveRejectAuctionBulk(Request $request)
+    {
+        $user = Auth::user();
 
-    // --- Process inside one transaction for safety ---
-    DB::beginTransaction();
-    try {
-        foreach ($ids as $id) {
-            // قفل الصف لمنع التضارب
-            $car = Car::whereKey($id)->lockForUpdate()->first();
+        if (!$user || !$user->isAdmin()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'You are not authorized to create auctions'
+            ], 403);
+        }
 
-            if (!$car) {
-                $tracking[] = [
-                    'id'      => $id,
-                    'outcome' => 'error',
-                    'message' => 'Car not found',
-                    'code'    => 'not_found',
-                ];
-                continue;
+        // --- Validate & normalize input ---
+        $request->validate([
+            'action' => ['required'],             // true/false (قد تأتي كسلسلة)
+            'ids'    => ['required', 'array', 'min:1'],
+            'ids.*'  => ['integer'],
+        ]);
+
+        // حوّل action لبوول بأمان (تتعامل مع 'true'/'false' كسترنج)
+        $approve = filter_var($request->action, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($approve === null) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid action value. Expected boolean.'
+            ], 422);
+        }
+
+        // حافظ على ترتيب الإدخال مع إزالة التكرارات
+        $inputIds = $request->ids;
+        $seen = [];
+        $ids = [];
+        foreach ($inputIds as $id) {
+            if (!isset($seen[$id])) {
+                $seen[$id] = true;
+                $ids[] = (int) $id;
             }
+        }
 
-            try {
-                if ($approve === true) {
-                    // APPROVE
-                    if ($car->auction_status === 'available') {
-                        if ($car->activeAuction) {
-                            // عنده مزاد نشط بالفعل -> فقط غيّر حالة السيارة
-                            $car->auction_status = 'in_auction';
-                            $car->save();
+        $tracking = []; // front-end-only per-id results
+        $now = Carbon::now();
 
-                            // إشعار المالك (اختياري وآمن)
-                            $this->notifyOwnerIfPossible($car, $car->activeAuction);
+        // --- Process inside one transaction for safety ---
+        DB::beginTransaction();
+        try {
+            foreach ($ids as $id) {
+                // قفل الصف لمنع التضارب
+                $car = Car::whereKey($id)->lockForUpdate()->first();
 
-                            $tracking[] = [
-                                'id'      => $car->id,
-                                'outcome' => 'approved',
-                                'message' => 'Car moved into existing auction',
-                                'code'    => 'approved_existing',
-                                'after'   => [
-                                    'auction_status'    => $car->auction_status,
-                                    'active_auction_id' => $car->activeAuction->id,
-                                ],
-                            ];
+                if (!$car) {
+                    $tracking[] = [
+                        'id'      => $id,
+                        'outcome' => 'error',
+                        'message' => 'Car not found',
+                        'code'    => 'not_found',
+                    ];
+                    continue;
+                }
+
+                try {
+                    if ($approve === true) {
+                        // APPROVE
+                        if ($car->auction_status === 'available') {
+                            if ($car->activeAuction) {
+                                // عنده مزاد نشط بالفعل -> فقط غيّر حالة السيارة
+                                $car->auction_status = 'in_auction';
+                                $car->save();
+
+                                // إشعار المالك (اختياري وآمن)
+                                $this->notifyOwnerIfPossible($car, $car->activeAuction);
+
+                                $tracking[] = [
+                                    'id'      => $car->id,
+                                    'outcome' => 'approved',
+                                    'message' => 'Car moved into existing auction',
+                                    'code'    => 'approved_existing',
+                                    'after'   => [
+                                        'auction_status'    => $car->auction_status,
+                                        'active_auction_id' => $car->activeAuction->id,
+                                    ],
+                                ];
+                            } else {
+                                // لا يوجد مزاد -> أنشئ واحداً
+                                $auction = new Auction();
+                                $auction->car_id        = $car->id;
+                                $auction->starting_bid  = $car->starting_bid ?? 0;
+                                $auction->current_bid   = $car->starting_bid ?? 0;
+                                $auction->reserve_price = $car->reserve_price ?? 0;
+                                $auction->min_price     = $car->min_price ?? 0;
+                                $auction->max_price     = $car->max_price ?? 0;
+
+                                // ابدأ الآن إن لم يكن هناك start_time صالح
+                                $start = $car->start_time ? Carbon::parse($car->start_time) : $now;
+                                $auction->start_time = $start;
+                                $auction->end_time   = (clone $start)->addMinutes(60);
+
+                                $auction->status = $start->lessThanOrEqualTo($now)
+                                    ? AuctionStatus::ACTIVE
+                                    : AuctionStatus::SCHEDULED;
+
+                                $auction->save();
+
+                                // حدث حالة السيارة
+                                $car->auction_status = 'in_auction';
+                                $car->save();
+
+                                // إشعار المالك (اختياري وآمن)
+                                $this->notifyOwnerIfPossible($car, $auction);
+
+                                $tracking[] = [
+                                    'id'      => $car->id,
+                                    'outcome' => 'approved',
+                                    'message' => 'Car approved and new auction created',
+                                    'code'    => 'approved_created',
+                                    'after'   => [
+                                        'auction_status'    => $car->auction_status,
+                                        'active_auction_id' => $auction->id,
+                                    ],
+                                ];
+                            }
                         } else {
-                            // لا يوجد مزاد -> أنشئ واحداً
-                            $auction = new Auction();
-                            $auction->car_id        = $car->id;
-                            $auction->starting_bid  = $car->starting_bid ?? 0;
-                            $auction->current_bid   = $car->starting_bid ?? 0;
-                            $auction->reserve_price = $car->reserve_price ?? 0;
-                            $auction->min_price     = $car->min_price ?? 0;
-                            $auction->max_price     = $car->max_price ?? 0;
-
-                            // ابدأ الآن إن لم يكن هناك start_time صالح
-                            $start = $car->start_time ? Carbon::parse($car->start_time) : $now;
-                            $auction->start_time = $start;
-                            $auction->end_time   = (clone $start)->addMinutes(60);
-
-                            $auction->status = $start->lessThanOrEqualTo($now)
-                                ? AuctionStatus::ACTIVE
-                                : AuctionStatus::SCHEDULED;
-
-                            $auction->save();
-
-                            // حدث حالة السيارة
-                            $car->auction_status = 'in_auction';
-                            $car->save();
-
-                            // إشعار المالك (اختياري وآمن)
-                            $this->notifyOwnerIfPossible($car, $auction);
-
+                            // ليست متاحة للموافقة
                             $tracking[] = [
                                 'id'      => $car->id,
-                                'outcome' => 'approved',
-                                'message' => 'Car approved and new auction created',
-                                'code'    => 'approved_created',
-                                'after'   => [
-                                    'auction_status'    => $car->auction_status,
-                                    'active_auction_id' => $auction->id,
+                                'outcome' => 'skipped',
+                                'message' => 'Car not available for approval',
+                                'code'    => 'not_available_for_approval',
+                                'before'  => [
+                                    'auction_status'     => $car->auction_status,
+                                    'has_active_auction' => (bool) $car->activeAuction,
                                 ],
                             ];
                         }
                     } else {
-                        // ليست متاحة للموافقة
-                        $tracking[] = [
-                            'id'      => $car->id,
-                            'outcome' => 'skipped',
-                            'message' => 'Car not available for approval',
-                            'code'    => 'not_available_for_approval',
-                            'before'  => [
-                                'auction_status'     => $car->auction_status,
-                                'has_active_auction' => (bool) $car->activeAuction,
-                            ],
-                        ];
-                    }
-                } else {
-                    // REJECT
-                    if ($car->auction_status === 'available') {
-                        $car->auction_status = 'cancelled';
-                        $car->save();
+                        // REJECT
+                        if ($car->auction_status === 'available') {
+                            $car->auction_status = 'cancelled';
+                            $car->save();
 
-                        $tracking[] = [
-                            'id'      => $car->id,
-                            'outcome' => 'rejected',
-                            'message' => 'Car rejected and cancelled',
-                            'code'    => 'rejected',
-                            'after'   => ['auction_status' => $car->auction_status],
-                        ];
-                    } else {
-                        $tracking[] = [
-                            'id'      => $car->id,
-                            'outcome' => 'skipped',
-                            'message' => 'Car not available to reject',
-                            'code'    => 'not_available_for_reject',
-                            'before'  => ['auction_status' => $car->auction_status],
-                        ];
+                            $tracking[] = [
+                                'id'      => $car->id,
+                                'outcome' => 'rejected',
+                                'message' => 'Car rejected and cancelled',
+                                'code'    => 'rejected',
+                                'after'   => ['auction_status' => $car->auction_status],
+                            ];
+                        } else {
+                            $tracking[] = [
+                                'id'      => $car->id,
+                                'outcome' => 'skipped',
+                                'message' => 'Car not available to reject',
+                                'code'    => 'not_available_for_reject',
+                                'before'  => ['auction_status' => $car->auction_status],
+                            ];
+                        }
                     }
+                } catch (\Throwable $e) {
+                    // لا نوقف بقية العناصر
+                    $tracking[] = [
+                        'id'      => $car->id,
+                        'outcome' => 'error',
+                        'message' => app()->hasDebugModeEnabled() && config('app.debug')
+                            ? $e->getMessage()
+                            : 'Error while processing this car',
+                        'code'    => 'exception',
+                    ];
                 }
-            } catch (\Throwable $e) {
-                // لا نوقف بقية العناصر
-                $tracking[] = [
-                    'id'      => $car->id,
-                    'outcome' => 'error',
-                    'message' => app()->hasDebugModeEnabled() && config('app.debug')
-                        ? $e->getMessage()
-                        : 'Error while processing this car',
-                    'code'    => 'exception',
-                ];
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Bulk operation failed.',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+
+        // Response
+        $hasAny = count($tracking) > 0;
+
+        // summary سريع
+        $summary = ['approved' => 0, 'rejected' => 0, 'skipped' => 0, 'errors' => 0];
+        foreach ($tracking as $t) {
+            if (isset($t['outcome']) && isset($summary[$t['outcome']])) {
+                $summary[$t['outcome']]++;
             }
         }
 
-        DB::commit();
-    } catch (\Throwable $e) {
-        DB::rollBack();
-
         return response()->json([
-            'status'  => 'error',
-            'message' => 'Bulk operation failed.',
-            'error'   => config('app.debug') ? $e->getMessage() : null,
-        ], 500);
+            'status'   => 'success',
+            'message'  => $approve ? 'تمت الموافقة على الدفعة' : 'تم رفض الدفعة',
+            'summary'  => $summary,
+            'tracking' => $tracking, // استهلكها مباشرةً في الفرونت
+        ], $hasAny ? 200 : 204);
     }
 
-    // Response
-    $hasAny = count($tracking) > 0;
+    /**
+     * محاولة إرسال إشعار للمالك فقط إذا كانت علاقة owner() أو user() موجودة.
+     * لا تكسر العملية لو الإشعار فشل.
+     */
+    protected function notifyOwnerIfPossible(Car $car, Auction $auction = null): void
+    {
+        try {
+            $owner = null;
+            if (method_exists($car, 'owner')) {
+                $owner = $car->owner;
+            } elseif (method_exists($car, 'user')) {
+                $owner = $car->user;
+            }
 
-    // summary سريع
-    $summary = ['approved'=>0,'rejected'=>0,'skipped'=>0,'errors'=>0];
-    foreach ($tracking as $t) {
-        if (isset($t['outcome']) && isset($summary[$t['outcome']])) {
-            $summary[$t['outcome']]++;
+            if ($owner && method_exists($owner, 'notify')) {
+                $owner->notify(new CarApprovedForAuctionNotification($car, $auction ?? $car->activeAuction));
+            }
+        } catch (\Throwable $e) {
+            // تجاهل أخطاء الإشعار ولا نوقف الدفقة
+            logger()->warning('Car owner notification failed', [
+                'car_id'   => $car->id,
+                'auction'  => $auction?->id,
+                'error'    => $e->getMessage(),
+            ]);
         }
     }
-
-    return response()->json([
-        'status'   => 'success',
-        'message'  => $approve ? 'تمت الموافقة على الدفعة' : 'تم رفض الدفعة',
-        'summary'  => $summary,
-        'tracking' => $tracking, // استهلكها مباشرةً في الفرونت
-    ], $hasAny ? 200 : 204);
-}
-
-/**
- * محاولة إرسال إشعار للمالك فقط إذا كانت علاقة owner() أو user() موجودة.
- * لا تكسر العملية لو الإشعار فشل.
- */
-protected function notifyOwnerIfPossible(Car $car, Auction $auction = null): void
-{
-    try {
-        $owner = null;
-        if (method_exists($car, 'owner')) {
-            $owner = $car->owner;
-        } elseif (method_exists($car, 'user')) {
-            $owner = $car->user;
-        }
-
-        if ($owner && method_exists($owner, 'notify')) {
-            $owner->notify(new CarApprovedForAuctionNotification($car, $auction ?? $car->activeAuction));
-        }
-    } catch (\Throwable $e) {
-        // تجاهل أخطاء الإشعار ولا نوقف الدفقة
-        logger()->warning('Car owner notification failed', [
-            'car_id'   => $car->id,
-            'auction'  => $auction?->id,
-            'error'    => $e->getMessage(),
-        ]);
-    }
-}
 
 
     public function approveRejectAuctionBulk1(Request $request)
@@ -705,174 +732,196 @@ protected function notifyOwnerIfPossible(Car $car, Auction $auction = null): voi
 
 
 
-public function moveBetweenAuctionsBulk(Request $request)
-{
-    /** ---------- Auth & Validate ---------- */
-    $user = Auth::user();
-    if (!$user || !$user->isAdmin()) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'You are not authorized to move auctions.',
-        ], 403);
-    }
+    public function moveBetweenAuctionsBulk(Request $request)
+    {
+        /** ---------- Auth & Validate ---------- */
+        $user = Auth::user();
+        if (!$user || !$user->isAdmin()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'You are not authorized to move auctions.',
+            ], 403);
+        }
 
-    $validated = $request->validate([
-        'ids'    => ['required', 'array', 'min:1'],
-        'ids.*'  => ['integer', 'distinct'],
-        'status' => ['required', 'string', 'in:active,instant,late,live,pending'],
-    ]);
+        $validated = $request->validate([
+            'ids'    => ['required', 'array', 'min:1'],
+            'ids.*'  => ['integer', 'distinct'],
+            'status' => ['required', 'string', 'in:active,instant,late,live,pending'],
+        ]);
 
-    $targetStatus = $validated['status'];
-    $carIds       = array_values($validated['ids']);
+        $targetStatus = $validated['status'];
+        $carIds       = array_values($validated['ids']);
 
-    /** ---------- Status → Base Payload ---------- */
-    $baseDataByStatus = [
-        'active'  => [
-            'control_room_approved' => true,
-            'status'                => AuctionStatus::ACTIVE->value,
-            'auction_type'          => AuctionType::LIVE_INSTANT->value,
-            'approved_for_live'     => null,
-        ],
-        'instant' => [
-            'control_room_approved' => true,
-            'status'                => AuctionStatus::ACTIVE->value,
-            'auction_type'          => AuctionType::LIVE_INSTANT->value,
-            'approved_for_live'     => null,
-        ],
-        'late'    => [
-            'control_room_approved' => true,
-            'status'                => AuctionStatus::ACTIVE->value,
-            'auction_type'          => AuctionType::SILENT_INSTANT->value,
-            'approved_for_live'     => null,
-        ],
-        'live'    => [
-            'control_room_approved' => true,
-            'status'                => AuctionStatus::ACTIVE->value,
-            'auction_type'          => AuctionType::LIVE->value,
-            'approved_for_live'     => false,
-        ],
-        'pending' => [
-            'control_room_approved' => false,
-            'status'                => AuctionStatus::SCHEDULED->value,
-            'auction_type'          => null, // مهم: لا نقارن النوع هنا
-            'approved_for_live'     => null,
-        ],
-    ];
-    $targetData = $baseDataByStatus[$targetStatus];
+        /** ---------- Status → Base Payload ---------- */
+        $baseDataByStatus = [
+            'active'  => [
+                'control_room_approved' => true,
+                'status'                => AuctionStatus::ACTIVE->value,
+                'auction_type'          => AuctionType::LIVE_INSTANT->value,
+                'approved_for_live'     => null,
+                'extended_until'        => null
+            ],
+            'instant' => [
+                'control_room_approved' => true,
+                'status'                => AuctionStatus::ACTIVE->value,
+                'auction_type'          => AuctionType::LIVE_INSTANT->value,
+                'approved_for_live'     => null,
+                'extended_until'        => null,
+            ],
+            'late'    => [
+                'control_room_approved' => true,
+                'status'                => AuctionStatus::ACTIVE->value,
+                'auction_type'          => AuctionType::SILENT_INSTANT->value,
+                'approved_for_live'     => null,
+                'extended_until'        => null
+            ],
+            'live'    => [
+                'control_room_approved' => true,
+                'status'                => AuctionStatus::ACTIVE->value,
+                'auction_type'          => AuctionType::LIVE->value,
+                'approved_for_live'     => false,
+                'extended_until'        => null
+            ],
+            'pending' => [
+                'control_room_approved' => false,
+                'status'                => AuctionStatus::SCHEDULED->value,
+                'auction_type'          => null, // مهم: لا نقارن النوع هنا
+                'approved_for_live'     => null,
+                'extended_until'        => null
+            ],
+        ];
+        $targetData = $baseDataByStatus[$targetStatus];
+      
+        /** ---------- Fetch cars ---------- */
+        $cars = Car::with(['user', 'dealer'])
+            ->whereIn('id', $carIds)
+            ->get();
 
-    /** ---------- Fetch cars ---------- */
-    $cars = Car::with(['user', 'dealer'])
-        ->whereIn('id', $carIds)
-        ->get();
+        if ($cars->isEmpty()) {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'لا توجد سيارات مطابقة للمعرّفات المرسلة.',
+                'summary' => ['requested' => count($carIds), 'found' => 0],
+                'data'    => [],
+            ], 200);
+        }
 
-    if ($cars->isEmpty()) {
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'لا توجد سيارات مطابقة للمعرّفات المرسلة.',
-            'summary' => ['requested' => count($carIds), 'found' => 0],
-            'data'    => [],
-        ], 200);
-    }
+        /** ---------- Process ---------- */
+        $nowRiyadh  = Carbon::now('Asia/Riyadh');
+        $endDefault = (clone $nowRiyadh)->addDays(5);
 
-    /** ---------- Process ---------- */
-    $nowRiyadh  = Carbon::now('Asia/Riyadh');
-    $endDefault = (clone $nowRiyadh)->addMinutes(60);
+        $results    = [];
+        $updatedCnt = 0;
+        $createdCnt = 0;
+        $skippedCnt = 0;
 
-    $results    = [];
-    $updatedCnt = 0;
-    $createdCnt = 0;
-    $skippedCnt = 0;
+        DB::beginTransaction();
+        try {
+            foreach ($cars as $car) {
 
-    DB::beginTransaction();
-    try {
-        foreach ($cars as $car) {
+                /** ========= SKIP: if already same status/type =========
+                 * نتحقق من وجود *أي* مزاد لنفس السيارة يطابق الحالة المستهدفة،
+                 * وإذا كان للهدف auction_type (غير null) نضيف شرط النوع.
+                 */
+                // $sameExists = Auction::where('car_id', $car->id)
+                //     ->where('status', $targetData['status'])
+                //     ->when(!is_null($targetData['auction_type']), function ($q) use ($targetData) {
+                //         $q->where('auction_type', $targetData['auction_type']);
+                //     })
+                //     ->exists();
 
-            /** ========= SKIP: if already same status/type =========
-             * نتحقق من وجود *أي* مزاد لنفس السيارة يطابق الحالة المستهدفة،
-             * وإذا كان للهدف auction_type (غير null) نضيف شرط النوع.
-             */
-            $sameExists = Auction::where('car_id', $car->id)
-                ->where('status', $targetData['status'])
-                ->when(!is_null($targetData['auction_type']), function ($q) use ($targetData) {
-                    $q->where('auction_type', $targetData['auction_type']);
-                })
-                ->exists();
+                // if ($sameExists) {
+                //     $skippedCnt++;
+                //     $results[] = [
+                //         'car_id'        => $car->id,
+                //         'action'        => 'skipped',
+                //         'reason'        => 'already in same target status/type',
+                //         'target_status' => $targetStatus,
+                //     ];
+                //     continue;
+                // }
 
-            if ($sameExists) {
-                $skippedCnt++;
-                $results[] = [
-                    'car_id'        => $car->id,
-                    'action'        => 'skipped',
-                    'reason'        => 'already in same target status/type',
-                    'target_status' => $targetStatus,
-                ];
-                continue;
-            }
+                /** ========= UPDATE or CREATE ========= */
+                // نبحث عن مزاد نشط/مجدول لنعمل عليه تحديث إن توفر
+                $auction = Auction::where('car_id', $car->id)
+                    ->whereIn('status', [AuctionStatus::ACTIVE->value, AuctionStatus::SCHEDULED->value])
+                    ->latest('id')
+                    ->first();
 
-            /** ========= UPDATE or CREATE ========= */
-            // نبحث عن مزاد نشط/مجدول لنعمل عليه تحديث إن توفر
-            $auction = Auction::where('car_id', $car->id)
-                ->whereIn('status', [AuctionStatus::ACTIVE->value, AuctionStatus::SCHEDULED->value])
-                ->latest('id')
-                ->first();
+                if ($auction) {
+                    // تحديث المزاد القائم
+                    $payload = array_filter([
+                        'control_room_approved' => $targetData['control_room_approved'],
+                        'status'                => $targetData['status'],
+                        'auction_type'          => $targetData['auction_type'],
+                        'approved_for_live'     => $targetData['approved_for_live'],
+                        'extended_until'        => $targetData['extended_until']
+                    ], fn($v) => !is_null($v));
 
-            if ($auction) {
-                // تحديث المزاد القائم
-                $payload = array_filter([
-                    'control_room_approved' => $targetData['control_room_approved'],
-                    'status'                => $targetData['status'],
-                    'auction_type'          => $targetData['auction_type'],
-                    'approved_for_live'     => $targetData['approved_for_live'],
-                ], fn ($v) => !is_null($v));
+                    if ($request->has('session_id')) {
+                        $payload['session_id'] = $request->session_id;
+                    }
 
-                $auction->update($payload);
-                $updatedCnt++;
+                    $auction->update($payload);
+                    $updatedCnt++;
 
-                $results[] = [
-                    'car_id'        => $car->id,
-                    'action'        => 'updated',
-                    'auction_id'    => $auction->id,
-                    'target_status' => $targetStatus,
-                ];
-            } else {
-                // إنشاء مزاد جديد
-                $startingBid = $car->starting_bid ?? 0;
-                $startTime   = $car->start_time ? Carbon::parse($car->start_time, 'Asia/Riyadh') : $nowRiyadh;
-                $endTime     = $car->end_time ? Carbon::parse($car->end_time, 'Asia/Riyadh') : $endDefault;
+                    $results[] = [
+                        'car_id'        => $car->id,
+                        'action'        => 'updated',
+                        'auction_id'    => $auction->id,
+                        'target_status' => $targetStatus,
+                    ];
+                } else {
+                    // إنشاء مزاد جديد
+                    $startingBid = $car->starting_bid ?? 0;
+                    $startTime   = $car->start_time ? Carbon::parse($car->start_time, 'Asia/Riyadh') : $nowRiyadh;
+                    $endTime     = $car->end_time ? Carbon::parse($car->end_time, 'Asia/Riyadh') : $endDefault;
 
-                $createData = array_filter([
-                    'car_id'                => $car->id,
-                    'starting_bid'          => $startingBid,
-                    'current_bid'           => $startingBid,
-                    'reserve_price'         => $car->reserve_price ?? 0,
-                    'min_price'             => $car->min_price ?? 0,
-                    'max_price'             => $car->max_price ?? 0,
-                    'start_time'            => $startTime,
-                    'end_time'              => $endTime,
-                    'control_room_approved' => $targetData['control_room_approved'],
-                    'status'                => $targetData['status'],
-                    'auction_type'          => $targetData['auction_type'],
-                    'approved_for_live'     => $targetData['approved_for_live'],
-                ], fn ($v) => !is_null($v));
+                    $createData = array_filter([
+                        'car_id'                => $car->id,
+                        'starting_bid'          => $startingBid,
+                        'current_bid'           => $startingBid,
+                        'reserve_price'         => $car->reserve_price ?? 0,
+                        'min_price'             => $car->min_price ?? 0,
+                        'max_price'             => $car->max_price ?? 0,
+                        'start_time'            => $startTime,
+                        'end_time'              => $endTime,
+                        'control_room_approved' => $targetData['control_room_approved'],
+                        'status'                => $targetData['status'],
+                        'auction_type'          => $targetData['auction_type'],
+                        'approved_for_live'     => $targetData['approved_for_live'],
+                    ], fn($v) => !is_null($v));
 
-                $auction = Auction::create($createData);
-                $createdCnt++;
+                    $auction = Auction::create($createData);
+                    $createdCnt++;
 
-                $results[] = [
-                    'car_id'        => $car->id,
-                    'action'        => 'created',
-                    'auction_id'    => $auction->id,
-                    'target_status' => $targetStatus,
-                ];
-            }
+                    $results[] = [
+                        'car_id'        => $car->id,
+                        'action'        => 'created',
+                        'auction_id'    => $auction->id,
+                        'target_status' => $targetStatus,
+                    ];
+                }
 
-            /** ---------- Notifications ---------- */
-            $recipient = $car->user ?? $car->dealer;
-            if ($recipient && method_exists($recipient, 'notify')) {
+                /** ---------- Notifications ---------- */
+                $recipient = $car->user ?? $car->dealer;
+                if ($recipient && method_exists($recipient, 'notify')) {
+                    try {
+                        $recipient->notify(new CarMovedToAuctionNotification($car, $auction, $targetStatus));
+                    } catch (\Throwable $e) {
+                        \Log::warning('CarMovedToAuctionNotification failed', [
+                            'car_id'     => $car->id,
+                            'auction_id' => $auction->id ?? null,
+                            'error'      => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                /** ---------- Broadcast ---------- */
                 try {
-                    $recipient->notify(new CarMovedToAuctionNotification($car, $auction, $targetStatus));
+                    event(new CarMovedBetweenAuctionsEvent($auction, $targetStatus, $car));
                 } catch (\Throwable $e) {
-                    \Log::warning('CarMovedToAuctionNotification failed', [
+                    \Log::warning('CarMovedBetweenAuctionsEvent failed', [
                         'car_id'     => $car->id,
                         'auction_id' => $auction->id ?? null,
                         'error'      => $e->getMessage(),
@@ -880,52 +929,39 @@ public function moveBetweenAuctionsBulk(Request $request)
                 }
             }
 
-            /** ---------- Broadcast ---------- */
-            try {
-                event(new CarMovedBetweenAuctionsEvent($auction, $targetStatus, $car));
-            } catch (\Throwable $e) {
-                \Log::warning('CarMovedBetweenAuctionsEvent failed', [
-                    'car_id'     => $car->id,
-                    'auction_id' => $auction->id ?? null,
-                    'error'      => $e->getMessage(),
-                ]);
-            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            \Log::error('moveBetweenAuctionsBulk failed', [
+                'status'   => $targetStatus,
+                'car_ids'  => $carIds,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء نقل السيارات بين المزادات.',
+            ], 500);
         }
 
-        DB::commit();
-
-    } catch (\Throwable $e) {
-        DB::rollBack();
-
-        \Log::error('moveBetweenAuctionsBulk failed', [
-            'status'   => $targetStatus,
-            'car_ids'  => $carIds,
-            'error'    => $e->getMessage(),
-        ]);
+        /** ---------- Response ---------- */
+        $summary = [
+            'requested' => count($carIds),
+            'processed' => count($results),
+            'updated'   => $updatedCnt,
+            'created'   => $createdCnt,
+            'skipped'   => $skippedCnt,
+            'target'    => $targetStatus,
+        ];
 
         return response()->json([
-            'status'  => 'error',
-            'message' => 'حدث خطأ أثناء نقل السيارات بين المزادات.',
-        ], 500);
+            'status'  => 'success',
+            'message' => 'تم الإجراء بنجاح.',
+            'summary' => $summary,
+            'data'    => $results,
+        ], 200);
     }
-
-    /** ---------- Response ---------- */
-    $summary = [
-        'requested' => count($carIds),
-        'processed' => count($results),
-        'updated'   => $updatedCnt,
-        'created'   => $createdCnt,
-        'skipped'   => $skippedCnt,
-        'target'    => $targetStatus,
-    ];
-
-    return response()->json([
-        'status'  => 'success',
-        'message' => 'تم الإجراء بنجاح.',
-        'summary' => $summary,
-        'data'    => $results,
-    ], 200);
-}
 
 
 
@@ -988,11 +1024,11 @@ public function moveBetweenAuctionsBulk(Request $request)
             $car = Car::find($id);
             // Check if car is available for auction
             if ($car->auction_status != 'available') {
-                 $auction = Auction::where('car_id', $car->id)
-                ->where('status', AuctionStatus::ACTIVE->value)
-                ->orWhere('status', AuctionStatus::SCHEDULED->value)
-                ->first();
-                if($auction){
+                $auction = Auction::where('car_id', $car->id)
+                    ->where('status', AuctionStatus::ACTIVE->value)
+                    ->orWhere('status', AuctionStatus::SCHEDULED->value)
+                    ->first();
+                if ($auction) {
                     $auction->update($data);
                     $tracking->push($auction);
 
@@ -1400,25 +1436,50 @@ public function moveBetweenAuctionsBulk(Request $request)
 
     public function purchaseConfirmation($auction_id)
     {
-        $auction = Auction::with(['car', 'bids', 'car.dealer'])->findOrFail($auction_id);
-        //$settlement = Settlement::where('auction_id', $auction_id)->first();
+        $user = Auth::user();
+        $auction = Auction::with(['car', 'bids', 'car.dealer'])
+            ->findOrFail($auction_id);
 
-        $trafficManagementFee = Setting::where('key', 'trafficManagementFee')->first();
-        $tamFeeSetting = Setting::where('key', 'tamFee')->first();
+        $settlement = Settlement::where('auction_id', $auction_id)
+            ->select([
+                'auction_id',
+                'buyer_id',
+                'car_id',
+                'final_price',
+                'platform_fee',
+                'tam_fee',
+                'muroor_fee',
+                'buyer_net_amount',
+                'status'
+            ])
+            ->where('status', 'pending')
+            ->where('buyer_id', $user->id)
+            ->first();
 
-        $trafficManagementFee = $trafficManagementFee->value ?? 0;
-        $tamFee = $tamFeeSetting->value ?? 0;
+        if (!$settlement) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Purchase confirmation not found',
+                'error' => 'Purchase confirmation not found',
+                'data' => null
+            ], 404);
+        }
 
-        $evaluation_price = $auction->car?->evaluation_price ?? 0;
-        $commission = CommissionTier::getCommissionForPrice($evaluation_price);
+        $muroorFee = $settlement->muroor_fee;
+        $tamFee = $settlement->tam_fee;
 
+        $auction_price = $settlement->final_price;
+        $commission = $settlement->platform_fee;
+        $net_amount = $settlement->buyer_net_amount;
         return response()->json([
             'status' => 'success',
             'data' => [
                 'auction' => $auction,
-                'trafficPoliceFees' => (int)$trafficManagementFee,
-                'tamFee' => (int)$tamFee,
-                'platformFee' => (int)$commission
+                'auction_price' => $auction_price,
+                'muroorFee' => (int)$muroorFee,
+                'tamFee' => (float)$tamFee,
+                'platformFee' => (int)$commission,
+                'net_amount' => (int)$net_amount
             ]
         ]);
     }
