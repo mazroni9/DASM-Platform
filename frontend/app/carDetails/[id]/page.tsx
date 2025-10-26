@@ -8,6 +8,11 @@
  *
  * 🔄 الارتباط:
  * - يستخدم مكون: @/components/CarDataEntryButton
+ *
+ * 🎨 ملاحظات التصميم:
+ * - توحيد الثيم على داكن slate مع تدرّج بنفسجي (violet → fuchsia)
+ * - استبدال الأخضر/الأزرق في الأزرار والتنبيهات بالتدرّج البنفسجي
+ * - دون أي تغيير على الباك إند أو المنطق
  */
 
 "use client";
@@ -17,7 +22,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
-import { ChevronRight, AlertCircle, CheckCircle2, Plus,  } from "lucide-react";
+import { ChevronRight, AlertCircle, CheckCircle2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PriceWithIcon } from "@/components/ui/priceWithIcon";
 import api from "@/lib/axios";
@@ -56,62 +61,64 @@ interface BidingData {
 }
 
 // ========== قسم السيارات المميزة ==========
-const FeaturedCars = ({cars}) => {
- 
+const FeaturedCars = ({ cars }) => {
   return (
-    <section className="bg-gray-100 min-h-screen mt-10">
+    <section className="bg-slate-950 text-slate-100 mt-10">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center ">
+        <div className="text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-right text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 md:mb-4"
+            className="text-right text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4"
           >
-           سيارات مشابهة
+            سيارات مشابهة
           </motion.h2>
-          
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 py-10">
-          {cars && cars.map((car, index) => (
-            <motion.div
-              key={car.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-            >
-              <div className="relative  h-40 sm:h-48 overflow-hidden">
-                <img
-                  src={car.images[0]}
-                  alt={car.make + " " + car.model + " " + car.year}
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                />
-               
-              </div>
-              <div className="p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold  mb-2 line-clamp-2">{car.make + " " + car.model + " " + car.year}</h3>
-                <div className="flex justify-between items-center mb-3 sm:mb-4">
-                  <span className="text-amber-400 font-bold text-base sm:text-lg">{car.active_auction.current_bid} ر.س</span>
-                  <span className="text-slate-400 text-xs sm:text-sm">{car.total_bids} مزايدة</span>
+          {cars &&
+            cars.map((car, index) => (
+              <motion.div
+                key={car.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900/60 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              >
+                <div className="relative h-40 sm:h-48 overflow-hidden">
+                  <img
+                    src={car.images[0]}
+                    alt={car.make + " " + car.model + " " + car.year}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                  />
                 </div>
-                <LoadingLink href={`/carDetails/${car.id}`} className="w-full">
-                  <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-2 sm:py-3 rounded-lg font-medium hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 text-sm sm:text-base">
-                    شارك في المزاد
-                  </button>
-                </LoadingLink>
-              </div>
-            </motion.div>
-          ))}
+                <div className="p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2 line-clamp-2">
+                    {car.make + " " + car.model + " " + car.year}
+                  </h3>
+                  <div className="flex justify-between items-center mb-3 sm:mb-4">
+                    <span className="text-fuchsia-300 font-bold text-base sm:text-lg">
+                      {car.active_auction.current_bid} ر.س
+                    </span>
+                    <span className="text-slate-400 text-xs sm:text-sm">
+                      {car.total_bids} مزايدة
+                    </span>
+                  </div>
+                  <LoadingLink href={`/carDetails/${car.id}`} className="w-full">
+                    <button className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-2 sm:py-3 rounded-lg font-medium hover:from-violet-700 hover:to-fuchsia-700 transition-all duration-300 text-sm sm:text-base">
+                      شارك في المزاد
+                    </button>
+                  </LoadingLink>
+                </div>
+              </motion.div>
+            ))}
         </div>
-
-       
       </div>
     </section>
   );
-}
+};
 
 export default function CarDetailPage() {
   console.log("Pusher Key:", process.env.NEXT_PUBLIC_PUSHER_APP_KEY);
@@ -139,6 +146,7 @@ export default function CarDetailPage() {
   let carId = params["id"];
   const [isOwner, setIsOwner] = useState(false);
   const [showBid, setShowBid] = useState(false);
+
   // التعامل مع تغيير قيم حقول النموذج
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -156,12 +164,10 @@ export default function CarDetailPage() {
     setSubmitResult(null);
 
     try {
-      // Check if there's an active auction first
       if (!formData.auction_id || formData.auction_id === 0) {
         throw new Error("هذه السيارة غير متاحة للمزايدة حالياً");
       }
 
-      // التحقق من البيانات المدخلة
       const requiredFields = ["bid_amount"];
       for (const field of requiredFields) {
         if (!formData[field as keyof BidingData]) {
@@ -171,7 +177,6 @@ export default function CarDetailPage() {
 
       formData.bid_amount = roundToNearest5or0(formData.bid_amount);
 
-      // إرسال بيانات المزايدة
       const response = await api.post("/api/auctions/bid", formData, {
         headers: {
           "Content-Type": "application/json",
@@ -183,26 +188,22 @@ export default function CarDetailPage() {
           success: true,
           message: "تم تقديم العرض بنجاح",
         });
-        // إعادة تعيين النموذج
         setFormData({
           auction_id: formData.auction_id,
           user_id: formData.user_id,
           bid_amount: 0,
         });
-        // setTimeout(() => {
-        //   window.location.reload();
-        // }, 2000);
       } else {
         toast.error("فشل في تقديم العرض");
       }
     } catch (error: any) {
       console.log(error);
-      console.error("خطأ في حفظ البيانات:", error.response.data.message);
+      console.error("خطأ في حفظ البيانات:", error?.response?.data?.message);
       setSubmitResult({
         success: false,
-        message: error.response.data.message || "حدث خطأ أثناء حفظ البيانات",
+        message: error?.response?.data?.message || "حدث خطأ أثناء حفظ البيانات",
       });
-      toast.error(error.response.data.message || "فشل في تقديم العرض");
+      toast.error(error?.response?.data?.message || "فشل في تقديم العرض");
     } finally {
       setIsSubmitting(false);
     }
@@ -211,7 +212,6 @@ export default function CarDetailPage() {
   // تقديم النموذج
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-
     setShowConfirm(true);
   };
 
@@ -222,13 +222,12 @@ export default function CarDetailPage() {
   // Verify user is authenticated (only redirect if auth loading is complete and user is not logged in)
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
-      // router.push("/auth/login?returnUrl=/dashboard/profile"); // Removed redirect to allow public access
+      // router.push("/auth/login?returnUrl=/dashboard/profile");
     }
   }, [isLoggedIn, authLoading, router]);
 
   // Fetch user profile data
   useEffect(() => {
-    // Don't fetch data if auth is still loading
     if (authLoading) return;
 
     setLoading(true);
@@ -244,10 +243,8 @@ export default function CarDetailPage() {
           setLastBid(
             roundToNearest5or0(carsData.active_auction?.current_bid || 0) + 100
           );
-          // تعامل مع هيكل البيانات من API
           setItem(carsData);
 
-          // Check if car has an active auction before setting auction_id
           if (carsData.active_auction && carsData.active_auction.id) {
             setFormData((prev) => ({
               ...prev,
@@ -278,14 +275,9 @@ export default function CarDetailPage() {
           }
 
           const auctionId = carsData.id;
-          console.log(`🎯 Setting up Echo listener for auction.${auctionId}`);
-
           var channel = pusher.subscribe(`auction.${auctionId}`);
 
           channel.bind("NewBidEvent", (event) => {
-            // add new price into the APPL widget
-            console.log("NewBidEvent received!");
-            console.log("Event data:", event.data);
             setItem((prevItem) => ({
               ...prevItem,
               active_auction: event.data.active_auction,
@@ -294,12 +286,11 @@ export default function CarDetailPage() {
             setLastBid(
               roundToNearest5or0(event.data.active_auction.current_bid) + 100
             );
-            //toast.success(`عرض جديد: ${event.data.active_auction.current_bid?.toLocaleString()} ريال`);
           });
         }
       } catch (error) {
         console.error("فشل تحميل بيانات المزاد الصامت", error);
-        setItem(null); // Set to null on error to prevent crash
+        setItem(null);
         setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
       } finally {
         setLoading(false);
@@ -308,12 +299,8 @@ export default function CarDetailPage() {
     fetchAuctions();
   }, [authLoading, isLoggedIn, carId, user]);
 
-  // Setup Echo listener for bid events when we have auction data
-
-  console.log("item", item);
-
-  const images = item ? item["car"]?.images?.length > 0 ? item["car"]?.images : [] : [];
-  // الصورة الحالية المختارة
+  const images =
+    item ? (item["car"]?.images?.length > 0 ? item["car"]?.images : []) : [];
   const currentImage = images[selectedImageIndex];
 
   const goToNextImage = () => {
@@ -321,489 +308,429 @@ export default function CarDetailPage() {
       prevIndex === images.length - 1 ? 0 : prevIndex + 1
     );
   };
-  // وظائف التنقل بين الصور
   const goToPreviousImage = () => {
     setSelectedImageIndex((prevIndex) =>
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     );
   };
 
-  // عرض بيانات السيارة إذا تم العثور عليها
   return (
     <>
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
-      {showImageModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowImageModal(false)}
-        >
-          <div className="relative w-full max-w-4xl mx-auto">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowImageModal(false);
-              }}
-              className="absolute top-0 right-0 m-4 text-white text-2xl z-10 hover:text-gray-300"
-            >
-              ✖
-            </button>
-            <img
-              src={currentImage}
-              alt={item?.title ?? ""}
-              className="max-w-full max-h-[80vh] mx-auto object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder-car.jpg";
-              }}
-            />
-            <div className="absolute inset-x-0 bottom-4 flex justify-center space-x-2 rtl:space-x-reverse">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedImageIndex(idx);
-                  }}
-                  className={`w-3 h-3 rounded-full ${
-                    idx === selectedImageIndex ? "bg-white" : "bg-gray-400"
-                  }`}
-                  aria-label={`عرض الصورة ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="max-w-6xl mx-auto">
-        {/* زر العودة */}
-        <div className="flex justify-between items-center mb-6">
-          <LoadingLink
-            href="/auctions"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
+      <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4">
+        {showImageModal && (
+          <div
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowImageModal(false)}
           >
-            <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
-            <span>العودة إلى الأسواق</span>
-          </LoadingLink>
-          {isOwner && (
-            <button
-              onClick={() => router.push(`/sales/confirm/${carId}`)}
-              className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded"
-            >
-              تأكيد البيع
-            </button>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 ">
-          {/* رسائل النظام */}
-          {submitResult && (
-            <div
-              className={`p-4 rounded-md ${
-                submitResult.success
-                  ? "bg-green-50 border border-green-200 mb-3"
-                  : "bg-red-50 border border-red-200 mb-3"
-              }`}
-            >
-              <div className="flex items-start">
-                {submitResult.success ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-red-500 ml-2" />
-                )}
-                <p
-                  className={
-                    submitResult.success ? "text-green-700" : "text-red-700"
-                  }
-                >
-                  {submitResult.message}
-                </p>
+            <div className="relative w-full max-w-4xl mx-auto">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowImageModal(false);
+                }}
+                className="absolute top-0 right-0 m-4 text-white text-2xl z-10 hover:text-slate-300"
+              >
+                ✖
+              </button>
+              <img
+                src={currentImage}
+                alt={item?.title ?? ""}
+                className="max-w-full max-h-[80vh] mx-auto object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-car.jpg";
+                }}
+              />
+              <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex(idx);
+                    }}
+                    className={`w-3 h-3 rounded-full ${
+                      idx === selectedImageIndex ? "bg-white" : "bg-slate-400"
+                    }`}
+                    aria-label={`عرض الصورة ${idx + 1}`}
+                  />
+                ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* قسم الصور (يمكن إضافته لاحقاً) */}
-            <div className="rounded-lg flex-direction-column items-center">
-              <div className="order-2 lg:order-1">
-                {/* الصورة الرئيسية */}
-                <div
-                  className="bg-gray-100 rounded-lg overflow-hidden relative cursor-pointer"
-                  onClick={() => setShowImageModal(true)}
-                >
-                  <img
-                    src={currentImage}
-                    alt={item?.title}
-                    className="w-full h-96 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/placeholder-car.jpg";
-                    }}
-                  />
+        <div className="max-w-6xl mx-auto">
+          {/* زر العودة + تأكيد البيع */}
+          <div className="flex justify-between items-center mb-6">
+            <LoadingLink
+              href="/auctions"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border border-slate-800 bg-slate-900/70 text-slate-100 hover:bg-slate-900/90 transition-colors"
+            >
+              <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
+              <span>العودة إلى الأسواق</span>
+            </LoadingLink>
 
-                  {/* أزرار التنقل بين الصور */}
-                  {images.length > 1 && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goToPreviousImage();
-                        }}
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70"
-                        aria-label="الصورة السابقة"
-                      >
-                        &lt;
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          goToNextImage();
-                        }}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70"
-                        aria-label="الصورة التالية"
-                      >
-                        &gt;
-                      </button>
-                    </>
+            {isOwner && (
+              <button
+                onClick={() => router.push(`/sales/confirm/${carId}`)}
+                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white py-2 px-6 rounded-lg shadow"
+              >
+                تأكيد البيع
+              </button>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 shadow-md overflow-hidden p-6">
+            {/* رسائل النظام */}
+            {submitResult && (
+              <div
+                className={`p-4 rounded-md mb-3 ${
+                  submitResult.success
+                    ? "bg-fuchsia-500/10 border border-fuchsia-400/30"
+                    : "bg-rose-500/10 border border-rose-400/30"
+                }`}
+              >
+                <div className="flex items-start">
+                  {submitResult.success ? (
+                    <CheckCircle2 className="h-5 w-5 text-fuchsia-400 ml-2" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-rose-400 ml-2" />
                   )}
+                  <p className={submitResult.success ? "text-fuchsia-200" : "text-rose-200"}>
+                    {submitResult.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* الصور */}
+              <div className="rounded-lg flex-direction-column items-center">
+                <div className="order-2 lg:order-1">
+                  {/* الصورة الرئيسية */}
+                  <div
+                    className="bg-slate-900 rounded-lg overflow-hidden relative cursor-pointer border border-slate-800"
+                    onClick={() => setShowImageModal(true)}
+                  >
+                    <img
+                      src={currentImage}
+                      alt={item?.title}
+                      className="w-full h-96 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder-car.jpg";
+                      }}
+                    />
+
+                    {/* أزرار التنقل بين الصور */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            goToPreviousImage();
+                          }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/70"
+                          aria-label="الصورة السابقة"
+                        >
+                          &lt;
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            goToNextImage();
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/70"
+                          aria-label="الصورة التالية"
+                        >
+                          &gt;
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* شريط الصور المصغرة */}
+                  <div className="mt-4 grid grid-cols-4 gap-2">
+                    {images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`cursor-pointer border-2 rounded-md overflow-hidden ${
+                          idx === selectedImageIndex
+                            ? "border-fuchsia-500 ring-2 ring-fuchsia-300/40"
+                            : "border-slate-700 hover:border-slate-500"
+                        }`}
+                        onClick={() => setSelectedImageIndex(idx)}
+                      >
+                        <img
+                          src={img}
+                          alt={`صورة ${idx + 1}`}
+                          className="w-full h-16 object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/placeholder-car.jpg";
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* معلومات السعر للشاشات الصغيرة */}
+                  <div className="mt-6 block lg:hidden">
+                    <div className="mb-6 bg-slate-950/60 p-4 rounded-lg border border-slate-800">
+                      <div className="text-2xl font-bold text-fuchsia-300">
+                        السعر الحالي:{" "}
+                        <PriceWithIcon
+                          price={item?.active_auction?.current_bid?.toLocaleString() || 0}
+                        />
+                      </div>
+                      {item?.auction_result && (
+                        <p className="text-lg text-fuchsia-300/90 mt-2">
+                          {item.auction_result}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* شريط الصور المصغرة */}
-                <div className="mt-4 grid grid-cols-4 gap-2">
-                  {images.map((img, idx) => (
-                    <div
-                      key={idx}
-                      className={`cursor-pointer border-2 rounded-md overflow-hidden ${
-                        idx === selectedImageIndex
-                          ? "border-blue-500 ring-2 ring-blue-300"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      onClick={() => setSelectedImageIndex(idx)}
+                {/* زر قدم عرضك أو نموذج المزايدة */}
+                {!isOwner && item?.active_auction && (
+                  !showBid ? (
+                    <button
+                      hidden={isOwner}
+                      onClick={() => setShowBid(!isOwner)}
+                      className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white py-2 rounded-lg hover:from-violet-700 hover:to-fuchsia-700 font-bold text-xl border border-fuchsia-700/40 shadow-lg transform hover:scale-105 mt-2"
                     >
-                      <img
-                        src={img}
-                        alt={`صورة ${idx + 1}`}
-                        className="w-full h-16 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "/placeholder-car.jpg";
+                      <span className="flex items-center justify-center">
+                        <Plus className="h-5 w-5 mr-1.5" />
+                        قدم عرضك
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="max-w-md mx-auto mt-2 bg-slate-900/60 p-6 rounded-3xl shadow-lg border border-slate-800" dir="rtl">
+                      <BidForm
+                        auction_id={parseInt(item.active_auction.id)}
+                        bid_amount={parseInt(
+                          (item.active_auction.current_bid == 0
+                            ? item.active_auction.opening_price || 0
+                            : item.active_auction.current_bid || 0
+                          )
+                            .toString()
+                            .replace(/,/g, "")
+                        )}
+                        onSuccess={() => {
+                          toast.success("تم تقديم العرض بنجاح");
                         }}
                       />
                     </div>
-                  ))}
-                </div>
+                  )
+                )}
 
-                {/* معلومات السعر للشاشات الصغيرة */}
-                <div className="mt-6 block lg:hidden">
-                  <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="text-2xl font-bold text-blue-600">
-                      السعر الحالي:{" "}
-                      <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || 0} />
-                     {/*  {item && item.active_auction
-                       ? item.active_auction?.current_bid?.toLocaleString()
-                       : item?.car?.max_price?.toLocaleString()}{" "} */}
-                    </div>
-                    {item?.auction_result && (
-                      <p className="text-lg text-green-600 mt-2">
-                        {item.auction_result}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {!isOwner && item?.active_auction && (
-                !showBid ? (
-                  <button
-                    hidden={isOwner}
-                    onClick={() => setShowBid(!isOwner)}
-                    className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 mt-2"
-                  >
-                    <span className="flex items-center justify-center">
-                      <Plus className="h-5 w-5 mr-1.5" />
-                      قدم عرضك
-                    </span>
-                  </button>
-                ) : (
-                <div
-                  className="max-w-md mx-auto mt-2 bg-white p-6 rounded-3xl shadow-lg border"
-                  dir="rtl"
-                >
-                  <BidForm
-                    auction_id={parseInt(item.active_auction.id)}
-                    bid_amount={parseInt(
-                      (item.active_auction.current_bid == 0
-                        ? item.active_auction.opening_price || 0
-                        : item.active_auction.current_bid || 0
-                      )
-                        .toString()
-                        .replace(/,/g, "")
-                    )}
-                    onSuccess={() => {
-                      toast.success("تم تقديم العرض بنجاح");
-                    }}
-                  />
-                  {/*<h2 className="text-2xl font-bold text-center mb-4 text-gray-800">
-                    تقديم عرض على السيارة
-                  </h2>
-                   <form onSubmit={handleSubmit}>
-                    <label className="block mb-2 font-semibold text-gray-700">
-                      قيمة العرض (ريال سعودي):
-                    </label>
-                    <input
-                      type="number"
-                      id="bid_amount"
-                      name="bid_amount"
-                      className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      placeholder={`الحد الأدنى: ${lastbid} ريال`}
-                      value={formData.bid_amount}
-                      onChange={handleInputChange}
-                      min={lastbid}
-                      step="5"
-                      required
-                    />
-                    <p className="text-sm text-gray-500 mb-4">
-                      الحد الأدنى للمزايدة: {lastbid.toLocaleString()} ريال
-                    </p>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                {/* آخر المزايدين */}
+                {item?.active_auction && (
+                  <div className="mt-3 border-t border-slate-800 pt-3">
+                    <h4 className="text-lg font-bold text-slate-200 mb-2">آخر المزايدين</h4>
+                    <List
+                      dir="rtl"
+                      sx={{
+                        width: '100%',
+                        maxWidth: 460,
+                        bgcolor: 'background.paper',
+                        position: 'relative',
+                        overflow: 'auto',
+                        maxHeight: 400,
+                      }}
                     >
-                      {isSubmitting ? "جاري الإرسال..." : "إرسال العرض"}
-                    </button>
-                  </form>
-
-                  {/* Confirmation Dialog /}
-                  {showConfirm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div
-                        className="bg-white rounded-lg p-6 max-w-md mx-4"
-                        dir="rtl"
-                      >
-                        <h3 className="text-lg font-bold mb-4 text-gray-800">
-                          تأكيد المزايدة
-                        </h3>
-                        <p className="text-gray-600 mb-6">
-                          هل أنت متأكد من تقديم عرض بقيمة{" "}
-                          {formData.bid_amount?.toLocaleString()} ريال على هذه
-                          السيارة؟
-                        </p>
-                        <div className="flex gap-4">
-                          <button
-                            onClick={confirmSubmit}
-                            disabled={isSubmitting}
-                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50"
-                          >
-                            {isSubmitting ? "جاري الإرسال..." : "تأكيد"}
-                          </button>
-                          <button
-                            onClick={() => setShowConfirm(false)}
-                            disabled={isSubmitting}
-                            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200 disabled:opacity-50"
-                          >
-                            إلغاء
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )} */}
-                </div>
-                )
-              )}
-
-              {item?.active_auction && (
-                <div  className="mt-3 border-t border-gray-200 pt-3">
-                  <h4 className="text-lg font-bold text-gray-600 mb-2">آخر المزايدين</h4>
-                  <List dir="rtl" sx={{width: '100%',
-                      maxWidth: 460,
-                      bgcolor: 'background.paper',
-                      position: 'relative',
-                      overflow: 'auto',
-                      maxHeight: 400,
-                      }}>
-                   
-                      {item.active_auction.bids.map((bid)=>{
-                        return (  
-                        <ListItem key={bid.id} component="div" disablePadding>
-                          <ListItemButton>
-                            <ListItemText dir="rtl" sx={{textAlign:"right" }} primary={`#${ bid.user_id }`} />
-                            <ListItemText dir="rtl" sx={{textAlign:"right" }} primary={bid.created_at} />
-                            <PriceWithIcon className="text-right font-bold" price={bid.bid_amount}/>
-                          </ListItemButton>
-                      </ListItem>)
+                      {item.active_auction.bids.map((bid) => {
+                        return (
+                          <ListItem key={bid.id} component="div" disablePadding>
+                            <ListItemButton>
+                              <ListItemText dir="rtl" sx={{ textAlign: "right" }} primary={`#${bid.user_id}`} />
+                              <ListItemText dir="rtl" sx={{ textAlign: "right" }} primary={bid.created_at} />
+                              <PriceWithIcon className="text-right font-bold" price={bid.bid_amount} />
+                            </ListItemButton>
+                          </ListItem>
+                        );
                       })}
-                  </List>
-                </div>
-            )}
+                    </List>
+                  </div>
+                )}
 
-              {!isOwner && !item?.active_auction && (
-                <div
-                  className="max-w-md mx-auto bg-gray-50 p-6 rounded-3xl shadow-lg border border-gray-200"
-                  dir="rtl"
-                >
-                  <h2 className="text-xl font-bold text-center mb-4 text-gray-600">
-                    غير متاح للمزايدة
-                  </h2>
-                  <p className="text-center text-gray-500">
-                    هذه السيارة غير مدرجة في مزاد حالياً. يرجى المراجعة لاحقاً
-                    أو تصفح السيارات المتاحة للمزاد.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* بيانات السيارة */}
-            <div>
-              {item?.active_auction ? (
-                <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <p className="text-gray-500">  آخر سعر:</p>
-                  <div className="text-2xl font-bold text-blue-600">
-                    <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || "-"} />
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <p className="text-xl font-bold text-yellow-700">
-                    هذه السيارة غير متاحة للمزايدة حالياً
-                  </p>
-                  <p className="text-sm text-yellow-600 mt-1">
-                    السيارة متاحة للعرض فقط أو في انتظار الموافقة للمزاد
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 text-sm">الماركة</p>
-                    <p className="font-semibold">{item?.car?.make}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">الموديل</p>
-                    <p className="font-semibold">{item?.car?.model}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">سنة الصنع</p>
-                    <p className="font-semibold">{item?.car?.year}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">رقم اللوحة</p>
-                    <p className="font-semibold">{item?.car?.plate}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">رقم العداد</p>
-                    <p className="font-semibold">
-                      {item?.car?.odometer?.toLocaleString() || "-"} كم
+                {!isOwner && !item?.active_auction && (
+                  <div className="max-w-md mx-auto bg-slate-900/60 p-6 rounded-3xl shadow-lg border border-slate-800" dir="rtl">
+                    <h2 className="text-xl font-bold text-center mb-2 text-slate-200">
+                      غير متاح للمزايدة
+                    </h2>
+                    <p className="text-center text-slate-400">
+                      هذه السيارة غير مدرجة في مزاد حالياً. يرجى المراجعة لاحقاً
+                      أو تصفح السيارات المتاحة للمزاد.
                     </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">نوع الوقود</p>
-                    <p className="font-semibold">{item?.car?.engine || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">حالة السيارة</p>
-                    <p className="font-semibold">
-                      {item?.car?.condition || "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">لون السيارة</p>
-                    <p className="font-semibold">{item?.car?.color || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">صورة كرت التسجيل</p>
-                    <p className="font-semibold">
-                      {item?.car?.registration_card_image ? (
-                        <a
-                          href={item?.car?.registration_card_image}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block"
-                        >
-                          <img
-                            src={item?.car?.registration_card_image}
-                            alt="صورة كرت التسجيل"
-                            className="w-20 h-auto rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                          />
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm">تقارير الفحص</p>
-                    <p className="font-semibold">
-                      {item?.car?.report_images.map((file: any) => (
-                        <div key={file.id}>
-                          <a href={file.image_path}>
-                            {file.image_path.split("/").pop()}
-                          </a>
-                        </div>
-                      )) || "-"}
-                    </p>
-                  </div>
-                </div>
-
-                {item?.active_auction ? (
-                  <div className="pt-4 border-t">
-                    <p className="text-gray-500 text-sm mb-2">معلومات المزاد</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-gray-500 text-sm">سعر الإفتتاح</p>
-                        <p className="font-semibold">
-                          <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-sm">أقل سعر</p>
-                        <p className="font-semibold">
-                          <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-sm">أعلى سعر</p>
-                        <p className="font-semibold">
-                          <PriceWithIcon price={item?.active_auction?.maximum_bid?.toLocaleString() || "-"} />
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-sm">
-                          المزايدات المقدمة
-                        </p>
-                        <p className="font-semibold">
-                          {item?.total_bids || "0"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-sm">مبلغ المزايدة</p>
-                        <p className="font-semibold text-green-500">
-                          {(() => {
-                            const bids = item?.active_auction?.bids || [];
-                            const lastBid =
-                              bids.length > 0 ? bids[bids.length - 1] : null;
-                            return lastBid ? lastBid.increment : 0;
-                          })()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="pt-4 border-t">
-                    <p className="text-gray-500 text-sm mb-2">حالة السيارة</p>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        هذه السيارة غير مدرجة في مزاد حالياً. قد تكون متاحة
-                        للعرض أو في انتظار الموافقة للمزاد.
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
+
+              {/* بيانات السيارة */}
+              <div>
+                {item?.active_auction ? (
+                  <div className="mb-6 bg-fuchsia-500/10 p-4 rounded-lg border border-fuchsia-400/30">
+                    <p className="text-slate-300">آخر سعر:</p>
+                    <div className="text-2xl font-bold text-fuchsia-300">
+                      <PriceWithIcon
+                        price={item?.active_auction?.current_bid?.toLocaleString() || "-"}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-6 bg-amber-500/10 p-4 rounded-lg border border-amber-400/30">
+                    <p className="text-xl font-bold text-amber-200">
+                      هذه السيارة غير متاحة للمزايدة حالياً
+                    </p>
+                    <p className="text-sm text-amber-300 mt-1">
+                      السيارة متاحة للعرض فقط أو في انتظار الموافقة للمزاد
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-slate-400 text-sm">الماركة</p>
+                      <p className="font-semibold">{item?.car?.make}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">الموديل</p>
+                      <p className="font-semibold">{item?.car?.model}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">سنة الصنع</p>
+                      <p className="font-semibold">{item?.car?.year}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">رقم اللوحة</p>
+                      <p className="font-semibold">{item?.car?.plate}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">رقم العداد</p>
+                      <p className="font-semibold">
+                        {item?.car?.odometer?.toLocaleString() || "-"} كم
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">نوع الوقود</p>
+                      <p className="font-semibold">{item?.car?.engine || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">حالة السيارة</p>
+                      <p className="font-semibold">{item?.car?.condition || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">لون السيارة</p>
+                      <p className="font-semibold">{item?.car?.color || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">صورة كرت التسجيل</p>
+                      <p className="font-semibold">
+                        {item?.car?.registration_card_image ? (
+                          <a
+                            href={item?.car?.registration_card_image}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block"
+                          >
+                            <img
+                              src={item?.car?.registration_card_image}
+                              alt="صورة كرت التسجيل"
+                              className="w-20 h-auto rounded border border-slate-800 cursor-pointer hover:opacity-80 transition-opacity"
+                            />
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-sm">تقارير الفحص</p>
+                      <p className="font-semibold">
+                        {item?.car?.report_images.map((file: any) => (
+                          <div key={file.id}>
+                            <a href={file.image_path} className="text-fuchsia-300 hover:text-fuchsia-200 underline-offset-4 hover:underline">
+                              {file.image_path.split("/").pop()}
+                            </a>
+                          </div>
+                        )) || "-"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {item?.active_auction ? (
+                    <div className="pt-4 border-t border-slate-800">
+                      <p className="text-slate-400 text-sm mb-2">معلومات المزاد</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-slate-400 text-sm">سعر الإفتتاح</p>
+                          <p className="font-semibold">
+                            <PriceWithIcon
+                              price={
+                                item?.active_auction?.minimum_bid?.toLocaleString() ||
+                                "-"
+                              }
+                            />
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-sm">أقل سعر</p>
+                          <p className="font-semibold">
+                            <PriceWithIcon
+                              price={
+                                item?.active_auction?.minimum_bid?.toLocaleString() ||
+                                "-"
+                              }
+                            />
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-sm">أعلى سعر</p>
+                          <p className="font-semibold">
+                            <PriceWithIcon
+                              price={
+                                item?.active_auction?.maximum_bid?.toLocaleString() ||
+                                "-"
+                              }
+                            />
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-sm">المزايدات المقدمة</p>
+                          <p className="font-semibold">{item?.total_bids || "0"}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-sm">مبلغ المزايدة</p>
+                          <p className="font-semibold text-fuchsia-300">
+                            {(() => {
+                              const bids = item?.active_auction?.bids || [];
+                              const lastBid = bids.length > 0 ? bids[bids.length - 1] : null;
+                              return lastBid ? lastBid.increment : 0;
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pt-4 border-t border-slate-800">
+                      <p className="text-slate-400 text-sm mb-2">حالة السيارة</p>
+                      <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800">
+                        <p className="text-sm text-slate-400">
+                          هذه السيارة غير مدرجة في مزاد حالياً. قد تكون متاحة
+                          للعرض أو في انتظار الموافقة للمزاد.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
+
+          <FeaturedCars cars={item?.similar_cars} />
         </div>
-          <FeaturedCars cars={item?.similar_cars}/>
       </div>
-    </div>
     </>
   );
 }
