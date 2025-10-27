@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\AuctionSessionController;
 use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
+use App\Http\Controllers\Admin\CarController as AdminCarController;
 
 // Health check endpoint for Render.com
 Route::get('/health', function () {
@@ -311,10 +312,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/bids/events/{id}', [BidEventController::class, 'show']);
 
     // Admin car management
-    Route::get('/cars', [AdminController::class, 'getAllCars']);
-    Route::put('/cars/{id}', [AdminController::class, 'updateCar']);
-    Route::put('/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
-    Route::delete('/cars/{id}', [AdminController::class, 'deleteCar']);
+    Route::get('/cars', [AdminCarController::class, 'index']);
+    Route::get('/cars/{id}', [AdminCarController::class, 'show']);
+    Route::put('/cars/{id}', [AdminCarController::class, 'update']);
+    Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus']);
+    Route::delete('/cars/{id}', [AdminCarController::class, 'destroy']);
 
 
     // Admin blog management

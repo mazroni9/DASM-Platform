@@ -669,7 +669,7 @@ export default function AdminCarsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center space-x-2 space-x-reverse">
-                                                <button onClick={() => redirect(`/admin/carDetailsPreview/${car.id}`)} className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 p-2 rounded-lg transition-all duration-300" title="عرض التفاصيل">
+                                                <button onClick={() => redirect(`/admin/cars/${car.id}`)} className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 p-2 rounded-lg transition-all duration-300" title="عرض التفاصيل">
                                                     <Eye size={16} />
                                                 </button>
                                                 
