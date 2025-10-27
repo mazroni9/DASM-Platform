@@ -19,6 +19,9 @@ use App\Http\Resources\CarCardResource;
 use App\Http\Resources\CarCollection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use App\Models\User;
+use App\Notifications\NewCarAddedNotification;
+use Illuminate\Support\Facades\Notification;
 
 class CarController extends Controller
 {
@@ -253,6 +256,11 @@ class CarController extends Controller
             $car->registration_card_image = $uploadedRegistrationCardImage;
             $car->save();
         }
+
+        // إرسال إشعار للمشرفين
+        $car->refresh();
+        $admins = User::where('role', 'admin')->get();
+        Notification::send($admins, new NewCarAddedNotification($car->load('user')));
 
         return response()->json([
             'status' => 'success',

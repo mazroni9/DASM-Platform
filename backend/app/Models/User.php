@@ -216,4 +216,9 @@ public function venueOwner()
     {
         return $this->role->canAccessInvestments();
     }
+
+    public function getNameAttribute(): string
+    {
+        return $this->first_name . ' ' . $this->last_name;
+    }
 }
