@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('auction_sessions', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->onDelete('cascade');
+            if (!Schema::hasColumn('auction_sessions', 'user_id')) {
+                $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->onDelete('cascade');
+            }
         });
     }
 
@@ -22,8 +24,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('auction_sessions', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropColumn('user_id');
+            if (Schema::hasColumn('auction_sessions', 'user_id')) {
+                $table->dropForeign(['user_id']);
+                $table->dropColumn('user_id');
+            }
         });
     }
 };
