@@ -32,4 +32,25 @@ class VenueOwner extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function reviews()
+{
+    return $this->hasMany(VenueOwnerReview::class);
+}
+
+/**
+ * أعد حساب المتوسط وخزّنه في عمود venue_owners.rating
+ * - يأخذ فقط المراجعات المعتمدة is_approved = true
+ */
+public function recalcRating(): void
+{
+    $avg = (float) $this->reviews()
+        ->where('is_approved', true)
+        ->avg('rating');
+
+    // خزّنه بمنزلتين
+    $this->rating = number_format($avg ?: 0, 2, '.', '');
+    $this->save();
+}
+
 }

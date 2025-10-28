@@ -10,7 +10,7 @@ import api from '@/lib/axios'
 import { format } from 'date-fns'
 import { ar } from 'date-fns/locale'
 
-/** ========= الإعدادات (بدون تعديل على المنطق) ========= **/
+/** ========= الإعدادات ========= **/
 const API_ROOT = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
 const API_BASE = `${API_ROOT}/api`
 const TOKEN_KEY = 'token'
@@ -19,6 +19,7 @@ function getToken(): string | null {
   if (typeof window === 'undefined') return null
   const raw = localStorage.getItem(TOKEN_KEY)
   if (!raw) return null
+  // إزالة علامات اقتباس محتملة من التخزين
   return raw.replace(/^"(.+)"$/, '$1')
 }
 
@@ -29,7 +30,7 @@ function authHeaders() {
   return h
 }
 
-// جلب JSON مع رسائل أخطاء واضحة (كما هي)
+// جلب JSON مع رسائل أخطاء واضحة
 async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -63,12 +64,12 @@ function arStatusLabel(s: string) {
   }
 }
 
-// ألوان الشارة — تحسين بصري فقط
+// ألوان الشارة (مخفّضة اللمعان)
 function statusChipColor(s: string) {
-  return s === 'live' ? 'bg-emerald-600 text-white'
-    : s === 'scheduled' ? 'bg-amber-500 text-white'
-    : s === 'ended' ? 'bg-rose-600 text-white'
-    : 'bg-slate-600 text-white'
+  return s === 'live' ? 'bg-emerald-600/90 text-white'
+    : s === 'scheduled' ? 'bg-amber-500/90 text-white'
+    : s === 'ended' ? 'bg-rose-600/90 text-white'
+    : 'bg-slate-600/90 text-white'
 }
 
 type AuctionStatusApi = 'scheduled' | 'live' | 'ended' | 'canceled' | 'failed' | 'completed'
@@ -131,7 +132,7 @@ interface UiAuction {
   owner?: string
 }
 
-/** شكل الجلسة طبقًا لمسار الباك الجديد (بدون تغيير) **/
+/** شكل الجلسة طبقًا لمسار الباك الجديد **/
 interface AuctionSession {
   id: number
   name: string
@@ -146,7 +147,7 @@ interface AuctionSession {
 const PLACEHOLDER_IMG =
   'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop'
 
-/** ========= عدّاد تنازلي ========= **/
+/** ========= عدّاد تنازلي صغير/واضح ========= **/
 function Countdown({ endIso }: { endIso: string }) {
   const [t, setT] = useState('')
   useEffect(() => {
@@ -164,7 +165,7 @@ function Countdown({ endIso }: { endIso: string }) {
     const id = setInterval(update, 1000)
     return () => clearInterval(id)
   }, [endIso])
-  return <span className="font-mono text-sm">{t}</span>
+  return <span className="font-mono text-xs md:text-sm">{t}</span>
 }
 
 /** ========= Utilities ========= **/
@@ -228,7 +229,7 @@ async function fetchMyCarsOnly(): Promise<CarApi[]> {
   return []
 }
 
-/** ========= جلب الجلسات من المسار العام الجديد ========= **/
+/** ========= جلب الجلسات العامة ========= **/
 async function fetchPublicSessions(): Promise<AuctionSession[]> {
   try {
     const js: any = await fetchJSON(`${API_BASE}/sessions/active-scheduled?with_counts=1`)
@@ -246,7 +247,7 @@ function sessionLabel(s: AuctionSession) {
   return `${s.name}${dateTxt}`
 }
 
-/** ========= مودال إنشاء مزاد فوري الآن (تحسينات شكل فقط) ========= **/
+/** ========= مودال إنشاء مزاد فوري (تصميم مضغوط) ========= **/
 function StartLiveModal({
   open, onClose, onCreated
 }: {
@@ -286,10 +287,7 @@ function StartLiveModal({
           setLoadingCars(true)
           setLoadingSessions(true)
 
-          const [mine, sess] = await Promise.all([
-            fetchMyCarsOnly(),
-            fetchPublicSessions(),
-          ])
+          const [mine, sess] = await Promise.all([fetchMyCarsOnly(), fetchPublicSessions()])
 
           setCars(Array.isArray(mine) ? mine : [])
           setSessions(Array.isArray(sess) ? sess : [])
@@ -297,7 +295,6 @@ function StartLiveModal({
           if (Array.isArray(mine) && mine.length === 0) {
             setErrors(prev => ({ ...prev, carsEmpty: 'لا توجد سيارات مرتبطة بحسابك.' }))
           }
-
           if (!sess || sess.length === 0) {
             setSessionsError('لا توجد جلسات متاحة (active / scheduled).')
           }
@@ -394,27 +391,27 @@ function StartLiveModal({
           aria-modal="true" role="dialog"
         >
           <motion.div
-            initial={{ scale: .95, opacity: 0, y: 20 }}
+            initial={{ scale: .96, opacity: 0, y: 16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: .95, opacity: 0, y: 20 }}
+            exit={{ scale: .96, opacity: 0, y: 16 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-            className="bg-slate-900/95 text-slate-100 w-full max-w-xl rounded-2xl shadow-2xl p-6 relative border border-slate-800"
+            className="bg-slate-900/95 text-slate-100 w-full max-w-xl rounded-2xl shadow-2xl p-5 md:p-6 relative border border-slate-800"
             onMouseDown={e => e.stopPropagation()}
           >
             <button onClick={onClose} className="absolute left-4 top-4 text-slate-400 hover:text-slate-200" aria-label="إغلاق">
-              <FiX size={22} />
+              <FiX size={20} />
             </button>
-            <h2 className="text-2xl font-bold mb-4 text-center">بدء حراج مباشر الآن</h2>
+            <h2 className="text-xl md:text-2xl font-bold mb-4 text-center">بدء حراج مباشر الآن</h2>
 
             {errors.global && <div className="mb-3 p-3 rounded-lg bg-rose-900/30 border border-rose-700 text-rose-200 text-sm whitespace-pre-wrap">{errors.global}</div>}
 
             <form onSubmit={submit} className="space-y-4">
               {/* السيارة */}
               <div>
-                <label className="block mb-1 text-slate-300">السيارة</label>
+                <label className="block mb-1 text-slate-300 text-sm">السيارة</label>
                 <select
                   ref={firstInputRef}
-                  className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.car_id ? 'border-rose-600' : 'border-slate-700'}`}
+                  className={`w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.car_id ? 'border-rose-600' : 'border-slate-700'}`}
                   value={form.car_id}
                   onChange={e => onSelectCar(e.target.value)}
                 >
@@ -431,9 +428,9 @@ function StartLiveModal({
 
               {/* الجلسة */}
               <div>
-                <label className="block mb-1 text-slate-300">الجلسة</label>
+                <label className="block mb-1 text-slate-300 text-sm">الجلسة</label>
                 <select
-                  className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.session_id ? 'border-rose-600' : 'border-slate-700'}`}
+                  className={`w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.session_id ? 'border-rose-600' : 'border-slate-700'}`}
                   value={form.session_id}
                   onChange={e => setForm(f => ({ ...f, session_id: e.target.value }))}
                 >
@@ -454,10 +451,10 @@ function StartLiveModal({
 
               {/* سعر السيارة (عرض فقط) */}
               <div>
-                <label className="block mb-1 text-slate-300">سعر السيارة (تقييم)</label>
+                <label className="block mb-1 text-slate-300 text-sm">سعر السيارة (تقييم)</label>
                 <input
                   type="number"
-                  className="w-full px-4 py-2 rounded-lg outline-none bg-slate-900/60 text-slate-200 border border-slate-700"
+                  className="w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/60 text-slate-200 border border-slate-700"
                   value={form.car_price}
                   readOnly
                   placeholder="يُملأ تلقائيًا من تقييم السيارة"
@@ -466,10 +463,10 @@ function StartLiveModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-slate-300">سعر البدء (ر.س)</label>
+                  <label className="block mb-1 text-slate-300 text-sm">سعر البدء (ر.س)</label>
                   <input
                     type="number"
-                    className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.starting_bid ? 'border-rose-600' : 'border-slate-700'}`}
+                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.starting_bid ? 'border-rose-600' : 'border-slate-700'}`}
                     value={form.starting_bid}
                     onChange={e => setForm(f => ({ ...f, starting_bid: e.target.value }))}
                     min={1000}
@@ -480,19 +477,19 @@ function StartLiveModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-slate-300">حد أدنى موصى به</label>
-                <input
+                  <label className="block mb-1 text-slate-300 text-sm">حد أدنى موصى به</label>
+                  <input
                     type="number"
-                    className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.minmax ? 'border-rose-600' : 'border-slate-700'}`}
+                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.minmax ? 'border-rose-600' : 'border-slate-700'}`}
                     value={form.min_price}
                     onChange={e => setForm(f => ({ ...f, min_price: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-slate-300">حد أقصى موصى به</label>
+                  <label className="block mb-1 text-slate-300 text-sm">حد أقصى موصى به</label>
                   <input
                     type="number"
-                    className={`w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.minmax ? 'border-rose-600' : 'border-slate-700'}`}
+                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 ${errors.minmax ? 'border-rose-600' : 'border-slate-700'}`}
                     value={form.max_price}
                     onChange={e => setForm(f => ({ ...f, max_price: e.target.value }))}
                   />
@@ -502,7 +499,7 @@ function StartLiveModal({
 
               <button
                 type="submit"
-                className="w-full py-3 mt-2 rounded-lg font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 transition-colors text-lg"
+                className="w-full py-2.5 mt-1 rounded-lg font-semibold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 transition-colors text-base"
               >
                 بدء الحراج الآن
               </button>
@@ -514,7 +511,7 @@ function StartLiveModal({
   )
 }
 
-/** ========= الصفحة الرئيسية (تحسينات شكل فقط) ========= **/
+/** ========= الصفحة الرئيسية (تصميم مضغوط ومتسق) ========= **/
 export default function DealerAuctionsPage() {
   const [list, setList] = useState<UiAuction[]>([])
   const [loading, setLoading] = useState(true)
@@ -591,9 +588,7 @@ export default function DealerAuctionsPage() {
       setTotal(prev => (prev !== pg.total ? pg.total : prev))
       setLastPage(prev => (prev !== pg.last_page ? pg.last_page : prev))
     } catch (e: any) {
-      if (e?.name === 'AbortError') {
-        // تجاهل الخطأ لأننا ألغينا الطلب السابق عمدًا
-      } else {
+      if (e?.name !== 'AbortError') {
         setError(e.message || 'حدث خطأ')
         setList([])
       }
@@ -623,7 +618,7 @@ export default function DealerAuctionsPage() {
     }, 5000)
 
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null } }
-  }, [hasLive, page, statusFilter]) // مش مرتبط بـ list مباشرة لتقليل resets
+  }, [hasLive, page, statusFilter])
 
   // بحث محلي باسم السيارة/الحالة
   const filtered = useMemo(() => {
@@ -644,28 +639,40 @@ export default function DealerAuctionsPage() {
     setPage(1)
   }
 
+  // مساعد لعرض صورة مع fallback
+  const imgOnError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    (e.target as HTMLImageElement).src = PLACEHOLDER_IMG
+  }
+
+  // توليد أزرار صفحات مختصرة حول الصفحة الحالية
+  const pageWindow = (current: number, last: number, span = 2) => {
+    const from = Math.max(1, current - span)
+    const to = Math.min(last, current + span)
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i)
+  }
+
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div dir="rtl" className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-100 py-6 md:py-8 px-4 sm:px-6 lg:px-8">
       <StartLiveModal open={showModal} onClose={() => setShowModal(false)} onCreated={onCreated} />
       <div className="max-w-7xl mx-auto">
         {/* العنوان */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <motion.h1
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-3xl font-extrabold mb-2 flex items-center gap-2"
+              transition={{ duration: 0.35 }}
+              className="text-2xl md:text-3xl font-extrabold mb-1.5 flex items-center gap-2"
             >
               <FaGavel className="text-violet-400" />
               حراج المعرض
             </motion.h1>
-            <p className="text-slate-400">إدارة مزاداتك الحيّة والفورية من مكان واحد.</p>
+            <p className="text-slate-400 text-sm md:text-base">إدارة مزاداتك الحيّة والفورية من مكان واحد.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 md:gap-3">
             <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center px-5 py-3 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors"
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}
+              className="flex items-center justify-center px-4 md:px-5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors text-sm md:text-base"
               onClick={() => fetchAuctions({ page, status: statusFilter, silent: false })}
               aria-label="تحديث"
               title="تحديث"
@@ -674,8 +681,8 @@ export default function DealerAuctionsPage() {
               {bgLoading ? 'جارٍ التحديث...' : 'تحديث'}
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="flex items-center justify-center px-6 py-3 rounded-xl text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg"
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}
+              className="flex items-center justify-center px-5 md:px-6 py-2.5 rounded-xl text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg text-sm md:text-base"
               onClick={() => setShowModal(true)}
               aria-label="بدء حراج مباشر"
             >
@@ -686,24 +693,25 @@ export default function DealerAuctionsPage() {
         </div>
 
         {/* شريط البحث والفلاتر */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-5 md:mb-6">
           <motion.div className="relative flex-grow" whileHover={{ scale: 1.01 }}>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               <FiSearch className="text-slate-400" />
             </div>
             <input
               type="text"
+              aria-label="بحث"
               placeholder="ابحث باسم السيارة..."
-              className="w-full pr-10 pl-4 py-3 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+              className="w-full pr-10 pl-3 md:pl-4 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm md:text-base"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </motion.div>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center justify-center px-6 py-3 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors"
+            className="flex items-center justify-center px-5 py-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors text-sm md:text-base"
           >
             <FiFilter className="ml-2" />
             <span>الفلاتر</span>
@@ -718,15 +726,15 @@ export default function DealerAuctionsPage() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
-              className="bg-slate-900/70 text-slate-100 p-6 rounded-xl shadow-xl border border-slate-800 mb-6 overflow-hidden"
+              className="bg-slate-900/70 text-slate-100 p-4 md:p-5 rounded-xl shadow-xl border border-slate-800 mb-5 md:mb-6 overflow-hidden"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 mb-2">حالة المزاد</label>
+                  <label className="block text-slate-300 mb-1.5 text-sm">حالة المزاد</label>
                   <select
                     value={statusFilter}
                     onChange={e => { setStatusFilter(e.target.value as any); setPage(1) }}
-                    className="w-full px-4 py-2 rounded-lg outline-none bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+                    className="w-full px-3 py-2.5 rounded-lg outline-none bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
                   >
                     <option value="">الكل</option>
                     <option value="live">جاري</option>
@@ -735,12 +743,11 @@ export default function DealerAuctionsPage() {
                   </select>
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-4">
+              <div className="mt-4 md:mt-5 flex justify-end gap-3">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}
                   onClick={() => { setStatusFilter(''); setShowFilters(false); setPage(1) }}
-                  className="px-6 py-2 rounded-lg text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
+                  className="px-5 py-2 rounded-lg text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-sm"
                 >
                   تطبيق
                 </motion.button>
@@ -749,55 +756,37 @@ export default function DealerAuctionsPage() {
           )}
         </AnimatePresence>
 
-        {/* إحصائيات سريعة */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800"
-          >
-            <h3 className="text-slate-400 mb-2">إجمالي (صفحة حالية)</h3>
-            <p className="text-3xl font-bold text-slate-100">{filtered.length}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800"
-          >
-            <h3 className="text-slate-400 mb-2">جارية</h3>
-            <p className="text-3xl font-bold text-emerald-400">{liveCount}</p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-            className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800"
-          >
-            <h3 className="text-slate-400 mb-2">منتهية</h3>
-            <p className="text-3xl font-bold text-rose-400">{endedCount}</p>
-          </motion.div>
+        {/* إحصائيات سريعة (أحجام أصغر) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-5 md:mb-6">
+          <StatCard title="إجمالي (الصفحة الحالية)" value={filtered.length} accent="indigo" />
+          <StatCard title="جارية" value={liveCount} accent="emerald" />
+          <StatCard title="منتهية" value={endedCount} accent="rose" />
         </div>
 
         {/* رسائل الحالة */}
         {error && (
-          <div className="mb-6 p-4 bg-rose-900/30 border border-rose-700 text-rose-200 rounded-lg whitespace-pre-wrap">{error}</div>
+          <div className="mb-5 p-3.5 bg-rose-900/30 border border-rose-700 text-rose-200 rounded-lg whitespace-pre-wrap text-sm">{error}</div>
         )}
 
-        {/* التحميل (فقط للجلب الرئيسي غير الصامت) */}
+        {/* التحميل */}
         {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-xl shadow-xl p-8 animate-pulse h-64" />
+              <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-xl shadow-xl p-8 animate-pulse h-60" />
             ))}
           </div>
         )}
 
         {/* لا توجد نتائج */}
         {!loading && filtered.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-xl p-12 text-center">
-            <div className="text-slate-500 mb-4"><FaGavel size={48} className="mx-auto" /></div>
-            <h3 className="text-xl font-medium text-slate-100 mb-2">لا توجد مزادات</h3>
-            <p className="text-slate-400 mb-6">أضف مزادًا جديدًا أو غيّر الفلاتر.</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-xl p-10 md:p-12 text-center">
+            <div className="text-slate-500 mb-3"><FaGavel size={40} className="mx-auto" /></div>
+            <h3 className="text-lg md:text-xl font-medium text-slate-100 mb-1.5">لا توجد مزادات</h3>
+            <p className="text-slate-400 text-sm md:text-base mb-5">أضف مزادًا جديدًا أو غيّر الفلاتر.</p>
             <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setStatusFilter(''); setSearchTerm(''); fetchAuctions({ page: 1, status: '', silent: false }) }}
-              className="px-6 py-2 rounded-lg text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
+              className="px-5 py-2.5 rounded-lg text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-sm md:text-base"
             >
               عرض الكل
             </motion.button>
@@ -807,11 +796,11 @@ export default function DealerAuctionsPage() {
         {/* شبكة المزادات */}
         {!loading && filtered.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {filtered.map((auction, idx) => (
                 <motion.div
                   key={auction.id}
-                  initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
                   className={`relative group rounded-2xl overflow-hidden shadow-2xl border
                     ${auction.statusApi === 'ended'
                       ? 'border-rose-700/40'
@@ -819,50 +808,52 @@ export default function DealerAuctionsPage() {
                       ? 'border-emerald-700/40'
                       : 'border-amber-700/40'} bg-slate-900/70`}
                 >
-                  <div className="relative h-48 w-full overflow-hidden">
+                  <div className="relative h-44 md:h-48 w-full overflow-hidden">
                     <img
                       src={auction.image}
                       alt={auction.carLabel}
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      onError={imgOnError}
+                      loading="lazy"
                     />
-                    <span className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold shadow ${statusChipColor(auction.statusApi)}`}>
+                    <span className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold shadow ${statusChipColor(auction.statusApi)}`}>
                       {auction.statusAr}
                     </span>
                   </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FaCar className="text-violet-400" />
-                      <span className="text-lg font-bold text-slate-100">{auction.carLabel}</span>
+                  <div className="p-5 md:p-6">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <FaCar className="text-violet-400 shrink-0" />
+                      <span className="text-base md:text-lg font-bold text-slate-100 truncate">{auction.carLabel}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-400 mb-3">
-                      <FiUser />
-                      <span className="text-sm">معرضك</span>
+                    <div className="flex items-center gap-2 text-slate-400 mb-2">
+                      <FiUser className="shrink-0" />
+                      <span className="text-xs md:text-sm">معرضك</span>
                     </div>
-                    <div className="flex items-center gap-4 mb-2 text-slate-200">
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-2 text-slate-200">
                       <div className="flex items-center gap-1">
                         <FiClock className="text-violet-400" />
                         {auction.statusApi === 'live'
                           ? <Countdown endIso={auction.endTimeIso} />
-                          : <span className="font-mono text-sm">{auction.statusApi === 'scheduled' ? 'قريبًا' : 'انتهى'}</span>
+                          : <span className="font-mono text-xs md:text-sm">{auction.statusApi === 'scheduled' ? 'قريبًا' : 'انتهى'}</span>
                         }
                       </div>
                       <div className="flex items-center gap-1">
                         <FaGavel className="text-amber-400" />
-                        <span className="font-mono text-sm">{auction.bidsCount} مزايدة</span>
+                        <span className="font-mono text-xs md:text-sm">{auction.bidsCount} مزايدة</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <FiEye className="text-sky-400" />
-                        <span className="font-mono text-sm">{auction.watchers} متابع</span>
+                        <span className="font-mono text-xs md:text-sm">{auction.watchers} متابع</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6 mt-3">
+                    <div className="flex items-center gap-6 mt-2">
                       <div>
-                        <span className="text-xs text-slate-400">سعر البدء</span>
-                        <div className="font-bold text-violet-300">{auction.startPrice.toLocaleString()} ر.س</div>
+                        <span className="text-[11px] md:text-xs text-slate-400">سعر البدء</span>
+                        <div className="font-semibold md:font-bold text-violet-300 text-sm md:text-base">{auction.startPrice.toLocaleString()} ر.س</div>
                       </div>
                       <div>
-                        <span className="text-xs text-slate-400">أعلى مزايدة</span>
-                        <div className="font-bold text-emerald-400">{auction.currentBid.toLocaleString()} ر.س</div>
+                        <span className="text-[11px] md:text-xs text-slate-400">أعلى مزايدة</span>
+                        <div className="font-semibold md:font-bold text-emerald-400 text-sm md:text-base">{auction.currentBid.toLocaleString()} ر.س</div>
                       </div>
                     </div>
                   </div>
@@ -870,10 +861,10 @@ export default function DealerAuctionsPage() {
               ))}
             </div>
 
-            {/* ترقيم الصفحات من الباك-إند */}
+            {/* ترقيم الصفحات */}
             {lastPage > 1 && (
-              <div className="mt-8 flex justify-between items-center">
-                <div className="text-sm text-slate-400">
+              <div className="mt-7 md:mt-8 flex justify-between items-center">
+                <div className="text-xs md:text-sm text-slate-400">
                   صفحة <span className="font-medium text-slate-200">{page}</span> من <span className="font-medium text-slate-200">{lastPage}</span> — إجمالي <span className="font-medium text-slate-200">{total}</span>
                 </div>
                 <nav className="flex items-center gap-1">
@@ -881,28 +872,31 @@ export default function DealerAuctionsPage() {
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
                     className="p-2 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="السابق"
                   >
                     <FiChevronLeft />
                   </button>
-                  {Array.from({ length: lastPage }, (_, i) => i + 1)
-                    .slice(Math.max(0, page - 3), Math.min(lastPage, page + 2))
-                    .map(n => (
-                      <button
-                        key={n}
-                        onClick={() => setPage(n)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          page === n
-                            ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white'
-                            : 'border border-slate-700 text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
+
+                  {/* نافذة صفحات قصيرة */}
+                  {pageWindow(page, lastPage, 2).map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setPage(n)}
+                      className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base ${
+                        page === n
+                          ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white'
+                          : 'border border-slate-700 text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+
                   <button
                     onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                     disabled={page === lastPage}
                     className="p-2 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="التالي"
                   >
                     <FiChevronRight />
                   </button>
@@ -912,6 +906,21 @@ export default function DealerAuctionsPage() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+/** ========= مكونات صغيرة ========= **/
+function StatCard({ title, value, accent }: { title: string; value: number | string; accent: 'indigo'|'emerald'|'rose' }) {
+  const ring =
+    accent === 'indigo' ? 'from-violet-600 to-indigo-600' :
+    accent === 'emerald' ? 'from-emerald-600 to-green-600' :
+    'from-rose-600 to-red-600'
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-slate-900/70 border border-slate-800 p-4 md:p-5">
+      <div className={`pointer-events-none absolute -top-10 -left-10 w-28 h-28 rounded-full bg-gradient-to-br opacity-20 ${ring}`} />
+      <h3 className="text-slate-400 text-xs md:text-sm mb-1.5">{title}</h3>
+      <p className="text-2xl md:text-3xl font-bold text-slate-100">{value}</p>
     </div>
   )
 }
