@@ -28,7 +28,8 @@ class CarController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('make', 'like', "%{$search}%")
                   ->orWhere('model', 'like', "%{$search}%")
-                  ->orWhere('vin', 'like', "%{$search}%");
+                  ->orWhere('vin', 'like', "%{$search}%")
+                  ->orWhere('plate', 'like', "%{$search}%");
             });
         }
 
