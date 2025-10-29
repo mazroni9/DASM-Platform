@@ -1,44 +1,378 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Header } from '../../../components/exhibitor/Header';
 import { Sidebar } from '../../../components/exhibitor/sidebar';
-import { CommissionSection } from '../../../components/exhibitor/CommissionSection';
 import { FiMenu } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '@/lib/axios';
+import toast from 'react-hot-toast';
+import {
+  Coins,
+  Info,
+  Search,
+  Filter,
+  RefreshCw,
+  Download,
+  Copy,
+  Calculator,
+  CheckCircle2,
+} from 'lucide-react';
 
-export default function ExhibitorDashboard() {
+/* =========================
+   Types
+========================= */
+type Currency = string;
+
+interface RecentCommission {
+  id: number;
+  date: string; // ISO
+  car: string | null;
+  value: number;
+}
+
+interface CommissionSummary {
+  commissionValue: number;
+  commissionCurrency: Currency;
+  commissionNote?: string | null;
+  recentCommissions: RecentCommission[];
+}
+
+interface Operation {
+  id: number;
+  date: string; // ISO
+  car: string | null;
+  value: number;
+  currency: Currency;
+  description?: string | null;
+}
+
+type Paginator<T> = {
+  data: T[];
+  current_page: number;
+  per_page: number;
+  last_page: number;
+  total: number;
+};
+
+/* =========================
+   Helpers
+========================= */
+const fmtMoney = (n: number) =>
+  new Intl.NumberFormat('ar-SA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+
+const formatDate = (iso: string) => new Date(iso).toLocaleString('ar-SA');
+
+/* =========================
+   Minimal Gauge
+========================= */
+function Gauge({ value, max = 2000 }: { value: number; max?: number }) {
+  const percent = Math.max(0, Math.min(100, (value / max) * 100));
+  const R = 56;
+  const CIRC = 2 * Math.PI * R;
+  const off = CIRC - (CIRC * percent) / 100;
+
+  return (
+    <div className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0">
+      <svg viewBox="0 0 140 140" className="w-full h-full">
+        <defs>
+          <linearGradient id="gaugeGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#a78bfa" />
+            <stop offset="100%" stopColor="#f472b6" />
+          </linearGradient>
+        </defs>
+        <circle cx="70" cy="70" r={R} fill="none" stroke="#0f172a" strokeWidth="14" />
+        <circle
+          cx="70"
+          cy="70"
+          r={R}
+          fill="none"
+          stroke="url(#gaugeGradient)"
+          strokeWidth="14"
+          strokeDasharray={CIRC}
+          strokeDashoffset={off}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset .9s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl sm:text-3xl font-extrabold text-fuchsia-300">{fmtMoney(value)}</span>
+        <span className="text-[11px] text-slate-400">ريال</span>
+      </div>
+    </div>
+  );
+}
+
+/* =========================
+   Page
+========================= */
+export default function ExhibitorCommissionPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // 🔹 التأكد أننا في الكلاينت (لحل مشكلة الهيدرات)
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // Summary + settings
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [summary, setSummary] = useState<CommissionSummary | null>(null);
 
-  // 🔹 منع العرض حتى يبدأ الكلاينت
+  // Settings form
+  const [valInput, setValInput] = useState<string>('0');
+  const [curInput, setCurInput] = useState<Currency>('SAR');
+  const [noteInput, setNoteInput] = useState<string>('');
+
+  // Operations
+  const [loadingOps, setLoadingOps] = useState(true);
+  const [paginator, setPaginator] = useState<Paginator<Operation> | null>(null);
+  const [ops, setOps] = useState<Operation[]>([]);
+  const [serverPage, setServerPage] = useState(1);
+
+  // Filters
+  const [q, setQ] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
+  // Estimator
+  const [estPrice, setEstPrice] = useState<string>(''); // string للتحكم الكامل
+  const [estMode, setEstMode] = useState<'flat' | 'progressive'>('flat');
+  const [estResult, setEstResult] = useState<number | null>(null);
+  const [estimating, setEstimating] = useState(false);
+
+  useEffect(() => setIsClient(true), []);
+
+  /* -------------------------
+     Fetchers
+  ------------------------- */
+  const fetchSummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const { data } = await api.get('/api/exhibitor/commission/summary');
+      if (data?.success && data?.data) {
+        const s: CommissionSummary = data.data;
+        setSummary(s);
+        // seed settings form
+        setValInput(String(s.commissionValue ?? 0));
+        setCurInput((s.commissionCurrency || 'SAR').toUpperCase());
+        setNoteInput(s.commissionNote || '');
+      } else {
+        throw new Error('Invalid summary payload');
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error('تعذّر تحميل الملخّص');
+      setSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  const fetchOps = async (page = 1) => {
+    setLoadingOps(true);
+    try {
+      const params = new URLSearchParams();
+      params.set('per_page', '10');
+      if (q.trim()) params.set('q', q.trim());
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      params.set('page', String(page));
+
+      const { data } = await api.get(`/api/exhibitor/commission/operations?${params.toString()}`);
+
+      // Laravel paginator
+      if (data?.data && Array.isArray(data.data) && typeof data.current_page === 'number') {
+        const p: Paginator<Operation> = data;
+        setPaginator(p);
+        setOps(p.data || []);
+        setServerPage(p.current_page || 1);
+      } else if (Array.isArray(data)) {
+        // array fallback
+        const p: Paginator<Operation> = {
+          data,
+          current_page: 1,
+          per_page: data.length,
+          last_page: 1,
+          total: data.length,
+        };
+        setPaginator(p);
+        setOps(data);
+        setServerPage(1);
+      } else {
+        // object fallback
+        const p: Paginator<Operation> = {
+          data: data?.data || [],
+          current_page: data?.current_page || 1,
+          per_page: data?.per_page || (data?.data?.length ?? 10),
+          last_page: data?.last_page || 1,
+          total: data?.total || (data?.data?.length ?? 0),
+        };
+        setPaginator(p);
+        setOps(p.data || []);
+        setServerPage(p.current_page || 1);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error('تعذّر تحميل العمليات');
+      setPaginator(null);
+      setOps([]);
+    } finally {
+      setLoadingOps(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isClient) return;
+    fetchSummary();
+    fetchOps(1);
+  }, [isClient]);
+
+  /* -------------------------
+     Actions
+  ------------------------- */
+  const saveSettings = async () => {
+    try {
+      const value = Number(valInput);
+      if (Number.isNaN(value) || value < 0) {
+        toast.error('قيمة السعي غير صالحة');
+        return;
+      }
+      const payload = {
+        commission_value: value,
+        commission_currency: (curInput || 'SAR').toUpperCase(),
+        commission_note: noteInput || null,
+      };
+      await api.put('/api/exhibitor/commission/settings', payload);
+      toast.success('تم حفظ الإعدادات');
+      fetchSummary();
+    } catch (e: any) {
+      console.error(e);
+      toast.error('تعذّر حفظ الإعدادات');
+    }
+  };
+
+  const refreshAll = async () => {
+    await Promise.all([fetchSummary(), fetchOps(serverPage)]);
+    toast.success('تم التحديث');
+  };
+
+  const handlePrev = async () => {
+    if (!paginator || paginator.current_page <= 1) return;
+    await fetchOps(paginator.current_page - 1);
+  };
+
+  const handleNext = async () => {
+    if (!paginator || paginator.current_page >= paginator.last_page) return;
+    await fetchOps(paginator.current_page + 1);
+  };
+
+  const applyFilters = async () => {
+    await fetchOps(1);
+  };
+
+  const exportCSV = () => {
+    const rows = [
+      ['#', 'التاريخ', 'السيارة', 'قيمة السعي', 'العملة', 'الوصف'],
+      ...ops.map((o) => [
+        String(o.id),
+        formatDate(o.date),
+        o.car ?? '',
+        String(o.value),
+        o.currency || '',
+        (o.description || '').replace(/\n/g, ' '),
+      ]),
+    ];
+    const csv = rows
+      .map((r) =>
+        r
+          .map((c) => {
+            const v = String(c ?? '');
+            return /[,"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+          })
+          .join(','),
+      )
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commission_ops_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('تم تنزيل CSV');
+  };
+
+  const copyTable = async () => {
+    try {
+      const header = ['#', 'التاريخ', 'السيارة', 'قيمة السعي', 'العملة', 'الوصف'];
+      const body = ops.map(
+        (o) =>
+          `${o.id}\t${formatDate(o.date)}\t${o.car ?? ''}\t${o.value}\t${o.currency ?? ''}\t${
+            o.description ?? ''
+          }`,
+      );
+      await navigator.clipboard.writeText([header.join('\t'), ...body].join('\n'));
+      toast.success('تم نسخ الجدول');
+    } catch {
+      toast.error('تعذّر النسخ للحافظة');
+    }
+  };
+
+  const estimate = async () => {
+    // تنظيف وتحقق
+    const cleaned = estPrice.replace(/[^\d]/g, '');
+    const priceNum = Number(cleaned);
+    if (!priceNum || Number.isNaN(priceNum) || priceNum <= 0) {
+      toast.error('أدخل سعر صالح للحساب');
+      return;
+    }
+    setEstimating(true);
+    setEstResult(null);
+    try {
+      const { data } = await api.post('/api/exhibitor/commission/estimate', {
+        price: priceNum,
+        mode: estMode, // 'flat' | 'progressive'
+      });
+      const amt = Number(data?.data?.amount ?? 0);
+      setEstResult(Number.isFinite(amt) ? amt : 0);
+    } catch (e: any) {
+      console.error(e);
+      toast.error('فشل حساب التقدير');
+      setEstResult(null);
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  /* -------------------------
+     Derivations
+  ------------------------- */
+  const recent = useMemo(() => summary?.recentCommissions ?? [], [summary]);
+  const resultCurrency = summary?.commissionCurrency || 'SAR';
+
+  /* -------------------------
+     Skeleton (client)
+  ------------------------- */
   if (!isClient) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        {/* تحميل وهمي للـ Sidebar */}
-        <div className="hidden md:block w-72 bg-gray-900 animate-pulse"></div>
-        {/* تحميل وهمي للـ Header والـ Main */}
+      <div dir="rtl" className="flex min-h-screen bg-slate-950">
+        <div className="hidden md:block w-72 bg-slate-900/80 border-l border-slate-800 animate-pulse" />
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-white animate-pulse"></div>
-          <main className="p-6 flex-1 bg-gray-50"></main>
+          <div className="h-16 bg-slate-900/70 border-b border-slate-800 animate-pulse" />
+          <main className="p-6 flex-1 bg-slate-950" />
         </div>
       </div>
     );
   }
 
+  /* -------------------------
+     UI (Contained, No Overflow)
+  ------------------------- */
   return (
-    <div className="flex min-h-screen bg-gray-50 relative">
-      {/* الشريط الجانبي - يظهر فقط على الشاشات المتوسطة فأكبر */}
+    <div dir="rtl" className="flex min-h-screen bg-slate-950 text-slate-100 overflow-x-hidden">
+      {/* Sidebar Desktop */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
       </div>
 
-      {/* الشريط الجانبي - نسخة الجوال (Drawer) */}
+      {/* Sidebar Mobile Drawer */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
@@ -46,40 +380,409 @@ export default function ExhibitorDashboard() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed inset-0 z-40 md:hidden flex"
+            className="fixed inset-0 z-50 md:hidden flex"
+            role="dialog"
+            aria-modal="true"
           >
-            {/* الخلفية الشفافة */}
-            <motion.div
+            <motion.button
+              type="button"
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.6 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black"
               onClick={() => setIsSidebarOpen(false)}
+              aria-label="إغلاق القائمة"
             />
-            {/* الشريط نفسه */}
-            <motion.div className="relative w-72 bg-gradient-to-b from-slate-900 via-indigo-900 to-indigo-950 shadow-2xl">
+            <motion.div className="relative w-72 ml-auto h-full bg-slate-950 border-l border-slate-800 shadow-2xl">
               <Sidebar />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* المحتوى الرئيسي */}
+      {/* Main */}
       <div className="flex-1 flex flex-col w-0">
         <Header />
-        <main className="p-4 md:p-6 flex-1 overflow-auto bg-gray-50">
-          <CommissionSection />
+
+        <main className="flex-1">
+          {/* Container */}
+          <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6 py-4 md:py-6">
+            {/* Title + Actions */}
+            <div className="mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold text-slate-100 flex items-center gap-2">
+                  <Coins className="w-5 h-5 text-violet-400" />
+                  خانة السعي
+                </h1>
+                <p className="text-slate-400 text-sm mt-1">
+                  إدارة قيمة السعي الخاصة بمعرضك، استعراض آخر العمليات، وحساب تقديري وفق الشرائح.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={refreshAll}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  تحديث
+                </button>
+              </div>
+            </div>
+
+            {/* Top: Current Commission + Note + Recent */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+              {/* Card: Current Commission */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 flex items-center gap-4 min-w-0 overflow-hidden">
+                <Gauge value={Number(summary?.commissionValue ?? 0)} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-slate-400 text-sm">قيمة السعي الحالية</div>
+                  {loadingSummary ? (
+                    <div className="mt-2 h-8 w-36 bg-slate-800/60 rounded animate-pulse" />
+                  ) : (
+                    <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-fuchsia-300 truncate">
+                      {fmtMoney(Number(summary?.commissionValue ?? 0))}{' '}
+                      <span className="text-sm text-slate-400">{summary?.commissionCurrency || 'SAR'}</span>
+                    </div>
+                  )}
+                  <div className="mt-2 text-xs text-slate-400 flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5 shrink-0" /> يمكنك تعديل القيمة من لوحة الإعدادات أدناه.
+                  </div>
+                </div>
+              </div>
+
+              {/* Card: Note */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 min-w-0 overflow-hidden">
+                <div className="text-slate-300 text-sm font-semibold mb-2">ملاحظة السعي</div>
+                {loadingSummary ? (
+                  <div className="space-y-2">
+                    <div className="h-4 bg-slate-800/60 rounded animate-pulse" />
+                    <div className="h-4 bg-slate-800/60 rounded animate-pulse w-3/4" />
+                  </div>
+                ) : (
+                  <p className="text-slate-400 text-sm leading-6 min-h-[48px] whitespace-pre-wrap break-words">
+                    {summary?.commissionNote || '—'}
+                  </p>
+                )}
+              </div>
+
+              {/* Card: Recent operations */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 min-w-0 overflow-hidden">
+                <div className="text-slate-300 text-sm font-semibold mb-2">العمليات الأخيرة</div>
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                  {loadingSummary ? (
+                    [...Array(4)].map((_, i) => (
+                      <div key={i} className="h-10 bg-slate-800/60 rounded animate-pulse" />
+                    ))
+                  ) : recent.length ? (
+                    recent.map((r) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2"
+                      >
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-slate-200 text-sm truncate">{r.car || 'عملية سعي'}</span>
+                          <span className="text-slate-500 text-xs">{formatDate(r.date)}</span>
+                        </div>
+                        <div className="text-fuchsia-300 font-bold whitespace-nowrap">{fmtMoney(r.value)}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-slate-500 text-sm">لا توجد عمليات حديثة</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Settings */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-5 mb-6 overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-slate-200 font-semibold">إعدادات السعي</div>
+                <div className="text-xs text-slate-500">تطبيق التغييرات فوريًا</div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">قيمة السعي</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min={0}
+                    value={valInput}
+                    onChange={(e) => setValInput(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">العملة</label>
+                  <input
+                    type="text"
+                    value={curInput}
+                    onChange={(e) => setCurInput(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                    placeholder="SAR"
+                    maxLength={3}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">ملاحظة</label>
+                  <input
+                    type="text"
+                    value={noteInput}
+                    onChange={(e) => setNoteInput(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                    placeholder="وصف موجز لمكونات السعي"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  onClick={saveSettings}
+                  className="px-4 py-2.5 rounded-lg text-white font-semibold bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 border border-fuchsia-700/40 shadow-lg inline-flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  حفظ الإعدادات
+                </button>
+              </div>
+            </div>
+
+            {/* Toolbar: Filters + estimator + export */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-5 mb-4 overflow-hidden">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                {/* Filters */}
+                <div className="col-span-2 min-w-0">
+                  <div className="flex flex-col xl:flex-row xl:flex-wrap gap-3 xl:items-end">
+                    <div className="relative flex-1 min-w-0">
+                      <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={q}
+                        onChange={(e) => setQ(e.target.value)}
+                        placeholder="ابحث بالسيارة / الوصف..."
+                        className="w-full pr-9 pl-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                      />
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">من تاريخ</label>
+                        <input
+                          type="date"
+                          value={from}
+                          onChange={(e) => setFrom(e.target.value)}
+                          className="px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">إلى تاريخ</label>
+                        <input
+                          type="date"
+                          value={to}
+                          onChange={(e) => setTo(e.target.value)}
+                          className="px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-end gap-2 flex-wrap">
+                      <button
+                        onClick={applyFilters}
+                        className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60"
+                      >
+                        <Filter className="w-4 h-4" />
+                        تطبيق الفلترة
+                      </button>
+                      <button
+                        onClick={() => {
+                          setQ('');
+                          setFrom('');
+                          setTo('');
+                          fetchOps(1);
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60"
+                      >
+                        إعادة تعيين
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estimator (شرائح) — تم إصلاح الـ overflow */}
+                <div className="col-span-1">
+                  <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 overflow-hidden">
+                    <div className="text-slate-300 text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Calculator className="w-4 h-4 text-fuchsia-300" />
+                      حاسبة تقديرية (شرائح)
+                    </div>
+
+                    {/* اللف التلقائي + عناصر بعرض كامل على الموبايل */}
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="سعر السيارة"
+                        value={estPrice}
+                        onChange={(e) => setEstPrice(e.target.value.replace(/[^\d]/g, ''))}
+                        className="w-full sm:flex-1 px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/30"
+                      />
+                      <select
+                        value={estMode}
+                        onChange={(e) =>
+                          setEstMode((e.target.value as 'flat' | 'progressive') || 'flat')
+                        }
+                        className="w-full sm:w-40 px-3 py-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100"
+                      >
+                        <option value="flat">Flat</option>
+                        <option value="progressive">Progressive</option>
+                      </select>
+                      <button
+                        onClick={estimate}
+                        disabled={estimating || !estPrice || Number(estPrice) <= 0}
+                        className={`w-full sm:w-auto px-3 py-2.5 rounded-lg text-white font-semibold border shadow-lg
+                          ${
+                            estimating || !estPrice || Number(estPrice) <= 0
+                              ? 'bg-slate-800 border-slate-700 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 border-fuchsia-700/40'
+                          }`}
+                      >
+                        {estimating ? 'جارِ الحساب…' : 'احسب'}
+                      </button>
+                    </div>
+
+                    <div className="mt-2 text-slate-400 text-sm">
+                      النتيجة:{' '}
+                      <span className="text-fuchsia-300 font-bold">
+                        {estResult != null ? `${fmtMoney(estResult)} ${resultCurrency}` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Export */}
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={exportCSV}
+                  className="px-3 py-2.5 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60 inline-flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  CSV
+                </button>
+                <button
+                  onClick={copyTable}
+                  className="px-3 py-2.5 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60 inline-flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  نسخ
+                </button>
+              </div>
+            </div>
+
+            {/* Table (contained & scrollable) */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+              <div className="w-full overflow-x-auto">
+                <table className="min-w-[880px] w-full table-auto text-sm">
+                  <thead className="bg-slate-900/70 border-b border-slate-800 text-slate-300">
+                    <tr>
+                      <th className="px-4 py-3 text-right">#</th>
+                      <th className="px-4 py-3 text-right">التاريخ</th>
+                      <th className="px-4 py-3 text-right">السيارة</th>
+                      <th className="px-4 py-3 text-right">قيمة السعي</th>
+                      <th className="px-4 py-3 text-right">العملة</th>
+                      <th className="px-4 py-3 text-right">الوصف</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {loadingOps ? (
+                      [...Array(8)].map((_, i) => (
+                        <tr key={i} className="animate-pulse">
+                          <td className="px-4 py-3"><div className="h-4 w-10 bg-slate-800/70 rounded" /></td>
+                          <td className="px-4 py-3"><div className="h-4 w-40 bg-slate-800/70 rounded" /></td>
+                          <td className="px-4 py-3"><div className="h-4 w-56 bg-slate-800/70 rounded" /></td>
+                          <td className="px-4 py-3"><div className="h-4 w-20 bg-slate-800/70 rounded" /></td>
+                          <td className="px-4 py-3"><div className="h-4 w-12 bg-slate-800/70 rounded" /></td>
+                          <td className="px-4 py-3"><div className="h-4 w-64 bg-slate-800/70 rounded" /></td>
+                        </tr>
+                      ))
+                    ) : ops.length ? (
+                      ops.map((o) => (
+                        <tr key={o.id} className="hover:bg-slate-900/40">
+                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{o.id}</td>
+                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{formatDate(o.date)}</td>
+                          <td className="px-4 py-3 text-slate-300">
+                            {o.car ? (
+                              <span className="truncate block max-w-[380px]">{o.car}</span>
+                            ) : (
+                              <span className="text-slate-500">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="font-bold text-fuchsia-300">{fmtMoney(o.value)}</span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{o.currency || 'SAR'}</td>
+                          <td className="px-4 py-3 text-slate-300">
+                            {o.description ? (
+                              <span className="block truncate max-w-[520px]">{o.description}</span>
+                            ) : (
+                              <span className="text-slate-500">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="px-4 py-10 text-center text-slate-400" colSpan={6}>
+                          لا توجد عمليات مطابقة
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Server Pagination */}
+              {!loadingOps && paginator && paginator.last_page > 1 && (
+                <div className="flex items-center justify-between p-3 border-t border-slate-800 text-sm text-slate-300">
+                  <button
+                    onClick={handlePrev}
+                    disabled={paginator.current_page <= 1}
+                    className={`px-3 py-2 rounded-lg border ${
+                      paginator.current_page <= 1
+                        ? 'border-slate-800 text-slate-500 cursor-not-allowed'
+                        : 'border-slate-700 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    السابق
+                  </button>
+                  <div className="text-slate-400">
+                    صفحة <span className="text-slate-200">{paginator.current_page}</span> من{' '}
+                    <span className="text-slate-200">{paginator.last_page}</span>
+                  </div>
+                  <button
+                    onClick={handleNext}
+                    disabled={paginator.current_page >= paginator.last_page}
+                    className={`px-3 py-2 rounded-lg border ${
+                      paginator.current_page >= paginator.last_page
+                        ? 'border-slate-800 text-slate-500 cursor-not-allowed'
+                        : 'border-slate-700 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    التالي
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </main>
       </div>
 
-      {/* زر القائمة - يظهر فقط على الجوال */}
+      {/* FAB (Mobile) لفتح القائمة */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed bottom-6 left-6 bg-gradient-to-r from-indigo-600 to-fuchsia-500 text-white p-4 rounded-full shadow-xl z-30 hover:from-indigo-700 hover:to-fuchsia-600 transition-all duration-200 flex items-center justify-center"
-        style={{ boxShadow: '0 10px 15px -3px rgba(147, 51, 234, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3)' }}
+        className="md:hidden fixed bottom-6 right-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-4 rounded-full shadow-xl z-50 hover:from-violet-700 hover:to-fuchsia-700 transition-all duration-200 flex items-center justify-center"
         aria-label="فتح القائمة"
+        title="القائمة"
       >
-        <FiMenu size={24} />
+        <FiMenu size={22} />
       </button>
     </div>
   );
