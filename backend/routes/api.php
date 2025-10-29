@@ -1,52 +1,73 @@
 <?php
 
 use Carbon\Carbon;
-use App\Models\Car;
-use Inertia\Inertia;
-use App\Events\MyEvent;
 use Illuminate\Http\Request;
-use App\Events\PublicMessageEvent;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BidController;
-use App\Http\Controllers\CarController;
+
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\BlogController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\VenueController;
-use App\Notifications\NewBidNotification;
-use App\Http\Controllers\DealerController;
-use App\Http\Controllers\WalletController;
+use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
-use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\BidController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ModeratorController;
+use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\DealerController;
+use App\Http\Controllers\VenueController;
 use App\Http\Controllers\SettlementController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CarSimilarityController;
-use App\Http\Controllers\Admin\BidEventController;
-use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\UploadController;
 use App\Http\Controllers\ActivityLogController;
+
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\BidEventController;
+use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
-use App\Http\Controllers\AuctionSessionController;
-use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 
-// Health check endpoint for Render.com
-Route::get('/health', function () {
-    return response()->json(['status' => 'ok']);
-});
+use App\Http\Controllers\AuctionSessionController;
+use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
 
+// User Wallet (العامة)
+use App\Http\Controllers\WalletController as UserWalletController;
 
+// Exhibitor Wallet (محفظة المعرض)
+use App\Http\Controllers\Exhibitor\WalletController as ExhibitorWalletController;
+use App\Http\Controllers\Exhibitor\WalletDepositController as ExhibitorWalletDepositController;
+use App\Http\Controllers\Exhibitor\WalletWithdrawController as ExhibitorWalletWithdrawController;
 
+// =========================
+// Exhibitor Ratings (NEW)
+// =========================
+use App\Http\Controllers\Exhibitor\VenueOwnerRatingController;
 
-Route::middleware(['auth:sanctum'])->post('/upload-image', [UploadController::class, 'store']);
+/*
+|--------------------------------------------------------------------------
+| Health
+|--------------------------------------------------------------------------
+*/
+Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
+/*
+|--------------------------------------------------------------------------
+| Upload
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->post('/upload-image', [UploadController::class, 'store']);
+
+/*
+|--------------------------------------------------------------------------
+| Utilities
+|--------------------------------------------------------------------------
+*/
 Route::get('/cars/similar', [CarSimilarityController::class, 'suggest']);
 
 Route::get('/check-time', function (Request $request) {
@@ -79,12 +100,9 @@ Route::get('/check-time', function (Request $request) {
             ->setDate($now->year, $now->month, $now->day);
 
         if ($end->lessThanOrEqualTo($start)) {
-            // Overnight case
             if ($now->lessThan($end)) {
-                // Current time is after midnight but before end time → start was yesterday
                 $start->subDay();
             } else {
-                // Current time is after start → end is tomorrow
                 $end->addDay();
             }
         }
@@ -106,8 +124,11 @@ Route::get('/check-time', function (Request $request) {
     ]);
 });
 
-
-// Public routes
+/*
+|--------------------------------------------------------------------------
+| Public Auth
+|--------------------------------------------------------------------------
+*/
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/refresh', [AuthController::class, 'refresh']);
@@ -116,11 +137,11 @@ Route::post('/resend-verification', [AuthController::class, 'resendVerification'
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-
-
-// Cloudinary test endpoints removed for security
-
-// Public auction browsing
+/*
+|--------------------------------------------------------------------------
+| Public: Auctions / Blog / Broadcast
+|--------------------------------------------------------------------------
+*/
 Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
@@ -128,36 +149,33 @@ Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/sessions/live', [AuctionSessionController::class, 'getActiveLiveSessions']);
 Route::get('/sessions/live/{id}', [AuctionSessionController::class, 'getLiveSession']);
 
-// Public blog routes
 Route::get('/blog', [BlogController::class, 'index']);
 Route::get('/blog/latest/{count?}', [BlogController::class, 'latest']);
 Route::get('/blog/tags', [BlogController::class, 'tags']);
 Route::get('/blog/{slug}', [BlogController::class, 'show']);
 
-
-// Public broadcast routes (no authentication required)
 Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
 
-// Removed venue routes as YouTube is the only streaming platform
-
-// Protected routes - for all authenticated users
+/*
+|--------------------------------------------------------------------------
+| Protected (auth:sanctum)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth:sanctum')->group(function () {
-    // Auth routes
+    // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
-    // User routes
+
+    // User
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
-    Route::post('/logout', [UserController::class, 'logout']);
     Route::get('/user/permissions', [UserController::class, 'getPermissions']);
 
-    // Dealer registration
+    // Dealer application
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
 
-    // Car management for all users
-
+    // Cars
     Route::get('/cars', [CarController::class, 'index']);
     Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']);
-    Route::get('/cars?page={id}', [CarController::class, 'index']);
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/enum-options', [CarController::class, 'enumOptions']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
@@ -166,78 +184,86 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/car-statistics', [CarController::class, 'statistics']);
 
-    // Auction management for all users
+    // Auctions (user scope)
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::get('/sessions/active-scheduled', [AdminController::class, 'getActiveAndScheduledSessions']);
     Route::get('/sessions/{id}', [AdminController::class, 'showSessionPublic']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update']);
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
-    Route::get('/approved-auctions', [AuctionController::class, 'index']);
-    Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
-    Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
-    Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
     Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
-    //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auctions/{auction}/leave', [AuctionController::class, 'leave']);
     Route::get('/auctions/{auction}/status', [AuctionController::class, 'status']);
     Route::post('/auctions/test-bid', [AuctionController::class, 'testBid']);
 
-    // Bid routes for all users
+    // Bids
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
     Route::post('/auctions/{auction}/bids', [BidController::class, 'store'])->middleware('bid.rate.limit');
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
     Route::get('/bids-history', [BidController::class, 'UserBidHistory']);
-    // New standardized bid API for the unified frontend
     Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids']);
 
-    // Auto-bid routes
+    // Auto-bid
     Route::post('/auctions/auto-bid', [AutoBidController::class, 'store']);
     Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus']);
     Route::delete('/auctions/auto-bid/{itemId}', [AutoBidController::class, 'destroy']);
 
-    //purchase-confirmation
+    // Purchase confirmation
     Route::get('/auctions/purchase-confirmation/{auction_id}', [AuctionController::class, 'purchaseConfirmation']);
 
-    // Public broadcast information (read-only)
-    Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
+    // Broadcast (read-only extras)
     Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
 
-    // Wallet routes
-    Route::get('/wallet', [WalletController::class, 'show']);
-    Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
-    Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
-    Route::post('/wallet/recharge', [WalletController::class, 'recharge']);
-    //confirm sales
+    // User Wallet (public wallet)
+    Route::get('/wallet', [UserWalletController::class, 'show']);
+    Route::post('/wallet/deposit', [UserWalletController::class, 'deposit']);
+    Route::get('/wallet/transactions', [UserWalletController::class, 'transactions']);
+    Route::post('/wallet/recharge', [UserWalletController::class, 'recharge']);
+
+    // Settlements
     Route::get('/auctions/calculate-settlement/{car_id}', [SettlementController::class, 'calculateSettlement']);
     Route::post('/auctions/confirm-sale', [SettlementController::class, 'confirmSale']);
-    // Notification routes
+
+    // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
     Route::get('/settlements', [SettlementController::class, 'index']);
+
+    // =========================
+    // Exhibitor Ratings (NEW)
+    // (إنشاء/تعديل/حذف مراجعات من أي مستخدم مسجّل)
+    // =========================
+    Route::prefix('exhibitor')->group(function () {
+        Route::post   ('/ratings',                [VenueOwnerRatingController::class, 'store']);
+        Route::put    ('/ratings/{review}',       [VenueOwnerRatingController::class, 'update']);
+        Route::delete ('/ratings/{review}',       [VenueOwnerRatingController::class, 'destroy']);
+    });
 });
 
-Route::post('/wallet/initiate-recharge', [WalletController::class, 'initiateRecharge'])->name('wallet.recharge');
-Route::post('/wallet/callback', [WalletController::class, 'handleCallback'])->name('wallet.callback');
-Route::get('/wallet/error', [WalletController::class, 'handleError'])->name('wallet.error');
+/*
+|--------------------------------------------------------------------------
+| Public Payment Webhooks for user wallet
+|--------------------------------------------------------------------------
+*/
+Route::post('/wallet/initiate-recharge', [UserWalletController::class, 'initiateRecharge'])->name('wallet.recharge');
+Route::post('/wallet/callback', [UserWalletController::class, 'handleCallback'])->name('wallet.callback');
+Route::get('/wallet/error', [UserWalletController::class, 'handleError'])->name('wallet.error');
 
-
-// Dealer-only routes
+/*
+|--------------------------------------------------------------------------
+| Dealer
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])->group(function () {
-    // Dealer dashboard
     Route::get('/dealer/dashboard', [DealerController::class, 'dashboard']);
-
-    // Dealer-specific functionality
     Route::get('/auctions/{id}/analytics', [AuctionController::class, 'analytics']);
 
-    // Legacy routes - these duplicate the routes above but are kept for backward compatibility
-    // They should be removed in a future update
+    // Legacy dealer cars
     Route::get('/dealer/cars', [CarController::class, 'index']);
     Route::post('/dealer/cars', [CarController::class, 'store']);
     Route::get('/dealer/cars/{id}', [CarController::class, 'show']);
@@ -246,35 +272,36 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
     Route::get('/dealer/car-statistics', [CarController::class, 'statistics']);
 });
 
-// Moderator routes
+/*
+|--------------------------------------------------------------------------
+| Moderator
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::class])->group(function () {
-    // Moderator dashboard
     Route::get('/moderator/dashboard', [ModeratorController::class, 'dashboard']);
-
-    // Broadcast management
     Route::post('/moderator/broadcast/start', [ModeratorController::class, 'startBroadcast']);
     Route::post('/moderator/broadcast/stop/{broadcastId}', [ModeratorController::class, 'stopBroadcast']);
     Route::put('/moderator/broadcast/{broadcastId}/current-car', [ModeratorController::class, 'switchCar']);
-
-    // Offline bid management
     Route::post('/moderator/bids/offline', [ModeratorController::class, 'addOfflineBid']);
-
-    // Admin bid event management
 });
 
-// Admin routes
+/*
+|--------------------------------------------------------------------------
+| Admin
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
-->prefix('admin')->group(function () {
-    // Activity Log
+    ->prefix('admin')->group(function () {
+
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
-    // Admin dashboard
+
     Route::get('dashboard', [AdminController::class, 'dashboard']);
     Route::get('settings', [SettingsController::class, 'index']);
     Route::put('settings', [SettingsController::class, 'update']);
-    Route::post('settings', [SettingsController::class, 'update']); // Keep POST for backward compatibility
+    Route::post('settings', [SettingsController::class, 'update']);
     Route::get('settings/{key}', [SettingsController::class, 'getSetting']);
 
-    // Admin user management
+    // Users
     Route::get('/users', [AdminUserController::class, 'index']);
     Route::get('/users/{userId}', [AdminUserController::class, 'show']);
     Route::put('/users/{userId}', [AdminUserController::class, 'update']);
@@ -285,7 +312,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification']);
     Route::post('/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification']);
 
-    // Admin moderator management
+    // Moderators
     Route::get('/moderators', [AdminModeratorController::class, 'index']);
     Route::post('/moderators', [AdminModeratorController::class, 'store']);
     Route::get('/moderators/{id}', [AdminModeratorController::class, 'show']);
@@ -308,37 +335,36 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/auctions/bulk-approve', [AdminAuctionController::class, 'bulkApprove']);
     Route::post('/auctions/bulk-reject',  [AdminAuctionController::class, 'bulkReject']);
 
+    // Bid events
     Route::get('/bids/events', [BidEventController::class, 'index']);
     Route::get('/bids/events/{id}', [BidEventController::class, 'show']);
 
-    // Admin car management
+    // Cars (admin)
     Route::get('/cars', [AdminCarController::class, 'index']);
     Route::get('/cars/{id}', [AdminCarController::class, 'show']);
     Route::put('/cars/{id}', [AdminCarController::class, 'update']);
     Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus']);
     Route::delete('/cars/{id}', [AdminCarController::class, 'destroy']);
 
-
-    // Admin blog management
+    // Blogs
     Route::get('/blogs', [AdminController::class, 'blogs']);
     Route::post('/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);
     Route::post('/blog-tags', [AdminController::class, 'manageTags']);
     Route::get('/blogs/tags', [AdminController::class, 'getBlogTags']);
 
-    // Admin financial management
+    // Finance
     Route::get('/transactions', [AdminController::class, 'getTransactions']);
     Route::get('/settlements', [AdminController::class, 'getSettlements']);
 
-
-    // Admin broadcast management
-
+    // Broadcast
     Route::get('/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
     Route::get('/broadcast', [BroadcastController::class, 'show']);
     Route::post('/broadcast', [BroadcastController::class, 'store']);
     Route::put('/broadcast', [BroadcastController::class, 'update']);
     Route::put('/broadcast/status', [BroadcastController::class, 'updateStatus']);
     Route::delete('/broadcast/{id}', [BroadcastController::class, 'destroy']);
-    // Admin commission tiers management
+
+    // Commission Tiers
     Route::get('/commission-tiers', [CommissionTierController::class, 'index']);
     Route::post('/commission-tiers', [CommissionTierController::class, 'store']);
     Route::get('/commission-tiers/{id}', [CommissionTierController::class, 'show']);
@@ -346,7 +372,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/commission-tiers/{id}', [CommissionTierController::class, 'destroy']);
     Route::post('/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
 
-    // Admin subscription plans management
+    // Subscription Plans
     Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
     Route::post('/subscription-plans', [SubscriptionPlanController::class, 'store']);
     Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show']);
@@ -354,7 +380,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy']);
     Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
 
-    // Admin auction sessions management
+    // Auction Sessions (admin)
     Route::get('/sessions', [AdminAuctionSessionController::class, 'index']);
     Route::get('/sessions/active-scheduled', [AdminAuctionSessionController::class, 'getActiveAndScheduledSessions']);
     Route::post('/sessions', [AdminAuctionSessionController::class, 'store']);
@@ -362,31 +388,58 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update']);
     Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus']);
     Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy']);
-
-    // Blog CRUD operations (admin only)
-    Route::post('/blog', [BlogController::class, 'store']);
-    Route::put('/blog/{id}', [BlogController::class, 'update']);
-    Route::delete('/blog/{id}', [BlogController::class, 'destroy']);
-
-    // Admin venue management
-    Route::post('/venues', [VenueController::class, 'store']);
-    Route::put('/venues/{id}', [VenueController::class, 'update']);
-    Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
-
 });
 
-
+/*
+|--------------------------------------------------------------------------
+| Exhibitor Sessions
+|--------------------------------------------------------------------------
+*/
 Route::prefix('exhibitor')
     ->middleware(['auth:sanctum','role:admin,venue_owner,dealer'])
     ->group(function () {
-        Route::get   ('/sessions',                 [ExhibitorAuctionSessionController::class, 'index']);
-        Route::post  ('/sessions',                 [ExhibitorAuctionSessionController::class, 'store']);
-        Route::get   ('/sessions/{id}',            [ExhibitorAuctionSessionController::class, 'show']);
-        Route::put   ('/sessions/{id}',            [ExhibitorAuctionSessionController::class, 'update']);
-        Route::post  ('/sessions/{id}/status',     [ExhibitorAuctionSessionController::class, 'updateStatus']);
-        Route::delete('/sessions/{id}',            [ExhibitorAuctionSessionController::class, 'destroy']);
+        Route::get   ('/sessions',             [ExhibitorAuctionSessionController::class, 'index']);
+        Route::post  ('/sessions',             [ExhibitorAuctionSessionController::class, 'store']);
+        Route::get   ('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'show']);
+        Route::put   ('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'update']);
+        Route::post  ('/sessions/{id}/status', [ExhibitorAuctionSessionController::class, 'updateStatus']);
+        Route::delete('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'destroy']);
+
+        // =========================
+        // Exhibitor Ratings (NEW)
+        // (قراءة ملخّص وقائمة التقييمات لصاحب المعرض)
+        // =========================
+        Route::get('/ratings',          [VenueOwnerRatingController::class, 'index']);
+        Route::get('/ratings/summary',  [VenueOwnerRatingController::class, 'summary']);
     });
 
+/*
+|--------------------------------------------------------------------------
+| Exhibitor Wallet
+|--------------------------------------------------------------------------
+*/
+Route::prefix('exhibitor')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/wallet', [ExhibitorWalletController::class, 'show']);
 
-// Public subscription plans routes
+    // legacy + canonical spelling
+    Route::get('/wallet/transcations', [ExhibitorWalletController::class, 'transactions']);
+    Route::get('/wallet/transactions', [ExhibitorWalletController::class, 'transactions']);
+
+    Route::post('/wallet/deposit/initiate', [ExhibitorWalletDepositController::class, 'initiate']);
+    Route::post('/wallet/withdraw', [ExhibitorWalletWithdrawController::class, 'requestPayout']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Exhibitor Wallet Webhook (no auth)
+|--------------------------------------------------------------------------
+*/
+Route::post('/exhibitor/wallet/deposit/webhook', [ExhibitorWalletDepositController::class, 'webhook'])
+    ->name('exhibitor.wallet.deposit.webhook');
+
+/*
+|--------------------------------------------------------------------------
+| Public Subscription Plans
+|--------------------------------------------------------------------------
+*/
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);

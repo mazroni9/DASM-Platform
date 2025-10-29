@@ -228,14 +228,14 @@ const Panel = ({ children, className = '' }: { children: React.ReactNode; classN
 const PrimaryBtn = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
   <button
     {...props}
-    className={`px-5 py-3 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50 ${props.className || ''}`}
+    className={`px-4 py-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50 text-sm ${props.className || ''}`}
   />
 )
 
 const SubtleBtn = (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
   <button
     {...props}
-    className={`px-5 py-3 rounded-xl bg-slate-900/60 text-slate-200 border border-slate-700 hover:bg-slate-800/60 transition-colors ${props.className || ''}`}
+    className={`px-4 py-2.5 rounded-xl bg-slate-900/60 text-slate-200 border border-slate-700 hover:bg-slate-800/60 transition-colors text-sm ${props.className || ''}`}
   />
 )
 
@@ -255,13 +255,13 @@ function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: (
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <Panel className="p-6">
+        <Panel className="p-5">
           <button
             onClick={onClose}
             className="absolute left-4 top-4 text-slate-400 hover:text-slate-200"
             aria-label="إغلاق"
           >
-            <FiX size={22} />
+            <FiX size={20} />
           </button>
           {children}
         </Panel>
@@ -275,9 +275,9 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
     <AnimatePresence>
       {open && (
         <Backdrop onClose={onClose}>
-          <h2 className="text-2xl font-bold text-slate-100 mb-4">تفاصيل السيارة</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-100 mb-3">تفاصيل السيارة</h2>
           {!car ? (
-            <div className="text-slate-400">جاري التحميل...</div>
+            <div className="text-slate-400 text-sm">جاري التحميل...</div>
           ) : (
             <div className="space-y-4 text-slate-200">
               <div className="grid grid-cols-2 gap-3">
@@ -297,11 +297,11 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
                 <Info label="فئة السوق" value={car.market_category ?? ''} />
               </div>
               <div>
-                <p className="text-sm text-slate-400 mb-1">الوصف</p>
-                <p className="bg-slate-800/60 rounded-lg p-3 whitespace-pre-wrap text-slate-200">{car.description || '—'}</p>
+                <p className="text-xs text-slate-400 mb-1">الوصف</p>
+                <p className="bg-slate-800/60 rounded-lg p-3 whitespace-pre-wrap text-slate-200 text-sm">{car.description || '—'}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-400 mb-2">الصور</p>
+                <p className="text-xs text-slate-400 mb-2">الصور</p>
                 {Array.isArray(car.images) && car.images.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2">
                     {car.images.map((src, i) => (
@@ -309,7 +309,7 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
                     ))}
                   </div>
                 ) : (
-                  <div className="text-slate-400">لا توجد صور</div>
+                  <div className="text-slate-400 text-sm">لا توجد صور</div>
                 )}
               </div>
             </div>
@@ -323,8 +323,8 @@ function ViewCarModal({ open, onClose, car }: { open: boolean; onClose: () => vo
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-800">
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="font-medium text-slate-100">{value || '—'}</p>
+      <p className="text-[11px] text-slate-400">{label}</p>
+      <p className="font-medium text-slate-100 text-sm">{value || '—'}</p>
     </div>
   )
 }
@@ -429,13 +429,13 @@ function EditCarModal({
     <AnimatePresence>
       {open && (
         <Backdrop onClose={onClose}>
-          <h2 className="text-2xl font-bold text-slate-100 mb-4">تعديل السيارة</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-100 mb-3">تعديل السيارة</h2>
           {!form ? (
-            <div className="text-slate-400">جارى التحميل...</div>
+            <div className="text-slate-400 text-sm">جارى التحميل...</div>
           ) : (
             <>
               {error && (
-                <div className="mb-3 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-3 whitespace-pre-wrap">{error}</div>
+                <div className="mb-3 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-3 whitespace-pre-wrap text-sm">{error}</div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="الماركة">
@@ -487,11 +487,11 @@ function EditCarModal({
                   <input type="text" className="input" value={form.max_price} onChange={(e)=>updateField('max_price', e.target.value)} />
                 </Field>
                 <div className="md:col-span-2">
-                  <label className="block text-slate-300 mb-1">الوصف</label>
+                  <label className="block text-xs text-slate-300 mb-1">الوصف</label>
                   <textarea className="input h-24" value={form.description} onChange={(e)=>updateField('description', e.target.value)} />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="mt-5 flex justify-end gap-3">
                 <SubtleBtn onClick={onClose}>إلغاء</SubtleBtn>
                 <PrimaryBtn onClick={submit} disabled={saving}>
                   {saving ? 'جارٍ الحفظ...' : 'حفظ التغييرات'}
@@ -508,17 +508,18 @@ function EditCarModal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-slate-300 mb-1">{label}</label>
+      <label className="block text-xs text-slate-300 mb-1">{label}</label>
       {children}
       <style jsx>{`
         .input {
           width: 100%;
-          padding: 0.6rem 0.8rem;
+          padding: 0.55rem 0.8rem;
           border: 1px solid rgb(51 65 85 / 1);
           border-radius: 0.75rem;
           outline: none;
           background: rgba(15, 23, 42, .7);
           color: #e5e7eb;
+          font-size: 0.9rem;
         }
         .input::placeholder { color: #94a3b8; }
         .input:focus {
@@ -544,15 +545,15 @@ function DeleteConfirmModal({
     <AnimatePresence>
       {open && (
         <Backdrop onClose={onClose}>
-          <h2 className="text-2xl font-bold text-slate-100 mb-3">حذف السيارة</h2>
-          <p className="text-slate-300">هل أنت متأكد من حذف هذه السيارة؟ هذا الإجراء لا يمكن التراجع عنه.</p>
-          {error && <div className="mt-3 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-3 whitespace-pre-wrap">{error}</div>}
-          <div className="mt-6 flex justify-end gap-3">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-100 mb-2">حذف السيارة</h2>
+          <p className="text-slate-300 text-sm">هل أنت متأكد من حذف هذه السيارة؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+          {error && <div className="mt-3 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-3 whitespace-pre-wrap text-sm">{error}</div>}
+          <div className="mt-5 flex justify-end gap-3">
             <SubtleBtn onClick={onClose}>إلغاء</SubtleBtn>
             <button
               onClick={onConfirm}
               disabled={loading}
-              className="px-5 py-3 rounded-xl bg-rose-600 text-white hover:bg-rose-700 transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 transition-colors disabled:opacity-50 text-sm"
             >
               {loading ? 'جارٍ الحذف...' : 'تأكيد الحذف'}
             </button>
@@ -621,7 +622,7 @@ function FilterPanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
-          <p className="block text-slate-300 mb-2">حالة الإعلان</p>
+          <p className="block text-xs text-slate-300 mb-2">حالة الإعلان</p>
           <div className="flex flex-wrap gap-2">
             {(['', ...statuses] as string[]).map((s) => {
               const selected = filters.status === s || (s === '' && !filters.status)
@@ -643,11 +644,11 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-slate-300 mb-2">العلامة التجارية</label>
+          <label className="block text-xs text-slate-300 mb-2">العلامة التجارية</label>
           <select
             value={filters.brand}
             onChange={(e) => handle('brand', e.target.value)}
-            className="w-full px-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+            className="w-full px-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
           >
             <option value="">الكل</option>
             {brands.map((b) => (
@@ -657,12 +658,12 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-slate-300 mb-2">السعر من</label>
+          <label className="block text-xs text-slate-300 mb-2">السعر من</label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiDollarSign /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
               placeholder="أدنى سعر"
               value={filters.minPrice}
               onChange={(e) => handle('minPrice', e.target.value)}
@@ -671,12 +672,12 @@ function FilterPanel({
           </div>
         </div>
         <div>
-          <label className="block text-slate-300 mb-2">السعر إلى</label>
+          <label className="block text-xs text-slate-300 mb-2">السعر إلى</label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiDollarSign /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
               placeholder="أعلى سعر"
               value={filters.maxPrice}
               onChange={(e) => handle('maxPrice', e.target.value)}
@@ -686,12 +687,12 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-slate-300 mb-2">سنة الصنع من</label>
+          <label className="block text-xs text-slate-300 mb-2">سنة الصنع من</label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiCalendar /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
               placeholder="أقدم سنة"
               value={filters.yearFrom}
               onChange={(e) => handle('yearFrom', e.target.value)}
@@ -699,12 +700,12 @@ function FilterPanel({
           </div>
         </div>
         <div>
-          <label className="block text-slate-300 mb-2">سنة الصنع إلى</label>
+          <label className="block text-xs text-slate-300 mb-2">سنة الصنع إلى</label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"><FiCalendar /></span>
             <input
               type="number"
-              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+              className="w-full pr-10 pl-4 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
               placeholder="أحدث سنة"
               value={filters.yearTo}
               onChange={(e) => handle('yearTo', e.target.value)}
@@ -726,15 +727,15 @@ function FilterPanel({
               className="absolute inset-y-0 right-0 w-full max-w-md p-3"
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              <Panel className="p-6 h-full overflow-y-auto rounded-l-2xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-slate-100">الفلاتر</h3>
-                  <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><FiX size={22} /></button>
+              <Panel className="p-5 h-full overflow-y-auto rounded-l-2xl">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-slate-100">الفلاتر</h3>
+                  <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><FiX size={20} /></button>
                 </div>
 
                 {body}
 
-                <div className="sticky bottom-0 bg-slate-900/80 backdrop-blur pt-4 border-t border-slate-800 mt-6">
+                <div className="sticky bottom-0 bg-slate-900/80 backdrop-blur pt-3 border-t border-slate-800 mt-6">
                   <div className="flex gap-3">
                     <SubtleBtn onClick={onReset} className="flex-1">إعادة تعيين</SubtleBtn>
                     <PrimaryBtn onClick={onApply} className="flex-1">تطبيق</PrimaryBtn>
@@ -752,9 +753,9 @@ function FilterPanel({
           <motion.div
             initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
           >
-            <Panel className="p-6 mb-8 hidden md:block">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-100">الفلاتر المتقدمة</h3>
+            <Panel className="p-5 mb-6 hidden md:block">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-bold text-slate-100">الفلاتر المتقدمة</h3>
                 <div className="flex items-center gap-2">
                   {activeChips.slice(0, 4).map((c, i) => (
                     <FilterChip key={`chip-head-${c.key}-${i}`} label={c.label} onClear={() => handle(c.key, '')} />
@@ -765,7 +766,7 @@ function FilterPanel({
 
               {body}
 
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="mt-5 flex justify-end gap-3">
                 <SubtleBtn onClick={onReset}>إعادة تعيين</SubtleBtn>
                 <PrimaryBtn onClick={onApply}>تطبيق الفلاتر</PrimaryBtn>
               </div>
@@ -987,7 +988,7 @@ export default function ExhibitorCars() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 py-8 px-4 sm:px-6 lg:px-8">
+    <div dir="rtl" className="min-h-screen bg-slate-950 py-7 px-4 sm:px-6 lg:px-8">
       {/* Modals */}
       <ViewCarModal open={viewOpen} onClose={()=>setViewOpen(false)} car={selectedCarData} />
       <EditCarModal open={editOpen} onClose={()=>setEditOpen(false)} car={selectedCarData} onSaved={handleSaved} />
@@ -995,30 +996,32 @@ export default function ExhibitorCars() {
 
       <div className="max-w-7xl mx-auto">
         {/* Header + Search */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="mb-7">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
             <div>
-              <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                className="text-3xl font-bold text-slate-100 mb-2">
+              <motion.h1
+                initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+                className="text-2xl font-bold text-slate-100 mb-1 leading-tight"
+              >
                 سيارات المعرض
               </motion.h1>
-              <p className="text-slate-400">إدارة السيارات المضافة إلى معرضك</p>
+              <p className="text-slate-400 text-sm">إدارة السيارات المضافة إلى معرضك</p>
             </div>
             <PrimaryBtn onClick={goToAddCar} aria-label="إضافة سيارة جديدة" className="inline-flex items-center gap-2">
-              <FiPlus className="ml-2" />
+              <FiPlus className="ml-1" size={16} />
               <span>إضافة سيارة جديدة</span>
             </PrimaryBtn>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <motion.div className="relative flex-grow" whileHover={{ scale: 1.005 }}>
+          <div className="flex flex-col md:flex-row gap-3">
+            <motion.div className="relative flex-grow" whileHover={{ scale: 1.003 }}>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <FiSearch className="text-slate-500" />
               </div>
               <input
                 type="text"
                 placeholder="ابحث عن سيارة (ماركة أو موديل أو سنة)"
-                className="w-full pr-10 pl-4 py-3 rounded-xl bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+                className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { setCurrentPage(1); fetchCars(1) } }}
@@ -1031,12 +1034,12 @@ export default function ExhibitorCars() {
 
             <button
               onClick={() => setShowFilters(true)}
-              className="relative inline-flex items-center justify-center px-6 py-3 rounded-xl bg-slate-900/60 text-slate-200 border border-slate-700 hover:bg-slate-800/60 transition-colors"
+              className="relative inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-slate-900/60 text-slate-200 border border-slate-700 hover:bg-slate-800/60 transition-colors text-sm"
             >
               <FiFilter className="ml-2" />
               <span>الفلاتر</span>
               {activeFilterCount > 0 && (
-                <span className="absolute -top-2 -left-2 bg-violet-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-2 -left-2 bg-violet-600 text-white text-[11px] rounded-full w-5 h-5 flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -1046,7 +1049,7 @@ export default function ExhibitorCars() {
 
         {/* Error */}
         {errorMsg && (
-          <div className="mb-6 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-4 whitespace-pre-wrap">
+          <div className="mb-6 bg-rose-500/10 border border-rose-700 text-rose-300 rounded-xl p-4 whitespace-pre-wrap text-sm">
             {errorMsg}
           </div>
         )}
@@ -1062,8 +1065,8 @@ export default function ExhibitorCars() {
           onReset={() => { resetFilters(); setCurrentPage(1); fetchCars(1) }}
         />
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Quick stats (مصغّرة ومتّسقة) */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-7">
           <StatCard title="إجمالي الصفحة الحالية" color="indigo" value={filteredCars.length} />
           <StatCard title="معلن" color="green" value={filteredCars.filter(c => c.status === 'معلن').length} />
           <StatCard title="محجوز" color="yellow" value={filteredCars.filter(c => c.status === 'محجوز').length} />
@@ -1071,12 +1074,14 @@ export default function ExhibitorCars() {
         </div>
 
         {/* Toolbar */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="text-slate-400"><span className="font-medium text-slate-200">{total}</span> إجمالي السيارات</div>
+        <div className="mb-5 flex justify-between items-center">
+          <div className="text-slate-400 text-sm">
+            <span className="font-medium text-slate-200 tabular-nums">{total}</span> إجمالي السيارات
+          </div>
           <div className="flex items-center">
-            <span className="text-slate-400 mr-2">ترتيب حسب:</span>
+            <span className="text-slate-400 mr-2 text-sm">ترتيب حسب:</span>
             <select
-              className="px-3 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+              className="px-3 py-2 rounded-xl bg-slate-900/70 text-slate-100 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 text-sm"
               value={sortKey}
               onChange={(e) => { setSortKey(e.target.value as any); setCurrentPage(1) }}
             >
@@ -1093,10 +1098,10 @@ export default function ExhibitorCars() {
 
         {/* No results */}
         {!loading && filteredCars.length === 0 && (
-          <Panel className="p-12 text-center">
-            <div className="text-slate-500 mb-4"><FiSearch size={48} className="mx-auto" /></div>
-            <h3 className="text-xl font-medium text-slate-100 mb-2">لا توجد سيارات متطابقة</h3>
-            <p className="text-slate-400 mb-6">عدّل الفلاتر أو أعد البحث.</p>
+          <Panel className="p-10 text-center">
+            <div className="text-slate-500 mb-3"><FiSearch size={40} className="mx-auto" /></div>
+            <h3 className="text-lg font-medium text-slate-100 mb-1">لا توجد سيارات متطابقة</h3>
+            <p className="text-slate-400 text-sm mb-5">عدّل الفلاتر أو أعد البحث.</p>
             <PrimaryBtn onClick={() => { resetFilters(); setCurrentPage(1); fetchCars(1) }}>
               عرض جميع السيارات
             </PrimaryBtn>
@@ -1121,25 +1126,25 @@ export default function ExhibitorCars() {
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {filteredCars.map((car, index) => (
-                      <motion.tr key={`car-${car.id}`} initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
+                      <motion.tr key={`car-${car.id}`} initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }}
                         className="hover:bg-slate-800/40">
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-3.5">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-violet-500/15 rounded-full flex items-center justify-center border border-violet-600/30">
-                              <FaCar className="text-violet-400" />
+                            <div className="flex-shrink-0 h-9 w-9 bg-violet-500/15 rounded-full flex items-center justify-center border border-violet-600/30">
+                              <FaCar className="text-violet-400" size={16} />
                             </div>
-                            <div className="mr-4">
+                            <div className="ml-4">
                               <div className="text-sm font-semibold text-slate-100">{car.title}</div>
-                              <div className="text-sm text-slate-400">{car.year} • {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم</div>
+                              <div className="text-xs text-slate-400">{car.year} • {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-bold text-violet-300">{Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س</div>
+                        <td className="px-5 py-3.5">
+                          <div className="text-sm font-bold text-violet-300 tabular-nums">{Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        <td className="px-5 py-3.5">
+                          <span className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${
                             car.status === 'معلن' ? 'bg-green-500/15 text-green-300 border border-green-600/30' :
                             car.status === 'محجوز' ? 'bg-amber-500/15 text-amber-200 border border-amber-600/30' :
                             car.status === 'مباع' ? 'bg-rose-500/15 text-rose-300 border border-rose-600/30' :
@@ -1148,25 +1153,25 @@ export default function ExhibitorCars() {
                             {car.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-400">
+                        <td className="px-5 py-3.5 text-sm text-slate-400 tabular-nums">
                           <div className="flex items-center gap-1"><FiEye className="text-slate-500" />{(car.views ?? 0).toLocaleString()}</div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-400">
+                        <td className="px-5 py-3.5 text-sm text-slate-400 tabular-nums">
                           {(car.inquiries ?? 0).toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium">
+                        <td className="px-5 py-3.5 text-sm font-medium">
                           <div className="flex justify-end gap-3">
                             <button className="text-violet-300 hover:text-violet-200" aria-label="تعديل" type="button"
                                     onClick={() => openEdit(car.id)}>
-                              <FiEdit size={18} />
+                              <FiEdit size={16} />
                             </button>
                             <button className="text-slate-300 hover:text-slate-100" aria-label="عرض التفاصيل" type="button"
                                     onClick={() => openView(car.id)}>
-                              <FiEye size={18} />
+                              <FiEye size={16} />
                             </button>
                             <button className="text-rose-400 hover:text-rose-300" aria-label="حذف" type="button"
                                     onClick={() => openDelete(car.id)}>
-                              <FiTrash2 size={18} />
+                              <FiTrash2 size={16} />
                             </button>
                           </div>
                         </td>
@@ -1179,9 +1184,9 @@ export default function ExhibitorCars() {
 
             {/* Pagination */}
             {lastPage > 1 && (
-              <div className="mt-8 flex justify-between items-center">
-                <div className="text-sm text-slate-400">
-                  صفحة <span className="font-medium text-slate-200">{currentPage}</span> من <span className="font-medium text-slate-200">{lastPage}</span> — إجمالي <span className="font-medium text-slate-200">{total}</span>
+              <div className="mt-6 flex justify-between items-center">
+                <div className="text-xs sm:text-sm text-slate-400">
+                  صفحة <span className="font-medium text-slate-200 tabular-nums">{currentPage}</span> من <span className="font-medium text-slate-200 tabular-nums">{lastPage}</span> — إجمالي <span className="font-medium text-slate-200 tabular-nums">{total}</span>
                 </div>
                 <nav className="flex items-center gap-1">
                   <button
@@ -1195,7 +1200,7 @@ export default function ExhibitorCars() {
                     <button
                       key={`page-${number}`}
                       onClick={() => setCurrentPage(number)}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center border text-sm tabular-nums ${
                         currentPage === number
                           ? 'bg-violet-600 text-white border-violet-600'
                           : 'border-slate-700 text-slate-200 hover:bg-slate-800/60'
@@ -1230,10 +1235,10 @@ function StatCard({ title, value, color }: { title: string; value: number | stri
     red: 'from-rose-600 to-red-600',
   }
   return (
-    <Panel className="p-6 relative overflow-hidden">
-      <div className={`absolute -top-12 -left-12 w-32 h-32 rounded-full bg-gradient-to-br opacity-20 ${ringMap[color]}`} />
-      <h3 className="text-slate-400 mb-2">{title}</h3>
-      <p className="text-3xl font-bold text-slate-100">{value}</p>
+    <Panel className="p-4 relative overflow-hidden">
+      <div className={`absolute -top-12 -left-12 w-28 h-28 rounded-full bg-gradient-to-br opacity-15 ${ringMap[color]}`} />
+      <h3 className="text-[11px] uppercase tracking-wider text-slate-400 mb-1">{title}</h3>
+      <p className="text-xl md:text-2xl font-semibold text-slate-100 leading-tight tabular-nums">{value}</p>
     </Panel>
   )
 }
@@ -1251,7 +1256,7 @@ function SkeletonTable() {
           {[...Array(5)].map((_, i) => (
             <tr key={`skrow-${i}`}>
               {Array.from({length:6}).map((_,j)=>(
-                <td key={`skcell-${i}-${j}`} className="px-6 py-4">
+                <td key={`skcell-${i}-${j}`} className="px-5 py-3.5">
                   <div className="h-4 bg-slate-800 rounded w-3/4 animate-pulse" />
                 </td>
               ))}
@@ -1265,6 +1270,6 @@ function SkeletonTable() {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">{children}</th>
+    <th className="px-5 py-3 text-right text-[11px] font-medium text-slate-400 tracking-wider">{children}</th>
   )
 }

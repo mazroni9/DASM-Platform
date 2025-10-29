@@ -31,16 +31,12 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
 import Pusher from "pusher-js";
 import BidForm from "@/components/BidForm";
-import Box from '@mui/material/Box';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import List from "@mui/material/List";
 import { motion } from "framer-motion";
 
-import { useEcho } from "@laravel/echo-react";
-import { List, ListSubheader } from "@mui/material";
-
-// تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getCurrentAuctionType(): string {
   const now = new Date();
   const hour = now.getHours();
@@ -147,7 +143,6 @@ export default function CarDetailPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [showBid, setShowBid] = useState(false);
 
-  // التعامل مع تغيير قيم حقول النموذج
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -209,7 +204,6 @@ export default function CarDetailPage() {
     }
   };
 
-  // تقديم النموذج
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setShowConfirm(true);
@@ -219,14 +213,12 @@ export default function CarDetailPage() {
     return Math.round(number / 5) * 5;
   };
 
-  // Verify user is authenticated (only redirect if auth loading is complete and user is not logged in)
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
       // router.push("/auth/login?returnUrl=/dashboard/profile");
     }
   }, [isLoggedIn, authLoading, router]);
 
-  // Fetch user profile data
   useEffect(() => {
     if (authLoading) return;
 
@@ -527,24 +519,69 @@ export default function CarDetailPage() {
                 {item?.active_auction && (
                   <div className="mt-3 border-t border-slate-800 pt-3">
                     <h4 className="text-lg font-bold text-slate-200 mb-2">آخر المزايدين</h4>
+
+                    {/* ✅ ضبط ألوان MUI لمنع الخلفية البيضاء + ستايل داكن متناسق */}
                     <List
                       dir="rtl"
                       sx={{
-                        width: '100%',
+                        width: "100%",
                         maxWidth: 460,
-                        bgcolor: 'background.paper',
-                        position: 'relative',
-                        overflow: 'auto',
+                        bgcolor: "transparent", // كان background.paper (أبيض)
+                        color: "inherit",
+                        position: "relative",
+                        overflow: "auto",
                         maxHeight: 400,
+                        px: 0,
+                        // Scrollbar داكن
+                        "::-webkit-scrollbar": { width: "8px" },
+                        "::-webkit-scrollbar-thumb": {
+                          background:
+                            "linear-gradient(180deg, rgba(139,92,246,0.45), rgba(244,114,182,0.35))",
+                          borderRadius: "8px",
+                          border: "2px solid rgba(2,6,23,0.7)",
+                        },
+                        "::-webkit-scrollbar-track": { background: "transparent" },
+                        // عناصر القائمة
+                        "& .MuiListItem-root": { padding: 0, marginBottom: 8 },
+                        "& .MuiListItemButton-root": {
+                          gap: 12,
+                          alignItems: "center",
+                          borderRadius: 12,
+                          padding: "10px 12px",
+                          backgroundColor: "rgba(2,6,23,0.6)", // slate-950/60
+                          border: "1px solid rgba(51,65,85,0.6)", // slate-700/60
+                          transition: "all .2s ease",
+                          "&:hover": {
+                            backgroundColor: "rgba(15,23,42,0.8)", // slate-900/80
+                            borderColor: "rgba(79,70,229,0.5)", // violet-600/50
+                            boxShadow: "0 8px 24px -12px rgba(139,92,246,0.35)",
+                            transform: "translateY(-1px)",
+                          },
+                        },
+                        "& .MuiListItemText-root .MuiTypography-root": {
+                          color: "inherit",
+                        },
                       }}
                     >
                       {item.active_auction.bids.map((bid) => {
                         return (
                           <ListItem key={bid.id} component="div" disablePadding>
                             <ListItemButton>
-                              <ListItemText dir="rtl" sx={{ textAlign: "right" }} primary={`#${bid.user_id}`} />
-                              <ListItemText dir="rtl" sx={{ textAlign: "right" }} primary={bid.created_at} />
-                              <PriceWithIcon className="text-right font-bold" price={bid.bid_amount} />
+                              <ListItemText
+                                dir="rtl"
+                                sx={{ textAlign: "right", m: 0 }}
+                                primary={`#${bid.user_id}`}
+                              />
+                              <ListItemText
+                                dir="rtl"
+                                sx={{ textAlign: "right", m: 0 }}
+                                primary={
+                                  new Date(bid.created_at).toLocaleString("ar-SA")
+                                }
+                              />
+                              <div className="ml-auto text-fuchsia-300 font-semibold">
+                                <PriceWithIcon className="text-right font-bold" price={bid.bid_amount} />
+                              </div>
                             </ListItemButton>
                           </ListItem>
                         );
@@ -650,7 +687,10 @@ export default function CarDetailPage() {
                       <p className="font-semibold">
                         {item?.car?.report_images.map((file: any) => (
                           <div key={file.id}>
-                            <a href={file.image_path} className="text-fuchsia-300 hover:text-fuchsia-200 underline-offset-4 hover:underline">
+                            <a
+                              href={file.image_path}
+                              className="text-fuchsia-300 hover:text-fuchsia-200 underline-offset-4 hover:underline"
+                            >
                               {file.image_path.split("/").pop()}
                             </a>
                           </div>
