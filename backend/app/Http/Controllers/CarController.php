@@ -48,10 +48,9 @@ class CarController extends Controller
         // تاجر أو مستخدم عادي
         if ($user->role === 'dealer' && $user->dealer) {
             $query = Car::where('dealer_id', $user->dealer->id);
-        } else {
-            $query = Car::where('user_id', $user->id);
         }
 
+        $query->where('user_id', $user->id);
         $query->with('auctions');
 
         // فلاتر اختيارية

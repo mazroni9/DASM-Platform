@@ -26,6 +26,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\BidEventController;
 use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
+use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -319,20 +320,20 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/moderators/{id}', [AdminModeratorController::class, 'destroy']);
     Route::patch('/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus']);
 
-    // Admin auctions
-    Route::get('/auctions', [AdminController::class, 'auctions']);
-    Route::get('/auctions/{id}', [AdminController::class, 'getAuction']);
-    Route::put('/auctions/{id}', [AdminController::class, 'updateAuction']);
-    Route::post('/auctions/{id}/approve', [AdminController::class, 'approveAuction']);
-    Route::post('/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
-    Route::put('/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
-    Route::put('/auctions/{id}/auction-type', [AdminController::class, 'updateAuctionType']);
+    // Admin auction management
+    Route::get('/auctions', [AdminAuctionController::class, 'index']);
+    Route::get('/auctions/{id}', [AdminAuctionController::class, 'show']);
+    Route::put('/auctions/{id}', [AdminAuctionController::class, 'update']);
+    Route::post('/auctions/{id}/approve', [AdminAuctionController::class, 'approve']);
+    Route::post('/auctions/{id}/reject', [AdminAuctionController::class, 'reject']);
+    Route::put('/auctions/{id}/status', [AdminAuctionController::class, 'updateStatus']);
+    Route::put('/auctions/{id}/auction-type', [AdminAuctionController::class, 'updateType']);
     Route::post('/auctions/bulk-status', [AuctionController::class, 'bulkUpdateStatus']);
     Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
     Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
-    Route::put('/auctions/{id}/set-open-price', [AdminController::class, 'setOpeningPrice']);
-    Route::post('/auctions/bulk-approve', [AdminController::class, 'bulkApprove']);
-    Route::post('/auctions/bulk-reject',  [AdminController::class, 'bulkReject']);
+    Route::put('/auctions/{id}/set-open-price', [AdminAuctionController::class, 'setOpeningPrice']);
+    Route::post('/auctions/bulk-approve', [AdminAuctionController::class, 'bulkApprove']);
+    Route::post('/auctions/bulk-reject',  [AdminAuctionController::class, 'bulkReject']);
 
     // Bid events
     Route::get('/bids/events', [BidEventController::class, 'index']);
