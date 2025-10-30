@@ -68,7 +68,6 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         parent::boot();
 
-
         static::created(function ($user) {
             if ($user->role == UserRole::USER) {
                 $user_code = 'Usr_'.$user->area?->code.'_0'.$user->id;
@@ -129,10 +128,10 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     // ✅ If the user is a venue owner
-public function venueOwner()
-{
-    return $this->hasOne(\App\Models\VenueOwner::class, 'user_id');
-}
+    public function venueOwner()
+    {
+        return $this->hasOne(\App\Models\VenueOwner::class, 'user_id');
+    }
 
     public function deviceTokens()
     {
