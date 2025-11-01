@@ -43,15 +43,17 @@ class CarController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = null;
 
-        // تاجر أو مستخدم عادي
+        // ابدأ دائمًا بـ Query Builder ثم طبّق القيود حسب الدور
+        $query = Car::query()->with('auctions');
+
         if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
+            // لو المستخدم تاجر ومعاه dealer، نقيّد على المعرض
+            $query->where('dealer_id', $user->dealer->id);
         }
 
+        // في جميع الأحوال نقيّد على صاحب السيارة (كما كان في منطقك الأصلي)
         $query->where('user_id', $user->id);
-        $query->with('auctions');
 
         // فلاتر اختيارية
         if ($request->has('condition')) {
@@ -116,8 +118,15 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
+        // ابدأ بـ Query Builder لتفادي null
+        $query = Car::query();
+
         if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
+            // سيارات المعرض الخاص بالتاجر
+            $query->where('dealer_id', $user->dealer->id);
+        } else {
+            //Fallback منطقي: سيارات المستخدم نفسه
+            $query->where('user_id', $user->id);
         }
 
         $cars = $query->paginate(10);
@@ -202,7 +211,6 @@ class CarController extends Controller
 
         $user = Auth::user();
         $car = new Car();
-
 
         if ($user->role === 'dealer' && $user->dealer) {
             $car->dealer_id = $user->dealer->id;
@@ -329,15 +337,6 @@ class CarController extends Controller
             }])
             ->first();
 
-        // $similar_cars = Car::select('id','make','model','year','images')
-        // ->with('activeAuction')
-        // ->withCount('activeAuctionBids as total_bids')
-        // ->where('make' ,"LIKE", "%$car->make%")
-        // ->where('model' ,"LIKE", "%$car->model%")
-        // ->where('id', '!=', $car->id)
-        // ->whereHas('activeAuction')
-        // ->take(4)
-        // ->get();
         $similar_cars = Car::where('make', $car->make)
             ->where('id', '!=', $car->id)
             ->whereHas('activeAuction')
