@@ -458,6 +458,18 @@ Route::prefix('exhibitor')->middleware(['auth:sanctum'])->group(function () {
     Route::get ('/extra-services/{extraService}',  [ExhibitorExtraServiceController::class, 'show'])->whereNumber('extraService');
     Route::post('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'store']);
     Route::get ('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'index']);
+
+    // سوق السيارات للمعارض (اعتمادًا على جدول cars الحالي)
+    Route::get('/market/cars', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'index']);
+    Route::get('/market/cars/{car}', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'show'])->whereNumber('car');
+    // Exhibitor Analytics (NEW)
+    // =========================
+    Route::get('/analytics/overview',     [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'overview']);
+    Route::get('/analytics/timeseries',   [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'timeseries']);
+    Route::get('/analytics/top-models',   [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'topModels']);
+    Route::get('/analytics/bids-heatmap', [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'bidsHeatmap']);
+
+
 });
 
 /*
