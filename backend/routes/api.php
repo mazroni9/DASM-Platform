@@ -3,6 +3,8 @@
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;       // <-- جديد: لاختبار قاعدة البيانات
+use Illuminate\Support\Facades\Cache;    // <-- جديد: لاختبار الكاش
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -67,10 +69,60 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 
 /*
 |--------------------------------------------------------------------------
-| Health
+| Diagnostics / Health
 |--------------------------------------------------------------------------
+| ملاحظات:
+| - /health: رد خفيف جدًا مع Cache-Control لقياس TTFB الخام.
+| - /diag  : يتطلب X-Diag-Token، ويقيس أزمنة DB/Cache ويُعيد Server-Timing (لو الميدل وير مفعل).
 */
-Route::get('/health', fn () => response()->json(['status' => 'ok']));
+Route::get('/health', function () {
+    return response()->json([
+        'ok'   => true,
+        'time' => now()->toIso8601String(),
+    ], 200)->header('Cache-Control', 'public, max-age=60');
+});
+
+Route::get('/diag', function (Request $request) {
+    $token = $request->header('X-Diag-Token') ?? $request->query('token');
+    if (!$token || !hash_equals(env('DIAG_TOKEN', ''), $token)) {
+        abort(404);
+    }
+
+    $started = microtime(true);
+    $dbMs = null;
+    $cacheMs = null;
+
+    // قياس DB (استعلام بسيط)
+    $t = microtime(true);
+    try {
+        DB::select('SELECT 1');
+        $dbMs = (microtime(true) - $t) * 1000;
+    } catch (\Throwable $e) {
+        $dbMs = -1;
+    }
+
+    // قياس Cache (put/get)
+    $t = microtime(true);
+    try {
+        Cache::put('diag_ping', '1', 60);
+        Cache::get('diag_ping');
+        $cacheMs = (microtime(true) - $t) * 1000;
+    } catch (\Throwable $e) {
+        $cacheMs = -1;
+    }
+
+    $totalMs = (microtime(true) - $started) * 1000;
+
+    return response()->json([
+        'ok'        => true,
+        'php'       => PHP_VERSION,
+        'laravel'   => app()->version(),
+        'env'       => config('app.env'),
+        'db_ms'     => round($dbMs, 1),
+        'cache_ms'  => round($cacheMs, 1),
+        'total_ms'  => round($totalMs, 1),
+    ], 200)->header('Cache-Control', 'no-store');
+})->middleware('throttle:10,1'); // حد أقصى 10 طلب/دقيقة
 
 /*
 |--------------------------------------------------------------------------
@@ -462,14 +514,12 @@ Route::prefix('exhibitor')->middleware(['auth:sanctum'])->group(function () {
     // سوق السيارات للمعارض (اعتمادًا على جدول cars الحالي)
     Route::get('/market/cars', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'index']);
     Route::get('/market/cars/{car}', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'show'])->whereNumber('car');
+
     // Exhibitor Analytics (NEW)
-    // =========================
     Route::get('/analytics/overview',     [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'overview']);
     Route::get('/analytics/timeseries',   [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'timeseries']);
     Route::get('/analytics/top-models',   [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'topModels']);
     Route::get('/analytics/bids-heatmap', [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'bidsHeatmap']);
-
-
 });
 
 /*
