@@ -3,8 +3,9 @@
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;       // <-- جديد: لاختبار قاعدة البيانات
-use Illuminate\Support\Facades\Cache;    // <-- جديد: لاختبار الكاش
+use Illuminate\Support\Facades\DB;        // DB test
+use Illuminate\Support\Facades\Cache;     // Cache test
+use Illuminate\Support\Facades\Redis;     // Redis test
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -71,9 +72,9 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 |--------------------------------------------------------------------------
 | Diagnostics / Health
 |--------------------------------------------------------------------------
-| ملاحظات:
-| - /health: رد خفيف جدًا مع Cache-Control لقياس TTFB الخام.
-| - /diag  : يتطلب X-Diag-Token، ويقيس أزمنة DB/Cache ويُعيد Server-Timing (لو الميدل وير مفعل).
+| /health     : خفيف جدًا لقياس TTFB الخام.
+| /diag-lite  : تشخيص سريع بدون توكن (DB/Cache/Redis/Disk + Server-Timing).
+| /diag       : تشخيص مفصّل اختياري (يتطلب توكن لو فعّلته في .env).
 */
 Route::get('/health', function () {
     return response()->json([
@@ -82,7 +83,126 @@ Route::get('/health', function () {
     ], 200)->header('Cache-Control', 'public, max-age=60');
 });
 
+Route::get('/diag-lite', function () {
+    $started = microtime(true);
+
+    // DB
+    $dbMs = -1;
+    $dbOk = false;
+    $t = microtime(true);
+    try {
+        DB::select('SELECT 1');
+        $dbMs = (microtime(true) - $t) * 1000;
+        $dbOk = true;
+    } catch (\Throwable $e) {
+        $dbMs = -1;
+    }
+
+    // Cache (put/get)
+    $cacheMs = -1;
+    $cacheOk = false;
+    $t = microtime(true);
+    try {
+        Cache::put('diag_lite_key', '1', 60);
+        Cache::get('diag_lite_key');
+        $cacheMs = (microtime(true) - $t) * 1000;
+        $cacheOk = true;
+    } catch (\Throwable $e) {
+        $cacheMs = -1;
+    }
+
+    // Redis ping
+    $redisMs = -1;
+    $redisOk = false;
+    $redisPong = null;
+    $t = microtime(true);
+    try {
+        $pong = Redis::connection()->ping(); // phpredis: "+PONG" أو "PONG"
+        $redisMs = (microtime(true) - $t) * 1000;
+        $redisOk = true;
+        $redisPong = is_string($pong) ? $pong : (is_bool($pong) ? ($pong ? 'PONG' : 'NO') : (string)$pong);
+    } catch (\Throwable $e) {
+        $redisMs = -1;
+        $redisPong = null;
+    }
+
+    // Disk write/delete 1KB
+    $diskMs = -1;
+    $diskOk = false;
+    $t = microtime(true);
+    try {
+        $file = storage_path('app/diag_lite.tmp');
+        file_put_contents($file, str_repeat('x', 1024));
+        @unlink($file);
+        $diskMs = (microtime(true) - $t) * 1000;
+        $diskOk = true;
+    } catch (\Throwable $e) {
+        $diskMs = -1;
+    }
+
+    // OPcache (ملخص بسيط)
+    $opcache = ['enabled' => false];
+    if (function_exists('opcache_get_status')) {
+        $st = @opcache_get_status(false);
+        if (is_array($st)) {
+            $opcache = [
+                'enabled'   => (bool)($st['opcache_enabled'] ?? false),
+                'jit'       => $st['jit'] ?? null,
+                'mem_used'  => $st['memory_usage']['used_memory']  ?? null,
+                'mem_free'  => $st['memory_usage']['free_memory']  ?? null,
+                'mem_wasted'=> $st['memory_usage']['wasted_memory']?? null,
+            ];
+        }
+    }
+
+    $totalMs = (microtime(true) - $started) * 1000;
+
+    $payload = [
+        'ok'      => true,
+        'php'     => PHP_VERSION,
+        'laravel' => app()->version(),
+        'app'     => [
+            'env'   => app()->environment(),
+            'debug' => config('app.debug'),
+            'url'   => config('app.url'),
+        ],
+        'drivers' => [
+            'db_connection'  => config('database.default'),
+            'cache_driver'   => config('cache.default'),
+            'session_driver' => config('session.driver'),
+        ],
+        'opcache' => $opcache,
+        'metrics' => [
+            'db_ms'     => round($dbMs, 1),
+            'cache_ms'  => round($cacheMs, 1),
+            'redis_ms'  => round($redisMs, 1),
+            'disk_ms'   => round($diskMs, 1),
+            'total_ms'  => round($totalMs, 1),
+        ],
+        'status' => [
+            'db'    => $dbOk,
+            'cache' => $cacheOk,
+            'redis' => $redisOk,
+            'disk'  => $diskOk,
+            'pong'  => $redisPong,
+        ],
+    ];
+
+    return response()->json($payload, 200)
+        ->header('Cache-Control', 'no-store')
+        ->header('X-Response-Time', sprintf('%.1fms', $totalMs))
+        ->header('Server-Timing', sprintf(
+            'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
+            $totalMs,
+            max(0, $dbMs),
+            max(0, $cacheMs),
+            max(0, $redisMs),
+            max(0, $diskMs),
+        ));
+})->middleware('throttle:10,1'); // 10 طلبات/دقيقة
+
 Route::get('/diag', function (Request $request) {
+    // اختياري: مفصّل أكثر لو حابب تفعّله بتوكن .env
     $token = $request->header('X-Diag-Token') ?? $request->query('token');
     if (!$token || !hash_equals(env('DIAG_TOKEN', ''), $token)) {
         abort(404);
@@ -92,7 +212,7 @@ Route::get('/diag', function (Request $request) {
     $dbMs = null;
     $cacheMs = null;
 
-    // قياس DB (استعلام بسيط)
+    // DB
     $t = microtime(true);
     try {
         DB::select('SELECT 1');
@@ -101,7 +221,7 @@ Route::get('/diag', function (Request $request) {
         $dbMs = -1;
     }
 
-    // قياس Cache (put/get)
+    // Cache
     $t = microtime(true);
     try {
         Cache::put('diag_ping', '1', 60);
@@ -122,7 +242,7 @@ Route::get('/diag', function (Request $request) {
         'cache_ms'  => round($cacheMs, 1),
         'total_ms'  => round($totalMs, 1),
     ], 200)->header('Cache-Control', 'no-store');
-})->middleware('throttle:10,1'); // حد أقصى 10 طلب/دقيقة
+})->middleware('throttle:10,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -445,7 +565,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show'])->whereNumber('id');
     Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])->whereNumber('id');
     Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])->whereNumber('id');
-    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus'])->whereNumber('id');
+    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
 
     // Auction Sessions (admin)
     Route::get('/sessions', [AdminAuctionSessionController::class, 'index']);
