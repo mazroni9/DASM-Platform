@@ -86,7 +86,7 @@ Route::get('/health', function () {
         'ok'   => true,
         'time' => now()->toIso8601String(),
     ], 200)->header('Cache-Control', 'public, max-age=60');
-});
+})->middleware('throttle:20,1');
 
 Route::get('/diag-lite', function () {
     $started = microtime(true);
@@ -101,10 +101,15 @@ Route::get('/diag-lite', function () {
     $t = microtime(true);
     try { Cache::put('diag_lite_key', '1', 60); Cache::get('diag_lite_key'); $cacheMs = (microtime(true) - $t) * 1000; $cacheOk = true; } catch (\Throwable $e) { $cacheMs = -1; }
 
-    // Redis ping
+    // Redis ping (normalize)
     $redisMs = -1; $redisOk = false; $redisPong = null;
     $t = microtime(true);
-    try { $pong = Redis::connection('default')->ping(); $redisMs = (microtime(true) - $t) * 1000; $redisOk = true; $redisPong = is_string($pong) ? $pong : 'PONG'; } catch (\Throwable $e) { $redisMs = -1; }
+    try {
+        $raw = Redis::connection('default')->ping();
+        $redisMs = (microtime(true) - $t) * 1000;
+        $redisOk = is_string($raw) ? stripos($raw, 'PONG') !== false : (bool) $raw;
+        $redisPong = is_string($raw) ? $raw : 'PONG';
+    } catch (\Throwable $e) { $redisMs = -1; }
 
     // Disk 1KB
     $diskMs = -1; $diskOk = false;
@@ -149,7 +154,7 @@ Route::get('/diag-lite', function () {
         'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
         $totalMs, max(0,$dbMs), max(0,$cacheMs), max(0,$redisMs), max(0,$diskMs)
       ));
-});
+})->middleware('throttle:10,1');
 
 Route::get('/diag-bench', function (Request $request) {
     $loops = max(1, min((int)$request->query('loops', 10), 50));   // 1..50
@@ -185,9 +190,19 @@ Route::get('/diag-bench', function (Request $request) {
         return ['store' => $store, 'available' => $available, 'avg_ms' => $ok ? round($sum/$ok,1) : -1, 'loops' => $n];
     };
 
+    // Redis ping (normalize)
     $redisPing = (function () {
-        try { $t=microtime(true); $pong = Redis::connection('default')->ping(); return ['ok'=>true,'ms'=>round((microtime(true)-$t)*1000,1),'pong'=>is_string($pong)?$pong:'PONG']; }
-        catch (\Throwable $e) { return ['ok'=>false,'ms'=>-1,'pong'=>null]; }
+        try {
+            $t = microtime(true);
+            $raw = Redis::connection('default')->ping();
+            return [
+                'ok'  => is_string($raw) ? stripos($raw,'PONG') !== false : (bool) $raw,
+                'ms'  => round((microtime(true)-$t)*1000,1),
+                'pong'=> is_string($raw) ? $raw : 'PONG'
+            ];
+        } catch (\Throwable $e) {
+            return ['ok'=>false,'ms'=>-1,'pong'=>null];
+        }
     })();
 
     $db    = $benchDb($loops);
@@ -220,7 +235,7 @@ Route::get('/diag-bench', function (Request $request) {
         ],
         'advice' => $tips,
     ], 200)->header('Cache-Control','no-store');
-});
+})->middleware('throttle:5,1');
 
 // ====== روت تأكيد Redis (محمي بالتوكن) ======
 Route::get('/diag-redis', function (Request $request) {
@@ -231,12 +246,15 @@ Route::get('/diag-redis', function (Request $request) {
 
     $err = null;
     $pong = null;
+    $ok = false;
     $pingMs = -1;
 
     try {
         $t = microtime(true);
-        $pong = Redis::connection('default')->ping();
+        $raw = Redis::connection('default')->ping();  // قد يرجع true أو "+PONG"
         $pingMs = round((microtime(true) - $t) * 1000, 1);
+        $ok  = is_string($raw) ? stripos($raw,'PONG') !== false : (bool) $raw;
+        $pong = is_string($raw) ? $raw : 'PONG';
     } catch (\Throwable $e) {
         $err = $e->getMessage();
     }
@@ -262,7 +280,7 @@ Route::get('/diag-redis', function (Request $request) {
     }
 
     return response()->json([
-        'ok' => ($pong === 'PONG' || $pong === '+PONG'),
+        'ok' => $ok,
         'pong' => $pong,
         'ping_ms' => $pingMs,
         'cache_ok' => $cacheOk,
@@ -270,7 +288,7 @@ Route::get('/diag-redis', function (Request $request) {
         'config_default' => $cfg,
         'error' => $err,
     ], 200)->header('Cache-Control','no-store');
-});
+})->middleware('throttle:10,1');
 
 // ====== روت لإعادة تحميل الإعدادات (محمي بالتوكن) ======
 Route::post('/diag-reload', function (Request $request) {
@@ -283,7 +301,7 @@ Route::post('/diag-reload', function (Request $request) {
     Artisan::call('route:clear');
     return response()->json(['ok' => true, 'message' => 'config/cache/routes cleared'], 200)
         ->header('Cache-Control','no-store');
-});
+})->middleware('throttle:2,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -569,7 +587,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
     // Cars (admin)
     Route::get('/cars', [AdminCarController::class, 'index']);
-    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id'); // <== تم تصحيح القوس هنا
+    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id');
     Route::put('/cars/{id}', [AdminCarController::class, 'update'])->whereNumber('id');
     Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id');
     Route::delete('/cars/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id');
