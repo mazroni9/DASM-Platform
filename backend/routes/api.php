@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;        // DB test
 use Illuminate\Support\Facades\Cache;     // Cache test
 use Illuminate\Support\Facades\Redis;     // Redis test
+use Illuminate\Support\Str;               // random + mask
+use Illuminate\Support\Facades\Artisan;   // clear caches
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -75,6 +77,8 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 | /health     : خفيف جدًا لقياس TTFB.
 | /diag-lite  : لقطة واحدة (DB/Cache/Redis/Disk).
 | /diag-bench : بنشمارك سريع بدون أي تغييرات .env (loops & payload عبر query).
+| /diag-redis : تأكيد اتصال Redis + cache store (محمي بالتوكن).
+| /diag-reload: تفريغ كاش الإعدادات (محمي بالتوكن).
 */
 
 Route::get('/health', function () {
@@ -100,7 +104,7 @@ Route::get('/diag-lite', function () {
     // Redis ping
     $redisMs = -1; $redisOk = false; $redisPong = null;
     $t = microtime(true);
-    try { $pong = Redis::connection()->ping(); $redisMs = (microtime(true) - $t) * 1000; $redisOk = true; $redisPong = is_string($pong) ? $pong : 'PONG'; } catch (\Throwable $e) { $redisMs = -1; }
+    try { $pong = Redis::connection('default')->ping(); $redisMs = (microtime(true) - $t) * 1000; $redisOk = true; $redisPong = is_string($pong) ? $pong : 'PONG'; } catch (\Throwable $e) { $redisMs = -1; }
 
     // Disk 1KB
     $diskMs = -1; $diskOk = false;
@@ -182,7 +186,7 @@ Route::get('/diag-bench', function (Request $request) {
     };
 
     $redisPing = (function () {
-        try { $t=microtime(true); $pong = Redis::connection()->ping(); return ['ok'=>true,'ms'=>round((microtime(true)-$t)*1000,1),'pong'=>is_string($pong)?$pong:'PONG']; }
+        try { $t=microtime(true); $pong = Redis::connection('default')->ping(); return ['ok'=>true,'ms'=>round((microtime(true)-$t)*1000,1),'pong'=>is_string($pong)?$pong:'PONG']; }
         catch (\Throwable $e) { return ['ok'=>false,'ms'=>-1,'pong'=>null]; }
     })();
 
@@ -217,6 +221,69 @@ Route::get('/diag-bench', function (Request $request) {
         'advice' => $tips,
     ], 200)->header('Cache-Control','no-store');
 })->middleware('throttle:5,1');
+
+// ====== روت تأكيد Redis (محمي بالتوكن) ======
+Route::get('/diag-redis', function (Request $request) {
+    $token = $request->header('X-Diag-Token') ?? $request->query('token');
+    if (!$token || !hash_equals(env('DIAG_TOKEN', ''), $token)) {
+        abort(404);
+    }
+
+    $err = null;
+    $pong = null;
+    $pingMs = -1;
+
+    try {
+        $t = microtime(true);
+        $pong = Redis::connection('default')->ping();
+        $pingMs = round((microtime(true) - $t) * 1000, 1);
+    } catch (\Throwable $e) {
+        $err = $e->getMessage();
+    }
+
+    $cacheMs = -1;
+    $cacheOk = false;
+    try {
+        $t = microtime(true);
+        Cache::store('redis')->put('diag_r_key', '1', 60);
+        $val = Cache::store('redis')->get('diag_r_key');
+        $cacheOk = ($val === '1');
+        $cacheMs = round((microtime(true) - $t) * 1000, 1);
+    } catch (\Throwable $e) {
+        $err = ($err ? $err.' | ' : '').$e->getMessage();
+    }
+
+    $cfg = config('database.redis.default');
+    if (isset($cfg['password']) && is_string($cfg['password'])) {
+        $cfg['password'] = Str::mask($cfg['password'], '*', 2, max(0, strlen($cfg['password']) - 4));
+    }
+    if (isset($cfg['url']) && is_string($cfg['url'])) {
+        $cfg['url'] = Str::mask($cfg['url'], '*', 10, 16);
+    }
+
+    return response()->json([
+        'ok' => ($pong === 'PONG' || $pong === '+PONG'),
+        'pong' => $pong,
+        'ping_ms' => $pingMs,
+        'cache_ok' => $cacheOk,
+        'cache_ms' => $cacheMs,
+        'config_default' => $cfg,
+        'error' => $err,
+    ], 200)->header('Cache-Control','no-store');
+})->middleware('throttle:10,1');
+
+// ====== روت لإعادة تحميل الإعدادات (محمي بالتوكن) ======
+Route::post('/diag-reload', function (Request $request) {
+    $token = $request->header('X-Diag-Token') ?? $request->query('token');
+    if (!$token || !hash_equals(env('DIAG_TOKEN', ''), $token)) {
+        abort(404);
+    }
+    Artisan::call('config:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('route:clear');
+    return response()->json(['ok' => true, 'message' => 'config/cache/routes cleared'], 200)
+        ->header('Cache-Control','no-store');
+})->middleware('throttle:2,1');
 
 /*
 |--------------------------------------------------------------------------
@@ -502,7 +569,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
     // Cars (admin)
     Route::get('/cars', [AdminCarController::class, 'index']);
-    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id');
+    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id']);
     Route::put('/cars/{id}', [AdminCarController::class, 'update'])->whereNumber('id');
     Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id');
     Route::delete('/cars/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id');
