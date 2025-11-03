@@ -26,6 +26,8 @@ use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
 use function Laravel\Prompts\select;
 use Illuminate\Support\Facades\Cache;
+use App\Jobs\ProcessAuctionSaleJob;
+use Illuminate\Support\Facades\Log;
 
 class BidController extends Controller
 {
@@ -427,9 +429,8 @@ class BidController extends Controller
             ]);
 
             $auction = Auction::select('id', 'car_id', 'current_bid', 'minimum_bid', 'maximum_bid', 'last_bid_time', 'status', 'start_time', 'end_time', 'starting_bid', 'auction_type', 'reserve_price', 'opening_price')
-                ->with(['car'])
                 ->withCount('bids')
-                ->with('car:id,dealer_id,user_id')
+                ->with('car:id,dealer_id,user_id,min_price,max_price')
                 ->find($data['auction_id']);
 
             // Validate auction exists
@@ -570,7 +571,7 @@ class BidController extends Controller
             //broadcast(new PublicMessageEvent( $channelName, $message ));
 
             // Log broadcasting attempt
-            \Illuminate\Support\Facades\Log::info('Broadcasting bid event', [
+            Log::info('Broadcasting bid event', [
                 'auction_id' => $auction->id,
                 'bid_id' => $bid->id,
                 'user_id' => $user->id,
@@ -586,7 +587,7 @@ class BidController extends Controller
             $owner = User::find($owner->id);
 
             // Log notification to auction owner
-            \Illuminate\Support\Facades\Log::info('Sending notification to auction owner', [
+            Log::info('Sending notification to auction owner', [
                 'auction_id' => $auction->id,
                 'owner_id' => $owner->id,
                 'bid_id' => $bid->id,
@@ -603,7 +604,7 @@ class BidController extends Controller
             $users = User::whereIn('id', $users_ids)->get();
 
             // Log notification to other bidders
-            \Illuminate\Support\Facades\Log::info('Sending notifications to other bidders', [
+            Log::info('Sending notifications to other bidders', [
                 'auction_id' => $auction->id,
                 'bid_id' => $bid->id,
                 'recipients_count' => count($users_ids),
@@ -612,6 +613,39 @@ class BidController extends Controller
             ]);
 
             Notification::sendNow($users, new HigherBidNotification($auction));
+
+            // --- NEW LOGIC STARTS HERE ---
+            $min_price = $auction->car->min_price;
+            $max_price = $auction->car->max_price;
+            $newBidAmount = $bid->bid_amount;
+
+            // Check Max Price (Instant Sale)
+            if ($max_price > 0 && $newBidAmount >= $max_price) {
+                Log::info("Max price reached for auction {$auction->id}. Dispatching immediate sale job.");
+
+                // Dispatch the job immediately
+                ProcessAuctionSaleJob::dispatch($auction->id, $bid->id);
+
+                DB::commit();
+                Cache::flush();
+
+                // Return a special status for the frontend
+                return response()->json([
+                    'status' => 'success_sold',
+                    'message' => 'تهانينا! لقد وصلت للحد الأعلى وفزت بالمزاد فوراً.',
+                    'data' => ['bid_id' => $bid->id, 'current_bid' => $auction->current_bid]
+                ]);
+            }
+
+            // Check Min Price (Delayed Sale)
+            if ($min_price > 0 && $newBidAmount >= $min_price) {
+                Log::info("Min price reached for auction {$auction->id}. Dispatching delayed sale job (30 mins).");
+
+                // Dispatch the job with a 30-minute delay
+                ProcessAuctionSaleJob::dispatch($auction->id, $bid->id)->delay(now()->addMinutes(30));
+            }
+            // --- NEW LOGIC ENDS HERE ---
+
             DB::commit();
             Cache::flush();
             return response()->json([
@@ -626,7 +660,7 @@ class BidController extends Controller
                 ]
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Illuminate\Support\Facades\Log::warning('Bid validation failed', [
+            Log::warning('Bid validation failed', [
                 'user_id' => Auth::id(),
                 'auction_id' => $request->input('auction_id'),
                 'errors' => $e->errors(),
@@ -640,7 +674,7 @@ class BidController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Illuminate\Database\QueryException $e) {
-            \Illuminate\Support\Facades\Log::error('Database error during bid placement', [
+            Log::error('Database error during bid placement', [
                 'user_id' => Auth::id(),
                 'auction_id' => $request->input('auction_id'),
                 'error' => $e->getMessage(),
@@ -654,7 +688,7 @@ class BidController extends Controller
                 'message' => 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى'
             ], 500);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            \Illuminate\Support\Facades\Log::warning('Model not found during bid placement', [
+            Log::warning('Model not found during bid placement', [
                 'user_id' => Auth::id(),
                 'auction_id' => $request->input('auction_id'),
                 'error' => $e->getMessage(),
@@ -666,7 +700,7 @@ class BidController extends Controller
                 'message' => 'المزاد أو المستخدم غير موجود'
             ], 404);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Unexpected error during bid placement', [
+            Log::error('Unexpected error during bid placement', [
                 'user_id' => Auth::id(),
                 'auction_id' => $request->input('auction_id'),
                 'error' => $e->getMessage(),

@@ -61,6 +61,11 @@ class Car extends Model
         'transmission' => CarTransmission::class,
     ];
 
+    protected $hidden = [
+        'min_price',
+        'max_price',
+    ];
+
     protected static function boot()
     {
         parent::boot();

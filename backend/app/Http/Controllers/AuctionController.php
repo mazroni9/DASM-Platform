@@ -791,7 +791,7 @@ class AuctionController extends Controller
             ],
         ];
         $targetData = $baseDataByStatus[$targetStatus];
-      
+
         /** ---------- Fetch cars ---------- */
         $cars = Car::with(['user', 'dealer'])
             ->whereIn('id', $carIds)

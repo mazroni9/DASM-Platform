@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Car;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\Admin\CarCollection;
 
 
 class CarController extends Controller
@@ -35,11 +36,13 @@ class CarController extends Controller
 
         $cars = $query->orderBy('created_at', 'desc')
         ->paginate(10);
-
+        $carCollection = new CarCollection($cars);
+        $responseData = $carCollection->toResponse(request())->getData(true);   
         return response()->json([
             'status' => 'success',
-            'data'   => $cars,
-        ]);
+            'data'   => $responseData['data'],
+            'pagination' => $responseData['pagination'],
+        ], 200);
     }
 
         /**

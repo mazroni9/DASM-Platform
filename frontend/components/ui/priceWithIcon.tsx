@@ -9,9 +9,9 @@ export function PriceWithIcon({ price, className = "" }: PriceWithIconProps) {
     const defaultClass = "flex items-center gap-1";
     const combinedClass = `${defaultClass}${className ? " " + className : ""}`;
     return (
-        <div className={combinedClass}>
+        <span className={combinedClass}>
             {price}
             <SaudiRiyal />
-        </div>
+        </span>
     );
 }

@@ -756,7 +756,7 @@ export default function CarDetailPage() {
                       <div>
                         <p className="text-gray-500 text-sm">أقل سعر</p>
                         <p className="font-semibold">
-                          <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
+                            <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>

@@ -311,6 +311,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $car = Car::with('reportImages')->find($id);
+        
         if ($car) {
             $car->load('dealer');
         }
@@ -329,15 +330,7 @@ class CarController extends Controller
             }])
             ->first();
 
-        // $similar_cars = Car::select('id','make','model','year','images')
-        // ->with('activeAuction')
-        // ->withCount('activeAuctionBids as total_bids')
-        // ->where('make' ,"LIKE", "%$car->make%")
-        // ->where('model' ,"LIKE", "%$car->model%")
-        // ->where('id', '!=', $car->id)
-        // ->whereHas('activeAuction')
-        // ->take(4)
-        // ->get();
+
         $similar_cars = Car::where('make', $car->make)
             ->where('id', '!=', $car->id)
             ->whereHas('activeAuction')
