@@ -70,12 +70,13 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 
 /*
 |--------------------------------------------------------------------------
-| Diagnostics / Health
+| Diagnostics / Health (Postman-only)
 |--------------------------------------------------------------------------
-| /health     : خفيف جدًا لقياس TTFB الخام.
-| /diag-lite  : تشخيص سريع بدون توكن (DB/Cache/Redis/Disk + Server-Timing).
-| /diag       : تشخيص مفصّل اختياري (يتطلب توكن لو فعّلته في .env).
+| /health     : خفيف جدًا لقياس TTFB.
+| /diag-lite  : لقطة واحدة (DB/Cache/Redis/Disk).
+| /diag-bench : بنشمارك سريع بدون أي تغييرات .env (loops & payload عبر query).
 */
+
 Route::get('/health', function () {
     return response()->json([
         'ok'   => true,
@@ -87,91 +88,49 @@ Route::get('/diag-lite', function () {
     $started = microtime(true);
 
     // DB
-    $dbMs = -1;
-    $dbOk = false;
+    $dbMs = -1; $dbOk = false;
     $t = microtime(true);
-    try {
-        DB::select('SELECT 1');
-        $dbMs = (microtime(true) - $t) * 1000;
-        $dbOk = true;
-    } catch (\Throwable $e) {
-        $dbMs = -1;
-    }
+    try { DB::select('SELECT 1'); $dbMs = (microtime(true) - $t) * 1000; $dbOk = true; } catch (\Throwable $e) { $dbMs = -1; }
 
-    // Cache (put/get)
-    $cacheMs = -1;
-    $cacheOk = false;
+    // Cache (default)
+    $cacheMs = -1; $cacheOk = false;
     $t = microtime(true);
-    try {
-        Cache::put('diag_lite_key', '1', 60);
-        Cache::get('diag_lite_key');
-        $cacheMs = (microtime(true) - $t) * 1000;
-        $cacheOk = true;
-    } catch (\Throwable $e) {
-        $cacheMs = -1;
-    }
+    try { Cache::put('diag_lite_key', '1', 60); Cache::get('diag_lite_key'); $cacheMs = (microtime(true) - $t) * 1000; $cacheOk = true; } catch (\Throwable $e) { $cacheMs = -1; }
 
     // Redis ping
-    $redisMs = -1;
-    $redisOk = false;
-    $redisPong = null;
+    $redisMs = -1; $redisOk = false; $redisPong = null;
     $t = microtime(true);
-    try {
-        $pong = Redis::connection()->ping(); // phpredis: "+PONG" أو "PONG"
-        $redisMs = (microtime(true) - $t) * 1000;
-        $redisOk = true;
-        $redisPong = is_string($pong) ? $pong : (is_bool($pong) ? ($pong ? 'PONG' : 'NO') : (string)$pong);
-    } catch (\Throwable $e) {
-        $redisMs = -1;
-        $redisPong = null;
-    }
+    try { $pong = Redis::connection()->ping(); $redisMs = (microtime(true) - $t) * 1000; $redisOk = true; $redisPong = is_string($pong) ? $pong : 'PONG'; } catch (\Throwable $e) { $redisMs = -1; }
 
-    // Disk write/delete 1KB
-    $diskMs = -1;
-    $diskOk = false;
+    // Disk 1KB
+    $diskMs = -1; $diskOk = false;
     $t = microtime(true);
-    try {
-        $file = storage_path('app/diag_lite.tmp');
-        file_put_contents($file, str_repeat('x', 1024));
-        @unlink($file);
-        $diskMs = (microtime(true) - $t) * 1000;
-        $diskOk = true;
-    } catch (\Throwable $e) {
-        $diskMs = -1;
-    }
-
-    // OPcache (ملخص بسيط)
-    $opcache = ['enabled' => false];
-    if (function_exists('opcache_get_status')) {
-        $st = @opcache_get_status(false);
-        if (is_array($st)) {
-            $opcache = [
-                'enabled'   => (bool)($st['opcache_enabled'] ?? false),
-                'jit'       => $st['jit'] ?? null,
-                'mem_used'  => $st['memory_usage']['used_memory']  ?? null,
-                'mem_free'  => $st['memory_usage']['free_memory']  ?? null,
-                'mem_wasted'=> $st['memory_usage']['wasted_memory']?? null,
-            ];
-        }
-    }
+    try { $f = storage_path('app/diag_lite.tmp'); file_put_contents($f, str_repeat('x', 1024)); @unlink($f); $diskMs = (microtime(true) - $t) * 1000; $diskOk = true; } catch (\Throwable $e) { $diskMs = -1; }
 
     $totalMs = (microtime(true) - $started) * 1000;
 
-    $payload = [
+    return response()->json([
         'ok'      => true,
         'php'     => PHP_VERSION,
         'laravel' => app()->version(),
-        'app'     => [
-            'env'   => app()->environment(),
-            'debug' => config('app.debug'),
-            'url'   => config('app.url'),
-        ],
-        'drivers' => [
-            'db_connection'  => config('database.default'),
-            'cache_driver'   => config('cache.default'),
-            'session_driver' => config('session.driver'),
-        ],
-        'opcache' => $opcache,
+        'app'     => ['env' => app()->environment(), 'debug' => config('app.debug'), 'url' => config('app.url')],
+        'drivers' => ['db_connection' => config('database.default'), 'cache_driver' => config('cache.default'), 'session_driver' => config('session.driver')],
+        'opcache' => (function () {
+            $op = ['enabled' => false];
+            if (function_exists('opcache_get_status')) {
+                $st = @opcache_get_status(false);
+                if (is_array($st)) {
+                    $op = [
+                        'enabled'    => (bool)($st['opcache_enabled'] ?? false),
+                        'jit'        => $st['jit'] ?? null,
+                        'mem_used'   => $st['memory_usage']['used_memory'] ?? null,
+                        'mem_free'   => $st['memory_usage']['free_memory'] ?? null,
+                        'mem_wasted' => $st['memory_usage']['wasted_memory'] ?? null,
+                    ];
+                }
+            }
+            return $op;
+        })(),
         'metrics' => [
             'db_ms'     => round($dbMs, 1),
             'cache_ms'  => round($cacheMs, 1),
@@ -179,70 +138,85 @@ Route::get('/diag-lite', function () {
             'disk_ms'   => round($diskMs, 1),
             'total_ms'  => round($totalMs, 1),
         ],
-        'status' => [
-            'db'    => $dbOk,
-            'cache' => $cacheOk,
-            'redis' => $redisOk,
-            'disk'  => $diskOk,
-            'pong'  => $redisPong,
-        ],
-    ];
+        'status' => ['db' => $dbOk, 'cache' => $cacheOk, 'redis' => $redisOk, 'disk' => $diskOk, 'pong' => $redisPong],
+    ], 200)->header('Cache-Control', 'no-store')
+      ->header('X-Response-Time', sprintf('%.1fms', $totalMs))
+      ->header('Server-Timing', sprintf(
+        'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
+        $totalMs, max(0,$dbMs), max(0,$cacheMs), max(0,$redisMs), max(0,$diskMs)
+      ));
+})->middleware('throttle:10,1');
 
-    return response()->json($payload, 200)
-        ->header('Cache-Control', 'no-store')
-        ->header('X-Response-Time', sprintf('%.1fms', $totalMs))
-        ->header('Server-Timing', sprintf(
-            'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
-            $totalMs,
-            max(0, $dbMs),
-            max(0, $cacheMs),
-            max(0, $redisMs),
-            max(0, $diskMs),
-        ));
-})->middleware('throttle:10,1'); // 10 طلبات/دقيقة
+Route::get('/diag-bench', function (Request $request) {
+    $loops = max(1, min((int)$request->query('loops', 10), 50));   // 1..50
+    $kb    = max(1, min((int)$request->query('kb', 1), 64));      // 1..64 KB payload
+    $payload = str_repeat('x', $kb * 1024);
 
-Route::get('/diag', function (Request $request) {
-    // اختياري: مفصّل أكثر لو حابب تفعّله بتوكن .env
-    $token = $request->header('X-Diag-Token') ?? $request->query('token');
-    if (!$token || !hash_equals(env('DIAG_TOKEN', ''), $token)) {
-        abort(404);
+    $benchDb = function (int $n) {
+        $first = null; $sum = 0.0; $ok = 0;
+        for ($i=0; $i<$n; $i++) {
+            $t = microtime(true);
+            try { DB::select('SELECT 1'); $ms = (microtime(true) - $t) * 1000; $ok++; }
+            catch (\Throwable $e) { $ms = -1; }
+            if ($i===0) $first = $ms;
+            if ($ms >= 0) $sum += $ms;
+        }
+        return ['first_ms' => $first !== null ? round($first,1) : -1, 'avg_ms' => $ok ? round($sum/$ok,1) : -1, 'ok' => $ok, 'loops' => $n];
+    };
+
+    $benchCache = function (string $store, int $n) use ($payload) {
+        $sum = 0.0; $ok = 0; $available = true;
+        try {
+            $cache = $store === 'default' ? Cache::store(config('cache.default')) : Cache::store($store);
+        } catch (\Throwable $e) {
+            return ['store' => $store, 'available' => false, 'avg_ms' => -1];
+        }
+        for ($i=0; $i<$n; $i++) {
+            $key = "diag_bench:{$store}:".Str::random(8);
+            $t = microtime(true);
+            try { $cache->put($key, $payload, 60); $cache->get($key); $ms = (microtime(true) - $t) * 1000; $ok++; }
+            catch (\Throwable $e) { $ms = -1; $available = false; break; }
+            if ($ms >= 0) $sum += $ms;
+        }
+        return ['store' => $store, 'available' => $available, 'avg_ms' => $ok ? round($sum/$ok,1) : -1, 'loops' => $n];
+    };
+
+    $redisPing = (function () {
+        try { $t=microtime(true); $pong = Redis::connection()->ping(); return ['ok'=>true,'ms'=>round((microtime(true)-$t)*1000,1),'pong'=>is_string($pong)?$pong:'PONG']; }
+        catch (\Throwable $e) { return ['ok'=>false,'ms'=>-1,'pong'=>null]; }
+    })();
+
+    $db    = $benchDb($loops);
+    $cDef  = $benchCache('default', $loops);
+    $cArr  = $benchCache('array',   $loops);
+    $cFile = $benchCache('file',    $loops);
+    $cRedis= $benchCache('redis',   $loops);
+
+    $tips = [];
+    if (config('app.debug') === true) $tips[] = 'APP_DEBUG=false في الإنتاج.';
+    if (($cDef['store'] ?? '') === 'database' || str_contains(strval(config('cache.default')), 'database')) {
+        $tips[] = 'بدّل CACHE_DRIVER إلى redis (أولوية) أو file/array مؤقتًا — database cache بطيء.';
     }
-
-    $started = microtime(true);
-    $dbMs = null;
-    $cacheMs = null;
-
-    // DB
-    $t = microtime(true);
-    try {
-        DB::select('SELECT 1');
-        $dbMs = (microtime(true) - $t) * 1000;
-    } catch (\Throwable $e) {
-        $dbMs = -1;
-    }
-
-    // Cache
-    $t = microtime(true);
-    try {
-        Cache::put('diag_ping', '1', 60);
-        Cache::get('diag_ping');
-        $cacheMs = (microtime(true) - $t) * 1000;
-    } catch (\Throwable $e) {
-        $cacheMs = -1;
-    }
-
-    $totalMs = (microtime(true) - $started) * 1000;
+    if (!$redisPing['ok']) $tips[] = 'Redis غير متاح — فعّله (Upstash/Render Redis) واستخدمه للـ cache & sessions.';
+    if (($db['first_ms'] ?? 0) > 200) $tips[] = 'زمن أول اتصال بقاعدة البيانات عالي — قد تكون قاعدة بيانات نائمة/بعيدة. فكّر في connection pooling (PgBouncer) أو health ping.';
+    if (($cDef['avg_ms'] ?? 0) > 50) $tips[] = 'الكاش الافتراضي بطيء — غيّره إلى Redis فورًا.';
+    if (($db['avg_ms'] ?? 0) > 50) $tips[] = 'زمن DB متوسط عالي — راجع المنطقة/الخطة/الفهارس.';
 
     return response()->json([
-        'ok'        => true,
-        'php'       => PHP_VERSION,
-        'laravel'   => app()->version(),
-        'env'       => config('app.env'),
-        'db_ms'     => round($dbMs, 1),
-        'cache_ms'  => round($cacheMs, 1),
-        'total_ms'  => round($totalMs, 1),
-    ], 200)->header('Cache-Control', 'no-store');
-})->middleware('throttle:10,1');
+        'ok' => true,
+        'loops' => $loops,
+        'payload_kb' => $kb,
+        'db' => $db,
+        'cache' => [
+            'default' => $cDef,
+            'array'   => $cArr,
+            'file'    => $cFile,
+            'redis'   => $cRedis,
+            'redis_ping' => $redisPing,
+        ],
+        'advice' => $tips,
+    ], 200)->header('Cache-Control','no-store');
+})->middleware('throttle:5,1');
 
 /*
 |--------------------------------------------------------------------------
