@@ -569,7 +569,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
 
     // Cars (admin)
     Route::get('/cars', [AdminCarController::class, 'index']);
-    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id']);
+    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id'); // <== تم تصحيح القوس هنا
     Route::put('/cars/{id}', [AdminCarController::class, 'update'])->whereNumber('id');
     Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id');
     Route::delete('/cars/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id');
