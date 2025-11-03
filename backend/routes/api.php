@@ -149,7 +149,7 @@ Route::get('/diag-lite', function () {
         'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
         $totalMs, max(0,$dbMs), max(0,$cacheMs), max(0,$redisMs), max(0,$diskMs)
       ));
-})->middleware('throttle:10,1');
+});
 
 Route::get('/diag-bench', function (Request $request) {
     $loops = max(1, min((int)$request->query('loops', 10), 50));   // 1..50
@@ -220,7 +220,7 @@ Route::get('/diag-bench', function (Request $request) {
         ],
         'advice' => $tips,
     ], 200)->header('Cache-Control','no-store');
-})->middleware('throttle:5,1');
+});
 
 // ====== روت تأكيد Redis (محمي بالتوكن) ======
 Route::get('/diag-redis', function (Request $request) {
@@ -270,7 +270,7 @@ Route::get('/diag-redis', function (Request $request) {
         'config_default' => $cfg,
         'error' => $err,
     ], 200)->header('Cache-Control','no-store');
-})->middleware('throttle:10,1');
+});
 
 // ====== روت لإعادة تحميل الإعدادات (محمي بالتوكن) ======
 Route::post('/diag-reload', function (Request $request) {
@@ -283,7 +283,7 @@ Route::post('/diag-reload', function (Request $request) {
     Artisan::call('route:clear');
     return response()->json(['ok' => true, 'message' => 'config/cache/routes cleared'], 200)
         ->header('Cache-Control','no-store');
-})->middleware('throttle:2,1');
+});
 
 /*
 |--------------------------------------------------------------------------
