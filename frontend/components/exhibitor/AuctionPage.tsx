@@ -142,6 +142,8 @@ interface AuctionSession {
   auctions_count?: number
   created_at?: string
   updated_at?: string
+  // optional if backend returns it:
+  description?: string | null
 }
 
 const PLACEHOLDER_IMG =
@@ -229,12 +231,15 @@ async function fetchMyCarsOnly(): Promise<CarApi[]> {
   return []
 }
 
-/** ========= جلب الجلسات العامة ========= **/
-async function fetchPublicSessions(): Promise<AuctionSession[]> {
+/** ========= (جديد) جلب جلسات المعرض فقط ========= **/
+async function fetchExhibitorSessions(): Promise<AuctionSession[]> {
   try {
-    const js: any = await fetchJSON(`${API_BASE}/sessions/active-scheduled?with_counts=1`)
+    // نقيّد بالنوع "live" من السيرفر (لو الجلسات أنواع متعددة)
+    const js: any = await fetchJSON(`${API_BASE}/exhibitor/sessions?type=live`)
     const arr = extractArray<AuctionSession>(js, 'data') ?? extractArray<AuctionSession>(js, 'sessions') ?? js
-    return Array.isArray(arr) ? arr : []
+    const rows = Array.isArray(arr) ? arr : []
+    // ونرشّح محليًا للحالات المسموح إضافة سيارات لها
+    return rows.filter(s => s.status === 'active' || s.status === 'scheduled')
   } catch {
     return []
   }
@@ -287,7 +292,8 @@ function StartLiveModal({
           setLoadingCars(true)
           setLoadingSessions(true)
 
-          const [mine, sess] = await Promise.all([fetchMyCarsOnly(), fetchPublicSessions()])
+          // ✅ تغيير هنا: استعمال جلسات العارض فقط
+          const [mine, sess] = await Promise.all([fetchMyCarsOnly(), fetchExhibitorSessions()])
 
           setCars(Array.isArray(mine) ? mine : [])
           setSessions(Array.isArray(sess) ? sess : [])
@@ -296,7 +302,7 @@ function StartLiveModal({
             setErrors(prev => ({ ...prev, carsEmpty: 'لا توجد سيارات مرتبطة بحسابك.' }))
           }
           if (!sess || sess.length === 0) {
-            setSessionsError('لا توجد جلسات متاحة (active / scheduled).')
+            setSessionsError('لا توجد جلسات تخص معرضك (active / scheduled).')
           }
         } catch (e: any) {
           setCars([])
@@ -439,7 +445,7 @@ function StartLiveModal({
                       ? '...جاري تحميل الجلسات'
                       : sessions.length
                         ? `اختر جلسة (${sessions.length})`
-                        : (sessionsError ? 'تعذر جلب الجلسات' : 'لا توجد جلسات')}
+                        : (sessionsError ? 'تعذر جلب الجلسات' : 'لا توجد جلسات تخص معرضك')}
                   </option>
                   {sessions.map(s => (
                     <option key={s.id} value={s.id}>{sessionLabel(s)}</option>
