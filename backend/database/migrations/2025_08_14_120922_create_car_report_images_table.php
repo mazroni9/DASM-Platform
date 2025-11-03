@@ -11,23 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // أنشئ الجدول فقط لو مش موجود
-        if (! Schema::hasTable('car_report_images')) {
-            Schema::create('car_report_images', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('car_id')
-                    ->constrained('cars')
-                    ->cascadeOnDelete();
-
-                $table->string('image_path'); // مسار الصورة
-                $table->integer('file_size'); // بالحجم بالبايت (integer كافي على Postgres)
-
-                // فهارس مفيدة للاستعلام
-                $table->index('car_id');
-
-                $table->timestamps();
-            });
-        }
+        Schema::create('car_report_images', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('car_id')->constrained('cars')->onDelete('cascade');
+            $table->string('image_path');
+            $table->integer('file_size');
+            $table->timestamps();
+        });
     }
 
     /**

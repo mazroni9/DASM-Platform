@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('cars', function (Blueprint $table) {
-            $table->string('registration_card_image')->nullable();
-        });
+        // أضف العمود فقط إذا غير موجود
+        if (! Schema::hasColumn('cars', 'registration_card_image')) {
+            Schema::table('cars', function (Blueprint $table) {
+                $table->string('registration_card_image')->nullable();
+            });
+        }
     }
 
     /**
@@ -21,8 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('cars', function (Blueprint $table) {
-            $table->dropColumn('registration_card_image');
-        });
+        // احذف العمود فقط إذا موجود
+        if (Schema::hasColumn('cars', 'registration_card_image')) {
+            Schema::table('cars', function (Blueprint $table) {
+                $table->dropColumn('registration_card_image');
+            });
+        }
     }
 };
