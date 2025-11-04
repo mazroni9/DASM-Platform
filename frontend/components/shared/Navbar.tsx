@@ -22,6 +22,7 @@ import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
 import NotificationMenu from "@/components/NotificationMenu";
+import { ThemeToggle } from "../ThemeToggle";
 
 interface NavigationItem {
   href: string;
@@ -92,11 +93,11 @@ const Navbar = () => {
 
   // 🛠️ كلاس مساعد لفرض ألوان واضحة على كل العناصر داخل UserMenu/NotificationMenu
   const forceBright =
-    "[&_*]:!text-white [&_svg]:!text-cyan-300 [&_sup]:!bg-cyan-500 [&_sup]:!text-slate-900";
+    "[&_*]:!text-foreground [&_svg]:!text-primary [&_sup]:!bg-primary [&_sup]:!text-white";
 
   return (
     <nav
-      className="bg-gradient-to-r from-slate-900 to-slate-800 text-slate-100 py-3 shadow-lg border-b border-slate-700/50 relative z-50"
+      className="bg-background text-foreground py-3 shadow-lg border-b border-border relative z-50"
       role="navigation"
       aria-label="التنقل الرئيسي"
     >
@@ -105,7 +106,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <LoadingLink href="/" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-cyan-400/30">
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-primary/30">
                 <Image
                   src="/logo.jpg"
                   alt="منصة DASM-e - المزادات الرقمية المتخصصة"
@@ -113,9 +114,9 @@ const Navbar = () => {
                   className="object-cover"
                 />
               </div>
-              <span className="font-bold text-lg tracking-tight text-white">
+              <span className="font-bold text-lg tracking-tight text-foreground">
                 المزادات الرقمية{" "}
-                <span className="text-cyan-400">DASM-e</span>
+                <span className="text-primary">DASM-e</span>
               </span>
             </LoadingLink>
           </div>
@@ -126,8 +127,8 @@ const Navbar = () => {
               href="/auctions/live-auctions"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                 isActive("/auctions/live-auctions")
-                  ? "bg-cyan-900/30 text-cyan-300"
-                  : "hover:bg-slate-800 hover:text-cyan-300"
+                  ? "bg-primary/10 text-primary"
+                  : "hover:bg-border hover:text-primary"
               }`}
             >
               <TvMinimalPlay size={18} />
@@ -137,7 +138,7 @@ const Navbar = () => {
             <LoadingLink
               target="_blank"
               href="https://blog.dasm.com.sa/"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-cyan-300 transition-all duration-200"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-border hover:text-primary transition-all duration-200"
             >
               <Book size={18} />
               <span>المدونة</span>
@@ -152,7 +153,7 @@ const Navbar = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-emerald-400 hover:bg-emerald-900/30 hover:text-emerald-300 transition-all duration-200"
+                className="text-secondary hover:bg-secondary/10 hover:text-secondary transition-all duration-200"
                 onClick={handleRestartServers}
                 disabled={isRestarting}
                 title="إعادة تشغيل الخوادم"
@@ -161,26 +162,27 @@ const Navbar = () => {
                 <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
               </Button>
             )}
-{user ? (
-  <>
-    <div className={forceBright}>
-      <NotificationMenu />
-    </div>
-    <div className={forceBright}>
-      <UserMenu />
-    </div>
-  </>
-) : (
-  <LoadingLink href="/auth/login">
-    <Button
-      variant="outline"
-      size="sm"
-      className="bg-transparent border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all duration-200"
-    >
-      تسجيل الدخول
-    </Button>
-  </LoadingLink>
-)}
+            <ThemeToggle />
+            {user ? (
+              <>
+                <div className={forceBright}>
+                  <NotificationMenu />
+                </div>
+                <div className={forceBright}>
+                  <UserMenu />
+                </div>
+              </>
+            ) : (
+              <LoadingLink href="/auth/login">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-transparent border-primary text-primary hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                >
+                  تسجيل الدخول
+                </Button>
+              </LoadingLink>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -191,8 +193,9 @@ const Navbar = () => {
                 <UserMenu />
               </div>
             )}
+            <ThemeToggle />
             <button
-              className="p-2 rounded-lg text-slate-200 hover:bg-slate-700 hover:text-cyan-300 transition-colors duration-200"
+              className="p-2 rounded-lg text-foreground hover:bg-border hover:text-primary transition-colors duration-200"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
               aria-expanded={mobileMenuOpen}
@@ -208,15 +211,15 @@ const Navbar = () => {
             mobileMenuOpen ? "max-h-96 opacity-100 mt-4 pb-4" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="space-y-2 pt-3 border-t border-slate-700">
+          <div className="space-y-2 pt-3 border-t border-border">
             {navigationItems.map((item) => (
               <LoadingLink
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-all duration-200 ${
                   isActive(item.href)
-                    ? "bg-cyan-900/40 text-cyan-200 font-semibold"
-                    : "hover:bg-slate-800 hover:text-cyan-300"
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "hover:bg-border hover:text-primary"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -228,7 +231,7 @@ const Navbar = () => {
             <LoadingLink
               target="_blank"
               href="https://blog.dasm.com.sa/"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-slate-800 hover:text-cyan-300 transition-all duration-200"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-border hover:text-primary transition-all duration-200"
               onClick={() => setMobileMenuOpen(false)}
             >
               <Book className="h-5 w-5" />
@@ -237,7 +240,7 @@ const Navbar = () => {
 
             {isAdmin && (
               <button
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-emerald-900/30 text-emerald-400 transition-all duration-200"
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-secondary/10 text-secondary transition-all duration-200"
                 onClick={() => {
                   handleRestartServers();
                   setMobileMenuOpen(false);
@@ -251,7 +254,7 @@ const Navbar = () => {
 
             {user ? (
               <button
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-rose-900/30 text-rose-400 transition-all duration-200"
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
                 onClick={() => {
                   handleLogout();
                   setMobileMenuOpen(false);
@@ -268,7 +271,7 @@ const Navbar = () => {
             ) : (
               <LoadingLink
                 href="/auth/login"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-cyan-900/30 text-cyan-300 transition-all duration-200"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-primary/10 text-primary transition-all duration-200"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span className="text-base">تسجيل الدخول</span>

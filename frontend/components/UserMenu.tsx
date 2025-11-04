@@ -21,6 +21,7 @@ import {
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
+import LoadingLink from "./LoadingLink";
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -83,6 +84,7 @@ export default function UserMenu() {
 
   const navigateTo = useCallback(
     (path: string) => {
+      
       router.push(path);
       setIsOpen(false);
     },
@@ -118,6 +120,7 @@ export default function UserMenu() {
     label: string;
     icon: JSX.Element;
     onClick: () => void;
+    path?: string;
     kind?: "danger" | "normal";
   };
 
@@ -127,6 +130,7 @@ export default function UserMenu() {
         label: "لوحة التحكم",
         icon: <LayoutDashboard className="w-4 h-4" />,
         onClick: () => navigateTo("/dashboard"),
+        path: "/dashboard",
       },
     ];
 
@@ -135,6 +139,7 @@ export default function UserMenu() {
         label: "لوحه الكنترول رووم",
         icon: <Building2 className="w-4 h-4" />,
         onClick: () => navigateTo("https://control.dasm.com.sa/dashboard"),
+        path: "https://control.dasm.com.sa/dashboard",
       });
     }
 
@@ -144,11 +149,13 @@ export default function UserMenu() {
           label: " المسؤول",
           icon: <ShieldCheck className="w-4 h-4" />,
           onClick: () => navigateTo("/admin"),
+          path: "/admin",
         },
         {
           label: "لوحة المعرض",
           icon: <Building2 className="w-4 h-4" />,
           onClick: () => navigateTo("/exhibitor"),
+          path: "/exhibitor",
         }
       );
     }
@@ -158,6 +165,7 @@ export default function UserMenu() {
         label: "لوحة المشرف",
         icon: <ShieldCheck className="w-4 h-4" />,
         onClick: () => navigateTo("/moderator/dashboard"),
+        path: "/moderator/dashboard",
       });
     }
 
@@ -166,6 +174,7 @@ export default function UserMenu() {
         label: "لوحة المعرض",
         icon: <Building2 className="w-4 h-4" />,
         onClick: () => navigateTo("/exhibitor"),
+        path: "/exhibitor",
       });
     }
 
@@ -174,7 +183,8 @@ export default function UserMenu() {
         label: "لوحة المستثمر",
         icon: <TrendingUp className="w-4 h-4" />,
         onClick: () => navigateTo("/investor/dashboard"),
-      });
+        path: "/investor/dashboard",
+        });
     }
 
     list.push(
@@ -182,12 +192,14 @@ export default function UserMenu() {
         label: "إعدادات الحساب",
         icon: <Settings className="w-4 h-4" />,
         onClick: () => navigateTo("/dashboard/profile"),
+        path: "/dashboard/profile",
       },
       {
         label: "تسجيل الخروج",
         icon: <LogOut className="w-4 h-4" />,
         onClick: handleLogout,
         kind: "danger",
+        
       }
     );
 
@@ -286,16 +298,16 @@ export default function UserMenu() {
         onClick={() => setIsOpen((s) => !s)}
         onKeyDown={handleTriggerKeyDown}
         className="group flex items-center gap-2 rounded-xl px-2.5 py-1.5
-                   text-white hover:text-cyan-300
-                   hover:bg-slate-800/60 focus:outline-none
-                   focus:ring-2 focus:ring-cyan-500/40 transition-all"
+                   text-foreground hover:text-primary
+                   hover:bg-border/60 focus:outline-none
+                   focus:ring-2 focus:ring-primary/40 transition-all"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls="user-menu"
         title="قائمة المستخدم"
       >
         {/* Avatar */}
-        <span className="relative inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden ring-1 ring-slate-600 bg-gradient-to-br from-sky-600 to-cyan-500 text-white text-sm font-semibold">
+        <span className="relative inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden ring-1 ring-border bg-primary text-white text-sm font-semibold">
           {user?.avatar_url ? (
             <Image
               src={user.avatar_url}
@@ -310,17 +322,17 @@ export default function UserMenu() {
 
         {/* Name + Role (مخفية على الشاشات الصغيرة) */}
         <span className="hidden md:flex flex-col items-start leading-tight max-w-[12rem]">
-          <span className="text-sm font-semibold truncate text-white">
+          <span className="text-sm font-semibold truncate text-foreground">
             {user.first_name || user.email || "مستخدم"}
           </span>
-          <span className="text-[11px] text-cyan-300/90 font-medium truncate">
+          <span className="text-[11px] text-primary/90 font-medium truncate">
             {roleLabel(role)}
           </span>
         </span>
 
         {/* Chevron */}
         <ChevronDown
-          className={`w-4 h-4 transition-transform text-cyan-300/90 ${isOpen ? "rotate-180" : ""}`}
+          className={`w-4 h-4 transition-transform text-primary/90 ${isOpen ? "rotate-180" : ""}`}
           aria-hidden="true"
         />
       </button>
@@ -342,8 +354,8 @@ export default function UserMenu() {
             // حماية إضافية
             maxHeight: "min(70vh, calc(100vh - 16px))",
           }}
-          className="mt-2 w-72 rounded-xl border border-slate-700/80
-                     bg-slate-900/95 backdrop-blur-md shadow-lg z-50
+          className="mt-2 w-72 rounded-xl border border-border
+                     bg-card/95 backdrop-blur-md shadow-lg z-50
                      p-2 animate-in fade-in zoom-in-95"
           onKeyDown={(e) => {
             if (e.key === "Escape") closeMenu();
@@ -351,7 +363,7 @@ export default function UserMenu() {
         >
           {/* User header */}
           <div className="flex items-center gap-3 px-2 py-2.5">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden ring-1 ring-slate-600 bg-gradient-to-br from-sky-600 to-cyan-500 text-white text-sm font-semibold flex items-center justify-center">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden ring-1 ring-border bg-primary text-white text-sm font-semibold flex items-center justify-center">
               {user?.avatar_url ? (
                 <Image
                   src={user.avatar_url}
@@ -365,48 +377,71 @@ export default function UserMenu() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-white truncate">
+                <span className="text-sm font-semibold text-foreground truncate">
                   {user.first_name || user.email || "مستخدم"}
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/20">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
                   {roleLabel(role)}
                 </span>
               </div>
-              <div className="text-xs text-slate-400 truncate">{user.email}</div>
+              <div className="text-xs text-foreground/70 truncate">{user.email}</div>
             </div>
           </div>
 
-          <div className="my-1 h-px bg-slate-700/70" />
+          <div className="my-1 h-px bg-border/70" />
 
           {/* Menu items */}
           <ul className="max-h-[inherit] overflow-auto pr-1">
             {items.map((item, idx) => (
               <li key={item.label}>
+                {item.path ? (
+                <LoadingLink href={item.path}>
                 <button
                   ref={(el) => {
                     itemRefs.current[idx] = el;
                   }}
                   role="menuitem"
                   onKeyDown={(e) => handleItemKeyDown(e, idx)}
-                  onClick={item.onClick}
+                  
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                               transition-colors
-                              hover:bg-slate-800/70 focus:bg-slate-800/70 focus:outline-none
+                              hover:bg-border/70 focus:bg-border/70 focus:outline-none
                               ${item.kind === "danger"
-                                ? "text-rose-300 hover:text-rose-200"
-                                : "text-slate-100 hover:text-cyan-200"
+                                ? "text-red-500 hover:text-red-400"
+                                : "text-foreground hover:text-primary"
                               }`}
                 >
                   <span
                     className={`inline-flex items-center justify-center w-8 h-8 rounded-md
-                                bg-slate-800/60 border border-slate-700/70
-                                ${item.kind === "danger" ? "text-rose-300" : "text-cyan-300"}`}
+                                bg-background/60 border border-border/70
+                                ${item.kind === "danger" ? "text-red-500" : "text-primary"}`}
                     aria-hidden="true"
                   >
                     {item.icon}
                   </span>
                   <span className="truncate">{item.label}</span>
                 </button>
+                </LoadingLink>
+                ) : (
+                  <button
+                    ref={(el) => {
+                      itemRefs.current[idx] = el;
+                    }}
+                    role="menuitem"
+                    onKeyDown={(e) => handleItemKeyDown(e, idx)}
+                    onClick={item.onClick}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
+                              transition-colors
+                              hover:bg-border/70 focus:bg-border/70 focus:outline-none
+                              ${item.kind === "danger"
+                                ? "text-red-500 hover:text-red-400"
+                                : "text-foreground hover:text-primary"
+                              }`}
+                  >
+                    {item.icon}
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                )}
               </li>
             ))}
           </ul>

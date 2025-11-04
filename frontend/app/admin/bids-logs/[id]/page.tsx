@@ -133,67 +133,67 @@ export default function BidEventDetailPage({ params }: { params: { id: string } 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-800">
+                <h1 className="text-3xl font-bold text-foreground">
                     تفاصيل حدث المزايدة
                 </h1>
                 <LoadingLink
                     href="/admin/bids-logs"
-                    className="text-blue-600 hover:underline flex items-center"
+                    className="text-primary hover:underline flex items-center"
                 >
                     <ArrowLeft className="w-4 h-4 ml-1" />
                     العودة إلى قائمة سجلات المزايدات
                 </LoadingLink>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md border p-6">
+            <div className="bg-card rounded-lg shadow-md border p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <DetailItem icon={<Hash className="w-5 h-5 text-gray-400" />} label="id">
+                    <DetailItem icon={<Hash className="w-5 h-5 text-foreground/50" />} label="id">
                         {bidEvent.id}
                     </DetailItem>
-                    <DetailItem icon={<User className="w-5 h-5 text-gray-400" />} label="اسم المستخدم المزايد">
+                    <DetailItem icon={<User className="w-5 h-5 text-foreground/50" />} label="اسم المستخدم المزايد">
                         {bidEvent.bidder.first_name+" "+bidEvent.bidder.last_name  || 'غير متوفر'}
                     </DetailItem>
-                    <DetailItem icon={<Hash className="w-5 h-5 text-gray-400" />} label="رقم المزاد">
+                    <DetailItem icon={<Hash className="w-5 h-5 text-foreground/50" />} label="رقم المزاد">
                         {bidEvent.auction_id}
                     </DetailItem>
-                    <DetailItem icon={<LinkIcon className="w-5 h-5 text-gray-400" />} label="رقم المزايدة">
+                    <DetailItem icon={<LinkIcon className="w-5 h-5 text-foreground/50" />} label="رقم المزايدة">
                         {bidEvent.bid_id}
                     </DetailItem>
-                    <DetailItem icon={<SaudiRiyal className="w-5 h-5 text-gray-400" />} label="مبلغ المزايدة">
+                    <DetailItem icon={<SaudiRiyal className="w-5 h-5 text-foreground/50" />} label="مبلغ المزايدة">
                         {Number(bidEvent.bid_amount).toFixed(2)} 
                     </DetailItem>
-                    <DetailItem icon={<Smartphone className="w-5 h-5 text-gray-400" />} label="(المصدر) قناة المزايدة">
+                    <DetailItem icon={<Smartphone className="w-5 h-5 text-foreground/50" />} label="(المصدر) قناة المزايدة">
                         {bidEvent.channel}
                     </DetailItem>
-                    <DetailItem icon={<Info className="w-5 h-5 text-gray-400" />} label="نوع الحدث">
+                    <DetailItem icon={<Info className="w-5 h-5 text-foreground/50" />} label="نوع الحدث">
                         {bidEvent.event_type}
                     </DetailItem>
-                    <DetailItem icon={<Clock className="w-5 h-5 text-gray-400" />} label="توقيت السيرفر">
+                    <DetailItem icon={<Clock className="w-5 h-5 text-foreground/50" />} label="توقيت السيرفر">
                         {formatDate(bidEvent.server_ts_utc)}
                     </DetailItem>
-                    <DetailItem icon={<Clock className="w-5 h-5 text-gray-400" />} label="توقيت العميل">
+                    <DetailItem icon={<Clock className="w-5 h-5 text-foreground/50" />} label="توقيت العميل">
                         {formatDate(bidEvent.client_ts)}
                     </DetailItem>
-                    <DetailItem icon={<Server className="w-5 h-5 text-gray-400" />} label="التسلسل الزمني الدقيق">
+                    <DetailItem icon={<Server className="w-5 h-5 text-foreground/50" />} label="التسلسل الزمني الدقيق">
                         {bidEvent.server_nano_seq}
                     </DetailItem>
-                    <DetailItem icon={<Globe className="w-5 h-5 text-gray-400" />} label="عنوان IP">
+                    <DetailItem icon={<Globe className="w-5 h-5 text-foreground/50" />} label="عنوان IP">
                         {bidEvent.ip_addr}
                     </DetailItem>
-                    <DetailItem icon={<User className="w-5 h-5 text-gray-400" />} label="وكيل المستخدم">
+                    <DetailItem icon={<User className="w-5 h-5 text-foreground/50" />} label="وكيل المستخدم">
                         {bidEvent.user_agent}
                     </DetailItem>
-                    <DetailItem icon={<Key className="w-5 h-5 text-gray-400" />} label="معرف الجلسة">
+                    <DetailItem icon={<Key className="w-5 h-5 text-foreground/50" />} label="معرف الجلسة">
                         {bidEvent.session_id}
                     </DetailItem>
-                    <DetailItem icon={<Fingerprint className="w-5 h-5 text-gray-400" />} label="التجزئة السابقة">
+                    <DetailItem icon={<Fingerprint className="w-5 h-5 text-foreground/50" />} label="التجزئة السابقة">
                         {bidEvent.hash_prev}
                     </DetailItem>
-                    <DetailItem icon={<Fingerprint className="w-5 h-5 text-gray-400" />} label="التجزئة الحالية">
+                    <DetailItem icon={<Fingerprint className="w-5 h-5 text-foreground/50" />} label="التجزئة الحالية">
                         {bidEvent.hash_curr}
                     </DetailItem>
                     {bidEvent.reason_code && (
-                        <DetailItem icon={<AlertCircle className="w-5 h-5 text-gray-400" />} label="رمز السبب">
+                        <DetailItem icon={<AlertCircle className="w-5 h-5 text-foreground/50" />} label="رمز السبب">
                             {bidEvent.reason_code}
                         </DetailItem>
                     )}

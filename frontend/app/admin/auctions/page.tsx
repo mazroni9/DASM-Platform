@@ -413,37 +413,37 @@ export default function AdminAuctionsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6 rtl">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 rtl">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
             إدارة المزادات
           </h1>
-          <p className="text-gray-400 mt-2">إدارة وتنظيم جميع المزادات في النظام</p>
+          <p className="text-foreground/70 mt-2">إدارة وتنظيم جميع المزادات في النظام</p>
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
           <button
             onClick={fetchAuctions}
-            className="bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+            className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
           >
             <RefreshCw className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`} />
             تحديث
           </button>
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-xl p-3">
-            <BarChart3 className="w-6 h-6 text-amber-400" />
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+            <BarChart3 className="w-6 h-6 text-primary" />
           </div>
         </div>
       </div>
 
       {/* Statistics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">إجمالي المزادات</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+              <p className="text-foreground/70 text-sm">إجمالي المزادات</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Car className="w-6 h-6 text-blue-400" />
@@ -451,11 +451,11 @@ export default function AdminAuctionsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">مزادات نشطة</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.live}</p>
+              <p className="text-foreground/70 text-sm">مزادات نشطة</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.live}</p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
               <Play className="w-6 h-6 text-green-400" />
@@ -463,11 +463,11 @@ export default function AdminAuctionsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">مزادات مجدولة</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.scheduled}</p>
+              <p className="text-foreground/70 text-sm">مزادات مجدولة</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.scheduled}</p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
               <Clock className="w-6 h-6 text-amber-400" />
@@ -475,11 +475,11 @@ export default function AdminAuctionsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">مزادات مكتملة</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.completed}</p>
+              <p className="text-foreground/70 text-sm">مزادات مكتملة</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.completed}</p>
             </div>
             <div className="bg-emerald-500/10 p-3 rounded-xl">
               <CheckCircle className="w-6 h-6 text-emerald-400" />
@@ -487,11 +487,11 @@ export default function AdminAuctionsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">في انتظار الموافقة</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
+              <p className="text-foreground/70 text-sm">في انتظار الموافقة</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.pending}</p>
             </div>
             <div className="bg-purple-500/10 p-3 rounded-xl">
               <AlertTriangle className="w-6 h-6 text-purple-400" />
@@ -501,15 +501,15 @@ export default function AdminAuctionsPage() {
       </div>
 
       {/* Tabs Section */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden mb-6">
-        <div className="border-b border-gray-700/50">
+      <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden mb-6">
+        <div className="border-b border-border">
           <nav className="flex space-x-8 space-x-reverse px-6">
             <button
               onClick={() => setActiveTab("all")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
                 activeTab === "all"
-                  ? "border-amber-500 text-amber-400"
-                  : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-foreground/70 hover:text-foreground hover:border-border"
               }`}
             >
               جميع المزادات
@@ -518,8 +518,8 @@ export default function AdminAuctionsPage() {
               onClick={() => setActiveTab("approvals")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
                 activeTab === "approvals"
-                  ? "border-amber-500 text-amber-400"
-                  : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-foreground/70 hover:text-foreground hover:border-border"
               }`}
             >
               الموافقات المعلقة
@@ -541,11 +541,11 @@ export default function AdminAuctionsPage() {
               <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                   <div className="relative">
-                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
                     <input
                       type="text"
                       placeholder="ابحث في المزادات..."
-                      className="bg-gray-700/50 border border-gray-600 rounded-xl py-2 pr-10 pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -554,7 +554,7 @@ export default function AdminAuctionsPage() {
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="bg-background/50 border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="all">جميع المزادات</option>
                     <option value="scheduled">مجدولة</option>
@@ -567,7 +567,7 @@ export default function AdminAuctionsPage() {
 
                 {selectedAuctions.length > 0 && (
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-foreground/70">
                       تم اختيار {selectedAuctions.length} مزاد
                     </span>
                     <button
@@ -589,11 +589,11 @@ export default function AdminAuctionsPage() {
               </div>
 
               {/* Auctions Table */}
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 overflow-hidden">
+              <div className="bg-background rounded-xl border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-gray-750 border-b border-gray-700/50">
+                      <tr className="bg-border/50 border-b border-border">
                         <th className="px-6 py-4 text-center">
                           <input
                             type="checkbox"
@@ -602,56 +602,56 @@ export default function AdminAuctionsPage() {
                               filteredAuctions.length > 0
                             }
                             onChange={handleSelectAll}
-                            className="w-4 h-4 text-amber-600 bg-gray-700 border-gray-600 rounded focus:ring-amber-500"
+                            className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
                           />
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           السيارة
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           السعر الحالي
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           الحالة
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           وقت البداية
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           نوع الحراج
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           في البث
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           الإجراءات
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700/50">
+                    <tbody className="divide-y divide-border">
                       {filteredAuctions.map((auction) => {
                         const TypeIcon = getAuctionTypeIcon(auction.auction_type);
                         return (
                           <tr
                             key={auction.id}
-                            className="hover:bg-gray-750/50 transition-colors duration-200"
+                            className="hover:bg-border/50 transition-colors duration-200"
                           >
                             <td className="px-6 py-4 text-center">
                               <input
                                 type="checkbox"
                                 checked={selectedAuctions.includes(auction.id)}
                                 onChange={() => handleSelectAuction(auction.id)}
-                                className="w-4 h-4 text-amber-600 bg-gray-700 border-gray-600 rounded focus:ring-amber-500"
+                                className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
                               />
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center">
-                                <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-2 rounded-xl">
+                                <div className="bg-primary p-2 rounded-xl">
                                   <Car className="w-4 h-4 text-white" />
                                 </div>
                                 <div className="mr-4">
                                   <div
-                                    className="text-sm font-medium text-white cursor-pointer hover:text-amber-400"
+                                    className="text-sm font-medium text-foreground cursor-pointer hover:text-primary"
                                     onClick={() =>
                                       window.open(
                                         `/carDetails/${auction.car?.id || auction.id}`,
@@ -661,14 +661,14 @@ export default function AdminAuctionsPage() {
                                   >
                                     {auction.car?.make} {auction.car?.model}
                                   </div>
-                                  <div className="text-xs text-gray-400 mt-1">
+                                  <div className="text-xs text-foreground/70 mt-1">
                                     {auction.car?.year}
                                   </div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center text-amber-400">
+                              <div className="flex items-center text-primary">
                                 <DollarSign className="w-4 h-4 ml-1" />
                                 <span className="text-sm font-medium">
                                   {auction.current_bid?.toLocaleString() || 0} ريال
@@ -684,11 +684,11 @@ export default function AdminAuctionsPage() {
                                 {getStatusText(auction.status)}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-300">
+                            <td className="px-6 py-4 text-sm text-foreground/80">
                               {formatDate(auction.start_time)}
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center text-sm text-gray-300">
+                              <div className="flex items-center text-sm text-foreground/80">
                                 <TypeIcon className="w-4 h-4 ml-1" />
                                 {getStatusText1(auction.auction_type)}
                               </div>
@@ -700,7 +700,7 @@ export default function AdminAuctionsPage() {
                                   في البث
                                 </span>
                               ) : (
-                                <span className="text-gray-400">-</span>
+                                <span className="text-foreground/70">-</span>
                               )}
                             </td>
                             <td className="px-6 py-4">
@@ -709,7 +709,7 @@ export default function AdminAuctionsPage() {
                                   onClick={() =>
                                     window.open(`/auctions/${auction.id}`, "_blank")
                                   }
-                                  className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 p-2 rounded-lg transition-all duration-300"
+                                  className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300"
                                   title="عرض التفاصيل"
                                 >
                                   <Eye size={16} />
@@ -807,7 +807,7 @@ export default function AdminAuctionsPage() {
                                   </>
                                 )}
 
-                                <button className="text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-300">
+                                <button className="text-foreground/70 hover:text-foreground hover:bg-border/50 p-2 rounded-lg transition-all duration-300">
                                   <MoreVertical size={16} />
                                 </button>
                               </div>
@@ -826,18 +826,18 @@ export default function AdminAuctionsPage() {
               {/* Search Bar */}
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <div className="relative flex-grow">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="البحث في المزادات المعلقة..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-2 pr-10 pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
                 <button
                   onClick={fetchPendingAuctions}
-                  className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
+                  className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
                 >
                   <Search className="w-4 h-4 ml-2" />
                   بحث
@@ -845,55 +845,55 @@ export default function AdminAuctionsPage() {
               </div>
 
               {/* Pending Auctions Table */}
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 overflow-hidden">
+              <div className="bg-background rounded-xl border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-gray-750 border-b border-gray-700/50">
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                      <tr className="bg-border/50 border-b border-border">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           السيارة
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           السعر المطلوب
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           تاريخ الطلب
                         </th>
-                        <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                        <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
                           الإجراءات
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700/50">
+                    <tbody className="divide-y divide-border">
                       {pendingAuctions.map((auction) => (
                         <tr
                           key={auction.id}
-                          className="hover:bg-gray-750/50 transition-colors duration-200"
+                          className="hover:bg-border/50 transition-colors duration-200"
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center">
-                              <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-2 rounded-xl">
+                              <div className="bg-primary p-2 rounded-xl">
                                 <Car className="w-4 h-4 text-white" />
                               </div>
                               <div className="mr-4">
-                                <div className="text-sm font-medium text-white">
+                                <div className="text-sm font-medium text-foreground">
                                   {auction.car.make} {auction.car.model}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1">
+                                <div className="text-xs text-foreground/70 mt-1">
                                   {auction.car.year}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center text-amber-400">
+                            <div className="flex items-center text-primary">
                               <DollarSign className="w-4 h-4 ml-1" />
                               <span className="text-sm font-medium">
                                 {auction.starting_bid?.toLocaleString()} ريال
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-300">
+                          <td className="px-6 py-4 text-sm text-foreground/80">
                             {formatDate(auction.created_at)}
                           </td>
                           <td className="px-6 py-4">
@@ -912,7 +912,7 @@ export default function AdminAuctionsPage() {
                               >
                                 <XCircle size={16} />
                               </button>
-                              <button className="text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-300">
+                              <button className="text-foreground/70 hover:text-foreground hover:bg-border/50 p-2 rounded-lg transition-all duration-300">
                                 <MoreVertical size={16} />
                               </button>
                             </div>
@@ -942,20 +942,20 @@ export default function AdminAuctionsPage() {
       {/* Approval Modal */}
       {showApprovalModal && selectedAuction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl p-6 w-full max-w-md">
+          <div className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-md">
             <div className="flex items-center space-x-3 space-x-reverse mb-4">
               <div className="bg-green-500/20 p-2 rounded-xl">
                 <CheckCircle className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">موافقة على المزاد</h2>
-                <p className="text-gray-400 text-sm">تأكيد موافقة على المزاد المحدد</p>
+                <h2 className="text-lg font-semibold text-foreground">موافقة على المزاد</h2>
+                <p className="text-foreground/70 text-sm">تأكيد موافقة على المزاد المحدد</p>
               </div>
             </div>
 
             {/* محتوى بسيط (سعر الافتتاح) */}
             <div className="space-y-4">
-              <label className="block text-sm text-gray-300">
+              <label className="block text-sm text-foreground/80">
                 سعر الافتتاح (اختياري)
               </label>
               <input
@@ -964,13 +964,13 @@ export default function AdminAuctionsPage() {
                 onChange={(e) =>
                   setApprovalData((p) => ({ ...p, opening_price: e.target.value }))
                 }
-                className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full bg-background/50 border border-border rounded-xl py-2 px-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={() => setShowApprovalModal(false)}
-                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl"
+                  className="bg-border hover:bg-border/80 text-foreground px-4 py-2 rounded-xl"
                 >
                   إلغاء
                 </button>
@@ -990,30 +990,30 @@ export default function AdminAuctionsPage() {
       {/* Rejection Modal */}
       {showRejectionModal && selectedAuction && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl p-6 w-full max-w-md">
+          <div className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-md">
             <div className="flex items-center space-x-3 space-x-reverse mb-4">
               <div className="bg-red-500/20 p-2 rounded-xl">
                 <XCircle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">رفض المزاد</h2>
-                <p className="text-gray-400 text-sm">تأكيد رفض المزاد المحدد</p>
+                <h2 className="text-lg font-semibold text-foreground">رفض المزاد</h2>
+                <p className="text-foreground/70 text-sm">تأكيد رفض المزاد المحدد</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <label className="block text-sm text-gray-300">سبب الرفض</label>
+              <label className="block text-sm text-foreground/80">سبب الرفض</label>
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
-                className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full bg-background/50 border border-border rounded-xl py-2 px-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={() => setShowRejectionModal(false)}
-                  className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-xl"
+                  className="bg-border hover:bg-border/80 text-foreground px-4 py-2 rounded-xl"
                 >
                   إلغاء
                 </button>

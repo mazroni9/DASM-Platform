@@ -134,8 +134,9 @@ export default function AdminCarsPage() {
             if (filters.status) params.append("status", filters.status);
             const response = await api.get(`/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`);
             if (response.data.status === "success") {
-                setCars(response.data.data.data);
-                setTotalCount(response.data.data.total);
+                setCars(response.data.data);
+                setCurrentPage(response.data.pagination.current_page);
+                setTotalCount(response.data.pagination.total);
             }
         } catch (error) {
             console.error("Error fetching cars:", error);
@@ -392,14 +393,14 @@ export default function AdminCarsPage() {
     });
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6 rtl">
+        <div className="min-h-screen bg-background text-foreground p-4 md:p-6 rtl">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-500 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-3xl font-bold text-primary">
                         إدارة السيارات
                     </h1>
-                    <p className="text-gray-400 mt-2">
+                    <p className="text-foreground/70 mt-2">
                         إدارة وتنظيم جميع السيارات في النظام
                     </p>
                 </div>
@@ -407,36 +408,36 @@ export default function AdminCarsPage() {
                 <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
                     <button 
                         onClick={fetchCars}
-                        className="bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+                        className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
                     >
                         <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
                         تحديث
                     </button>
-                    <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-600/10 border border-emerald-500/20 rounded-xl p-3">
-                        <Car className="w-6 h-6 text-emerald-400" />
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+                        <Car className="w-6 h-6 text-primary" />
                     </div>
                 </div>
             </div>
 
             {/* Statistics Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">إجمالي السيارات</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+                            <p className="text-foreground/70 text-sm">إجمالي السيارات</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
                         </div>
-                        <div className="bg-blue-500/10 p-3 rounded-xl">
-                            <Car className="w-6 h-6 text-blue-400" />
+                        <div className="bg-primary/10 p-3 rounded-xl">
+                            <Car className="w-6 h-6 text-primary" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">في المزاد</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.inAuction}</p>
+                            <p className="text-foreground/70 text-sm">في المزاد</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{stats.inAuction}</p>
                         </div>
                         <div className="bg-green-500/10 p-3 rounded-xl">
                             <Play className="w-6 h-6 text-green-400" />
@@ -444,11 +445,11 @@ export default function AdminCarsPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">في انتظار الموافقة</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
+                            <p className="text-foreground/70 text-sm">في انتظار الموافقة</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{stats.pending}</p>
                         </div>
                         <div className="bg-amber-500/10 p-3 rounded-xl">
                             <Clock className="w-6 h-6 text-amber-400" />
@@ -456,11 +457,11 @@ export default function AdminCarsPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">تم البيع</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.sold}</p>
+                            <p className="text-foreground/70 text-sm">تم البيع</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{stats.sold}</p>
                         </div>
                         <div className="bg-emerald-500/10 p-3 rounded-xl">
                             <CheckCircle className="w-6 h-6 text-emerald-400" />
@@ -468,11 +469,11 @@ export default function AdminCarsPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">متاحة</p>
-                            <p className="text-2xl font-bold text-white mt-1">{stats.available}</p>
+                            <p className="text-foreground/70 text-sm">متاحة</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{stats.available}</p>
                         </div>
                         <div className="bg-cyan-500/10 p-3 rounded-xl">
                             <TrendingUp className="w-6 h-6 text-cyan-400" />
@@ -482,25 +483,25 @@ export default function AdminCarsPage() {
             </div>
 
             {/* Main Content */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
                 {/* Search and Filters Header */}
-                <div className="border-b border-gray-700/50 p-6">
+                <div className="border-b border-border p-6">
                     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
                             <div className="relative flex-grow">
-                                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
                                 <input
                                     type="text"
                                     placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-2 pr-10 pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                    className="w-full bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                                 />
                             </div>
                             
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+                                className="bg-background border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
                             >
                                 <Filter className="w-4 h-4 ml-2" />
                                 فلاتر
@@ -510,50 +511,50 @@ export default function AdminCarsPage() {
 
                         {selectedCars.size > 0 && (
                             <div className="flex items-center gap-3">
-                                <span className="text-sm text-gray-400">
+                                <span className="text-sm text-foreground/70">
                                     تم اختيار {selectedCars.size} سيارة
                                 </span>
                                 <div className="relative">
                                     <button
                                         onClick={() => setShowBulkActions(!showBulkActions)}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
+                                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
                                     >
                                         إجراءات جماعية
                                         <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showBulkActions ? 'rotate-180' : ''}`} />
                                     </button>
 
                                     {showBulkActions && (
-                                        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-700 border border-gray-600 rounded-xl shadow-2xl z-10">
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-10">
                                             <div className="p-2 space-y-1">
-                                                <button onClick={() => handleBulkAction("approve-auctions")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("approve-auctions")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <CheckSquare size={16} />
                                                     الموافقة على المزادات
                                                 </button>
-                                                <button onClick={() => handleBulkAction("reject-auctions")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("reject-auctions")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <X size={16} />
                                                     رفض المزادات
                                                 </button>
-                                                <button onClick={() => handleBulkAction("move-to-live")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("move-to-live")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <Play size={16} />
                                                     نقل إلى الحراج المباشر
                                                 </button>
-                                                <button onClick={() => handleBulkAction("move-to-instant")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("move-to-instant")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <Clock size={16} />
                                                     نقل الى المزادات الفورية
                                                 </button>
-                                                <button onClick={() => handleBulkAction("move-to-late")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("move-to-late")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <AlertTriangle size={16} />
                                                     نقل إلى المزادات المتأخرة
                                                 </button>
-                                                <button onClick={() => handleBulkAction("move-to-active")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("move-to-active")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <CheckCircle size={16} />
                                                     نقل إلى المزادات النشطة
                                                 </button>
-                                                <button onClick={() => handleBulkAction("move-to-pending")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("move-to-pending")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
                                                     <RotateCcw size={16} />
                                                     نقل إلى المزادات المعلقة
                                                 </button>
-                                                <button onClick={() => handleBulkAction("archive")} className="w-full text-right px-4 py-2 hover:bg-gray-600 rounded-lg flex items-center gap-2 text-red-400 transition-all duration-300">
+                                                <button onClick={() => handleBulkAction("archive")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 text-red-500 transition-all duration-300">
                                                     <Archive size={16} />
                                                     أرشفة
                                                 </button>
@@ -567,8 +568,8 @@ export default function AdminCarsPage() {
 
                     {/* Filters Panel */}
                     {showFilters && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-700/30 rounded-xl mt-4">
-                            <select value={filters.status} onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))} className="bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-background/50 rounded-xl mt-4">
+                            <select value={filters.status} onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 <option value="">كل الحالات</option>
                                 <option value="available">متاح</option>
                                 <option value="in_auction">غير متاح</option>
@@ -576,21 +577,21 @@ export default function AdminCarsPage() {
                                 <option value="cancelled">ملغي</option>
                             </select>
 
-                            <select value={filters.category} onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))} className="bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <select value={filters.category} onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 <option value="">كل الفئات</option>
                                 {enumOptions.categories?.map((category: any) => (
                                     <option key={category.value} value={category.value}>{category.label}</option>
                                 ))}
                             </select>
 
-                            <select value={filters.condition} onChange={(e) => setFilters(prev => ({ ...prev, condition: e.target.value }))} className="bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <select value={filters.condition} onChange={(e) => setFilters(prev => ({ ...prev, condition: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 <option value="">كل الحالات</option>
                                 {enumOptions.conditions?.map((condition: any) => (
                                     <option key={condition.value} value={condition.value}>{condition.label}</option>
                                 ))}
                             </select>
 
-                            <select value={filters.transmission} onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value }))} className="bg-gray-700/50 border border-gray-600 rounded-xl py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                            <select value={filters.transmission} onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 <option value="">كل أنواع الناقل</option>
                                 {enumOptions.transmissions?.map((transmission: any) => (
                                     <option key={transmission.value} value={transmission.value}>{transmission.label}</option>
@@ -605,43 +606,43 @@ export default function AdminCarsPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="bg-gray-750 border-b border-gray-700/50">
+                                <tr className="bg-border/50 border-b border-border">
                                     <th className="px-6 py-4 text-center">
-                                        <input type="checkbox" checked={selectAll} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4 text-emerald-600 bg-gray-700 border-gray-600 rounded focus:ring-emerald-500" />
+                                        <input type="checkbox" checked={selectAll} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary" />
                                     </th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">السيارة</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المالك</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">حالة المزاد</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">حالة الموافقة</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">سعر الأفتتاح</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">أقل سعر مرغوب</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">أعلى سعر مرغوب</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">أقل سعر في المزاد</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">أعلى سعر في المزاد</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">تاريخ الإضافة</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">السيارة</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">المالك</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة المزاد</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة الموافقة</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">سعر الأفتتاح</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر مرغوب</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر مرغوب</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر في المزاد</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر في المزاد</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">تاريخ الإضافة</th>
+                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-700/50">
+                            <tbody className="divide-y border-border">
                                 {filteredCars.map((car) => (
-                                    <tr key={car.id} className="hover:bg-gray-750/50 transition-colors duration-200">
+                                    <tr key={car.id} className="hover:bg-border/50 transition-colors duration-200">
                                         <td className="px-6 py-4 text-center">
-                                            <input type="checkbox" checked={selectedCars.has(car.id)} onChange={(e) => handleSelectCar(car.id, e.target.checked)} className="w-4 h-4 text-emerald-600 bg-gray-700 border-gray-600 rounded focus:ring-emerald-500" />
+                                            <input type="checkbox" checked={selectedCars.has(car.id)} onChange={(e) => handleSelectCar(car.id, e.target.checked)} className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary" />
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className="bg-gradient-to-r from-emerald-500 to-cyan-600 p-2 rounded-xl">
+                                                <div className="bg-primary p-2 rounded-xl">
                                                     <Car className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div className="mr-4">
-                                                    <div className="text-sm font-medium text-white cursor-pointer hover:text-emerald-400" onClick={() => redirect(`/carDetails/${car.id}`)}>
+                                                    <div className="text-sm font-medium text-foreground cursor-pointer hover:text-primary" onClick={() => redirect(`/carDetails/${car.id}`)}>
                                                         {car.make} {car.model}
                                                     </div>
-                                                    <div className="text-xs text-gray-400 mt-1">{car.year} • {car.plate_number || "بدون لوحة"}</div>
+                                                    <div className="text-xs text-foreground/70 mt-1">{car.year} • {car.plate_number || "بدون لوحة"}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-300">
+                                        <td className="px-6 py-4 text-sm text-foreground/80">
                                             {car.dealer ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)` : car.user ? `${car.user.first_name} ${car.user.last_name}` : "غير محدد"}
                                         </td>
                                         <td className="px-6 py-4">
@@ -655,37 +656,37 @@ export default function AdminCarsPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center text-emerald-400">
+                                            <div className="flex items-center text-primary">
                                                 <DollarSign className="w-4 h-4 ml-1" />
                                                 <span className="text-sm font-medium">{car.evaluation_price?.toLocaleString() || "0"}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-300">{car.min_price?.toLocaleString() || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-300">{car.max_price?.toLocaleString() || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-300">{car.auctions?.[0]?.minimum_bid || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-300">{car.auctions?.[0]?.maximum_bid || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-300">
+                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.min_price?.toLocaleString() || "0"}</td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.max_price?.toLocaleString() || "0"}</td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.auctions?.[0]?.minimum_bid || "0"}</td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.auctions?.[0]?.maximum_bid || "0"}</td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80">
                                             {new Date(car.created_at).toLocaleDateString("ar-SA")}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center space-x-2 space-x-reverse">
-                                                <button onClick={() => redirect(`/admin/cars/${car.id}`)} className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 p-2 rounded-lg transition-all duration-300" title="عرض التفاصيل">
+                                                <button onClick={() => redirect(`/admin/cars/${car.id}`)} className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300" title="عرض التفاصيل">
                                                     <Eye size={16} />
                                                 </button>
                                                 
                                                 {car.auction_status === "pending" && (
-                                                    <button onClick={() => handleProcessAuction(car.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300" title="معالجة طلب المزاد">
+                                                    <button onClick={() => handleProcessAuction(car.id)} className="bg-secondary hover:bg-secondary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300" title="معالجة طلب المزاد">
                                                         معالجة
                                                     </button>
                                                 )}
                                                 
                                                 {car.auction_status === "in_auction" && (
-                                                    <button onClick={() => { formData.price = car.evaluation_price?.toString() || ""; formData.id = car.auctions?.[0]?.id || ""; setShowModal(true); }} className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300" title="تحديد السعر للمزاد">
+                                                    <button onClick={() => { formData.price = car.evaluation_price?.toString() || ""; formData.id = car.auctions?.[0]?.id || ""; setShowModal(true); }} className="bg-card hover:bg-border text-foreground px-3 py-1 rounded-lg text-xs transition-all duration-300" title="تحديد السعر للمزاد">
                                                         حدد السعر
                                                     </button>
                                                 )}
                                                 
-                                                <button className="text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-300">
+                                                <button className="text-foreground/70 hover:text-foreground hover:bg-border p-2 rounded-lg transition-all duration-300">
                                                     <MoreVertical size={16} />
                                                 </button>
                                             </div>
@@ -697,9 +698,9 @@ export default function AdminCarsPage() {
 
                         {filteredCars.length === 0 && (
                             <div className="text-center py-12">
-                                <Car className="mx-auto h-12 w-12 text-gray-600 mb-4" />
-                                <h3 className="text-lg font-medium text-gray-400">لا توجد سيارات</h3>
-                                <p className="text-gray-500 mt-1">لم يتم العثور على سيارات تطابق معايير البحث.</p>
+                                <Car className="mx-auto h-12 w-12 text-foreground/50 mb-4" />
+                                <h3 className="text-lg font-medium text-foreground/70">لا توجد سيارات</h3>
+                                <p className="text-foreground/50 mt-1">لم يتم العثور على سيارات تطابق معايير البحث.</p>
                             </div>
                         )}
                     </div>
@@ -718,14 +719,14 @@ export default function AdminCarsPage() {
                         <input type="text" id="id" name="id" value={formData.id} className="hidden" readOnly />
                     </div>
                     <div>
-                        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">سعر بدأ المزاد</label>
-                        <input type="string" id="price" name="price" value={formData.price} onChange={handleInputChange} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="سعر بدأ المزاد" required />
+                        <label htmlFor="price" className="block text-sm font-medium text-foreground mb-1">سعر بدأ المزاد</label>
+                        <input type="string" id="price" name="price" value={formData.price} onChange={handleInputChange} className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary" placeholder="سعر بدأ المزاد" required />
                     </div>
                     <div className="flex gap-3">
-                        <button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-md transition-all duration-300">
+                        <button type="submit" className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300">
                             حفظ
                         </button>
-                        <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md transition-all duration-300">
+                        <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300">
                             إغلاق
                         </button>
                     </div>

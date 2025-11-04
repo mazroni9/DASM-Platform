@@ -297,40 +297,40 @@ export default function MyWalletPage() {
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+                className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
             >
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-xl">
+                            <div className="p-2 bg-primary rounded-xl">
                                 <Wallet className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">
-                                    محفظتي <span className="bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">({walletBalance.total.toLocaleString()} ريال)</span>
+                                <h1 className="text-2xl font-bold text-foreground">
+                                    محفظتي <span className="text-primary">({walletBalance.total.toLocaleString()} ريال)</span>
                                 </h1>
-                                <p className="text-gray-400 text-sm mt-1">إدارة رصيدك المالي ومعاملاتك</p>
+                                <p className="text-foreground/70 text-sm mt-1">إدارة رصيدك المالي ومعاملاتك</p>
                             </div>
                         </div>
 
                         {/* Balance Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* Total Balance */}
-                            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl p-4 border border-amber-500/30 backdrop-blur-sm">
+                            <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 backdrop-blur-sm">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <Wallet className="w-4 h-4 text-amber-400" />
-                                    <span className="text-sm text-gray-300">الرصيد الكلي</span>
+                                    <Wallet className="w-4 h-4 text-primary" />
+                                    <span className="text-sm text-foreground/80">الرصيد الكلي</span>
                                 </div>
-                                <p className="text-2xl font-bold text-amber-300">
+                                <p className="text-2xl font-bold text-primary">
                                     {walletBalance.total.toLocaleString()} ريال
                                 </p>
                             </div>
 
                             {/* Available Balance */}
-                            <div className="bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-xl p-4 border border-emerald-500/30 backdrop-blur-sm">
+                            <div className="bg-emerald-500/10 rounded-xl p-4 border border-emerald-500/20 backdrop-blur-sm">
                                 <div className="flex items-center gap-2 mb-2">
                                     <CheckCircle className="w-4 h-4 text-emerald-400" />
-                                    <span className="text-sm text-gray-300">المتاح</span>
+                                    <span className="text-sm text-foreground/80">المتاح</span>
                                 </div>
                                 <p className="text-2xl font-bold text-emerald-300">
                                     {walletBalance.available.toLocaleString()} ريال
@@ -338,10 +338,10 @@ export default function MyWalletPage() {
                             </div>
 
                             {/* Funded Balance */}
-                            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30 backdrop-blur-sm">
+                            <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20 backdrop-blur-sm">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Clock className="w-4 h-4 text-blue-400" />
-                                    <span className="text-sm text-gray-300">المحجوز</span>
+                                    <span className="text-sm text-foreground/80">المحجوز</span>
                                 </div>
                                 <p className="text-2xl font-bold text-blue-300">
                                     {walletBalance.funded.toLocaleString()} ريال
@@ -353,17 +353,17 @@ export default function MyWalletPage() {
                     <div className="flex flex-col sm:flex-row gap-3">
                         <button
                             onClick={handleDeposit}
-                            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-xl border border-emerald-400/30 hover:scale-105 transition-all duration-300 group"
+                            className="flex items-center gap-2 px-4 py-3 bg-secondary text-white rounded-xl border border-secondary/30 hover:scale-105 transition-all duration-300 group"
                         >
-                            <Plus className="w-4 h-4 text-white transition-transform group-hover:scale-110" />
-                            <span className="text-white font-medium">إيداع</span>
+                            <Plus className="w-4 h-4 transition-transform group-hover:scale-110" />
+                            <span className="font-medium">إيداع</span>
                         </button>
                         <button
                             onClick={handleWithdraw}
-                            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-rose-500 to-pink-500 rounded-xl border border-rose-400/30 hover:scale-105 transition-all duration-300 group"
+                            className="flex items-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl border border-red-400/30 hover:scale-105 transition-all duration-300 group"
                         >
-                            <ArrowDownLeft className="w-4 h-4 text-white transition-transform group-hover:scale-110" />
-                            <span className="text-white font-medium">سحب</span>
+                            <ArrowDownLeft className="w-4 h-4 transition-transform group-hover:scale-110" />
+                            <span className="font-medium">سحب</span>
                         </button>
                     </div>
                 </div>
@@ -374,26 +374,26 @@ export default function MyWalletPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+                className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6"
             >
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-white">{transactionStats.total}</div>
-                        <div className="text-sm text-gray-400">إجمالي المعاملات</div>
+                        <div className="text-2xl font-bold text-foreground">{transactionStats.total}</div>
+                        <div className="text-sm text-foreground/70">إجمالي المعاملات</div>
                     </div>
                     <div className="text-center">
                         <div className="text-2xl font-bold text-emerald-400">{transactionStats.deposits}</div>
-                        <div className="text-sm text-gray-400">عملية إيداع</div>
+                        <div className="text-sm text-foreground/70">عملية إيداع</div>
                     </div>
                     <div className="text-center">
                         <div className="text-2xl font-bold text-rose-400">{transactionStats.withdrawals}</div>
-                        <div className="text-sm text-gray-400">عملية سحب</div>
+                        <div className="text-sm text-foreground/70">عملية سحب</div>
                     </div>
                     <div className="text-center">
                         <div className="text-2xl font-bold text-cyan-400">
                             {transactionStats.totalAmount.toLocaleString('ar-EG')}
                         </div>
-                        <div className="text-sm text-gray-400">إجمالي المبالغ</div>
+                        <div className="text-sm text-foreground/70">إجمالي المبالغ</div>
                     </div>
                 </div>
             </motion.div>
@@ -403,19 +403,19 @@ export default function MyWalletPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+                className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6"
             >
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex flex-col sm:flex-row gap-3 flex-1">
                         {/* Search Input */}
                         <div className="relative flex-1 max-w-md">
-                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                             <input
                                 type="text"
                                 placeholder="ابحث في المعاملات..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                                className="w-full bg-background/50 border border-border rounded-xl pl-4 pr-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                             />
                         </div>
 
@@ -423,7 +423,7 @@ export default function MyWalletPage() {
                         <select
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
-                            className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                            className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-blue-500/50 transition-colors"
                         >
                             <option value="all">جميع الأنواع</option>
                             <option value="deposit">إيداع</option>
@@ -438,7 +438,7 @@ export default function MyWalletPage() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                            className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-emerald-500/50 transition-colors"
                         >
                             <option value="all">جميع الحالات</option>
                             <option value="completed">مكتملة</option>
@@ -447,7 +447,7 @@ export default function MyWalletPage() {
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="flex items-center gap-2 text-sm text-foreground/70">
                         <Filter className="w-4 h-4" />
                         <span>عرض {filteredTransactions.length} من {transactions.length} معاملة</span>
                     </div>
@@ -464,22 +464,22 @@ export default function MyWalletPage() {
                 {isLoading ? (
                     <div className="text-center py-16">
                         <div className="relative w-16 h-16 mx-auto mb-4">
-                            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
-                            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+                            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-primary" />
+                            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-primary animate-spin opacity-60"></div>
                         </div>
-                        <p className="text-lg text-gray-400 font-medium">جاري تحميل بيانات المحفظة...</p>
+                        <p className="text-lg text-foreground/70 font-medium">جاري تحميل بيانات المحفظة...</p>
                     </div>
                 ) : filteredTransactions.length === 0 ? (
                     <div className="text-center py-16">
-                        <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md mx-auto">
-                            <Wallet className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-400 mb-2">
+                        <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
+                            <Wallet className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-foreground/70 mb-2">
                                 {searchTerm || typeFilter !== 'all' || statusFilter !== 'all' 
                                     ? 'لا توجد نتائج' 
                                     : 'لا توجد معاملات'
                                 }
                             </h3>
-                            <p className="text-gray-500 text-sm mb-4">
+                            <p className="text-foreground/50 text-sm mb-4">
                                 {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
                                     ? 'لم نتمكن من العثور على معاملات تطابق معايير البحث'
                                     : 'لم تقم بأي معاملات في محفظتك حتى الآن'
@@ -492,14 +492,14 @@ export default function MyWalletPage() {
                                         setTypeFilter('all');
                                         setStatusFilter('all');
                                     }}
-                                    className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                                    className="px-4 py-2 bg-primary/20 text-primary rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors"
                                 >
                                     إعادة تعيين الفلتر
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleDeposit}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg text-white hover:scale-105 transition-all duration-300"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:scale-105 transition-all duration-300"
                                 >
                                     <Plus className="w-4 h-4" />
                                     إيداع أول مبلغ
@@ -520,7 +520,7 @@ export default function MyWalletPage() {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: index * 0.1 }}
-                                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 hover:border-gray-700/70 hover:shadow-xl transition-all duration-300 group"
+                                className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6 hover:border-border/70 hover:shadow-xl transition-all duration-300 group"
                             >
                                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                                     <div className="flex items-start gap-4 flex-1">
@@ -534,7 +534,7 @@ export default function MyWalletPage() {
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                                                <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors">
+                                                <h3 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors">
                                                     {getTransactionTypeArabic(transaction.type)}
                                                 </h3>
                                                 <div className={cn(
@@ -545,11 +545,11 @@ export default function MyWalletPage() {
                                                 </div>
                                             </div>
 
-                                            <p className="text-gray-400 text-sm mb-3 leading-relaxed">
+                                            <p className="text-foreground/70 text-sm mb-3 leading-relaxed">
                                                 {transaction.description}
                                             </p>
 
-                                            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                                            <div className="flex flex-wrap gap-4 text-sm text-foreground/50">
                                                 <div className="flex items-center gap-1">
                                                     <Calendar className="w-3 h-3" />
                                                     <span>{transaction.date}</span>

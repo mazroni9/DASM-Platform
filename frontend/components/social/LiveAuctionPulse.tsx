@@ -142,9 +142,9 @@ export default function LiveAuctionPulse({
 
     return (
         <div
-            className={`bg-white rounded-lg shadow-md overflow-hidden h-full ${className}`}
+            className={`bg-card rounded-lg shadow-md overflow-hidden h-full ${className}`}
         >
-            <div className="p-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+            <div className="p-2 bg-primary text-white">
                 <div className="flex items-center">
                     <HeartPulse className="h-5 w-5 mr-2" />
                     <h3 className="font-bold">نبض المزاد</h3>
@@ -159,23 +159,23 @@ export default function LiveAuctionPulse({
                 {/* المؤشرات بتنسيق أفقي */}
                 <div className="grid grid-cols-4 gap-2">
                     {/* عدد المشاهدين */}
-                    <div className="bg-indigo-50 p-2 rounded-lg">
-                        <div className="flex items-center text-xs text-indigo-700 mb-1">
+                    <div className="bg-primary/10 p-2 rounded-lg">
+                        <div className="flex items-center text-xs text-primary/80 mb-1">
                             <Eye className="h-3 w-3 mr-1" />
                             <span>المشاهدون</span>
                         </div>
                         <div className="flex items-end">
-                            <span className="text-xl font-bold text-indigo-700">
+                            <span className="text-xl font-bold text-primary">
                                 {viewers}
                             </span>
-                            <span className="text-xs text-indigo-500 mb-1 mr-1">
+                            <span className="text-xs text-primary/70 mb-1 mr-1">
                                 نشط
                             </span>
                         </div>
                     </div>
 
                     {/* عدد المزايدين */}
-                    <div className="bg-green-50 p-2 rounded-lg">
+                    <div className="bg-green-500/10 p-2 rounded-lg">
                         <div className="flex items-center text-xs text-green-700 mb-1">
                             <Users className="h-3 w-3 mr-1" />
                             <span>المزايدون</span>
@@ -191,8 +191,8 @@ export default function LiveAuctionPulse({
                     </div>
 
                     {/* مستوى الاهتمام */}
-                    <div className="bg-gray-50 p-2 rounded-lg">
-                        <div className="flex items-center text-xs text-gray-700 mb-1">
+                    <div className="bg-border p-2 rounded-lg">
+                        <div className="flex items-center text-xs text-foreground/70 mb-1">
                             <Zap className="h-3 w-3 mr-1" />
                             <span>مستوى الاهتمام</span>
                         </div>
@@ -205,11 +205,11 @@ export default function LiveAuctionPulse({
                                 >
                                     {getInterestCategory(interestLevel)}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-foreground/50">
                                     {interestLevel}%
                                 </span>
                             </div>
-                            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-background rounded-full overflow-hidden">
                                 <div
                                     className={`h-full rounded-full ${
                                         interestLevel >= 80
@@ -229,7 +229,7 @@ export default function LiveAuctionPulse({
                     </div>
 
                     {/* معدل تغير السعر */}
-                    <div className="bg-yellow-50 p-2 rounded-lg">
+                    <div className="bg-yellow-500/10 p-2 rounded-lg">
                         <div className="flex items-center text-xs text-yellow-700 mb-1">
                             <TrendingUp className="h-3 w-3 mr-1" />
                             <span>معدل تغير السعر</span>
@@ -246,13 +246,13 @@ export default function LiveAuctionPulse({
                 </div>
 
                 {/* الوقت المتبقي والنبض */}
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                    <div className="flex items-center text-sm text-gray-600">
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
+                    <div className="flex items-center text-sm text-foreground/70">
                         <Clock className="h-4 w-4 mr-1.5" />
                         <span>{formatCountdown(countdown)}</span>
                     </div>
 
-                    <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center text-xs text-foreground/50">
                         <span>
                             آخر تحديث:{" "}
                             {pulseTime.toLocaleTimeString("ar", {
@@ -261,7 +261,7 @@ export default function LiveAuctionPulse({
                                 second: "2-digit",
                             })}
                         </span>
-                        <div className="h-2 w-2 bg-indigo-400 rounded-full ml-1.5 animate-pulse"></div>
+                        <div className="h-2 w-2 bg-primary/80 rounded-full ml-1.5 animate-pulse"></div>
                     </div>
                 </div>
             </div>

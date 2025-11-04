@@ -24,7 +24,7 @@ interface AuctionCardProps {
 
 export default function AuctionCard({ car, loading = false }: AuctionCardProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-4 flex flex-col">
+    <div className="bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition p-4 flex flex-col">
       {/* صورة السيارة أو skeleton */}
       {loading ? (
         <Skeleton variant="rectangular" width="100%" height={192} className="rounded-md mb-4" />
@@ -40,14 +40,14 @@ export default function AuctionCard({ car, loading = false }: AuctionCardProps) 
       {loading ? (
         <Skeleton variant="text" height={28} className="mb-1" />
       ) : (
-        <h3 className="text-lg font-bold text-gray-800 mb-1">{car?.title}</h3>
+        <h3 className="text-lg font-bold text-foreground mb-1">{car?.title}</h3>
       )}
 
       {/* السعر الحالي أو skeleton */}
       {loading ? (
         <Skeleton variant="text" height={24} width="60%" className="mb-2" />
       ) : (
-        <p className="text-blue-600 font-semibold mb-2">
+        <p className="text-primary font-semibold mb-2">
           السعر الحالي: {car?.evaluation_price?.toLocaleString() ?? 0} ريال
         </p>
       )}
@@ -59,7 +59,7 @@ export default function AuctionCard({ car, loading = false }: AuctionCardProps) 
         car?.active_auction?.status_label && (
           <div className="flex items-center mb-2">
             <span className="ml-1">حالة المزاد:</span>
-            <p className="text-sm text-green-600">{car.active_auction.status_label}</p>
+            <p className="text-sm text-secondary">{car.active_auction.status_label}</p>
           </div>
         )
       )}
@@ -73,13 +73,13 @@ export default function AuctionCard({ car, loading = false }: AuctionCardProps) 
         </Box>
       ) : (
         <div className="flex items-center gap-1 mb-4">
-          <span className="flex items-center gap-1 text-gray-500">
+          <span className="flex items-center gap-1 text-foreground">
             <KeySquare size={12}/> {car?.condition?.ar}
           </span>
-          <span className="flex items-center gap-1 text-gray-500">
+          <span className="flex items-center gap-1 text-foreground">
             <Fuel size={12}/> {car?.engine}
           </span>
-          <span className="flex items-center gap-1 text-gray-500">
+          <span className="flex items-center gap-1 text-foreground">
             <KeySquare size={12}/> {car?.transmission?.ar}
           </span>
         </div>
@@ -91,7 +91,7 @@ export default function AuctionCard({ car, loading = false }: AuctionCardProps) 
       ) : (
         <LoadingLink
           href={`/carDetails/${car?.id}`}
-          className="mt-auto text-center bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 block text-sm"
+          className="mt-auto text-center bg-primary text-white py-2 px-4 rounded hover:bg-primary/90 block text-sm"
         >
           عرض التفاصيل
         </LoadingLink>

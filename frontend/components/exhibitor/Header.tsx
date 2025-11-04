@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, Badge, Dropdown, Tooltip } from 'antd';
-import { FiSearch, FiBell, FiLogOut, FiUser, FiHome, FiSettings, FiX } from 'react-icons/fi';
+import { Search, Bell, LogOut, User, Home, Settings, X } from 'lucide-react';
 import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import { useAuthStore } from '@/store/authStore';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 /* ============== Utilities ============== */
 const useIsMobile = () => {
@@ -21,7 +22,7 @@ const useIsMobile = () => {
 };
 
 const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-  <div className={`bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-800 overflow-hidden ${className}`}>
+  <div className={`bg-card/95 backdrop-blur-xl rounded-xl shadow-2xl border border-border overflow-hidden ${className}`}>
     {children}
   </div>
 );
@@ -35,10 +36,10 @@ const MenuItem = ({
   <button
     onClick={onClick}
     className={`w-full text-right px-4 py-2.5 flex items-center gap-3 text-sm transition-colors ${
-      danger ? 'text-rose-400 hover:bg-rose-500/10' : 'text-slate-200 hover:bg-slate-800/60'
+      danger ? 'text-red-500 hover:bg-red-500/10' : 'text-foreground hover:bg-border'
     }`}
   >
-    <span className={danger ? 'text-rose-400' : 'text-slate-400'}>{icon}</span>
+    <span className={danger ? 'text-red-500' : 'text-foreground/70'}>{icon}</span>
     <span className="truncate">{label}</span>
   </button>
 );
@@ -100,41 +101,40 @@ export function Header() {
   /* ============== Menus ============== */
   const userMenu = (
     <Panel className="w-72">
-      <div className="px-5 py-4 bg-gradient-to-l from-violet-600/90 to-fuchsia-600/90 text-white">
-        {/* 👇 لا تغيّر هذا السطر */}
+      <div className="px-5 py-4 bg-primary text-white">
         <p className="font-bold text-sm truncate">{user?.venue_name || 'معرض السيارات'}</p>
         <p className="text-xs opacity-90">مرحباً، {user?.first_name || 'زائر'}</p>
       </div>
       <div className="py-2">
-        <MenuItem icon={<FiHome size={16} />} label="الرئيسية" onClick={() => router.push('/exhibitor')} />
-        <MenuItem icon={<FiUser size={16} />} label="الملف الشخصي" onClick={() => router.push('/exhibitor/profile')} />
-        <MenuItem icon={<FiSettings size={16} />} label="الإعدادات" onClick={() => router.push('/exhibitor/settings')} />
-        <div className="border-t border-slate-800 my-1" />
-        <MenuItem icon={<FiLogOut size={16} />} label="تسجيل الخروج" onClick={logout} danger />
+        <MenuItem icon={<Home size={16} />} label="الرئيسية" onClick={() => router.push('/exhibitor')} />
+        <MenuItem icon={<User size={16} />} label="الملف الشخصي" onClick={() => router.push('/exhibitor/profile')} />
+        <MenuItem icon={<Settings size={16} />} label="الإعدادات" onClick={() => router.push('/exhibitor/settings')} />
+        <div className="border-t border-border my-1" />
+        <MenuItem icon={<LogOut size={16} />} label="تسجيل الخروج" onClick={logout} danger />
       </div>
     </Panel>
   );
 
   const notificationMenu = (
     <Panel className="w-80">
-      <div className="px-5 py-4 border-b border-slate-800 flex justify-between items-center">
-        <h3 className="font-bold text-slate-100 text-sm">الإشعارات</h3>
+      <div className="px-5 py-4 border-b border-border flex justify-between items-center">
+        <h3 className="font-bold text-foreground text-sm">الإشعارات</h3>
         <Badge count={notifications.length} color="#7c3aed" />
       </div>
       <div className="max-h-64 overflow-y-auto">
         {notifications.map((n) => (
           <div
             key={n.id}
-            className="p-4 hover:bg-slate-800/60 border-b border-slate-800 last:border-0 cursor-pointer transition-colors"
+            className="p-4 hover:bg-border border-b border-border last:border-0 cursor-pointer transition-colors"
           >
-            <p className="font-semibold text-slate-100 text-sm">{n.title}</p>
-            <p className="text-xs text-slate-400 mt-1 line-clamp-2">{n.description}</p>
-            <p className="text-[11px] text-slate-500 mt-1">منذ ساعتين</p>
+            <p className="font-semibold text-foreground text-sm">{n.title}</p>
+            <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{n.description}</p>
+            <p className="text-[11px] text-foreground/50 mt-1">منذ ساعتين</p>
           </div>
         ))}
       </div>
-      <div className="text-center py-3 border-t border-slate-800 bg-slate-900/60">
-        <button className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">
+      <div className="text-center py-3 border-t border-border bg-card/60">
+        <button className="text-primary hover:text-primary/80 text-sm font-medium transition-colors">
           عرض جميع الإشعارات
         </button>
       </div>
@@ -148,7 +148,7 @@ export function Header() {
       initial={{ y: -40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/70"
+      className="sticky top-0 z-50 bg-card/90 backdrop-blur-xl border-b border-border"
     >
       <div className="max-w-7xl mx-auto px-3 md:px-6 py-3">
         <div className="flex items-center justify-between gap-3">
@@ -160,14 +160,14 @@ export function Header() {
                   <button
                     aria-label="فتح البحث"
                     onClick={() => (isMobile ? setOpenOverlaySearch(true) : setOpenInlineSearch(true))}
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-800 text-slate-300 hover:bg-slate-900/60 transition-colors"
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border text-foreground/80 hover:bg-border transition-colors"
                   >
-                    <FiSearch size={18} />
+                    <Search size={18} />
                   </button>
                 </Tooltip>
                 <div className="hidden sm:flex items-center gap-2">
-                  <span className="h-6 w-[1px] bg-slate-800" />
-                  <div className="text-slate-300 text-sm">{user?.venue_name || 'معرض السيارات'}</div>
+                  <span className="h-6 w-[1px] bg-border" />
+                  <div className="text-foreground/80 text-sm">{user?.venue_name || 'معرض السيارات'}</div>
                 </div>
               </div>
             ) : (
@@ -179,8 +179,8 @@ export function Header() {
                   exit={{ opacity: 0, x: 10 }}
                 >
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                      <FiSearch size={18} />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/70">
+                      <Search size={18} />
                     </span>
                     <input
                       ref={inputRef}
@@ -191,7 +191,7 @@ export function Header() {
                         if (!searchQuery) setOpenInlineSearch(false);
                       }}
                       placeholder="ابحث عن سيارة، عميل، طلب..."
-                      className="h-10 w-full rounded-xl bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none pr-4 pl-10"
+                      className="h-10 w-full rounded-xl bg-background/70 text-foreground placeholder-foreground/50 border border-border focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none pr-4 pl-10"
                     />
                     <button
                       aria-label="إغلاق"
@@ -199,9 +199,9 @@ export function Header() {
                         setOpenInlineSearch(false);
                         setSearchQuery('');
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground/70 hover:text-foreground p-1"
                     >
-                      <FiX size={16} />
+                      <X size={16} />
                     </button>
                   </div>
                 </motion.div>
@@ -211,14 +211,14 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Dropdown trigger={['click']} placement="bottomLeft" dropdownRender={() => notificationMenu}>
               <button
                 aria-label="الإشعارات"
-                className="relative inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-800 text-slate-300 hover:bg-slate-900/60 transition-colors"
+                className="relative inline-flex items-center justify-center w-10 h-10 rounded-xl border border-border text-foreground/80 hover:bg-border transition-colors"
               >
                 <Badge count={notifications.length} offset={[-4, 4]} size="small" color="#7c3aed">
-                  {/* ✅ إبقاء الجرس أبيض دائماً */}
-                  <FiBell size={20} className="text-white" />
+                  <Bell size={20} className="text-foreground" />
                 </Badge>
               </button>
             </Dropdown>
@@ -228,13 +228,13 @@ export function Header() {
                 <Avatar
                   size="large"
                   src="https://saraahah.com/images/profile.png"
-                  className="border border-slate-700 shadow-md transition-transform group-hover:scale-[1.02]"
+                  className="border border-border shadow-md transition-transform group-hover:scale-[1.02]"
                 />
                 <div className="hidden md:flex flex-col text-right">
-                  <p className="font-semibold text-sm text-slate-100 truncate max-w-[140px]">
+                  <p className="font-semibold text-sm text-foreground truncate max-w-[140px]">
                     {user?.venue_name || 'معرض السيارات'}
                   </p>
-                  <p className="text-xs text-slate-400">مرحباً، {user?.first_name || 'زائر'}</p>
+                  <p className="text-xs text-foreground/70">مرحباً، {user?.first_name || 'زائر'}</p>
                 </div>
               </button>
             </Dropdown>
@@ -255,8 +255,8 @@ export function Header() {
             <div className="absolute inset-x-0 top-0 p-3">
               <Panel className="max-w-2xl mx-auto">
                 <div className="p-3 flex items-center gap-2">
-                  <span className="text-slate-400 pl-1">
-                    <FiSearch size={18} />
+                  <span className="text-foreground/70 pl-1">
+                    <Search size={18} />
                   </span>
                   <input
                     autoFocus
@@ -264,7 +264,7 @@ export function Header() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && runSearch()}
                     placeholder="ابحث عن سيارة، عميل، طلب..."
-                    className="h-11 flex-1 rounded-lg bg-slate-900/70 text-slate-100 placeholder-slate-500 border border-slate-700 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 outline-none px-3"
+                    className="h-11 flex-1 rounded-lg bg-background/70 text-foreground placeholder-foreground/50 border border-border focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none px-3"
                   />
                   <button
                     aria-label="إغلاق البحث"
@@ -272,15 +272,15 @@ export function Header() {
                       setOpenOverlaySearch(false);
                       setSearchQuery('');
                     }}
-                    className="w-11 h-11 inline-flex items-center justify-center rounded-lg text-slate-300 hover:bg-slate-800/60 transition-colors"
+                    className="w-11 h-11 inline-flex items-center justify-center rounded-lg text-foreground/80 hover:bg-border transition-colors"
                   >
-                    <FiX size={18} />
+                    <X size={18} />
                   </button>
                 </div>
                 <div className="px-3 pb-3 flex justify-end">
                   <button
                     onClick={runSearch}
-                    className="px-4 h-10 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+                    className="px-4 h-10 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
                   >
                     بحث
                   </button>

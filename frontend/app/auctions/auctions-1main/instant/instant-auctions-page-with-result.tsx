@@ -144,22 +144,22 @@ export default function InstantAuctionCarDetailsPage() {
   // واجهة المستخدم
   // =====================
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white" dir="rtl">
+    <main className="min-h-screen bg-background text-foreground" dir="rtl">
       {/* Header / breadcrumbs */}
-      <div className="border-b border-white/10 bg-gray-900/60 backdrop-blur">
+      <div className="border-b border-border bg-card/60 backdrop-blur">
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-200">
-            <LoadingLink href="/auctions" className="hover:text-white">الأسواق</LoadingLink>
-            <span className="text-gray-500">/</span>
-            <LoadingLink href="/auctions/auctions-1main/instant" className="hover:text-white">السوق الفوري</LoadingLink>
-            <span className="text-gray-500">/</span>
-            <span className="text-white font-semibold">تفاصيل السيارة</span>
+          <div className="flex items-center gap-2 text-foreground">
+            <LoadingLink href="/auctions" className="hover:text-primary">الأسواق</LoadingLink>
+            <span className="text-foreground/50">/</span>
+            <LoadingLink href="/auctions/auctions-1main/instant" className="hover:text-primary">السوق الفوري</LoadingLink>
+            <span className="text-foreground/50">/</span>
+            <span className="text-foreground font-semibold">تفاصيل السيارة</span>
           </div>
           <div className="hidden sm:flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-white/10 border border-white/10">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-card/50 border border-border">
               <Shield className="w-4 h-4" /> بيئة آمنة
             </span>
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-white/10 border border-white/10">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-card/50 border border-border">
               <TrendingUp className="w-4 h-4" /> مزايدات مباشرة
             </span>
           </div>
@@ -170,8 +170,8 @@ export default function InstantAuctionCarDetailsPage() {
         {/* حالات التحميل / الخطأ */}
         {loading && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={`bg-white/5 border border-white/10 rounded-2xl p-5 h-[420px] ${shimmer}`}></div>
-            <div className={`lg:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-5 h-[420px] ${shimmer}`}></div>
+            <div className={`bg-card/5 border border-border rounded-2xl p-5 h-[420px] ${shimmer}`}></div>
+            <div className={`lg:col-span-2 bg-card/5 border border-border rounded-2xl p-5 h-[420px] ${shimmer}`}></div>
           </div>
         )}
 
@@ -188,15 +188,15 @@ export default function InstantAuctionCarDetailsPage() {
             <motion.aside
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 lg:order-2"
+              className="bg-card/5 border border-border rounded-2xl p-5 lg:order-2"
             >
               <div className="flex items-center gap-3 mb-4">
-                <span className="p-3 rounded-2xl bg-white/10">
-                  <CarIcon className="w-6 h-6 text-white" />
+                <span className="p-3 rounded-2xl bg-card/50">
+                  <CarIcon className="w-6 h-6 text-foreground" />
                 </span>
                 <div>
                   <h2 className="text-xl font-extrabold">{car.الماركة} — {car.الموديل}</h2>
-                  <p className="text-gray-300 text-sm">رقم المزاد: #{id}</p>
+                  <p className="text-foreground/70 text-sm">رقم المزاد: #{id}</p>
                 </div>
               </div>
 
@@ -210,7 +210,7 @@ export default function InstantAuctionCarDetailsPage() {
               </div>
 
               <div className="mt-4">
-                <p className="text-sm text-gray-300">آخر سعر</p>
+                <p className="text-sm text-foreground/70">آخر سعر</p>
                 <p className="text-2xl font-extrabold">{sar.format(car['اخر سعر'] ?? 0)}</p>
               </div>
 
@@ -218,7 +218,7 @@ export default function InstantAuctionCarDetailsPage() {
                 <LoadingLink
                   href={car['رابط تقرير الفحص']!}
                   target="_blank"
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/10 hover:bg-white/20"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card/50 border border-border hover:bg-border"
                 >
                   <ExternalLink className="w-4 h-4" />
                   عرض تقرير الفحص PDF
@@ -233,13 +233,13 @@ export default function InstantAuctionCarDetailsPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-3"
+                  className="bg-card/5 border border-border rounded-2xl p-3"
                 >
-                  <div className="flex items-center gap-2 px-2 pb-2 text-gray-200">
+                  <div className="flex items-center gap-2 px-2 pb-2 text-foreground">
                     <Video className="w-4 h-4" />
                     <span className="text-sm">البث المباشر</span>
                   </div>
-                  <div className="aspect-video rounded-xl overflow-hidden border border-white/10">
+                  <div className="aspect-video rounded-xl overflow-hidden border border-border">
                     <iframe
                       src={car['رابط البث']!}
                       allow="autoplay; encrypted-media"
@@ -255,14 +255,14 @@ export default function InstantAuctionCarDetailsPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-2xl p-3"
+                className="bg-card/5 border border-border rounded-2xl p-3"
               >
-                <div className="flex items-center justify-between px-2 pb-2 text-gray-200">
+                <div className="flex items-center justify-between px-2 pb-2 text-foreground">
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" />
                     <span className="text-sm">معرض الصور</span>
                   </div>
-                  <span className="text-xs text-gray-400">{activeIndex + 1} / {images.length}</span>
+                  <span className="text-xs text-foreground/70">{activeIndex + 1} / {images.length}</span>
                 </div>
                 <div className="relative aspect-[16/10] bg-black/40 rounded-xl overflow-hidden">
                   <img
@@ -301,7 +301,7 @@ export default function InstantAuctionCarDetailsPage() {
                       key={i}
                       onClick={() => setActiveIndex(i)}
                       className={`relative aspect-square rounded-lg overflow-hidden border transition ${
-                        i === activeIndex ? 'border-blue-500 ring-1 ring-blue-500' : 'border-white/10 hover:border-white/30'
+                        i === activeIndex ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-border/70'
                       }`}
                       aria-label={`عرض صورة ${i + 1}`}
                     >
@@ -320,19 +320,19 @@ export default function InstantAuctionCarDetailsPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 border border-white/10 rounded-2xl p-4"
+                className="bg-card/5 border border-border rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-bold">قدّم مزايدتك الآن</h3>
-                  <span className="text-sm text-gray-300">أدنى مزايدة: {sar.format(minBid)}</span>
+                  <span className="text-sm text-foreground/70">أدنى مزايدة: {sar.format(minBid)}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-3">
                   {quickSteps.map((s) => (
-                    <div key={s} className="inline-flex items-center gap-1 bg-white/10 border border-white/10 rounded-xl">
+                    <div key={s} className="inline-flex items-center gap-1 bg-card/50 border border-border rounded-xl">
                       <button
                         onClick={() => decStep(s)}
-                        className="px-2 py-1 hover:bg-white/10 rounded-l-xl"
+                        className="px-2 py-1 hover:bg-border rounded-l-xl"
                         title={`- ${s}`}
                       >
                         <Minus className="w-4 h-4" />
@@ -340,7 +340,7 @@ export default function InstantAuctionCarDetailsPage() {
                       <span className="px-2 text-sm">{s}</span>
                       <button
                         onClick={() => applyStep(s)}
-                        className="px-2 py-1 hover:bg-white/10 rounded-r-xl"
+                        className="px-2 py-1 hover:bg-border rounded-r-xl"
                         title={`+ ${s}`}
                       >
                         <Plus className="w-4 h-4" />
@@ -357,21 +357,21 @@ export default function InstantAuctionCarDetailsPage() {
                       value={bid}
                       onChange={(e) => setBid(e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder={`أدخل مبلغ أعلى من ${lastPrice}`}
-                      className="w-full rounded-xl bg-black/30 border border-white/10 p-3 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-xl bg-background/30 border border-border p-3 text-right focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   <button
                     disabled={!validBid}
                     onClick={submitBid}
                     className={`px-5 rounded-xl font-semibold transition-colors ${
-                      validBid ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600/40 cursor-not-allowed'
+                      validBid ? 'bg-primary hover:bg-primary/90' : 'bg-primary/40 cursor-not-allowed'
                     }`}
                   >
                     تأكيد المزايدة
                   </button>
                 </div>
 
-                <p className="mt-2 text-sm text-gray-300">
+                <p className="mt-2 text-sm text-foreground/70">
                   آخر سعر حالي: <span className="font-bold">{sar.format(lastPrice)}</span>
                 </p>
               </motion.div>
@@ -394,7 +394,7 @@ export default function InstantAuctionCarDetailsPage() {
             onClick={closeLightbox}
           >
             <button
-              className="absolute top-4 left-4 p-2 rounded-xl bg-white/10 hover:bg-white/20"
+              className="absolute top-4 left-4 p-2 rounded-xl bg-card/50 hover:bg-border"
               onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
               aria-label="إغلاق"
             >
@@ -403,15 +403,15 @@ export default function InstantAuctionCarDetailsPage() {
 
             <button
               onClick={(e) => { e.stopPropagation(); prevImage(); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/10 hover:bg-white/20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-card/50 hover:bg-border"
               aria-label="السابق"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
-            <img src={images[activeIndex]} alt="صورة مكبرة" className="max-h-[88vh] max-w-[92vw] object-contain rounded-xl border border-white/10" />
+            <img src={images[activeIndex]} alt="صورة مكبرة" className="max-h-[88vh] max-w-[92vw] object-contain rounded-xl border border-border" />
             <button
               onClick={(e) => { e.stopPropagation(); nextImage(); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-white/10 hover:bg-white/20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-card/50 hover:bg-border"
               aria-label="التالي"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -428,10 +428,10 @@ export default function InstantAuctionCarDetailsPage() {
 // =====================
 function Spec({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-      <Icon className="w-4 h-4 text-white" />
-      <div className="text-gray-200 text-sm">
-        <p className="text-gray-400 text-[12px]">{label}</p>
+    <div className="flex items-center gap-2 bg-card/50 border border-border rounded-xl px-3 py-2">
+      <Icon className="w-4 h-4 text-foreground" />
+      <div className="text-foreground/80 text-sm">
+        <p className="text-foreground/50 text-[12px]">{label}</p>
         <p className="font-semibold">{value}</p>
       </div>
     </div>

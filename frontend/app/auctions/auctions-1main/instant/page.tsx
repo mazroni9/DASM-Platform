@@ -213,13 +213,13 @@ export default function InstantAuctionPage() {
 
   // =============== العرض الرئيسي ===============
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-gray-100 p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* التنقل العلوي */}
         <div className="flex justify-end mb-6">
           <LoadingLink
             href="/auctions"
-            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors px-4 py-2.5 text-sm rounded-xl border border-blue-800/50 hover:border-blue-700 bg-gray-800/50 hover:bg-gray-800 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2.5 text-sm rounded-xl border border-border hover:border-primary/50 bg-card/50 hover:bg-card backdrop-blur-sm"
           >
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />
             العودة إلى الأسواق
@@ -228,20 +228,20 @@ export default function InstantAuctionPage() {
 
         {/* العنوان الرئيسي */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary">
             السوق الفوري المباشر
           </h1>
-          <div className="mt-3 flex items-center justify-center gap-2.5 text-sm text-blue-300 bg-gray-800/60 backdrop-blur-sm px-5 py-2.5 rounded-xl max-w-max mx-auto border border-blue-800/30">
+          <div className="mt-3 flex items-center justify-center gap-2.5 text-sm text-primary/80 bg-card/60 backdrop-blur-sm px-5 py-2.5 rounded-xl max-w-max mx-auto border border-border">
             <Clock className="w-4 h-4" />
             <span>من 7 مساءً إلى 10 مساءً يوميًا</span>
           </div>
         </div>
 
         {/* لوحة التحكم */}
-        <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-5 mb-6 shadow-2xl">
+        <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border p-5 mb-6 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
             <div className="relative flex-1 max-w-2xl">
-              <Search className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
               <input
                 type="text"
                 placeholder="ابحث بالماركة، الموديل، أو رقم الشاصي..."
@@ -250,18 +250,18 @@ export default function InstantAuctionPage() {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pr-11 pl-4 py-3.5 bg-gray-900/70 border border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-gray-100 placeholder-gray-500 backdrop-blur-sm"
+                className="w-full pr-11 pl-4 py-3.5 bg-background/70 border border-border rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-foreground placeholder-foreground/50 backdrop-blur-sm"
               />
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="text-sm text-gray-300 bg-gray-900/60 px-4.5 py-2.5 rounded-xl border border-gray-700/50">
-                <span className="font-semibold text-white">{filteredCars.length}</span> من <span className="font-semibold text-white">{carsTotal}</span> سيارة
+              <div className="text-sm text-foreground/80 bg-background/60 px-4.5 py-2.5 rounded-xl border border-border">
+                <span className="font-semibold text-foreground">{filteredCars.length}</span> من <span className="font-semibold text-foreground">{carsTotal}</span> سيارة
               </div>
 
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2.5 px-4.5 py-2.5 border border-gray-700/50 rounded-xl hover:bg-gray-800/70 transition-colors text-gray-300 hover:text-white backdrop-blur-sm"
+                className="flex items-center gap-2.5 px-4.5 py-2.5 border border-border rounded-xl hover:bg-border transition-colors text-foreground/80 hover:text-foreground backdrop-blur-sm"
               >
                 <Filter className="w-4.5 h-4.5" />
                 فلاتر
@@ -272,21 +272,21 @@ export default function InstantAuctionPage() {
 
           {/* فلاتر متقدمة */}
           {showFilters && (
-            <div className="mt-5 pt-5 border-t border-gray-700/40">
+            <div className="mt-5 pt-5 border-t border-border/40">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">ماركة السيارة</label>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">ماركة السيارة</label>
                   <select
                     value={filters.brand}
                     onChange={(e) => {
                       setFilters(prev => ({ ...prev, brand: e.target.value }));
                       setCurrentPage(1);
                     }}
-                    className="w-full p-3 bg-gray-900/70 border border-gray-700 rounded-xl focus:ring-blue-500/50 focus:border-blue-500/50 text-gray-100 backdrop-blur-sm"
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
                   >
-                    <option value="" className="bg-gray-800 text-gray-300">جميع الماركات</option>
+                    <option value="" className="bg-card text-foreground/70">جميع الماركات</option>
                     {carsBrands.map((brand, idx) => (
-                      <option key={idx} value={brand} className="bg-gray-800 text-gray-200">{brand}</option>
+                      <option key={idx} value={brand} className="bg-card text-foreground">{brand}</option>
                     ))}
                   </select>
                 </div>
@@ -297,22 +297,22 @@ export default function InstantAuctionPage() {
 
         {/* رسائل الحالة */}
         {!isAllowed && (
-          <div className="bg-amber-900/20 border border-amber-800/40 text-amber-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>السوق غير مفتوح حاليًا. يفتح يوميًا من 7 مساءً إلى 10 مساءً.</span>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-900/20 border border-red-800/40 text-red-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
+          <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {!loading && !error && filteredCars.length === 0 && isAllowed && (
-          <div className="bg-blue-900/10 border border-blue-800/30 text-blue-300 rounded-2xl p-8 text-center backdrop-blur-sm">
-            <Car className="w-14 h-14 mx-auto mb-4 text-blue-400" />
+          <div className="bg-primary/10 border border-primary/20 text-primary rounded-2xl p-8 text-center backdrop-blur-sm">
+            <Car className="w-14 h-14 mx-auto mb-4 text-primary/80" />
             <p className="font-semibold text-lg">لا توجد سيارات متاحة في السوق الفوري حاليًا</p>
             <p className="text-sm mt-2 opacity-80">سيتم تحديث القائمة تلقائيًا عند توفر سيارات جديدة</p>
           </div>
@@ -320,12 +320,12 @@ export default function InstantAuctionPage() {
 
         {/* جدول السيارات */}
         {isAllowed && filteredCars.length > 0 && (
-          <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
+          <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
               <div className="max-h-[70vh] overflow-auto" ref={scrollContainerRef}>
                 <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-900/70 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-700/50">
+                    <tr className="bg-background/70 backdrop-blur-sm sticky top-0 z-10 border-b border-border">
                       {[
                         "رابط البث", "المنطقة", "المدينة", "الماركة", "الموديل", "السنة",
                         "اللوحة", "العداد", "الحالة", "اللون", "الوقود", "المزايدات",
@@ -334,47 +334,47 @@ export default function InstantAuctionPage() {
                       ].map((header, idx) => (
                         <th
                           key={idx}
-                          className="px-4 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                          className="px-4 py-4 text-right text-xs font-semibold text-foreground/70 uppercase tracking-wider whitespace-nowrap"
                         >
                           {header}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800/50">
+                  <tbody className="divide-y divide-border">
                     {filteredCars.map((car, idx) => (
                       <tr 
                         key={idx} 
-                        className="hover:bg-gray-800/60 transition-colors duration-200 border-b border-gray-800/30"
+                        className="hover:bg-border/60 transition-colors duration-200 border-b border-border/30"
                       >
                         <td className="px-4 py-4 text-center text-sm">
                           {car.broadcasts.length > 0 ? (
                             <LoadingLink
                               target="_blank"
                               href={car.broadcasts[0].stream_url}
-                              className="text-blue-400 hover:text-blue-300 font-medium hover:underline transition-colors"
+                              className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
                             >
                               مشاهدة البث
                             </LoadingLink>
                           ) : (
-                            <span className="text-gray-500">—</span>
+                            <span className="text-foreground/50">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.province}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.city}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-white">{car.car.make}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.model}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.year}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.plate}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.odometer}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.condition}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.color}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.car.engine}</td>
-                        <td className="px-4 py-4 text-center text-sm text-gray-300">{car.bids.length}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-emerald-300">{formatCurrency(car.opening_price)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-amber-300">{formatCurrency(car.minimum_bid)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-rose-300">{formatCurrency(car.maximum_bid)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-white">{formatCurrency(car.current_bid)}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.province}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.city}</td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">{car.car.make}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.model}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.year}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.plate}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.odometer}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.condition}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.color}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.engine}</td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.bids.length}</td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-emerald-400">{formatCurrency(car.opening_price)}</td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-amber-400">{formatCurrency(car.minimum_bid)}</td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-rose-400">{formatCurrency(car.maximum_bid)}</td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">{formatCurrency(car.current_bid)}</td>
                         <td className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
                           {car.bids.length > 0 ? car.bids[car.bids.length - 1].increment : 0}
                         </td>
@@ -389,7 +389,7 @@ export default function InstantAuctionPage() {
                         <td className="px-4 py-4 text-center">
                           <LoadingLink
                             href={`/carDetails/${car.car_id}`}
-                            className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl border border-blue-500/30"
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl border border-primary/30"
                           >
                             <Eye className="w-4.5 h-4.5" />
                           </LoadingLink>
@@ -403,11 +403,11 @@ export default function InstantAuctionPage() {
                 <div ref={sentryRef} className="py-6 text-center">
                   {loading && currentPage > 1 && (
                     <div className="flex justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )}
                   {!loading && currentPage >= totalPages && filteredCars.length > 0 && (
-                    <p className="text-sm text-gray-500">تم عرض جميع السيارات</p>
+                    <p className="text-sm text-foreground/50">تم عرض جميع السيارات</p>
                   )}
                 </div>
               </div>
@@ -417,9 +417,9 @@ export default function InstantAuctionPage() {
 
         {/* حالة التحميل الأولي */}
         {loading && currentPage === 1 && (
-          <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-10 text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-400">جارٍ تحميل بيانات السوق الفوري...</p>
+          <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border p-10 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-foreground/70">جارٍ تحميل بيانات السوق الفوري...</p>
           </div>
         )}
       </div>

@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\AuctionSessionController;
+use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
 use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 
@@ -165,7 +166,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cars/{id}', [CarController::class, 'update']);
     Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/car-statistics', [CarController::class, 'statistics']);
-
+    Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
     // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::get('/sessions/active-scheduled', [AdminController::class, 'getActiveAndScheduledSessions']);

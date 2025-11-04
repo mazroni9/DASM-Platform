@@ -81,17 +81,17 @@ export default function BidTimer({
   }
 
   return (
-    <div className="bg-white border-l-4 border-red-500 rounded-lg shadow-md p-4">
+    <div className="bg-card border-l-4 border-destructive rounded-lg shadow-md p-4">
       {showLabel && (
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-800">
+            <h2 className="text-lg font-bold text-foreground">
               {label} - جارٍ الآن
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <Clock className="text-red-500 h-5 w-5" />
-            <div className="text-xl font-mono font-semibold text-red-600">
+            <Clock className="text-destructive h-5 w-5" />
+            <div className="text-xl font-mono font-semibold text-destructive">
               {formatTime(remaining)}
             </div>
           </div>
@@ -99,16 +99,16 @@ export default function BidTimer({
       )}
       {!showLabel && (
         <div className="flex items-center gap-3 justify-center">
-          <Clock className="text-red-500 h-5 w-5" />
-          <div className="text-xl font-mono font-semibold text-red-600">
+          <Clock className="text-destructive h-5 w-5" />
+          <div className="text-xl font-mono font-semibold text-destructive">
             {formatTime(remaining)}
           </div>
         </div>
       )}
       {showProgress && (
-        <div className="mt-3 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+        <div className="mt-3 h-2 w-full bg-border rounded-full overflow-hidden">
           <div 
-            className="h-full bg-red-500 rounded-full"
+            className="h-full bg-destructive rounded-full"
             style={{
               width: `${Math.min(100, 100 - (remaining / (3 * 60 * 60 * 1000)) * 100)}%`,
             }}

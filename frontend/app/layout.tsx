@@ -29,11 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={lamaSans.variable}>
+    <html lang="ar" dir="rtl" className={lamaSans.variable} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${lamaSans.className} min-h-screen bg-slate-950`}>
+      <body className={`${lamaSans.className} min-h-screen`}>
         <LoadingProvider>
           <Providers>
             <ProtectedRoute>

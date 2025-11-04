@@ -121,24 +121,21 @@ export default function LoginForm() {
       <form onSubmit={handleVerifyCode} className="space-y-5 w-full">
         <div className="space-y-4">
           {error && (
-            <Alert
-              variant="destructive"
-              className="bg-red-900/30 border-red-800 text-red-200"
-            >
-              <AlertCircle className="h-4 w-4 text-red-300" />
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
           {success && (
-            <Alert className="bg-emerald-900/30 border-emerald-800 text-emerald-200">
-              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+            <Alert variant="success">
+              <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="verificationCode" className="text-gray-200 font-medium">
+            <Label htmlFor="verificationCode" className="text-foreground font-medium">
               رمز التحقق
             </Label>
             <Input
@@ -148,14 +145,13 @@ export default function LoginForm() {
               onChange={(e) => setVerificationCode(e.target.value)}
               disabled={isLoading}
               dir="ltr"
-              className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
 
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 transition-all duration-200"
+            className="w-full py-2.5"
           >
             {isLoading ? (
               <span className="flex items-center justify-center">
@@ -172,7 +168,7 @@ export default function LoginForm() {
             variant="outline"
             onClick={() => setShowVerification(false)}
             disabled={isLoading}
-            className="w-full border-gray-700 text-gray-300 hover:bg-gray-800"
+            className="w-full"
           >
             العودة للخلف
           </Button>
@@ -185,18 +181,15 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 w-full">
       <div className="space-y-4">
         {error && !pendingApproval && (
-          <Alert
-            variant="destructive"
-            className="bg-red-900/30 border-red-800 text-red-200"
-          >
-            <AlertCircle className="h-4 w-4 text-red-300" />
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {pendingApproval && (
-          <Alert className="bg-amber-900/30 border-amber-800 text-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-300" />
+          <Alert variant="warning">
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               {error}
               <div className="mt-2 text-sm">
@@ -207,19 +200,19 @@ export default function LoginForm() {
         )}
 
         {success && (
-          <Alert className="bg-emerald-900/30 border-emerald-800 text-emerald-200">
-            <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+          <Alert variant="success">
+            <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-200 font-medium">
+          <Label htmlFor="email" className="text-foreground font-medium">
             البريد الإلكتروني
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-gray-500" />
+              <Mail className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="email"
@@ -228,7 +221,7 @@ export default function LoginForm() {
               autoComplete="email"
               disabled={isLoading}
               {...register("email")}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.email && (
@@ -238,19 +231,19 @@ export default function LoginForm() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-gray-200 font-medium">
+            <Label htmlFor="password" className="text-foreground font-medium">
               كلمة المرور
             </Label>
             <LoadingLink
               href="/auth/forgot-password"
-              className="text-sm text-blue-400 hover:text-blue-300"
+              className="text-sm text-primary hover:text-primary/80"
             >
               نسيت كلمة المرور؟
             </LoadingLink>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-500" />
+              <Lock className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="password"
@@ -259,12 +252,12 @@ export default function LoginForm() {
               autoComplete="current-password"
               disabled={isLoading}
               {...register("password")}
-              className="pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-10 pr-10"
             />
             <button
               type="button"
               onClick={togglePasswordVisibility}
-              className="absolute inset-y-0 left-3 flex items-center text-gray-500 hover:text-blue-400"
+              className="absolute inset-y-0 left-3 flex items-center text-foreground/50 hover:text-primary"
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
@@ -279,9 +272,9 @@ export default function LoginForm() {
             type="checkbox"
             id="remember"
             {...register("remember")}
-            className="h-4 w-4 text-blue-500 border-gray-600 rounded focus:ring-blue-500 bg-gray-800"
+            className="h-4 w-4 text-primary border-border rounded focus:ring-primary bg-card"
           />
-          <Label htmlFor="remember" className="text-sm text-gray-300 font-normal">
+          <Label htmlFor="remember" className="text-sm text-foreground font-normal">
             تذكرني
           </Label>
         </div>
@@ -289,7 +282,7 @@ export default function LoginForm() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 transition-all duration-200 active:scale-[0.98]"
+          className="w-full py-2.5 active:scale-[0.98]"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">
@@ -301,11 +294,11 @@ export default function LoginForm() {
           )}
         </Button>
       </div>
-<div className="text-center text-sm text-gray-400">
+<div className="text-center text-sm text-foreground">
   ليس لديك حساب؟
   <LoadingLink
     href="/auth/register"
-    className="text-blue-400 hover:text-blue-300 font-medium mr-1"
+    className="text-primary hover:text-primary/80 font-medium mr-1"
   >
     إنشاء حساب جديد
   </LoadingLink>

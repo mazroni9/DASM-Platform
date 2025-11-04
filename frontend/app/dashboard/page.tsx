@@ -98,40 +98,40 @@ export default function DashboardPage() {
     { 
       label: "المشتريات", 
       value: stats.purchases, 
-      bg: "bg-gradient-to-br from-sky-900/30 to-cyan-900/20", 
-      border: "border-sky-700/30", 
-      glow: "shadow-sky-500/20", 
-      text: "text-sky-300",
+      bg: "bg-primary/10", 
+      border: "border-primary/20", 
+      glow: "shadow-primary/20", 
+      text: "text-primary",
       icon: ShoppingCart,
       trend: "+12%"
     },
     { 
       label: "المبيعات", 
       value: stats.sales, 
-      bg: "bg-gradient-to-br from-emerald-900/30 to-teal-900/20", 
-      border: "border-emerald-700/30", 
-      glow: "shadow-emerald-500/20", 
-      text: "text-emerald-300",
+      bg: "bg-secondary/10", 
+      border: "border-secondary/20", 
+      glow: "shadow-secondary/20", 
+      text: "text-secondary",
       icon: TrendingUp,
       trend: "+8%"
     },
     { 
       label: "رصيد المحفظة", 
       value: `$${stats.walletBalance.toLocaleString()}`, 
-      bg: "bg-gradient-to-br from-amber-900/30 to-yellow-900/20", 
-      border: "border-amber-700/30", 
+      bg: "bg-amber-500/10", 
+      border: "border-amber-500/20", 
       glow: "shadow-amber-500/20", 
-      text: "text-amber-300",
+      text: "text-amber-500",
       icon: DollarSign,
       trend: "+5%"
     },
     { 
       label: "الطلبات النشطة", 
       value: stats.activeOrders, 
-      bg: "bg-gradient-to-br from-violet-900/30 to-purple-900/20", 
-      border: "border-violet-700/30", 
-      glow: "shadow-violet-500/20", 
-      text: "text-violet-300",
+      bg: "bg-purple-500/10", 
+      border: "border-purple-500/20", 
+      glow: "shadow-purple-500/20", 
+      text: "text-purple-500",
       icon: Package,
       trend: "+3%"
     },
@@ -139,11 +139,11 @@ export default function DashboardPage() {
 
   const getActivityBgColor = (type: string) => {
     switch (type) {
-      case "purchase": return "bg-gradient-to-br from-sky-900/40 to-cyan-900/20";
-      case "sale": return "bg-gradient-to-br from-emerald-900/40 to-teal-900/20";
+      case "purchase": return "bg-primary/10";
+      case "sale": return "bg-secondary/10";
       case "deposit":
-      case "withdrawal": return "bg-gradient-to-br from-amber-900/40 to-yellow-900/20";
-      default: return "bg-gradient-to-br from-gray-800/40 to-gray-900/20";
+      case "withdrawal": return "bg-amber-500/10";
+      default: return "bg-border";
     }
   };
 
@@ -162,32 +162,29 @@ export default function DashboardPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
       >
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl">
+              <div className="p-2 bg-primary rounded-xl">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-white">
-                مرحباً بك، <span className="bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">{userName}</span>
+              <h1 className="text-2xl font-bold text-foreground">
+                مرحباً بك، <span className="text-primary">{userName}</span>
               </h1>
             </div>
             
             <div className="flex flex-wrap gap-2 mb-4">
-              <span className="px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-xs border border-emerald-500/30">
+              <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
                 {user?.role === "user" || user?.role === "dealer" ? "الاشتراك: مجاني" : ""}
               </span>
-              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs border border-blue-500/30">
+              <span className="px-2 py-1 bg-primary/20 text-primary rounded-lg text-xs border border-primary/30">
                 عضو منذ {user?.created_at ? new Date(user.created_at).getFullYear() : ""}
               </span>
-             {/*  <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-xs border border-purple-500/30">
-                {user?.verified ? "حساب موثق" : "حساب غير موثق"}
-              </span> */}
             </div>
 
-            <p className="text-gray-300 text-sm leading-relaxed">
+            <p className="text-foreground/80 text-sm leading-relaxed">
               أنت على بعد نقرة من إدارة حسابك، مشترياتك، مبيعاتك، ومحفظتك بكل سهولة وأمان.
               استعرض إحصائياتك الأخيرة وتابع نشاطك التجاري.
             </p>
@@ -195,13 +192,13 @@ export default function DashboardPage() {
           
           <div className="flex gap-2">
             <LoadingLink href="/dashboard/profile">
-            <button className="p-2 bg-gray-800/60 rounded-xl border border-gray-700 hover:bg-gray-700/60 transition-all duration-300 hover:scale-105">
+            <button className="p-2 bg-border rounded-xl border border-border hover:bg-border/80 transition-all duration-300 hover:scale-105">
               <Settings className="w-4 h-4 text-purple-400" />
             </button>
             </LoadingLink>
             <LoadingLink
               href="/auctions"
-              className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl border border-purple-400/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
+              className="p-2 bg-primary rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
             >
               <Rocket className="w-4 h-4 text-white" />
             </LoadingLink>
@@ -213,18 +210,18 @@ export default function DashboardPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="relative w-16 h-16">
-            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
-            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-primary" />
+            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-primary animate-spin opacity-60"></div>
           </div>
-          <p className="mt-4 text-lg text-gray-400 font-medium">جاري تحميل لوحة التحكم...</p>
+          <p className="mt-4 text-lg text-foreground/70 font-medium">جاري تحميل لوحة التحكم...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Stats Cards */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <div className="p-1.5 bg-primary rounded-lg">
                   <Activity className="w-4 h-4 text-white" />
                 </div>
                 إحصائيات سريعة
@@ -232,7 +229,7 @@ export default function DashboardPage() {
               <button 
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-1 px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg hover:bg-gray-700/50 transition-all duration-300 disabled:opacity-50"
+                className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all duration-300 disabled:opacity-50"
               >
                 <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
                 <span className="text-xs">تحديث</span>
@@ -263,7 +260,7 @@ export default function DashboardPage() {
                         {item.trend}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-300 mb-1">{item.label}</p>
+                    <p className="text-xs text-foreground/80 mb-1">{item.label}</p>
                     <p className={cn("text-lg font-bold", item.text)}>
                       {item.value}
                     </p>
@@ -276,18 +273,18 @@ export default function DashboardPage() {
           {/* Recent Activities */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <div className="p-1.5 bg-primary rounded-lg">
                   <Clock className="w-4 h-4 text-white" />
                 </div>
                 آخر النشاطات
               </h2>
-              <button className="text-xs text-gray-400 hover:text-white transition-colors">
+              <button className="text-xs text-foreground/70 hover:text-foreground transition-colors">
                 عرض الكل
               </button>
             </div>
             
-            <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-xl p-4">
+            <div className="bg-card backdrop-blur-xl border border-border rounded-xl p-4">
               <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                 {displayActivities.map((activity, index) => (
                   <motion.div
@@ -295,7 +292,7 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-all duration-300 border border-gray-700/30 hover:border-gray-600/50 group"
+                    className="flex items-start gap-3 p-3 rounded-lg bg-background/50 hover:bg-border transition-all duration-300 border border-border/70 hover:border-border group"
                   >
                     <div className={cn(
                       "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
@@ -304,15 +301,15 @@ export default function DashboardPage() {
                       {getActivityIcon(activity.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white group-hover:text-gray-200 transition-colors leading-tight">
+                      <p className="text-sm font-medium text-foreground group-hover:text-foreground/80 transition-colors leading-tight">
                         {activity.title}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-foreground/50 mt-1 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {activity.date}
                       </p>
                     </div>
-                    <div className="w-1.5 h-1.5 bg-gray-600 rounded-full group-hover:bg-current transition-colors duration-300"></div>
+                    <div className="w-1.5 h-1.5 bg-border rounded-full group-hover:bg-current transition-colors duration-300"></div>
                   </motion.div>
                 ))}
               </div>

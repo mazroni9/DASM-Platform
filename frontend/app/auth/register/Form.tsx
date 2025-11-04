@@ -225,72 +225,69 @@ export default function RegisterForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 w-full">
       <div className="space-y-4">
         {error && (
-          <Alert
-            variant="destructive"
-            className="bg-red-900/30 border-red-800 text-red-200"
-          >
-            <AlertCircle className="h-4 w-4 text-red-300" />
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {success && (
-          <Alert className="bg-emerald-900/30 border-emerald-800 text-emerald-200">
-            <AlertCircle className="h-4 w-4 text-emerald-300" />
+          <Alert variant="success">
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         {/* الاسم الأول */}
         <div className="space-y-2">
-          <Label htmlFor="first_name" className="text-gray-200 font-medium">
+          <Label htmlFor="first_name" className="text-foreground font-medium">
             الاسم الأول
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-500" />
+              <User className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="first_name"
               {...register("first_name")}
               disabled={isLoading}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.first_name && (
-            <p className="text-sm text-red-400">{errors.first_name.message}</p>
+            <p className="text-sm text-red-500">{errors.first_name.message}</p>
           )}
         </div>
 
         {/* الاسم الأخير */}
         <div className="space-y-2">
-          <Label htmlFor="last_name" className="text-gray-200 font-medium">
+          <Label htmlFor="last_name" className="text-foreground font-medium">
             الاسم الأخير
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-500" />
+              <User className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="last_name"
               {...register("last_name")}
               disabled={isLoading}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.last_name && (
-            <p className="text-sm text-red-400">{errors.last_name.message}</p>
+            <p className="text-sm text-red-500">{errors.last_name.message}</p>
           )}
         </div>
 
         {/* البريد الإلكتروني */}
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-200 font-medium">
+          <Label htmlFor="email" className="text-foreground font-medium">
             البريد الإلكتروني
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-gray-500" />
+              <Mail className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="email"
@@ -298,22 +295,22 @@ export default function RegisterForm() {
               dir="ltr"
               {...register("email")}
               disabled={isLoading}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.email && (
-            <p className="text-sm text-red-400">{errors.email.message}</p>
+            <p className="text-sm text-red-500">{errors.email.message}</p>
           )}
         </div>
 
         {/* رقم الهاتف */}
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-gray-200 font-medium">
+          <Label htmlFor="phone" className="text-foreground font-medium">
             رقم الهاتف
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Phone className="h-5 w-5 text-gray-500" />
+              <Phone className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="phone"
@@ -321,22 +318,22 @@ export default function RegisterForm() {
               dir="ltr"
               {...register("phone")}
               disabled={isLoading}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.phone && (
-            <p className="text-sm text-red-400">{errors.phone.message}</p>
+            <p className="text-sm text-red-500">{errors.phone.message}</p>
           )}
         </div>
 
           {/* المنطقة */}
           <div className="space-y-2">
-          <Label htmlFor="area_id" className="text-gray-200 font-medium">
+          <Label htmlFor="area_id" className="text-foreground font-medium">
             المنطقة
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Map className="h-5 w-5 text-gray-500" />
+              <Map className="h-5 w-5 text-foreground/50" />
             </div>
             <Select
               onValueChange={(value) => {
@@ -348,12 +345,12 @@ export default function RegisterForm() {
             >
               <SelectTrigger
                 id="area_id"
-                className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+                className="pl-3 pr-10 h-10"
               >
                 <SelectValue placeholder="اختر المنطقة" />
               </SelectTrigger>
               <SelectContent
-                className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+                className="z-50"
                 dir="rtl"
                 align="end"
               >
@@ -374,12 +371,12 @@ export default function RegisterForm() {
 
         {/* كلمة المرور */}
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-gray-200 font-medium">
+          <Label htmlFor="password" className="text-foreground font-medium">
             كلمة المرور
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-500" />
+              <Lock className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="password"
@@ -387,22 +384,22 @@ export default function RegisterForm() {
               dir="ltr"
               {...register("password")}
               disabled={isLoading}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.password && (
-            <p className="text-sm text-red-400">{errors.password.message}</p>
+            <p className="text-sm text-red-500">{errors.password.message}</p>
           )}
         </div>
 
         {/* تأكيد كلمة المرور */}
         <div className="space-y-2">
-          <Label htmlFor="password_confirmation" className="text-gray-200 font-medium">
+          <Label htmlFor="password_confirmation" className="text-foreground font-medium">
             تأكيد كلمة المرور
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-gray-500" />
+              <Lock className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="password_confirmation"
@@ -410,23 +407,23 @@ export default function RegisterForm() {
               dir="ltr"
               {...register("password_confirmation")}
               disabled={isLoading}
-              className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+              className="pl-3 pr-10"
             />
           </div>
           {errors.password_confirmation && (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-red-500">
               {errors.password_confirmation.message}
             </p>
           )}
         </div>
           {/* نوع الحساب */}
         <div className="space-y-2">
-          <Label htmlFor="account_type" className="text-gray-200 font-medium">
+          <Label htmlFor="account_type" className="text-foreground font-medium">
             نوع الحساب
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-500" />
+              <User className="h-5 w-5 text-foreground/50" />
             </div>
             <Select
               onValueChange={(value) => {
@@ -438,12 +435,12 @@ export default function RegisterForm() {
             >
               <SelectTrigger
                 id="account_type"
-                className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+                className="pl-3 pr-10 h-10"
               >
                 <SelectValue placeholder="اختر نوع الحساب" />
               </SelectTrigger>
               <SelectContent
-                className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+                className="z-50"
                 dir="rtl"
                 align="end"
               >
@@ -460,49 +457,49 @@ export default function RegisterForm() {
         {accountType === "dealer" && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-gray-200 font-medium">
+              <Label htmlFor="company_name" className="text-foreground font-medium">
                 اسم الشركة
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-500" />
+                  <Building className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="company_name"
                   {...register("company_name")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-400">{errors.company_name.message}</p>
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="commercial_registry" className="text-gray-200 font-medium">
+              <Label htmlFor="commercial_registry" className="text-foreground font-medium">
                 السجل التجاري
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-gray-500" />
+                  <ClipboardList className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="commercial_registry"
                   {...register("commercial_registry")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                 />
               </div>
               {errors.commercial_registry && (
-                <p className="text-sm text-red-400">
+                <p className="text-sm text-red-500">
                   {errors.commercial_registry.message}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-200 font-medium">
+              <Label htmlFor="description" className="text-foreground font-medium">
                 وصف النشاط التجاري (اختياري)
               </Label>
               <Textarea
@@ -510,7 +507,6 @@ export default function RegisterForm() {
                 {...register("description")}
                 disabled={isLoading}
                 rows={3}
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 placeholder="اكتب وصفاً مختصراً عن نشاطك التجاري..."
               />
             </div>
@@ -520,63 +516,63 @@ export default function RegisterForm() {
         {accountType === "venue_owner" && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-gray-200 font-medium">
+              <Label htmlFor="company_name" className="text-foreground font-medium">
                 اسم المعرض
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-500" />
+                  <Building className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="company_name"
                   {...register("company_name")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-400">{errors.company_name.message}</p>
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address" className="text-gray-200 font-medium">
+              <Label htmlFor="address" className="text-foreground font-medium">
                 عنوان المعرض
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <MapPin className="h-5 w-5 text-gray-500" />
+                  <MapPin className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="address"
                   {...register("address")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                   placeholder="مثال: القاهرة، مدينة نصر..."
                 />
               </div>
               {errors.address && (
-                <p className="text-sm text-red-400">{errors.address.message}</p>
+                <p className="text-sm text-red-500">{errors.address.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="commercial_registry" className="text-gray-200 font-medium">
+              <Label htmlFor="commercial_registry" className="text-foreground font-medium">
                 السجل التجاري
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-gray-500" />
+                  <ClipboardList className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="commercial_registry"
                   {...register("commercial_registry")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                 />
               </div>
               {errors.commercial_registry && (
-                <p className="text-sm text-red-400">
+                <p className="text-sm text-red-500">
                   {errors.commercial_registry.message}
                 </p>
               )}
@@ -587,42 +583,42 @@ export default function RegisterForm() {
         {accountType === "investor" && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-gray-200 font-medium">
+              <Label htmlFor="company_name" className="text-foreground font-medium">
                 اسم الشركة الاستثمارية
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-500" />
+                  <Building className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="company_name"
                   {...register("company_name")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-400">{errors.company_name.message}</p>
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="commercial_registry" className="text-gray-200 font-medium">
+              <Label htmlFor="commercial_registry" className="text-foreground font-medium">
                 السجل التجاري
               </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-gray-500" />
+                  <ClipboardList className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
                   id="commercial_registry"
                   {...register("commercial_registry")}
                   disabled={isLoading}
-                  className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  className="pl-3 pr-10"
                 />
               </div>
               {errors.commercial_registry && (
-                <p className="text-sm text-red-400">
+                <p className="text-sm text-red-500">
                   {errors.commercial_registry.message}
                 </p>
               )}
@@ -633,7 +629,7 @@ export default function RegisterForm() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 transition-all duration-200 active:scale-[0.98]"
+          className="w-full py-2.5 active:scale-[0.98]"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">

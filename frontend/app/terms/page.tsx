@@ -4,12 +4,12 @@ import { FileText } from 'lucide-react'; // Using FileText icon
 
 const TermsPage = () => {
   return (
-    <main className="container mx-auto p-8 bg-white rounded-lg shadow my-8">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 flex items-center justify-center gap-3">
+    <main className="container mx-auto p-8 bg-card rounded-lg shadow my-8">
+      <h1 className="text-3xl font-bold mb-6 text-center text-foreground flex items-center justify-center gap-3">
          <FileText size={32} />
          الشروط والأحكام
       </h1>
-       <div className="prose prose-lg max-w-none text-right" dir="rtl">
+       <div className="prose prose-lg max-w-none text-right text-foreground" dir="rtl">
          <h2>مقدمة</h2>
          <p>تحدد هذه الشروط والأحكام القواعد واللوائح لاستخدام موقع ومنصة قلب.</p>
          <p>من خلال الوصول إلى هذا الموقع، نفترض أنك تقبل هذه الشروط والأحكام. لا تستمر في استخدام منصة قلب إذا كنت لا توافق على جميع الشروط والأحكام المذكورة في هذه الصفحة.</p>

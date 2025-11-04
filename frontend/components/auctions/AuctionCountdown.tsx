@@ -49,11 +49,11 @@ const AuctionCountdown: React.FC<AuctionCountdownProps> = ({ endTime }) => {
   return (
     <div>
       {timerComponents.length ? (
-        <div className="text-lg font-bold text-red-600">
+        <div className="text-lg font-bold text-destructive">
             {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
         </div>
       ) : (
-        <span className="text-red-500 font-semibold">Auction Ended</span>
+        <span className="text-destructive font-semibold">Auction Ended</span>
       )}
     </div>
   );

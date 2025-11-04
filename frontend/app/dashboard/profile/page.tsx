@@ -449,13 +449,13 @@ export default function ProfilePage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
                     <div className="relative w-16 h-16 mx-auto mb-4">
-                        <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
-                        <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
+                        <Loader2 className="absolute inset-0 w-full h-full animate-spin text-primary" />
+                        <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-primary animate-spin opacity-60"></div>
                     </div>
-                    <p className="text-lg text-gray-400 font-medium">جاري تحميل بيانات الملف الشخصي...</p>
+                    <p className="text-lg text-foreground/70 font-medium">جاري تحميل بيانات الملف الشخصي...</p>
                 </div>
             </div>
         );
@@ -463,14 +463,14 @@ export default function ProfilePage() {
 
     if (!profile) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
-                    <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md">
-                        <AlertCircle className="w-16 h-16 text-rose-400 mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold text-white mb-4">لم يتم العثور على بيانات الملف الشخصي</h2>
+                    <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md">
+                        <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-foreground mb-4">لم يتم العثور على بيانات الملف الشخصي</h2>
                         <button
                             onClick={() => window.location.reload()}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white hover:scale-105 transition-all duration-300"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-xl text-white hover:scale-105 transition-all duration-300"
                         >
                             إعادة تحميل الصفحة
                         </button>
@@ -488,42 +488,42 @@ export default function ProfilePage() {
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+                className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
             >
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                            <div className="p-2 bg-primary rounded-xl">
                                 <User className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">
+                                <h1 className="text-2xl font-bold text-foreground">
                                     الملف الشخصي
                                 </h1>
-                                <p className="text-gray-400 text-sm mt-1">إدارة معلومات حسابك وإعداداته</p>
+                                <p className="text-foreground/70 text-sm mt-1">إدارة معلومات حسابك وإعداداته</p>
                             </div>
                         </div>
 
                         {/* User Info Card */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30 backdrop-blur-sm">
+                            <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 backdrop-blur-sm">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
                                         <User className="w-8 h-8 text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-white text-lg">
+                                        <h3 className="font-bold text-foreground text-lg">
                                             {profile.first_name} {profile.last_name}
                                         </h3>
-                                        <p className="text-gray-300 text-sm">{profile.email}</p>
+                                        <p className="text-foreground/80 text-sm">{profile.email}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30 backdrop-blur-sm">
+                            <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20 backdrop-blur-sm">
                                 <div className="flex items-center gap-2 mb-2">
                                     <BadgeCheck className="w-4 h-4 text-blue-400" />
-                                    <span className="text-sm text-gray-300">الحالة</span>
+                                    <span className="text-sm text-foreground/80">الحالة</span>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     <div className={cn(
@@ -545,10 +545,10 @@ export default function ProfilePage() {
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-xl p-4 border border-amber-500/30 backdrop-blur-sm">
+                            <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20 backdrop-blur-sm">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Calendar className="w-4 h-4 text-amber-400" />
-                                    <span className="text-sm text-gray-300">تاريخ الانضمام</span>
+                                    <span className="text-sm text-foreground/80">تاريخ الانضمام</span>
                                 </div>
                                 <p className="text-amber-300 font-medium">{formatDate(profile.created_at)}</p>
                             </div>
@@ -558,7 +558,7 @@ export default function ProfilePage() {
                     <div className="flex flex-col sm:flex-row gap-3">
                         <LoadingLink
                             href="/dashboard"
-                            className="flex items-center gap-2 px-4 py-3 bg-gray-500/20 text-gray-300 rounded-xl border border-gray-500/30 hover:bg-gray-500/30 hover:scale-105 transition-all duration-300"
+                            className="flex items-center gap-2 px-4 py-3 bg-card/50 text-foreground/80 rounded-xl border border-border hover:bg-border hover:scale-105 transition-all duration-300"
                         >
                             <ArrowLeft className="w-4 h-4" />
                             <span className="font-medium">العودة للرئيسية</span>
@@ -576,8 +576,8 @@ export default function ProfilePage() {
                     transition={{ delay: 0.1 }}
                     className="xl:col-span-1"
                 >
-                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
-                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6">
+                        <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                             <Sparkles className="w-5 h-5 text-purple-400" />
                             الإعدادات
                         </h2>
@@ -599,18 +599,18 @@ export default function ProfilePage() {
                                             "w-full p-4 rounded-xl border transition-all duration-300 text-right flex items-center gap-3 group",
                                             isActive 
                                                 ? `bg-${tab.color}-500/20 border-${tab.color}-500/30 text-${tab.color}-300 shadow-lg` 
-                                                : "bg-gray-800/30 border-gray-700/30 text-gray-400 hover:bg-gray-700/30 hover:border-gray-600/50"
+                                                : "bg-border/30 border-border text-foreground/70 hover:bg-border/70 hover:border-border"
                                         )}
                                     >
                                         <div className={cn(
                                             "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
                                             isActive 
                                                 ? `bg-${tab.color}-500/20` 
-                                                : "bg-gray-700/30"
+                                                : "bg-border/30"
                                         )}>
                                             <TabIcon className={cn(
                                                 "w-5 h-5",
-                                                isActive ? `text-${tab.color}-400` : "text-gray-400"
+                                                isActive ? `text-${tab.color}-400` : "text-foreground/70"
                                             )} />
                                         </div>
                                         <div className="flex-1 text-right">
@@ -653,7 +653,7 @@ export default function ProfilePage() {
                     transition={{ delay: 0.2 }}
                     className="xl:col-span-3"
                 >
-                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
+                    <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6">
                         {/* Personal Information Tab */}
                         {activeTab === "personal" && (
                             <div className="space-y-6">
@@ -683,78 +683,78 @@ export default function ProfilePage() {
                                     onSubmit={handlePersonalInfoSubmit}
                                     className="space-y-6"
                                 >
-                                    <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
                                         <User className="w-5 h-5 text-blue-400" />
                                         المعلومات الأساسية
                                     </h2>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">الاسم الأول</label>
+                                            <label className="text-sm text-foreground/80 mb-2 block">الاسم الأول</label>
                                             <div className="relative">
                                                 <input
                                                     name="first_name"
                                                     value={formData.first_name}
                                                     onChange={handleInputChange}
-                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                                     required
                                                 />
-                                                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                             </div>
                                         </div>
 
                                         <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">الاسم الأخير</label>
+                                            <label className="text-sm text-foreground/80 mb-2 block">الاسم الأخير</label>
                                             <div className="relative">
                                                 <input
                                                     name="last_name"
                                                     value={formData.last_name}
                                                     onChange={handleInputChange}
-                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                                     required
                                                 />
-                                                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                             </div>
                                         </div>
 
                                         <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">البريد الإلكتروني</label>
+                                            <label className="text-sm text-foreground/80 mb-2 block">البريد الإلكتروني</label>
                                             <div className="relative">
                                                 <input
                                                     name="email"
                                                     type="email"
                                                     value={formData.email}
                                                     disabled
-                                                    className="w-full bg-gray-800/30 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-gray-400 cursor-not-allowed"
+                                                    className="w-full bg-background/30 border border-border rounded-lg pl-10 pr-3 py-3 text-foreground/70 cursor-not-allowed"
                                                 />
-                                                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/50" />
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1">لا يمكن تغيير البريد الإلكتروني</p>
+                                            <p className="text-xs text-foreground/50 mt-1">لا يمكن تغيير البريد الإلكتروني</p>
                                         </div>
 
                                         <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">رقم الهاتف</label>
+                                            <label className="text-sm text-foreground/80 mb-2 block">رقم الهاتف</label>
                                             <div className="relative">
                                                 <input
                                                     name="phone"
                                                     value={formData.phone}
                                                     onChange={handleInputChange}
-                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                                     required
                                                 />
-                                                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                             </div>
                                         </div>
 
                                        
                                         {/* المنطقة */}
                                         <div className="space-y-2">
-                                        <Label htmlFor="area_id" className="text-gray-200 font-medium">
+                                        <Label htmlFor="area_id" className="text-foreground/80 font-medium">
                                             المنطقة
                                         </Label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                                            <Map className="h-5 w-5 text-gray-500" />
+                                            <Map className="h-5 w-5 text-foreground/50" />
                                             </div>
                                             <Select
                                             onValueChange={(value) => {
@@ -765,12 +765,12 @@ export default function ProfilePage() {
                                             >
                                             <SelectTrigger
                                                 id="area_id"
-                                                className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 h-10"
+                                                className="pl-3 pr-10 bg-background border-border text-foreground placeholder-foreground/50 h-10"
                                             >
                                                 <SelectValue placeholder="اختر المنطقة" />
                                             </SelectTrigger>
                                             <SelectContent
-                                                className="[&_*]:!bg-gray-800 [&_*]:!text-white border-gray-700 z-50"
+                                                className="[&_*]:!bg-card [&_*]:!text-foreground border-border z-50"
                                                 dir="rtl"
                                                 align="end"
                                             >
@@ -790,59 +790,59 @@ export default function ProfilePage() {
                                         </div>
 
                                         <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">العنوان</label>
+                                            <label className="text-sm text-foreground/80 mb-2 block">العنوان</label>
                                             <div className="relative">
                                                 <input
                                                     name="address"
                                                     value={formData.address}
                                                     onChange={handleInputChange}
-                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                                    className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                                 />
-                                                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Dealer-specific fields */}
                                     {profile.role === UserRole.DEALER && (
-                                        <div className="mt-8 pt-6 border-t border-gray-700/50">
-                                            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                        <div className="mt-8 pt-6 border-t border-border">
+                                            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                                                 <Building className="w-5 h-5 text-purple-400" />
                                                 معلومات التاجر
                                             </h3>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="text-sm text-gray-300 mb-2 block">اسم الشركة</label>
+                                                    <label className="text-sm text-foreground/80 mb-2 block">اسم الشركة</label>
                                                     <div className="relative">
                                                         <input
                                                             name="company_name"
                                                             value={formData.company_name}
                                                             onChange={handleInputChange}
-                                                            className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                                                            className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-purple-500/50 transition-colors"
                                                         />
-                                                        <Building className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                        <Building className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                                     </div>
                                                 </div>
 
                                                 <div>
-                                                    <label className="text-sm text-gray-300 mb-2 block">رقم السجل التجاري</label>
+                                                    <label className="text-sm text-foreground/80 mb-2 block">رقم السجل التجاري</label>
                                                     <input
                                                         name="trade_license"
                                                         value={formData.trade_license}
                                                         onChange={handleInputChange}
-                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-purple-500/50 transition-colors"
                                                     />
                                                 </div>
 
                                                 <div className="md:col-span-2">
-                                                    <label className="text-sm text-gray-300 mb-2 block">وصف الشركة</label>
+                                                    <label className="text-sm text-foreground/80 mb-2 block">وصف الشركة</label>
                                                     <textarea
                                                         name="description"
                                                         value={formData.description}
                                                         onChange={handleInputChange}
                                                         rows={4}
-                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors resize-none"
+                                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-3 text-foreground placeholder-foreground/70 focus:outline-none focus:border-purple-500/50 transition-colors resize-none"
                                                     />
                                                 </div>
                                             </div>
@@ -856,8 +856,8 @@ export default function ProfilePage() {
                                             className={cn(
                                                 "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
                                                 submitting
-                                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                                    : "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white hover:scale-105"
+                                                    ? "bg-border text-foreground/70 cursor-not-allowed"
+                                                    : "bg-primary text-white hover:bg-primary/90 hover:scale-105"
                                             )}
                                         >
                                             {submitting ? (
@@ -907,14 +907,14 @@ export default function ProfilePage() {
                                     onSubmit={handleSecuritySubmit}
                                     className="space-y-6"
                                 >
-                                    <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
                                         <Shield className="w-5 h-5 text-emerald-400" />
                                         إعدادات الأمان
                                     </h2>
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="text-sm text-gray-300 mb-2 block">كلمة المرور الحالية</label>
+                                            <label className="text-sm text-foreground/80 mb-2 block">كلمة المرور الحالية</label>
                                             <div className="relative">
                                                 <input
                                                     name="currentPassword"
@@ -922,13 +922,13 @@ export default function ProfilePage() {
                                                     value={formData.currentPassword}
                                                     onChange={handleInputChange}
                                                     placeholder="أدخل كلمة المرور الحالية"
-                                                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                                    className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-emerald-500/50 transition-colors"
                                                 />
-                                                <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/70 hover:text-foreground"
                                                 >
                                                     {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                 </button>
@@ -937,7 +937,7 @@ export default function ProfilePage() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-sm text-gray-300 mb-2 block">كلمة المرور الجديدة</label>
+                                                <label className="text-sm text-foreground/80 mb-2 block">كلمة المرور الجديدة</label>
                                                 <div className="relative">
                                                     <input
                                                         name="password"
@@ -945,13 +945,13 @@ export default function ProfilePage() {
                                                         value={formData.password}
                                                         onChange={handleInputChange}
                                                         placeholder="أدخل كلمة المرور الجديدة"
-                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                                        className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-emerald-500/50 transition-colors"
                                                     />
-                                                    <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowPassword(!showPassword)}
-                                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/70 hover:text-foreground"
                                                     >
                                                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                     </button>
@@ -959,7 +959,7 @@ export default function ProfilePage() {
                                             </div>
 
                                             <div>
-                                                <label className="text-sm text-gray-300 mb-2 block">تأكيد كلمة المرور</label>
+                                                <label className="text-sm text-foreground/80 mb-2 block">تأكيد كلمة المرور</label>
                                                 <div className="relative">
                                                     <input
                                                         name="confirmPassword"
@@ -967,13 +967,13 @@ export default function ProfilePage() {
                                                         value={formData.confirmPassword}
                                                         onChange={handleInputChange}
                                                         placeholder="أعد إدخال كلمة المرور الجديدة"
-                                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg pl-10 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                                        className="w-full bg-background/50 border border-border rounded-lg pl-10 pr-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-emerald-500/50 transition-colors"
                                                     />
-                                                    <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                                                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/70 hover:text-foreground"
                                                     >
                                                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                     </button>
@@ -981,7 +981,7 @@ export default function ProfilePage() {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                                        <div className="flex items-start gap-3 p-4 bg-background/30 rounded-xl border border-border">
                                             <input
                                                 type="checkbox"
                                                 id="twoFactorAuth"
@@ -990,10 +990,10 @@ export default function ProfilePage() {
                                                 className="mt-1"
                                             />
                                             <div>
-                                                <label htmlFor="twoFactorAuth" className="text-base font-medium text-white">
+                                                <label htmlFor="twoFactorAuth" className="text-base font-medium text-foreground">
                                                     المصادقة الثنائية
                                                 </label>
-                                                <p className="text-sm text-gray-400 mt-1">
+                                                <p className="text-sm text-foreground/70 mt-1">
                                                     تأمين حسابك بشكل أفضل باستخدام رمز إضافي عند تسجيل الدخول
                                                 </p>
                                             </div>
@@ -1007,8 +1007,8 @@ export default function ProfilePage() {
                                             className={cn(
                                                 "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
                                                 submitting
-                                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                                    : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white hover:scale-105"
+                                                    ? "bg-border text-foreground/70 cursor-not-allowed"
+                                                    : "bg-secondary text-white hover:bg-secondary/90 hover:scale-105"
                                             )}
                                         >
                                             {submitting ? (
@@ -1054,13 +1054,13 @@ export default function ProfilePage() {
                                     onSubmit={handleNotificationsSubmit}
                                     className="space-y-6"
                                 >
-                                    <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
                                         <Bell className="w-5 h-5 text-amber-400" />
                                         إعدادات الإشعارات
                                     </h2>
 
                                     <div className="space-y-4">
-                                        <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                                        <div className="flex items-start gap-3 p-4 bg-background/30 rounded-xl border border-border">
                                             <input
                                                 type="checkbox"
                                                 id="notifyEmail"
@@ -1069,16 +1069,16 @@ export default function ProfilePage() {
                                                 className="mt-1"
                                             />
                                             <div>
-                                                <label htmlFor="notifyEmail" className="text-base font-medium text-white">
+                                                <label htmlFor="notifyEmail" className="text-base font-medium text-foreground">
                                                     إشعارات البريد الإلكتروني
                                                 </label>
-                                                <p className="text-sm text-gray-400 mt-1">
+                                                <p className="text-sm text-foreground/70 mt-1">
                                                     استلام إشعارات عبر البريد الإلكتروني عند حدوث نشاط في حسابك
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                                        <div className="flex items-start gap-3 p-4 bg-background/30 rounded-xl border border-border">
                                             <input
                                                 type="checkbox"
                                                 id="notifySMS"
@@ -1087,10 +1087,10 @@ export default function ProfilePage() {
                                                 className="mt-1"
                                             />
                                             <div>
-                                                <label htmlFor="notifySMS" className="text-base font-medium text-white">
+                                                <label htmlFor="notifySMS" className="text-base font-medium text-foreground">
                                                     إشعارات الرسائل النصية
                                                 </label>
-                                                <p className="text-sm text-gray-400 mt-1">
+                                                <p className="text-sm text-foreground/70 mt-1">
                                                     استلام إشعارات عبر الرسائل النصية عند حدوث نشاط في حسابك
                                                 </p>
                                             </div>
@@ -1104,8 +1104,8 @@ export default function ProfilePage() {
                                             className={cn(
                                                 "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
                                                 submitting
-                                                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                                                    : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white hover:scale-105"
+                                                    ? "bg-border text-foreground/70 cursor-not-allowed"
+                                                    : "bg-secondary text-white hover:bg-secondary/90 hover:scale-105"
                                             )}
                                         >
                                             {submitting ? (

@@ -168,21 +168,21 @@ export default function EditSessionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div className="flex items-center space-x-4 space-x-reverse">
           <LoadingLink
             href="/admin/sessions"
-            className="bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300 p-3 rounded-xl"
+            className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 p-3 rounded-xl"
           >
             <ArrowRight className="w-5 h-5" />
           </LoadingLink>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">
               تعديل جلسة المزاد
             </h1>
-            <p className="text-gray-400 mt-2">
+            <p className="text-foreground/70 mt-2">
               تعديل بيانات جلسة المزاد رقم #{sessionId}
             </p>
           </div>
@@ -194,8 +194,8 @@ export default function EditSessionPage() {
               <AlertCircle className="w-6 h-6 text-amber-400" />
             </div>
           )}
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-xl p-3">
-            <Sparkles className="w-6 h-6 text-amber-400" />
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+            <Sparkles className="w-6 h-6 text-primary" />
           </div>
         </div>
       </div>
@@ -203,37 +203,37 @@ export default function EditSessionPage() {
       <div className="max-w-4xl mx-auto">
         {/* Session Info Card */}
         {originalData && (
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 p-6 mb-6">
+          <div className="bg-card rounded-2xl border border-border p-6 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4 space-x-reverse">
-                <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-3 rounded-xl">
+                <div className="bg-primary p-3 rounded-xl">
                   <FileText className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{originalData.name}</h3>
-                  <p className="text-gray-400 text-sm">
-                    تم الإنشاء في {format(new Date(originalData.created_at), 'dd MMMM yyyy', { locale: ar })}
+                  <h3 className="text-lg font-semibold text-foreground">{originalData.name}</h3>
+                  <p className="text-foreground/70 text-sm">
+                    تم الإنشاء في {format(new Date(originalData.created_at), 'dd MMMM yyyy', )}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-400">عدد المزادات</div>
-                <div className="text-2xl font-bold text-cyan-400">{originalData.auctions_count}</div>
+                <div className="text-sm text-foreground/70">عدد المزادات</div>
+                <div className="text-2xl font-bold text-primary">{originalData.auctions_count}</div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
           {/* Form Header */}
-          <div className="border-b border-gray-700/50 p-6 bg-gradient-to-r from-gray-800 to-gray-900">
+          <div className="border-b border-border p-6 bg-card">
             <div className="flex items-center space-x-3 space-x-reverse">
-              <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-2 rounded-xl">
+              <div className="bg-primary p-2 rounded-xl">
                 <Settings className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">تعديل بيانات الجلسة</h2>
-                <p className="text-gray-400 text-sm mt-1">
+                <h2 className="text-xl font-semibold text-foreground">تعديل بيانات الجلسة</h2>
+                <p className="text-foreground/70 text-sm mt-1">
                   قم بتعديل المعلومات المطلوبة ثم حفظ التغييرات
                 </p>
               </div>
@@ -243,7 +243,7 @@ export default function EditSessionPage() {
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Session Name */}
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-200">
+              <label className="block text-sm font-medium text-foreground/80">
                 اسم الجلسة <span className="text-red-400">*</span>
               </label>
               <div className="relative">
@@ -252,19 +252,19 @@ export default function EditSessionPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-4 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300"
+                  className="w-full bg-background/50 border border-border rounded-xl py-4 px-4 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
                   placeholder="أدخل اسم الجلسة (مثال: جلسة المزاد الأسبوعية - ديسمبر 2024)"
                   required
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  <FileText className="w-5 h-5 text-gray-400" />
+                  <FileText className="w-5 h-5 text-foreground/70" />
                 </div>
               </div>
             </div>
 
             {/* Session Date */}
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-200">
+              <label className="block text-sm font-medium text-foreground/80">
                 تاريخ ووقت الجلسة <span className="text-red-400">*</span>
               </label>
               <div className="relative">
@@ -273,18 +273,18 @@ export default function EditSessionPage() {
                   name="session_date"
                   value={formData.session_date}
                   onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-4 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300"
+                  className="w-full bg-background/50 border border-border rounded-xl py-4 px-4 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
                   required
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  <Calendar className="w-5 h-5 text-gray-400" />
+                  <Calendar className="w-5 h-5 text-foreground/70" />
                 </div>
               </div>
             </div>
 
             {/* Session Type */}
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-200">
+              <label className="block text-sm font-medium text-foreground/80">
                 نوع الجلسة <span className="text-red-400">*</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -296,8 +296,8 @@ export default function EditSessionPage() {
                       onClick={() => setFormData(prev => ({ ...prev, type: type.value as any }))}
                       className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${
                         formData.type === type.value
-                          ? 'border-amber-500 bg-amber-500/10'
-                          : 'border-gray-600 bg-gray-700/30 hover:border-gray-500'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-card/30 hover:border-border/80'
                       }`}
                     >
                       <div className="flex items-center space-x-3 space-x-reverse">
@@ -305,11 +305,11 @@ export default function EditSessionPage() {
                           <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <div className="font-medium text-white">{type.label}</div>
-                          <div className="text-xs text-gray-400 mt-1">{type.description}</div>
+                          <div className="font-medium text-foreground">{type.label}</div>
+                          <div className="text-xs text-foreground/70 mt-1">{type.description}</div>
                         </div>
                         {formData.type === type.value && (
-                          <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-primary rounded-full"></div>
                         )}
                       </div>
                     </div>
@@ -322,18 +322,18 @@ export default function EditSessionPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Status */}
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-200">
+                <label className="block text-sm font-medium text-foreground/80">
                   حالة الجلسة <span className="text-red-400">*</span>
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-4 px-4 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300"
+                  className="w-full bg-background/50 border border-border rounded-xl py-4 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
                   required
                 >
                   {statusOptions.map((status) => (
-                    <option key={status.value} value={status.value} className="bg-gray-800">
+                    <option key={status.value} value={status.value} className="bg-card">
                       {status.label}
                     </option>
                   ))}
@@ -342,7 +342,7 @@ export default function EditSessionPage() {
 
               {/* Description */}
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-200">
+                <label className="block text-sm font-medium text-foreground/80">
                   وصف الجلسة (اختياري)
                 </label>
                 <textarea
@@ -350,24 +350,24 @@ export default function EditSessionPage() {
                   value={formData.description}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full bg-gray-700/50 border border-gray-600 rounded-xl py-4 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-300 resize-none"
+                  className="w-full bg-background/50 border border-border rounded-xl py-4 px-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 resize-none"
                   placeholder="أدخل وصفاً مختصراً للجلسة..."
                 />
               </div>
             </div>
 
             {/* Form Actions */}
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-4 pt-8 border-t border-gray-700/50">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-4 pt-8 border-t border-border">
               <LoadingLink
                 href="/admin/sessions"
-                className="px-6 py-3 bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white rounded-xl transition-all duration-300 text-center font-medium"
+                className="px-6 py-3 bg-border border border-border text-foreground/80 hover:bg-border/80 hover:text-foreground rounded-xl transition-all duration-300 text-center font-medium"
               >
                 إلغاء
               </LoadingLink>
               <button
                 type="submit"
                 disabled={saving || !hasChanges}
-                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl transition-all duration-300 font-medium flex items-center justify-center space-x-2 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl transition-all duration-300 font-medium flex items-center justify-center space-x-2 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? (
                   <>
@@ -386,26 +386,26 @@ export default function EditSessionPage() {
         </div>
 
         {/* Quick Tips */}
-        <div className="mt-6 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 p-6">
+        <div className="mt-6 bg-card rounded-2xl border border-border p-6">
           <div className="flex items-center space-x-3 space-x-reverse mb-4">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-semibold text-white">ملاحظات هامة</h3>
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">ملاحظات هامة</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-foreground/70">
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-primary rounded-full"></div>
               <span>سيتم رفض التغييرات إذا كانت الجلسة تحتوي على مزادات نشطة</span>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-primary rounded-full"></div>
               <span>تأكد من صحة التاريخ والوقت قبل الحفظ</span>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-primary rounded-full"></div>
               <span>تغيير حالة الجلسة قد يؤثر على المزادات المرتبطة بها</span>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
-              <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-primary rounded-full"></div>
               <span>يمكنك التراجع عن التغييرات باستخدام زر الإلغاء</span>
             </div>
           </div>

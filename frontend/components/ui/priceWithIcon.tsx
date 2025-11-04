@@ -1,7 +1,7 @@
 import { SaudiRiyal } from "lucide-react";
 
 interface PriceWithIconProps {
-    price: number;
+    price: number | string;
     className?: string;
 }
 

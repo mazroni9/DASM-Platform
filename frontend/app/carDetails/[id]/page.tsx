@@ -59,14 +59,14 @@ interface BidingData {
 const FeaturedCars = ({cars}) => {
  
   return (
-    <section className="bg-gray-100 min-h-screen mt-10">
+    <section className="bg-background min-h-screen mt-10">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center ">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-right text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-3 md:mb-4"
+            className="text-right text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 md:mb-4"
           >
            سيارات مشابهة
           </motion.h2>
@@ -81,7 +81,7 @@ const FeaturedCars = ({cars}) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-card"
             >
               <div className="relative  h-40 sm:h-48 overflow-hidden">
                 <img
@@ -92,13 +92,13 @@ const FeaturedCars = ({cars}) => {
                
               </div>
               <div className="p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold  mb-2 line-clamp-2">{car.make + " " + car.model + " " + car.year}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2">{car.make + " " + car.model + " " + car.year}</h3>
                 <div className="flex justify-between items-center mb-3 sm:mb-4">
-                  <span className="text-amber-400 font-bold text-base sm:text-lg">{car.active_auction.current_bid} ر.س</span>
-                  <span className="text-slate-400 text-xs sm:text-sm">{car.total_bids} مزايدة</span>
+                  <span className="text-secondary font-bold text-base sm:text-lg">{car.active_auction.current_bid} ر.س</span>
+                  <span className="text-foreground text-xs sm:text-sm">{car.total_bids} مزايدة</span>
                 </div>
                 <LoadingLink href={`/carDetails/${car.id}`} className="w-full">
-                  <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-2 sm:py-3 rounded-lg font-medium hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 text-sm sm:text-base">
+                  <button className="w-full bg-primary text-white py-2 sm:py-3 rounded-lg font-medium hover:bg-primary/90 transition-all duration-300 text-sm sm:text-base">
                     شارك في المزاد
                   </button>
                 </LoadingLink>
@@ -331,7 +331,7 @@ export default function CarDetailPage() {
   // عرض بيانات السيارة إذا تم العثور عليها
   return (
     <>
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       {showImageModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
@@ -343,7 +343,7 @@ export default function CarDetailPage() {
                 e.stopPropagation();
                 setShowImageModal(false);
               }}
-              className="absolute top-0 right-0 m-4 text-white text-2xl z-10 hover:text-gray-300"
+              className="absolute top-0 right-0 m-4 text-foreground text-2xl z-10 hover:text-foreground/80"
             >
               ✖
             </button>
@@ -364,7 +364,7 @@ export default function CarDetailPage() {
                     setSelectedImageIndex(idx);
                   }}
                   className={`w-3 h-3 rounded-full ${
-                    idx === selectedImageIndex ? "bg-white" : "bg-gray-400"
+                    idx === selectedImageIndex ? "bg-foreground" : "bg-foreground/50"
                   }`}
                   aria-label={`عرض الصورة ${idx + 1}`}
                 />
@@ -378,7 +378,7 @@ export default function CarDetailPage() {
         <div className="flex justify-between items-center mb-6">
           <LoadingLink
             href="/auctions"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
+            className="inline-flex items-center text-primary hover:text-primary/80 transition-colors px-3 py-1 text-sm rounded-full border border-primary/20 hover:border-primary/30 bg-primary/10 hover:bg-primary/20"
           >
             <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
             <span>العودة إلى الأسواق</span>
@@ -386,21 +386,21 @@ export default function CarDetailPage() {
           {isOwner && (
             <button
               onClick={() => router.push(`/sales/confirm/${carId}`)}
-              className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded"
+              className="bg-secondary hover:bg-opacity-90 text-white py-2 px-6 rounded"
             >
               تأكيد البيع
             </button>
           )}
         </div>
 
-        <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 ">
+        <div className="bg-card rounded-xl shadow-md overflow-hidden p-6 ">
           {/* رسائل النظام */}
           {submitResult && (
             <div
               className={`p-4 rounded-md ${
                 submitResult.success
-                  ? "bg-green-50 border border-green-200 mb-3"
-                  : "bg-red-50 border border-red-200 mb-3"
+                  ? "bg-green-500/10 border border-green-500/20 mb-3"
+                  : "bg-red-500/10 border border-red-500/20 mb-3"
               }`}
             >
               <div className="flex items-start">
@@ -426,7 +426,7 @@ export default function CarDetailPage() {
               <div className="order-2 lg:order-1">
                 {/* الصورة الرئيسية */}
                 <div
-                  className="bg-gray-100 rounded-lg overflow-hidden relative cursor-pointer"
+                  className="bg-background rounded-lg overflow-hidden relative cursor-pointer"
                   onClick={() => setShowImageModal(true)}
                 >
                   <img
@@ -447,7 +447,7 @@ export default function CarDetailPage() {
                           e.stopPropagation();
                           goToPreviousImage();
                         }}
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70"
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-card/50 text-foreground w-10 h-10 rounded-full flex items-center justify-center hover:bg-card/70"
                         aria-label="الصورة السابقة"
                       >
                         &lt;
@@ -457,7 +457,7 @@ export default function CarDetailPage() {
                           e.stopPropagation();
                           goToNextImage();
                         }}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-opacity-70"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-card/50 text-foreground w-10 h-10 rounded-full flex items-center justify-center hover:bg-card/70"
                         aria-label="الصورة التالية"
                       >
                         &gt;
@@ -473,8 +473,8 @@ export default function CarDetailPage() {
                       key={idx}
                       className={`cursor-pointer border-2 rounded-md overflow-hidden ${
                         idx === selectedImageIndex
-                          ? "border-blue-500 ring-2 ring-blue-300"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-primary ring-2 ring-primary/50"
+                          : "border-border hover:border-border"
                       }`}
                       onClick={() => setSelectedImageIndex(idx)}
                     >
@@ -493,8 +493,8 @@ export default function CarDetailPage() {
 
                 {/* معلومات السعر للشاشات الصغيرة */}
                 <div className="mt-6 block lg:hidden">
-                  <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div className="mb-6 bg-background p-4 rounded-lg border border-border">
+                    <div className="text-2xl font-bold text-primary">
                       السعر الحالي:{" "}
                       <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || 0} />
                      {/*  {item && item.active_auction
@@ -502,7 +502,7 @@ export default function CarDetailPage() {
                        : item?.car?.max_price?.toLocaleString()}{" "} */}
                     </div>
                     {item?.auction_result && (
-                      <p className="text-lg text-green-600 mt-2">
+                      <p className="text-lg text-secondary mt-2">
                         {item.auction_result}
                       </p>
                     )}
@@ -514,7 +514,7 @@ export default function CarDetailPage() {
                   <button
                     hidden={isOwner}
                     onClick={() => setShowBid(!isOwner)}
-                    className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 mt-2"
+                    className="w-full bg-secondary text-white py-2 rounded-lg hover:bg-secondary/90 font-bold text-xl border-2 border-secondary/80 shadow-lg transform hover:scale-105 mt-2"
                   >
                     <span className="flex items-center justify-center">
                       <Plus className="h-5 w-5 mr-1.5" />
@@ -523,7 +523,7 @@ export default function CarDetailPage() {
                   </button>
                 ) : (
                 <div
-                  className="max-w-md mx-auto mt-2 bg-white p-6 rounded-3xl shadow-lg border"
+                  className="max-w-md mx-auto mt-2 bg-card p-6 rounded-3xl shadow-lg border"
                   dir="rtl"
                 >
                   <BidForm
@@ -540,18 +540,18 @@ export default function CarDetailPage() {
                       toast.success("تم تقديم العرض بنجاح");
                     }}
                   />
-                  {/*<h2 className="text-2xl font-bold text-center mb-4 text-gray-800">
+                  {/*<h2 className="text-2xl font-bold text-center mb-4 text-foreground">
                     تقديم عرض على السيارة
                   </h2>
                    <form onSubmit={handleSubmit}>
-                    <label className="block mb-2 font-semibold text-gray-700">
+                    <label className="block mb-2 font-semibold text-foreground">
                       قيمة العرض (ريال سعودي):
                     </label>
                     <input
                       type="number"
                       id="bid_amount"
                       name="bid_amount"
-                      className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="w-full px-4 py-2 mb-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder={`الحد الأدنى: ${lastbid} ريال`}
                       value={formData.bid_amount}
                       onChange={handleInputChange}
@@ -559,13 +559,13 @@ export default function CarDetailPage() {
                       step="5"
                       required
                     />
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-sm text-foreground mb-4">
                       الحد الأدنى للمزايدة: {lastbid.toLocaleString()} ريال
                     </p>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-primary text-white py-2 rounded-xl hover:bg-primary/90 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? "جاري الإرسال..." : "إرسال العرض"}
                     </button>
@@ -575,13 +575,13 @@ export default function CarDetailPage() {
                   {showConfirm && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div
-                        className="bg-white rounded-lg p-6 max-w-md mx-4"
+                        className="bg-card rounded-lg p-6 max-w-md mx-4"
                         dir="rtl"
                       >
-                        <h3 className="text-lg font-bold mb-4 text-gray-800">
+                        <h3 className="text-lg font-bold mb-4 text-foreground">
                           تأكيد المزايدة
                         </h3>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-foreground mb-6">
                           هل أنت متأكد من تقديم عرض بقيمة{" "}
                           {formData.bid_amount?.toLocaleString()} ريال على هذه
                           السيارة؟
@@ -590,14 +590,14 @@ export default function CarDetailPage() {
                           <button
                             onClick={confirmSubmit}
                             disabled={isSubmitting}
-                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50"
+                            className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition duration-200 disabled:opacity-50"
                           >
                             {isSubmitting ? "جاري الإرسال..." : "تأكيد"}
                           </button>
                           <button
                             onClick={() => setShowConfirm(false)}
                             disabled={isSubmitting}
-                            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200 disabled:opacity-50"
+                            className="flex-1 bg-border text-foreground py-2 px-4 rounded-lg hover:bg-border/80 transition duration-200 disabled:opacity-50"
                           >
                             إلغاء
                           </button>
@@ -610,11 +610,11 @@ export default function CarDetailPage() {
               )}
 
               {item?.active_auction && (
-                <div  className="mt-3 border-t border-gray-200 pt-3">
-                  <h4 className="text-lg font-bold text-gray-600 mb-2">آخر المزايدين</h4>
+                <div  className="mt-3 border-t border-border pt-3">
+                  <h4 className="text-lg font-bold text-foreground mb-2">آخر المزايدين</h4>
                   <List dir="rtl" sx={{width: '100%',
                       maxWidth: 460,
-                      bgcolor: 'background.paper',
+                      bgcolor: 'var(--color-card-background)',
                       position: 'relative',
                       overflow: 'auto',
                       maxHeight: 400,
@@ -636,13 +636,13 @@ export default function CarDetailPage() {
 
               {!isOwner && !item?.active_auction && (
                 <div
-                  className="max-w-md mx-auto bg-gray-50 p-6 rounded-3xl shadow-lg border border-gray-200"
+                  className="max-w-md mx-auto bg-background p-6 rounded-3xl shadow-lg border border-border"
                   dir="rtl"
                 >
-                  <h2 className="text-xl font-bold text-center mb-4 text-gray-600">
+                  <h2 className="text-xl font-bold text-center mb-4 text-foreground">
                     غير متاح للمزايدة
                   </h2>
-                  <p className="text-center text-gray-500">
+                  <p className="text-center text-foreground">
                     هذه السيارة غير مدرجة في مزاد حالياً. يرجى المراجعة لاحقاً
                     أو تصفح السيارات المتاحة للمزاد.
                   </p>
@@ -653,14 +653,14 @@ export default function CarDetailPage() {
             {/* بيانات السيارة */}
             <div>
               {item?.active_auction ? (
-                <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <p className="text-gray-500">  آخر سعر:</p>
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="mb-6 bg-primary/10 p-4 rounded-lg border border-primary/20">
+                  <p className="text-foreground">  آخر سعر:</p>
+                  <div className="text-2xl font-bold text-primary">
                     <PriceWithIcon price={item?.active_auction?.current_bid?.toLocaleString() || "-"} />
                   </div>
                 </div>
               ) : (
-                <div className="mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <div className="mb-6 bg-yellow-500/10 p-4 rounded-lg border border-yellow-500/20">
                   <p className="text-xl font-bold text-yellow-700">
                     هذه السيارة غير متاحة للمزايدة حالياً
                   </p>
@@ -673,44 +673,44 @@ export default function CarDetailPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-gray-500 text-sm">الماركة</p>
-                    <p className="font-semibold">{item?.car?.make}</p>
+                    <p className="text-foreground text-sm">الماركة</p>
+                    <p className="font-semibold text-foreground">{item?.car?.make}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">الموديل</p>
-                    <p className="font-semibold">{item?.car?.model}</p>
+                    <p className="text-foreground text-sm">الموديل</p>
+                    <p className="font-semibold text-foreground">{item?.car?.model}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">سنة الصنع</p>
-                    <p className="font-semibold">{item?.car?.year}</p>
+                    <p className="text-foreground text-sm">سنة الصنع</p>
+                    <p className="font-semibold text-foreground">{item?.car?.year}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">رقم اللوحة</p>
-                    <p className="font-semibold">{item?.car?.plate}</p>
+                    <p className="text-foreground text-sm">رقم اللوحة</p>
+                    <p className="font-semibold text-foreground">{item?.car?.plate}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">رقم العداد</p>
-                    <p className="font-semibold">
+                    <p className="text-foreground text-sm">رقم العداد</p>
+                    <p className="font-semibold text-foreground">
                       {item?.car?.odometer?.toLocaleString() || "-"} كم
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">نوع الوقود</p>
-                    <p className="font-semibold">{item?.car?.engine || "-"}</p>
+                    <p className="text-foreground text-sm">نوع الوقود</p>
+                    <p className="font-semibold text-foreground">{item?.car?.engine || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">حالة السيارة</p>
-                    <p className="font-semibold">
+                    <p className="text-foreground text-sm">حالة السيارة</p>
+                    <p className="font-semibold text-foreground">
                       {item?.car?.condition || "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">لون السيارة</p>
-                    <p className="font-semibold">{item?.car?.color || "-"}</p>
+                    <p className="text-foreground text-sm">لون السيارة</p>
+                    <p className="font-semibold text-foreground">{item?.car?.color || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">صورة كرت التسجيل</p>
-                    <p className="font-semibold">
+                    <p className="text-foreground text-sm">صورة كرت التسجيل</p>
+                    <p className="font-semibold text-foreground">
                       {item?.car?.registration_card_image ? (
                         <a
                           href={item?.car?.registration_card_image}
@@ -730,8 +730,8 @@ export default function CarDetailPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">تقارير الفحص</p>
-                    <p className="font-semibold">
+                    <p className="text-foreground text-sm">تقارير الفحص</p>
+                    <p className="font-semibold text-foreground">
                       {item?.car?.report_images.map((file: any) => (
                         <div key={file.id}>
                           <a href={file.image_path}>
@@ -745,37 +745,37 @@ export default function CarDetailPage() {
 
                 {item?.active_auction ? (
                   <div className="pt-4 border-t">
-                    <p className="text-gray-500 text-sm mb-2">معلومات المزاد</p>
+                    <p className="text-foreground text-sm mb-2">معلومات المزاد</p>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-gray-500 text-sm">سعر الإفتتاح</p>
-                        <p className="font-semibold">
+                        <p className="text-foreground text-sm">سعر الإفتتاح</p>
+                        <p className="font-semibold text-foreground">
                           <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-sm">أقل سعر</p>
-                        <p className="font-semibold">
+                        <p className="text-foreground text-sm">أقل سعر</p>
+                        <p className="font-semibold text-foreground">
                             <PriceWithIcon price={item?.active_auction?.minimum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-sm">أعلى سعر</p>
-                        <p className="font-semibold">
+                        <p className="text-foreground text-sm">أعلى سعر</p>
+                        <p className="font-semibold text-foreground">
                           <PriceWithIcon price={item?.active_auction?.maximum_bid?.toLocaleString() || "-"} />
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-foreground text-sm">
                           المزايدات المقدمة
                         </p>
-                        <p className="font-semibold">
+                        <p className="font-semibold text-foreground">
                           {item?.total_bids || "0"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-sm">مبلغ المزايدة</p>
-                        <p className="font-semibold text-green-500">
+                        <p className="text-foreground text-sm">مبلغ المزايدة</p>
+                        <p className="font-semibold text-secondary">
                           {(() => {
                             const bids = item?.active_auction?.bids || [];
                             const lastBid =
@@ -788,9 +788,9 @@ export default function CarDetailPage() {
                   </div>
                 ) : (
                   <div className="pt-4 border-t">
-                    <p className="text-gray-500 text-sm mb-2">حالة السيارة</p>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-600">
+                    <p className="text-foreground text-sm mb-2">حالة السيارة</p>
+                    <div className="bg-background p-3 rounded-lg">
+                      <p className="text-sm text-foreground">
                         هذه السيارة غير مدرجة في مزاد حالياً. قد تكون متاحة
                         للعرض أو في انتظار الموافقة للمزاد.
                       </p>

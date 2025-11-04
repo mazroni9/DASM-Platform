@@ -21,15 +21,15 @@ class AuctionSessionController extends Controller
         $liveSessions = AuctionSession::where('status', 'active')
                                       ->where('type', 'live')
                                       ->with('owner:id,first_name,last_name')
+                                      ->with('owner.venueOwner:id,venue_name,user_id')
                                       ->latest()
                                       ->paginate(12);
-
-        return response()->json($liveSessions);
+        return response()->json([
+            'status' => 'success',
+            'data' => $liveSessions
+        ]);
     }
 
-    /**
-     * Display the specified auction session with its auctions.
-     */
     public function getLiveSession(string $id): JsonResponse
     {
         $live_session = AuctionSession::with([
@@ -45,7 +45,7 @@ class AuctionSessionController extends Controller
         ->with('auctions.car.dealer')
         ->findOrFail($id);
 
- 
+
     if (! $live_session) {
         return response()->json([
             'status' => 'error',

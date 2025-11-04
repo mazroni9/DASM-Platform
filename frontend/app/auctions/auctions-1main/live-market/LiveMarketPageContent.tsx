@@ -307,7 +307,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
   };
   console.log(marketCars);
   return (
-    <div className="min-h-screen bg-gray-50 p-4 py-6">
+    <div className="min-h-screen bg-background p-4 py-6">
       <div className="max-w-7xl mx-auto">
         {/* زر العودة منفرد في الجهة اليمنى */}
         <div className="flex justify-between items-center mb-4">
@@ -317,7 +317,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
           {!sessionId && (
             <LoadingLink
               href="/auctions/auctions-1main"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors px-3 py-1 text-sm rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
+              className="inline-flex items-center text-primary hover:text-primary/80 transition-colors px-3 py-1 text-sm rounded-full border border-primary/20 hover:border-primary/30 bg-primary/10 hover:bg-primary/20"
             >
               <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
               <span>العودة</span>
@@ -329,13 +329,13 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
         <div className="grid grid-cols-12 items-center mb-6 gap-4">
           {/* شريط المزاد في اليسار */}
           <div className="col-span-3 flex justify-start">
-            <div className="bg-white border-r-4 border-teal-500 rounded-lg shadow-sm px-3 py-1.5 flex items-center justify-between">
-              <div className="text-sm font-medium text-gray-800 ml-2">
+            <div className="bg-card border-r-4 border-secondary rounded-lg shadow-sm px-3 py-1.5 flex items-center justify-between">
+              <div className="text-sm font-medium text-foreground ml-2">
                 <div>{auctionType} - جارٍ الآن</div>
               </div>
               <div className="flex items-center gap-2 mr-2">
-                <Clock className="text-teal-500 h-4 w-4" />
-                <div className="text-base font-mono font-semibold text-teal-800 dir-ltr">
+                <Clock className="text-secondary h-4 w-4" />
+                <div className="text-base font-mono font-semibold text-secondary">
                   <BidTimer showLabel={false} showProgress={false} />
                 </div>
               </div>
@@ -344,10 +344,10 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
 
           {/* عنوان الصفحة في الوسط */}
           <div className="col-span-6 text-center">
-            <h1 className="text-3xl font-bold text-teal-700">
+            <h1 className="text-3xl font-bold text-primary">
               {sessionId ? 'جلسة المزاد المباشر' : 'الحراج المباشر'}
             </h1>
-            <div className="text-sm text-teal-600 mt-1">
+            <div className="text-sm text-primary/80 mt-1">
               {sessionId ? 'أهلاً بك في جلسة المزاد' : 'وقت السوق من 4 عصراً إلى 7 مساءً كل يوم'}
             </div>
           </div>
@@ -384,69 +384,69 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                     />
                   </div>
                   {/* شعار المعلق */}
-                  <div className="absolute top-4 right-4 bg-white bg-opacity-80 rounded-full p-1.5 z-20">
+                  <div className="absolute top-4 right-4 bg-card bg-opacity-80 rounded-full p-1.5 z-20">
                     <img
                       src="/grok auctioneer.jpg"
                       alt="معلق المزاد"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-teal-600"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-secondary"
                     />
                   </div>
                 </div>
-                <div className="text-center text-xs text-gray-500 italic">
+                <div className="text-center text-xs text-foreground/50 italic">
                   (بث مباشر من قاعة المزاد - الحراج المباشر)
                 </div>
 
                 {/* جدول السيارات في جلسة الحراج الحالية */}
-                <div className="bg-white rounded-xl shadow-md p-4">
-                  <h2 className="text-lg font-bold mb-3 text-teal-800">
+                <div className="bg-card rounded-xl shadow-md p-4">
+                  <h2 className="text-lg font-bold mb-3 text-primary">
                     سيارات جلسة الحراج الحالية
                   </h2>
 
                   <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200 divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full border border-border divide-y divide-border">
+                      <thead className="bg-background/50">
                         <tr>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             #
                           </th>
 
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             الماركة
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             الموديل
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             السنة
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             أقل سعر
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             أعلى سعر
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             آخر سعر
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             مشاهدة
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-card divide-y divide-border">
                         {marketCars && marketCars.length > 0 ? (
                           marketCars.map((car: any, index: number) => (
                             <tr
                               key={car.id}
-                              className={`hover:bg-gray-50 ${
-                                currentCar?.id === car.id ? "bg-blue-50" : ""
+                              className={`hover:bg-background ${
+                                currentCar?.id === car.id ? "bg-primary/10" : ""
                               }`}
                             >
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {index + 1}
                               </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 <div className="flex items-center">
                                   {currentCar?.id === car.id ? (
                                     <Radio
@@ -461,22 +461,22 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                                   {car.car.make}
                                 </div>
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {car.car.model}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {car.car.year}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {formatCurrency(car.min_price)}{" "}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {formatCurrency(car.max_price)}{" "}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
                                 {formatCurrency(car.current_bid)}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
                                 <LoadingLink
                                   target="_blank"
                                   href={`/carDetails/${car.id}`}
@@ -491,7 +491,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                           <tr>
                             <td
                               colSpan={8}
-                              className="px-4 py-4 text-center text-sm text-gray-500"
+                              className="px-4 py-4 text-center text-sm text-foreground/50"
                             >
                               لا توجد سيارات متاحة حاليًا في الحراج المباشر
                             </td>
@@ -503,69 +503,69 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                 </div>
 
                 {/* جدول السيارات في جلسة الحراج الحالية */}
-                <div className="bg-white rounded-xl shadow-md p-4">
-                  <h2 className="text-lg font-bold mb-3 text-teal-800">
+                <div className="bg-card rounded-xl shadow-md p-4">
+                  <h2 className="text-lg font-bold mb-3 text-primary">
                     {" "}
                     سيارات جلسة الحراج الحالية المنتهية
                   </h2>
 
                   <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200 divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full border border-border divide-y divide-border">
+                      <thead className="bg-background/50">
                         <tr>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             #
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             الماركة
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             الموديل
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             السنة
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             أقل سعر
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             أعلى سعر
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             آخر سعر
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                             مشاهدة
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-card divide-y divide-border">
                         {marketCarsCompleted &&
                         marketCarsCompleted.length > 0 ? (
                           marketCarsCompleted.map((car: any, index: number) => (
-                            <tr key={car.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <tr key={car.id} className="hover:bg-background">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {index + 1}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {car.car.make}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {car.car.model}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {car.car.year}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {formatCurrency(car.min_price)}{" "}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 {formatCurrency(car.max_price)}{" "}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-teal-600">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
                                 {formatCurrency(car.current_bid)}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-teal-600">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
                                 <LoadingLink
                                   target="_blank"
                                   href="#"
@@ -580,7 +580,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                           <tr>
                             <td
                               colSpan={8}
-                              className="px-4 py-4 text-center text-sm text-gray-500"
+                              className="px-4 py-4 text-center text-sm text-foreground/50"
                             >
                               لا توجد سيارات مكتملة في الحراج المباشر
                             </td>
@@ -616,8 +616,8 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
     </div>
     */}
                 {/* معلومات السيارة */}
-                <div className="bg-white p-4 rounded-xl shadow-md">
-                  <h2 className="text-lg font-bold mb-3 border-b pb-2 text-center text-teal-800">
+                <div className="bg-card p-4 rounded-xl shadow-md">
+                  <h2 className="text-lg font-bold mb-3 border-b pb-2 text-center text-primary">
                     السيارة الحالية في الحراج
                   </h2>
                   {currentCar && currentCar.car ? (
@@ -651,9 +651,9 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                         </div>
 
                         {/* قسم تفاصيل المشاهدين والسعر وتقديم العرض - معاد تنسيقه */}
-                        <div className="mt-3 border rounded-lg bg-gray-50 p-3">
+                        <div className="mt-3 border rounded-lg bg-background p-3">
                           {/* معلومات المشاهدين والمزايدين */}
-                          <div className="text-center text-gray-600 mb-2 text-xs">
+                          <div className="text-center text-foreground/70 mb-2 text-xs">
                             <span>مشاهدون: {currentCar.viewers || "0"} | </span>
                             <span>
                               مزايدون: {currentCar.bids?.length || "0"}{" "}
@@ -663,10 +663,10 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
 
                           {/* آخر سعر */}
                           <div className="text-center mb-3">
-                            <h3 className="font-semibold text-base text-teal-800">
+                            <h3 className="font-semibold text-base text-primary">
                               آخر سعر
                             </h3>
-                            <div className="text-2xl font-bold text-teal-600 my-2 py-2 rounded-lg border-2 border-teal-200 bg-white">
+                            <div className="text-2xl font-bold text-secondary my-2 py-2 rounded-lg border-2 border-border bg-card">
                               {formatCurrency(
                                 currentCar.current_bid == 0
                                   ? currentCar.opening_price
@@ -680,7 +680,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                             <button
                               hidden={isOwner}
                               onClick={() => setShowBid(!isOwner)}
-                              className="w-full bg-gradient-to-r from-teal-500 to-teal-700 text-white py-2 rounded-lg hover:from-teal-600 hover:to-teal-800 font-bold text-xl border-2 border-teal-700 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
+                              className="w-full bg-secondary text-white py-2 rounded-lg hover:bg-secondary/90 font-bold text-xl border-2 border-secondary/80 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
                               style={{ animation: "pulse 2.5s infinite" }}
                             >
                               <span className="flex items-center justify-center">
@@ -730,7 +730,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                     </div>
                   ) : (
                     <div className="h-full flex items-center justify-center">
-                      <p className="text-gray-500">
+                      <p className="text-foreground/50">
                         لا توجد سيارة معروضة حاليًا في الحراج المباشر
                       </p>
                     </div>
@@ -745,17 +745,17 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                           value={plate}
                           onChange={(e) => setPlate(e.target.value)}
                           placeholder="أدخل رقم اللوحة مثل XYZ987"
-                          className="p-1.5 text-xs border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-teal-300 focus:border-teal-500"
+                          className="p-1.5 text-xs border border-border rounded-lg w-full focus:ring-2 focus:ring-primary focus:border-primary bg-background"
                         />
                         <button
                           onClick={handleSearch}
                           disabled={loading}
-                          className="absolute left-0 top-0 h-full bg-teal-600 text-white px-2 rounded-l-lg hover:bg-teal-700 whitespace-nowrap text-xs"
+                          className="absolute left-0 top-0 h-full bg-primary text-white px-2 rounded-l-lg hover:bg-primary/90 whitespace-nowrap text-xs"
                         >
                           {loading ? "جارٍ..." : "بحث"}
                         </button>
                       </div>
-                      <h3 className="text-xs font-semibold text-teal-800 whitespace-nowrap">
+                      <h3 className="text-xs font-semibold text-primary whitespace-nowrap">
                         ابحث برقم اللوحة
                       </h3>
                     </div>

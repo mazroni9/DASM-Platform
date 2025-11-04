@@ -275,24 +275,24 @@ export default function CarDetailsPage() {
     const canEdit = !["scheduled", "active", "in_auction"].includes(car.auction_status);
 
     return (
-        <div className="space-y-6" dir="rtl">
+        <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
             {/* Header Section */}
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+                className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
             >
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+                            <div className="p-2 bg-primary rounded-xl">
                                 <Car className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">
+                                <h1 className="text-2xl font-bold text-foreground">
                                     {car.make} {car.model} - {car.year}
                                 </h1>
-                                <p className="text-gray-400 text-sm mt-1">تفاصيل السيارة المعروضة</p>
+                                <p className="text-foreground/70 text-sm mt-1">تفاصيل السيارة المعروضة</p>
                             </div>
                         </div>
 
@@ -368,9 +368,9 @@ export default function CarDetailsPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+                    className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6"
                 >
-                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-purple-400" />
                         معرض الصور
                     </h2>
@@ -397,17 +397,17 @@ export default function CarDetailsPage() {
                             </div>
                         ) : (
                             <div className="text-center py-8">
-                                <ImageIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                                <p className="text-gray-400">لا توجد صور متاحة للسيارة</p>
+                                <ImageIcon className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
+                                <p className="text-foreground/70">لا توجد صور متاحة للسيارة</p>
                             </div>
                         )}
 
                         {editing && (
-                            <div className="border-2 border-dashed border-gray-700/50 rounded-xl p-6 transition-all duration-300 hover:border-purple-500/50">
+                            <div className="border-2 border-dashed border-border/50 rounded-xl p-6 transition-all duration-300 hover:border-primary/50">
                                 <label className="cursor-pointer flex flex-col items-center">
-                                    <Upload className="w-8 h-8 text-gray-400 mb-3" />
-                                    <span className="text-gray-300 font-medium mb-2">اختر صور جديدة</span>
-                                    <span className="text-gray-500 text-sm text-center">
+                                    <Upload className="w-8 h-8 text-foreground/70 mb-3" />
+                                    <span className="text-foreground/80 font-medium mb-2">اختر صور جديدة</span>
+                                    <span className="text-foreground/50 text-sm text-center">
                                         يمكنك اختيار عدة صور مرة واحدة
                                         <br />
                                         الصور المدعومة: JPG, PNG, GIF
@@ -424,7 +424,7 @@ export default function CarDetailsPage() {
                                 {selectedImages.length > 0 && (
                                     <div className="mt-4">
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-gray-300 font-medium">
+                                            <span className="text-foreground/80 font-medium">
                                                 الصور المختارة ({selectedImages.length})
                                             </span>
                                             <button
@@ -432,7 +432,7 @@ export default function CarDetailsPage() {
                                                     setSelectedImages([]);
                                                     setImagePreviews([]);
                                                 }}
-                                                className="text-rose-400 hover:text-rose-300 transition-colors"
+                                                className="text-red-400 hover:text-red-300 transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -447,7 +447,7 @@ export default function CarDetailsPage() {
                                                     />
                                                     <button
                                                         onClick={() => removeSelectedImage(index)}
-                                                        className="absolute -top-2 -left-2 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                                        className="absolute -top-2 -left-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                                                     >
                                                         <X className="w-3 h-3 text-white" />
                                                     </button>
@@ -469,8 +469,8 @@ export default function CarDetailsPage() {
                     className="space-y-6"
                 >
                     {/* Basic Information */}
-                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                             <FileText className="w-5 h-5 text-blue-400" />
                             المعلومات الأساسية
                         </h2>
@@ -478,69 +478,69 @@ export default function CarDetailsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Make */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">الماركة</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">الماركة</label>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={editedCar.make || ""}
                                         onChange={(e) => handleInputChange("make", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.make}</p>
+                                    <p className="text-foreground font-medium">{car.make}</p>
                                 )}
                             </div>
 
                             {/* Model */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">الموديل</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">الموديل</label>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={editedCar.model || ""}
                                         onChange={(e) => handleInputChange("model", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.model}</p>
+                                    <p className="text-foreground font-medium">{car.model}</p>
                                 )}
                             </div>
 
                             {/* Year */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">سنة الصنع</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">سنة الصنع</label>
                                 {editing ? (
                                     <input
                                         type="number"
                                         value={editedCar.year || ""}
                                         onChange={(e) => handleInputChange("year", parseInt(e.target.value))}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.year}</p>
+                                    <p className="text-foreground font-medium">{car.year}</p>
                                 )}
                             </div>
 
                             {/* Color */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">اللون</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">اللون</label>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={editedCar.color || ""}
                                         onChange={(e) => handleInputChange("color", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.color || "غير محدد"}</p>
+                                    <p className="text-foreground font-medium">{car.color || "غير محدد"}</p>
                                 )}
                             </div>
                         </div>
                     </div>
 
                     {/* Technical Specifications */}
-                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                             <Settings className="w-5 h-5 text-purple-400" />
                             المواصفات الفنية
                         </h2>
@@ -548,42 +548,42 @@ export default function CarDetailsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Odometer */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">العداد (كم)</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">العداد (كم)</label>
                                 {editing ? (
                                     <input
                                         type="number"
                                         value={editedCar.odometer || ""}
                                         onChange={(e) => handleInputChange("odometer", parseInt(e.target.value))}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.odometer?.toLocaleString("ar-EG")}</p>
+                                    <p className="text-foreground font-medium">{car.odometer?.toLocaleString("ar-EG")}</p>
                                 )}
                             </div>
 
                             {/* Engine */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">المحرك</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">المحرك</label>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={editedCar.engine || ""}
                                         onChange={(e) => handleInputChange("engine", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.engine || "غير محدد"}</p>
+                                    <p className="text-foreground font-medium">{car.engine || "غير محدد"}</p>
                                 )}
                             </div>
 
                             {/* Transmission */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">ناقل الحركة</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">ناقل الحركة</label>
                                 {editing ? (
                                     <select
                                         value={editedCar.transmission || ""}
                                         onChange={(e) => handleInputChange("transmission", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                                     >
                                         <option value="">اختر نوع ناقل الحركة</option>
                                         <option value="automatic">أوتوماتيك</option>
@@ -591,7 +591,7 @@ export default function CarDetailsPage() {
                                         <option value="cvt">CVT</option>
                                     </select>
                                 ) : (
-                                    <p className="text-white font-medium">
+                                    <p className="text-foreground font-medium">
                                         {car.transmission === "automatic" ? "أوتوماتيك" :
                                          car.transmission === "manual" ? "يدوي" :
                                          car.transmission === "cvt" ? "CVT" : "غير محدد"}
@@ -601,12 +601,12 @@ export default function CarDetailsPage() {
 
                             {/* Condition */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">الحالة</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">الحالة</label>
                                 {editing ? (
                                     <select
                                         value={editedCar.condition || ""}
                                         onChange={(e) => handleInputChange("condition", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                                     >
                                         <option value="">اختر حالة السيارة</option>
                                         <option value="excellent">ممتازة</option>
@@ -615,7 +615,7 @@ export default function CarDetailsPage() {
                                         <option value="poor">ضعيفة</option>
                                     </select>
                                 ) : (
-                                    <p className="text-white font-medium">
+                                    <p className="text-foreground font-medium">
                                         {car.condition === "excellent" ? "ممتازة" :
                                          car.condition === "good" ? "جيدة" :
                                          car.condition === "fair" ? "متوسطة" :
@@ -626,24 +626,24 @@ export default function CarDetailsPage() {
 
                             {/* VIN */}
                             <div className="md:col-span-2">
-                                <label className="text-sm text-gray-400 mb-2 block">رقم الهيكل (VIN)</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">رقم الهيكل (VIN)</label>
                                 {editing ? (
                                     <input
                                         type="text"
                                         value={editedCar.vin || ""}
                                         onChange={(e) => handleInputChange("vin", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-white font-medium">{car.vin}</p>
+                                    <p className="text-foreground font-medium">{car.vin}</p>
                                 )}
                             </div>
                         </div>
                     </div>
 
                     {/* Price & Description */}
-                    <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6">
+                        <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                             <DollarSign className="w-5 h-5 text-amber-400" />
                             السعر والوصف
                         </h2>
@@ -651,17 +651,17 @@ export default function CarDetailsPage() {
                         <div className="space-y-4">
                             {/* Evaluation Price */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">سعر التقييم (ريال)</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">سعر التقييم (ريال)</label>
                                 {editing ? (
                                     <input
                                         type="number"
                                         step="0.01"
                                         value={editedCar.evaluation_price || ""}
                                         onChange={(e) => handleInputChange("evaluation_price", parseFloat(e.target.value))}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
                                     />
                                 ) : (
-                                    <p className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
+                                    <p className="text-2xl font-bold text-secondary">
                                         {car.evaluation_price?.toLocaleString("ar-EG")} ريال
                                     </p>
                                 )}
@@ -669,17 +669,17 @@ export default function CarDetailsPage() {
 
                             {/* Description */}
                             <div>
-                                <label className="text-sm text-gray-400 mb-2 block">الوصف</label>
+                                <label className="text-sm text-foreground/70 mb-2 block">الوصف</label>
                                 {editing ? (
                                     <textarea
                                         rows={4}
                                         value={editedCar.description || ""}
                                         onChange={(e) => handleInputChange("description", e.target.value)}
-                                        className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 transition-colors resize-none"
+                                        className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-foreground placeholder-foreground/70 focus:outline-none focus:border-primary/50 transition-colors resize-none"
                                         placeholder="اكتب وصفاً مفصلاً للسيارة..."
                                     />
                                 ) : (
-                                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                    <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
                                         {car.description || "لا يوجد وصف متاح"}
                                     </p>
                                 )}
@@ -694,10 +694,10 @@ export default function CarDetailsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+                className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6"
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-gray-400">
+                    <div className="flex items-center gap-2 text-foreground/70">
                         <Calendar className="w-4 h-4" />
                         <span>
                             <strong>تاريخ الإضافة:</strong>{" "}
@@ -710,7 +710,7 @@ export default function CarDetailsPage() {
                             })}
                         </span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-400">
+                    <div className="flex items-center gap-2 text-foreground/70">
                         <Calendar className="w-4 h-4" />
                         <span>
                             <strong>آخر تحديث:</strong>{" "}

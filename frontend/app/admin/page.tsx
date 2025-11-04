@@ -173,14 +173,14 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+        <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-3xl font-bold text-primary">
                         لوحة التحكم الإدارية
                     </h1>
-                    <div className="flex items-center mt-2 text-gray-400">
+                    <div className="flex items-center mt-2 text-foreground/70">
                         <Clock className="ml-1" size={16} />
                         <span className="text-sm">
                             {new Date().toLocaleDateString("ar-SA", {
@@ -196,12 +196,12 @@ export default function AdminDashboard() {
                 <div className="flex items-center space-x-3 space-x-reverse mt-4 md:mt-0">
                     <button 
                         onClick={refreshData}
-                        className="flex items-center bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-all duration-300 px-4 py-2 rounded-lg"
+                        className="flex items-center bg-card hover:bg-border text-foreground/80 hover:text-foreground transition-all duration-300 px-4 py-2 rounded-lg"
                     >
                         <RefreshCw size={18} className={`ml-2 ${loading ? 'animate-spin' : ''}`} />
                         تحديث البيانات
                     </button>
-                    <button className="flex items-center bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 px-4 py-2 rounded-lg">
+                    <button className="flex items-center bg-primary hover:bg-primary/90 text-white transition-all duration-300 px-4 py-2 rounded-lg">
                         <Download size={18} className="ml-2" />
                         تصدير تقرير
                     </button>
@@ -209,13 +209,13 @@ export default function AdminDashboard() {
             </div>
 
             {/* Main Content */}
-            <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
+            <div className="bg-card backdrop-blur-lg rounded-2xl border border-border shadow-2xl overflow-hidden">
                 <Tabs defaultValue="dashboard" className="w-full">
-                    <div className="border-b border-gray-700/50 px-6">
+                    <div className="border-b border-border px-6">
                         <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 h-14">
                             <TabsTrigger 
                                 value="dashboard" 
-                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-b-2 data-[state=active]:border-cyan-400 rounded-none h-full flex flex-col justify-center transition-all duration-300"
+                                className="data-[state=active]:bg-primary/10 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full flex flex-col justify-center transition-all duration-300"
                             >
                                 <div className="flex items-center justify-center">
                                     <BarChart3 size={18} className="ml-2" />
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
                             </TabsTrigger>
                             <TabsTrigger 
                                 value="cars" 
-                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-b-2 data-[state=active]:border-cyan-400 rounded-none h-full flex flex-col justify-center transition-all duration-300"
+                                className="data-[state=active]:bg-primary/10 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full flex flex-col justify-center transition-all duration-300"
                             >
                                 <div className="flex items-center justify-center">
                                     <Car size={18} className="ml-2" />
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
                             </TabsTrigger>
                             <TabsTrigger 
                                 value="broadcast" 
-                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-b-2 data-[state=active]:border-cyan-400 rounded-none h-full flex flex-col justify-center transition-all duration-300"
+                                className="data-[state=active]:bg-primary/10 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full flex flex-col justify-center transition-all duration-300"
                             >
                                 <div className="flex items-center justify-center">
                                     <Play size={18} className="ml-2" />
@@ -242,7 +242,7 @@ export default function AdminDashboard() {
                             </TabsTrigger>
                             <TabsTrigger 
                                 value="auctions" 
-                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-blue-600/20 data-[state=active]:border-b-2 data-[state=active]:border-cyan-400 rounded-none h-full flex flex-col justify-center transition-all duration-300"
+                                className="data-[state=active]:bg-primary/10 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full flex flex-col justify-center transition-all duration-300"
                             >
                                 <div className="flex items-center justify-center">
                                     <DollarSign size={18} className="ml-2" />
@@ -256,45 +256,45 @@ export default function AdminDashboard() {
                         {/* Statistics Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             {/* Total Users Card */}
-                            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-5 border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-cyan-500/30 group">
+                            <div className="bg-background rounded-xl p-5 border border-border shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary/30 group">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-gray-400 text-sm mb-1">إجمالي المستخدمين</p>
-                                        <p className="text-2xl font-bold text-white">{stats.totalUsers}</p>
+                                        <p className="text-foreground/70 text-sm mb-1">إجمالي المستخدمين</p>
+                                        <p className="text-2xl font-bold text-foreground">{stats.totalUsers}</p>
                                         <div className="flex items-center mt-2">
                                             <TrendingUp size={14} className="text-green-400 ml-1" />
                                             <span className="text-xs text-green-400">+12% عن الشهر الماضي</span>
                                         </div>
                                     </div>
-                                    <div className="bg-cyan-500/10 p-3 rounded-xl group-hover:bg-cyan-500/20 transition-all duration-300">
-                                        <Users className="w-6 h-6 text-cyan-400" />
+                                    <div className="bg-primary/10 p-3 rounded-xl group-hover:bg-primary/20 transition-all duration-300">
+                                        <Users className="w-6 h-6 text-primary" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Active Auctions Card */}
-                            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-5 border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-500/30 group">
+                            <div className="bg-background rounded-xl p-5 border border-border shadow-lg hover:shadow-xl transition-all duration-300 hover:border-secondary/30 group">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-gray-400 text-sm mb-1">المزادات النشطة</p>
-                                        <p className="text-2xl font-bold text-white">{stats.activeAuctions}</p>
+                                        <p className="text-foreground/70 text-sm mb-1">المزادات النشطة</p>
+                                        <p className="text-2xl font-bold text-foreground">{stats.activeAuctions}</p>
                                         <div className="flex items-center mt-2">
-                                            <Zap size={14} className="text-blue-400 ml-1" />
-                                            <span className="text-xs text-blue-400">من أصل {stats.totalAuctions} مزاد</span>
+                                            <Zap size={14} className="text-secondary ml-1" />
+                                            <span className="text-xs text-secondary">من أصل {stats.totalAuctions} مزاد</span>
                                         </div>
                                     </div>
-                                    <div className="bg-blue-500/10 p-3 rounded-xl group-hover:bg-blue-500/20 transition-all duration-300">
-                                        <Car className="w-6 h-6 text-blue-400" />
+                                    <div className="bg-secondary/10 p-3 rounded-xl group-hover:bg-secondary/20 transition-all duration-300">
+                                        <Car className="w-6 h-6 text-secondary" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Pending Verifications Card */}
-                            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-5 border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-amber-500/30 group">
+                            <div className="bg-background rounded-xl p-5 border border-border shadow-lg hover:shadow-xl transition-all duration-300 hover:border-amber-500/30 group">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-gray-400 text-sm mb-1">طلبات التحقق</p>
-                                        <p className="text-2xl font-bold text-white">{stats.pendingVerifications}</p>
+                                        <p className="text-foreground/70 text-sm mb-1">طلبات التحقق</p>
+                                        <p className="text-2xl font-bold text-foreground">{stats.pendingVerifications}</p>
                                         <div className="flex items-center mt-2">
                                             <AlertTriangle size={14} className="text-amber-400 ml-1" />
                                             <span className="text-xs text-amber-400">بانتظار المراجعة</span>
@@ -307,11 +307,11 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Pending Users Card */}
-                            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-5 border border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-purple-500/30 group">
+                            <div className="bg-background rounded-xl p-5 border border-border shadow-lg hover:shadow-xl transition-all duration-300 hover:border-purple-500/30 group">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-gray-400 text-sm mb-1">المستخدمين المعلقين</p>
-                                        <p className="text-2xl font-bold text-white">{stats.pendingUsers}</p>
+                                        <p className="text-foreground/70 text-sm mb-1">المستخدمين المعلقين</p>
+                                        <p className="text-2xl font-bold text-foreground">{stats.pendingUsers}</p>
                                         <div className="flex items-center mt-2">
                                             <UserCheck size={14} className="text-purple-400 ml-1" />
                                             <span className="text-xs text-purple-400">بحاجة للتفعيل</span>
@@ -326,13 +326,13 @@ export default function AdminDashboard() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Recent Users Table */}
-                            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
-                                <div className="p-5 border-b border-gray-700/50">
+                            <div className="bg-background rounded-xl border border-border shadow-lg overflow-hidden">
+                                <div className="p-5 border-b border-border">
                                     <div className="flex justify-between items-center">
-                                        <h2 className="text-lg font-semibold text-white">أحدث المستخدمين المسجلين</h2>
+                                        <h2 className="text-lg font-semibold text-foreground">أحدث المستخدمين المسجلين</h2>
                                         <a
                                             href="/admin/users"
-                                            className="text-cyan-400 hover:text-cyan-300 text-sm flex items-center transition-colors duration-300"
+                                            className="text-primary hover:text-primary/80 text-sm flex items-center transition-colors duration-300"
                                         >
                                             عرض الكل
                                             <ChevronLeft size={16} className="mr-1" />
@@ -343,21 +343,21 @@ export default function AdminDashboard() {
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="bg-gray-750 border-b border-gray-700/50">
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">الاسم</th>
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">البريد الإلكتروني</th>
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                                            <tr className="bg-border/50 border-b border-border">
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">الاسم</th>
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">البريد الإلكتروني</th>
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">الحالة</th>
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-700/50">
+                                        <tbody className="divide-y border-border">
                                             {recentUsers.slice(0, 5).map((user) => (
                                                 <tr
                                                     key={user.id}
-                                                    className="hover:bg-gray-750/50 transition-colors duration-200"
+                                                    className="hover:bg-border/50 transition-colors duration-200"
                                                 >
-                                                    <td className="py-3 px-4 text-sm text-white">{`${user.first_name} ${user.last_name}`}</td>
-                                                    <td className="py-3 px-4 text-sm text-gray-300">{user.email}</td>
+                                                    <td className="py-3 px-4 text-sm text-foreground">{`${user.first_name} ${user.last_name}`}</td>
+                                                    <td className="py-3 px-4 text-sm text-foreground/80">{user.email}</td>
                                                     <td className="py-3 px-4 text-sm">
                                                         {user.status === "active" ? (
                                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
@@ -375,7 +375,7 @@ export default function AdminDashboard() {
                                                     </td>
                                                     <td className="py-3 px-4 text-sm">
                                                         <div className="flex items-center space-x-2 space-x-reverse">
-                                                            <button className="text-cyan-400 hover:text-cyan-300 transition-colors duration-200 p-1 rounded">
+                                                            <button className="text-primary hover:text-primary/80 transition-colors duration-200 p-1 rounded">
                                                                 <Eye size={16} />
                                                             </button>
                                                             {(user.status === "pending" || user.status === "rejected") && (
@@ -396,13 +396,13 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Pending Activation Users Table */}
-                            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
-                                <div className="p-5 border-b border-gray-700/50">
+                            <div className="bg-background rounded-xl border border-border shadow-lg overflow-hidden">
+                                <div className="p-5 border-b border-border">
                                     <div className="flex justify-between items-center">
-                                        <h2 className="text-lg font-semibold text-white">مستخدمين بإنتظار التفعيل</h2>
+                                        <h2 className="text-lg font-semibold text-foreground">مستخدمين بإنتظار التفعيل</h2>
                                         <a
                                             href="/admin/users"
-                                            className="text-cyan-400 hover:text-cyan-300 text-sm flex items-center transition-colors duration-300"
+                                            className="text-primary hover:text-primary/80 text-sm flex items-center transition-colors duration-300"
                                         >
                                             عرض الكل
                                             <ChevronLeft size={16} className="mr-1" />
@@ -413,21 +413,21 @@ export default function AdminDashboard() {
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="bg-gray-750 border-b border-gray-700/50">
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">الاسم</th>
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">البريد الإلكتروني</th>
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                                                <th className="py-3 px-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                                            <tr className="bg-border/50 border-b border-border">
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">الاسم</th>
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">البريد الإلكتروني</th>
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">الحالة</th>
+                                                <th className="py-3 px-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-700/50">
+                                        <tbody className="divide-y border-border">
                                             {recentUsersNotActivated.slice(0, 5).map((user) => (
                                                 <tr
                                                     key={user.id}
-                                                    className="hover:bg-gray-750/50 transition-colors duration-200"
+                                                    className="hover:bg-border/50 transition-colors duration-200"
                                                 >
-                                                    <td className="py-3 px-4 text-sm text-white">{user.first_name} {user.last_name}</td>
-                                                    <td className="py-3 px-4 text-sm text-gray-300">{user.email}</td>
+                                                    <td className="py-3 px-4 text-sm text-foreground">{user.first_name} {user.last_name}</td>
+                                                    <td className="py-3 px-4 text-sm text-foreground/80">{user.email}</td>
                                                     <td className="py-3 px-4 text-sm">
                                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
                                                             <Clock className="w-3 h-3 mr-1" /> في الانتظار
@@ -435,7 +435,7 @@ export default function AdminDashboard() {
                                                     </td>
                                                     <td className="py-3 px-4 text-sm">
                                                         <div className="flex items-center space-x-2 space-x-reverse">
-                                                            <button className="text-cyan-400 hover:text-cyan-300 transition-colors duration-200 p-1 rounded">
+                                                            <button className="text-primary hover:text-primary/80 transition-colors duration-200 p-1 rounded">
                                                                 <Eye size={16} />
                                                             </button>
                                                             <button

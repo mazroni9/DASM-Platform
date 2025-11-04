@@ -128,11 +128,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Dealer::class);
     }
 
-    // ✅ If the user is a venue owner
-public function venueOwner()
-{
-    return $this->hasOne(\App\Models\VenueOwner::class, 'user_id');
-}
+        // ✅ If the user is a venue owner
+    public function venueOwner()
+    {
+        return $this->hasOne(VenueOwner::class, 'user_id');
+    }
 
     public function deviceTokens()
     {
