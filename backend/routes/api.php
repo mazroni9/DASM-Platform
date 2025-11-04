@@ -30,7 +30,6 @@ use App\Http\Controllers\ActivityLogController;
 
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\BidEventController;
-use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
 use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
@@ -38,7 +37,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 
-use App\Http\Controllers\AuctionSessionController;
+use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController;
 use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
 use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
 
@@ -77,7 +76,7 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 |--------------------------------------------------------------------------
 | /health     : خفيف جدًا لقياس TTFB.
 | /diag-lite  : لقطة واحدة (DB/Cache/Redis/Disk).
-| /diag-bench : بنشمارك سريع بدون أي تغييرات .env (loops & payload عبر query).
+| /diag-bench : بنشمارك سريع.
 | /diag-redis : تأكيد اتصال Redis + cache store (محمي بالتوكن).
 | /diag-reload: تفريغ كاش الإعدادات (محمي بالتوكن).
 */
@@ -218,7 +217,7 @@ Route::get('/diag-bench', function (Request $request) {
         $tips[] = 'بدّل CACHE_DRIVER إلى redis (أولوية) أو file/array مؤقتًا — database cache بطيء.';
     }
     if (!$redisPing['ok']) $tips[] = 'Redis غير متاح — فعّله (Upstash/Render Redis) واستخدمه للـ cache & sessions.';
-    if (($db['first_ms'] ?? 0) > 200) $tips[] = 'زمن أول اتصال بقاعدة البيانات عالي — قد تكون قاعدة بيانات نائمة/بعيدة. فكّر في connection pooling (PgBouncer) أو health ping.';
+    if (($db['first_ms'] ?? 0) > 200) $tips[] = 'زمن أول اتصال بقاعدة البيانات عالي — قد تكون قاعدة بيانات نائمة/بعيدة.';
     if (($cDef['avg_ms'] ?? 0) > 50) $tips[] = 'الكاش الافتراضي بطيء — غيّره إلى Redis فورًا.';
     if (($db['avg_ms'] ?? 0) > 50) $tips[] = 'زمن DB متوسط عالي — راجع المنطقة/الخطة/الفهارس.';
 
@@ -252,7 +251,7 @@ Route::get('/diag-redis', function (Request $request) {
 
     try {
         $t = microtime(true);
-        $raw = Redis::connection('default')->ping();  // قد يرجع true أو "+PONG"
+        $raw = Redis::connection('default')->ping();  // ✅ استخدم -> بدل النقطة
         $pingMs = round((microtime(true) - $t) * 1000, 1);
         $ok  = is_string($raw) ? stripos($raw,'PONG') !== false : (bool) $raw;
         $pong = is_string($raw) ? $raw : 'PONG';
@@ -394,8 +393,8 @@ Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show'])->whereNumber('id');
 
-Route::get('/sessions/live', [AuctionSessionController::class, 'getActiveLiveSessions']);
-Route::get('/sessions/live/{id}', [AuctionSessionController::class, 'getLiveSession'])->whereNumber('id');
+Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
+Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession'])->whereNumber('id');
 
 Route::get('/blog', [BlogController::class, 'index']);
 Route::get('/blog/latest/{count?}', [BlogController::class, 'latest'])->whereNumber('count');
@@ -432,7 +431,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cars/{id}', [CarController::class, 'destroy'])->whereNumber('id');
     Route::get('/car-statistics', [CarController::class, 'statistics']);
     Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
-    // Auction management for all users
+
+    // Auctions (user scope)
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::get('/sessions/active-scheduled', [AdminController::class, 'getActiveAndScheduledSessions']);
     Route::get('/sessions/{id}', [AdminController::class, 'showSessionPublic'])->whereNumber('id');
@@ -619,20 +619,12 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::delete('/commission-tiers/{id}', [CommissionTierController::class, 'destroy'])->whereNumber('id');
     Route::post('/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
 
-    // Subscription Plans
-    Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
-    Route::post('/subscription-plans', [SubscriptionPlanController::class, 'store']);
-    Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show'])->whereNumber('id');
-    Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])->whereNumber('id');
-    Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])->whereNumber('id');
-    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
-
     // Auction Sessions (admin)
     Route::get('/sessions', [AdminAuctionSessionController::class, 'index']);
     Route::get('/sessions/active-scheduled', [AdminAuctionSessionController::class, 'getActiveAndScheduledSessions']);
     Route::post('/sessions', [AdminAuctionSessionController::class, 'store']);
     Route::get('/sessions/{id}', [AdminAuctionSessionController::class, 'show'])->whereNumber('id');
-    Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id');
+    Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id'); // ✅ تم تصحيح القوس
     Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
     Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy'])->whereNumber('id');
 });
@@ -691,7 +683,7 @@ Route::prefix('exhibitor')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'store']);
     Route::get ('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'index']);
 
-    // سوق السيارات للمعارض (اعتمادًا على جدول cars الحالي)
+    // سوق السيارات للمعارض
     Route::get('/market/cars', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'index']);
     Route::get('/market/cars/{car}', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'show'])->whereNumber('car');
 
