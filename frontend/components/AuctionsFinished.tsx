@@ -67,8 +67,8 @@ export default function AuctionFinished() {
 
   return (
     <>
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-border">
+        <thead className="bg-border/50">
         <tr>
                   {[
                     "المنطقة",
@@ -91,47 +91,47 @@ export default function AuctionFinished() {
                     "نتيجة المزايدة",
                     "تفاصيل",
                   ].map((header, idx) => (
-                    <th key={idx} className="border p-2 text-sm">
+                    <th key={idx} className="border p-2 text-sm text-foreground/70">
                       {header}
                     </th>
                   ))}
                 </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-card divide-y divide-border">
           {Array.isArray(auctionsFinished) && auctionsFinished.length > 0 ? (
             auctionsFinished.map((auction, idx) => (
-            <tr key={idx} className="border-t hover:bg-gray-50">
+            <tr key={idx} className="border-t hover:bg-background">
               {(
                   <>
-                    <td className="p-2 text-sm">{auction["car"].province}</td>
-                    <td className="p-2 text-sm">{auction["car"].city}</td>
-                    <td className="p-2 text-sm">{auction["car"].make}</td>
-                    <td className="p-2 text-sm">{auction["car"].model}</td>
-                    <td className="p-2 text-sm">{auction["car"].year}</td>
-                    <td className="p-2 text-sm">{auction["car"].plate}</td>
-                    <td className="p-2 text-sm">{auction["car"].odometer}</td>
-                    <td className="p-2 text-sm">{auction["car"].condition}</td>
-                    <td className="p-2 text-sm">{auction["car"].color}</td>
-                    <td className="p-2 text-sm">{auction["car"].engine}</td>
-                    <td className="p-2 text-sm">{auction["bids"].length}</td>
-                    <td className="p-2 text-sm">
+                    <td className="p-2 text-sm text-foreground">{auction["car"].province}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].city}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].make}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].model}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].year}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].plate}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].odometer}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].condition}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].color}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["car"].engine}</td>
+                    <td className="p-2 text-sm text-foreground">{auction["bids"].length}</td>
+                    <td className="p-2 text-sm text-foreground">
                       {formatCurrency (auction["opening_price"] || 0)}
                     </td>
-                    <td className="p-2 text-sm">
+                    <td className="p-2 text-sm text-foreground">
                       {formatCurrency (auction["minimum_bid"] || 0)}
                     </td>
-                    <td className="p-2 text-sm">
+                    <td className="p-2 text-sm text-foreground">
                       {formatCurrency (auction["maximum_bid"] || 0)}
                     </td>
-                    <td className="p-2 text-sm">
+                    <td className="p-2 text-sm text-foreground">
                       {formatCurrency (auction["current_bid"] || 0)}
                     </td>
-                    <td className="p-2 text-sm bg-green-50">
+                    <td className="p-2 text-sm bg-green-500/10">
                       {auction["bids"][auction["bids"].length - 1]
                         ? auction["bids"][auction["bids"].length - 1].increment
                         : 0}
                     </td>
-                    <td className="p-2 text-sm bg-green-50">
+                    <td className="p-2 text-sm bg-green-500/10">
                       {auction["bids"][auction["bids"].length - 1]
                         ? (
                             (auction["bids"][auction["bids"].length - 1].increment /
@@ -141,10 +141,10 @@ export default function AuctionFinished() {
                         : "0%"}
                     </td>
 
-                    <td className="p-2 text-sm">
+                    <td className="p-2 text-sm text-foreground">
                       {(auction.status_label)}
                     </td>
-                    <td className="p-2 text-sm text-blue-600 underline">
+                    <td className="p-2 text-sm text-primary underline">
                       <LoadingLink href={`/carDetails/${auction.car_id}`}>عرض</LoadingLink>
                     </td>
                   </>
@@ -153,7 +153,7 @@ export default function AuctionFinished() {
           ))
           ) : (
             <tr>
-              <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+              <td colSpan={9} className="px-4 py-8 text-center text-foreground/50">
                 لا توجد مزايدات منتهية
               </td>
             </tr>

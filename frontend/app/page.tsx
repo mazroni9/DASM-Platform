@@ -6,11 +6,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/ar";
 import { Clock, Car, Shield, TrendingUp, Users, Award, CheckCircle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Footer from "@/components/shared/Footer";
 import AuctionDropdown from "@/components/shared/AuctionDropdown";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
+import api from "@/lib/axios";
+import LoadingLink from "@/components/LoadingLink";
 
 // ========== typing effect للعنوان الرئيسي (مرة واحدة) ==========
 const TypingMainTitle = ({
@@ -37,10 +42,10 @@ const TypingMainTitle = ({
   const displayed = text.slice(0, charIndex);
 
   return (
-    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-cyan-300 via-cyan-400 to-blue-400 bg-clip-text text-transparent leading-tight">
+    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-primary leading-tight">
       {displayed}
       {charIndex < text.length ? (
-        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-cyan-300" />
+        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-primary" />
       ) : null}
     </h1>
   );
@@ -107,10 +112,10 @@ const RotatingSentences = ({
   const text = current.slice(0, charIndex);
 
   return (
-    <p className="text-slate-300 text-lg md:text-xl max-w-3xl mx-auto mt-6 leading-relaxed">
+    <p className="text-foreground text-lg md:text-xl max-w-3xl mx-auto mt-6 leading-relaxed">
       {text}
       {!isDeleting && charIndex === current.length ? (
-        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-cyan-300" />
+        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-primary" />
       ) : null}
     </p>
   );
@@ -125,14 +130,43 @@ const CountdownUnit = ({ value, label }: { value: number; label: string }) => (
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shadow-lg"
+        className="absolute inset-0 bg-secondary rounded-xl flex items-center justify-center shadow-lg"
       >
-        <span className="text-slate-900 text-xl md:text-2xl lg:text-3xl font-bold">{value}</span>
+        <span className="text-white text-xl md:text-2xl lg:text-3xl font-bold">{value}</span>
       </motion.div>
     </div>
-    <span className="mt-2 text-xs md:text-sm text-slate-400 font-medium">{label}</span>
+    <span className="mt-2 text-xs md:text-sm text-foreground font-medium">{label}</span>
   </div>
 );
+
+const AuctionCountdown = ({ endTime }: { endTime: string }) => {
+  dayjs.extend(relativeTime);
+  dayjs.locale("ar");
+
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = dayjs();
+      const end = dayjs(endTime);
+      const diff = end.diff(now);
+
+      if (diff <= 0) {
+        setTimeLeft("انتهى المزاد");
+        return;
+      }
+
+      setTimeLeft(end.fromNow(true));
+    };
+
+    updateCountdown(); 
+    const timer = setInterval(updateCountdown, 1000 * 60);
+
+    return () => clearInterval(timer);
+  }, [endTime]);
+
+  return <>{timeLeft ? `ينتهي خلال ${timeLeft}` : 'جار التحميل...'}</>;
+};
 
 const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   const [timeLeft, setTimeLeft] = useState<{ أيام: number; ساعات: number; دقائق: number; ثواني: number } | null>(null);
@@ -154,16 +188,16 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
     return () => clearInterval(id);
   }, [targetDate]);
 
-  if (!timeLeft) return <div className="text-amber-400 font-bold text-sm md:text-base">الانطلاقة قريبة!</div>;
+  if (!timeLeft) return <div className="text-secondary font-bold text-sm md:text-base">الانطلاقة قريبة!</div>;
 
   return (
     <div className="flex items-center gap-2 md:gap-4 lg:gap-6">
       <CountdownUnit value={timeLeft.أيام} label="أيام" />
-      <span className="text-slate-500 text-sm md:text-base">:</span>
+      <span className="text-foreground text-sm md:text-base">:</span>
       <CountdownUnit value={timeLeft.ساعات} label="ساعات" />
-      <span className="text-slate-500 text-sm md:text-base">:</span>
+      <span className="text-foreground text-sm md:text-base">:</span>
       <CountdownUnit value={timeLeft.دقائق} label="دقائق" />
-      <span className="text-slate-500 text-sm md:text-base">:</span>
+      <span className="text-foreground text-sm md:text-base">:</span>
       <CountdownUnit value={timeLeft.ثواني} label="ثواني" />
     </div>
   );
@@ -171,54 +205,29 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
 
 // ========== قسم السيارات المميزة ==========
 const FeaturedCars = () => {
-  const cars = [
-    {
-      id: 1,
-      name: "مرسيدس بنز الفئة S 2023",
-      price: "350,000",
-      image: "https://images.unsplash.com/photo-1617814076662-1c6c3ccde5b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      timeLeft: "2 يوم",
-      bids: 24,
-    },
-    {
-      id: 2,
-      name: "بي إم دبليو X7 2022",
-      price: "420,000",
-      image: "https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      timeLeft: "1 يوم",
-      bids: 18,
-    },
-    {
-      id: 3,
-      name: "أودي Q8 2023",
-      price: "380,000",
-      image: "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      timeLeft: "3 أيام",
-      bids: 32,
-    },
-    {
-      id: 4,
-      name: "تويوتا لاند كروزر 2023",
-      price: "320,000",
-      image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      timeLeft: "5 أيام",
-      bids: 15,
-    },
-  ];
+  const [cars, setCars] = useState([]);
+  useEffect(() => {
+    const fetchFeaturedCars = async () => {
+      const response = await api.get('/api/featured-cars');
+      const data = response.data.data;
+      setCars(data);
+    };
+    fetchFeaturedCars();
+  }, []);
 
   return (
-    <section className="py-16 md:py-20 bg-slate-900">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-3 md:mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
           >
             سيارات مميزة في المزاد
           </motion.h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg px-4">
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
             اكتشف مجموعة مختارة من أفضل السيارات المتاحة للمزاد الآن
           </p>
         </div>
@@ -231,27 +240,29 @@ const FeaturedCars = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-slate-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              className="bg-card rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
               <div className="relative h-40 sm:h-48 overflow-hidden">
                 <img
-                  src={car.image}
-                  alt={car.name}
+                  src={car.images[0] || '/placeholder-car.jpg'}
+                  alt={car.make + ' ' + car.model + ' ' + car.year}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                 />
-                <div className="absolute top-3 right-3 bg-amber-500 text-slate-900 px-2 py-1 rounded-full text-xs sm:text-sm font-bold">
-                  {car.timeLeft}
+                <div className="absolute top-3 right-3 bg-secondary text-white px-2 py-1 rounded-full text-xs sm:text-sm font-bold">
+                  <AuctionCountdown endTime={car.active_auction?.end_time} />
                 </div>
               </div>
               <div className="p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 line-clamp-2">{car.name}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2">{car.make + ' ' + car.model + ' ' + car.year}</h3>
                 <div className="flex justify-between items-center mb-3 sm:mb-4">
-                  <span className="text-amber-400 font-bold text-base sm:text-lg">{car.price} ر.س</span>
-                  <span className="text-slate-400 text-xs sm:text-sm">{car.bids} مزايدة</span>
+                  <span className="text-secondary font-bold text-base sm:text-lg">{car.active_auction?.current_bid} ر.س</span>
+                  <span className="text-foreground text-xs sm:text-sm">{car?.total_bids} مزايدة</span>
                 </div>
-                <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-2 sm:py-3 rounded-lg font-medium hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 text-sm sm:text-base">
-                  شارك في المزاد
-                </button>
+                <LoadingLink href={`/carDetails/${car.id}`}>  
+                  <button className="w-full bg-primary hover:bg-opacity-90 text-white py-2 sm:py-3 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base">
+                    شارك في المزاد
+                  </button>
+                </LoadingLink>
               </div>
             </motion.div>
           ))}
@@ -261,7 +272,7 @@ const FeaturedCars = () => {
           <motion.a
             href="/auctions"
             whileHover={{ scale: 1.05 }}
-            className="inline-flex items-center gap-2 bg-slate-800 text-cyan-400 font-bold py-3 px-6 rounded-xl border border-slate-700 hover:bg-slate-700 transition-all duration-300 text-sm md:text-base"
+            className="inline-flex items-center gap-2 bg-card text-primary font-bold py-3 px-6 rounded-xl border border-border hover:bg-border transition-all duration-300 text-sm md:text-base"
           >
             عرض جميع المزادات
             <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -302,18 +313,18 @@ const AuctionTimeline = () => {
   ];
 
   return (
-    <section className="py-16 md:py-20 bg-slate-950">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-3 md:mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
           >
             كيف تشارك في المزاد؟
           </motion.h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg px-4">
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
             خطوات بسيطة تفصلك عن امتلاك السيارة التي تحلم بها
           </p>
         </div>
@@ -329,22 +340,22 @@ const AuctionTimeline = () => {
               className={`flex ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'} items-center mb-8 md:mb-12`}
             >
               <div className="flex-1">
-                <div className={`bg-slate-800 p-4 sm:p-6 rounded-2xl border border-slate-700 ${index % 2 === 0 ? 'mr-4 md:mr-8' : 'ml-4 md:ml-8'}`}>
+                <div className={`bg-card p-4 sm:p-6 rounded-2xl border border-border ${index % 2 === 0 ? 'mr-4 md:mr-8' : 'ml-4 md:ml-8'}`}>
                   <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary flex items-center justify-center text-white">
                       {step.icon}
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-white">{step.title}</h3>
+                    <h3 className="text-lg md:text-xl font-bold text-foreground">{step.title}</h3>
                   </div>
-                  <p className="text-slate-400 text-sm md:text-base">{step.description}</p>
+                  <p className="text-foreground text-sm md:text-base">{step.description}</p>
                 </div>
               </div>
               <div className="relative">
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 font-bold text-lg md:text-xl z-10 relative">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-lg md:text-xl z-10 relative">
                   {step.step}
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="absolute top-12 md:top-16 left-1/2 transform -translate-x-1/2 w-1 h-8 md:h-12 bg-gradient-to-b from-amber-400 to-amber-600"></div>
+                  <div className="absolute top-12 md:top-16 left-1/2 transform -translate-x-1/2 w-1 h-8 md:h-12 bg-secondary"></div>
                 )}
               </div>
               <div className="flex-1"></div>
@@ -363,41 +374,41 @@ const StatsSection = () => {
       value: "10,000+",
       label: "سيارة مباعة",
       icon: <Car className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "from-cyan-400 to-cyan-600",
+      color: "bg-primary",
     },
     {
       value: "50,000+",
       label: "مستخدم نشط",
       icon: <Users className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "from-blue-400 to-blue-600",
+      color: "bg-primary",
     },
     {
       value: "95%",
       label: "رضا العملاء",
       icon: <Award className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "from-amber-400 to-amber-600",
+      color: "bg-secondary",
     },
     {
       value: "2.5B+",
       label: "قيمة الصفقات",
       icon: <TrendingUp className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "from-emerald-400 to-emerald-600",
+      color: "bg-secondary",
     },
   ];
 
   return (
-    <section className="py-16 md:py-20 bg-gradient-to-br from-slate-900 to-slate-800">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 md:mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 md:mb-4"
           >
             أرقام تُحدث الفرق
           </motion.h2>
-          <p className="text-slate-300 max-w-2xl mx-auto text-base md:text-lg px-4">
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
             إحصائيات حقيقية تثبت جودة خدماتنا وثقة عملائنا
           </p>
         </div>
@@ -412,11 +423,11 @@ const StatsSection = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="text-center"
             >
-              <div className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-r ${stat.color} flex items-center justify-center text-white mx-auto mb-4 md:mb-6 shadow-lg`}>
+              <div className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl ${stat.color} flex items-center justify-center text-white mx-auto mb-4 md:mb-6 shadow-lg`}>
                 {stat.icon}
               </div>
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">{stat.value}</h3>
-              <p className="text-slate-300 text-sm md:text-base">{stat.label}</p>
+              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">{stat.value}</h3>
+              <p className="text-foreground text-sm md:text-base">{stat.label}</p>
             </motion.div>
           ))}
         </div>
@@ -451,18 +462,18 @@ const CarTypes = () => {
   ];
 
   return (
-    <section className="py-16 md:py-20 bg-slate-900">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-3 md:mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
           >
             اكتشف أنواع السيارات
           </motion.h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg px-4">
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
             مجموعة متنوعة من السيارات تناسب جميع الأذواق والميزانيات
           </p>
         </div>
@@ -484,9 +495,9 @@ const CarTypes = () => {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex flex-col justify-end p-4 md:p-6">
-                <h3 className="text-lg md:text-xl font-bold text-white mb-1">{type.name}</h3>
-                <p className="text-slate-300 text-sm md:text-base">{type.count} سيارة متاحة</p>
+              <div className="absolute inset-0 bg-card/75 flex flex-col justify-end p-4 md:p-6">
+                <h3 className="text-lg md:text-xl font-bold text-foreground mb-1">{type.name}</h3>
+                <p className="text-foreground text-sm md:text-base">{type.count} سيارة متاحة</p>
               </div>
             </motion.div>
           ))}
@@ -522,18 +533,18 @@ const BenefitsSection = () => {
   ];
 
   return (
-    <section className="py-16 md:py-20 bg-slate-950">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-3 md:mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
           >
             لماذا تختار داسم؟
           </motion.h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg px-4">
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
             نقدم لك تجربة فريدة ومميزة لشراء وبيع السيارات عبر المزادات
           </p>
         </div>
@@ -546,13 +557,13 @@ const BenefitsSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-slate-800 rounded-2xl p-4 sm:p-6 border border-slate-700 hover:border-cyan-500/30 transition-all duration-300"
+              className="bg-card rounded-2xl p-4 sm:p-6 border border-border hover:border-primary/30 transition-all duration-300"
             >
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center text-white mb-3 md:mb-4">
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-primary flex items-center justify-center text-white mb-3 md:mb-4">
                 {benefit.icon}
               </div>
-              <h3 className="text-lg md:text-xl font-bold text-white mb-2">{benefit.title}</h3>
-              <p className="text-slate-400 text-sm md:text-base">{benefit.description}</p>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2">{benefit.title}</h3>
+              <p className="text-foreground text-sm md:text-base">{benefit.description}</p>
             </motion.div>
           ))}
         </div>
@@ -589,18 +600,18 @@ const FAQSection = () => {
   };
 
   return (
-    <section className="py-16 md:py-20 bg-slate-900">
+    <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-3 md:mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
           >
             الأسئلة الشائعة
           </motion.h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg px-4">
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
             إجابات على أكثر الأسئلة شيوعًا حول منصة داسم للمزادات
           </p>
         </div>
@@ -613,17 +624,17 @@ const FAQSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-slate-800 rounded-xl md:rounded-2xl overflow-hidden border border-slate-700 hover:border-slate-600 transition-colors duration-300"
+              className="bg-card rounded-xl md:rounded-2xl overflow-hidden border border-border hover:border-border transition-colors duration-300"
             >
               <button
-                className="w-full text-right p-4 md:p-6 flex justify-between items-center text-white font-medium text-base md:text-lg hover:bg-slate-750 transition-colors duration-200"
+                className="w-full text-right p-4 md:p-6 flex justify-between items-center text-foreground font-medium text-base md:text-lg hover:bg-border transition-colors duration-200"
                 onClick={() => toggleFAQ(index)}
               >
                 <span className="flex-1 text-right pr-3 md:pr-4">{faq.question}</span>
                 <motion.div
                   animate={{ rotate: activeIndex === index ? 180 : 0 }}
                   transition={{ duration: 0.3 }}
-                  className="w-5 h-5 md:w-6 md:h-6 text-cyan-400 flex-shrink-0"
+                  className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0"
                 >
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -639,7 +650,7 @@ const FAQSection = () => {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="p-4 md:p-6 pt-0 text-slate-400 border-t border-slate-700 text-sm md:text-base leading-relaxed">
+                <div className="p-4 md:p-6 pt-0 text-foreground border-t border-border text-sm md:text-base leading-relaxed">
                   {faq.answer}
                 </div>
               </motion.div>
@@ -659,15 +670,7 @@ export default function Page() {
   return (
     <>
       {/* Hero Section – فاخر وغامر */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950">
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: "radial-gradient(circle, #25B4D8 1px, transparent 1px)",
-            backgroundSize: "30px 30px",
-          }}
-        ></div>
-
+      <section className="relative overflow-hidden bg-secondary dark:bg-background">
         <div className="container mx-auto px-4 sm:px-6 py-20 md:py-24 lg:py-32 relative z-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -685,7 +688,7 @@ export default function Page() {
             <RotatingSentences start={titleDone} />
 
             {/* النص العربي الثابت */}
-            <p className="text-slate-300 text-base md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 md:mt-6 leading-relaxed px-4">
+            <p className="text-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 md:mt-6 leading-relaxed px-4">
               منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات ذكية، شفافية مطلقة، ووصول عالمي.
             </p>
           </motion.div>
@@ -697,10 +700,10 @@ export default function Page() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mt-8 md:mt-12 flex justify-center"
           >
-            <div className="bg-slate-800 px-4 md:px-6 py-3 md:py-4 rounded-2xl border border-slate-700 shadow-xl">
+            <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-2xl border border-border shadow-xl">
               <div className="flex items-center gap-2 md:gap-3 justify-center">
-                <Clock className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
-                <span className="text-slate-300 font-medium text-sm md:text-base">الانطلاقة في:</span>
+                <Clock className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
+                <span className="text-foreground font-medium text-sm md:text-base">الانطلاقة في:</span>
               </div>
               <div className="mt-2 md:mt-3">
                 <CountdownTimer targetDate={targetDate} />
@@ -711,7 +714,7 @@ export default function Page() {
       </section>
 
       {/* أنواع الأسواق — ✅ تم إصلاح الخلفية هنا */}
-      <section className="py-8 md:py-12 bg-slate-900 border-y border-slate-800/40">
+      <section className="py-8 md:py-12 bg-background border-y border-border">
         <div className="container mx-auto px-4 sm:px-6">
           <MarketTypeNav />
         </div>

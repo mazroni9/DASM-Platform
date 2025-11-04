@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 
 use App\Http\Controllers\AuctionSessionController;
+use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
 use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
 
 // User Wallet (العامة)
@@ -430,8 +431,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cars/{id}', [CarController::class, 'update'])->whereNumber('id');
     Route::delete('/cars/{id}', [CarController::class, 'destroy'])->whereNumber('id');
     Route::get('/car-statistics', [CarController::class, 'statistics']);
-
-    // Auctions (user scope)
+    Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
+    // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::get('/sessions/active-scheduled', [AdminController::class, 'getActiveAndScheduledSessions']);
     Route::get('/sessions/{id}', [AdminController::class, 'showSessionPublic'])->whereNumber('id');

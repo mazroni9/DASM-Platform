@@ -152,20 +152,20 @@ export default function BidsLogsPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800">
-                     سجلات المزايدات
+                <h1 className="text-3xl font-bold text-foreground">
+                    سجلات المزايدات
                 </h1>
-                <Button onClick={fetchBidsLogs} className="bg-blue-600 hover:bg-blue-700" variant="outline" size="sm">
+                <Button onClick={fetchBidsLogs} className="bg-primary hover:bg-primary/90" variant="outline" size="sm">
                     <RefreshCw className="w-4 h-4 ml-2" />
                     تحديث
                 </Button>
             </div>
 
             {/* Filters and search */}
-            <div className="bg-white p-4 rounded-lg shadow border flex flex-col md:flex-row gap-4">
+            <div className="bg-card p-4 rounded-lg shadow border flex flex-col md:flex-row gap-4">
                 <div className="relative flex-grow">
                     <Search
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/50"
                         size={18}
                     />
                     <Input
@@ -181,82 +181,82 @@ export default function BidsLogsPage() {
             </div>
 
             {/* Users table */}
-            <div className="bg-white rounded-lg shadow border overflow-hidden">
+            <div className="bg-card rounded-lg shadow border overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-border/50">
                             <tr>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                     المستخدم(المزايد)
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                      مصدر المزايدة
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                     رقم المزاد
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                     مبلغ المزايدة
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                     الحالة
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                    توقيت السيرفر
                                 </th>
                                 <th scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                                         توقيت الزبون
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider"
                                 >
                                     الإجراءات
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-card divide-y divide-border">
                             {filteredBidsLogs.length > 0 ? (
                                 filteredBidsLogs.map((bidLog) => (
                                     <tr
                                         key={bidLog.id}
-                                        className="hover:bg-gray-50"
+                                        className="hover:bg-background"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                    <span className="text-blue-600 font-semibold text-lg">
+                                                <div className="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                                    <span className="text-primary font-semibold text-lg">
                                                         {bidLog.bidder.first_name
                                                             .charAt(0)
                                                             .toUpperCase()}
                                                     </span>
                                                 </div>
                                                 <div className="mr-4">
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                    <div className="text-sm font-medium text-foreground">
                                                         {bidLog.bidder.first_name}{" "}
                                                         {bidLog.bidder.last_name}
                                                     </div>
                                                     {bidLog.dealer && (
-                                                        <div className="text-xs text-gray-500">
+                                                        <div className="text-xs text-foreground/70">
                                                             {
                                                                 bidLog.dealer
                                                                     .company_name
@@ -267,54 +267,54 @@ export default function BidsLogsPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+                                            <div className="text-sm text-foreground">
                                                 {bidLog.channel}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+                                            <div className="text-sm text-foreground">
                                                 {bidLog.auction_id}
                                             </div>
                                           
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-600">
+                                            <div className="text-sm text-foreground/80">
                                                 <PriceWithIcon price={Number(bidLog.bid_amount).toFixed(2)} />
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             
                                             {bidLog.event_type === "bid_placed" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-500/10 text-green-800">
                                                     <CheckCircle className="w-3 h-3 ml-1" />
                                                     تمت المزايدة
                                                 </span>
                                             ) : bidLog.event_type === "bid_rejected" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-500/10 text-red-800">
                                                     <XCircle className="w-3 h-3 ml-1" />
                                                     مرفوض
                                                 </span>
                                             ) : bidLog.event_type === "outbid" ?  (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-500/10 text-amber-800">
                                                     تم التجاوز
                                                 </span>
                                             ) : bidLog.event_type === "autobid_fired" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-500/10 text-blue-800">
                                                     مزايدة تلقائية
                                                 </span>
                                             ) : bidLog.event_type === "bid_withdrawn" ? (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-border text-foreground/80">
                                                     معلقة
                                                 </span>
                                             ) : (
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-border text-foreground/80">
                                                     معلقة
                                                 </span>
                                             )}
 
                                           
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/70">
                                             <div className="flex items-center gap-1">
                                                 <Calendar className="w-4 h-4" />
                                                 {dayjs(bidLog.server_ts_utc).format('DD/MM/YYYY')}
@@ -324,7 +324,7 @@ export default function BidsLogsPage() {
                                                 {dayjs(bidLog.server_ts_utc).format('HH:mm')}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/70">
                                             <div className="flex items-center gap-1">
                                                 <Calendar className="w-4 h-4" />
                                                 {dayjs(bidLog.client_ts).format('DD/MM/YYYY')}
@@ -342,7 +342,7 @@ export default function BidsLogsPage() {
                                                 asChild
                                                 variant="ghost"
                                                 size="sm"
-                                                className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                                                className="border-primary text-primary hover:bg-primary/10"
                                             >
                                                 <LoadingLink
                                                     href={`/admin/bids-logs/${bidLog.id}`}
@@ -358,7 +358,7 @@ export default function BidsLogsPage() {
                                 <tr>
                                     <td
                                         colSpan={6}
-                                        className="px-6 py-4 text-center text-gray-500"
+                                        className="px-6 py-4 text-center text-foreground/50"
                                     >
                                         لا توجد نتائج مطابقة للبحث
                                     </td>

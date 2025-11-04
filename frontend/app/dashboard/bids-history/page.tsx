@@ -59,73 +59,123 @@ const BidLogsTimeline = () => {
     }
   };
 
-  const getEventIcon = (eventType) => {
+  const getEventIcon = (eventType: string) => {
+    // كلاسات موحدة لحجم الأيقون
+    const iconClasses = "w-6 h-6";
+  
     switch (eventType) {
       case 'bid_placed':
-        return <CheckCircle className="w-6 h-6 text-white" />;
+        // استخدم لون DASM الأخضر (Secondary) للنجاح
+        return <CheckCircle className={`${iconClasses} text-secondary`} />;
+      
       case 'outbid':
-        return <TrendingDown className="w-6 h-6 text-white" />;
+        // استخدم لون تحذيري (برتقالي)
+        return <TrendingDown className={`${iconClasses} text-orange-500`} />;
+      
       case 'autobid_fired':
-        return <Zap className="w-6 h-6 text-white" />;
+        // استخدم لون DASM الأزرق (Primary) للإجراءات الآلية
+        return <Zap className={`${iconClasses} text-primary`} />;
+      
       case 'bid_rejected':
-        return <XCircle className="w-6 h-6 text-white" />;
+        // استخدم لون الخطر (أحمر)
+        return <XCircle className={`${iconClasses} text-red-500`} />;
+      
       case 'bid_withdrawn':
-        return <AlertCircle className="w-6 h-6 text-white" />;
+        // استخدم لون تحذيري
+        return <AlertCircle className={`${iconClasses} text-orange-500`} />;
+      
       default:
-        return <TrendingUp className="w-6 h-6 text-white" />;
+        // استخدم لوناً محايداً (رمادي)
+        return <TrendingUp className={`${iconClasses} text-gray-500`} />;
     }
   };
+// import { useTheme } from 'next-themes';
 
-  const getEventStyle = (eventType) => {
-    switch (eventType) {
-      case 'bid_placed':
-        return {
-          bgGradient: 'from-green-400 to-green-600',
-          borderColor: 'border-green-500',
-          bgLight: 'bg-green-50',
-          badgeBg: 'bg-green-100',
-          badgeText: 'text-green-700',
-          pulse: true
-        };
-      case 'outbid':
-        return {
-          bgGradient: 'from-orange-400 to-orange-600',
-          borderColor: 'border-orange-400',
-          bgLight: 'bg-white',
-          badgeBg: 'bg-orange-100',
-          badgeText: 'text-orange-700',
-          pulse: false
-        };
-      case 'autobid_fired':
-        return {
-          bgGradient: 'from-blue-400 to-blue-600',
-          borderColor: 'border-blue-500',
-          bgLight: 'bg-blue-50',
-          badgeBg: 'bg-blue-100',
-          badgeText: 'text-blue-700',
-          pulse: false
-        };
-      case 'bid_rejected':
-        return {
-          bgGradient: 'from-red-400 to-red-600',
-          borderColor: 'border-red-500',
-          bgLight: 'bg-red-50',
-          badgeBg: 'bg-red-100',
-          badgeText: 'text-red-700',
-          pulse: false
-        };
-      default:
-        return {
-          bgGradient: 'from-gray-300 to-gray-400',
-          borderColor: 'border-gray-300',
-          bgLight: 'bg-white',
-          badgeBg: 'bg-gray-100',
-          badgeText: 'text-gray-700',
-          pulse: false
-        };
-    }
-  };
+const getEventStyle = (eventType: string) => {
 
+  switch (eventType) {
+    case 'bid_placed':
+      return {
+       
+        bgColor: 'bg-secondary', 
+        textColor: 'text-white', 
+        borderColor: 'border-secondary', 
+        
+        cardBg: 'bg-card', 
+        cardBorder: 'border-border', 
+        cardText: 'text-foreground', 
+        
+        badgeBg: 'bg-secondary/20', // أخضر فاتح للـ badge
+        badgeText: 'text-secondary', // نص أخضر للـ badge
+        
+        pulse: true
+      };
+    case 'outbid':
+      return {
+     
+        bgColor: 'bg-orange-500', // يمكن تعريف لون تحذيري جديد في Tailwind
+        textColor: 'text-white',
+        borderColor: 'border-orange-500',
+        
+        cardBg: 'bg-card', // لون خلفية الكارت المتوافق مع الثيم
+        cardBorder: 'border-border', // حدود الكارت
+        cardText: 'text-foreground', // نص الكارت
+        
+        badgeBg: 'bg-orange-500/20',
+        badgeText: 'text-orange-500',
+        
+        pulse: false
+      };
+    case 'autobid_fired':
+      return {
+        // اللون الأزرق للأتمتة/الـ autobid
+        bgColor: 'bg-primary', // لون DASM الأزرق
+        textColor: 'text-white',
+        borderColor: 'border-primary',
+        
+        cardBg: 'bg-card', // لون خلفية الكارت المتوافق مع الثيم
+        cardBorder: 'border-border', // حدود الكارت
+        cardText: 'text-foreground', // نص الكارت
+        
+        badgeBg: 'bg-primary/20', // أزرق فاتح للـ badge
+        badgeText: 'text-primary', // نص أزرق للـ badge
+        
+        pulse: false
+      };
+    case 'bid_rejected':
+      return {
+        // اللون الأحمر للرفض/الأخطاء
+        bgColor: 'bg-red-500', // يمكن تعريف لون خطأ جديد في Tailwind
+        textColor: 'text-white',
+        borderColor: 'border-red-500',
+        
+        cardBg: 'bg-card', // لون خلفية الكارت المتوافق مع الثيم
+        cardBorder: 'border-border', // حدود الكارت
+        cardText: 'text-foreground', // نص الكارت
+        
+        badgeBg: 'bg-red-500/20',
+        badgeText: 'text-red-500',
+        
+        pulse: false
+      };
+    default:
+      return {
+        // الألوان الافتراضية/الرمادية
+        bgColor: 'bg-gray-500',
+        textColor: 'text-white',
+        borderColor: 'border-gray-500',
+        
+        cardBg: 'bg-card', // لون خلفية الكارت المتوافق مع الثيم
+        cardBorder: 'border-border', // حدود الكارت
+        cardText: 'text-foreground', // نص الكارت
+        
+        badgeBg: 'bg-gray-500/20',
+        badgeText: 'text-gray-500',
+        
+        pulse: false
+      };
+  }
+};
   const getEventBadge = (eventType) => {
     const badges = {
       bid_placed: 'تمت المزايدة',
@@ -208,10 +258,10 @@ const BidLogsTimeline = () => {
   return (
     <div className="max-w-4xl mx-auto mt-4">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm mb-6 p-6">
+      <div className="bg-card rounded-lg shadow-sm mb-6 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">سجل المزايدات</h1>
+            <h1 className="text-2xl font-bold text-foreground">سجل المزايدات</h1>
             {/* <p className="text-gray-600 mt-1">رقم المزاد #{auctionId}</p> */}
           </div>
         </div>
@@ -219,45 +269,45 @@ const BidLogsTimeline = () => {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 pt-4 border-t">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
-            <div className="text-sm text-gray-600">إجمالي المزايدات</div>
+            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
+            <div className="text-sm text-foreground/70">إجمالي المزايدات</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{stats.bid_placed}</div>
-            <div className="text-sm text-gray-600">مزايدات تمت</div>
+            <div className="text-sm text-foreground/70">مزايدات تمت</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-400">{stats.outbid}</div>
-            <div className="text-sm text-gray-600">تم تجاوزها</div>
+            <div className="text-2xl font-bold text-foreground/50">{stats.outbid}</div>
+            <div className="text-sm text-foreground/70">تم تجاوزها</div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
+      <div className="bg-card rounded-lg shadow-sm mb-6 p-4">
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg text-sm ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg text-sm ${filter === 'all' ? 'bg-primary text-white' : 'bg-border text-foreground hover:bg-border/80'}`}
           >
             الكل
           </button>
           <button 
             onClick={() => setFilter('bid_placed')}
-            className={`px-4 py-2 rounded-lg text-sm ${filter === 'bid_placed' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg text-sm ${filter === 'bid_placed' ? 'bg-primary text-white' : 'bg-border text-foreground hover:bg-border/80'}`}
           >
             مزايدات تمت
           </button>
           <button 
             onClick={() => setFilter('outbid')}
-            className={`px-4 py-2 rounded-lg text-sm ${filter === 'outbid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg text-sm ${filter === 'outbid' ? 'bg-primary text-white' : 'bg-border text-foreground hover:bg-border/80'}`}
           >
             متجاوزة
           </button>
           <select
             value={selectedAuctionId}
             onChange={(e) => setSelectedAuctionId(e.target.value)}
-            className="px-4 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200"
+            className="px-4 py-2 rounded-lg text-sm bg-border text-foreground hover:bg-border/80"
           >
             <option value="">كل المزادات</option>
             {auctionIds.map((id) => (
@@ -284,23 +334,23 @@ const BidLogsTimeline = () => {
            return (
             <div key={log.bid_id} className="relative pr-16 mb-8">
               {/* Timeline Icon */}
-              <div className={`absolute right-0 top-0 w-12 h-12 bg-gradient-to-br ${style.bgGradient} rounded-full flex items-center justify-center shadow-lg ${style.pulse ? 'animate-pulse' : ''}`}>
+              <div className={`absolute right-0 top-0 w-12 h-12 bg-gradient-to-br ${style.badgeBg}  rounded-full flex items-center justify-center shadow-lg ${style.pulse ? 'animate-pulse' : ''}`}>
                 {getEventIcon(log.event_type)}
               </div>
               
               {/* Timeline Line */}
               {i < logs.length - 1 && (
-                <div className="absolute right-6 top-12 bottom-0 w-0.5 bg-gradient-to-b from-blue-600 to-gray-200"></div>
+                <div className="absolute right-6 top-12 bottom-0 w-0.5 bg-gradient-to-b from-primary to-border"></div>
               )}
               
               {/* Card */}
-              <div className={`${style.bgLight} rounded-lg shadow-sm p-5 border-r-4 ${style.borderColor} transition-all hover:-translate-x-1 hover:shadow-md`}>
+              <div className={`${style.cardBg} rounded-lg shadow-sm p-5 border-r-4  ${style.borderColor}  transition-all hover:-translate-x-1 hover:shadow-md`}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="font-semibold text-gray-800 mb-1">
+                    <div className="font-semibold text-foreground mb-1">
                       {log.event}
                     </div>
-                    <div className="text-xs text-gray-500 flex items-center gap-2">
+                    <div className="text-xs text-foreground/70 flex items-center gap-2">
                       <span>{getChannelText(log.channel)}</span>
                       {log.reason_code && (
                         <>
@@ -317,17 +367,17 @@ const BidLogsTimeline = () => {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className={`text-2xl font-bold ${log.event_type === 'outbid' ? 'text-gray-600 ' : 'text-gray-800'}`}>
+                    <div className={`text-2xl font-bold ${log.event_type === 'outbid' ? 'text-foreground/70 ' : 'text-foreground'}`}>
                       <PriceWithIcon price={log.bid_amount} />
                     </div>
                   </div>
                   
                   <div className="text-left">
-                    <div className="text-sm text-gray-600 flex items-center gap-1">
+                    <div className="text-sm text-foreground/80 flex items-center gap-1">
                       <Clock className="w-4 h-4" />
                       {formatTime(log.client_ts)}
                     </div>
-                    <div className="text-xs text-gray-400 mt-1">
+                    <div className="text-xs text-foreground/50 mt-1">
                       {new Date(log.client_ts).toLocaleString('ar-SA', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -335,7 +385,7 @@ const BidLogsTimeline = () => {
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-600 mt-1">رقم المزاد #{log.auction_id}</p>
+                <p className="text-foreground/80 mt-1">رقم المزاد #{log.auction_id}</p>
           
               </div>
             </div>
@@ -349,11 +399,11 @@ const BidLogsTimeline = () => {
        </div>
  
        {logs.length === 0 && !loading &&(
-         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <div className="text-gray-400 mb-2">
+         <div className="bg-card rounded-lg shadow-sm p-8 text-center">
+          <div className="text-foreground/50 mb-2">
             <TrendingUp className="w-16 h-16 mx-auto" />
           </div>
-          <p className="text-gray-600">لا توجد مزايدات بعد</p>
+          <p className="text-foreground/70">لا توجد مزايدات بعد</p>
         </div>
       )}
     </div>

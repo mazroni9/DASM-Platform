@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Menu } from 'lucide-react';
 import { FiMenu, FiRefreshCw, FiPlusCircle, FiBarChart2, FiSettings, FiExternalLink, FiTruck, FiStar, FiDollarSign, FiAlertTriangle } from 'react-icons/fi';
 import { BsCarFront } from 'react-icons/bs';
 import { useLoadingRouter } from '@/hooks/useLoadingRouter';
@@ -256,16 +257,16 @@ export default function ExhibitorDashboard() {
 
   if (!isClient) {
     return (
-      <div dir="rtl" className="min-h-dvh flex items-center justify-center bg-slate-950">
-        <p className="text-slate-300 animate-pulse">جاري التحميل...</p>
+      <div dir="rtl" className="min-h-dvh flex items-center justify-center bg-background">
+        <p className="text-foreground animate-pulse">جاري التحميل...</p>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="min-h-dvh bg-slate-950 text-slate-100 flex relative">
+    <div dir="rtl" className="min-h-dvh bg-background text-foreground flex relative">
       {/* Sidebar (Desktop) */}
-      <aside className="hidden md:flex w-72 shrink-0 sticky top-0 min-h-dvh bg-gradient-to-b from-slate-950 via-slate-930 to-slate-950 border-l border-slate-800/60">
+      <aside className="hidden md:flex w-72 shrink-0 sticky top-0 min-h-dvh bg-card/50 border-l border-border">
         <Suspense fallback={<GlobalLoader />}>
           <Sidebar />
         </Suspense>
@@ -294,7 +295,7 @@ export default function ExhibitorDashboard() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="fixed inset-y-0 left-0 right-auto z-50 md:hidden w-72 bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 border-l border-slate-800/60 shadow-2xl"
+            className="fixed inset-y-0 left-0 right-auto z-50 md:hidden w-72 bg-card border-l border-border shadow-2xl"
             role="dialog"
             aria-modal="true"
           >
@@ -691,10 +692,10 @@ export default function ExhibitorDashboard() {
       {/* FAB (mobile) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed bottom-6 left-6 z-40 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-[0_10px_15px_-3px_rgba(147,51,234,0.35),0_4px_6px_-4px_rgba(0,0,0,0.35)] hover:from-violet-700 hover:to-fuchsia-700 active:scale-95 transition-transform"
+        className="md:hidden fixed bottom-6 left-6 z-40 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary text-white shadow-lg hover:bg-primary/90 active:scale-95 transition-transform"
         aria-label="فتح القائمة"
       >
-        <FiMenu size={22} />
+        <Menu size={22} />
       </button>
     </div>
   );

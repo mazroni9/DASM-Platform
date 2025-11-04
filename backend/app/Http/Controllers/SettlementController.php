@@ -121,8 +121,8 @@ class SettlementController extends Controller
             $tamFeeSetting = Setting::where('key', 'tamFee')->first();
             $tamFee = $tamFeeSetting->value;
             $muroorFee = Setting::where('key', 'muroorFee')->first()->value;
-            $myfatoorahFee = 200;
-            $netAmount = $highestBid->highest_bid - ($platformFee + $myfatoorahFee);
+            //$myfatoorahFee = 200;
+            $netAmount = $highestBid->highest_bid - ($platformFee );
             $buyerNetAmount = $highestBid->highest_bid + $platformFee + $tamFee + $muroorFee;
 
             $settlements = Settlement::create([

@@ -9,7 +9,7 @@ interface Owner {
     id: number;
     first_name: string;
     last_name: string;
-    logo_url?: string;
+    venueOwner?: object;
 }
 
 interface Session {
@@ -36,8 +36,8 @@ const BrowseLiveSessionsPage = () => {
             setLoading(true);
             try {
                 const response = await axios.get<PaginatedResponse>(`/api/sessions/live?page=${page}`);
-                setSessions(prev => [...prev, ...response.data.data]);
-                if (response.data.current_page >= response.data.last_page) {
+                setSessions(prev => [...prev, ...response.data.data.data]);
+                if (response.data.data.current_page >= response.data.data.last_page) {
                     setHasMore(false);
                 }
             } catch (error) {
@@ -58,10 +58,10 @@ const BrowseLiveSessionsPage = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold text-white text-center mb-8">جلسات الحراج المباشر</h1>
+            <h1 className="text-3xl font-bold text-foreground text-center mb-8">جلسات الحراج المباشر</h1>
             
             {sessions.length === 0 && !loading && (
-                <div className="text-center text-gray-500">
+                <div className="text-center text-foreground/70">
                     <p>لا توجد جلسات مزاد مباشر متاحة حاليًا.</p>
                 </div>
             )}

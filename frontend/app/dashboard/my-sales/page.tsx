@@ -19,7 +19,8 @@ import {
   Clock,
   Eye,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  AlertCircle
 } from 'lucide-react';
 
 // Mock data for sales
@@ -183,6 +184,11 @@ export default function MySalesPage() {
     ));
   };
 
+  const handleOpenDispute = (saleId: string) => {
+    // Simulate opening a dispute
+    alert(`Opening dispute for sale ID: ${saleId}`);
+  };
+
   const getCategories = () => {
     return [...new Set(sales.map(s => s.category))];
   };
@@ -193,57 +199,57 @@ export default function MySalesPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl">
+              <div className="p-2 bg-primary rounded-xl">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">
-                  مبيعاتي <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">({stats.total})</span>
+                <h1 className="text-2xl font-bold text-foreground">
+                  مبيعاتي <span className="text-primary">({stats.total})</span>
                 </h1>
-                <p className="text-gray-400 text-sm mt-1">إدارة وتتبع جميع مبيعاتك في المزادات</p>
+                <p className="text-foreground/70 text-sm mt-1">إدارة وتتبع جميع مبيعاتك في المزادات</p>
               </div>
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-blue-500/20 rounded">
                     <Package className="w-3 h-3 text-blue-400" />
                   </div>
-                  <span className="text-xs text-gray-400">المجموع</span>
+                  <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-white mt-1">{stats.total}</p>
+                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
               </div>
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-emerald-500/20 rounded">
                     <CheckCircle className="w-3 h-3 text-emerald-400" />
                   </div>
-                  <span className="text-xs text-gray-400">مكتملة</span>
+                  <span className="text-xs text-foreground/70">مكتملة</span>
                 </div>
                 <p className="text-lg font-bold text-emerald-400 mt-1">{stats.completed}</p>
               </div>
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Clock className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-gray-400">بانتظار الدفع</span>
+                  <span className="text-xs text-foreground/70">بانتظار الدفع</span>
                 </div>
                 <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
               </div>
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-cyan-500/20 rounded">
                     <DollarSign className="w-3 h-3 text-cyan-400" />
                   </div>
-                  <span className="text-xs text-gray-400">صافي الإيرادات</span>
+                  <span className="text-xs text-foreground/70">صافي الإيرادات</span>
                 </div>
                 <p className="text-lg font-bold text-cyan-400 mt-1">
                   {stats.netRevenue.toLocaleString('ar-EG')}
@@ -252,13 +258,13 @@ export default function MySalesPage() {
             </div>
 
             {/* Revenue Breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/30">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 p-3 bg-background/30 rounded-lg border border-border">
               <div className="text-sm">
-                <span className="text-gray-400">إجمالي المبيعات: </span>
-                <span className="text-white font-medium">{stats.totalRevenue.toLocaleString('ar-EG')} ريال</span>
+                <span className="text-foreground/70">إجمالي المبيعات: </span>
+                <span className="text-foreground font-medium">{stats.totalRevenue.toLocaleString('ar-EG')} ريال</span>
               </div>
               <div className="text-sm">
-                <span className="text-gray-400">عمولة المنصة: </span>
+                <span className="text-foreground/70">عمولة المنصة: </span>
                 <span className="text-rose-400 font-medium">-{stats.totalCommission.toLocaleString('ar-EG')} ريال</span>
               </div>
             </div>
@@ -267,10 +273,10 @@ export default function MySalesPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <LoadingLink
               href="/dashboard/mycars"
-              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl border border-green-400/30 hover:scale-105 transition-all duration-300 group"
+              className="flex items-center gap-2 px-4 py-3 bg-secondary text-white rounded-xl border border-secondary/30 hover:scale-105 transition-all duration-300 group"
             >
-              <Package className="w-4 h-4 text-white transition-transform group-hover:scale-110" />
-              <span className="text-white font-medium">إضافة عنصر جديد</span>
+              <Package className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <span className="font-medium">إضافة عنصر جديد</span>
             </LoadingLink>
           </div>
         </div>
@@ -281,19 +287,19 @@ export default function MySalesPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+        className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6"
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
               <input
                 type="text"
                 placeholder="ابحث في المبيعات..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                className="w-full bg-background/50 border border-border rounded-xl pl-4 pr-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
               />
             </div>
 
@@ -301,7 +307,7 @@ export default function MySalesPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 transition-colors"
+              className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-blue-500/50 transition-colors"
             >
               <option value="all">جميع الحالات</option>
               <option value="payment_pending">بانتظار الدفع</option>
@@ -315,7 +321,7 @@ export default function MySalesPage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+              className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-cyan-500/50 transition-colors"
             >
               <option value="all">جميع الفئات</option>
               {getCategories().map(category => (
@@ -324,7 +330,7 @@ export default function MySalesPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-gray-400">
+          <div className="flex items-center gap-2 text-sm text-foreground/70">
             <Filter className="w-4 h-4" />
             <span>عرض {filteredSales.length} من {sales.length} عملية بيع</span>
           </div>
@@ -340,15 +346,15 @@ export default function MySalesPage() {
       >
         {filteredSales.length === 0 ? (
           <div className="text-center py-16">
-            <div className="p-6 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md mx-auto">
-              <TrendingUp className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-400 mb-2">
+            <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
+              <TrendingUp className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground/70 mb-2">
                 {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' 
                   ? 'لا توجد نتائج' 
                   : 'لا توجد مبيعات'
                 }
               </h3>
-              <p className="text-gray-500 text-sm mb-4">
+              <p className="text-foreground/50 text-sm mb-4">
                 {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
                   ? 'لم نتمكن من العثور على مبيعات تطابق معايير البحث'
                   : 'لم تقم ببيع أي عناصر في المزادات بعد'
@@ -361,14 +367,14 @@ export default function MySalesPage() {
                     setStatusFilter('all');
                     setCategoryFilter('all');
                   }}
-                  className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                  className="px-4 py-2 bg-primary/20 text-primary rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors"
                 >
                   إعادة تعيين الفلتر
                 </button>
               ) : (
                 <LoadingLink
                   href="/dashboard/mycars"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg text-white hover:scale-105 transition-all duration-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:scale-105 transition-all duration-300"
                 >
                   <Package className="w-4 h-4" />
                   إضافة أول عنصر للبيع
@@ -389,12 +395,12 @@ export default function MySalesPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 hover:border-gray-700/70 hover:shadow-xl transition-all duration-300 group"
+                className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6 hover:border-border/70 hover:shadow-xl transition-all duration-300 group"
               >
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                   {/* Product Image */}
                   <div className="flex-shrink-0">
-                    <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden">
+                    <div className="w-24 h-24 lg:w-32 lg:h-32 bg-background rounded-xl overflow-hidden">
                       <img 
                         src={sale.imageUrl} 
                         alt={sale.itemName}
@@ -411,11 +417,11 @@ export default function MySalesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors mb-2">
+                        <h3 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors mb-2">
                           {sale.itemName}
                         </h3>
                         
-                        <div className="flex flex-wrap gap-3 text-sm text-gray-400 mb-3">
+                        <div className="flex flex-wrap gap-3 text-sm text-foreground/70 mb-3">
                           <div className="flex items-center gap-1">
                             <Package className="w-3 h-3" />
                             <span>{sale.category}</span>
@@ -432,7 +438,7 @@ export default function MySalesPage() {
 
                         {/* Buyer Info */}
                         <div className="flex items-center gap-3 text-sm">
-                          <div className="flex items-center gap-2 text-gray-400">
+                          <div className="flex items-center gap-2 text-foreground/70">
                             <User className="w-4 h-4" />
                             <span>المشتري:</span>
                             <span className="text-blue-300">{sale.buyerUsername}</span>
@@ -446,10 +452,10 @@ export default function MySalesPage() {
                       <div className="flex flex-col items-start lg:items-end gap-3">
                         {/* Price Info */}
                         <div className="text-right">
-                          <div className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
+                          <div className="text-2xl font-bold text-secondary">
                             {sale.salePrice.toLocaleString('ar-EG')} ريال
                           </div>
-                          <div className="text-sm text-gray-400 mt-1">
+                          <div className="text-sm text-foreground/70 mt-1">
                             صافي: <span className="text-emerald-400">{netAmount.toLocaleString('ar-EG')} ريال</span>
                           </div>
                           <div className="text-xs text-rose-400">
@@ -471,7 +477,7 @@ export default function MySalesPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-800/50">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
                       {sale.status === 'paid_pending_delivery' && (
                         <button 
                           onClick={() => handleArrangeDelivery(sale.id)}
@@ -500,10 +506,15 @@ export default function MySalesPage() {
                         <span className="font-medium">عرض تفاصيل العنصر</span>
                       </LoadingLink>
 
-                      <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-500/20 text-gray-300 rounded-lg border border-gray-500/30 hover:bg-gray-500/30 transition-all duration-300 group/contact">
-                        <MessageSquare className="w-4 h-4 transition-transform group-hover/contact:scale-110" />
-                        <span className="font-medium">مراسلة المشتري</span>
-                      </button>
+                      {sale.status !== 'completed' && (
+                        <button 
+                          onClick={() => handleOpenDispute(sale.id)}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500/20 text-rose-300 rounded-lg border border-rose-500/30 hover:bg-rose-500/30 transition-all duration-300 group/dispute"
+                        >
+                          <AlertCircle className="w-4 h-4 transition-transform group-hover/dispute:scale-110" />
+                          <span className="font-medium">فتح نزاع</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

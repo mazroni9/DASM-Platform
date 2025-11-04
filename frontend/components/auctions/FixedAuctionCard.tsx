@@ -39,7 +39,7 @@ const FixedAuctionCard = ({ auction }) => {
     }
 
     return (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden transform hover:scale-105 transition-transform duration-300">
+        <div className="bg-card rounded-lg shadow-md overflow-hidden transform hover:scale-105 transition-transform duration-300">
             <div className="relative h-48">
                 <Image
                     src={car.images && car.images.length > 0 ? car.images[0] : '/placeholder-icon.png'}
@@ -49,28 +49,28 @@ const FixedAuctionCard = ({ auction }) => {
                 />
             </div>
             <div className="p-4">
-                <h3 className="text-xl font-bold">{car.make} {car.model} - {car.year}</h3>
+                <h3 className="text-xl font-bold text-foreground">{car.make} {car.model} - {car.year}</h3>
                 
                 <div className="mt-4">
-                    <div className="flex justify-between items-center text-gray-700">
+                    <div className="flex justify-between items-center text-foreground">
                         <span>سعر الافتتاح</span>
                         <span className="font-bold"><PriceWithIcon price={auction.opening_price} /></span>
                     </div>
-                    <div className="flex justify-between items-center text-blue-600 mt-2">
+                    <div className="flex justify-between items-center text-primary mt-2">
                         <span>أعلى سعر حالي</span>
                         <span className="font-bold text-lg"><PriceWithIcon price={auction.current_bid} /></span>
                     </div>
                 </div>
 
                 <div className="mt-4 text-center">
-                    <div className="text-2xl font-mono bg-gray-200 p-2 rounded-lg">
+                    <div className="text-2xl font-mono bg-border p-2 rounded-lg">
                         {formatTime(timeRemaining)}
                     </div>
                 </div>
 
                 <div className="mt-4">
                     <LoadingLink href={`/carDetails/${auction.car_id}`}>
-                        <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <button className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors">
                             المزايدة الآن
                         </button>
                     </LoadingLink>

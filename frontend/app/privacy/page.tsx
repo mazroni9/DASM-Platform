@@ -4,12 +4,12 @@ import { ShieldCheck } from 'lucide-react';
 
 const PrivacyPolicyPage = () => {
   return (
-    <main className="container mx-auto p-8 bg-white rounded-lg shadow my-8">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 flex items-center justify-center gap-3">
+    <main className="container mx-auto p-8 bg-card rounded-lg shadow my-8">
+      <h1 className="text-3xl font-bold mb-6 text-center text-foreground flex items-center justify-center gap-3">
          <ShieldCheck size={32} />
          سياسة الخصوصية
       </h1>
-       <div className="prose prose-lg max-w-none text-right" dir="rtl">
+       <div className="prose prose-lg max-w-none text-right text-foreground" dir="rtl">
          <h2>مقدمة</h2>
          <p>نحن في منصة قلب نأخذ خصوصيتك على محمل الجد. توضح سياسة الخصوصية هذه كيف نجمع ونستخدم ونحمي معلوماتك الشخصية عند استخدامك لمنصتنا.</p>
          

@@ -90,10 +90,10 @@ export default function MarketTypeNav() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-200 mb-3">
+          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-3">
             اختر سوقك المتخصص
           </h2>
-          <p className="text-slate-400 max-w-lg mx-auto">
+          <p className="text-base max-w-lg mx-auto">
             كل سوق مصمم ليلبي احتياجات فئة محددة من البائعين والمشترين
           </p>
         </motion.div>

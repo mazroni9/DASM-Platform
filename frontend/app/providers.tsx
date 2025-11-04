@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useLoading, setLoadingFunctions } from "@/contexts/LoadingContext";
 import { preloadCriticalComponents, preloadCriticalData } from "@/lib/dynamic-imports";
+import { ThemeProvider } from "next-themes";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
     const { initializeFromStorage } = useAuthStore();
@@ -49,7 +50,11 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-    return <AuthInitializer>{children}</AuthInitializer>;
+    return (
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthInitializer>{children}</AuthInitializer>
+        </ThemeProvider>
+    );
 }
 
 export default Providers;

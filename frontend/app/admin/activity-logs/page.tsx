@@ -154,33 +154,33 @@ const ActivityLogsPage = () => {
         <CardContent>
           {loading ? (
             <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
           ) : (
             <div className="space-y-4">
               {activities.map((activity) => (
                 <Fragment key={activity.id}>
                   <div 
-                    className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                    className="bg-card p-4 rounded-lg shadow-sm border border-border cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => handleRowToggle(activity.id)}
                   >
                     <div className="grid grid-cols-12 items-center gap-4">
                       <div className="col-span-2">
                         <Badge>{activity.log_name}</Badge>
                       </div>
-                      <div className="col-span-4 text-sm">{activity.description}</div>
+                      <div className="col-span-4 text-sm text-foreground">{activity.description}</div>
                       <div className="col-span-2 text-sm">{renderSubjectLink(activity)}</div>
-                      <div className="col-span-2 text-sm">
+                      <div className="col-span-2 text-sm text-foreground">
                         {activity.causer ? `${activity.causer.first_name} ${activity.causer.last_name}` : 'System'}
                       </div>
-                      <div className="col-span-2 text-sm text-gray-500">{format(new Date(activity.created_at), 'yyyy-MM-dd HH:mm:ss')}</div>
+                      <div className="col-span-2 text-sm text-foreground/70">{format(new Date(activity.created_at), 'yyyy-MM-dd HH:mm:ss')}</div>
                       <div className="col-span-12 flex justify-end">
                         {expandedRow === activity.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                       </div>
                     </div>
                   </div>
                   {expandedRow === activity.id && (
-                    <div className="p-4 bg-gray-50 rounded-b-lg border border-t-0 border-gray-200">
+                    <div className="p-4 bg-background rounded-b-lg border border-t-0 border-border">
                       {renderChanges(activity)}
                     </div>
                   )}

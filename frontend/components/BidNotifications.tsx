@@ -134,32 +134,32 @@ export default function BidNotifications({
         switch (type) {
             case "outbid":
                 return (
-                    <div className="bg-red-100 p-2 rounded-full">
+                    <div className="bg-red-500/10 p-2 rounded-full">
                         <Bell className="h-5 w-5 text-red-500" />
                     </div>
                 );
             case "upcoming":
                 return (
-                    <div className="bg-blue-100 p-2 rounded-full">
+                    <div className="bg-blue-500/10 p-2 rounded-full">
                         <Clock className="h-5 w-5 text-blue-500" />
                     </div>
                 );
             case "priceChange":
                 return (
-                    <div className="bg-yellow-100 p-2 rounded-full">
+                    <div className="bg-yellow-500/10 p-2 rounded-full">
                         <Bell className="h-5 w-5 text-yellow-500" />
                     </div>
                 );
             case "bidAccepted":
                 return (
-                    <div className="bg-green-100 p-2 rounded-full">
+                    <div className="bg-green-500/10 p-2 rounded-full">
                         <Check className="h-5 w-5 text-green-500" />
                     </div>
                 );
             default:
                 return (
-                    <div className="bg-gray-100 p-2 rounded-full">
-                        <Car className="h-5 w-5 text-gray-500" />
+                    <div className="bg-border p-2 rounded-full">
+                        <Car className="h-5 w-5 text-foreground/70" />
                     </div>
                 );
         }
@@ -170,10 +170,10 @@ export default function BidNotifications({
             {/* زر الإشعارات */}
             <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                className="relative p-2 rounded-full hover:bg-border focus:outline-none"
                 aria-label="الإشعارات"
             >
-                <Bell className="h-6 w-6 text-gray-600" />
+                <Bell className="h-6 w-6 text-foreground/70" />
                 {unreadCount > 0 && (
                     <span className="absolute top-0.5 right-0.5 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
                         {unreadCount}
@@ -184,17 +184,17 @@ export default function BidNotifications({
             {/* مربع الإشعارات */}
             {showNotifications && (
                 <div
-                    className="absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
+                    className="absolute left-0 mt-2 w-80 bg-card rounded-lg shadow-xl border border-border z-50"
                     style={{ maxHeight: "500px" }}
                 >
                     {/* رأس مربع الإشعارات */}
-                    <div className="px-4 py-2 border-b flex justify-between items-center bg-teal-50">
-                        <h3 className="font-bold text-teal-800">الإشعارات</h3>
+                    <div className="px-4 py-2 border-b flex justify-between items-center bg-primary/10">
+                        <h3 className="font-bold text-primary">الإشعارات</h3>
                         <div className="flex space-x-2 rtl:space-x-reverse">
                             <button
                                 onClick={() => setSound(!sound)}
                                 title={sound ? "كتم الصوت" : "تشغيل الصوت"}
-                                className="p-1 rounded hover:bg-gray-200"
+                                className="p-1 rounded hover:bg-border"
                             >
                                 {sound ? (
                                     <Volume2 size={16} />
@@ -205,7 +205,7 @@ export default function BidNotifications({
                             <button
                                 onClick={markAllAsRead}
                                 title="وضع علامة مقروءة على الكل"
-                                className="p-1 rounded hover:bg-gray-200 text-gray-600"
+                                className="p-1 rounded hover:bg-border text-foreground/70"
                             >
                                 <Check size={16} />
                             </button>
@@ -215,15 +215,15 @@ export default function BidNotifications({
                     {/* قائمة الإشعارات */}
                     <div className="overflow-y-auto max-h-96">
                         {notifications.length === 0 ? (
-                            <div className="p-4 text-center text-gray-500">
+                            <div className="p-4 text-center text-foreground/50">
                                 لا توجد إشعارات جديدة
                             </div>
                         ) : (
                             notifications.map((notification) => (
                                 <div
                                     key={notification.id}
-                                    className={`p-3 border-b hover:bg-gray-50 transition-colors ${
-                                        notification.isRead ? "" : "bg-blue-50"
+                                    className={`p-3 border-b hover:bg-background transition-colors ${
+                                        notification.isRead ? "" : "bg-primary/10"
                                     }`}
                                 >
                                     <div className="flex">
@@ -234,7 +234,7 @@ export default function BidNotifications({
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start">
-                                                <p className="font-medium text-gray-900">
+                                                <p className="font-medium text-foreground">
                                                     {notification.title}
                                                 </p>
                                                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
@@ -245,7 +245,7 @@ export default function BidNotifications({
                                                                     notification.id
                                                                 )
                                                             }
-                                                            className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                                                            className="p-1 rounded hover:bg-border text-foreground/50"
                                                         >
                                                             <Check size={14} />
                                                         </button>
@@ -256,17 +256,17 @@ export default function BidNotifications({
                                                                 notification.id
                                                             )
                                                         }
-                                                        className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                                                        className="p-1 rounded hover:bg-border text-foreground/50"
                                                     >
                                                         <X size={14} />
                                                     </button>
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-gray-600 mt-1">
+                                            <p className="text-sm text-foreground/70 mt-1">
                                                 {notification.message}
                                             </p>
                                             <div className="mt-1 flex justify-between items-center">
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-foreground/50">
                                                     {formatTimeAgo(
                                                         notification.timestamp
                                                     )}
@@ -274,7 +274,7 @@ export default function BidNotifications({
                                                 {notification.itemId && (
                                                     <a
                                                         href={`/car/${notification.itemId}`}
-                                                        className="text-xs text-blue-600 hover:underline"
+                                                        className="text-xs text-primary hover:underline"
                                                     >
                                                         عرض التفاصيل
                                                     </a>
@@ -289,7 +289,7 @@ export default function BidNotifications({
 
                     {/* تذييل مربع الإشعارات */}
                     <div className="px-4 py-2 border-t text-center">
-                        <button className="text-sm text-blue-600 hover:text-blue-800">
+                        <button className="text-sm text-primary hover:text-primary/80">
                             عرض جميع الإشعارات
                         </button>
                     </div>

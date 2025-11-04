@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\CarCardResource;
 use App\Http\Resources\CarCollection;
+use App\Models\Auction;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
@@ -44,16 +45,14 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        // ابدأ دائمًا بـ Query Builder ثم طبّق القيود حسب الدور
-        $query = Car::query()->with('auctions');
-
+        // تاجر أو مستخدم عادي
+        $query = Car::where('user_id', $user->id);
         if ($user->role === 'dealer' && $user->dealer) {
             // لو المستخدم تاجر ومعاه dealer، نقيّد على المعرض
             $query->where('dealer_id', $user->dealer->id);
         }
 
-        // في جميع الأحوال نقيّد على صاحب السيارة (كما كان في منطقك الأصلي)
-        $query->where('user_id', $user->id);
+        $query->with('auctions');
 
         // فلاتر اختيارية
         if ($request->has('condition')) {
@@ -111,6 +110,21 @@ class CarController extends Controller
         ]);
     }
 
+    public function getFeaturedCars(Request $request)
+    {
+
+        $cars = Car::with('activeAuction')
+        ->select('id', 'make', 'model', 'year', 'images', 'evaluation_price')
+        ->whereHas('activeAuction')
+        ->withCount('activeAuctionBids as total_bids')
+        ->orderBy('total_bids', 'DESC')
+        ->limit(4)
+        ->get();
+        return response()->json([
+            'status' => 'success',
+            'data' => $cars
+        ]);
+    }
     /**
      * سيارات أضافها التاجر
      */
@@ -319,6 +333,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
         $car = Car::with('reportImages')->find($id);
+
         if ($car) {
             $car->load('dealer');
         }

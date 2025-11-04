@@ -59,14 +59,13 @@ const Countdown: React.FC<CountdownProps> = ({ page }) => {
   }, [page]);
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-3 p-3 rounded-2xl shadow-lg 
-                    bg-gradient-to-r from-purple-400 to-pink-500 text-white w-60 mx-auto">
+    <div className="flex flex-col items-center justify-center space-y-3 p-3 rounded-2xl shadow-lg bg-primary text-white w-60 mx-auto">
       {remainingTime ? (
-        <div className="text-1xl font-bold text-gray-200 animate-pulse">
+        <div className="text-1xl font-bold text-white/80 animate-pulse">
           {remainingTime}
         </div>
       ) : (
-        <div className="text-1xl font-bold text-gray-200 animate-pulse">
+        <div className="text-1xl font-bold text-white/80 animate-pulse">
           مغلق المزاد الان
         </div>
       )}

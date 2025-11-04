@@ -10,20 +10,20 @@ export default function LoginPage() {
     <Suspense fallback={<SuspenseLoader />}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-3xl font-bold text-foreground">
             تسجيل الدخول
           </h1>
-          <p className="mt-2 text-gray-400 text-sm">
+          <p className="mt-2 text-foreground text-sm">
             واجهة خاصة بالمحرّجين وفريق الكنترول
           </p>
         </div>
 
-        <div className="bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-700/50">
+        <div className="bg-card backdrop-blur-sm rounded-2xl shadow-2xl p-6 sm:p-8 border border-border">
           <LoginForm />
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-foreground">
             © {new Date().getFullYear()} منصة قلب. جميع الحقوق محفوظة.
           </p>
         </div>

@@ -49,12 +49,13 @@ export default function MyCarsPage() {
     prevButtonText: "السابق"
   }
 
-  const getData = (paginationData) => {
-    axios.get('/api/cars?page=' + paginationData.page).then(response => {
-      const carsData = response.data.data.data || response.data.data;
-      setPagination(response.data.data)
-      setCars(carsData);
-    });
+  const getData = async (paginationData) => {
+   const response =  await api.get('/api/cars?page=' + paginationData.page);
+   if (response.data.status === 'success') {
+    
+    setPagination(response.data.data)
+    setCars(response.data.data.data)
+   }
   }
 
   // Verify user is authenticated
@@ -142,57 +143,57 @@ export default function MyCarsPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-gray-900/80 to-gray-800/60 backdrop-blur-2xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl"
+        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
+              <div className="p-2 bg-primary rounded-xl">
                 <CarIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">
-                  سياراتي <span className="bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">({stats.total})</span>
+                <h1 className="text-2xl font-bold text-foreground">
+                  سياراتي <span className="text-primary">({stats.total})</span>
                 </h1>
-                <p className="text-gray-400 text-sm mt-1">إدارة وعرض جميع سياراتك المعروضة</p>
+                <p className="text-foreground/70 text-sm mt-1">إدارة وعرض جميع سياراتك المعروضة</p>
               </div>
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-blue-500/20 rounded">
                     <CarIcon className="w-3 h-3 text-blue-400" />
                   </div>
-                  <span className="text-xs text-gray-400">المجموع</span>
+                  <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-white mt-1">{stats.total}</p>
+                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
               </div>
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-purple-500/20 rounded">
                     <Gauge className="w-3 h-3 text-purple-400" />
                   </div>
-                  <span className="text-xs text-gray-400">في المزاد</span>
+                  <span className="text-xs text-foreground/70">في المزاد</span>
                 </div>
                 <p className="text-lg font-bold text-purple-400 mt-1">{stats.inAuction}</p>
               </div>
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Loader2 className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-gray-400">بانتظار الموافقة</span>
+                  <span className="text-xs text-foreground/70">بانتظار الموافقة</span>
                 </div>
                 <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
               </div>
-              <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/30">
+              <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-emerald-500/20 rounded">
                     <CheckCircle className="w-3 h-3 text-emerald-400" />
                   </div>
-                  <span className="text-xs text-gray-400">معتمدة</span>
+                  <span className="text-xs text-foreground/70">معتمدة</span>
                 </div>
                 <p className="text-lg font-bold text-emerald-400 mt-1">{stats.approved}</p>
               </div>
@@ -202,10 +203,10 @@ export default function MyCarsPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <LoadingLink
               href="/add/Car"
-              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl border border-green-400/30 hover:scale-105 transition-all duration-300 group"
+              className="flex items-center gap-2 px-4 py-3 bg-secondary text-white rounded-xl border border-secondary/30 hover:scale-105 transition-all duration-300 group"
             >
-              <Plus className="w-4 h-4 text-white transition-transform group-hover:rotate-90" />
-              <span className="text-white font-medium">إضافة سيارة جديدة</span>
+              <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
+              <span className="font-medium">إضافة سيارة جديدة</span>
             </LoadingLink>
           </div>
         </div>
@@ -216,19 +217,19 @@ export default function MyCarsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6"
+        className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6"
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
               <input
                 type="text"
                 placeholder="ابحث عن سيارة..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl pl-4 pr-10 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500/50 transition-colors"
+                className="w-full bg-background/50 border border-border rounded-xl pl-4 pr-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
               />
             </div>
 
@@ -236,7 +237,7 @@ export default function MyCarsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+              className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
             >
               <option value="all">جميع الحالات</option>
               <option value="pending">بانتظار الموافقة</option>
@@ -247,7 +248,7 @@ export default function MyCarsPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-gray-400">
+          <div className="flex items-center gap-2 text-sm text-foreground/70">
             <Filter className="w-4 h-4" />
             <span>عرض {filteredCars.length} من {cars.length} سيارة</span>
           </div>
@@ -263,10 +264,10 @@ export default function MyCarsPage() {
       >
         {filteredCars.length === 0 ? (
           <div className="col-span-full text-center py-16">
-            <div className="p-4 bg-gray-800/30 rounded-2xl border border-gray-700/50 max-w-md mx-auto">
-              <CarIcon className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-400 mb-2">لا توجد سيارات</h3>
-              <p className="text-gray-500 text-sm mb-4">
+            <div className="p-4 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
+              <CarIcon className="w-12 h-12 text-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground/70 mb-2">لا توجد سيارات</h3>
+              <p className="text-foreground/50 text-sm mb-4">
                 {searchTerm || statusFilter !== 'all' 
                   ? 'لم نتمكن من العثور على سيارات تطابق معايير البحث'
                   : 'لم تقم بإضافة أي سيارات بعد'
@@ -278,14 +279,14 @@ export default function MyCarsPage() {
                     setSearchTerm('');
                     setStatusFilter('all');
                   }}
-                  className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                  className="px-4 py-2 bg-primary/20 text-primary rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors"
                 >
                   إعادة تعيين الفلتر
                 </button>
               ) : (
                 <LoadingLink
                   href="/add/Car"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white hover:scale-105 transition-all duration-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:scale-105 transition-all duration-300"
                 >
                   <Plus className="w-4 h-4" />
                   إضافة أول سيارة
@@ -307,9 +308,9 @@ export default function MyCarsPage() {
                 className="group cursor-pointer"
                 onClick={() => router.push(`/dashboard/mycars/${car.id}`)}
               >
-                <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl overflow-hidden hover:border-gray-700/70 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                <div className="bg-card backdrop-blur-xl border border-border rounded-2xl overflow-hidden hover:border-border/70 hover:shadow-2xl transition-all duration-300 hover:scale-105">
                   {/* Car Image */}
-                  <div className="relative h-48 bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden">
+                  <div className="relative h-48 bg-background overflow-hidden">
                     <img
                       src={
                         (car.images && car.images.length > 0)
@@ -336,7 +337,7 @@ export default function MyCarsPage() {
 
                     {/* Approval Badge */}
                     {isApproved && (
-                      <div className="absolute top-3 right-3 px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-medium border border-emerald-500/30 backdrop-blur-sm">
+                      <div className="absolute top-3 right-3 px-2 py-1 bg-emerald-500 text-white rounded-full text-xs font-medium border border-emerald-500/30 backdrop-blur-sm">
                         <CheckCircle className="w-3 h-3 inline ml-1" />
                         معتمدة
                       </div>
@@ -346,25 +347,25 @@ export default function MyCarsPage() {
                   {/* Car Details */}
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-bold text-white group-hover:text-gray-200 transition-colors">
+                      <h3 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors">
                         {car.make} {car.model} - {car.year}
                       </h3>
-                      <div className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-yellow-300 bg-clip-text text-transparent">
+                      <div className="text-2xl font-bold text-secondary">
                         {car.evaluation_price?.toLocaleString('ar-EG')}
                       </div>
                     </div>
 
                     {/* Car Specs */}
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="flex items-center gap-2 text-sm text-foreground/70">
                         <Gauge className="w-4 h-4 text-blue-400" />
                         <span>العداد: {car.odometer} كم</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="flex items-center gap-2 text-sm text-foreground/70">
                         <Settings className="w-4 h-4 text-purple-400" />
                         <span>المحرك: {car.engine}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="flex items-center gap-2 text-sm text-foreground/70">
                         <Route className="w-4 h-4 text-emerald-400" />
                         <span>القير: {car.transmission}</span>
                       </div>
@@ -372,7 +373,7 @@ export default function MyCarsPage() {
 
                     {/* Description */}
                     {car.description && (
-                      <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
+                      <p className="text-sm text-foreground/50 mb-4 line-clamp-2 leading-relaxed">
                         {car.description}
                       </p>
                     )}
@@ -380,7 +381,7 @@ export default function MyCarsPage() {
                    
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 pt-4 border-t border-gray-800/50">
+                    <div className="flex gap-2 pt-4 border-t border-border">
                       {(car.status === 'pending' || car.status === 'processing') && (
                         <LoadingLink
                           href={`/dashboard/mycars/${car.id}?edit=1`}
@@ -396,7 +397,7 @@ export default function MyCarsPage() {
                         target="_blank"
                         href={`/carDetails/${car.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300 group/view"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary/30 hover:bg-primary/30 transition-all duration-300 group/view"
                       >
                         <Eye className="w-3 h-3 transition-transform group-hover/view:scale-110" />
                         <span className="text-xs font-medium">عرض</span>
@@ -418,7 +419,7 @@ export default function MyCarsPage() {
           transition={{ delay: 0.3 }}
           className="flex justify-center"
         >
-          <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-4">
+          <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
             <Pagination 
               data={paginationData} 
               options={options} 

@@ -292,26 +292,26 @@ export default function SessionDetailsPage() {
   const SessionStatusIcon = sessionStatusConfig[session.status].icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       {/* --- Session Header --- */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6 mb-6">
+      <div className="bg-card rounded-2xl border border-border shadow-lg p-6 mb-6">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="flex items-center space-x-4 space-x-reverse">
-            <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-3 rounded-xl">
+            <div className="bg-primary p-3 rounded-xl">
               <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{session.name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">{session.name}</h1>
               <div className="flex flex-wrap items-center gap-3 mt-2">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${sessionStatusConfig[session.status].color}`}>
                   <SessionStatusIcon className="w-3 h-3 ml-1" />
                   {sessionStatusConfig[session.status].label}
                 </span>
-                <div className="flex items-center text-gray-400 text-sm">
+                <div className="flex items-center text-foreground/70 text-sm">
                   <Clock className="w-4 h-4 ml-1" />
                   {format(new Date(session.session_date), 'eeee, dd MMMM yyyy', { locale: ar })}
                 </div>
-                <div className="flex items-center text-cyan-400 text-sm">
+                <div className="flex items-center text-primary text-sm">
                   <Target className="w-4 h-4 ml-1" />
                   {session.auctions.length} مزاد
                 </div>
@@ -322,7 +322,7 @@ export default function SessionDetailsPage() {
           <div className="flex items-center space-x-3 space-x-reverse">
             <button 
               onClick={fetchSession}
-              className="bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+              className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
             >
               <RefreshCw className="w-4 h-4 ml-2" />
               تحديث
@@ -332,7 +332,7 @@ export default function SessionDetailsPage() {
               <button 
                 onClick={() => handleUpdateSessionStatus('active')} 
                 disabled={sessionActionLoading}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
+                className="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
               >
                 {sessionActionLoading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Play className="w-4 h-4 ml-2" />}
                 بدء الجلسة
@@ -343,7 +343,7 @@ export default function SessionDetailsPage() {
               <button 
                 onClick={() => handleUpdateSessionStatus('completed')} 
                 disabled={sessionActionLoading}
-                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
+                className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
               >
                 {sessionActionLoading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Square className="w-4 h-4 ml-2" />}
                 إنهاء الجلسة
@@ -354,7 +354,7 @@ export default function SessionDetailsPage() {
               <button 
                 onClick={() => handleUpdateSessionStatus('cancelled')} 
                 disabled={sessionActionLoading}
-                className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
               >
                 {sessionActionLoading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <XCircle className="w-4 h-4 ml-2" />}
                 إلغاء الجلسة
@@ -366,11 +366,11 @@ export default function SessionDetailsPage() {
 
       {/* --- Statistics Summary Bar --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">إجمالي المزادات</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+              <p className="text-foreground/70 text-sm">إجمالي المزادات</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <BarChart3 className="w-6 h-6 text-blue-400" />
@@ -378,10 +378,10 @@ export default function SessionDetailsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">المزادات النشطة</p>
+              <p className="text-foreground/70 text-sm">المزادات النشطة</p>
               <p className="text-2xl font-bold text-green-400 mt-1">{stats.active}</p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
@@ -390,10 +390,10 @@ export default function SessionDetailsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">المزادات المكتملة</p>
+              <p className="text-foreground/70 text-sm">المزادات المكتملة</p>
               <p className="text-2xl font-bold text-purple-400 mt-1">{stats.completed}</p>
             </div>
             <div className="bg-purple-500/10 p-3 rounded-xl">
@@ -402,10 +402,10 @@ export default function SessionDetailsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">المزادات المتبقية</p>
+              <p className="text-foreground/70 text-sm">المزادات المتبقية</p>
               <p className="text-2xl font-bold text-cyan-400 mt-1">{stats.remaining}</p>
             </div>
             <div className="bg-cyan-500/10 p-3 rounded-xl">
@@ -414,10 +414,10 @@ export default function SessionDetailsPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">القيمة الإجمالية</p>
+              <p className="text-foreground/70 text-sm">القيمة الإجمالية</p>
               <p className="text-2xl font-bold text-amber-400 mt-1">
                 {(stats.totalValue / 1000).toFixed(0)}K
               </p>
@@ -430,19 +430,19 @@ export default function SessionDetailsPage() {
       </div>
 
       {/* --- Auctions Section --- */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border shadow-lg overflow-hidden">
         {/* --- Bulk Actions Bar --- */}
         {selectedAuctions.length > 0 && (
-          <div className="p-6 bg-gray-750 border-b border-gray-700/50 flex items-center justify-between flex-wrap gap-4">
+          <div className="p-6 bg-border/50 border-b border-border flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-3 space-x-reverse">
-              <div className="bg-cyan-500/20 p-2 rounded-xl">
-                <Sparkles className="w-5 h-5 text-cyan-400" />
+              <div className="bg-primary/20 p-2 rounded-xl">
+                <Sparkles className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold text-foreground">
                   {selectedAuctions.length} مزاد محدد
                 </span>
-                <p className="text-xs text-gray-400">اختر الإجراء المناسب للتطبيق</p>
+                <p className="text-xs text-foreground/70">اختر الإجراء المناسب للتطبيق</p>
               </div>
             </div>
             
@@ -452,7 +452,7 @@ export default function SessionDetailsPage() {
                 <select
                   value={bulkStatus}
                   onChange={(e) => setBulkStatus(e.target.value as typeof bulkStatus)}
-                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="px-3 py-2 bg-background border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   {bulkStatuses.map(status => {
                     const Icon = status.icon;
@@ -466,28 +466,28 @@ export default function SessionDetailsPage() {
                 <button
                   onClick={handleBulkUpdate}
                   disabled={bulkActionLoading}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center disabled:opacity-50"
+                  className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center disabled:opacity-50"
                 >
                   {bulkActionLoading ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : 'تطبيق الحالة'}
                 </button>
               </div>
 
               {/* Divider */}
-              <div className="h-8 border-r border-gray-600"></div>
+              <div className="h-8 border-r border-border"></div>
 
               {/* Approval/Rejection */}
               <div className="flex items-center space-x-2 space-x-reverse">
                 <button 
                   onClick={() => handleBulkApproveReject(true)} 
                   disabled={bulkActionLoading}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 disabled:opacity-50"
+                  className="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 disabled:opacity-50"
                 >
                   قبول المحدد
                 </button>
                 <button 
                   onClick={() => handleBulkApproveReject(false)} 
                   disabled={bulkActionLoading}
-                  className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 disabled:opacity-50"
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 disabled:opacity-50"
                 >
                   رفض المحدد
                 </button>
@@ -500,48 +500,48 @@ export default function SessionDetailsPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-750 border-b border-gray-700/50">
+              <tr className="bg-border/50 border-b border-border">
                 <th scope="col" className="p-4">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
                     onChange={handleSelectAll}
-                    className="h-4 w-4 text-cyan-500 border-gray-600 rounded focus:ring-cyan-500 bg-gray-700"
+                    className="h-4 w-4 text-primary border-border rounded focus:ring-primary bg-background"
                   />
                 </th>
-                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-gray-400 uppercase tracking-wider">السيارة</th>
-                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-gray-400 uppercase tracking-wider">سعر الافتتاح</th>
-                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-gray-400 uppercase tracking-wider">حالة الموافقة</th>
-                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-gray-400 uppercase tracking-wider">الحالة</th>
-                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-gray-400 uppercase tracking-wider">البث المباشر</th>
-                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-gray-400 uppercase tracking-wider">الإجراءات</th>
+                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-foreground/70 uppercase tracking-wider">السيارة</th>
+                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-foreground/70 uppercase tracking-wider">سعر الافتتاح</th>
+                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-foreground/70 uppercase tracking-wider">حالة الموافقة</th>
+                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-foreground/70 uppercase tracking-wider">الحالة</th>
+                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-foreground/70 uppercase tracking-wider">البث المباشر</th>
+                <th scope="col" className="px-6 py-4 text-right text-sm font-medium text-foreground/70 uppercase tracking-wider">الإجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/50">
+            <tbody className="divide-y divide-border">
               {session.auctions.map((auction) => {
                 const StatusIcon = statusConfig[auction.status]?.icon || Clock;
                 return (
-                  <tr key={auction.id} className="hover:bg-gray-750/50 transition-colors duration-200 group">
+                  <tr key={auction.id} className="hover:bg-border/50 transition-colors duration-200 group">
                     <td className="p-4">
                       <input
                         type="checkbox"
                         checked={selectedAuctions.includes(auction.id)}
                         onChange={(e) => handleSelectOne(e, auction.id)}
-                        className="h-4 w-4 text-cyan-500 border-gray-600 rounded focus:ring-cyan-500 bg-gray-700"
+                        className="h-4 w-4 text-primary border-border rounded focus:ring-primary bg-background"
                       />
                     </td>
                     
                     {/* Car Info */}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
+                        <div className="bg-primary p-2 rounded-xl">
                           <Crown className="w-4 h-4 text-white" />
                         </div>
                         <div className="mr-4">
-                          <div className="text-sm font-medium text-white">
+                          <div className="text-sm font-medium text-foreground">
                             {auction.car.make} {auction.car.model}
                           </div>
-                          <div className="text-xs text-gray-400 mt-1">
+                          <div className="text-xs text-foreground/70 mt-1">
                             {auction.car.year} • ID: {auction.id}
                           </div>
                         </div>
@@ -559,19 +559,19 @@ export default function SessionDetailsPage() {
                             onBlur={() => handlePriceUpdate(auction.id)}
                             onKeyDown={(e) => e.key === 'Enter' && handlePriceUpdate(auction.id)}
                             autoFocus
-                            className="w-32 px-3 py-1 bg-gray-700 border border-cyan-500 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-32 px-3 py-1 bg-background border border-primary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                           />
-                          <SaudiRiyal className="w-4 h-4 text-cyan-400" />
+                          <SaudiRiyal className="w-4 h-4 text-primary" />
                         </div>
                       ) : (
                         <div 
                           onClick={() => { setEditingAuctionId(auction.id); setEditingPrice(String(auction.opening_price)); }} 
-                          className="cursor-pointer hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-300 flex items-center space-x-2 space-x-reverse"
+                          className="cursor-pointer hover:bg-border p-2 rounded-lg transition-all duration-300 flex items-center space-x-2 space-x-reverse"
                         >
-                          <span className="text-cyan-400 font-semibold">
+                          <span className="text-primary font-semibold">
                             {auction.opening_price?.toLocaleString() || 0}
                           </span>
-                          <SaudiRiyal className="w-4 h-4 text-cyan-400" />
+                          <SaudiRiyal className="w-4 h-4 text-primary" />
                         </div>
                       )}
                     </td>
@@ -593,7 +593,7 @@ export default function SessionDetailsPage() {
 
                     {/* Status */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusConfig[auction.status]?.color || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${statusConfig[auction.status]?.color || 'bg-card text-foreground border-border'}`}>
                         <StatusIcon className="w-3 h-3 ml-1" />
                         {statusConfig[auction.status]?.label || auction.status}
                       </span>
@@ -616,13 +616,13 @@ export default function SessionDetailsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2 space-x-reverse">
                         {actionLoading[auction.id] ? (
-                          <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
                         ) : (
                           auction.status === 'live' && (
                             auction.approved_for_live ? (
                               <button 
                                 onClick={() => handleStreamToggle(auction.id, false)} 
-                                className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center space-x-1 space-x-reverse"
+                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center space-x-1 space-x-reverse"
                               >
                                 <Square className="w-3 h-3" />
                                 <span>إيقاف البث</span>
@@ -631,7 +631,7 @@ export default function SessionDetailsPage() {
                               <button 
                                 onClick={() => handleStreamToggle(auction.id, true)} 
                                 disabled={!auction.control_room_approved}
-                                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center space-x-1 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 flex items-center space-x-1 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed"
                                 title={!auction.control_room_approved ? "غير مسموح - يحتاج موافقة" : "بدء البث المباشر"}
                               >
                                 <Volume2 className="w-3 h-3" />
@@ -641,7 +641,7 @@ export default function SessionDetailsPage() {
                           )
                         )}
                         
-                        <button className="text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-300">
+                        <button className="text-foreground/70 hover:text-foreground hover:bg-border/50 p-2 rounded-lg transition-all duration-300">
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
@@ -656,9 +656,9 @@ export default function SessionDetailsPage() {
         {/* Empty State */}
         {session.auctions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16">
-            <Target className="w-16 h-16 text-gray-600 mb-4" />
-            <p className="text-gray-400 text-lg mb-2">لا توجد مزادات في هذه الجلسة</p>
-            <p className="text-gray-500 text-sm">يمكنك إضافة مزادات جديدة إلى الجلسة</p>
+            <Target className="w-16 h-16 text-foreground/50 mb-4" />
+            <p className="text-foreground/70 text-lg mb-2">لا توجد مزادات في هذه الجلسة</p>
+            <p className="text-foreground/50 text-sm">يمكنك إضافة مزادات جديدة إلى الجلسة</p>
           </div>
         )}
       </div>
