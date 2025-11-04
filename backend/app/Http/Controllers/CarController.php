@@ -44,12 +44,12 @@ class CarController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = null;
 
         // تاجر أو مستخدم عادي
         $query = Car::where('user_id', $user->id);
         if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
+            // لو المستخدم تاجر ومعاه dealer، نقيّد على المعرض
+            $query->where('dealer_id', $user->dealer->id);
         }
 
         $query->with('auctions');
@@ -132,8 +132,15 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
+        // ابدأ بـ Query Builder لتفادي null
+        $query = Car::query();
+
         if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
+            // سيارات المعرض الخاص بالتاجر
+            $query->where('dealer_id', $user->dealer->id);
+        } else {
+            //Fallback منطقي: سيارات المستخدم نفسه
+            $query->where('user_id', $user->id);
         }
 
         $cars = $query->paginate(10);
@@ -218,7 +225,6 @@ class CarController extends Controller
 
         $user = Auth::user();
         $car = new Car();
-
 
         if ($user->role === 'dealer' && $user->dealer) {
             $car->dealer_id = $user->dealer->id;
@@ -345,7 +351,6 @@ class CarController extends Controller
                     ->orderBy('created_at', 'desc');
             }])
             ->first();
-
 
         $similar_cars = Car::where('make', $car->make)
             ->where('id', '!=', $car->id)

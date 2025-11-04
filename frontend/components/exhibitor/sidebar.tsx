@@ -3,21 +3,21 @@
 import LoadingLink from "@/components/LoadingLink";
 import { motion } from 'framer-motion';
 import {
-  Radio,
-  Home,
-  PlusSquare,
-  Layers,
-  DollarSign,
-  BarChart2,
-  User,
-  Settings,
-  Star,
-  Truck,
-  Gift,
-  Database,
-  LogOut,
-  Calendar,
-} from 'lucide-react';
+  FiRadio,
+  FiHome,
+  FiPlusSquare,
+  FiLayers,
+  FiDollarSign,
+  FiBarChart2,
+  FiUser,
+  FiStar,
+  FiTruck,
+  FiGift,
+  FiDatabase,
+  FiLogOut,
+  FiCalendar,
+} from 'react-icons/fi';
+import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import { Avatar } from 'antd';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
@@ -27,34 +27,49 @@ import { useAuthStore } from '@/store/authStore';
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
+const normalizePath = (p?: string) => {
+  if (!p) return '/';
+  const trimmed = p.replace(/\/+$/, '');
+  return trimmed.length ? trimmed : '/';
+};
 
 /* ===== عناصر القائمة ===== */
 const navItems = [
-  { href: '/exhibitor',                 icon: Home,       label: 'الرئيسية' },
-  { href: '/exhibitor/add-car',         icon: PlusSquare, label: 'إضافة سيارة' },
-  { href: '/exhibitor/all-cars',        icon: Layers,     label: 'جميع السيارات' },
-  { href: '/exhibitor/auctions',        icon: DollarSign, label: 'المزادات' },
-  { href: '/exhibitor/sessions',        icon: Calendar,   label: 'جلسات المزاد' },
-  { href: '/exhibitor/live-sessions',   icon: Radio,      label: 'جلسات البث المباشر' },
-  { href: '#',                          icon: BarChart2,  label: 'التحليلات' },
-  { href: '#',                          icon: Wallet,     label: 'رصيد المحفظة' },
-  { href: '#',                          icon: Star,       label: 'التقييمات' },
-  { href: '#',                          icon: Truck,      label: 'الشحن' },
-  { href: '#',                          icon: DollarSign, label: 'خانة السعي' },
-  { href: '#',                          icon: Gift,       label: 'خدمات إضافية' },
-  { href: '#',                          icon: BarChart2,   label: 'العمليات المالية' },
-  { href: '#',                          icon: Database,   label: 'بيانات السيارات' },
-  { href: '#',                          icon: User,       label: 'الملف الشخصي' },
-  { href: '#',                          icon: Settings,   label: 'الإعدادات' },
+  { href: '/exhibitor',               icon: FiHome,        label: 'الرئيسية' },
+  { href: '/exhibitor/add-car',       icon: FiPlusSquare,  label: 'إضافة سيارة' },
+  { href: '/exhibitor/all-cars',      icon: FiLayers,      label: 'جميع السيارات' },
+  { href: '/exhibitor/auctions',      icon: FiDollarSign,  label: 'المزادات' },
+
+  // ✅ جلسات المزاد
+  { href: '/exhibitor/sessions',      icon: FiCalendar,    label: 'جلسات المزاد' },
+
+  { href: '/exhibitor/live-sessions', icon: FiRadio,       label: 'جلسات البث المباشر' },
+  { href: '/exhibitor/analytics',     icon: FiBarChart2,   label: 'التحليلات' },
+  { href: '/exhibitor/wallet',        icon: FaWallet,      label: 'رصيد المحفظة' },
+  { href: '/exhibitor/ratings',       icon: FiStar,        label: 'التقييمات' },
+  { href: '/exhibitor/shipping',      icon: FiTruck,       label: 'الشحن' },
+  { href: '/exhibitor/commission',    icon: FaMoneyCheckAlt, label: 'خانة السعي' },
+  { href: '/exhibitor/extra-services',icon: FiGift,        label: 'خدمات إضافية' },
+  { href: '/exhibitor/financial',     icon: FaChartBar,    label: 'العمليات المالية' },
+  { href: '/exhibitor/cars-data',     icon: FiDatabase,    label: 'بيانات السيارات' },
+  { href: '/exhibitor/profile',       icon: FiUser,        label: 'الملف الشخصي' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useLoadingRouter(); // ممكن تحتاجه لاحقًا
+  const router = useLoadingRouter(); // متاح لو احتجناه لاحقًا
   const { user, logout } = useAuthStore();
 
-  const isItemActive = (href: string) =>
-    href !== '#' && (pathname === href || pathname.startsWith(href + '/'));
+  const currentPath = normalizePath(pathname);
+
+  // ✅ الرئيسية exact فقط، وباقي العناصر exact أو يبدأ بمسار فرعي
+  const isItemActive = (href: string) => {
+    const h = normalizePath(href);
+    if (h === '/exhibitor') {
+      return currentPath === h; // الرئيسية لا تكون Active إلا لو المسار مطابق تمامًا
+    }
+    return currentPath === h || currentPath.startsWith(h + '/');
+  };
 
   return (
     <motion.aside
