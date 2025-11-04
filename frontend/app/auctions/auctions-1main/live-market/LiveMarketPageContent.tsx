@@ -7,8 +7,6 @@
  * - تسحب السيارات من قاعدة البيانات: items حيث type = 'live'
  * - تُظهر السيارة الحالية، معلوماتها، وعدد المزايدات والسعر الحالي
  * - تتيح تقديم مزايدة مباشرة من الصفحة
- *
- * ⚠️ ملاحظة: تم تعديل التصميم فقط (Front-end UI) دون أي تغيير على الباك إند أو التدفقات.
  */
 
 "use client";
@@ -18,7 +16,11 @@ import LoadingLink from "@/components/LoadingLink";
 import {
   ChevronRight,
   Clock,
+  BellOff,
+  Timer,
+  Video,
   Radio,
+  XCircle,
   CircleAlert,
 } from "lucide-react";
 import PlateSearch from "./component/PlateSearch";
@@ -27,6 +29,7 @@ import BidForm from "@/components/BidForm";
 import LiveBidding from "@/components/LiveBidding";
 import BidNotifications from "@/components/BidNotifications";
 import { formatCurrency } from "@/utils/formatCurrency";
+// استيراد المكونات الجديدة
 import BidderChat from "@/components/social/BidderChat";
 import LiveAuctionPulse from "@/components/social/LiveAuctionPulse";
 import LiveYouTubeEmbed from "@/components/LiveYouTubeEmbed";
@@ -43,7 +46,7 @@ async function isWithinAllowedTime(page: string): Promise<boolean> {
   return response.data.allowed;
 }
 
-// دالة للحصول على نوع المزاد الحالي (بدون تغيير على المنطق)
+// دالة للحصول على نوع المزاد الحالي
 function getCurrentAuctionType(time: Date = new Date()): {
   label: string;
   isLive: boolean;
@@ -69,10 +72,10 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
   const [error, setError] = useState<string | null>(null);
   const { user, isLoggedIn } = useAuth();
   const router = useLoadingRouter();
-
-  const [marketCars, setMarketCars] = useState<any[]>([]);
-  const [currentCar, setCurrentCar] = useState<any>(null);
-  const [marketCarsCompleted, setMarketCarsCompleted] = useState<any[]>([]);
+  
+  const [marketCars, setMarketCars] = useState([]);
+  const [currentCar, setCurrentCar] = useState(null);
+  const [marketCarsCompleted, setMarketCarsCompleted] = useState([]);
   const [showBid, setShowBid] = useState(false);
   const [bid, setBid] = useState("");
   const [status, setStatus] = useState("");
@@ -81,40 +84,67 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
   const [currentTime, setCurrentTime] = useState(new Date());
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 
-  // Verify user is authenticated (لا تعديل على السلوك)
+  // تحديث الوقت كل ثانية
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentTime(new Date());
+  //   }, 1000);
+
+  //   return () => clearInterval(timer);
+  // }, []);
+
+  // Verify user is authenticated
   useEffect(() => {
     if (!isLoggedIn) {
       router.push("/auth/login?returnUrl=/dashboard/profile");
     }
   }, [isLoggedIn, router]);
 
-  // جلب البيانات + Pusher (بدون تغيير على المنطق)
+  // تحديث الوقت كل ثانية
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setCurrentTime(new Date());
+  //   }, 1000);
+
+  //   return () => clearInterval(timer);
+  // }, []);
+
+  // Fetch user profile data
   useEffect(() => {
     async function fetchAuctions() {
       if (!isLoggedIn) return;
       try {
-        setIsAllowed(true);
-
+        setIsAllowed(true); // Assuming live sessions are always allowed to be viewed
+        
         let response;
         if (sessionId) {
           response = await api.get(`/api/sessions/live/${sessionId}`);
+          console.log('response',response);
+          
           if (response.data.data) {
+
             const carsData = response.data.data;
-            let current_car = carsData.current_live_car;
-            let liveAuctions = carsData.pending_live_auctions;
-            let completedAuctions = carsData.completed_live_auctions;
-
-            if (current_car && current_car.car) {
-              let car_user_id = current_car.car.user_id;
-              let current_user_id = user.id;
-              let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
-
-              setIsOwner(current_user_id == car_user_id || dealer_user_id == current_user_id);
-            }
-
-            setMarketCars(liveAuctions || []);
-            setCurrentCar(current_car || null);
-            setMarketCarsCompleted(completedAuctions || []);
+            console.log('cars data',carsData);
+              let current_car = carsData.current_live_car;
+              let liveAuctions = carsData.pending_live_auctions;
+              let completedAuctions = carsData.completed_live_auctions;
+              
+              if (current_car && current_car.car) {
+                let car_user_id = current_car.car.user_id;
+                let current_user_id = user.id;
+                let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
+                
+                if (current_user_id == car_user_id || dealer_user_id == current_user_id) {
+                  setIsOwner(true);
+                } else {
+                  setIsOwner(false);
+                }
+              }
+              
+              setMarketCars(liveAuctions);
+              setCurrentCar(current_car);
+              setMarketCarsCompleted(completedAuctions);
+            
           }
         } else {
           response = await api.get("/api/approved-live-auctions");
@@ -123,20 +153,25 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
             let current_car = carsData.current_live_car;
             let liveAuctions = carsData.pending_live_auctions;
             let completedAuctions = carsData.completed_live_auctions;
-
+            
             if (current_car && current_car.car) {
               let car_user_id = current_car.car.user_id;
               let current_user_id = user.id;
               let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
-
-              setIsOwner(current_user_id == car_user_id || dealer_user_id == current_user_id);
+              
+              if (current_user_id == car_user_id || dealer_user_id == current_user_id) {
+                setIsOwner(true);
+              } else {
+                setIsOwner(false);
+              }
             }
-
-            setMarketCars(liveAuctions || []);
-            setCurrentCar(current_car || null);
-            setMarketCarsCompleted(completedAuctions || []);
+            
+            setMarketCars(liveAuctions);
+            setCurrentCar(current_car);
+            setMarketCarsCompleted(completedAuctions);
           }
         }
+
       } catch (error) {
         console.error("Failed to load auction data", error);
         setMarketCars([]);
@@ -149,7 +184,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
     }
     fetchAuctions();
 
-    // Setup Pusher listener
+    // Setup Pusher listener for real-time auction updates
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
     });
@@ -157,33 +192,39 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
     const channelName = sessionId ? `session.${sessionId}` : 'auction.live';
     const channel = pusher.subscribe(channelName);
 
-    channel.bind('UpdateSessionEvent', () => {
+    channel.bind('UpdateSessionEvent', (data: any) => {
+      console.log('Session updated:', data);
+      // Refresh auction data when session is updated
       fetchAuctions();
     });
-    channel.bind('CarMovedBetweenAuctionsEvent', () => {
+    channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
+      console.log('Car moved to auction:', data);
+      // Refresh auction data when cars are moved
       fetchAuctions();
+      //toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
     });
 
+    // Listen for cars approved for live auction
     channel.bind('CarApprovedForLiveEvent', (data: any) => {
+      console.log('Car approved for live auction:', data);
+      // Refresh auction data when cars are approved for live
       fetchAuctions();
       if (data.approved_for_live) {
         toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
-      } else {
-        toast.custom(
-          <div
-            style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#ffffcc' }}
-            className="text-black flex items-center gap-2"
-          >
-            <CircleAlert className="w-4 h-4" /> تم إيقاف المزاد المباشر على {data.car_make} {data.car_model}!
-          </div>,
-          { duration: 5000 }
-        );
+      }else{
+        toast.custom(<div style={{padding: '16px', borderRadius: '8px',backgroundColor: '#ffffcc'}} className="text-black flex items-center gap-2"> <CircleAlert className="w-4 h-4" /> تم إيقاف المزاد المباشر على {data.car_make} {data.car_model}!</div>,{
+          duration: 5000,
+         
+        });
       }
     });
 
+    // Listen for auction status changes
     channel.bind('AuctionStatusChangedEvent', (data: any) => {
+      console.log('Auction status changed:', data);
+      // Refresh auction data when status changes
       fetchAuctions();
-      const statusLabels: Record<string, string> = {
+      const statusLabels = {
         'live': 'مباشر',
         'ended': 'منتهي',
         'completed': 'مكتمل',
@@ -196,16 +237,22 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
       toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
     });
 
+    // Listen for live market bid events (excludes the bidder)
     channel.bind('LiveMarketBidEvent', (data: any) => {
+      // Only show notification if the current user is not the bidder
       if (user && data.bidder_id !== user.id) {
         toast.success(`مزايدة جديدة: ${data.car_make} ${data.car_model} - ${data.bid_amount.toLocaleString()} ريال`, {
           duration: 5000,
           position: 'top-right',
         });
+        // Refresh auction data to show updated bid
         fetchAuctions();
       }
     });
 
+    // Note: Only listening on auction.live channel to avoid duplicate notifications
+
+    // Cleanup function
     return () => {
       pusher.unsubscribe(channelName);
       pusher.disconnect();
@@ -258,16 +305,15 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
       setLoading(false);
     }
   };
-
+  console.log(marketCars);
   return (
     <div className="min-h-screen bg-background p-4 py-6">
       <div className="max-w-7xl mx-auto">
-        {/* الشريط العلوي: إشعارات + رجوع */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
+        {/* زر العودة منفرد في الجهة اليمنى */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <BidNotifications />
           </div>
-
           {!sessionId && (
             <LoadingLink
               href="/auctions/auctions-1main"
@@ -306,17 +352,16 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
             </div>
           </div>
 
-          {/* فراغ للموازنة */}
-          <div className="col-span-12 md:col-span-4" />
+          {/* مساحة فارغة للتوازن */}
+          <div className="col-span-3"></div>
         </div>
 
-        {/* حالة الإتاحة */}
+        {/* إعادة تصميم التخطيط الرئيسي - تغيير إلى صفين بدلاً من ثلاثة أعمدة */}
         {!isAllowed && (
-          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 p-3 text-sm">
-            السوق ليس مفتوح الآن — سيفتح حسب الوقت الموضح في الأعلى
+          <div>
+            <p> السوق ليس مفتوح الان سوف يفتح كما موضح في الوقت الأعلى</p>
           </div>
         )}
-
         {isAllowed && (
           <>
             {/* <Countdown page="live_auction"/>*/}
@@ -450,6 +495,12 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                             >
                               لا توجد سيارات متاحة حاليًا في الحراج المباشر
                             </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
                 {/* جدول السيارات في جلسة الحراج الحالية */}
                 <div className="bg-card rounded-xl shadow-md p-4">
@@ -534,20 +585,20 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                               لا توجد سيارات مكتملة في الحراج المباشر
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-4 py-4 text-center text-slate-400"
-                          >
-                            لا توجد سيارات مكتملة في الحراج المباشر
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+                {/* إضافة مكون المزايدات المباشرة */}
+                {currentCar && <LiveBidding data={currentCar} />}
+
+                {/* إضافة مكون الدردشة بين المزايدين
+    <BidderChat
+      auctionId={parseInt(currentCar?.id) || 1}
+      onNewQuestion={(message) => console.log('سؤال جديد:', message)}
+    />
+    */}
               </div>
 
               {/* القسم الأيمن - نبض المزاد والسيارة الحالية */}
@@ -701,28 +752,18 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                           disabled={loading}
                           className="absolute left-0 top-0 h-full bg-primary text-white px-2 rounded-l-lg hover:bg-primary/90 whitespace-nowrap text-xs"
                         >
-                          قدم عرضك
+                          {loading ? "جارٍ..." : "بحث"}
                         </button>
                       </div>
                       <h3 className="text-xs font-semibold text-primary whitespace-nowrap">
                         ابحث برقم اللوحة
                       </h3>
                     </div>
-                    <h3 className="text-xs font-semibold text-slate-300 whitespace-nowrap">
-                      ابحث برقم اللوحة
-                    </h3>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* خطأ عام إن وجد */}
-        {error && (
-          <div className="mt-6 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 p-3 text-sm">
-            {error}
-          </div>
+          </>
         )}
       </div>
     </div>
