@@ -8,11 +8,6 @@
  *
  * 🔄 الارتباط:
  * - يستخدم مكون: @/components/CarDataEntryButton
- *
- * 🎨 ملاحظات التصميم:
- * - توحيد الثيم على داكن slate مع تدرّج بنفسجي (violet → fuchsia)
- * - استبدال الأخضر/الأزرق في الأزرار والتنبيهات بالتدرّج البنفسجي
- * - دون أي تغيير على الباك إند أو المنطق
  */
 
 "use client";
@@ -22,7 +17,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
-import { ChevronRight, AlertCircle, CheckCircle2, Plus } from "lucide-react";
+import { ChevronRight, AlertCircle, CheckCircle2, Plus,  } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PriceWithIcon } from "@/components/ui/priceWithIcon";
 import api from "@/lib/axios";
@@ -31,12 +26,16 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
 import Pusher from "pusher-js";
 import BidForm from "@/components/BidForm";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemText from "@mui/material/ListItemText";
-import List from "@mui/material/List";
+import Box from '@mui/material/Box';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
 import { motion } from "framer-motion";
 
+import { useEcho } from "@laravel/echo-react";
+import { List, ListSubheader } from "@mui/material";
+
+// تعريف دالة getCurrentAuctionType محلياً لتفادي مشاكل الاستيراد
 function getCurrentAuctionType(): string {
   const now = new Date();
   const hour = now.getHours();
@@ -57,19 +56,21 @@ interface BidingData {
 }
 
 // ========== قسم السيارات المميزة ==========
-const FeaturedCars = ({ cars }) => {
+const FeaturedCars = ({cars}) => {
+ 
   return (
     <section className="bg-background min-h-screen mt-10">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center">
+        <div className="text-center ">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-right text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 md:mb-4"
           >
-            سيارات مشابهة
+           سيارات مشابهة
           </motion.h2>
+          
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 py-10">
@@ -105,10 +106,12 @@ const FeaturedCars = ({ cars }) => {
             </motion.div>
           ))}
         </div>
+
+       
       </div>
     </section>
   );
-};
+}
 
 export default function CarDetailPage() {
   console.log("Pusher Key:", process.env.NEXT_PUBLIC_PUSHER_APP_KEY);
@@ -136,7 +139,7 @@ export default function CarDetailPage() {
   let carId = params["id"];
   const [isOwner, setIsOwner] = useState(false);
   const [showBid, setShowBid] = useState(false);
-
+  // التعامل مع تغيير قيم حقول النموذج
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -153,10 +156,12 @@ export default function CarDetailPage() {
     setSubmitResult(null);
 
     try {
+      // Check if there's an active auction first
       if (!formData.auction_id || formData.auction_id === 0) {
         throw new Error("هذه السيارة غير متاحة للمزايدة حالياً");
       }
 
+      // التحقق من البيانات المدخلة
       const requiredFields = ["bid_amount"];
       for (const field of requiredFields) {
         if (!formData[field as keyof BidingData]) {
@@ -166,6 +171,7 @@ export default function CarDetailPage() {
 
       formData.bid_amount = roundToNearest5or0(formData.bid_amount);
 
+      // إرسال بيانات المزايدة
       const response = await api.post("/api/auctions/bid", formData, {
         headers: {
           "Content-Type": "application/json",
@@ -177,29 +183,35 @@ export default function CarDetailPage() {
           success: true,
           message: "تم تقديم العرض بنجاح",
         });
+        // إعادة تعيين النموذج
         setFormData({
           auction_id: formData.auction_id,
           user_id: formData.user_id,
           bid_amount: 0,
         });
+        // setTimeout(() => {
+        //   window.location.reload();
+        // }, 2000);
       } else {
         toast.error("فشل في تقديم العرض");
       }
     } catch (error: any) {
       console.log(error);
-      console.error("خطأ في حفظ البيانات:", error?.response?.data?.message);
+      console.error("خطأ في حفظ البيانات:", error.response.data.message);
       setSubmitResult({
         success: false,
-        message: error?.response?.data?.message || "حدث خطأ أثناء حفظ البيانات",
+        message: error.response.data.message || "حدث خطأ أثناء حفظ البيانات",
       });
-      toast.error(error?.response?.data?.message || "فشل في تقديم العرض");
+      toast.error(error.response.data.message || "فشل في تقديم العرض");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // تقديم النموذج
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+
     setShowConfirm(true);
   };
 
@@ -207,13 +219,16 @@ export default function CarDetailPage() {
     return Math.round(number / 5) * 5;
   };
 
+  // Verify user is authenticated (only redirect if auth loading is complete and user is not logged in)
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
-      // router.push("/auth/login?returnUrl=/dashboard/profile");
+      // router.push("/auth/login?returnUrl=/dashboard/profile"); // Removed redirect to allow public access
     }
   }, [isLoggedIn, authLoading, router]);
 
+  // Fetch user profile data
   useEffect(() => {
+    // Don't fetch data if auth is still loading
     if (authLoading) return;
 
     setLoading(true);
@@ -229,8 +244,10 @@ export default function CarDetailPage() {
           setLastBid(
             roundToNearest5or0(carsData.active_auction?.current_bid || 0) + 100
           );
+          // تعامل مع هيكل البيانات من API
           setItem(carsData);
 
+          // Check if car has an active auction before setting auction_id
           if (carsData.active_auction && carsData.active_auction.id) {
             setFormData((prev) => ({
               ...prev,
@@ -261,9 +278,14 @@ export default function CarDetailPage() {
           }
 
           const auctionId = carsData.id;
+          console.log(`🎯 Setting up Echo listener for auction.${auctionId}`);
+
           var channel = pusher.subscribe(`auction.${auctionId}`);
 
           channel.bind("NewBidEvent", (event) => {
+            // add new price into the APPL widget
+            console.log("NewBidEvent received!");
+            console.log("Event data:", event.data);
             setItem((prevItem) => ({
               ...prevItem,
               active_auction: event.data.active_auction,
@@ -272,11 +294,12 @@ export default function CarDetailPage() {
             setLastBid(
               roundToNearest5or0(event.data.active_auction.current_bid) + 100
             );
+            //toast.success(`عرض جديد: ${event.data.active_auction.current_bid?.toLocaleString()} ريال`);
           });
         }
       } catch (error) {
         console.error("فشل تحميل بيانات المزاد الصامت", error);
-        setItem(null);
+        setItem(null); // Set to null on error to prevent crash
         setError("تعذر الاتصال بالخادم. يرجى المحاولة مرة أخرى لاحقاً.");
       } finally {
         setLoading(false);
@@ -285,8 +308,12 @@ export default function CarDetailPage() {
     fetchAuctions();
   }, [authLoading, isLoggedIn, carId, user]);
 
-  const images =
-    item ? (item["car"]?.images?.length > 0 ? item["car"]?.images : []) : [];
+  // Setup Echo listener for bid events when we have auction data
+
+  console.log("item", item);
+
+  const images = item ? item["car"]?.images?.length > 0 ? item["car"]?.images : [] : [];
+  // الصورة الحالية المختارة
   const currentImage = images[selectedImageIndex];
 
   const goToNextImage = () => {
@@ -294,12 +321,14 @@ export default function CarDetailPage() {
       prevIndex === images.length - 1 ? 0 : prevIndex + 1
     );
   };
+  // وظائف التنقل بين الصور
   const goToPreviousImage = () => {
     setSelectedImageIndex((prevIndex) =>
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     );
   };
 
+  // عرض بيانات السيارة إذا تم العثور عليها
   return (
     <>
     <div className="min-h-screen bg-background py-8 px-4">
@@ -408,37 +437,7 @@ export default function CarDetailPage() {
                       (e.target as HTMLImageElement).src =
                         "/placeholder-car.jpg";
                     }}
-                    className={`w-3 h-3 rounded-full ${
-                      idx === selectedImageIndex ? "bg-white" : "bg-slate-400"
-                    }`}
-                    aria-label={`عرض الصورة ${idx + 1}`}
                   />
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="max-w-6xl mx-auto">
-          {/* زر العودة + تأكيد البيع */}
-          <div className="flex justify-between items-center mb-6">
-            <LoadingLink
-              href="/auctions"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border border-slate-800 bg-slate-900/70 text-slate-100 hover:bg-slate-900/90 transition-colors"
-            >
-              <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
-              <span>العودة إلى الأسواق</span>
-            </LoadingLink>
-
-            {isOwner && (
-              <button
-                onClick={() => router.push(`/sales/confirm/${carId}`)}
-                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white py-2 px-6 rounded-lg shadow"
-              >
-                تأكيد البيع
-              </button>
-            )}
-          </div>
 
                   {/* أزرار التنقل بين الصور */}
                   {images.length > 1 && (
@@ -465,12 +464,7 @@ export default function CarDetailPage() {
                       </button>
                     </>
                   )}
-                  <p className={submitResult.success ? "text-fuchsia-200" : "text-rose-200"}>
-                    {submitResult.message}
-                  </p>
                 </div>
-              </div>
-            )}
 
                 {/* شريط الصور المصغرة */}
                 <div className="mt-4 grid grid-cols-4 gap-2">
@@ -577,9 +571,9 @@ export default function CarDetailPage() {
                     </button>
                   </form>
 
-                  {/* شريط الصور المصغرة */}
-                  <div className="mt-4 grid grid-cols-4 gap-2">
-                    {images.map((img, idx) => (
+                  {/* Confirmation Dialog /}
+                  {showConfirm && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                       <div
                         className="bg-card rounded-lg p-6 max-w-md mx-4"
                         dir="rtl"
@@ -609,23 +603,6 @@ export default function CarDetailPage() {
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* معلومات السعر للشاشات الصغيرة */}
-                  <div className="mt-6 block lg:hidden">
-                    <div className="mb-6 bg-slate-950/60 p-4 rounded-lg border border-slate-800">
-                      <div className="text-2xl font-bold text-fuchsia-300">
-                        السعر الحالي:{" "}
-                        <PriceWithIcon
-                          price={item?.active_auction?.current_bid?.toLocaleString() || 0}
-                        />
-                      </div>
-                      {item?.auction_result && (
-                        <p className="text-lg text-fuchsia-300/90 mt-2">
-                          {item.auction_result}
-                        </p>
-                      )}
                     </div>
                   )} */}
                 </div>
@@ -655,6 +632,7 @@ export default function CarDetailPage() {
                       })}
                   </List>
                 </div>
+            )}
 
               {!isOwner && !item?.active_auction && (
                 <div
@@ -759,27 +737,11 @@ export default function CarDetailPage() {
                           <a href={file.image_path}>
                             {file.image_path.split("/").pop()}
                           </a>
-                        ) : (
-                          "-"
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-sm">تقارير الفحص</p>
-                      <p className="font-semibold">
-                        {item?.car?.report_images.map((file: any) => (
-                          <div key={file.id}>
-                            <a
-                              href={file.image_path}
-                              className="text-fuchsia-300 hover:text-fuchsia-200 underline-offset-4 hover:underline"
-                            >
-                              {file.image_path.split("/").pop()}
-                            </a>
-                          </div>
-                        )) || "-"}
-                      </p>
-                    </div>
+                        </div>
+                      )) || "-"}
+                    </p>
                   </div>
+                </div>
 
                 {item?.active_auction ? (
                   <div className="pt-4 border-t">
@@ -838,10 +800,10 @@ export default function CarDetailPage() {
               </div>
             </div>
           </div>
-
-          <FeaturedCars cars={item?.similar_cars} />
         </div>
+          <FeaturedCars cars={item?.similar_cars}/>
       </div>
+    </div>
     </>
   );
 }
