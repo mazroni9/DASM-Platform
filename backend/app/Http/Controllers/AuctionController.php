@@ -164,7 +164,9 @@ class AuctionController extends Controller
     public function auctionByType(Request $request)
     {
 
-        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])->where('auction_type', $request->auction_type);
+        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])
+        ->where('auction_type', $request->auction_type);
+        
         $brands = Auction::query()
             ->where('auction_type', $request->auction_type)
             ->where('control_room_approved', true)
