@@ -15,9 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Global middleware
+        // ملاحظة: PerformanceHeaders يضيف هيدرز قياس فقط إذا PERF_HEADERS=true في .env
         $middleware->append([
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
-            \App\Http\Middleware\PerformanceMiddleware::class,
+            \App\Http\Middleware\PerformanceHeaders::class, // <-- تم التبديل ليتطابق مع اسم الكلاس/الملف
         ]);
 
         // API middleware
@@ -37,7 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'              => \App\Http\Middleware\RoleMiddleware::class,
 
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
-            'performance'       => \App\Http\Middleware\PerformanceMiddleware::class,
+
+            // aliases محدثة:
+            'performance'       => \App\Http\Middleware\PerformanceHeaders::class, // <-- بدل PerformanceMiddleware
             'api.cache'         => \App\Http\Middleware\ApiCacheMiddleware::class,
             'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ]);

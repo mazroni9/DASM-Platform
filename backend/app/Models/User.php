@@ -68,7 +68,6 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         parent::boot();
 
-
         static::created(function ($user) {
             if ($user->role == UserRole::USER) {
                 $user_code = 'Usr_'.$user->area?->code.'_0'.$user->id;

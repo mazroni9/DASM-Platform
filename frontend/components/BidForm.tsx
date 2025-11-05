@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { AlertCircle, CheckCircle2, TrendingUp, Loader2, SaudiRiyal } from "lucide-react";
 interface BidFormProps {
   auction_id: number;
-  bid_amount: number;
+  bid_amount: number; // السعر الحالي
   onSuccess?: () => void;
 }
 export default function BidForm({
@@ -17,6 +17,7 @@ export default function BidForm({
 }: BidFormProps) {
   const [bidAmount, setBidAmount] = useState<number | string>(bid_amount);
   const [customAmount, setCustomAmount] = useState<string>("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -39,9 +40,9 @@ export default function BidForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* أزرار المزايدة السريعة */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {quickBidOptions.map((option) => (
+          {increments.map((inc) => (
             <button
-              key={option.value}
+              key={inc}
               type="button"
               onClick={() => selectQuickBid(option.value)}
               className="bg-card/60 hover:bg-card/70 text-foreground/70 text-sm py-2.5 px-3 rounded-xl border border-border/50 hover:border-border transition-colors duration-200"

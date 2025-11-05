@@ -8,19 +8,7 @@ import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import { useAuthStore } from '@/store/authStore';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-/* ============== Utilities ============== */
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 767px)');
-    const update = () => setIsMobile(mql.matches);
-    update();
-    mql.addEventListener('change', update);
-    return () => mql.removeEventListener('change', update);
-  }, []);
-  return isMobile;
-};
-
+/* ============== UI Helpers ============== */
 const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`bg-card/95 backdrop-blur-xl rounded-xl shadow-2xl border border-border overflow-hidden ${className}`}>
     {children}
@@ -49,54 +37,8 @@ export function Header() {
   const router = useLoadingRouter();
   const { user, logout } = useAuthStore();
 
-  const isMobile = useIsMobile();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [openInlineSearch, setOpenInlineSearch] = useState(false);
-  const [openOverlaySearch, setOpenOverlaySearch] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  const notifications = useMemo(
-    () => [
-      { id: 1, title: 'طلب جديد', description: 'لديك طلب حجز جديد لسيارة مرسيدس' },
-      { id: 2, title: 'مزاد قادم', description: 'مزاد سيارة كلاسيكية يبدأ بعد 3 أيام' },
-      { id: 3, title: 'رسالة جديدة', description: 'لديك رسالة من العميل أحمد محمد' },
-    ],
-    []
-  );
-
-  const runSearch = () => {
-    const q = searchQuery.trim();
-    if (!q) return;
-    router.push(`/exhibitor/search?q=${encodeURIComponent(q)}`);
-    setSearchQuery('');
-    setOpenInlineSearch(false);
-    setOpenOverlaySearch(false);
-  };
-
-  // Shortcuts
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const isK = e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey);
-      if (e.key === '/' || isK) {
-        e.preventDefault();
-        if (isMobile) setOpenOverlaySearch(true);
-        else {
-          setOpenInlineSearch(true);
-          setTimeout(() => inputRef.current?.focus(), 0);
-        }
-      }
-      if (e.key === 'Escape') {
-        setOpenInlineSearch(false);
-        setOpenOverlaySearch(false);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isMobile]);
-
-  useEffect(() => {
-    if (openInlineSearch) inputRef.current?.focus();
-  }, [openInlineSearch]);
+  // لا بيانات تجريبية؛ العداد صفر بشكل افتراضي (هنربطه بالباك-إند لاحقًا)
+  const unreadCount = 0;
 
   /* ============== Menus ============== */
   const userMenu = (
@@ -152,7 +94,7 @@ export function Header() {
     >
       <div className="max-w-7xl mx-auto px-3 md:px-6 py-3">
         <div className="flex items-center justify-between gap-3">
-          {/* Search / Brand */}
+          {/* Brand فقط – تم إزالة البحث بالكامل */}
           <div className="flex-1 min-w-0">
             {!openInlineSearch ? (
               <div className="flex items-center gap-2">
