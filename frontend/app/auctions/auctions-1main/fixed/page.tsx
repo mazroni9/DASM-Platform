@@ -55,8 +55,8 @@ const FixedAuctionPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl text-white font-bold text-center my-8">المزاد الثابت</h1>
-      <p className="text-gray-400 text-center my-4">هذا هو المكان الذي تحصل فيه السيارات الرائعة على فرصة ثانية. السيارات المعروضة هنا لم يتم بيعها في المزادات الأخرى، وتُعرض الآن في مزاد تقليدي بسيط ومحدد بوقت. عندما ينتهي العداد، يفوز صاحب أعلى سعر بالمزاد تلقائياً. إنها فرصتك لاقتناص سيارة أحلامك بسعر رائع.</p>
+      <h1 className="text-3xl text-foreground font-bold text-center my-8">المزاد الثابت</h1>
+      <p className="text-foreground/70 text-center my-4">هذا هو المكان الذي تحصل فيه السيارات الرائعة على فرصة ثانية. السيارات المعروضة هنا لم يتم بيعها في المزادات الأخرى، وتُعرض الآن في مزاد تقليدي بسيط ومحدد بوقت. عندما ينتهي العداد، يفوز صاحب أعلى سعر بالمزاد تلقائياً. إنها فرصتك لاقتناص سيارة أحلامك بسعر رائع.</p>
       
       {loading && <p className="text-center">Loading...</p>}
       {error && <p className="text-center text-red-500">{error}</p>}
