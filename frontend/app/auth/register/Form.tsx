@@ -1,7 +1,7 @@
 // app/auth/register/Form.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,7 +15,7 @@ import {
   Building,
   ClipboardList,
   MapPin,
-  Map
+  Map,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,14 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import axios, { AxiosError } from "axios";
 import LoadingLink from "@/components/LoadingLink";
 
+// ✅ Schema محدثة: أضفنا area_label اختيارية
 const registerSchema = z
   .object({
     first_name: z
@@ -58,7 +61,7 @@ const registerSchema = z
       .string()
       .min(10, { message: "يرجى إدخال رقم هاتف صالح (10 أرقام على الأقل)" })
       .max(15, { message: "رقم الهاتف لا يجب أن يتجاوز 15 رقم" })
-      .refine((value) => /^[0-9+\s]+$/.test(value), {
+      .refine((value) => /^[0-9+\s\-()]+$/.test(value), {
         message: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
       }),
     password: z
@@ -80,7 +83,9 @@ const registerSchema = z
     commercial_registry: z.string().optional(),
     description: z.string().optional(),
     address: z.string().optional(),
+    // ✅ الاتنين اختياريين: area_id (من الـDB) أو area_label (اسم دولة/منطقة عرضي)
     area_id: z.string().optional(),
+    area_label: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -133,15 +138,23 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+type AreaOption = { id: string; name: string };
+
 export default function RegisterForm() {
   const router = useLoadingRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const [accountType, setAccountType] = useState<
     "user" | "dealer" | "venue_owner" | "investor"
   >("user");
-  const [areaId, setAreaId] = useState<string | undefined>(undefined);
+
+  // ✅ حالة قائمة المناطق من الـAPI
+  const [areas, setAreas] = useState<AreaOption[]>([]);
+  // القيمة المختارة بالـSelect: "db:<id>" أو "country:<code>"
+  const [areaValue, setAreaValue] = useState<string | undefined>(undefined);
+
   const {
     register,
     handleSubmit,
@@ -154,6 +167,60 @@ export default function RegisterForm() {
     },
   });
 
+  // ✅ اجلب مناطق من الـAPI (إجتهاد: /api/areas)
+  useEffect(() => {
+    const fetchAreas = async () => {
+      const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ?? "";
+      const url = `${base}/api/areas`;
+      try {
+        const res = await axios.get(url, { timeout: 15000 });
+        const raw = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
+        const normalized: AreaOption[] = raw
+          .map((a: any) => {
+            const id =
+              a?.id ?? a?.uuid ?? a?._id ?? a?.value ?? a?.code ?? null;
+            const name =
+              a?.name ??
+              a?.title ??
+              a?.label ??
+              a?.ar_name ??
+              a?.en_name ??
+              null;
+            if (!id || !name) return null;
+            return { id: String(id), name: String(name) };
+          })
+          .filter(Boolean);
+        setAreas(normalized);
+      } catch (e) {
+        // لو فشل، نسيب القائمة فاضية (هيفضل خيار "الدول" فقط)
+        // console.warn("Failed to fetch areas:", e);
+      }
+    };
+    fetchAreas();
+  }, []);
+
+  // ✅ الدول المطلوبة (ثابتة)
+  const countryOptions = useMemo(
+    () => [
+      { code: "eg", name: "مصر" },
+      { code: "sy", name: "سوريا" },
+      { code: "ps", name: "فلسطين" },
+      { code: "jo", name: "الأردن" },
+      { code: "iq", name: "العراق" },
+      { code: "kw", name: "الكويت" },
+      { code: "bh", name: "البحرين" },
+      { code: "qa", name: "قطر" },
+      { code: "ae", name: "الإمارات" },
+      { code: "om", name: "عُمان" },
+      { code: "ye", name: "اليمن" },
+    ],
+    []
+  );
+
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     setError("");
@@ -162,7 +229,12 @@ export default function RegisterForm() {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
 
     try {
-      const response = await axios.post(url, data, {
+      // ✨ ضمان عدم إرسال area_id لو الاختيار دولة (مش من الـDB)
+      const payload: RegisterFormValues = { ...data };
+      if (areaValue?.startsWith("country:")) {
+        delete payload.area_id;
+      }
+      const response = await axios.post(url, payload, {
         timeout: 15000,
         headers: {
           "Content-Type": "application/json",
@@ -195,6 +267,7 @@ export default function RegisterForm() {
             "company_name",
             "commercial_registry",
             "address",
+            "area_id", // ✅ أضفناها
           ];
           for (const field of errorPriority) {
             if (errs[field]?.length > 0) {
@@ -218,6 +291,27 @@ export default function RegisterForm() {
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ✅ عندما يختار المستخدم قيمة من القائمة:
+  const handleAreaChange = (value: string) => {
+    setAreaValue(value);
+
+    if (value.startsWith("db:")) {
+      const id = value.slice(3);
+      const found = areas.find((a) => a.id === id);
+      setValue("area_id", id);
+      setValue("area_label", found?.name || undefined);
+    } else if (value.startsWith("country:")) {
+      const code = value.slice(8);
+      const found = countryOptions.find((c) => c.code === code);
+      // لا نرسل area_id مع الدول
+      setValue("area_id", undefined);
+      setValue("area_label", found?.name || undefined);
+    } else {
+      setValue("area_id", undefined);
+      setValue("area_label", undefined);
     }
   };
 
@@ -326,47 +420,42 @@ export default function RegisterForm() {
           )}
         </div>
 
-          {/* المنطقة */}
-          <div className="space-y-2">
+        {/* المنطقة / الدولة */}
+        <div className="space-y-2">
           <Label htmlFor="area_id" className="text-foreground font-medium">
-            المنطقة
+            المنطقة / الدولة
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
               <Map className="h-5 w-5 text-foreground/50" />
             </div>
-            <Select
-              onValueChange={(value) => {
-                const typedValue = value ;
-                setAreaId(typedValue);
-                setValue("area_id", typedValue);
-              }}
-              value={areaId}
-            >
-              <SelectTrigger
-                id="area_id"
-                className="pl-3 pr-10 h-10"
-              >
-                <SelectValue placeholder="اختر المنطقة" />
+            <Select onValueChange={handleAreaChange} value={areaValue}>
+              <SelectTrigger id="area_id" className="pl-3 pr-10 h-10">
+                <SelectValue placeholder="اختر المنطقة أو الدولة" />
               </SelectTrigger>
-              <SelectContent
-                className="z-50"
-                dir="rtl"
-                align="end"
-              >
-                <SelectItem value="1">منطقة الرياض</SelectItem>
-                <SelectItem value="2">منطقة مكة المكرمة</SelectItem>
-                <SelectItem value="3">المنطقة الشرقية</SelectItem>
-                <SelectItem value="4">منطقة تبوك</SelectItem>
-                <SelectItem value="5">منطقة المدينة المنورة</SelectItem>
-                <SelectItem value="6">منطقة الحدود الشمالية</SelectItem>
-                <SelectItem value="7">منطقة القصيم</SelectItem>
-                <SelectItem value="8">منطقة المجمعة</SelectItem>
-                <SelectItem value="9">منطقة حائل</SelectItem>
-                <SelectItem value="10">منطقة عسير</SelectItem>
+              <SelectContent className="z-50" dir="rtl" align="end">
+                {areas.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>المناطق المتاحة</SelectLabel>
+                    {areas.map((a) => (
+                      <SelectItem key={a.id} value={`db:${a.id}`}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+                <SelectGroup>
+                  <SelectLabel>الدول</SelectLabel>
+                  {countryOptions.map((c) => (
+                    <SelectItem key={c.code} value={`country:${c.code}`}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
+          {/* لا نعرض خطأ لأن area اختيارية، والباك-إند يشترطها فقط لو كانت id موجود */}
         </div>
 
         {/* كلمة المرور */}
@@ -394,7 +483,10 @@ export default function RegisterForm() {
 
         {/* تأكيد كلمة المرور */}
         <div className="space-y-2">
-          <Label htmlFor="password_confirmation" className="text-foreground font-medium">
+          <Label
+            htmlFor="password_confirmation"
+            className="text-foreground font-medium"
+          >
             تأكيد كلمة المرور
           </Label>
           <div className="relative">
@@ -416,7 +508,8 @@ export default function RegisterForm() {
             </p>
           )}
         </div>
-          {/* نوع الحساب */}
+
+        {/* نوع الحساب */}
         <div className="space-y-2">
           <Label htmlFor="account_type" className="text-foreground font-medium">
             نوع الحساب
@@ -427,23 +520,20 @@ export default function RegisterForm() {
             </div>
             <Select
               onValueChange={(value) => {
-                const typedValue = value as "user" | "dealer" | "venue_owner" | "investor";
+                const typedValue = value as
+                  | "user"
+                  | "dealer"
+                  | "venue_owner"
+                  | "investor";
                 setAccountType(typedValue);
                 setValue("account_type", typedValue);
               }}
               value={accountType}
             >
-              <SelectTrigger
-                id="account_type"
-                className="pl-3 pr-10 h-10"
-              >
+              <SelectTrigger id="account_type" className="pl-3 pr-10 h-10">
                 <SelectValue placeholder="اختر نوع الحساب" />
               </SelectTrigger>
-              <SelectContent
-                className="z-50"
-                dir="rtl"
-                align="end"
-              >
+              <SelectContent className="z-50" dir="rtl" align="end">
                 <SelectItem value="user">مستخدم</SelectItem>
                 <SelectItem value="dealer">تاجر</SelectItem>
                 <SelectItem value="venue_owner">مالك المعرض</SelectItem>
