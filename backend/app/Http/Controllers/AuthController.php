@@ -18,335 +18,280 @@ use App\Notifications\VerifyEmailNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\QueryException;
 
 class AuthController extends Controller
 {
     /**
      * Register a new user
      */
+    public function register(Request $request)
+    {
+        Log::info('Registration process started', ['email' => $request->email]);
 
-public function register(Request $request)
-{
-    Log::info('Registration process started', ['email' => $request->email]);
-
-    // ✅ التحقق الأساسي
-    $validator = Validator::make($request->all(), [
-        'first_name'   => 'required|string|max:255',
-        'last_name'    => 'required|string|max:255',
-        'email'        => 'required|string|email|max:255|unique:users',
-        'phone'        => ['required','string','max:15','unique:users','regex:/^[\+]?[0-9\s\-\(\)]{10,15}$/'],
-        'password'     => 'required|string|min:8',
-        'account_type' => 'nullable|string|in:user,dealer,venue_owner,investor',
-        'area_id'      => 'nullable|string|exists:areas,id',
-    ], [
-        'first_name.required' => 'الاسم الأول مطلوب',
-        'first_name.string'   => 'الاسم الأول يجب أن يكون نصًا',
-        'first_name.max'      => 'الاسم الأول يجب ألا يتجاوز 255 حرفًا',
-
-        'last_name.required'  => 'الاسم الأخير مطلوب',
-        'last_name.string'    => 'الاسم الأخير يجب أن يكون نصًا',
-        'last_name.max'       => 'الاسم الأخير يجب ألا يتجاوز 255 حرفًا',
-
-        'email.required'      => 'البريد الإلكتروني مطلوب',
-        'email.email'         => 'يرجى إدخال بريد إلكتروني صالح',
-        'email.unique'        => 'هذا البريد الإلكتروني مستخدم بالفعل',
-        'email.max'           => 'البريد الإلكتروني يجب ألا يتجاوز 255 حرفًا',
-
-        'phone.required'      => 'رقم الهاتف مطلوب',
-        'phone.string'        => 'رقم الهاتف يجب أن يكون نصًا',
-        'phone.max'           => 'رقم الهاتف يجب ألا يتجاوز 15 رقمًا',
-        'phone.unique'        => 'رقم الهاتف هذا مستخدم بالفعل',
-        'phone.regex'         => 'رقم الهاتف غير صالح. يجب أن يحتوي على 10-15 رقمًا',
-
-        'password.required'   => 'كلمة المرور مطلوبة',
-        'password.string'     => 'كلمة المرور يجب أن تكون نصًا',
-        'password.min'        => 'كلمة المرور يجب أن تكون على الأقل 8 أحرف',
-
-        'account_type.in'     => 'نوع الحساب غير صالح',
-
-        'area_id.exists'      => 'المنطقة غير صالحة',
-    ]);
-
-    if ($validator->fails()) {
-        Log::warning('Registration validation failed', ['errors' => $validator->errors()->toArray()]);
-        return response()->json([
-            'status'      => 'error',
-            'message'     => 'بيانات التسجيل غير صالحة',
-            'errors'      => $validator->errors()->toArray(),
-            'first_error' => $validator->errors()->first(),
-        ], 422);
-    }
-
-    // ✅ تحقق إضافي لحسابات الأعمال
-    $isBusinessAccount = in_array($request->account_type, ['dealer', 'venue_owner', 'investor']);
-    if ($isBusinessAccount) {
-        Log::info('Business account registration detected', [
-            'email'               => $request->email,
-            'type'                => $request->account_type,
-            'commercial_registry' => $request->commercial_registry,
-            'company_name'        => $request->company_name,
-            'description'         => $request->description,
-            'address'             => $request->address,
-        ]);
-
-        $businessValidator = Validator::make($request->all(), [
-            'company_name'        => 'required|string|max:255',
-            'commercial_registry' => 'required|string|max:50',
-            'description'         => 'nullable|string|max:1000',
-            'address'             => 'required_if:account_type,venue_owner|string|min:5|max:255',
+        // ✅ التحقق الأساسي
+        $validator = Validator::make($request->all(), [
+            'first_name'   => 'required|string|max:255',
+            'last_name'    => 'required|string|max:255',
+            'email'        => 'required|string|email|max:255|unique:users',
+            'phone'        => ['required','string','max:15','unique:users','regex:/^[\+]?[0-9\s\-\(\)]{10,15}$/'],
+            'password'     => 'required|string|min:8',
+            'account_type' => 'nullable|string|in:user,dealer,venue_owner,investor',
+            'area_id'      => 'nullable|string|exists:areas,id',
         ], [
-            'company_name.required'        => 'اسم الشركة/المعرض مطلوب',
-            'company_name.string'          => 'اسم الشركة/المعرض يجب أن يكون نصًا',
-            'company_name.max'             => 'اسم الشركة/المعرض يجب ألا يتجاوز 255 حرفًا',
+            'first_name.required' => 'الاسم الأول مطلوب',
+            'first_name.string'   => 'الاسم الأول يجب أن يكون نصًا',
+            'first_name.max'      => 'الاسم الأول يجب ألا يتجاوز 255 حرفًا',
 
-            'commercial_registry.required' => 'رقم السجل التجاري مطلوب',
-            'commercial_registry.string'   => 'رقم السجل التجاري يجب أن يكون نصًا',
-            'commercial_registry.max'      => 'رقم السجل التجاري يجب ألا يتجاوز 50 حرفًا',
+            'last_name.required'  => 'الاسم الأخير مطلوب',
+            'last_name.string'    => 'الاسم الأخير يجب أن يكون نصًا',
+            'last_name.max'       => 'الاسم الأخير يجب ألا يتجاوز 255 حرفًا',
 
-            'description.string'           => 'وصف الشركة يجب أن يكون نصاً',
-            'description.max'              => 'وصف الشركة يجب ألا يتجاوز 1000 حرفاً',
+            'email.required'      => 'البريد الإلكتروني مطلوب',
+            'email.email'         => 'يرجى إدخال بريد إلكتروني صالح',
+            'email.unique'        => 'هذا البريد الإلكتروني مستخدم بالفعل',
+            'email.max'           => 'البريد الإلكتروني يجب ألا يتجاوز 255 حرفًا',
 
-            'address.required_if'          => 'العنوان مطلوب لمالك المعرض',
-            'address.string'               => 'العنوان يجب أن يكون نصًا',
-            'address.min'                  => 'العنوان يجب أن يكون 5 أحرف على الأقل',
-            'address.max'                  => 'العنوان يجب ألا يتجاوز 255 حرفًا',
+            'phone.required'      => 'رقم الهاتف مطلوب',
+            'phone.string'        => 'رقم الهاتف يجب أن يكون نصًا',
+            'phone.max'           => 'رقم الهاتف يجب ألا يتجاوز 15 رقمًا',
+            'phone.unique'        => 'رقم الهاتف هذا مستخدم بالفعل',
+            'phone.regex'         => 'رقم الهاتف غير صالح. يجب أن يحتوي على 10-15 رقمًا',
+
+            'password.required'   => 'كلمة المرور مطلوبة',
+            'password.string'     => 'كلمة المرور يجب أن تكون نصًا',
+            'password.min'        => 'كلمة المرور يجب أن تكون على الأقل 8 أحرف',
+
+            'account_type.in'     => 'نوع الحساب غير صالح',
+
+            'area_id.exists'      => 'المنطقة غير صالحة',
         ]);
 
-        if ($businessValidator->fails()) {
-            Log::warning('Business account validation failed', ['errors' => $businessValidator->errors()->toArray()]);
+        if ($validator->fails()) {
+            Log::warning('Registration validation failed', ['errors' => $validator->errors()->toArray()]);
             return response()->json([
                 'status'      => 'error',
-                'message'     => 'بيانات الحساب التجاري غير صالحة',
-                'errors'      => $businessValidator->errors()->toArray(),
-                'first_error' => $businessValidator->errors()->first(),
+                'message'     => 'بيانات التسجيل غير صالحة',
+                'errors'      => $validator->errors()->toArray(),
+                'first_error' => $validator->errors()->first(),
             ], 422);
         }
-    }
 
-    // ✅ رمز تحقق البريد
-    $verificationToken = Str::random(60);
-    Log::info('Generated verification token', ['token_length' => strlen($verificationToken)]);
-
-    try {
-        $user = null;
-
-        DB::transaction(function () use ($request, $isBusinessAccount, $verificationToken, &$user) {
-
-            $passwordColumn = null;
-            if (Schema::hasColumn('users', 'password_hash')) {
-                $passwordColumn = 'password_hash';
-            } elseif (Schema::hasColumn('users', 'password')) {
-                $passwordColumn = 'password';
-            } else {
-                throw new \RuntimeException('لم يتم العثور على عمود كلمة المرور (password أو password_hash) في جدول users.');
-            }
-
-            $userData = [
-                'first_name'               => $request->first_name,
-                'last_name'                => $request->last_name,
-                'email'                    => $request->email,
-                'phone'                    => $request->phone,
-                $passwordColumn            => Hash::make($request->password),
-                'role'                     => $request->account_type ?? 'user',
-                'email_verification_token' => $verificationToken,
-                'is_active'                => false,
-                'area_id'                  => $request->area_id,
-            ];
-
-            if (Schema::hasColumn('users', 'status') && empty($userData['status'])) {
-                $userData['status'] = 'pending';
-            }
-            if (Schema::hasColumn('users', 'approval_status') && empty($userData['approval_status'])) {
-                $userData['approval_status'] = 'pending';
-            }
-
-            $user = User::create($userData);
-
-            Log::info('User created successfully', [
-                'user_id' => $user->id,
-                'email'   => $user->email,
-                'role'    => $user->role,
+        // ✅ تحقق إضافي لحسابات الأعمال
+        $isBusinessAccount = in_array($request->account_type, ['dealer', 'venue_owner', 'investor']);
+        if ($isBusinessAccount) {
+            Log::info('Business account registration detected', [
+                'email'               => $request->email,
+                'type'                => $request->account_type,
+                'commercial_registry' => $request->commercial_registry,
+                'company_name'        => $request->company_name,
+                'description'         => $request->description,
+                'address'             => $request->address,
             ]);
 
-            if ($isBusinessAccount) {
-                Log::info('Creating business account record with data', [
-                    'user_id'             => $user->id,
-                    'account_type'        => $request->account_type,
-                    'company_name'        => $request->company_name,
-                    'commercial_registry' => $request->commercial_registry,
-                    'description'         => $request->description,
-                    'address'             => $request->address,
-                    'area_id'             => $request->area_id,
-                ]);
+            $businessValidator = Validator::make($request->all(), [
+                'company_name'        => 'required|string|max:255',
+                'commercial_registry' => 'required|string|max:50',
+                'description'         => 'nullable|string|max:1000',
+                'address'             => 'required_if:account_type,venue_owner|string|min:5|max:255',
+            ], [
+                'company_name.required'        => 'اسم الشركة/المعرض مطلوب',
+                'company_name.string'          => 'اسم الشركة/المعرض يجب أن يكون نصًا',
+                'company_name.max'             => 'اسم الشركة/المعرض يجب ألا يتجاوز 255 حرفًا',
 
-                switch ($request->account_type) {
-                    case 'dealer':
-                        Dealer::create([
-                            'user_id'             => $user->id,
-                            'company_name'        => $request->company_name,
-                            'commercial_registry' => $request->commercial_registry,
-                            'description'         => $request->description ?? null,
-                            'status'              => 'pending',
-                            'is_active'           => false,
+                'commercial_registry.required' => 'رقم السجل التجاري مطلوب',
+                'commercial_registry.string'   => 'رقم السجل التجاري يجب أن يكون نصًا',
+                'commercial_registry.max'      => 'رقم السجل التجاري يجب ألا يتجاوز 50 حرفًا',
 
-                        ]);
-                        break;
+                'description.string'           => 'وصف الشركة يجب أن يكون نصاً',
+                'description.max'              => 'وصف الشركة يجب ألا يتجاوز 1000 حرفاً',
 
-                    case 'venue_owner':
-                        VenueOwner::create([
-                            'user_id'             => $user->id,
-                            'venue_name'          => $request->company_name,
-                            'commercial_registry' => $request->commercial_registry,
-                            'description'         => null,
-                            'address'             => $request->address,
-                            'status'              => 'pending',
-                            'is_active'           => false,
+                'address.required_if'          => 'العنوان مطلوب لمالك المعرض',
+                'address.string'               => 'العنوان يجب أن يكون نصًا',
+                'address.min'                  => 'العنوان يجب أن يكون 5 أحرف على الأقل',
+                'address.max'                  => 'العنوان يجب ألا يتجاوز 255 حرفًا',
+            ]);
 
-                        ]);
-                        break;
+            if ($businessValidator->fails()) {
+                Log::warning('Business account validation failed', ['errors' => $businessValidator->errors()->toArray()]);
+                return response()->json([
+                    'status'      => 'error',
+                    'message'     => 'بيانات الحساب التجاري غير صالحة',
+                    'errors'      => $businessValidator->errors()->toArray(),
+                    'first_error' => $businessValidator->errors()->first(),
+                ], 422);
+            }
+        }
 
-                    case 'investor':
-                        Investor::create([
-                            'user_id'                => $user->id,
-                            'company_name'           => $request->company_name,
-                            'commercial_registry'    => $request->commercial_registry,
-                            'investment_description' => null,
-                            'investment_capacity'    => null,
-                            'status'                 => 'pending',
-                            'is_active'              => false,
-                            
-                        ]);
-                        break;
+        // ✅ رمز تحقق البريد
+        $verificationToken = Str::random(60);
+        Log::info('Generated verification token', ['token_length' => strlen($verificationToken)]);
+
+        try {
+            $user = null;
+
+            DB::transaction(function () use ($request, $isBusinessAccount, $verificationToken, &$user) {
+
+                $passwordColumn = null;
+                if (Schema::hasColumn('users', 'password_hash')) {
+                    $passwordColumn = 'password_hash';
+                } elseif (Schema::hasColumn('users', 'password')) {
+                    $passwordColumn = 'password';
+                } else {
+                    throw new \RuntimeException('لم يتم العثور على عمود كلمة المرور (password أو password_hash) في جدول users.');
                 }
 
-                Log::info('Business account record created', [
+                $userData = [
+                    'first_name'               => $request->first_name,
+                    'last_name'                => $request->last_name,
+                    'email'                    => $request->email,
+                    'phone'                    => $request->phone,
+                    $passwordColumn            => Hash::make($request->password),
+                    'role'                     => $request->account_type ?? 'user',
+                    'email_verification_token' => $verificationToken,
+                    'is_active'                => false,
+                    'area_id'                  => $request->area_id,
+                ];
+
+                if (Schema::hasColumn('users', 'status') && empty($userData['status'])) {
+                    $userData['status'] = 'pending';
+                }
+                if (Schema::hasColumn('users', 'approval_status') && empty($userData['approval_status'])) {
+                    $userData['approval_status'] = 'pending';
+                }
+
+                $user = User::create($userData);
+
+                Log::info('User created successfully', [
                     'user_id' => $user->id,
-                    'type'    => $request->account_type,
-                    'area_id' => $request->area_id,
+                    'email'   => $user->email,
+                    'role'    => $user->role,
                 ]);
-            }
-        });
 
-        Log::info('Attempting to send verification email', ['email' => $user->email, 'area_id' => $request->area_id]);
-        $this->sendVerificationEmail($user);
+                if ($isBusinessAccount) {
+                    Log::info('Creating business account record with data', [
+                        'user_id'             => $user->id,
+                        'account_type'        => $request->account_type,
+                        'company_name'        => $request->company_name,
+                        'commercial_registry' => $request->commercial_registry,
+                        'description'         => $request->description,
+                        'address'             => $request->address,
+                        'area_id'             => $request->area_id,
+                    ]);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => $isBusinessAccount
-                ? 'تم إنشاء الحساب التجاري بنجاح وهو في انتظار التحقق'
-                : 'تم إنشاء الحساب بنجاح',
-            'user'    => [
-                'id'         => $user->id,
-                'first_name' => $user->first_name,
-                'last_name'  => $user->last_name,
-                'email'      => $user->email,
-                'role'       => $user->role,
-                'area_id'    => $user->area_id,
-            ],
-        ], 201);
+                    switch ($request->account_type) {
+                        case 'dealer':
+                            Dealer::create([
+                                'user_id'             => $user->id,
+                                'company_name'        => $request->company_name,
+                                'commercial_registry' => $request->commercial_registry,
+                                'description'         => $request->description ?? null,
+                                'status'              => 'pending',
+                                'is_active'           => false,
+                            ]);
+                            break;
 
-    } catch (\Illuminate\Database\QueryException $e) {
-        $sqlState = $e->getCode();
-        $msg      = $e->getMessage();
-        $info     = $e->errorInfo ?? [];
+                        case 'venue_owner':
+                            VenueOwner::create([
+                                'user_id'             => $user->id,
+                                'venue_name'          => $request->company_name,
+                                'commercial_registry' => $request->commercial_registry,
+                                'description'         => null,
+                                'address'             => $request->address,
+                                'status'              => 'pending',
+                                'is_active'           => false,
+                            ]);
+                            break;
 
-        Log::error('Database error during registration', [
-            'sqlstate' => $sqlState,
-            'message'  => $msg,
-            'errorInfo'=> $info,
-            'email'    => $request->email,
-            'area_id'  => $request->area_id,
-        ]);
+                        case 'investor':
+                            Investor::create([
+                                'user_id'                => $user->id,
+                                'company_name'           => $request->company_name,
+                                'commercial_registry'    => $request->commercial_registry,
+                                'investment_description' => null,
+                                'investment_capacity'    => null,
+                                'status'                 => 'pending',
+                                'is_active'              => false,
+                            ]);
+                            break;
+                    }
 
-        if ($sqlState === '23505') {
-            if (str_contains($msg, '(email)')) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'البريد الإلكتروني مستخدم بالفعل',
-                    'errors'  => ['email' => ['البريد الإلكتروني مستخدم بالفعل']],
-                ], 422);
-            }
-            if (str_contains($msg, '(phone)')) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'رقم الهاتف مستخدم بالفعل',
-                    'errors'  => ['phone' => ['رقم الهاتف مستخدم بالفعل']],
-                ], 422);
-            }
+                    Log::info('Business account record created', [
+                        'user_id' => $user->id,
+                        'type'    => $request->account_type,
+                        'area_id' => $request->area_id,
+                    ]);
+                }
+            });
 
-            // ✅ الإضافة هنا
-            if (
-                str_contains($msg, 'commercial_registry') ||
-                str_contains($msg, 'venue_owners_commercial_registry_unique') ||
-                str_contains($msg, 'dealers_commercial_registry_unique') ||
-                str_contains($msg, 'investors_commercial_registry_unique')
-            ) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'رقم السجل التجاري مستخدم بالفعل',
-                    'errors'  => ['commercial_registry' => ['رقم السجل التجاري مستخدم بالفعل']],
-                ], 422);
-            }
+            Log::info('Attempting to send verification email', ['email' => $user->email, 'area_id' => $request->area_id]);
+            $this->sendVerificationEmail($user);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => $isBusinessAccount
+                    ? 'تم إنشاء الحساب التجاري بنجاح وهو في انتظار التحقق'
+                    : 'تم إنشاء الحساب بنجاح',
+                'user'    => [
+                    'id'         => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name'  => $user->last_name,
+                    'email'      => $user->email,
+                    'role'       => $user->role,
+                    'area_id'    => $user->area_id,
+                ],
+            ], 201);
+
+        } catch (QueryException $e) {
+            // 🔎 تفسير الخطأ وإرجاع سبب واضح
+            $out = $this->interpretDbError($e, $request);
+
+            Log::error('Database error during registration', [
+                'sqlstate'   => $out['sqlstate'],
+                'reason'     => $out['reason'],
+                'message'    => $out['details'],
+                'email'      => $request->email,
+                'area_id'    => $request->area_id,
+                'driver'     => DB::getDriverName(),
+                'error_info' => $e->errorInfo ?? [],
+            ]);
+
+            return response()->json(array_filter([
+                'status'  => 'error',
+                'message' => $out['message'],   // رسالة عامة ملائمة
+                'reason'  => $out['reason'],    // سبب إنساني واضح
+                'errors'  => $out['errors'] ?? null, // إن وُجدت
+                'sqlstate'=> $out['sqlstate'],
+                'details' => config('app.debug') ? $out['details'] : null,
+            ]), $out['http']);
+
+        } catch (\RuntimeException $e) {
+            Log::error('Runtime error during registration', [
+                'message' => $e->getMessage(),
+                'email'   => $request->email,
+                'area_id' => $request->area_id,
+            ]);
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'reason'  => 'خطأ في منطق التطبيق (RuntimeException).',
+            ], 500);
+
+        } catch (\Exception $e) {
+            Log::error('Error during user registration process', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'email' => $request->email,
+            ]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.',
+                'reason'  => 'استثناء عام غير متوقّع.',
+                'details' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
-
-        if ($sqlState === '23502') {
-            if (str_contains($msg, '"password_hash"')) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'فشل إنشاء المستخدم: عمود password_hash لا يقبل القيم الفارغة.',
-                    'details' => config('app.debug') ? $msg : null,
-                ], 500);
-            }
-            if (str_contains($msg, '"password"')) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'فشل إنشاء المستخدم: عمود password لا يقبل القيم الفارغة.',
-                    'details' => config('app.debug') ? $msg : null,
-                ], 500);
-            }
-        }
-
-        if ($sqlState === '42703') {
-            if (str_contains($msg, 'address')) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'عمود address غير موجود في جدول venue_owners.',
-                    'details' => config('app.debug') ? $msg : null,
-                ], 500);
-            }
-        }
-
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'حدث خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.',
-            'details' => config('app.debug') ? $msg : null,
-        ], 500);
-
-    } catch (\RuntimeException $e) {
-        Log::error('Runtime error during registration', [
-            'message' => $e->getMessage(),
-            'email'   => $request->email,
-            'area_id' => $request->area_id,
-        ]);
-        return response()->json([
-            'status'  => 'error',
-            'message' => $e->getMessage(),
-        ], 500);
-
-    } catch (\Exception $e) {
-        Log::error('Error during user registration process', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'email' => $request->email,
-        ]);
-
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.',
-            'details' => config('app.debug') ? $e->getMessage() : null,
-        ], 500);
     }
-}
 
     /**
      * Send verification email to user
@@ -507,7 +452,6 @@ public function register(Request $request)
         }
 
         // Check if user is approved by admin
-        // Using enum comparison for better reliability
         if ($user->status !== UserStatus::ACTIVE) {
             return response()->json([
                 'status' => 'error',
@@ -692,5 +636,120 @@ public function register(Request $request)
             'message' => 'تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.'
         ]);
     }
-}
 
+    // ============================
+    // 🔧 دوال مساعدة لتفسير أخطاء DB
+    // ============================
+    private function interpretDbError(QueryException $e, Request $request): array
+    {
+        $sqlState = $e->getCode();                 // SQLSTATE
+        $msg      = $e->getMessage();              // الرسالة الكاملة من PDO
+        $driver   = DB::getDriverName();           // mysql/pgsql/sqlite...
+        $reason   = 'خطأ في قاعدة البيانات.';
+        $message  = 'حدث خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
+        $http     = 500;
+        $errors   = [];
+        $details  = $msg;
+
+        // 🔁 Helpers
+        $contains = fn(string $needle) => $this->str_contains_ci($msg, $needle);
+
+        // ========= Mapping شائع (Postgres / MySQL) =========
+        // undefined_table: 42P01 (pgsql), 42S02 (mysql)
+        if (in_array($sqlState, ['42P01','42S02'])) {
+            $reason  = 'الجدول المطلوب غير موجود. تأكد من تشغيل المايجريشن.';
+            $message = 'قاعدة البيانات غير مهيأة: يرجى تشغيل المايجريشن.';
+            $http    = 500;
+        }
+        // undefined_column: 42703 (pgsql), 42S22 (mysql)
+        elseif (in_array($sqlState, ['42703','42S22'])) {
+            $reason  = 'هناك عمود مفقود في الجدول. تأكد من تحديث بنية قاعدة البيانات.';
+            $message = 'عمود مفقود في الجدول. يرجى تشغيل أحدث المايجريشن.';
+            $http    = 500;
+            // تخصيص شائع
+            if ($contains('address') && $contains('venue_owners')) {
+                $reason = 'عمود address غير موجود في جدول venue_owners.';
+            }
+        }
+        // unique_violation: 23505 (pgsql), 23000 (mysql ضمن Duplicate entry)
+        elseif ($sqlState === '23505' || ($sqlState === '23000' && $contains('Duplicate entry'))) {
+            $http   = 422;
+            $reason = 'تعارض في قيمة فريدة (duplicate).';
+
+            if ($contains('(email)') || $contains('users_email_unique') || $contains('for key \'users_email_unique\'')) {
+                $message = 'البريد الإلكتروني مستخدم بالفعل';
+                $errors  = ['email' => ['البريد الإلكتروني مستخدم بالفعل']];
+            } elseif ($contains('(phone)') || $contains('users_phone_unique') || $contains('for key \'users_phone_unique\'')) {
+                $message = 'رقم الهاتف مستخدم بالفعل';
+                $errors  = ['phone' => ['رقم الهاتف مستخدم بالفعل']];
+            } elseif (
+                $contains('commercial_registry') ||
+                $contains('venue_owners_commercial_registry_unique') ||
+                $contains('dealers_commercial_registry_unique') ||
+                $contains('investors_commercial_registry_unique')
+            ) {
+                $message = 'رقم السجل التجاري مستخدم بالفعل';
+                $errors  = ['commercial_registry' => ['رقم السجل التجاري مستخدم بالفعل']];
+            } else {
+                $message = 'تعارض مع قيد فريد في قاعدة البيانات.';
+            }
+        }
+        // not_null_violation: 23502
+        elseif ($sqlState === '23502') {
+            $http   = 500;
+            $reason = 'محاولة إدخال قيمة فارغة في عمود لا يقبل الفراغ.';
+            if ($contains('"password_hash"')) {
+                $message = 'فشل إنشاء المستخدم: عمود password_hash لا يقبل القيم الفارغة.';
+            } elseif ($contains('"password"')) {
+                $message = 'فشل إنشاء المستخدم: عمود password لا يقبل القيم الفارغة.';
+            } else {
+                $message = 'حقل مطلوب مفقود على مستوى قاعدة البيانات.';
+            }
+        }
+        // foreign_key_violation: 23503
+        elseif ($sqlState === '23503') {
+            $http    = 422;
+            $reason  = 'فشل تكامل المفتاح الأجنبي (قيمة غير موجودة).';
+            $message = 'قيمة مرجعية غير صالحة. تحقق من المعرفات المرتبطة.';
+            if ($contains('areas') || $contains('area_id')) {
+                $errors  = ['area_id' => ['area_id غير صالح أو غير موجود']];
+                $message = 'المنطقة غير صالحة أو غير موجودة.';
+            }
+        }
+        // invalid_text_representation (مثال UUID سيء): 22P02
+        elseif ($sqlState === '22P02') {
+            $http    = 422;
+            $reason  = 'قيمة ذات صيغة غير صالحة (مثلاً UUID غير صحيح).';
+            $message = 'صيغة قيمة غير صالحة. تحقق من الحقول المعرّفة كـ UUID.';
+            if ($contains('uuid') || $contains('area_id')) {
+                $errors = ['area_id' => ['صيغة area_id غير صالحة (UUID)']];
+            }
+        }
+        // datatype_mismatch: 42804 (pgsql)
+        elseif ($sqlState === '42804') {
+            $http    = 400;
+            $reason  = 'عدم تطابق في نوع البيانات.';
+            $message = 'نوع البيانات المُرسل لا يتوافق مع العمود في قاعدة البيانات.';
+        }
+        // default fallback
+        else {
+            $http    = 500;
+            $reason  = 'خطأ قاعدة بيانات غير معروف.';
+            $message = 'حدث خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
+        }
+
+        return [
+            'http'     => $http,
+            'message'  => $message,
+            'reason'   => $reason,
+            'errors'   => $errors,
+            'sqlstate' => $sqlState,
+            'details'  => $details,
+        ];
+    }
+
+    private function str_contains_ci(string $haystack, string $needle): bool
+    {
+        return $needle !== '' && mb_stripos($haystack ?? '', $needle) !== false;
+    }
+}
