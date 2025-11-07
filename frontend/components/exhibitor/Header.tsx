@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, Badge, Dropdown, Tooltip } from 'antd';
@@ -7,6 +8,15 @@ import { Search, Bell, LogOut, User, Home, Settings, X } from 'lucide-react';
 import { useLoadingRouter } from '@/hooks/useLoadingRouter';
 import { useAuthStore } from '@/store/authStore';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
+/* ============== Types ============== */
+type NotificationItem = {
+  id: string;
+  title: string;
+  description: string;
+  read?: boolean;
+  createdAt?: string;
+};
 
 /* ============== UI Helpers ============== */
 const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -20,7 +30,12 @@ const MenuItem = ({
   label,
   onClick,
   danger,
-}: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) => (
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) => (
   <button
     onClick={onClick}
     className={`w-full text-right px-4 py-2.5 flex items-center gap-3 text-sm transition-colors ${
@@ -37,10 +52,53 @@ export function Header() {
   const router = useLoadingRouter();
   const { user, logout } = useAuthStore();
 
-  // لا بيانات تجريبية؛ العداد صفر بشكل افتراضي (هنربطه بالباك-إند لاحقًا)
-  const unreadCount = 0;
+  /* --------- Notifications state (FIX) --------- */
+  // مبدئيًا فاضي؛ اربطه لاحقًا بواجهة الباك-إند /api/exhibitor/notifications
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
-  /* ============== Menus ============== */
+  /* --------- Search/Responsive state --------- */
+  const [openInlineSearch, setOpenInlineSearch] = useState(false);
+  const [openOverlaySearch, setOpenOverlaySearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // اختصار لوحة المفاتيح: "/" أو Ctrl/Cmd+K يفتح البحث
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const isCmdK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k';
+      if (isCmdK || e.key === '/') {
+        e.preventDefault();
+        if (isMobile) setOpenOverlaySearch(true);
+        else setOpenInlineSearch(true);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }
+      if (e.key === 'Escape') {
+        setOpenInlineSearch(false);
+        setOpenOverlaySearch(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobile]);
+
+  const runSearch = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    router.push(`/exhibitor?search=${encodeURIComponent(q)}`);
+    setOpenInlineSearch(false);
+    setOpenOverlaySearch(false);
+  };
+
+  /* --------- Menus --------- */
   const userMenu = (
     <Panel className="w-72">
       <div className="px-5 py-4 bg-primary text-white">
@@ -61,20 +119,26 @@ export function Header() {
     <Panel className="w-80">
       <div className="px-5 py-4 border-b border-border flex justify-between items-center">
         <h3 className="font-bold text-foreground text-sm">الإشعارات</h3>
-        <Badge count={notifications.length} color="#7c3aed" />
+        <Badge count={unreadCount} color="#7c3aed" />
       </div>
+
       <div className="max-h-64 overflow-y-auto">
-        {notifications.map((n) => (
-          <div
-            key={n.id}
-            className="p-4 hover:bg-border border-b border-border last:border-0 cursor-pointer transition-colors"
-          >
-            <p className="font-semibold text-foreground text-sm">{n.title}</p>
-            <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{n.description}</p>
-            <p className="text-[11px] text-foreground/50 mt-1">منذ ساعتين</p>
-          </div>
-        ))}
+        {notifications.length === 0 ? (
+          <div className="p-6 text-center text-foreground/60 text-sm">لا توجد إشعارات حالياً</div>
+        ) : (
+          notifications.map((n) => (
+            <div
+              key={n.id}
+              className="p-4 hover:bg-border border-b border-border last:border-0 cursor-pointer transition-colors"
+            >
+              <p className="font-semibold text-foreground text-sm">{n.title}</p>
+              <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{n.description}</p>
+              <p className="text-[11px] text-foreground/50 mt-1">{n.createdAt ?? 'منذ قليل'}</p>
+            </div>
+          ))
+        )}
       </div>
+
       <div className="text-center py-3 border-t border-border bg-card/60">
         <button className="text-primary hover:text-primary/80 text-sm font-medium transition-colors">
           عرض جميع الإشعارات
@@ -94,7 +158,7 @@ export function Header() {
     >
       <div className="max-w-7xl mx-auto px-3 md:px-6 py-3">
         <div className="flex items-center justify-between gap-3">
-          {/* Brand فقط – تم إزالة البحث بالكامل */}
+          {/* Brand & Search */}
           <div className="flex-1 min-w-0">
             {!openInlineSearch ? (
               <div className="flex items-center gap-2">
@@ -154,12 +218,13 @@ export function Header() {
           {/* Actions */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
+
             <Dropdown trigger={['click']} placement="bottomLeft" dropdownRender={() => notificationMenu}>
               <button
                 aria-label="الإشعارات"
                 className="relative inline-flex items-center justify-center w-10 h-10 rounded-xl border border-border text-foreground/80 hover:bg-border transition-colors"
               >
-                <Badge count={notifications.length} offset={[-4, 4]} size="small" color="#7c3aed">
+                <Badge count={unreadCount} offset={[-4, 4]} size="small" color="#7c3aed">
                   <Bell size={20} className="text-foreground" />
                 </Badge>
               </button>
