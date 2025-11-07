@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use App\Notifications\VerifyEmailNotification;
 use Carbon\Carbon;
@@ -29,15 +30,37 @@ class AuthController extends Controller
     {
         Log::info('Registration process started', ['email' => $request->email]);
 
+        // ✅ تطبيع/تنظيف مُسبق للمدخلات قبل التحقق
+        $email = Str::lower(trim((string) $request->input('email')));
+        $phone = preg_replace('/\s+/', '', (string) $request->input('phone')); // إزالة المسافات
+        $registry = $request->filled('commercial_registry')
+            ? preg_replace('/\s+/', '', (string) $request->input('commercial_registry'))
+            : null;
+
+        // ✅ area_id: لو جاية من الواجهة بصيغة country:/region: نخليها null
+        $areaId = $request->input('area_id');
+        if (is_string($areaId) && str_contains($areaId, ':')) {
+            $areaId = null;
+        }
+
+        $request->merge([
+            'email' => $email,
+            'phone' => $phone,
+            'commercial_registry' => $registry,
+            'area_id' => $areaId,
+            'first_name' => trim((string) $request->input('first_name')),
+            'last_name'  => trim((string) $request->input('last_name')),
+        ]);
+
         // ✅ التحقق الأساسي
         $validator = Validator::make($request->all(), [
             'first_name'   => 'required|string|max:255',
             'last_name'    => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:users',
-            'phone'        => ['required','string','max:15','unique:users','regex:/^[\+]?[0-9\s\-\(\)]{10,15}$/'],
+            'email'        => 'required|string|email|max:255|unique:users,email',
+            'phone'        => ['required','string','max:15','unique:users,phone','regex:/^[\+]?[0-9\-\(\)]{10,15}$/'],
             'password'     => 'required|string|min:8',
             'account_type' => 'nullable|string|in:user,dealer,venue_owner,investor',
-            'area_id'      => 'nullable|string|exists:areas,id',
+            'area_id'      => 'nullable|exists:areas,id',
         ], [
             'first_name.required' => 'الاسم الأول مطلوب',
             'first_name.string'   => 'الاسم الأول يجب أن يكون نصًا',
@@ -77,7 +100,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // ✅ تحقق إضافي لحسابات الأعمال
+        // ✅ تحقق إضافي لحسابات الأعمال + فحص فريد على الجدول الصحيح
         $isBusinessAccount = in_array($request->account_type, ['dealer', 'venue_owner', 'investor']);
         if ($isBusinessAccount) {
             Log::info('Business account registration detected', [
@@ -89,9 +112,19 @@ class AuthController extends Controller
                 'address'             => $request->address,
             ]);
 
+            $table = match ($request->account_type) {
+                'dealer'      => 'dealers',
+                'venue_owner' => 'venue_owners',
+                'investor'    => 'investors',
+                default       => null,
+            };
+
             $businessValidator = Validator::make($request->all(), [
                 'company_name'        => 'required|string|max:255',
-                'commercial_registry' => 'required|string|max:50',
+                'commercial_registry' => [
+                    'required','string','max:50',
+                    $table ? Rule::unique($table, 'commercial_registry') : 'nullable'
+                ],
                 'description'         => 'nullable|string|max:1000',
                 'address'             => 'required_if:account_type,venue_owner|string|min:5|max:255',
             ], [
@@ -102,6 +135,7 @@ class AuthController extends Controller
                 'commercial_registry.required' => 'رقم السجل التجاري مطلوب',
                 'commercial_registry.string'   => 'رقم السجل التجاري يجب أن يكون نصًا',
                 'commercial_registry.max'      => 'رقم السجل التجاري يجب ألا يتجاوز 50 حرفًا',
+                'commercial_registry.unique'   => 'رقم السجل التجاري مستخدم بالفعل',
 
                 'description.string'           => 'وصف الشركة يجب أن يكون نصاً',
                 'description.max'              => 'وصف الشركة يجب ألا يتجاوز 1000 حرفاً',
@@ -150,7 +184,7 @@ class AuthController extends Controller
                     'role'                     => $request->account_type ?? 'user',
                     'email_verification_token' => $verificationToken,
                     'is_active'                => false,
-                    'area_id'                  => $request->area_id,
+                    'area_id'                  => $request->area_id, // nullable
                 ];
 
                 if (Schema::hasColumn('users', 'status') && empty($userData['status'])) {
@@ -263,6 +297,9 @@ class AuthController extends Controller
                 'errors'  => $out['errors'] ?? null, // إن وُجدت
                 'sqlstate'=> $out['sqlstate'],
                 'details' => config('app.debug') ? $out['details'] : null,
+                'column'  => $out['column'] ?? null,
+                'value'   => $out['value'] ?? null,
+                'constraint' => $out['constraint'] ?? null,
             ]), $out['http']);
 
         } catch (\RuntimeException $e) {
@@ -428,7 +465,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', Str::lower(trim((string)$request->email)))->first();
 
         if (!$user) {
             throw ValidationException::withMessages([
@@ -436,6 +473,7 @@ class AuthController extends Controller
             ]);
         }
 
+        // ⚠️ لو عندك عمود password بدل password_hash غيّر السطر ده
         if (!Hash::check($request->password, $user->password_hash)) {
             throw ValidationException::withMessages([
                 'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
@@ -547,7 +585,7 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', Str::lower(trim((string)$request->email)))->first();
 
         if (!$user) {
             // For security, don't reveal that the user doesn't exist
@@ -650,9 +688,22 @@ class AuthController extends Controller
         $http     = 500;
         $errors   = [];
         $details  = $msg;
+        $column   = null;
+        $value    = null;
+        $constraint = null;
+
+        // حاول استخراج الحقل والقيمة والكونسترينت من DETAIL (خصوصًا PostgreSQL)
+        $detail = $e->errorInfo[2] ?? $msg;
+        if (preg_match('/Key \(([^)]+)\)=\(([^)]+)\)/', $detail, $m)) {
+            $column = $m[1] ?? null;
+            $value  = $m[2] ?? null;
+        }
+        if (preg_match('/unique constraint "([^"]+)"/i', $detail, $m)) {
+            $constraint = $m[1] ?? null;
+        }
 
         // 🔁 Helpers
-        $contains = fn(string $needle) => $this->str_contains_ci($msg, $needle);
+        $contains = fn(string $needle) => $this->str_contains_ci($msg, $needle) || $this->str_contains_ci($detail, $needle);
 
         // ========= Mapping شائع (Postgres / MySQL) =========
         // undefined_table: 42P01 (pgsql), 42S02 (mysql)
@@ -666,7 +717,6 @@ class AuthController extends Controller
             $reason  = 'هناك عمود مفقود في الجدول. تأكد من تحديث بنية قاعدة البيانات.';
             $message = 'عمود مفقود في الجدول. يرجى تشغيل أحدث المايجريشن.';
             $http    = 500;
-            // تخصيص شائع
             if ($contains('address') && $contains('venue_owners')) {
                 $reason = 'عمود address غير موجود في جدول venue_owners.';
             }
@@ -676,18 +726,17 @@ class AuthController extends Controller
             $http   = 422;
             $reason = 'تعارض في قيمة فريدة (duplicate).';
 
-            if ($contains('(email)') || $contains('users_email_unique') || $contains('for key \'users_email_unique\'')) {
+            if ($column === 'email' || $contains('(email)') || $contains('users_email_unique') || $contains("for key 'users_email_unique'")) {
                 $message = 'البريد الإلكتروني مستخدم بالفعل';
                 $errors  = ['email' => ['البريد الإلكتروني مستخدم بالفعل']];
-            } elseif ($contains('(phone)') || $contains('users_phone_unique') || $contains('for key \'users_phone_unique\'')) {
+            } elseif ($column === 'phone' || $contains('(phone)') || $contains('users_phone_unique') || $contains("for key 'users_phone_unique'")) {
                 $message = 'رقم الهاتف مستخدم بالفعل';
                 $errors  = ['phone' => ['رقم الهاتف مستخدم بالفعل']];
-            } elseif (
+            } elseif ($column === 'commercial_registry' ||
                 $contains('commercial_registry') ||
                 $contains('venue_owners_commercial_registry_unique') ||
                 $contains('dealers_commercial_registry_unique') ||
-                $contains('investors_commercial_registry_unique')
-            ) {
+                $contains('investors_commercial_registry_unique')) {
                 $message = 'رقم السجل التجاري مستخدم بالفعل';
                 $errors  = ['commercial_registry' => ['رقم السجل التجاري مستخدم بالفعل']];
             } else {
@@ -739,12 +788,15 @@ class AuthController extends Controller
         }
 
         return [
-            'http'     => $http,
-            'message'  => $message,
-            'reason'   => $reason,
-            'errors'   => $errors,
-            'sqlstate' => $sqlState,
-            'details'  => $details,
+            'http'       => $http,
+            'message'    => $message,
+            'reason'     => $reason,
+            'errors'     => $errors,
+            'sqlstate'   => $sqlState,
+            'details'    => $details,
+            'column'     => $column,
+            'value'      => $value,
+            'constraint' => $constraint,
         ];
     }
 
