@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import axios, { AxiosError } from "axios";
 import LoadingLink from "@/components/LoadingLink";
 
+// ✅ أضفنا area_label اختيارية لتخزين اسم المنطقة/الدولة للعرض فقط
 const registerSchema = z
   .object({
     first_name: z
@@ -60,7 +61,7 @@ const registerSchema = z
       .string()
       .min(10, { message: "يرجى إدخال رقم هاتف صالح (10 أرقام على الأقل)" })
       .max(15, { message: "رقم الهاتف لا يجب أن يتجاوز 15 رقم" })
-      .refine((value) => /^[0-9+\s]+$/.test(value), {
+      .refine((value) => /^[0-9+\s\-()]+$/.test(value), {
         message: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
       }),
     password: z
@@ -82,7 +83,8 @@ const registerSchema = z
     commercial_registry: z.string().optional(),
     description: z.string().optional(),
     address: z.string().optional(),
-    area_id: z.string().optional(),
+    area_id: z.string().optional(),   // ⬅️ يُرسل فقط عند وجود ID حقيقي من DB
+    area_label: z.string().optional() // ⬅️ اسم معروض فقط
   })
   .refine(
     (data) => {
@@ -143,7 +145,9 @@ export default function RegisterForm() {
   const [accountType, setAccountType] = useState<
     "user" | "dealer" | "venue_owner" | "investor"
   >("user");
-  const [areaId, setAreaId] = useState<string | undefined>(undefined);
+
+  // قيمة الـSelect: "region:<code>" أو "country:<code>"
+  const [areaValue, setAreaValue] = useState<string | undefined>(undefined);
 
   const {
     register,
@@ -165,11 +169,27 @@ export default function RegisterForm() {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
 
     try {
-      const response = await axios.post(url, data, {
+      // ✅ لا نرسل area_id إطلاقًا هنا (لأننا ما عندنا IDs من DB)
+      // بننظّف بعض الحقول لتفادي تعارضات بسبب مسافات:
+      const payload: Record<string, any> = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.replace(/\s+/g, ""),
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+        account_type: data.account_type,
+        company_name: data.company_name?.trim() || undefined,
+        commercial_registry: data.commercial_registry?.trim() || undefined,
+        description: data.description?.trim() || undefined,
+        address: data.address?.trim() || undefined,
+        // نبعث اسم المنطقة/الدولة للعرض فقط (اختياري)
+        area_label: data.area_label || undefined,
+      };
+
+      const response = await axios.post(url, payload, {
         timeout: 15000,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
 
       if (response.data.status === "success") {
@@ -225,20 +245,49 @@ export default function RegisterForm() {
     }
   };
 
-  // عند اختيار قيمة من القائمة:
-  const handleAreaSelect = (value: string) => {
-    setAreaId(value);
-    // لو دولة: ما نبعتش area_id للباك-إند (عشان exists:areas,id)
-    if (value.startsWith("country:")) {
-      setValue("area_id", undefined as unknown as string);
-    } else {
-      // قيمة من المناطق (أرقام ال IDs)
-      setValue("area_id", value);
-    }
+  // ✅ عند تغيير القيمة: نحفظ الاسم في area_label فقط
+  const handleAreaChange = (value: string) => {
+    setAreaValue(value);
+
+    // نخزن الاسم المعروض في area_label (مفيد للعرض فقط)
+    const labelMap: Record<string, string> = {
+      // مناطق المملكة (ثابتة)
+      "region:riyadh": "منطقة الرياض",
+      "region:makkah": "منطقة مكة المكرمة",
+      "region:sharqiyah": "المنطقة الشرقية",
+      "region:tabuk": "منطقة تبوك",
+      "region:madinah": "منطقة المدينة المنورة",
+      "region:northern-borders": "منطقة الحدود الشمالية",
+      "region:qassim": "منطقة القصيم",
+      "region:almujammah": "منطقة المجمعة",
+      "region:hail": "منطقة حائل",
+      "region:asir": "منطقة عسير",
+
+      // الدول
+      "country:eg": "مصر",
+      "country:sy": "سوريا",
+      "country:ps": "فلسطين",
+      "country:jo": "الأردن",
+      "country:iq": "العراق",
+      "country:kw": "الكويت",
+      "country:bh": "البحرين",
+      "country:qa": "قطر",
+      "country:ae": "الإمارات",
+      "country:om": "عُمان",
+      "country:ye": "اليمن",
+    };
+
+    // لا نرسل area_id إطلاقًا هنا (لأن القيمة ليست ID من قاعدة البيانات)
+    setValue("area_id", undefined as unknown as string);
+    setValue("area_label", labelMap[value] || undefined);
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 w-full">
+      {/* حقول خفية لضمان تسجيلها داخل RHF */}
+      <input type="hidden" {...register("area_id")} />
+      <input type="hidden" {...register("area_label")} />
+
       <div className="space-y-4">
         {error && (
           <Alert variant="destructive">
@@ -282,7 +331,7 @@ export default function RegisterForm() {
           </Label>
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-              <User className="h-5 و-5 text-foreground/50" />
+              <User className="h-5 w-5 text-foreground/50" />
             </div>
             <Input
               id="last_name"
@@ -342,7 +391,7 @@ export default function RegisterForm() {
           )}
         </div>
 
-        {/* المنطقة + الدول تحتها */}
+        {/* المنطقة / الدولة */}
         <div className="space-y-2">
           <Label htmlFor="area_id" className="text-foreground font-medium">
             المنطقة / الدولة
@@ -351,16 +400,16 @@ export default function RegisterForm() {
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
               <Map className="h-5 w-5 text-foreground/50" />
             </div>
-            <Select onValueChange={handleAreaSelect} value={areaId}>
+            <Select onValueChange={handleAreaChange} value={areaValue}>
               <SelectTrigger
                 id="area_id"
-                type="button"
+                type="button"               // 🔒 يمنع submit أو سلوك زر
                 className="pl-3 pr-10 h-10"
               >
                 <SelectValue placeholder="اختر المنطقة أو الدولة" />
               </SelectTrigger>
               <SelectContent
-                position="popper"
+                position="popper"          // 🔧 يثبّت القائمة كـ popper
                 side="bottom"
                 align="end"
                 sideOffset={6}
@@ -369,17 +418,17 @@ export default function RegisterForm() {
                 dir="rtl"
               >
                 <SelectGroup>
-                  <SelectLabel>المناطق</SelectLabel>
-                  <SelectItem value="1">منطقة الرياض</SelectItem>
-                  <SelectItem value="2">منطقة مكة المكرمة</SelectItem>
-                  <SelectItem value="3">المنطقة الشرقية</SelectItem>
-                  <SelectItem value="4">منطقة تبوك</SelectItem>
-                  <SelectItem value="5">منطقة المدينة المنورة</SelectItem>
-                  <SelectItem value="6">منطقة الحدود الشمالية</SelectItem>
-                  <SelectItem value="7">منطقة القصيم</SelectItem>
-                  <SelectItem value="8">منطقة المجمعة</SelectItem>
-                  <SelectItem value="9">منطقة حائل</SelectItem>
-                  <SelectItem value="10">منطقة عسير</SelectItem>
+                  <SelectLabel>مناطق المملكة (ثابتة)</SelectLabel>
+                  <SelectItem value="region:riyadh">منطقة الرياض</SelectItem>
+                  <SelectItem value="region:makkah">منطقة مكة المكرمة</SelectItem>
+                  <SelectItem value="region:sharqiyah">المنطقة الشرقية</SelectItem>
+                  <SelectItem value="region:tabuk">منطقة تبوك</SelectItem>
+                  <SelectItem value="region:madinah">منطقة المدينة المنورة</SelectItem>
+                  <SelectItem value="region:northern-borders">منطقة الحدود الشمالية</SelectItem>
+                  <SelectItem value="region:qassim">منطقة القصيم</SelectItem>
+                  <SelectItem value="region:almujammah">منطقة المجمعة</SelectItem>
+                  <SelectItem value="region:hail">منطقة حائل</SelectItem>
+                  <SelectItem value="region:asir">منطقة عسير</SelectItem>
                 </SelectGroup>
 
                 <SelectGroup>
@@ -399,6 +448,7 @@ export default function RegisterForm() {
               </SelectContent>
             </Select>
           </div>
+          {/* مفيش خطأ هنا لأننا لا نتحقق من area_id في الفرونت */}
         </div>
 
         {/* كلمة المرور */}
@@ -625,7 +675,7 @@ export default function RegisterForm() {
                 اسم الشركة الاستثمارية
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 right-3 flex.items-center pointer-events-none">
                   <Building className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
@@ -645,7 +695,7 @@ export default function RegisterForm() {
                 السجل التجاري
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 right-3 flex.items-center pointer-events-none">
                   <ClipboardList className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
