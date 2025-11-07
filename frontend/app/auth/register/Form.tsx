@@ -137,8 +137,8 @@ const registerSchema = z
   });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
-
 type AreaOption = { id: string; name: string };
+type KSARegion = { code: string; name: string };
 
 export default function RegisterForm() {
   const router = useLoadingRouter();
@@ -152,7 +152,7 @@ export default function RegisterForm() {
 
   // ✅ حالة قائمة المناطق من الـAPI
   const [areas, setAreas] = useState<AreaOption[]>([]);
-  // القيمة المختارة بالـSelect: "db:<id>" أو "country:<code>"
+  // القيمة المختارة بالـSelect: "db:<id>" أو "region:<code>" أو "country:<code>"
   const [areaValue, setAreaValue] = useState<string | undefined>(undefined);
 
   const {
@@ -167,7 +167,7 @@ export default function RegisterForm() {
     },
   });
 
-  // ✅ اجلب مناطق من الـAPI (إجتهاد: /api/areas)
+  // ✅ اجلب مناطق من الـAPI (إن وُجد)
   useEffect(() => {
     const fetchAreas = async () => {
       const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ?? "";
@@ -193,17 +193,36 @@ export default function RegisterForm() {
             if (!id || !name) return null;
             return { id: String(id), name: String(name) };
           })
-          .filter(Boolean);
+          .filter(Boolean) as AreaOption[];
         setAreas(normalized);
-      } catch (e) {
-        // لو فشل، نسيب القائمة فاضية (هيفضل خيار "الدول" فقط)
-        // console.warn("Failed to fetch areas:", e);
+      } catch {
+        // لو فشل، نسيب القائمة فاضية (هيظهر عندنا “مناطق المملكة” و“الدول” فقط)
       }
     };
     fetchAreas();
   }, []);
 
-  // ✅ الدول المطلوبة (ثابتة)
+  // ✅ مناطق المملكة (ثابتة) — الـ 13 منطقة الرسمية
+  const ksaRegions: KSARegion[] = useMemo(
+    () => [
+      { code: "riyadh", name: "منطقة الرياض" },
+      { code: "makkah", name: "منطقة مكة المكرمة" },
+      { code: "sharqiyah", name: "المنطقة الشرقية" },
+      { code: "madinah", name: "منطقة المدينة المنورة" },
+      { code: "qassim", name: "منطقة القصيم" },
+      { code: "hail", name: "منطقة حائل" },
+      { code: "tabuk", name: "منطقة تبوك" },
+      { code: "northern-borders", name: "منطقة الحدود الشمالية" },
+      { code: "jazan", name: "منطقة جازان" },
+      { code: "najran", name: "منطقة نجران" },
+      { code: "al-baha", name: "منطقة الباحة" },
+      { code: "asir", name: "منطقة عسير" },
+      { code: "al-jouf", name: "منطقة الجوف" },
+    ],
+    []
+  );
+
+  // ✅ الدول (تحت المناطق مباشرةً وبنفس الترتيب المطلوب)
   const countryOptions = useMemo(
     () => [
       { code: "eg", name: "مصر" },
@@ -229,11 +248,12 @@ export default function RegisterForm() {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
 
     try {
-      // ✨ ضمان عدم إرسال area_id لو الاختيار دولة (مش من الـDB)
+      // ✨ عدم إرسال area_id لو الاختيار من “مناطق المملكة” أو “الدول”
       const payload: RegisterFormValues = { ...data };
-      if (areaValue?.startsWith("country:")) {
+      if (areaValue?.startsWith("country:") || areaValue?.startsWith("region:")) {
         delete payload.area_id;
       }
+
       const response = await axios.post(url, payload, {
         timeout: 15000,
         headers: {
@@ -267,7 +287,7 @@ export default function RegisterForm() {
             "company_name",
             "commercial_registry",
             "address",
-            "area_id", // ✅ أضفناها
+            "area_id", // ✅ لو الـID غير موجود فعلاً في DB
           ];
           for (const field of errorPriority) {
             if (errs[field]?.length > 0) {
@@ -303,6 +323,12 @@ export default function RegisterForm() {
       const found = areas.find((a) => a.id === id);
       setValue("area_id", id);
       setValue("area_label", found?.name || undefined);
+    } else if (value.startsWith("region:")) {
+      const code = value.slice(7);
+      const found = ksaRegions.find((r) => r.code === code);
+      // لا نرسل area_id مع المناطق الثابتة
+      setValue("area_id", undefined);
+      setValue("area_label", found?.name || undefined);
     } else if (value.startsWith("country:")) {
       const code = value.slice(8);
       const found = countryOptions.find((c) => c.code === code);
@@ -317,6 +343,10 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 w-full">
+      {/* حقول خفية لضمان تسجيلها داخل RHF */}
+      <input type="hidden" {...register("area_id")} />
+      <input type="hidden" {...register("area_label")} />
+
       <div className="space-y-4">
         {error && (
           <Alert variant="destructive">
@@ -434,9 +464,10 @@ export default function RegisterForm() {
                 <SelectValue placeholder="اختر المنطقة أو الدولة" />
               </SelectTrigger>
               <SelectContent className="z-50" dir="rtl" align="end">
+                {/* إن وُجدت مناطق من النظام */}
                 {areas.length > 0 && (
                   <SelectGroup>
-                    <SelectLabel>المناطق المتاحة</SelectLabel>
+                    <SelectLabel>المناطق المتاحة (من النظام)</SelectLabel>
                     {areas.map((a) => (
                       <SelectItem key={a.id} value={`db:${a.id}`}>
                         {a.name}
@@ -444,6 +475,18 @@ export default function RegisterForm() {
                     ))}
                   </SelectGroup>
                 )}
+
+                {/* مناطق المملكة (ثابتة) */}
+                <SelectGroup>
+                  <SelectLabel>مناطق المملكة (ثابتة)</SelectLabel>
+                  {ksaRegions.map((r) => (
+                    <SelectItem key={r.code} value={`region:${r.code}`}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+
+                {/* الدول (تحتيهم بنفس الترتيب) */}
                 <SelectGroup>
                   <SelectLabel>الدول</SelectLabel>
                   {countryOptions.map((c) => (
