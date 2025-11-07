@@ -14,7 +14,7 @@ const HowItWorksPage = () => {
   return (
     <main className="container mx-auto p-8 bg-card rounded-lg shadow my-8">
       <h1 className="text-3xl font-bold mb-6 text-center text-foreground flex items-center justify-center gap-3">
-        كيف نعمل في منصة DASM-e
+        كيف نعمل في منصة DASMe
       </h1>
 
       <div className="prose prose-lg max-w-none text-right space-y-8" dir="rtl">

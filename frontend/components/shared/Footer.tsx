@@ -43,7 +43,7 @@ const Footer = () => {
             </LoadingLink>
           </div>
           <div className="w-1/3 text-center text-foreground">
-            © {currentYear} منصة DASM-e. جميع الحقوق محفوظة.
+            © {currentYear} منصة DASMe. جميع الحقوق محفوظة.
           </div>
           <div className="w-1/3 flex justify-end">
             <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ const Footer = () => {
           </div>
           <div className="flex justify-between items-center">
             <div className="text-foreground">
-              © {currentYear} منصة DASM-e. جميع الحقوق محفوظة.
+              © {currentYear} منصة DASMe. جميع الحقوق محفوظة.
             </div>
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-primary" />
@@ -136,7 +136,7 @@ const Footer = () => {
           </div>
 
           <div className="text-center text-foreground text-xs border-t border-border pt-3">
-            © {currentYear} منصة DASM-e
+            © {currentYear} منصة DASMe
             <br className="sm:hidden" />
             <span className="hidden sm:inline"> - </span>
             جميع الحقوق محفوظة
