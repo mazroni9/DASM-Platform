@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
+use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
 
 // ========= Auction Sessions =========
 use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController; // للجمهور
@@ -603,7 +604,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id');
     Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
     Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy'])->whereNumber('id');
-
+    // Venue Owners (Admin)
+    Route::get  ('/venue-owners',      [AdminVenueOwnerController::class, 'index']);
+    Route::get  ('/venue-owners/{id}', [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
+    
     // Venues (من الملف الثاني)
     Route::post('/venues', [VenueController::class, 'store']);
     Route::put('/venues/{id}', [VenueController::class, 'update'])->whereNumber('id');

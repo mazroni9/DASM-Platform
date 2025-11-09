@@ -1,0 +1,567 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  Users,
+  Search,
+  Filter,
+  RefreshCw,
+  Eye,
+  Building,
+  Calendar,
+  Mail,
+  Hash,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ChevronDown,
+  Download,
+  Loader2,
+  ArrowUpDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Switch from "@mui/material/Switch";
+import Pagination from "@components/Pagination";
+import api from "@/lib/axios";
+import LoadingLink from "@/components/LoadingLink";
+import { toast } from "react-hot-toast";
+
+/** Types coming from backend */
+type VenueStatus = "pending" | "active" | "rejected" | string;
+
+interface VenueOwner {
+  id: number;
+  user_id: number | null;
+  venue_name?: string | null;
+  commercial_registry?: string | null;
+  description?: string | null;
+  status?: VenueStatus;
+  is_active?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+  user_name?: string | null;
+  user_email?: string | null;
+}
+
+interface ApiResponse {
+  ok: boolean;
+  data: VenueOwner[];
+  meta: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+  };
+  filters?: Record<string, unknown>;
+}
+
+const ToggleSwitch = ({
+  checked,
+  disabled = true, // للعرض فقط حالياً
+}: {
+  checked: boolean;
+  disabled?: boolean;
+}) => (
+  <Switch
+    checked={!!checked}
+    onChange={() => {}}
+    disabled={disabled}
+    color="primary"
+    size="small"
+    sx={{
+      "& .MuiSwitch-switchBase.Mui-checked": { color: "#22d3ee" },
+      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+        backgroundColor: "#22d3ee",
+      },
+    }}
+  />
+);
+
+function formatDateAr(dateString?: string | null) {
+  if (!dateString) return "غير متوفر";
+  const d = new Date(dateString.replace(" ", "T"));
+  if (isNaN(d.getTime())) return dateString;
+  return d.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function statusChipClasses(status?: VenueStatus) {
+  switch (status) {
+    case "active":
+      return "bg-green-500/20 text-green-400 border-green-500/30";
+    case "pending":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    case "rejected":
+      return "bg-red-500/20 text-red-400 border-red-500/30";
+    default:
+      return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+  }
+}
+
+export default function VenueOwnersAdminPage() {
+  // Server-side data
+  const [owners, setOwners] = useState<VenueOwner[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Query params
+  const [search, setSearch] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // all|pending|active|rejected
+  const [activeFilter, setActiveFilter] = useState<string>("all"); // all|1|0
+  const [sortBy, setSortBy] = useState<string>("vo.id");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  // Pagination
+  const [page, setPage] = useState<number>(1);
+  const [perPage] = useState<number>(15);
+  const [lastPage, setLastPage] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
+  const canSort = useMemo(
+    () => [
+      { key: "vo.id", label: "المعرف" },
+      { key: "vo.venue_name", label: "اسم المعرض" },
+      { key: "u.name", label: "اسم المستخدم" },
+      { key: "vo.status", label: "الحالة" },
+      { key: "vo.is_active", label: "التفعيل" },
+      { key: "vo.created_at", label: "التاريخ" },
+    ],
+    []
+  );
+
+  async function fetchOwners(options?: { silent?: boolean }) {
+    try {
+      if (!options?.silent) setLoading(true);
+      else setRefreshing(true);
+
+      const params: Record<string, any> = {
+        page,
+        per_page: perPage,
+        sort_by: sortBy,
+        sort_dir: sortDir,
+      };
+
+      if (search.trim()) params.search = search.trim();
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (activeFilter !== "all") params.is_active = activeFilter;
+
+      const res = await api.get<ApiResponse>("/api/admin/venue-owners", { params });
+
+      if (res.data && res.data.ok) {
+        setOwners(Array.isArray(res.data.data) ? res.data.data : []);
+        setLastPage(res.data.meta?.last_page ?? 1);
+        setTotalCount(res.data.meta?.total ?? res.data.data?.length ?? 0);
+      } else {
+        setOwners([]);
+        setLastPage(1);
+        setTotalCount(0);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error("فشل في تحميل بيانات ملاك المعارض");
+      setOwners([]);
+      setLastPage(1);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchOwners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage, sortBy, sortDir, statusFilter, activeFilter]);
+
+  const handleSearchEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      setPage(1);
+      fetchOwners();
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearch("");
+    setPage(1);
+    fetchOwners({ silent: true });
+  };
+
+  const toggleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
+
+  const exportCsv = () => {
+    try {
+      const rows = owners;
+      if (!rows || rows.length === 0) {
+        toast("لا توجد بيانات للتصدير");
+        return;
+      }
+      const headers = [
+        "ID",
+        "اسم المعرض",
+        "السجل التجاري",
+        "البريد الإلكتروني",
+        "اسم المستخدم",
+        "الحالة",
+        "مفعّل",
+        "تاريخ الإنشاء",
+      ];
+      const csvLines = [
+        headers.join(","),
+        ...rows.map((r) =>
+          [
+            r.id ?? "",
+            (r.venue_name ?? "").toString().replace(/,/g, "،"),
+            (r.commercial_registry ?? "").toString(),
+            (r.user_email ?? "").toString(),
+            (r.user_name ?? "").toString().replace(/,/g, "،"),
+            r.status ?? "",
+            r.is_active ? "نعم" : "لا",
+            r.created_at ?? "",
+          ].join(",")
+        ),
+      ];
+      const blob = new Blob(["\uFEFF" + csvLines.join("\n")], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      link.download = `venue-owners-${ts}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      toast.error("تعذر تصدير CSV");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            مُلّاك المعارض
+          </h1>
+          <p className="text-gray-400 mt-2">إدارة وعرض قائمة أصحاب/مُلّاك المعارض</p>
+        </div>
+
+        <div className="flex items-center gap-3 mt-4 lg:mt-0">
+          <Button
+            onClick={() => fetchOwners({ silent: true })}
+            variant="outline"
+            size="sm"
+            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
+          >
+            <RefreshCw className={`w-4 h-4 ml-2 ${refreshing ? "animate-spin" : ""}`} />
+            تحديث البيانات
+          </Button>
+          <Button
+            onClick={exportCsv}
+            variant="outline"
+            size="sm"
+            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
+          >
+            <Download className="w-4 h-4 ml-2" />
+            تصدير CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">إجمالي المُلّاك</p>
+              <p className="text-2xl font-bold text-white mt-1">{totalCount}</p>
+            </div>
+            <div className="bg-blue-500/10 p-3 rounded-xl">
+              <Users className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">الحالة: مفعّل</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {owners.filter((o) => o.is_active).length}
+              </p>
+            </div>
+            <div className="bg-green-500/10 p-3 rounded-xl">
+              <CheckCircle className="w-6 h-6 text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">في الانتظار</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {owners.filter((o) => o.status === "pending").length}
+              </p>
+            </div>
+            <div className="bg-amber-500/10 p-3 rounded-xl">
+              <Clock className="w-6 h-6 text-amber-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">المرفوضين</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {owners.filter((o) => o.status === "rejected").length}
+              </p>
+            </div>
+            <div className="bg-red-500/10 p-3 rounded-xl">
+              <XCircle className="w-6 h-6 text-red-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="relative flex-grow">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="ابحث بالاسم، السجل التجاري، البريد الإلكتروني..."
+              className="pr-12 w-full bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchEnter}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            >
+              <option value="all">كل الحالات</option>
+              <option value="pending">في الانتظار</option>
+              <option value="active">مفعل</option>
+              <option value="rejected">مرفوض</option>
+            </select>
+
+            <select
+              value={activeFilter}
+              onChange={(e) => {
+                setActiveFilter(e.target.value);
+                setPage(1);
+              }}
+              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            >
+              <option value="all">التفعيل (الكل)</option>
+              <option value="1">مفعّل</option>
+              <option value="0">غير مفعّل</option>
+            </select>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                onClick={() => toggleSort(sortBy)}
+                title="تبديل ترتيب الحقل الحالي"
+              >
+                <ArrowUpDown className="w-4 h-4 ml-2" />
+                ترتيب: {canSort.find((s) => s.key === sortBy)?.label ?? "المعرف"} ({sortDir})
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("all");
+                  setActiveFilter("all");
+                  setSortBy("vo.id");
+                  setSortDir("desc");
+                  setPage(1);
+                  fetchOwners({ silent: true });
+                }}
+              >
+                <Filter className="w-4 h-4 ml-2" />
+                تصفية سريعة
+                <ChevronDown className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-gray-700/50">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-white">قائمة مُلّاك المعارض</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!search) return;
+                  setPage(1);
+                  fetchOwners();
+                }}
+                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+              >
+                <Search className="w-4 h-4 ml-2" />
+                بحث
+              </Button>
+              {search && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearSearch}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700/50"
+                >
+                  مسح البحث
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-750 border-b border-gray-700/50">
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المعرض</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">السجل التجاري</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المستخدم</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">التفعيل</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">تاريخ الإنشاء</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700/50">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
+                    <Loader2 className="w-6 h-6 inline-block animate-spin mr-2" />
+                    جاري التحميل...
+                  </td>
+                </tr>
+              ) : owners.length > 0 ? (
+                owners.map((v) => (
+                  <tr key={v.id} className="hover:bg-gray-750/50 transition-colors duration-200 group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
+                          <Building className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="mr-4">
+                          <div className="text-sm font-medium text-white">
+                            {v.venue_name || "—"}
+                          </div>
+                          {v.description && (
+                            <div className="text-xs text-gray-400 mt-1 line-clamp-1">{v.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-white flex items-center">
+                        <Hash className="w-3 h-3 ml-1 text-gray-400" />
+                        {v.commercial_registry || "—"}
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-white flex items-center">
+                        <Mail className="w-3 h-3 ml-1 text-gray-400" />
+                        {v.user_email || "—"}
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(v.status)}`}>
+                        {v.status === "active" && <CheckCircle className="w-3 h-3 ml-1" />}
+                        {v.status === "pending" && <Clock className="w-3 h-3 ml-1" />}
+                        {v.status === "rejected" && <XCircle className="w-3 h-3 ml-1" />}
+                        {v.status === "active"
+                          ? "مفعل"
+                          : v.status === "pending"
+                          ? "في الانتظار"
+                          : v.status === "rejected"
+                          ? "مرفوض"
+                          : (v.status ?? "—")}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <ToggleSwitch checked={!!v.is_active} />
+                    </td>
+
+                    <td className="px-6 py-4 text-sm text-gray-400">
+                      <div className="flex items-center">
+                        <Calendar className="w-3 h-3 ml-1" />
+                        {formatDateAr(v.created_at)}
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-1 space-x-reverse">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-white hover:bg-gray-700/50 px-3"
+                        >
+                          <LoadingLink href={`/admin/venue-owners/${v.id}`}>
+                            <Eye className="w-4 h-4" />
+                          </LoadingLink>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                    <p>لا توجد نتائج مطابقة</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="p-6 border-t border-gray-700/50">
+          <Pagination
+            totalPages={lastPage}
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
