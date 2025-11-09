@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Dealer;
-use App\Models\VenueOwner;
 use App\Models\Investor;
 use App\Enums\UserStatus;
+use App\Models\VenueOwner;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
-use App\Notifications\VerifyEmailNotification;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
+use App\Notifications\VerifyEmailNotification;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -214,7 +215,7 @@ public function register(Request $request)
                             'investment_capacity'    => null,
                             'status'                 => 'pending',
                             'is_active'              => false,
-                            
+
                         ]);
                         break;
                 }
@@ -522,6 +523,17 @@ public function register(Request $request)
         // Calculate token expiration time
         $expiresAt = now()->addMinutes(config('sanctum.expiration', 120));
 
+        $cookie = Cookie::make(
+            name: 'auth-token',           // اسم الكوكي
+            value: $token,                 // التوكن
+            minutes: 60 * 24 * 7,         // أسبوع
+            path: '/',                     // متاح لكل المسارات
+            domain: null,                  // أو حدد الدومين
+            secure: true,                  // فقط عبر HTTPS (في production)
+            httpOnly: true,                // ✅ مهم جداً للأمان
+            sameSite: 'lax'               // حماية من CSRF
+        );
+
         return response()->json([
             'user' => [
                 'id' => $user->id,
@@ -533,7 +545,7 @@ public function register(Request $request)
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expiresAt' => $expiresAt->toIso8601String(),
-        ]);
+        ])->withCookie($cookie);
     }
 
     /**
@@ -560,6 +572,16 @@ public function register(Request $request)
         // Calculate new expiration time
         $expiresAt = now()->addMinutes(config('sanctum.expiration', 120));
 
+        $cookie = Cookie::make(
+            name: 'auth-token',
+            value: $token,
+            minutes: 60 * 24 * 7,
+            path: '/',
+            secure: true,
+            httpOnly: true,
+            sameSite: 'lax'
+        );
+
         return response()->json([
             'user' => [
                 'id' => $user->id,
@@ -571,7 +593,7 @@ public function register(Request $request)
             'access_token' => $token,
             'token_type' => 'Bearer',
             'expiresAt' => $expiresAt->toIso8601String(),
-        ]);
+        ])->withCookie($cookie);
     }
 
     /**
@@ -584,7 +606,7 @@ public function register(Request $request)
 
         // Regenerate the CSRF token
         $request->session()->regenerateToken();
-
+        $cookie = Cookie::forget('auth-token');
         return response()->json(['message' => 'Logged out successfully']);
     }
 

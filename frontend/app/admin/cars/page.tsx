@@ -37,10 +37,13 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/OldPagination";
 import { MoveToLiveDialog } from "@/components/admin/MoveToLiveDialog";
-
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { PriceWithIcon } from "@/components/ui/priceWithIcon";
+import { cn } from "@/lib/utils";
 interface CarFormData {
     price: string;
-    id: string;
+    id: string | number;
 }
 
 let carOjbect = {
@@ -75,6 +78,11 @@ interface CarData {
     };
     created_at: string;
     auctions?: any[];
+    active_auction?: {
+        id: number | string;
+        minimum_bid: number;
+        maximum_bid: number;
+    };
 }
 
 interface FilterOptions {
@@ -84,6 +92,9 @@ interface FilterOptions {
     transmission: string;
     dealer_id: string;
 }
+
+
+
 
 export default function AdminCarsPage() {
     const router = useLoadingRouter();
@@ -100,6 +111,10 @@ export default function AdminCarsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
     const [showMoveToLiveDialog, setShowMoveToLiveDialog] = useState(false);
+    const [moveToLiveCarIds, setMoveToLiveCarIds] = useState<number[]>([]);
+    const [showApproveModal, setShowApproveModal] = useState(false);
+    const [carsToApprove, setCarsToApprove] = useState<number[]>([]);
+    const [openingPrice, setOpeningPrice] = useState("");
     const [filters, setFilters] = useState<FilterOptions>({
         status: "",
         category: "",
@@ -119,7 +134,7 @@ export default function AdminCarsPage() {
 
     useEffect(() => {
         fetchCars();
-        fetchStats();
+        // fetchStats();
     }, [currentPage]);
 
     useEffect(() => {
@@ -133,8 +148,10 @@ export default function AdminCarsPage() {
             if (searchTerm) params.append("search", searchTerm);
             if (filters.status) params.append("status", filters.status);
             const response = await api.get(`/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`);
+            console.log("response", response.data);
+            
             if (response.data.status === "success") {
-                setCars(response.data.data);
+                setCars(response.data.data.data);
                 setCurrentPage(response.data.pagination.current_page);
                 setTotalCount(response.data.pagination.total);
             }
@@ -228,13 +245,29 @@ export default function AdminCarsPage() {
         }
     };
 
-    const handleBulkAction = async (action: string) => {
-        if (selectedCars.size === 0) {
+    const handleBulkAction = async (action: string, carId?: number) => {
+        const carIds = carId ? [carId] : Array.from(selectedCars);
+        if (carIds.length === 0) {
             toast.error("يرجى اختيار سيارة واحدة على الأقل");
             return;
         }
 
-        const carIds = Array.from(selectedCars);
+        if (action === "approve-auctions-with-price") {
+            setCarsToApprove(carIds);
+            if (carId) {
+                const car = cars.find(c => c.id === carId);
+                if (car && car.evaluation_price) {
+                    setOpeningPrice(car.evaluation_price.toString());
+                } else {
+                    setOpeningPrice("");
+                }
+            } else {
+                setOpeningPrice("");
+            }
+            setShowApproveModal(true);
+            return;
+        }
+
         try {
             switch (action) {
                 case "approve-auctions":
@@ -252,6 +285,7 @@ export default function AdminCarsPage() {
                     toast.success(rejectStatus.data.message);
                     break;
                 case "move-to-live":
+                    setMoveToLiveCarIds(carIds);
                     setShowMoveToLiveDialog(true);
                     return;
                 case "move-to-active":
@@ -298,6 +332,30 @@ export default function AdminCarsPage() {
         }
     };
 
+    const handleApproveWithPrice = async (e: FormEvent) => {
+        e.preventDefault();
+        try {
+            const approveStatus = await api.put("/api/admin/cars/bulk/approve-reject", {
+                ids: carsToApprove,
+                action: true,
+                price: openingPrice,
+            });
+
+            toast.success(approveStatus.data.message);
+            setShowApproveModal(false);
+            setOpeningPrice("");
+            setCarsToApprove([]);
+            fetchCars();
+            setSelectedCars(new Set());
+            setSelectAll(false);
+            setShowBulkActions(false);
+            setShowActions(false);
+        } catch (error: any) {
+            console.error("Error performing bulk action:", error);
+            toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+        }
+    };
+
     const approveCarAuction = async (carId: number, approve: boolean) => {
         try {
             await api.put(`/api/admin/cars/${carId}/approve-auction`, {
@@ -318,19 +376,19 @@ export default function AdminCarsPage() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "active":
-                return "bg-green-500/20 text-green-400 border-green-500/30";
+                return "bg-green-100 text-green-800 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30";
             case "pending":
-                return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+                return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30";
             case "completed":
-                return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+                return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30";
             case "cancelled":
-                return "bg-red-500/20 text-red-400 border-red-500/30";
+                return "bg-red-100 text-red-800 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30";
             case "in_auction":
-                return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+                return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30";
             case "sold":
-                return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+                return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
             default:
-                return "bg-gray-500/20 text-gray-400 border-gray-500/30";
+                return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30";
         }
     };
 
@@ -358,15 +416,15 @@ export default function AdminCarsPage() {
     const getAuctionStatusColor = (status: string) => {
         switch (status) {
             case "in_auction":
-                return "bg-green-500/20 text-green-400";
+                return "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400";
             case "pending_approval":
-                return "bg-amber-500/20 text-amber-400";
+                return "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400";
             case "rejected":
-                return "bg-red-500/20 text-red-400";
+                return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400";
             case "sold":
-                return "bg-emerald-500/20 text-emerald-400";
+                return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400";
             default:
-                return "bg-gray-500/20 text-gray-400";
+                return "bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-400";
         }
     };
 
@@ -384,7 +442,8 @@ export default function AdminCarsPage() {
                 return "متاحة";
         }
     };
-
+    
+    
     const filteredCars = cars.filter((car) => {
         if (filters.category && car.category !== filters.category) return false;
         if (filters.condition && car.condition !== filters.condition) return false;
@@ -646,25 +705,32 @@ export default function AdminCarsPage() {
                                             {car.dealer ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)` : car.user ? `${car.user.first_name} ${car.user.last_name}` : "غير محدد"}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(car.auction_status)}`}>
+                                            <span className={cn(
+                                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                                                getStatusColor(car.auction_status)
+                                            )}>
                                                 {getStatusText(car.auction_status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAuctionStatusColor(car.auction_status)}`}>
+                                            <span className={cn(
+                                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                                getAuctionStatusColor(car.auction_status)
+                                            )}>
                                                 {getAuctionStatusText(car.auction_status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center text-primary">
-                                                <DollarSign className="w-4 h-4 ml-1" />
-                                                <span className="text-sm font-medium">{car.evaluation_price?.toLocaleString() || "0"}</span>
+                                                <PriceWithIcon iconSize={18}  className="text-sm font-medium" price={car.evaluation_price || 0} />
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.min_price?.toLocaleString() || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.max_price?.toLocaleString() || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.auctions?.[0]?.minimum_bid || "0"}</td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">{car.auctions?.[0]?.maximum_bid || "0"}</td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80">
+                                        <PriceWithIcon iconSize={18}   price={car.min_price || 0} />
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80"><PriceWithIcon iconSize={18}  price={car.max_price || 0} /></td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80"><PriceWithIcon iconSize={18}  price={car.auctions?.[0]?.minimum_bid || 0} /></td>
+                                        <td className="px-6 py-4 text-sm text-foreground/80"><PriceWithIcon iconSize={18}  price={car.auctions?.[0]?.maximum_bid || 0} /></td>
                                         <td className="px-6 py-4 text-sm text-foreground/80">
                                             {new Date(car.created_at).toLocaleDateString("ar-SA")}
                                         </td>
@@ -681,14 +747,12 @@ export default function AdminCarsPage() {
                                                 )}
                                                 
                                                 {car.auction_status === "in_auction" && (
-                                                    <button onClick={() => { formData.price = car.evaluation_price?.toString() || ""; formData.id = car.auctions?.[0]?.id || ""; setShowModal(true); }} className="bg-card hover:bg-border text-foreground px-3 py-1 rounded-lg text-xs transition-all duration-300" title="تحديد السعر للمزاد">
+                                                    <button onClick={() => { formData.price = car.evaluation_price?.toString() || ""; formData.id = car.active_auction?.id || ""; setShowModal(true); }} className="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300" title="تحديد السعر للمزاد">
                                                         حدد السعر
                                                     </button>
                                                 )}
                                                 
-                                                <button className="text-foreground/70 hover:text-foreground hover:bg-border p-2 rounded-lg transition-all duration-300">
-                                                    <MoreVertical size={16} />
-                                                </button>
+                                                <ActionsMenu car={car} handleAction={handleBulkAction} />
                                             </div>
                                         </td>
                                     </tr>
@@ -733,7 +797,106 @@ export default function AdminCarsPage() {
                 </form>
             </Modal>
 
-            <MoveToLiveDialog open={showMoveToLiveDialog} onClose={() => setShowMoveToLiveDialog(false)} carIds={Array.from(selectedCars)} onSuccess={() => { setSelectedCars(new Set()); setSelectAll(false); fetchCars(); setShowMoveToLiveDialog(false); }} />
+            <Modal show={showApproveModal} onClose={() => setShowApproveModal(false)} title="الموافقة على المزاد وتحديد سعر البداية">
+                <form onSubmit={handleApproveWithPrice} className="space-y-6">
+                    <div>
+                        <label htmlFor="openingPrice" className="block text-sm font-medium text-foreground mb-1">سعر بدأ المزاد</label>
+                        <input type="number" id="openingPrice" name="openingPrice" value={openingPrice} onChange={(e) => setOpeningPrice(e.target.value)} className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary" placeholder="سعر بدأ المزاد" required />
+                    </div>
+                    <div className="flex gap-3">
+                        <button type="submit" className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300">
+                            موافق
+                        </button>
+                        <button type="button" onClick={() => setShowApproveModal(false)} className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300">
+                            إغلاق
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            <MoveToLiveDialog open={showMoveToLiveDialog} onClose={() => setShowMoveToLiveDialog(false)} carIds={moveToLiveCarIds} onSuccess={() => { setSelectedCars(new Set()); setSelectAll(false); fetchCars(); setShowMoveToLiveDialog(false); }} />
         </div>
     );
+}
+
+  
+const ITEM_HEIGHT = 55;
+  
+export function ActionsMenu({ car, handleAction }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  return (
+    <div>
+      <button
+          aria-label="more"
+          id="long-button"
+          aria-controls={open ? 'long-menu' : undefined}
+          aria-expanded={open ? 'true' : undefined}
+          aria-haspopup="true"
+          onClick={handleClick}
+          className="text-foreground/70 hover:text-foreground hover:bg-border p-2 rounded-lg transition-all duration-300">
+           <MoreVertical size={16} />
+      </button>
+
+    
+      <Menu
+        id="long-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        slotProps={{
+          paper: {
+            style: {
+              maxHeight: ITEM_HEIGHT * 4.5,
+              width: '25ch',
+            },
+          },
+          list: {
+            'aria-labelledby': 'long-button',
+          },
+        }}
+      >
+              <button onClick={() =>{handleClose(); handleAction("approve-auctions-with-price", car.id)}} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <CheckSquare size={16} />
+                  الموافقة على المزادات
+              </button>
+              <button onClick={() => handleAction("reject-auctions", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <X size={16} />
+                  رفض المزادات
+              </button>
+              <button onClick={() => handleAction("move-to-live", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <Play size={16} />
+                  نقل إلى الحراج المباشر
+              </button>
+              <button onClick={() => handleAction("move-to-instant", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <Clock size={16} />
+                  نقل الى المزادات الفورية
+              </button>
+              <button onClick={() => handleAction("move-to-late", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <AlertTriangle size={16} />
+                  نقل إلى المزادات المتأخرة
+              </button>
+              <button onClick={() => handleAction("move-to-active", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <CheckCircle size={16} />
+                  نقل إلى المزادات النشطة
+              </button>
+              <button onClick={() => handleAction("move-to-pending", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
+                  <RotateCcw size={16} />
+                  نقل إلى المزادات المعلقة
+              </button>
+              <button onClick={() => handleAction("archive", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 text-red-500 transition-all duration-300">
+                  <Archive size={16} />
+                  أرشفة
+              </button>
+        
+      </Menu>
+    </div>
+  );
 }

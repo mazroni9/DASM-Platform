@@ -44,6 +44,22 @@ Route::get('/health', function () {
 });
 
 
+    // In routes/api.php
+    Route::middleware('auth:sanctum')->group(function () {
+        // ... your other routes like /user/profile
+
+        Route::get('/test-auth', function (Request $request) {
+            if ($request->user()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'You are authenticated!',
+                    'user_id' => $request->user()->id,
+                ]);
+            } else {
+                return response()->json(['status' => 'failed', 'message' => 'User not found'], 401);
+            }
+        });
+    });
 
 
 Route::middleware(['auth:sanctum'])->post('/upload-image', [UploadController::class, 'store']);

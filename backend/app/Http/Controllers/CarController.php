@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
+use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\Dealer;
+use App\Models\Auction;
+use App\Enums\AuctionType;
 use App\Enums\CarCondition;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
@@ -15,14 +18,12 @@ use App\Enums\CarsMarketsCategory;
 use App\Services\CloudinaryService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Resources\CarCardResource;
 use App\Http\Resources\CarCollection;
-use App\Models\Auction;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
-use App\Models\User;
-use App\Notifications\NewCarAddedNotification;
+use App\Http\Resources\CarCardResource;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewCarAddedNotification;
 
 class CarController extends Controller
 {
@@ -332,7 +333,7 @@ class CarController extends Controller
     public function showOnly($id)
     {
         $user = Auth::user();
-        $car = Car::with('reportImages')->find($id);
+        $car = Car::with('reportImages','activeAuction')->find($id);
 
         if ($car) {
             $car->load('dealer');
@@ -346,11 +347,17 @@ class CarController extends Controller
         }
 
         $activeAuction = $car->activeAuction()
-            ->with(['bids' => function ($q) {
+        ->withCount('bids')
+        ->first();
+        $total_bids = $activeAuction?->bids_count ?? 0;
+        if ($activeAuction && $activeAuction->auction_type != AuctionType::SILENT_INSTANT) {
+            $activeAuction->load(['bids' => function ($q) {
                 $q->select('id', 'bid_amount', 'created_at', 'user_id', 'auction_id')
                     ->orderBy('created_at', 'desc');
-            }])
-            ->first();
+            }]);
+
+           // $total_bids = $activeAuction ? $activeAuction->bids->count() : 0;
+        }
 
         $similar_cars = Car::where('make', $car->make)
             ->where('id', '!=', $car->id)
@@ -368,7 +375,7 @@ class CarController extends Controller
                 'car' => $car,
                 'active_auction' => $activeAuction,
                 'similar_cars' => $similar_cars,
-                'total_bids' => $activeAuction ? $activeAuction->bids->count() : 0
+                'total_bids' => $total_bids
             ]
         ]);
     }

@@ -6,5 +6,8 @@
     "pusher-js": "^8.4.0",
     "react-chartjs-2": "^5.3.1",
     "react-hot-toast": "^2.6.0"
+  },
+  "devDependencies": {
+    "tailwind-merge": "^3.3.1"
   }
 }

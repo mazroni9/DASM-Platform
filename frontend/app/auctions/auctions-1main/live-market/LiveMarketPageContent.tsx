@@ -479,7 +479,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
                                 <LoadingLink
                                   target="_blank"
-                                  href={`/carDetails/${car.id}`}
+                                  href={`/carDetails/${car.car_id}`}
                                   className="hover:underline"
                                 >
                                   عرض
@@ -705,6 +705,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                             <div>
                               <BidForm
                                 auction_id={parseInt(currentCar.id)}
+                                auction_type={'live'}
                                 bid_amount={parseInt(
                                   (currentCar.current_bid == 0
                                     ? currentCar.opening_price

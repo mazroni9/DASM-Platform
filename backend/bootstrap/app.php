@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\PerformanceHeaders::class, // <-- تم التبديل ليتطابق مع اسم الكلاس/الملف
         ]);
 
+       // $middleware->statefulApi();
         // API middleware
         $middleware->api(append: [
             // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
