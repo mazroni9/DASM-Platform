@@ -7,15 +7,6 @@ import { useAuthStore } from "@/store/authStore";
 
 import { handleRoleBasedRedirection } from "@/lib/roleNavigation";
 
-// List of routes that are public and don't require authentication
-const publicPaths = [
-    "/auth/login",
-    "/auth/register",
-    "/auth/forgot-password",
-    "/auth/reset-password",
-    "/verify-email",
-];
-
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const router = useLoadingRouter();
@@ -24,38 +15,24 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        async function checkAuth() {
-            // Check if the current path is a public path that doesn't require auth
-            const isPublicPath = publicPaths.some(
-                (path) => pathname === path || pathname.startsWith(`${path}/`)
-            );
-
-            // Wait for auth to be initialized
-            if (!initialized) {
-                return;
-            }
-
-            // If it's not a public path and user isn't logged in, redirect to login
-            if (!isPublicPath && !isLoggedIn) {
-                router.push(
-                    `/auth/login?returnUrl=${encodeURIComponent(pathname)}`
-                );
-                return;
-            }
-
-            // ONLY role-based redirection logic - centralized here
-            if (isLoggedIn && user) {
-                handleRoleBasedRedirection(user.role, pathname, router);
-            }
-
-            // Auth check is complete
-            setIsLoading(false);
+        if (!initialized) {
+            return;
         }
 
-        checkAuth();
-    }, [isLoggedIn, pathname, router, initialized, user]);
+        if (isLoggedIn && user) {
+            handleRoleBasedRedirection(user.role, pathname, router);
+        }
 
+        setIsLoading(false);
+    }, [initialized, isLoggedIn, user, pathname, router]);
 
+    if (isLoading) {
+        return (
+            <div className="flex h-full w-full items-center justify-center">
+                <span>Loading...</span>
+            </div>
+        );
+    }
 
     return <>{children}</>;
 }

@@ -2,12 +2,14 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import ProtectedRoute from "@/components/ProtectedRoute";
+// Removed ProtectedRoute - authentication now handled by middleware.ts
+// Client-side role-based redirects handled at page level where needed
 import Providers from "./providers";
 import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import ClientProviders from "@/components/ClientProviders";
 import GlobalLoader from "@/components/GlobalLoader";
+import AuthModal from "@/components/AuthModal";
 
 // ملاحظة: ضع suppressHydrationWarning على <html> و <body>
 // لمنع تحذيرات الاختلاف الناتجة عن إضافات المتصفح (مثل cz-shortcut-listen)
@@ -42,13 +44,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* موحد تحميل عالمي + موفري الحالة */}
         <LoadingProvider>
           <Providers>
-            {/* كل ما بداخل ProtectedRoute و ClientProviders هو Client Components */}
-            <ProtectedRoute>
-              <ClientProviders>
-                <Navbar />
-                <main>{children}</main>
-              </ClientProviders>
-            </ProtectedRoute>
+            <ClientProviders>
+              <Navbar />
+              <main>{children}</main>
+              <AuthModal />
+            </ClientProviders>
             <GlobalLoader />
           </Providers>
         </LoadingProvider>

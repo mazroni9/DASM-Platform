@@ -57,7 +57,7 @@ interface BidingData {
 
 // ========== قسم السيارات المميزة ==========
 const FeaturedCars = ({cars}) => {
- 
+ console.log("cars", cars);
   return (
     <section className="bg-background min-h-screen mt-10">
       <div className="container mx-auto px-4 sm:px-6">
@@ -85,7 +85,7 @@ const FeaturedCars = ({cars}) => {
             >
               <div className="relative  h-40 sm:h-48 overflow-hidden">
                 <img
-                  src={car.images[0]}
+                  src={car.images?.[0] || "/placeholder-car.jpg"}
                   alt={car.make + " " + car.model + " " + car.year}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                 />
@@ -219,17 +219,12 @@ export default function CarDetailPage() {
     return Math.round(number / 5) * 5;
   };
 
-  // Verify user is authenticated (only redirect if auth loading is complete and user is not logged in)
-  useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      // router.push("/auth/login?returnUrl=/dashboard/profile"); // Removed redirect to allow public access
-    }
-  }, [isLoggedIn, authLoading, router]);
+
 
   // Fetch user profile data
   useEffect(() => {
     // Don't fetch data if auth is still loading
-    if (authLoading) return;
+   // if (authLoading) return;
 
     setLoading(true);
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY, {
@@ -262,16 +257,18 @@ export default function CarDetailPage() {
           }
 
           let car_user_id = carsData.car.user_id;
-          let current_user_id = user?.id;
+          let current_user_id = user?.id || null;
           let dealer_user_id = carsData.car.dealer;
 
           if (dealer_user_id != null) {
             dealer_user_id = carsData.car.dealer.user_id;
           }
-
-          if (current_user_id == car_user_id) {
+          console.log('current_user_id',current_user_id);
+          console.log('car_user_id',car_user_id);
+          
+          if (current_user_id && current_user_id == car_user_id) {
             setIsOwner(true);
-          } else if (dealer_user_id == current_user_id) {
+          } else if (current_user_id && dealer_user_id == current_user_id) {
             setIsOwner(true);
           } else {
             setIsOwner(false);
@@ -528,6 +525,7 @@ export default function CarDetailPage() {
                 >
                   <BidForm
                     auction_id={parseInt(item.active_auction.id)}
+                    auction_type={item.active_auction.auction_type}
                     bid_amount={parseInt(
                       (item.active_auction.current_bid == 0
                         ? item.active_auction.opening_price || 0
@@ -609,7 +607,7 @@ export default function CarDetailPage() {
                 )
               )}
 
-              {item?.active_auction && (
+              {item?.active_auction && item?.active_auction?.bids &&  (
                 <div  className="mt-3 border-t border-border pt-3">
                   <h4 className="text-lg font-bold text-foreground mb-2">آخر المزايدين</h4>
                   <List dir="rtl" sx={{width: '100%',
@@ -731,7 +729,7 @@ export default function CarDetailPage() {
                   </div>
                   <div>
                     <p className="text-foreground text-sm">تقارير الفحص</p>
-                    <p className="font-semibold text-foreground">
+                    <div className="font-semibold text-foreground">
                       {item?.car?.report_images.map((file: any) => (
                         <div key={file.id}>
                           <a href={file.image_path}>
@@ -739,7 +737,7 @@ export default function CarDetailPage() {
                           </a>
                         </div>
                       )) || "-"}
-                    </p>
+                    </div>
                   </div>
                 </div>
 

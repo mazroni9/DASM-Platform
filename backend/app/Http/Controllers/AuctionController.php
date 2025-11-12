@@ -166,7 +166,7 @@ class AuctionController extends Controller
 
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])
         ->where('auction_type', $request->auction_type);
-        
+
         $brands = Auction::query()
             ->where('auction_type', $request->auction_type)
             ->where('control_room_approved', true)
@@ -434,6 +434,7 @@ class AuctionController extends Controller
             'action' => ['required'],             // true/false (قد تأتي كسلسلة)
             'ids'    => ['required', 'array', 'min:1'],
             'ids.*'  => ['integer'],
+            'price'  => ['nullable', 'numeric', 'min:0'],
         ]);
 
         // حوّل action لبوول بأمان (تتعامل مع 'true'/'false' كسترنج)
@@ -480,9 +481,19 @@ class AuctionController extends Controller
                     if ($approve === true) {
                         // APPROVE
                         if ($car->auction_status === 'available') {
+                            if ($request->has('price') && $request->price) {
+                                $car->evaluation_price = $request->price;
+                            }
                             if ($car->activeAuction) {
                                 // عنده مزاد نشط بالفعل -> فقط غيّر حالة السيارة
                                 $car->auction_status = 'in_auction';
+
+
+                                if ($request->has('price') && $request->price) {
+                                    $auction = $car->activeAuction;
+                                    $auction->opening_price = $request->price;
+                                    $auction->save();
+                                }
                                 $car->save();
 
                                 // إشعار المالك (اختياري وآمن)
@@ -502,7 +513,7 @@ class AuctionController extends Controller
                                 // لا يوجد مزاد -> أنشئ واحداً
                                 $auction = new Auction();
                                 $auction->car_id        = $car->id;
-                                $auction->starting_bid  = $car->starting_bid ?? 0;
+                                $auction->opening_price  = $request->price ?? $car->starting_bid ?? $car->evaluation_price ?? 0;
                                 $auction->current_bid   = $car->starting_bid ?? 0;
                                 $auction->reserve_price = $car->reserve_price ?? 0;
                                 $auction->min_price     = $car->min_price ?? 0;

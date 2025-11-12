@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Auction;
 use App\Models\BidEvent;
+use App\Enums\AuctionType;
 use App\Events\NewBidEvent;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
@@ -16,7 +17,11 @@ use App\Services\BidEventService;
 use App\Events\LiveMarketBidEvent;
 use App\Events\PublicMessageEvent;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\ProcessAuctionSaleJob;
+use Illuminate\Support\Facades\Log;
+use function Laravel\Prompts\select;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Services\AuctionLoggingService;
 use App\Notifications\NewBidNotification;
 use Illuminate\Support\Facades\Broadcast;
@@ -24,10 +29,6 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\UserBidLogResource;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
-use function Laravel\Prompts\select;
-use Illuminate\Support\Facades\Cache;
-use App\Jobs\ProcessAuctionSaleJob;
-use Illuminate\Support\Facades\Log;
 
 class BidController extends Controller
 {
@@ -229,16 +230,16 @@ class BidController extends Controller
         $auctions_ids = (clone $bidEventsQuery)->pluck('auction_id')->unique()->toArray();
 
         $bid_events = $bidEventsQuery
-        ->when($request->filter, function ($query, $filter) {
-            if ($filter === 'all') {
-                return $query;
-            }
-            return $query->where('event_type', $filter);
-        })
-        ->when($request->auction_id, function ($query, $auctionId) {
-            return $query->where('auction_id', $auctionId);
-        })
-        ->paginate(3);
+            ->when($request->filter, function ($query, $filter) {
+                if ($filter === 'all') {
+                    return $query;
+                }
+                return $query->where('event_type', $filter);
+            })
+            ->when($request->auction_id, function ($query, $auctionId) {
+                return $query->where('auction_id', $auctionId);
+            })
+            ->paginate(3);
 
         $data  = UserBidLogResource::collection($bid_events);
 
@@ -449,6 +450,8 @@ class BidController extends Controller
                 ], 400);
             }
 
+
+
             // Validate user authorization
             if ($user->id != $data['user_id']) {
                 return response()->json([
@@ -468,7 +471,7 @@ class BidController extends Controller
             if ($isOwner) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'لا يمكنك المزايدة على مزادك الخاص'
+                    'message' => 'لا يمكنك المزايدة على مزاد خاص بك'
                 ], 400);
             }
 
@@ -496,36 +499,38 @@ class BidController extends Controller
             // Enhanced bid amount validation
             $minBidAmount = max($auction->current_bid, $auction->minimum_bid, $auction->starting_bid);
 
-            if ($data['bid_amount'] <= $minBidAmount) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'يجب أن يكون مبلغ المزايدة أعلى من ' . number_format($minBidAmount, 2) . ' ريال'
-                ], 400);
-            }
-
-            // Validate bid amount for instant auctions
-            if (in_array($auction->auction_type, ['live_instant', 'silent_instant'])) {
-                $openingPrice = $auction->opening_price ?? $auction->starting_bid;
-                $minAllowed = $openingPrice * 0.9; // -10%
-                $maxAllowed = $openingPrice * 1.3; // +30%
-
-                if ($data['bid_amount'] < $minAllowed || $data['bid_amount'] > $maxAllowed) {
+            if ($auction->auction_type !=  AuctionType::SILENT_INSTANT->value) {
+                if ($data['bid_amount'] <= $minBidAmount) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'مبلغ المزايدة يجب أن يكون بين ' . number_format($minAllowed, 2) . ' و ' . number_format($maxAllowed, 2) . ' ريال'
+                        'message' => 'يجب أن يكون مبلغ المزايدة أعلى من ' . number_format($minBidAmount, 2) . ' ريال'
+                    ], 400);
+                }
+
+
+                // Validate bid amount for instant auctions
+                if (in_array($auction->auction_type, ['live_instant', 'silent_instant'])) {
+                    $openingPrice = $auction->opening_price ?? $auction->starting_bid;
+                    $minAllowed = $openingPrice * 0.9; // -10%
+                    $maxAllowed = $openingPrice * 1.3; // +30%
+
+                    if ($data['bid_amount'] < $minAllowed || $data['bid_amount'] > $maxAllowed) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'مبلغ المزايدة يجب أن يكون بين ' . number_format($minAllowed, 2) . ' و ' . number_format($maxAllowed, 2) . ' ريال'
+                        ], 400);
+                    }
+                }
+
+                // Check for reasonable bid increment (minimum 1% of current bid)
+                $minIncrement = max($auction->current_bid * 0.01, 100);
+                if ($data['bid_amount'] - $auction->current_bid < $minIncrement) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'الزيادة في المزايدة يجب أن تكون على الأقل ' . number_format($minIncrement, 2) . ' ريال'
                     ], 400);
                 }
             }
-
-            // Check for reasonable bid increment (minimum 1% of current bid)
-            $minIncrement = max($auction->current_bid * 0.01, 100);
-            if ($data['bid_amount'] - $auction->current_bid < $minIncrement) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'الزيادة في المزايدة يجب أن تكون على الأقل ' . number_format($minIncrement, 2) . ' ريال'
-                ], 400);
-            }
-
             // Log bid attempt
             AuctionLoggingService::logBidAttempt($user, $auction, $data['bid_amount'], $request);
 

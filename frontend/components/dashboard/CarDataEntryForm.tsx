@@ -374,19 +374,34 @@ export default function CarDataEntryForm() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 w-full max-w-6xl mx-auto mb-10">
+    <div className="bg-card rounded-lg shadow-md p-4 sm:p-6 w-full max-w-6xl mx-auto mb-10">
       <div className="border-b pb-4 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">نموذج إدخال بيانات السيارة</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">يرجى تعبئة جميع البيانات المطلوبة لإضافة سيارتك</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+          نموذج إدخال بيانات السيارة
+        </h1>
+        <p className="text-sm sm:text-base text-foreground/70 mt-1">
+          يرجى تعبئة جميع البيانات المطلوبة لإضافة سيارتك
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* بيانات أساسية */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:p-6">
           <div>
-            <label htmlFor="make" className={titleCls}>الماركة *</label>
-            <select id="make" name="make" value={formData.make} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            <label
+              htmlFor="الماركة"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              الماركة *
+            </label>
+            <select
+              id="make"
+              name="make"
+              value={formData.make}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              required
+            >
               <option value="">-- اختر الماركة --</option>
               <option value="تويوتا">تويوتا</option><option value="نيسان">نيسان</option>
               <option value="هونداي">هونداي</option><option value="كيا">كيا</option>
@@ -398,15 +413,38 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="model" className={titleCls}>الموديل *</label>
-            <input type="text" id="model" name="model" value={formData.model} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+            <label
+              htmlFor="model"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              الموديل *
+            </label>
+            <input
+              type="text"
+              id="model"
+              name="model"
+              value={formData.model}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              required
+            />
           </div>
 
           <div>
-            <label htmlFor="year" className={titleCls}>سنة الصنع *</label>
-            <select id="year" name="year" value={formData.year} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            <label
+              htmlFor="year"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              سنة الصنع *
+            </label>
+            <select
+              id="year"
+              name="year"
+              value={formData.year}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              required
+            >
               <option value="">-- اختر السنة --</option>
               {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -415,22 +453,56 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="vin" className={titleCls}>رقم التسجيل *</label>
-            <input type="text" id="vin" name="vin" value={formData.vin} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="رقم الهيكل" required />
+            <label
+              htmlFor="vin"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              رقم التسجيل*
+            </label>
+            <input
+              type="text"
+              id="vin"
+              name="vin"
+              value={formData.vin}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              placeholder="رقم الهيكل"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="plate"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              لوحة السيارة
+            </label>
+            <input
+              type="text"
+              id="plate"
+              name="plate"
+              value={formData.plate}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              placeholder="لوحة السيارة"
+              required
+            />
           </div>
 
           <div>
-            <label htmlFor="plate" className={titleCls}>لوحة السيارة</label>
-            <input type="text" id="plate" name="plate" value={formData.plate} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="لوحة السيارة" />
-          </div>
-
-          <div>
-            <label htmlFor="engine" className={titleCls}>نوع الوقود</label>
-            <select id="engine" name="engine" value={formData.engine} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label
+              htmlFor="engine"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              نوع الوقود
+            </label>
+            <select
+              id="engine"
+              name="engine"
+              value={formData.engine}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+            >
               <option value="">-- اختر نوع الوقود --</option>
               <option value="بنزين">بنزين</option><option value="ديزل">ديزل</option>
               <option value="هجين">هجين</option><option value="كهربائي">كهربائي</option>
@@ -438,84 +510,208 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="odometer" className={titleCls}>رقم العداد (كم) *</label>
-            <input type="number" id="odometer" name="odometer" value={formData.odometer} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              min="0" placeholder="10000" required />
+            <label
+              htmlFor="odometer"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              رقم العداد (كم) *
+            </label>
+            <input
+              type="number"
+              id="odometer"
+              name="odometer"
+              value={formData.odometer}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              min="0"
+              placeholder="10000"
+              required
+            />
           </div>
 
           <div>
-            <label htmlFor="color" className={titleCls}>لون السيارة</label>
-            <select id="color" name="color" value={formData.color} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label
+              htmlFor="color"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              لون السيارة
+            </label>
+            <select
+              name="color"
+              id="color"
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+            >
               <option value="">اختر لون السيارة</option>
               {carColors.map((c) => (<option key={c.value} value={c.name}>{c.name}</option>))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="transmission" className={titleCls}>نوع ناقل الحركة</label>
-            <select id="transmission" name="transmission" value={formData.transmission} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label
+              htmlFor="transmission"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              نوع ناقل الحركة
+            </label>
+            <select
+              id="transmission"
+              name="transmission"
+              value={formData.transmission}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+            >
               <option value="">-- اختر نوع ناقل الحركة --</option>
               {transmissionOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="condition" className={titleCls}>حالة السيارة *</label>
-            <select id="condition" name="condition" value={formData.condition} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            <label
+              htmlFor="condition"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              حالة السيارة
+            </label>
+            <select
+              id="condition"
+              name="condition"
+              value={formData.condition}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              required
+            >
               <option value="">-- اختر حالة السيارة --</option>
               {conditionOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="province" className={titleCls}>المنطقة *</label>
-            <select id="province" name="province" value={formData.province} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            <label
+              htmlFor="province"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              المنطقة
+            </label>
+            <select
+              id="province"
+              name="province"
+              value={formData.province}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              required
+            >
               <option value="">-- أختر المنطقة --</option>
               {emirates.map((label) => (<option key={label} value={label}>{label}</option>))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="city" className={titleCls}>المدينة</label>
-            <input type="text" id="city" name="city" value={formData.city} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="المدينة" />
+            <label
+              htmlFor="city"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              المدينة
+            </label>
+            <input
+              type="text"
+              id="city"
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              placeholder="المدينة"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="min_price"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              الحد الأدنى المقبول (ريال) *
+            </label>
+            <input
+              type="number"
+              id="min_price"
+              name="min_price"
+              value={formData.min_price}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              min="0"
+              placeholder="أقل سعر تقبل به للسيارة"
+              required
+            />
           </div>
 
           <div>
-            <label htmlFor="min_price" className={titleCls}>الحد الأدنى المقبول (ريال) *</label>
-            <input type="number" id="min_price" name="min_price" value={formData.min_price} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              min="0" placeholder="أقل سعر تقبل به للسيارة" required />
+            <label
+              htmlFor="max_price"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              الحد الأعلى المرغوب (ريال)
+            </label>
+            <input
+              type="number"
+              id="max_price"
+              name="max_price"
+              value={formData.max_price}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              min="0"
+              placeholder="السعر المستهدف للبيع"
+            />
           </div>
 
           <div>
-            <label htmlFor="max_price" className={titleCls}>الحد الأعلى المرغوب (ريال)</label>
-            <input type="number" id="max_price" name="max_price" value={formData.max_price} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              min="0" placeholder="السعر المستهدف للبيع" />
+            <label
+              htmlFor="agency_number"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              رقم الوكالة
+            </label>
+            <input
+              type="text"
+              id="agency_number"
+              name="agency_number"
+              value={formData.agency_number}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              placeholder="رقم الوكالة"
+            />
           </div>
 
           <div>
-            <label htmlFor="agency_number" className={titleCls}>رقم الوكالة</label>
-            <input type="text" id="agency_number" name="agency_number" value={formData.agency_number} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="رقم الوكالة" />
+            <label
+              htmlFor="agency_issue_date"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              تاريخ إصدار الوكالة
+            </label>
+            <input
+              type="date"
+              id="agency_issue_date"
+              name="agency_issue_date"
+              value={formData.agency_issue_date}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+            />
           </div>
 
           <div>
-            <label htmlFor="agency_issue_date" className={titleCls}>تاريخ إصدار الوكالة</label>
-            <input type="date" id="agency_issue_date" name="agency_issue_date" value={formData.agency_issue_date} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
-          </div>
-
-          <div>
-            <label htmlFor="market_category" className={titleCls}>سوق السيارة *</label>
-            <select id="market_category" name="market_category" value={formData.market_category} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            <label
+              htmlFor="condition"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              سوق السيارة
+            </label>
+            <select
+              id="market_category"
+              name="market_category"
+              value={formData.market_category}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+              required
+            >
               <option value="">-- اختر  سوق السيارة --</option>
               {(marketOptions?.length ? marketOptions : DEFAULT_MARKET_OPTIONS).map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -524,9 +720,19 @@ export default function CarDataEntryForm() {
           </div>
 
           <div>
-            <label htmlFor="main_auction_duration" className={titleCls}>مدة البقاء في المزادات الرئيسية</label>
-            <select id="main_auction_duration" name="main_auction_duration" value={formData.main_auction_duration} onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <label
+              htmlFor="main_auction_duration"
+              className="block text-sm font-medium text-foreground/80 mb-1"
+            >
+              مدة البقاء في المزادات الرئيسية
+            </label>
+            <select
+              id="main_auction_duration"
+              name="main_auction_duration"
+              value={formData.main_auction_duration}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+            >
               <option value="">اختر مدة</option>
               <option value="5">5 أيام</option>
               <option value="7">7 أيام</option>
@@ -534,37 +740,49 @@ export default function CarDataEntryForm() {
           </div>
         </div>
 
-        {/* تحليل ذكي */}
-        {aiAnalysis && (
-          <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h3 className="font-bold text-gray-800 mb-3">تحليل السوق الذكي</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500">متوسط السعر بالسوق</p>
-                <p className="text-xl font-bold">{aiAnalysis.marketPrice.toLocaleString()} ر.س</p>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500">مستوى الطلب</p>
-                <p className={`text-xl font-bold ${aiAnalysis.demandLevel === "مرتفع" ? "text-green-600" : aiAnalysis.demandLevel === "متوسط" ? "text-yellow-600" : "text-red-600"}`}>
-                  {aiAnalysis.demandLevel}
-                </p>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500">سيارات مشابهة</p>
-                <p className="text-xl font-bold">{aiAnalysis.similarCars}</p>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-500">السعر المقترح</p>
-                <p className="text-xl font-bold text-indigo-600">{aiAnalysis.priceSuggestion.toLocaleString()} ر.س</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* تحليل الذكاء الاصطناعي */}
+              {aiAnalysis && (
+                <div className="mt-6 bg-background border border-border rounded-lg p-4">
+                  <h3 className="font-bold text-foreground mb-3">تحليل السوق الذكي</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-sm text-foreground/70">متوسط السعر بالسوق</p>
+                      <p className="text-xl font-bold">{aiAnalysis.marketPrice.toLocaleString()} ر.س</p>
+                    </div>
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-sm text-foreground/70">مستوى الطلب</p>
+                      <p className={`text-xl font-bold ${
+                        aiAnalysis.demandLevel === 'مرتفع' ? 'text-green-600' : 
+                        aiAnalysis.demandLevel === 'متوسط' ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {aiAnalysis.demandLevel}
+                      </p>
+                    </div>
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-sm text-foreground/70">سيارات مشابهة</p>
+                      <p className="text-xl font-bold">{aiAnalysis.similarCars}</p>
+                    </div>
+                    <div className="bg-card p-3 rounded-lg border border-border">
+                      <p className="text-sm text-foreground/70">السعر المقترح</p>
+                      <p className="text-xl font-bold text-primary">{aiAnalysis.priceSuggestion.toLocaleString()} ر.س</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
         {/* كرت التسجيل */}
         <div className="border-t pt-6">
-          <label htmlFor="registration_card_image" className={titleCls}>صورة كرت التسجيل</label>
-          <input type="file" id="registration_card_image" name="registration_card_image" accept="image/*"
+          <label
+            htmlFor="registration_card_image"
+            className="block text-sm font-medium text-foreground/80 mb-1"
+          >
+            صورة كرت التسجيل
+          </label>
+          <input
+            type="file"
+            id="registration_card_image"
+            name="registration_card_image"
+            accept="image/*"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
@@ -574,7 +792,7 @@ export default function CarDataEntryForm() {
                 setFormData((prev) => ({ ...prev, registration_card_image: "" }));
               }
             }}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
           />
           {registrationCardPreview && (
             <div className="mt-4">
@@ -593,25 +811,55 @@ export default function CarDataEntryForm() {
 
         {/* وصف */}
         <div className="border-t pt-6">
-          <label htmlFor="description" className={titleCls}>وصف السيارة *</label>
-          <input type="text" id="description" name="description" value={formData.description} onChange={handleInputChange}
-            className="w-full p-4 sm:p-6 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="وصف السيارة" required />
+          <label
+            htmlFor="vin"
+            className="block text-sm font-medium text-foreground/80 mb-1"
+          >
+            وصف السيارة
+          </label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            className="w-full p-4 sm:p-6 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+            placeholder="وصف السيارة"
+            required
+          />
         </div>
 
         {/* صور */}
         <div className="border-t pt-6">
-          <h3 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
-            <Upload className="ml-2 h-5 w-5 text-blue-500" /> صور السيارة <span className="text-red-500">*</span>
+          <h3 className="text-lg font-medium text-foreground mb-3 flex items-center">
+            <Upload className="ml-2 h-5 w-5 text-primary" />
+            صور السيارة <span className="text-red-500">*</span>
           </h3>
 
           <div className="mb-4">
-            <input type="file" id="car-images" ref={imageInputRef} onChange={handleImageChange}
-              accept="image/*" multiple className="hidden" title="إضافة صور السيارة" aria-label="إضافة صور السيارة" />
-            <button type="button" onClick={() => imageInputRef.current?.click()}
-              className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              <Upload className="ml-2 -mr-1 h-5 w-5" /> إضافة صور السيارة
+            <input
+              type="file"
+              id="car-images"
+              ref={imageInputRef}
+              onChange={handleImageChange}
+              accept="image/*"
+              multiple
+              className="hidden"
+              title="إضافة صور السيارة"
+              aria-label="إضافة صور السيارة"
+            />
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              className="inline-flex items-center px-4 py-2 border border-primary/30 rounded-md shadow-sm text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              <Upload className="ml-2 -mr-1 h-5 w-5" />
+              إضافة صور السيارة
             </button>
+            <p className="text-sm text-foreground/50 mt-1">
+              يمكنك رفع حتى 10 صور للسيارة بصيغة JPG أو PNG. يجب أن تكون الصور
+              واضحة.
+            </p>
           </div>
 
           {previewUrls.length > 0 && (
@@ -631,26 +879,53 @@ export default function CarDataEntryForm() {
 
         {/* تقارير */}
         <div className="border-t pt-6">
-          <h3 className="text-lg font-medium text-gray-800 mb-3 flex items-center">
-            <Upload className="ml-2 h-5 w-5 text-blue-500" /> تقارير الفحص
+          <h3 className="text-lg font-medium text-foreground mb-3 flex items-center">
+            <Upload className="ml-2 h-5 w-5 text-primary" />
+            تقارير الفحص
           </h3>
 
           <div className="mb-4">
-            <input type="file" id="car-reports" ref={reportInputRef} onChange={handleReportChange}
-              accept=".pdf,.doc,.docx,.jpg,.png" multiple className="hidden" title="إضافة تقارير الفحص" aria-label="إضافة تقارير الفحص" />
-            <button type="button" onClick={() => reportInputRef.current?.click()}
-              className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-              <Upload className="ml-2 -mr-1 h-5 و-5" /> إضافة تقارير الفحص
+            <input
+              type="file"
+              id="car-reports"
+              ref={reportInputRef}
+              onChange={handleReportChange}
+              accept=".pdf,.doc,.docx,.jpg,.png"
+              multiple
+              className="hidden"
+              title="إضافة تقارير الفحص"
+              aria-label="إضافة تقارير الفحص"
+            />
+            <button
+              type="button"
+              onClick={() => reportInputRef.current?.click()}
+              className="inline-flex items-center px-4 py-2 border border-secondary/30 rounded-md shadow-sm text-sm font-medium text-secondary bg-secondary/10 hover:bg-secondary/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+            >
+              <Upload className="ml-2 -mr-1 h-5 w-5" />
+              إضافة تقارير الفحص
             </button>
+            <p className="text-sm text-foreground/50 mt-1">
+              يمكنك رفع تقارير فحص السيارة بصيغة PDF أو DOC أو صور.
+            </p>
           </div>
 
           {reports.length > 0 && (
             <div className="space-y-2 mb-4">
               {reports.map((report, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 border rounded-md">
-                  <span className="text-sm truncate max-w-xs">{report.name}</span>
-                  <button type="button" onClick={() => removeReport(index)} className="text-red-500 hover:text-red-700" aria-label="حذف التقرير">
-                    <FileX className="h-4 و-4" />
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-background border rounded-md"
+                >
+                  <span className="text-sm truncate max-w-xs">
+                    {report.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeReport(index)}
+                    className="text-red-500 hover:text-red-700"
+                    aria-label="حذف التقرير"
+                  >
+                    <FileX className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -660,30 +935,46 @@ export default function CarDataEntryForm() {
 
         {/* الإقرار والتوقيع */}
         <div className="border-t pt-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-3">إقرار قبول الشروط والأحكام</h3>
+          <h3 className="text-xl font-bold text-foreground mb-3">
+            إقرار قبول الشروط والأحكام
+          </h3>
 
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-            <p className="text-gray-700 mb-4">
-              أقر أنا مقدم هذا النموذج بموافقتي على جميع شروط وإجراءات المنصة، وأوافق على خصم جميع العمولات والرسوم
-              المقررة من قيمة بيع السيارة. كما أتعهد بأن جميع البيانات المقدمة في هذا النموذج صحيحة وكاملة، وأتحمل
-              المسؤولية القانونية الكاملة في حال ثبوت عدم صحة أي منها.
+          <div className="bg-background/50 p-4 rounded-lg border border-border mb-4">
+            <p className="text-foreground/80 mb-4">
+              أقر أنا مقدم هذا النموذج بموافقتي على جميع شروط وإجراءات المنصة،
+              وأوافق على خصم جميع العمولات والرسوم المقررة من قيمة بيع السيارة.
+              كما أتعهد بأن جميع البيانات المقدمة في هذا النموذج صحيحة وكاملة،
+              وأتحمل المسؤولية القانونية الكاملة في حال ثبوت عدم صحة أي منها.
             </p>
-            <p className="text-gray-700 mb-4">
-              كما أوافق على التوقيع على هذا الإقرار بنظام التوقيع الإلكتروني بواسطة الشركة السعودية للمصادقة (صادق)،
-              وأقر بأن هذا التوقيع يعتبر ملزماً قانونياً لي ولا يجوز لي الرجوع فيه بعد إتمام عملية البيع.
+
+            <p className="text-foreground/80 mb-4">
+              كما أوافق على التوقيع على هذا الإقرار بنظام التوقيع الإلكتروني
+              بواسطة الشركة السعودية للمصادقة (صادق)، وأقر بأن هذا التوقيع يعتبر
+              ملزماً قانونياً لي ولا يجوز لي الرجوع فيه بعد إتمام عملية البيع.
             </p>
             <div className="flex items-center mt-6 mb-2">
-              <input type="checkbox" id="acceptTerms" name="acceptTerms"
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" required />
-              <label htmlFor="acceptTerms" className="mr-2 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                id="acceptTerms"
+                name="acceptTerms"
+                className="w-5 h-5 text-primary border-border rounded focus:ring-primary"
+                required
+              />
+              <label
+                htmlFor="acceptTerms"
+                className="mr-2 text-sm font-medium text-foreground/80"
+              >
                 أوافق على جميع الشروط والأحكام والعمولات المذكورة أعلاه
               </label>
             </div>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4 mb-4">
-            <h4 className="text-md font-semibold text-gray-800 mb-3">التوقيع الإلكتروني (صادق)</h4>
-            <div className="flex items-center justify-center p-4 bg-white border border-dashed border-gray-300 rounded-md">
+          <div className="border border-border rounded-lg p-4 mb-4">
+            <h4 className="text-md font-semibold text-foreground mb-3">
+              التوقيع الإلكتروني (صادق)
+            </h4>
+
+            <div className="flex items-center justify-center p-4 bg-background border border-dashed border-border rounded-md">
               <div className="text-center">
                 <img src="/images/sadad-logo.png" alt="شعار صادق للتوقيع الإلكتروني" className="h-10 mb-2 mx-auto"
                   onError={(e) => {
@@ -691,9 +982,13 @@ export default function CarDataEntryForm() {
                       "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjUwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiIGZpbGw9IiNmMWYxZjEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIxNHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBhbGlnbm1lbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmaWxsPSIjODg4ODg4Ij7Ytdin2K/ZgiAtINin2YTYqtmI2YLZitisINin2YTYpdmE2YPYqtix2YjZhti5PC90ZXh0Pjwvc3ZnPg==";
                   }}
                 />
-                <p className="text-sm text-gray-500">اضغط هنا للتوقيع بواسطة خدمة صادق</p>
-                <button type="button"
-                  className="mt-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                <p className="text-sm text-foreground/50">
+                  اضغط هنا للتوقيع بواسطة خدمة صادق
+                </p>
+                <button
+                  type="button"
+                  className="mt-2 px-4 py-2 bg-secondary text-white text-sm font-medium rounded-md hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+                >
                   توقيع إلكتروني
                 </button>
               </div>
@@ -703,7 +998,13 @@ export default function CarDataEntryForm() {
 
         {/* رسائل النظام */}
         {submitResult && (
-          <div className={`p-4 rounded-md ${submitResult.success ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+          <div
+            className={`p-4 rounded-md ${
+              submitResult.success
+                ? "bg-green-500/10 border border-green-500/20"
+                : "bg-red-500/10 border border-red-500/20"
+            }`}
+          >
             <div className="flex items-start">
               {submitResult.success ? (<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />)
                : (<AlertCircle className="h-5 w-5 text-red-500 ml-2" />)}
@@ -714,23 +1015,36 @@ export default function CarDataEntryForm() {
 
         {/* أزرار */}
         <div className="flex justify-end space-x-3 rtl:space-x-reverse pt-4 border-t">
-          <button type="button" onClick={() => {
-            previewUrls.forEach((u) => URL.revokeObjectURL(u));
-            if (registrationCardPreview) URL.revokeObjectURL(registrationCardPreview);
-            setFormData(emptyCar);
-            setImages([]); setReports([]);
-            setRegistrationCardFile(null);
-            setPreviewUrls([]); setRegistrationCardPreview("");
-            setSubmitResult(null);
-          }}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <button
+            type="button"
+            onClick={() => {
+              // Clean up preview URLs before resetting
+              previewUrls.forEach((url) => URL.revokeObjectURL(url));
+              if (registrationCardPreview) {
+                URL.revokeObjectURL(registrationCardPreview);
+              }
+
+              setFormData(emptyCar);
+              setImages([]);
+              setReports([]);
+              setRegistrationCardFile(null);
+              setPreviewUrls([]);
+              setRegistrationCardPreview("");
+              setSubmitResult(null);
+            }}
+            className="px-4 py-2 border border-border rounded-md shadow-sm text-sm font-medium text-foreground/80 bg-card hover:bg-border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          >
             مسح النموذج
           </button>
-
-          <button type="submit" disabled={isSubmitting}
-            className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-            }`}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${
+              isSubmitting
+                ? "bg-border/50 cursor-not-allowed"
+                : "bg-primary hover:bg-primary/90"
+            }`}
+          >
             {isSubmitting ? "جاري الحفظ..." : "حفظ بيانات السيارة"}
             <Car className="mr-2 h-5 w-5" />
           </button>

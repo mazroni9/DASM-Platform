@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Dealer;
-use App\Models\VenueOwner;
 use App\Models\Investor;
 use App\Enums\UserStatus;
+use App\Models\VenueOwner;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
 use App\Notifications\VerifyEmailNotification;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\QueryException;
 
 class AuthController extends Controller
@@ -162,7 +163,7 @@ class AuthController extends Controller
         Log::info('Generated verification token', ['token_length' => strlen($verificationToken)]);
 
         try {
-            $user = null;
+            $user = new User();
 
             DB::transaction(function () use ($request, $isBusinessAccount, $verificationToken, &$user) {
 
@@ -498,11 +499,11 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Create a new token for the user
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Calculate token expiration time
-        $expiresAt = now()->addMinutes(config('sanctum.expiration', 120));
+        // Create a short-lived API token (15 minutes) for the user
+        $tokenExpiresAt = now()->addMinutes(15);
+        $token = $user
+            ->createToken('auth_token', ['*'], $tokenExpiresAt)
+            ->plainTextToken;
 
         return response()->json([
             'user' => [
@@ -514,7 +515,7 @@ class AuthController extends Controller
             ],
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'expiresAt' => $expiresAt->toIso8601String(),
+            'expiresAt' => $tokenExpiresAt->toIso8601String(),
         ]);
     }
 
@@ -533,14 +534,22 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $currentToken = $request->user()->currentAccessToken();
+        if (!$currentToken instanceof PersonalAccessToken) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active token to refresh',
+            ], 401);
+        }
+
         // Revoke the current token
-        $request->user()->currentAccessToken()->delete();
+        $currentToken->delete();
 
-        // Create a new token
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Calculate new expiration time
-        $expiresAt = now()->addMinutes(config('sanctum.expiration', 120));
+        // Create a new short-lived token
+        $tokenExpiresAt = now()->addMinutes(15);
+        $token = $user
+            ->createToken('auth_token', ['*'], $tokenExpiresAt)
+            ->plainTextToken;
 
         return response()->json([
             'user' => [
@@ -552,7 +561,7 @@ class AuthController extends Controller
             ],
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'expiresAt' => $expiresAt->toIso8601String(),
+            'expiresAt' => $tokenExpiresAt->toIso8601String(),
         ]);
     }
 
@@ -561,12 +570,17 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        // Revoke the active API token if present
+        $token = $request->user()?->currentAccessToken();
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+        }
+
         // Invalidate the session
         $request->session()->invalidate();
 
         // Regenerate the CSRF token
         $request->session()->regenerateToken();
-
         return response()->json(['message' => 'Logged out successfully']);
     }
 

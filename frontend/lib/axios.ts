@@ -48,6 +48,19 @@ api.interceptors.request.use(
         if (loadingFunctions) {
             loadingFunctions.startLoading();
         }
+
+        const authState = useAuthStore.getState();
+        const token =
+            authState.token ||
+            (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+
+        if (token) {
+            config.headers = {
+                ...config.headers,
+                Authorization: `Bearer ${token}`,
+            };
+        }
+
         return config;
     },
     (error) => {
@@ -102,15 +115,15 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             // Check if we're already on the login page or trying to login
-            if (typeof window !== "undefined") {
-                const currentPath = window.location.pathname;
-                if (
-                    currentPath.includes("/auth/login") ||
-                    originalRequest.url.includes("/api/login")
-                ) {
-                    return Promise.reject(error);
-                }
-            }
+            // if (typeof window !== "undefined") {
+            //     const currentPath = window.location.pathname;
+            //     if (
+            //         currentPath.includes("/auth/login") ||
+            //         originalRequest.url.includes("/api/login")
+            //     ) {
+            //         return Promise.reject(error);
+            //     }
+            // }
 
             try {
                 // Use a shared promise to prevent multiple refresh calls
@@ -127,48 +140,52 @@ api.interceptors.response.use(
                 if (refreshSuccess) {
                     // Update Authorization header with new token
                     const newToken = useAuthStore.getState().token;
-                    originalRequest.headers[
-                        "Authorization"
-                    ] = `Bearer ${newToken}`;
+                    const headers = originalRequest.headers ?? {};
+                    (headers as Record<string, string>)["Authorization"] = `Bearer ${newToken}`;
+                    originalRequest.headers = headers;
                     return api(originalRequest);
-                } else {
-                    // If refresh failed, clear auth state and redirect
-                    console.log("Token refresh failed, rejecting request");
-
-                    // Redirect to login page only if we're not already redirecting
-                    if (typeof window !== "undefined") {
-                        const currentPath = window.location.pathname;
-                        const isAlreadyOnLoginPage =
-                            currentPath.includes("/auth/login");
-
-                        if (!isAlreadyOnLoginPage) {
-                            const isRedirecting = sessionStorage.getItem(
-                                "redirecting_to_login"
-                            );
-
-                            if (!isRedirecting) {
-                                sessionStorage.setItem(
-                                    "redirecting_to_login",
-                                    "true"
-                                );
-                                console.log(
-                                    "Auth refresh failed - redirecting to login"
-                                );
-
-                                // Immediate redirect without timeout
-                                window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
-                                    currentPath
-                                )}`;
-                            }
-                        }
-                    }
-
-                    return Promise.reject(error);
                 }
+
+                await useAuthStore
+                    .getState()
+                    .logout({ skipRequest: true, redirectToLogin: false });
+
+                if (typeof window !== "undefined") {
+                    const currentPath =
+                        window.location.pathname +
+                        window.location.search +
+                        window.location.hash;
+
+                    // if (!currentPath.includes("/auth/login")) {
+                    //     window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
+                    //         currentPath || "/"
+                    //     )}`;
+                    // }
+                }
+
+                return Promise.reject(error);
             } catch (refreshError) {
                 isRefreshing = false;
                 refreshPromise = null;
                 console.error("Error during token refresh:", refreshError);
+
+                await useAuthStore
+                    .getState()
+                    .logout({ skipRequest: true, redirectToLogin: false });
+
+                // if (typeof window !== "undefined") {
+                //     const currentPath =
+                //         window.location.pathname +
+                //         window.location.search +
+                //         window.location.hash;
+
+                //     if (!currentPath.includes("/auth/login")) {
+                //         window.location.href = `/auth/login?returnUrl=${encodeURIComponent(
+                //             currentPath || "/"
+                //         )}`;
+                //     }
+                // }
+
                 return Promise.reject(refreshError);
             }
         }

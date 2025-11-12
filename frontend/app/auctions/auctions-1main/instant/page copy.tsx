@@ -118,12 +118,8 @@ export default function InstantAuctionPage() {
   const { isLoggedIn } = useAuth();
   const router = useLoadingRouter();
 
-  // حارس الدخول
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/auth/login?returnUrl=/dashboard/profile');
-    }
-  }, [isLoggedIn, router]);
+  // Removed client-side authentication redirect - now handled by middleware
+  // Public page: authentication only required for bidding actions
 
   // Debounce للبحث
   useEffect(() => {

@@ -95,16 +95,12 @@ export default function InstantAuctionPage() {
   const loadingGateRef = useRef(false);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // =============== تحقق من التوثيق ===============
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/auctions/instant");
-    }
-  }, [isLoggedIn, router]);
+  // Removed client-side authentication redirect - now handled by middleware
+  // Public page: authentication only required for bidding actions
 
   // =============== جلب البيانات ===============
   const fetchAuctions = useCallback(async () => {
-    if (!isLoggedIn || loadingGateRef.current) return;
+    
     
     loadingGateRef.current = true;
     setLoading(currentPage === 1);

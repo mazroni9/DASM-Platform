@@ -42,6 +42,11 @@ interface AuthState {
   initialized: boolean;
   lastProfileFetch: number;
 
+  isAuthModalOpen: boolean;
+  authModalInitialTab: "login" | "register";
+  openAuthModal: (tab?: "login" | "register") => void;
+  closeAuthModal: () => void;
+
   initializeFromStorage: () => Promise<boolean>;
   fetchProfile: (opts?: { force?: boolean; silent?: boolean }) => Promise<boolean>;
 
@@ -56,11 +61,31 @@ interface AuthState {
     pendingApproval?: boolean;
   }>;
 
-  logout: () => Promise<void>;
+  logout: (opts?: { skipRequest?: boolean; redirectToLogin?: boolean }) => Promise<void>;
   refreshToken: () => Promise<boolean>;
 }
 
 const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
+const TOKEN_EXPIRY_MINUTES = 15;
+const AUTH_COOKIE_NAME = "auth-token";
+
+const isBrowser = () => typeof window !== "undefined";
+
+const setAuthCookie = (token: string, minutes = TOKEN_EXPIRY_MINUTES) => {
+  if (!isBrowser()) return;
+
+  const expires = new Date(Date.now() + minutes * 60 * 1000).toUTCString();
+  const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
+
+  document.cookie = `${AUTH_COOKIE_NAME}=${token}; Path=/; Expires=${expires}; SameSite=Lax${secureFlag}`;
+};
+
+const clearAuthCookie = () => {
+  if (!isBrowser()) return;
+
+  const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${AUTH_COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
+};
 
 // ✅ موحّد شكل المستخدم من أي رد (يدعم {success,data} و {data:{}} و {…user})
 const extractUser = (respOrObj: any): User | null => {
@@ -83,13 +108,20 @@ export const useAuthStore = create<AuthState>()(
       initialized: false,
       lastProfileFetch: 0,
 
+      isAuthModalOpen: false,
+      authModalInitialTab: "login",
+      openAuthModal: (tab = "login") =>
+        set({ isAuthModalOpen: true, authModalInitialTab: tab }),
+      closeAuthModal: () => set({ isAuthModalOpen: false }),
+
       initializeFromStorage: async () => {
         if (get().initialized) return true;
 
         set({ loading: true });
 
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const token = isBrowser() ? localStorage.getItem("token") : null;
         if (!token) {
+          clearAuthCookie();
           set({ loading: false, initialized: true });
           return false;
         }
@@ -97,6 +129,7 @@ export const useAuthStore = create<AuthState>()(
         // ضع التوكن في الرؤوس
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        setAuthCookie(token);
 
         set({ token, isLoggedIn: true });
 
@@ -194,12 +227,13 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const token = data.access_token;
-          if (typeof window !== "undefined" && token) {
+          if (isBrowser() && token) {
             localStorage.setItem("token", token);
           }
           if (token) {
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
             if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            setAuthCookie(token);
           }
 
           const loginUser = extractUser(data);
@@ -249,19 +283,25 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: async () => {
+      logout: async (opts) => {
+        const skipRequest = opts?.skipRequest ?? false;
+        const redirectToLogin = opts?.redirectToLogin ?? true;
+
         try {
-          api.post(`/api/logout`).catch((error) => {
-            console.error("Logout API error:", error);
-          });
+          if (!skipRequest) {
+            await api.post(`/api/logout`).catch((error) => {
+              console.error("Logout API error:", error);
+            });
+          }
         } finally {
-          if (typeof window !== "undefined") localStorage.removeItem("token");
+          if (isBrowser()) localStorage.removeItem("token");
           delete axios.defaults.headers.common["Authorization"];
           if (api.defaults) delete api.defaults.headers.common["Authorization"];
+          clearAuthCookie();
 
           set({ user: null, token: null, isLoggedIn: false, lastProfileFetch: 0 });
 
-          if (typeof window !== "undefined") {
+          if (redirectToLogin && isBrowser()) {
             window.location.href = "/auth/login";
           }
         }
@@ -285,9 +325,12 @@ export const useAuthStore = create<AuthState>()(
           if (response.data && response.data.access_token) {
             const { access_token } = response.data;
 
-            if (typeof window !== "undefined") localStorage.setItem("token", access_token);
+            if (isBrowser()) {
+              localStorage.setItem("token", access_token);
+            }
             axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
             if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+            setAuthCookie(access_token);
 
             const state = get();
             const now = Date.now();
@@ -313,13 +356,15 @@ export const useAuthStore = create<AuthState>()(
           console.error("Token refresh failed:", error);
 
           if (error?.response?.status === 401) {
-            if (typeof window !== "undefined") localStorage.removeItem("token");
+            if (isBrowser()) localStorage.removeItem("token");
             delete axios.defaults.headers.common["Authorization"];
             if (api.defaults) delete api.defaults.headers.common["Authorization"];
+            clearAuthCookie();
 
             set({ user: null, token: null, isLoggedIn: false, lastProfileFetch: 0 });
           }
 
+          clearAuthCookie();
           return false;
         }
       },

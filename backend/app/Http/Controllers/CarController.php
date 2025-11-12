@@ -4,23 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Car;
 use App\Models\User;
+use Inertia\Inertia;
+use Inertia\Response;
+use App\Models\Dealer;
 use App\Models\Auction;
+use App\Enums\AuctionType;
+use App\Enums\CarCondition;
+use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Schema;
-
-use App\Services\CloudinaryService;
 use App\Http\Resources\CarCollection;
-
-use App\Enums\CarCondition;
+use Illuminate\Support\Facades\Cache;
+use App\Http\Resources\CarCardResource;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
+use App\Services\CloudinaryService;
 use App\Enums\CarTransmission;
 use App\Enums\CarsMarketsCategory;
-use App\Enums\AuctionStatus;
+
 
 use App\Notifications\NewCarAddedNotification;
 
@@ -319,19 +323,29 @@ class CarController extends Controller
      */
     public function showOnly($id)
     {
-        $car = Car::with('reportImages')->find($id);
-        if ($car) $car->load('dealer');
+        $user = Auth::user();
+        $car = Car::with('reportImages','activeAuction')->find($id);
+
+        if ($car) {
+            $car->load('dealer');
+        }
 
         if (!$car) {
             return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة.'], 404);
         }
 
         $activeAuction = $car->activeAuction()
-            ->with(['bids' => function ($q) {
+        ->withCount('bids')
+        ->first();
+        $total_bids = $activeAuction?->bids_count ?? 0;
+        if ($activeAuction && $activeAuction->auction_type != AuctionType::SILENT_INSTANT) {
+            $activeAuction->load(['bids' => function ($q) {
                 $q->select('id', 'bid_amount', 'created_at', 'user_id', 'auction_id')
-                  ->orderBy('created_at', 'desc');
-            }])
-            ->first();
+                    ->orderBy('created_at', 'desc');
+            }]);
+
+           // $total_bids = $activeAuction ? $activeAuction->bids->count() : 0;
+        }
 
         $similar_cars = Car::where('make', $car->make)
             ->where('id', '!=', $car->id)
@@ -345,11 +359,11 @@ class CarController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => [
-                'car'           => $car,
-                'active_auction'=> $activeAuction,
-                'similar_cars'  => $similar_cars,
-                'total_bids'    => $activeAuction ? $activeAuction->bids->count() : 0,
+            'data' => [
+                'car' => $car,
+                'active_auction' => $activeAuction,
+                'similar_cars' => $similar_cars,
+                'total_bids' => $total_bids
             ]
         ]);
     }

@@ -29,15 +29,15 @@ const MarketCard = ({ item, index }) => {
   const Icon = item.icon;
   const isRight = item.group === 'right';
 
-  const gradient = 
+  const bgColor = 
     item.group === 'right'
-      ? 'from-cyan-500 to-blue-600'
-      : 'from-emerald-500 to-teal-600';
+      ? 'bg-primary'
+      : 'bg-secondary';
 
   const shadowColor = 
     item.group === 'right'
-      ? 'shadow-cyan-500/20'
-      : 'shadow-emerald-500/20';
+      ? 'shadow-primary/20'
+      : 'shadow-secondary/20';
 
   return (
     <motion.div
@@ -52,7 +52,7 @@ const MarketCard = ({ item, index }) => {
         className={`
           group relative block
           h-full
-          bg-gradient-to-br ${gradient}
+          ${bgColor}
           rounded-2xl
           p-1
           shadow-lg hover:shadow-2xl hover:${shadowColor}
@@ -62,16 +62,16 @@ const MarketCard = ({ item, index }) => {
         aria-label={`الذهاب إلى ${item.name}`}
       >
         {/* طبقة داخلية لفصل التدرج */}
-        <div className="bg-slate-900 h-full rounded-xl flex flex-col items-center justify-center p-5 text-center">
+        <div className="bg-card h-full rounded-xl flex flex-col items-center justify-center p-5 text-center">
           <div className="mb-3">
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-              <Icon className={`h-6 w-6 text-white ${isRight ? 'ml-0.5' : 'mr-0.5'}`} />
+            <div className="w-12 h-12 rounded-full bg-background/50 flex items-center justify-center">
+              <Icon className={`h-6 w-6 text-foreground ${isRight ? 'ml-0.5' : 'mr-0.5'}`} />
             </div>
           </div>
-          <h3 className="text-white font-bold text-base leading-tight">
+          <h3 className="text-foreground font-bold text-base leading-tight">
             {item.name}
           </h3>
-          <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+          <div className="absolute inset-0 bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
         </div>
       </LoadingLink>
     </motion.div>
@@ -93,7 +93,7 @@ export default function MarketTypeNav() {
           <h2 className="text-2xl md:text-3xl font-bold text-primary mb-3">
             اختر سوقك المتخصص
           </h2>
-          <p className="text-base max-w-lg mx-auto">
+          <p className="text-base max-w-lg mx-auto text-foreground">
             كل سوق مصمم ليلبي احتياجات فئة محددة من البائعين والمشترين
           </p>
         </motion.div>

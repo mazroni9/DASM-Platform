@@ -332,7 +332,6 @@ Route::get('/check-time', function (Request $request) {
 */
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -345,11 +344,15 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 */
 Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
-Route::get('/auctions/{id}', [AuctionController::class, 'show'])->whereNumber('id');
+Route::get('/auctions/{id}', [AuctionController::class, 'show']);
+Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+Route::get('/sessions/live', [AuctionSessionController::class, 'getActiveLiveSessions']);
+Route::get('/sessions/live/{id}', [AuctionSessionController::class, 'getLiveSession']);
 
-Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
-Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession'])->whereNumber('id');
+Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
+Route::get('/car/{id}', [CarController::class, 'showOnly']);
 
+// Public blog routes
 Route::get('/blog', [BlogController::class, 'index']);
 Route::get('/blog/latest/{count?}', [BlogController::class, 'latest'])->whereNumber('count');
 Route::get('/blog/tags', [BlogController::class, 'tags']);
@@ -371,8 +374,9 @@ Route::get('/market/buses',   [CarController::class, 'publicMarketCars'])->defau
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
-
-    // User
+    Route::post('/refresh', [AuthController::class, 'refresh']);
+    // User routes
+    Route::get('/user', [UserController::class, 'profile']);
     Route::get('/user/profile', [UserController::class, 'profile']);
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::get('/user/permissions', [UserController::class, 'getPermissions']);
@@ -385,14 +389,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']); // يدعم ?only_approved=1 و ?market_category=trucks|buses|...
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/enum-options', [CarController::class, 'enumOptions']);
-    Route::get('/cars/{id}', [CarController::class, 'show'])->whereNumber('id');
-    Route::get('/car/{id}', [CarController::class, 'showOnly'])->whereNumber('id');
-    Route::put('/cars/{id}', [CarController::class, 'update'])->whereNumber('id');
-    Route::delete('/cars/{id}', [CarController::class, 'destroy'])->whereNumber('id');
-    Route::get('/car-statistics', [CarController::class, 'statistics']);
-    Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
+    Route::get('/cars/{id}', [CarController::class, 'show']);
 
-    // Auctions (user scope)
+    Route::put('/cars/{id}', [CarController::class, 'update']);
+    Route::delete('/cars/{id}', [CarController::class, 'destroy']);
+    Route::get('/car-statistics', [CarController::class, 'statistics']);
+
+    // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update'])->whereNumber('id');
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel'])->whereNumber('id');
@@ -409,7 +412,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions/{id}', [AdminController::class, 'showSessionPublic'])->whereNumber('id');
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
     Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
-    Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+
     Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
 
     // Bids
@@ -608,7 +611,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     // Venue Owners (Admin)
     Route::get  ('/venue-owners',      [AdminVenueOwnerController::class, 'index']);
     Route::get  ('/venue-owners/{id}', [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
-    
+
     // Venues (من الملف الثاني)
     Route::post('/venues', [VenueController::class, 'store']);
     Route::put('/venues/{id}', [VenueController::class, 'update'])->whereNumber('id');

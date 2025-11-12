@@ -55,6 +55,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_code'
     ];
 
+     
+     public function getAuthPassword()
+     {
+         return $this->password_hash; // Return the value of your custom password column
+     }
+
     // Casts for automatic type conversion
     protected $casts = [
         'is_active' => 'boolean',
