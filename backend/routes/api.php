@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
+use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
 
 // ========= Auction Sessions =========
 use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController; // للجمهور
@@ -66,11 +67,6 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 |--------------------------------------------------------------------------
 | Diagnostics / Health
 |--------------------------------------------------------------------------
-| /health      : خفيف جدًا لقياس TTFB.
-| /diag-lite   : لقطة سريعة DB/Cache/Redis/Disk.
-| /diag-bench  : بنشمارك مبسّط.
-| /diag-redis  : تأكيد اتصال Redis والكاش (محمي بالتوكن).
-| /diag-reload : تفريغ الكاشات (محمي بالتوكن).
 */
 Route::get('/health', function () {
     return response()->json([
@@ -344,7 +340,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 /*
 |--------------------------------------------------------------------------
-| Public: Auctions / Sessions / Blog / Broadcast
+| Public: Auctions / Sessions / Blog / Broadcast (+ Market)
 |--------------------------------------------------------------------------
 */
 Route::get('/auctions', [AuctionController::class, 'index']);
@@ -360,6 +356,12 @@ Route::get('/blog/tags', [BlogController::class, 'tags']);
 Route::get('/blog/{slug}', [BlogController::class, 'show']);
 
 Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
+
+// ✅ عام: أسواق السيارات
+Route::get('/market/cars',    [CarController::class, 'publicMarketCars']);
+// ✅ روابط ثابتة اختيارية لكل سوق (تسهل على الفرونت والـSEO)
+Route::get('/market/trucks',  [CarController::class, 'publicMarketCars'])->defaults('market', 'trucks');
+Route::get('/market/buses',   [CarController::class, 'publicMarketCars'])->defaults('market', 'buses');
 
 /*
 |--------------------------------------------------------------------------
@@ -380,7 +382,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cars
     Route::get('/cars', [CarController::class, 'index']);
-    Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']);
+    Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']); // يدعم ?only_approved=1 و ?market_category=trucks|buses|...
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/enum-options', [CarController::class, 'enumOptions']);
     Route::get('/cars/{id}', [CarController::class, 'show'])->whereNumber('id');
@@ -388,7 +390,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cars/{id}', [CarController::class, 'update'])->whereNumber('id');
     Route::delete('/cars/{id}', [CarController::class, 'destroy'])->whereNumber('id');
     Route::get('/car-statistics', [CarController::class, 'statistics']);
-    Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']); // من الملف الثالث
+    Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
 
     // Auctions (user scope)
     Route::post('/auctions', [AuctionController::class, 'store']);
@@ -593,7 +595,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show'])->whereNumber('id');
     Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])->whereNumber('id');
     Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])->whereNumber('id');
-    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus'])->whereNumber('id');
+    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
 
     // Auction Sessions (Admin)
     Route::get('/sessions', [AdminAuctionSessionController::class, 'index']);
@@ -602,8 +604,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::get('/sessions/{id}', [AdminAuctionSessionController::class, 'show'])->whereNumber('id');
     Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id');
     Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
-    Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy'])->whereNumber('id');
-
+    Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy']);
+    // Venue Owners (Admin)
+    Route::get  ('/venue-owners',      [AdminVenueOwnerController::class, 'index']);
+    Route::get  ('/venue-owners/{id}', [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
+    
     // Venues (من الملف الثاني)
     Route::post('/venues', [VenueController::class, 'store']);
     Route::put('/venues/{id}', [VenueController::class, 'update'])->whereNumber('id');
@@ -624,10 +629,10 @@ Route::prefix('exhibitor')
         Route::get   ('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'show'])->whereNumber('id');
         Route::put   ('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'update'])->whereNumber('id');
         Route::post  ('/sessions/{id}/status', [ExhibitorAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
-        Route::delete('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'destroy'])->whereNumber('id');
+        Route::delete('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'destroy']);
 
         // Ratings (قراءة)
-        Route::get('/ratings',         [VenueOwnerRatingController::class, 'index']);
+        Route::get('/ratings',         [ExhibitorVenueOwnerRatingController::class ?? VenueOwnerRatingController::class, 'index']);
         Route::get('/ratings/summary', [VenueOwnerRatingController::class, 'summary']);
     });
 
