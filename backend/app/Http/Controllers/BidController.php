@@ -541,6 +541,7 @@ class BidController extends Controller
                 'auction_id' => $auction->id,
                 'user_id' => $user->id,
                 'bid_amount' => $data['bid_amount'],
+                'auction_type_at_bid' => $auction->auction_type,
                 'increment' =>  $data['bid_amount'] - $auction->current_bid
             ]);
 

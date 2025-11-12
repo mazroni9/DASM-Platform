@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Auction;
 use App\Enums\AuctionType;
 use App\Enums\AuctionStatus;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,14 +15,14 @@ use Illuminate\Foundation\Bus\Dispatchable;
 
 class UpdateCarAuctionJob implements ShouldQueue
 {
-    use  Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * Create a new job instance.
      */
     public function __construct(public $status)
     {
-        // Constructor logging removed - job execution is logged in handle() method
+        //
     }
 
     /**
@@ -34,33 +35,11 @@ class UpdateCarAuctionJob implements ShouldQueue
         try {
             switch ($this->status) {
                 case "instant":
-                    // Update silent instant auctions to live instant auctions
-                    $affectedRows = Auction::whereIn('auction_type', [AuctionType::LIVE->value, AuctionType::SILENT_INSTANT->value])
-                        ->where('status', AuctionStatus::ACTIVE->value)
-                        ->update([
-                            'control_room_approved' => true,
-                            'status' => AuctionStatus::ACTIVE->value,
-                            'auction_type' => AuctionType::LIVE_INSTANT->value,
-                            'approved_for_live' => false
-                        ]);
-
-                    Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE_INSTANT (status: {$this->status})");
+                    $this->transitionDelayedToInstant();
                     break;
-                // case "live":
-                //     // Update silent instant auctions to live instant auctions
-                //     $affectedRows = Auction::where('auction_type', AuctionType::SILENT_INSTANT->value)
-                //         ->where('status', AuctionStatus::ACTIVE->value)
-                //         ->update([
-                //             'control_room_approved' => true,
-                //             'status' => AuctionStatus::ACTIVE->value,
-                //             'auction_type' => AuctionType::LIVE->value,
-                //         ]);
-
-                //     Log::error("Updated {$affectedRows} auctions from SILENT_INSTANT to LIVE (status: {$this->status})");
-                //     break;
 
                 case "late":
-                    // Update live instant auctions to silent instant auctions
+                    // This logic remains for transitioning auctions into the 'delayed'/'late' state.
                     $affectedRows = Auction::where('auction_type', AuctionType::LIVE_INSTANT->value)
                         ->where('status', AuctionStatus::ACTIVE->value)
                         ->update([
@@ -82,5 +61,47 @@ class UpdateCarAuctionJob implements ShouldQueue
         }
 
         Log::error("Completed UpdateCarAuctionJob with status: {$this->status}");
+    }
+
+    /**
+     * Transitions auctions from 'delayed' (Silent Instant) to 'instant' (Live Instant).
+     * Calculates a new opening price based on the average of bids in a specific KSA time window.
+     */
+    private function transitionDelayedToInstant(): void
+    {
+        Log::error("Starting transition from 'delayed' (SILENT_INSTANT) to 'instant' (LIVE_INSTANT) auctions.");
+
+        $ksaTimezone = 'Asia/Riyadh';
+        // The cron job is scheduled to run at 4:01 PM KSA, so `now()` is appropriate.
+        $endOfWindowKSA = Carbon::now($ksaTimezone)->setTime(16, 0, 0);
+        $startOfWindowKSA = $endOfWindowKSA->copy()->subDay()->setTime(22, 0, 0);
+
+        // We assume 'delayed' auctions are of type SILENT_INSTANT.
+        $auctionsToTransition = Auction::where('auction_type', AuctionType::SILENT_INSTANT->value)
+            ->where('status', AuctionStatus::ACTIVE->value)
+            ->get();
+
+        Log::error("Found {$auctionsToTransition->count()} auctions to transition from delayed to instant.");
+
+        foreach ($auctionsToTransition as $auction) {
+            $newAverage = $auction->bids()
+                ->whereBetween('created_at', [$startOfWindowKSA, $endOfWindowKSA])
+                ->avg('bid_amount');
+
+            // Fallback to the auction's original starting_bid if no bids were placed.
+            if (is_null($newAverage) || $newAverage == 0) {
+                $newAverage = $auction->starting_bid;
+            }
+
+            $auction->update([
+                'opening_price' => $newAverage,
+                'current_bid' => null, // "T-Zeroing": Reset the current bid for the instant phase.
+                'auction_type' => AuctionType::LIVE_INSTANT->value, // Transition to 'instant'.
+                'control_room_approved' => true,
+                'approved_for_live' => false,
+            ]);
+
+            Log::error("Auction #{$auction->id} transitioned to LIVE_INSTANT. New opening price set to: {$newAverage}");
+        }
     }
 }
