@@ -3,7 +3,7 @@
 import React from 'react';
 import LoadingLink from "@/components/LoadingLink";
 import Image from 'next/image';
-import { ChevronRight, Car, Building, Building2, Truck, Home } from 'lucide-react';
+import { ChevronRight, Car, Truck, Home, Bus } from 'lucide-react';
 
 export default function CarAuctionsPage() {
   const carMarkets = [
@@ -19,7 +19,6 @@ export default function CarAuctionsPage() {
       textColor: 'text-amber-400',
       icon: Car,
       path: '/auctions/auctions-2car/luxuryCars',
-      row: 1
     },
     {
       id: 'classic',
@@ -32,7 +31,6 @@ export default function CarAuctionsPage() {
       textColor: 'text-amber-400',
       icon: Car,
       path: '/auctions/auctions-2car/classic',
-      row: 1
     },
     {
       id: 'caravan',
@@ -45,13 +43,12 @@ export default function CarAuctionsPage() {
       textColor: 'text-amber-400',
       icon: Home,
       path: '/auctions/auctions-2car/caravan',
-      row: 1
     },
-    
-    // الصف الثاني
+
+    // الصف الثاني — تم الفصل بين الشاحنات والحافلات، وحذف الحكومة + الشركات لتفادي 404
     {
-      id: 'buses',
-      title: 'سوق الشاحنات والحافلات',
+      id: 'trucks',
+      title: 'سوق الشاحنات',
       description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة',
       image: '/trucks.jpg',
       color: 'from-blue-500 to-blue-700',
@@ -59,35 +56,20 @@ export default function CarAuctionsPage() {
       hoverColor: 'bg-gray-800/60',
       textColor: 'text-blue-400',
       icon: Truck,
-      path: '/auctions/auctions-2car/busesTrucks',
-      row: 2
+      path: '/auctions/auctions-2car/trucks',
     },
     {
-      id: 'companies',
-      title: 'سوق سيارات الشركات',
-      description: 'سيارات شركات بأسعار تصفية مخزون',
-      image: '/company-fleet.jpg',
+      id: 'buses',
+      title: 'سوق الحافلات',
+      description: 'حافلات بجاهزية عالية مع خيارات متنوعة',
+      image: '/buses.jpg',
       color: 'from-blue-500 to-blue-700',
       bgColor: 'bg-gray-800/40',
       hoverColor: 'bg-gray-800/60',
       textColor: 'text-blue-400',
-      icon: Building2,
-      path: '/auctions/auctions-2car/companiesCars',
-      row: 2
+      icon: Bus,
+      path: '/auctions/auctions-2car/buses',
     },
-    {
-      id: 'government',
-      title: 'سوق سيارات الجهات الحكومية',
-      description: 'سيارات من الجهات الحكومية بحالة جيدة',
-      image: '/gov-cars.jpg',
-      color: 'from-blue-500 to-blue-700',
-      bgColor: 'bg-gray-800/40',
-      hoverColor: 'bg-gray-800/60',
-      textColor: 'text-blue-400',
-      icon: Building,
-      path: '/auctions/auctions-2car/government',
-      row: 2
-    }
   ];
 
   return (
@@ -110,7 +92,7 @@ export default function CarAuctionsPage() {
             قطاع السيارات المختلفة
           </h1>
           <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto text-center text-blue-100">
-            تصفح مجموعة متنوعة من أسواق السيارات المتخصصة، من الكلاسيكية إلى الفاخرة والشاحنات والكرفانات
+            تصفح أسواق متخصصة: الفارهة، الكلاسيكية، الكرفانات، الشاحنات، الحافلات
           </p>
         </div>
       </div>

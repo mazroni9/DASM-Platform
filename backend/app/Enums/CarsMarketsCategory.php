@@ -4,44 +4,38 @@ namespace App\Enums;
 
 enum CarsMarketsCategory: string
 {
-    /*[
-    { name: 'سوق السيارات الفارهة',  'luxuryCars'},
-    { name: 'سوق السيارات الكلاسيكية',  'classic'},
-    { name: 'سوق الكرافانات', slug: 'caravan'},
+    case LUXURY_CARS   = 'luxuryCars';
+    case CLASSIC       = 'classic';
+    case CARAVAN       = 'caravan';
 
-    { name: 'سوق الشاحنات والحافلات',  'busesTrucks'},
-    { name: 'سوق سيارات الشركات',  'companiesCars',},
-    { name: 'سوق سيارات الجهات الحكومية',  'government',},
-  ];
-  */
-    case LUXURY_CARS = 'luxuryCars';
-    case CLASSIC = 'classic';
-    case CARAVAN = 'caravan';
-    case BUSES_TRUCKS = 'busesTrucks';
+    // ✅ فصل بدل busesTrucks:
+    case TRUCKS        = 'trucks';
+    case BUSES         = 'buses';
+
     case COMPANIES_CARS = 'companiesCars';
-    case GOVERNMENT = 'government';
+    // ❌ تمت إزالة GOVERNMENT
 
     public function label(): string
     {
         return match ($this) {
-            self::LUXURY_CARS => 'سوق السيارات الفارهة',
-            self::CLASSIC => 'سوق السيارات الكلاسيكية',
-            self::CARAVAN => 'سوق الكرافانات',
-            self::BUSES_TRUCKS => 'سوق الشاحنات والحافلات',
-            self::COMPANIES_CARS => 'سوق سيارات الشركات',
-            self::GOVERNMENT => 'سوق سيارات الجهات الحكومية',
+            self::LUXURY_CARS   => 'سوق السيارات الفارهة',
+            self::CLASSIC       => 'سوق السيارات الكلاسيكية',
+            self::CARAVAN       => 'سوق الكرافانات',
+            self::TRUCKS        => 'سوق الشاحنات',
+            self::BUSES         => 'سوق الحافلات',
+            self::COMPANIES_CARS=> 'سوق سيارات الشركات',
         };
     }
 
     public function englishLabel(): string
     {
         return match ($this) {
-            self::LUXURY_CARS => 'Luxury Cars',
-            self::CLASSIC => 'Classic Cars',
-            self::CARAVAN => 'Caravans',
-            self::BUSES_TRUCKS => 'Buses and Trucks',
-            self::COMPANIES_CARS => 'Companies Cars',
-            self::GOVERNMENT => 'Government Cars',
+            self::LUXURY_CARS   => 'Luxury Cars',
+            self::CLASSIC       => 'Classic Cars',
+            self::CARAVAN       => 'Caravans',
+            self::TRUCKS        => 'Trucks',
+            self::BUSES         => 'Buses',
+            self::COMPANIES_CARS=> 'Companies Cars',
         };
     }
 
