@@ -93,12 +93,8 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
   //   return () => clearInterval(timer);
   // }, []);
 
-  // Verify user is authenticated
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/dashboard/profile");
-    }
-  }, [isLoggedIn, router]);
+  // Removed client-side authentication redirect - now handled by middleware
+  // Public page: authentication only required for bidding actions
 
   // تحديث الوقت كل ثانية
   // useEffect(() => {
@@ -109,12 +105,12 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
   //   return () => clearInterval(timer);
   // }, []);
 
-  // Fetch user profile data
+  // Fetch auction data - Public page, guests can view
   useEffect(() => {
     async function fetchAuctions() {
-      if (!isLoggedIn) return;
+      // Public page - authentication only required for bidding actions
       try {
-        setIsAllowed(true); // Assuming live sessions are always allowed to be viewed
+        setIsAllowed(true); // Live sessions are publicly viewable
         
         let response;
         if (sessionId) {
@@ -131,10 +127,10 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
               
               if (current_car && current_car.car) {
                 let car_user_id = current_car.car.user_id;
-                let current_user_id = user.id;
+                let current_user_id = user?.id || null;
                 let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
                 
-                if (current_user_id == car_user_id || dealer_user_id == current_user_id) {
+                if ((current_user_id) && (current_user_id == car_user_id || dealer_user_id == current_user_id)) {
                   setIsOwner(true);
                 } else {
                   setIsOwner(false);
@@ -154,12 +150,12 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
             let liveAuctions = carsData.pending_live_auctions;
             let completedAuctions = carsData.completed_live_auctions;
             
-            if (current_car && current_car.car) {
-              let car_user_id = current_car.car.user_id;
-              let current_user_id = user.id;
-              let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
+              if (current_car && current_car.car) {
+                let car_user_id = current_car.car.user_id;
+                let current_user_id = user?.id || null;
+                let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
               
-              if (current_user_id == car_user_id || dealer_user_id == current_user_id) {
+              if (current_user_id && (current_user_id == car_user_id || dealer_user_id == current_user_id)) {
                 setIsOwner(true);
               } else {
                 setIsOwner(false);
@@ -257,7 +253,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
       pusher.unsubscribe(channelName);
       pusher.disconnect();
     };
-  }, [isLoggedIn, sessionId, user]);
+  }, [sessionId, user]); // Removed isLoggedIn - page is now publicly accessible
 
   const submitBid = async () => {
     try {

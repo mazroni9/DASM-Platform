@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -517,22 +517,11 @@ public function register(Request $request)
             ], 403);
         }
 
-        // Create a new token for the user
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Calculate token expiration time
-        $expiresAt = now()->addMinutes(config('sanctum.expiration', 120));
-
-        $cookie = Cookie::make(
-            name: 'auth-token',           // اسم الكوكي
-            value: $token,                 // التوكن
-            minutes: 60 * 24 * 7,         // أسبوع
-            path: '/',                     // متاح لكل المسارات
-            domain: null,                  // أو حدد الدومين
-            secure: true,                  // فقط عبر HTTPS (في production)
-            httpOnly: true,                // ✅ مهم جداً للأمان
-            sameSite: 'lax'               // حماية من CSRF
-        );
+        // Create a short-lived API token (15 minutes) for the user
+        $tokenExpiresAt = now()->addMinutes(15);
+        $token = $user
+            ->createToken('auth_token', ['*'], $tokenExpiresAt)
+            ->plainTextToken;
 
         return response()->json([
             'user' => [
@@ -544,8 +533,8 @@ public function register(Request $request)
             ],
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'expiresAt' => $expiresAt->toIso8601String(),
-        ])->withCookie($cookie);
+            'expiresAt' => $tokenExpiresAt->toIso8601String(),
+        ]);
     }
 
     /**
@@ -563,24 +552,22 @@ public function register(Request $request)
             ], 401);
         }
 
+        $currentToken = $request->user()->currentAccessToken();
+        if (!$currentToken instanceof PersonalAccessToken) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No active token to refresh',
+            ], 401);
+        }
+
         // Revoke the current token
-        $request->user()->currentAccessToken()->delete();
+        $currentToken->delete();
 
-        // Create a new token
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Calculate new expiration time
-        $expiresAt = now()->addMinutes(config('sanctum.expiration', 120));
-
-        $cookie = Cookie::make(
-            name: 'auth-token',
-            value: $token,
-            minutes: 60 * 24 * 7,
-            path: '/',
-            secure: true,
-            httpOnly: true,
-            sameSite: 'lax'
-        );
+        // Create a new short-lived token
+        $tokenExpiresAt = now()->addMinutes(15);
+        $token = $user
+            ->createToken('auth_token', ['*'], $tokenExpiresAt)
+            ->plainTextToken;
 
         return response()->json([
             'user' => [
@@ -592,8 +579,8 @@ public function register(Request $request)
             ],
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'expiresAt' => $expiresAt->toIso8601String(),
-        ])->withCookie($cookie);
+            'expiresAt' => $tokenExpiresAt->toIso8601String(),
+        ]);
     }
 
     /**
@@ -601,12 +588,17 @@ public function register(Request $request)
      */
     public function logout(Request $request)
     {
+        // Revoke the active API token if present
+        $token = $request->user()?->currentAccessToken();
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+        }
+
         // Invalidate the session
         $request->session()->invalidate();
 
         // Regenerate the CSRF token
         $request->session()->regenerateToken();
-        $cookie = Cookie::forget('auth-token');
         return response()->json(['message' => 'Logged out successfully']);
     }
 

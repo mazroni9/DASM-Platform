@@ -216,6 +216,7 @@ const FeaturedCars = () => {
   }, []);
 
   return (
+    (cars && cars.length > 0) ? (
     <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
@@ -280,7 +281,14 @@ const FeaturedCars = () => {
         </div>
       </div>
     </section>
-  );
+  ) : (
+    
+      <>
+        
+      </>
+    
+  )
+);
 };
 
 // ========== قسم خطوات المزاد (Timeline) ==========

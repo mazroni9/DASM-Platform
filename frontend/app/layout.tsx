@@ -2,12 +2,14 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import ProtectedRoute from "@/components/ProtectedRoute";
+// Removed ProtectedRoute - authentication now handled by middleware.ts
+// Client-side role-based redirects handled at page level where needed
 import Providers from "./providers";
 import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import ClientProviders from "@/components/ClientProviders";
 import GlobalLoader from "@/components/GlobalLoader";
+import AuthModal from "@/components/AuthModal";
 
 const lamaSans = localFont({
   src: [
@@ -36,12 +38,11 @@ export default function RootLayout({
       <body className={`${lamaSans.className} min-h-screen`}>
         <LoadingProvider>
           <Providers>
-            <ProtectedRoute>
-              <ClientProviders>
-                <Navbar />
-                <main>{children}</main>
-              </ClientProviders>
-            </ProtectedRoute>
+            <ClientProviders>
+              <Navbar />
+              <main>{children}</main>
+              <AuthModal />
+            </ClientProviders>
             <GlobalLoader />
           </Providers>
         </LoadingProvider>

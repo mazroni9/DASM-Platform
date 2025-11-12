@@ -219,17 +219,12 @@ export default function CarDetailPage() {
     return Math.round(number / 5) * 5;
   };
 
-  // Verify user is authenticated (only redirect if auth loading is complete and user is not logged in)
-  useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      // router.push("/auth/login?returnUrl=/dashboard/profile"); // Removed redirect to allow public access
-    }
-  }, [isLoggedIn, authLoading, router]);
+
 
   // Fetch user profile data
   useEffect(() => {
     // Don't fetch data if auth is still loading
-    if (authLoading) return;
+   // if (authLoading) return;
 
     setLoading(true);
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY, {
@@ -262,16 +257,18 @@ export default function CarDetailPage() {
           }
 
           let car_user_id = carsData.car.user_id;
-          let current_user_id = user?.id;
+          let current_user_id = user?.id || null;
           let dealer_user_id = carsData.car.dealer;
 
           if (dealer_user_id != null) {
             dealer_user_id = carsData.car.dealer.user_id;
           }
-
-          if (current_user_id == car_user_id) {
+          console.log('current_user_id',current_user_id);
+          console.log('car_user_id',car_user_id);
+          
+          if (current_user_id && current_user_id == car_user_id) {
             setIsOwner(true);
-          } else if (dealer_user_id == current_user_id) {
+          } else if (current_user_id && dealer_user_id == current_user_id) {
             setIsOwner(true);
           } else {
             setIsOwner(false);

@@ -103,12 +103,8 @@ export default function SilentAuctionPage() {
 
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 
-  // تحقق من التوثيق
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/auctions/auctions-1main/silent");
-    }
-  }, [isLoggedIn, router]);
+  // Removed client-side authentication redirect - now handled by middleware
+  // Public page: authentication only required for bidding actions
 
   // تحديث الوقت
   useEffect(() => {
@@ -118,7 +114,7 @@ export default function SilentAuctionPage() {
 
   // جلب البيانات
   const fetchAuctions = useCallback(async () => {
-    if (!isLoggedIn || loadingGateRef.current) return;
+    
     
     loadingGateRef.current = true;
     setLoading(currentPage === 1);

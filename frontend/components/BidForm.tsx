@@ -12,6 +12,8 @@ import {
   Loader2,
   SaudiRiyal,
 } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+
 interface BidFormProps {
   auction_id: number;
   bid_amount: number; // السعر الحالي
@@ -109,7 +111,23 @@ export default function BidForm({
       setIsSubmitting(false);
     }
   };
-  return (
+  return !isLoggedIn ? (
+    <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border/50 p-5 shadow-2xl text-center">
+      <h3 className="text-xl font-bold text-primary mb-4">
+        يرجى تسجيل الدخول للمزايدة
+      </h3>
+      <p className="text-foreground/80 mb-6">
+        يجب أن تكون مسجلاً لتتمكن من تقديم عرضك.
+      </p>
+      <button
+        type="button"
+        onClick={() => useAuthStore.getState().openAuthModal("login")}
+        className="w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90"
+      >
+        تسجيل الدخول أو إنشاء حساب
+      </button>
+    </div>
+  ) : (
     <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border/50 p-5 shadow-2xl">
       <div className="text-center mb-5">
         <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-xl mb-3 border border-border">
