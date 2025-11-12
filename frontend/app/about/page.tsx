@@ -7,7 +7,7 @@ const AboutPage = () => {
     <main className="container mx-auto p-8 bg-card rounded-lg shadow my-8">
       <h1 className="text-3xl font-bold mb-6 text-center text-foreground flex items-center justify-center gap-3">
         <Building2 size={32} />
-        من نحن - منصة DASM-e
+        من نحن - منصة DASMe
       </h1>
 
       <div className="prose prose-lg max-w-none text-right space-y-6" dir="rtl">
@@ -19,7 +19,7 @@ const AboutPage = () => {
           
           <div className="space-y-4 text-foreground">
             <p className="leading-relaxed">
-              منصة DASM-e هي منصة إلكترونية متخصصة في تقديم خدمات المزادات الرقمية المباشرة، انطلاقًا من النشاط التجاري الرسمي لمعرض محمد أحمد الزهراني وإخوانه لتجارة السيارات.
+              منصة DASMe هي منصة إلكترونية متخصصة في تقديم خدمات المزادات الرقمية المباشرة، انطلاقًا من النشاط التجاري الرسمي لمعرض محمد أحمد الزهراني وإخوانه لتجارة السيارات.
             </p>
 
             <p className="leading-relaxed">

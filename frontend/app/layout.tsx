@@ -1,4 +1,4 @@
-// app/layout.tsx
+// app/layout.tsx (Hydration-safe)
 import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
@@ -10,6 +10,10 @@ import { LoadingProvider } from "@/contexts/LoadingContext";
 import ClientProviders from "@/components/ClientProviders";
 import GlobalLoader from "@/components/GlobalLoader";
 import AuthModal from "@/components/AuthModal";
+
+// ملاحظة: ضع suppressHydrationWarning على <html> و <body>
+// لمنع تحذيرات الاختلاف الناتجة عن إضافات المتصفح (مثل cz-shortcut-listen)
+// وأي فروقات طفيفة في السمات قبل تحميل React.
 
 const lamaSans = localFont({
   src: [
@@ -25,17 +29,19 @@ export const metadata: Metadata = {
   description: "منصة رقمية للمزادات المباشرة والفورية والصامتة",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className={lamaSans.variable} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" />
+        {/* أي وسوم <meta> إضافية تُضاف هنا */}
       </head>
-      <body className={`${lamaSans.className} min-h-screen`}>
+      {/*
+        \u26a0\ufe0f مهم: إضافة suppressHydrationWarning هنا تعالج اختلاف السمات على <body>
+        الناتج عادةً من إضافات المتصفح або تغييرات مبكرة قبل ترطيب React.
+      */}
+      <body className={`${lamaSans.className} min-h-screen`} suppressHydrationWarning>
+        {/* موحد تحميل عالمي + موفري الحالة */}
         <LoadingProvider>
           <Providers>
             <ClientProviders>

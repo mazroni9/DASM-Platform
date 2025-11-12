@@ -82,7 +82,7 @@ const Navbar = () => {
                             />
                             <span className="font-bold text-base whitespace-nowrap">
                                 سوق المزادات الرقمية{" "}
-                                <span className="text-blue-700">DASM-e</span>
+                                <span className="text-blue-700">DASMe</span>
                             </span>
                         </LoadingLink>
                     </div>

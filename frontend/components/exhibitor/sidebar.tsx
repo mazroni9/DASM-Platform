@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import LoadingLink from "@/components/LoadingLink";
 import { motion } from 'framer-motion';
 import {
@@ -35,29 +36,29 @@ const normalizePath = (p?: string) => {
 
 /* ===== عناصر القائمة ===== */
 const navItems = [
-  { href: '/exhibitor',               icon: FiHome,        label: 'الرئيسية' },
-  { href: '/exhibitor/add-car',       icon: FiPlusSquare,  label: 'إضافة سيارة' },
-  { href: '/exhibitor/all-cars',      icon: FiLayers,      label: 'جميع السيارات' },
-  { href: '/exhibitor/auctions',      icon: FiDollarSign,  label: 'المزادات' },
+  { href: '/exhibitor',               icon: FiHome,         label: 'الرئيسية' },
+  { href: '/exhibitor/add-car',       icon: FiPlusSquare,   label: 'إضافة سيارة' },
+  { href: '/exhibitor/all-cars',      icon: FiLayers,       label: 'جميع السيارات' },
+  { href: '/exhibitor/auctions',      icon: FiDollarSign,   label: 'المزادات' },
 
   // ✅ جلسات المزاد
-  { href: '/exhibitor/sessions',      icon: FiCalendar,    label: 'جلسات المزاد' },
+  { href: '/exhibitor/sessions',      icon: FiCalendar,     label: 'جلسات المزاد' },
 
-  { href: '/exhibitor/live-sessions', icon: FiRadio,       label: 'جلسات البث المباشر' },
-  { href: '/exhibitor/analytics',     icon: FiBarChart2,   label: 'التحليلات' },
-  { href: '/exhibitor/wallet',        icon: FaWallet,      label: 'رصيد المحفظة' },
-  { href: '/exhibitor/ratings',       icon: FiStar,        label: 'التقييمات' },
-  { href: '/exhibitor/shipping',      icon: FiTruck,       label: 'الشحن' },
-  { href: '/exhibitor/commission',    icon: FaMoneyCheckAlt, label: 'خانة السعي' },
-  { href: '/exhibitor/extra-services',icon: FiGift,        label: 'خدمات إضافية' },
-  { href: '/exhibitor/financial',     icon: FaChartBar,    label: 'العمليات المالية' },
-  { href: '/exhibitor/cars-data',     icon: FiDatabase,    label: 'بيانات السيارات' },
-  { href: '/exhibitor/profile',       icon: FiUser,        label: 'الملف الشخصي' },
+  { href: '/exhibitor/live-sessions', icon: FiRadio,        label: 'جلسات البث المباشر' },
+  { href: '/exhibitor/analytics',     icon: FiBarChart2,    label: 'التحليلات' },
+  { href: '/exhibitor/wallet',        icon: FaWallet,       label: 'رصيد المحفظة' },
+  { href: '/exhibitor/ratings',       icon: FiStar,         label: 'التقييمات' },
+  { href: '/exhibitor/shipping',      icon: FiTruck,        label: 'الشحن' },
+  { href: '/exhibitor/commission',    icon: FaMoneyCheckAlt,label: 'خانة السعي' },
+  { href: '/exhibitor/extra-services',icon: FiGift,         label: 'خدمات إضافية' },
+  { href: '/exhibitor/financial',     icon: FaChartBar,     label: 'العمليات المالية' },
+  { href: '/exhibitor/cars-data',     icon: FiDatabase,     label: 'بيانات السيارات' },
+  { href: '/exhibitor/profile',       icon: FiUser,         label: 'الملف الشخصي' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useLoadingRouter(); // متاح لو احتجناه لاحقًا
+  const _router = useLoadingRouter(); // احتياطي لو احتجناه لاحقًا
   const { user, logout } = useAuthStore();
 
   const currentPath = normalizePath(pathname);
@@ -143,7 +144,7 @@ export function Sidebar() {
           onClick={logout}
           className="w-full flex items-center gap-3 p-3 rounded-xl text-red-500 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/30 transition-all duration-200 group"
         >
-          <LogOut size={18} className="text-red-500 group-hover:text-red-400" />
+          <FiLogOut size={18} className="text-red-500 group-hover:text-red-400" />
           <span className="font-medium text-sm">تسجيل الخروج</span>
         </button>
       </div>

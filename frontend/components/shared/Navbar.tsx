@@ -109,14 +109,14 @@ const Navbar = () => {
               <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-primary/30">
                 <Image
                   src="/logo.jpg"
-                  alt="منصة DASM-e - المزادات الرقمية المتخصصة"
+                  alt="منصة DASMe - المزادات الرقمية المتخصصة"
                   fill
                   className="object-cover"
                 />
               </div>
               <span className="font-bold text-lg tracking-tight text-foreground">
                 المزادات الرقمية{" "}
-                <span className="text-primary">DASM-e</span>
+                <span className="text-primary">DASMe</span>
               </span>
             </LoadingLink>
           </div>
