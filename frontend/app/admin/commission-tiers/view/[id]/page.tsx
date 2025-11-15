@@ -55,10 +55,10 @@ export default function Page() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">جاري تحميل بيانات الفئة...</p>
+          <RefreshCw className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">جاري تحميل بيانات الفئة...</p>
         </div>
       </div>
     );
@@ -66,17 +66,17 @@ export default function Page() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
         <Shield className="w-20 h-20 text-amber-500 mb-6" />
-        <h1 className="text-2xl font-bold text-white mb-4 text-center">
+        <h1 className="text-2xl font-bold text-foreground mb-4 text-center">
           لم يتم العثور على الفئة
         </h1>
-        <p className="text-gray-400 mb-8 text-center">
+        <p className="text-muted-foreground mb-8 text-center">
           الفئة المطلوبة غير موجودة أو تم حذفها
         </p>
         <Button
           onClick={() => r.push("/admin/commission-tiers")}
-          className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           <ArrowLeft className="w-5 h-5 ml-2" />
           العودة إلى القائمة
@@ -86,22 +86,22 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
           <Button
             onClick={() => r.push("/admin/commission-tiers")}
             variant="ghost"
-            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 mb-4"
+            className="text-primary hover:text-primary/80 mb-4"
           >
             <ArrowLeft className="w-5 h-5 ml-2" />
             العودة إلى قائمة الفئات
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             تفاصيل فئة العمولة
           </h1>
-          <p className="text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             عرض المعلومات الكاملة لفئة العمولة وحساب الرسوم
           </p>
         </div>
@@ -110,14 +110,13 @@ export default function Page() {
           <Button
             onClick={loadData}
             variant="outline"
-            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
           >
             <RefreshCw className="w-4 h-4 ml-2" />
             تحديث
           </Button>
           <Button
             onClick={() => r.push(`/admin/commission-tiers/edit/${id}`)}
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Edit className="w-4 h-4 ml-2" />
             تعديل الفئة
@@ -129,13 +128,13 @@ export default function Page() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Tier Header Card */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
+          <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
             <div className="flex items-center space-x-4 space-x-reverse mb-6">
-              <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-3 rounded-xl">
-                <Percent className="w-6 h-6 text-white" />
+              <div className="bg-primary p-3 rounded-xl">
+                <Percent className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">{data.name}</h2>
+                <h2 className="text-xl font-bold text-foreground">{data.name}</h2>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
                     data.isActive 
@@ -181,22 +180,22 @@ export default function Page() {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-700/30 p-4 rounded-xl">
-                <div className="text-gray-400 text-sm">العمولة الأساسية</div>
-                <div className="text-2xl font-bold text-cyan-400 mt-1">
+              <div className="bg-muted p-4 rounded-xl">
+                <div className="text-muted-foreground text-sm">العمولة الأساسية</div>
+                <div className="text-2xl font-bold text-primary mt-1">
                   {formatCurrency(data.commissionAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
-              <div className="bg-gray-700/30 p-4 rounded-xl">
-                <div className="text-gray-400 text-sm">نطاق الأسعار</div>
-                <div className="text-lg font-semibold text-white mt-1">
+              <div className="bg-muted p-4 rounded-xl">
+                <div className="text-muted-foreground text-sm">نطاق الأسعار</div>
+                <div className="text-lg font-semibold text-foreground mt-1">
                   {formatCurrency(data.minPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} - {' '}
                   {data.maxPrice === null ? '∞' : formatCurrency(data.maxPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </div>
               </div>
-              <div className="bg-gray-700/30 p-4 rounded-xl">
-                <div className="text-gray-400 text-sm">نوع الحساب</div>
-                <div className="text-lg font-semibold text-white mt-1">
+              <div className="bg-muted p-4 rounded-xl">
+                <div className="text-muted-foreground text-sm">نوع الحساب</div>
+                <div className="text-lg font-semibold text-foreground mt-1">
                   {data.isProgressive ? 'تدريجي' : 'ثابت'}
                 </div>
               </div>
@@ -204,29 +203,29 @@ export default function Page() {
           </div>
 
           {/* Detailed Information */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
-              <BarChart3 className="w-5 h-5 ml-2 text-cyan-400" />
+          <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center">
+              <BarChart3 className="w-5 h-5 ml-2 text-primary" />
               المعلومات التفصيلية
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <div className="bg-gray-700/30 p-4 rounded-xl">
-                  <div className="text-sm font-medium text-gray-400 mb-2">اسم الفئة</div>
-                  <div className="text-white font-semibold">{data.name}</div>
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">اسم الفئة</div>
+                  <div className="text-foreground font-semibold">{data.name}</div>
                 </div>
 
-                <div className="bg-gray-700/30 p-4 rounded-xl">
-                  <div className="text-sm font-medium text-gray-400 mb-2">أقل سعر</div>
-                  <div className="text-white font-semibold flex items-center">
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">أقل سعر</div>
+                  <div className="text-foreground font-semibold flex items-center">
                     <DollarSign className="w-4 h-4 ml-1 text-green-400" />
                     {formatCurrency(data.minPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
 
-                <div className="bg-gray-700/30 p-4 rounded-xl">
-                  <div className="text-sm font-medium text-gray-400 mb-2">نوع العمولة</div>
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">نوع العمولة</div>
                   <div className="flex items-center">
                     {data.isProgressive ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400">
@@ -244,28 +243,28 @@ export default function Page() {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gray-700/30 p-4 rounded-xl">
-                  <div className="text-sm font-medium text-gray-400 mb-2">أعلى سعر</div>
-                  <div className="text-white font-semibold flex items-center">
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">أعلى سعر</div>
+                  <div className="text-foreground font-semibold flex items-center">
                     <DollarSign className="w-4 h-4 ml-1 text-green-400" />
                     {data.maxPrice === null ? (
-                      <span className="text-gray-400">غير محدد</span>
+                      <span className="text-muted-foreground">غير محدد</span>
                     ) : (
                       formatCurrency(data.maxPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     )}
                   </div>
                 </div>
 
-                <div className="bg-gray-700/30 p-4 rounded-xl">
-                  <div className="text-sm font-medium text-gray-400 mb-2">مبلغ العمولة</div>
-                  <div className="text-cyan-400 font-bold text-lg flex items-center">
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">مبلغ العمولة</div>
+                  <div className="text-primary font-bold text-lg flex items-center">
                     <Percent className="w-4 h-4 ml-1" />
                     {formatCurrency(data.commissionAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
 
-                <div className="bg-gray-700/30 p-4 rounded-xl">
-                  <div className="text-sm font-medium text-gray-400 mb-2">حالة الفئة</div>
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">حالة الفئة</div>
                   <div className="flex items-center">
                     {data.isActive ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
@@ -288,8 +287,8 @@ export default function Page() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Commission Calculator */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
               <Calculator className="w-5 h-5 ml-2 text-amber-400" />
               حاسبة العمولة
             </h3>
@@ -297,13 +296,13 @@ export default function Page() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">إجراءات سريعة</h3>
+          <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">إجراءات سريعة</h3>
             
             <div className="space-y-3">
               <Button 
                 variant="outline" 
-                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                className="w-full justify-start"
                 onClick={() => r.push(`/admin/commission-tiers/edit/${id}`)}
               >
                 <Edit className="w-4 h-4 ml-2" />
@@ -312,7 +311,7 @@ export default function Page() {
               
               <Button 
                 variant="outline" 
-                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                className="w-full justify-start"
               >
                 <Download className="w-4 h-4 ml-2" />
                 تصدير التقرير
@@ -320,7 +319,7 @@ export default function Page() {
               
               <Button 
                 variant="outline" 
-                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                className="w-full justify-start"
               >
                 <Share className="w-4 h-4 ml-2" />
                 مشاركة المعلومات
@@ -329,27 +328,27 @@ export default function Page() {
           </div>
 
           {/* Tier Information */}
-          <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-2xl border border-cyan-500/20 shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-cyan-400 mb-4">معلومات الفئة</h3>
+          <div className="bg-muted rounded-2xl border border-border shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-primary mb-4">معلومات الفئة</h3>
             
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-cyan-300">معرف الفئة</span>
-                <span className="text-white">{data.id}</span>
+                <span className="text-muted-foreground">معرف الفئة</span>
+                <span className="text-foreground">{data.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-cyan-300">النوع</span>
-                <span className="text-white">{data.isProgressive ? 'تدريجية' : 'ثابتة'}</span>
+                <span className="text-muted-foreground">النوع</span>
+                <span className="text-foreground">{data.isProgressive ? 'تدريجية' : 'ثابتة'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-cyan-300">الحالة</span>
+                <span className="text-muted-foreground">الحالة</span>
                 <span className={`${data.isActive ? 'text-green-400' : 'text-red-400'}`}>
                   {data.isActive ? 'مفعلة' : 'معطلة'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-cyan-300">تاريخ الإنشاء</span>
-                <span className="text-white">-</span>
+                <span className="text-muted-foreground">تاريخ الإنشاء</span>
+                <span className="text-foreground">-</span>
               </div>
             </div>
           </div>
@@ -357,28 +356,28 @@ export default function Page() {
       </div>
 
       {/* Usage Statistics */}
-      <div className="mt-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+      <div className="mt-8 bg-card rounded-2xl border border-border shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
           <TrendingUp className="w-5 h-5 ml-2 text-green-400" />
           إحصائيات الاستخدام
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gray-700/30 p-4 rounded-xl text-center">
-            <div className="text-2xl font-bold text-cyan-400">0</div>
-            <div className="text-gray-400 text-sm">المعاملات</div>
+          <div className="bg-muted p-4 rounded-xl text-center">
+            <div className="text-2xl font-bold text-primary">0</div>
+            <div className="text-muted-foreground text-sm">المعاملات</div>
           </div>
-          <div className="bg-gray-700/30 p-4 rounded-xl text-center">
+          <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-green-400">0</div>
-            <div className="text-gray-400 text-sm">إجمالي العمولة</div>
+            <div className="text-muted-foreground text-sm">إجمالي العمولة</div>
           </div>
-          <div className="bg-gray-700/30 p-4 rounded-xl text-center">
+          <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-amber-400">0%</div>
-            <div className="text-gray-400 text-sm">نسبة الاستخدام</div>
+            <div className="text-muted-foreground text-sm">نسبة الاستخدام</div>
           </div>
-          <div className="bg-gray-700/30 p-4 rounded-xl text-center">
+          <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-blue-400">0</div>
-            <div className="text-gray-400 text-sm">المستخدمين النشطين</div>
+            <div className="text-muted-foreground text-sm">المستخدمين النشطين</div>
           </div>
         </div>
       </div>

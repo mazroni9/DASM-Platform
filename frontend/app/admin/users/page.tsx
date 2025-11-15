@@ -382,14 +382,14 @@ export default function UsersManagementPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+        <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                         إدارة المستخدمين
                     </h1>
-                    <p className="text-gray-400 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         إدارة وتنظيم حسابات المستخدمين في النظام
                     </p>
                 </div>
@@ -399,14 +399,13 @@ export default function UsersManagementPage() {
                         onClick={fetchUsers} 
                         variant="outline" 
                         size="sm"
-                        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
                     >
                         <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
                         تحديث البيانات
                     </Button>
                     <Button 
                         size="sm"
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                         <UserPlus className="w-4 h-4 ml-2" />
                         إضافة مستخدم
@@ -416,11 +415,11 @@ export default function UsersManagementPage() {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">إجمالي المستخدمين</p>
-                            <p className="text-2xl font-bold text-white mt-1">{users.length}</p>
+                            <p className="text-muted-foreground text-sm">إجمالي المستخدمين</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{users.length}</p>
                         </div>
                         <div className="bg-blue-500/10 p-3 rounded-xl">
                             <Users className="w-6 h-6 text-blue-400" />
@@ -428,11 +427,11 @@ export default function UsersManagementPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">المستخدمين النشطين</p>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-muted-foreground text-sm">المستخدمين النشطين</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">
                                 {users.filter(u => u.status === 'active').length}
                             </p>
                         </div>
@@ -442,11 +441,11 @@ export default function UsersManagementPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">في انتظار التفعيل</p>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-muted-foreground text-sm">في انتظار التفعيل</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">
                                 {users.filter(u => u.status === 'pending').length}
                             </p>
                         </div>
@@ -456,11 +455,11 @@ export default function UsersManagementPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">المستخدمين المرفوضين</p>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-muted-foreground text-sm">المستخدمين المرفوضين</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">
                                 {users.filter(u => u.status === 'rejected').length}
                             </p>
                         </div>
@@ -472,15 +471,15 @@ export default function UsersManagementPage() {
             </div>
 
             {/* Filters and Search Section */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+            <div className="bg-card rounded-xl p-6 border border-border shadow-lg mb-6">
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
                     {/* Search Input */}
                     <div className="relative flex-grow">
-                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                         <Input
                             type="text"
                             placeholder="ابحث بالاسم، البريد الإلكتروني، أو اسم الشركة..."
-                            className="pr-12 w-full bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="pr-12 w-full bg-background border-border text-foreground placeholder:text-muted-foreground"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -491,7 +490,7 @@ export default function UsersManagementPage() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
                         >
                             <option value="all">جميع الحالات</option>
                             <option value="pending">في انتظار التفعيل</option>
@@ -502,7 +501,7 @@ export default function UsersManagementPage() {
                         <select
                             value={roleFilter}
                             onChange={(e) => setRoleFilter(e.target.value)}
-                            className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
                         >
                             <option value="all">جميع الأدوار</option>
                             <option value="user">مستخدم</option>
@@ -514,7 +513,6 @@ export default function UsersManagementPage() {
                         <Button 
                             variant="outline" 
                             size="sm"
-                            className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                         >
                             <Filter className="w-4 h-4 ml-2" />
                             المزيد من الفلاتر
@@ -525,17 +523,16 @@ export default function UsersManagementPage() {
             </div>
 
             {/* Users Table */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+            <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
                 {/* Table Header */}
-                <div className="p-6 border-b border-gray-700/50">
+                <div className="p-6 border-b border-border">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-semibold text-white">
+                        <h2 className="text-lg font-semibold text-foreground">
                             قائمة المستخدمين ({filteredUsers.length})
                         </h2>
                         <Button 
                             variant="outline" 
                             size="sm"
-                            className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                         >
                             <Download className="w-4 h-4 ml-2" />
                             تصدير التقرير
@@ -547,41 +544,41 @@ export default function UsersManagementPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gray-750 border-b border-gray-700/50">
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المستخدم</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">معلومات الاتصال</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الدور</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">تاريخ التسجيل</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                            <tr className="bg-muted border-b border-border">
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المستخدم</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">معلومات الاتصال</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الدور</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الحالة</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">تاريخ التسجيل</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الإجراءات</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-700/50">
+                        <tbody className="divide-y divide-border">
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map((user) => (
                                     <tr
                                         key={user.id}
-                                        className="hover:bg-gray-750/50 transition-colors duration-200 group"
+                                        className="hover:bg-muted/50 transition-colors duration-200 group"
                                     >
                                         {/* User Info */}
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
-                                                    <span className="text-white font-semibold text-sm">
+                                                <div className="bg-primary p-2 rounded-xl">
+                                                    <span className="text-primary-foreground font-semibold text-sm">
                                                         {user.first_name.charAt(0).toUpperCase()}
                                                     </span>
                                                 </div>
                                                 <div className="mr-4">
-                                                    <div className="text-sm font-medium text-white">
+                                                    <div className="text-sm font-medium text-foreground">
                                                         {user.first_name} {user.last_name}
                                                     </div>
                                                     {user.dealer && (
-                                                        <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                        <div className="text-xs text-muted-foreground flex items-center mt-1">
                                                             <Building className="w-3 h-3 ml-1" />
                                                             {user.dealer.company_name}
                                                         </div>
                                                     )}
-                                                    <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                    <div className="text-xs text-muted-foreground flex items-center mt-1">
                                                     {user.user_code}
                                                     </div>
                                                 </div>
@@ -592,12 +589,12 @@ export default function UsersManagementPage() {
 
                                         {/* Contact Info */}
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-white flex items-center">
-                                                <Mail className="w-3 h-3 ml-1 text-gray-400" />
+                                            <div className="text-sm text-foreground flex items-center">
+                                                <Mail className="w-3 h-3 ml-1 text-muted-foreground" />
                                                 {user.email}
                                             </div>
                                             {user.phone && (
-                                                <div className="text-sm text-gray-400 flex items-center mt-1">
+                                                <div className="text-sm text-muted-foreground flex items-center mt-1">
                                                     <Phone className="w-3 h-3 ml-1" />
                                                     {user.phone}
                                                 </div>
@@ -649,7 +646,7 @@ export default function UsersManagementPage() {
                                         </td>
 
                                         {/* Registration Date */}
-                                        <td className="px-6 py-4 text-sm text-gray-400">
+                                        <td className="px-6 py-4 text-sm text-muted-foreground">
                                             <div className="flex items-center">
                                                 <Calendar className="w-3 h-3 ml-1" />
                                                 {formatDate(user.created_at)}
@@ -719,7 +716,7 @@ export default function UsersManagementPage() {
                                                         onClick={() => handleOpenEditFrom(user)}
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 px-3"
+                                                        className="px-3"
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </Button>
@@ -728,7 +725,7 @@ export default function UsersManagementPage() {
                                                         asChild
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-gray-400 hover:text-white hover:bg-gray-700/50 px-3"
+                                                        className="px-3"
                                                     >
                                                         <LoadingLink href={`/admin/users/${user.id}`}>
                                                             <Eye className="w-4 h-4" />
@@ -741,8 +738,8 @@ export default function UsersManagementPage() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                        <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                                        <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                                         <p>لا توجد نتائج مطابقة للبحث</p>
                                     </td>
                                 </tr>
@@ -752,7 +749,7 @@ export default function UsersManagementPage() {
                 </div>
 
                 {/* Pagination */}
-                <div className="p-6 border-t border-gray-700/50">
+                <div className="p-6 border-t border-border">
                     <Pagination
                         totalPages={totalCount}
                         page={currentPage}

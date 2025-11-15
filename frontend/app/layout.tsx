@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 // Removed ProtectedRoute - authentication now handled by middleware.ts
 // Client-side role-based redirects handled at page level where needed
+import  ProtectedRoute  from "@/components/ProtectedRoute";
 import Providers from "./providers";
 import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
@@ -23,6 +24,14 @@ const lamaSans = localFont({
   variable: "--font-lama",
   display: "swap",
 });
+const almarai = localFont({
+  src: [
+    { path: "../public/fonts/almarai/Almarai-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../public/fonts/almarai/Almarai-Bold.ttf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-almarai",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DASM - منصة المزادات الرقمية للأسواق",
@@ -31,7 +40,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={lamaSans.variable} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={`${lamaSans.variable} ${almarai.variable}`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" />
         {/* أي وسوم <meta> إضافية تُضاف هنا */}
@@ -40,13 +49,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         \u26a0\ufe0f مهم: إضافة suppressHydrationWarning هنا تعالج اختلاف السمات على <body>
         الناتج عادةً من إضافات المتصفح або تغييرات مبكرة قبل ترطيب React.
       */}
-      <body className={`${lamaSans.className} min-h-screen`} suppressHydrationWarning>
+      <body className={`${lamaSans.className} ${almarai.className} min-h-screen`} suppressHydrationWarning>
         {/* موحد تحميل عالمي + موفري الحالة */}
         <LoadingProvider>
           <Providers>
             <ClientProviders>
               <Navbar />
-              <main>{children}</main>
+              <main>
+                <ProtectedRoute>
+                {children}
+                </ProtectedRoute>
+                </main>
               <AuthModal />
             </ClientProviders>
             <GlobalLoader />

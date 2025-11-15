@@ -220,11 +220,11 @@ export default function EditUserForm({
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Basic Information */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-gray-800 border-b pb-2">
+                        <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
                             المعلومات الأساسية
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 color-gray-800">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="first_name">الاسم الأول</Label>
                                 <Input
@@ -297,7 +297,7 @@ export default function EditUserForm({
 
                     {/* Role and Status */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-gray-800 border-b pb-2">
+                        <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
                             الدور والحالة
                         </h3>
 
@@ -374,7 +374,7 @@ export default function EditUserForm({
                                             e.target.checked
                                         )
                                     }
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
                                 />
                                 <Label htmlFor="is_active" className="text-sm">
                                     حساب نشط
@@ -386,7 +386,7 @@ export default function EditUserForm({
                     {/* Dealer Information - Only show if role is dealer */}
                     {(formData.role === UserRole.DEALER || user.dealer) && (
                         <div className="space-y-4">
-                            <h3 className="text-lg font-medium text-gray-800 border-b pb-2">
+                            <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
                                 معلومات التاجر
                             </h3>
 
