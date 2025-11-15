@@ -204,14 +204,14 @@ export default function ModeratorsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+        <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                         إدارة المشرفين
                     </h1>
-                    <p className="text-gray-400 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         إدارة وتنظيم حسابات المشرفين في النظام
                     </p>
                 </div>
@@ -221,14 +221,13 @@ export default function ModeratorsPage() {
                         onClick={fetchModerators} 
                         variant="outline" 
                         size="sm"
-                        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
                     >
                         <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
                         تحديث البيانات
                     </Button>
                     <Button 
                         asChild 
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                         <Link href="/admin/moderators/add">
                             <Plus className="w-4 h-4 ml-2" />
@@ -240,11 +239,11 @@ export default function ModeratorsPage() {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">إجمالي المشرفين</p>
-                            <p className="text-2xl font-bold text-white mt-1">{moderators.length}</p>
+                            <p className="text-muted-foreground text-sm">إجمالي المشرفين</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">{moderators.length}</p>
                         </div>
                         <div className="bg-blue-500/10 p-3 rounded-xl">
                             <Users className="w-6 h-6 text-blue-400" />
@@ -252,11 +251,11 @@ export default function ModeratorsPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">المشرفين النشطين</p>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-muted-foreground text-sm">المشرفين النشطين</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">
                                 {moderators.filter(m => m.is_active).length}
                             </p>
                         </div>
@@ -266,11 +265,11 @@ export default function ModeratorsPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">المشرفين المعطلين</p>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-muted-foreground text-sm">المشرفين المعطلين</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">
                                 {moderators.filter(m => !m.is_active).length}
                             </p>
                         </div>
@@ -280,11 +279,11 @@ export default function ModeratorsPage() {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-400 text-sm">البريد المؤكد</p>
-                            <p className="text-2xl font-bold text-white mt-1">
+                            <p className="text-muted-foreground text-sm">البريد المؤكد</p>
+                            <p className="text-2xl font-bold text-foreground mt-1">
                                 {moderators.filter(m => m.email_verified_at).length}
                             </p>
                         </div>
@@ -296,15 +295,15 @@ export default function ModeratorsPage() {
             </div>
 
             {/* Filters and Search Section */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+            <div className="bg-card rounded-xl p-6 border border-border shadow-lg mb-6">
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
                     {/* Search Input */}
                     <div className="relative flex-grow">
-                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                         <Input
                             type="text"
                             placeholder="ابحث بالاسم، البريد الإلكتروني، أو رقم الهاتف..."
-                            className="pr-12 w-full bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="pr-12 w-full bg-background border-border text-foreground placeholder:text-muted-foreground"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -315,7 +314,7 @@ export default function ModeratorsPage() {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
                         >
                             <option value="all">جميع الحالات</option>
                             <option value="active">مفعل</option>
@@ -325,7 +324,6 @@ export default function ModeratorsPage() {
                         <Button 
                             variant="outline" 
                             size="sm"
-                            className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                         >
                             <Filter className="w-4 h-4 ml-2" />
                             المزيد من الفلاتر
@@ -335,7 +333,6 @@ export default function ModeratorsPage() {
                         <Button 
                             variant="outline" 
                             size="sm"
-                            className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                         >
                             <Download className="w-4 h-4 ml-2" />
                             تصدير التقرير
@@ -345,14 +342,14 @@ export default function ModeratorsPage() {
             </div>
 
             {/* Moderators Table */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+            <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
                 {/* Table Header */}
-                <div className="p-6 border-b border-gray-700/50">
+                <div className="p-6 border-b border-border">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-semibold text-white">
+                        <h2 className="text-lg font-semibold text-foreground">
                             قائمة المشرفين ({filteredModerators.length})
                         </h2>
-                        <div className="text-sm text-gray-400">
+                        <div className="text-sm text-muted-foreground">
                             إجمالي {moderators.length} مشرف
                         </div>
                     </div>
@@ -362,34 +359,34 @@ export default function ModeratorsPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-gray-750 border-b border-gray-700/50">
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المشرف</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">معلومات الاتصال</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">تاريخ الإنشاء</th>
-                                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                            <tr className="bg-muted border-b border-border">
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المشرف</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">معلومات الاتصال</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الحالة</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">تاريخ الإنشاء</th>
+                                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الإجراءات</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-700/50">
+                        <tbody className="divide-y divide-border">
                             {filteredModerators.length > 0 ? (
                                 filteredModerators.map((moderator) => (
                                     <tr
                                         key={moderator.id}
-                                        className="hover:bg-gray-750/50 transition-colors duration-200 group"
+                                        className="hover:bg-muted/50 transition-colors duration-200 group"
                                     >
                                         {/* Moderator Info */}
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
-                                                <div className="bg-gradient-to-r from-orange-500 to-amber-600 p-2 rounded-xl">
-                                                    <span className="text-white font-semibold text-sm">
+                                                <div className="bg-primary p-2 rounded-xl">
+                                                    <span className="text-primary-foreground font-semibold text-sm">
                                                         {moderator.first_name.charAt(0).toUpperCase()}
                                                     </span>
                                                 </div>
                                                 <div className="mr-4">
-                                                    <div className="text-sm font-medium text-white">
+                                                    <div className="text-sm font-medium text-foreground">
                                                         {moderator.first_name} {moderator.last_name}
                                                     </div>
-                                                    <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                    <div className="text-xs text-muted-foreground flex items-center mt-1">
                                                         <Shield className="w-3 h-3 ml-1" />
                                                         مشرف
                                                     </div>
@@ -400,11 +397,11 @@ export default function ModeratorsPage() {
                                         {/* Contact Info */}
                                         <td className="px-6 py-4">
                                             <div className="space-y-2">
-                                                <div className="text-sm text-white flex items-center">
-                                                    <Mail className="w-3 h-3 ml-1 text-gray-400" />
+                                                <div className="text-sm text-foreground flex items-center">
+                                                    <Mail className="w-3 h-3 ml-1 text-muted-foreground" />
                                                     {moderator.email}
                                                 </div>
-                                                <div className="text-sm text-gray-400 flex items-center">
+                                                <div className="text-sm text-muted-foreground flex items-center">
                                                     <Phone className="w-3 h-3 ml-1" />
                                                     {moderator.phone}
                                                 </div>
@@ -442,7 +439,7 @@ export default function ModeratorsPage() {
                                         </td>
 
                                         {/* Registration Date */}
-                                        <td className="px-6 py-4 text-sm text-gray-400">
+                                        <td className="px-6 py-4 text-sm text-muted-foreground">
                                             <div className="flex items-center">
                                                 <Calendar className="w-3 h-3 ml-1" />
                                                 {formatDate(moderator.created_at)}
@@ -456,7 +453,7 @@ export default function ModeratorsPage() {
                                                     asChild
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 px-3"
+                                                    className="px-3"
                                                 >
                                                     <Link href={`/admin/moderators/${moderator.id}`}>
                                                         <Eye className="w-4 h-4" />
@@ -467,7 +464,7 @@ export default function ModeratorsPage() {
                                                     asChild
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-3"
+                                                    className="px-3"
                                                 >
                                                     <Link href={`/admin/moderators/edit/${moderator.id}`}>
                                                         <Edit className="w-4 h-4" />
@@ -479,7 +476,7 @@ export default function ModeratorsPage() {
                                                     disabled={deletingId === moderator.id}
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3"
+                                                    className="px-3"
                                                 >
                                                     {deletingId === moderator.id ? (
                                                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -491,7 +488,7 @@ export default function ModeratorsPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-gray-400 hover:text-white hover:bg-gray-700/50 px-3"
+                                                    className="px-3"
                                                 >
                                                     <MoreVertical className="w-4 h-4" />
                                                 </Button>
@@ -503,20 +500,20 @@ export default function ModeratorsPage() {
                                 <tr>
                                     <td colSpan={5} className="px-6 py-12 text-center">
                                         <div className="flex flex-col items-center justify-center">
-                                            <Shield className="w-16 h-16 text-gray-600 mb-4" />
-                                            <p className="text-gray-400 text-lg mb-2">
+                                            <Shield className="w-16 h-16 text-muted-foreground mb-4" />
+                                            <p className="text-muted-foreground text-lg mb-2">
                                                 {searchTerm || statusFilter !== "all"
                                                     ? "لا توجد نتائج مطابقة للبحث"
                                                     : "لا يوجد مشرفين مسجلين"
                                                 }
                                             </p>
-                                            <p className="text-gray-500 text-sm mb-6">
+                                            <p className="text-muted-foreground text-sm mb-6">
                                                 {!searchTerm && statusFilter === "all" && "ابدأ بإضافة مشرفين جدد إلى النظام"}
                                             </p>
                                             {!searchTerm && statusFilter === "all" && (
                                                 <Button 
                                                     asChild 
-                                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                                                 >
                                                     <Link href="/admin/moderators/add">
                                                         <Plus className="w-4 h-4 ml-2" />
@@ -535,21 +532,21 @@ export default function ModeratorsPage() {
 
             {/* Quick Stats Footer */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center">
-                    <div className="text-cyan-400 font-semibold">{moderators.length}</div>
-                    <div className="text-gray-400">إجمالي المشرفين</div>
+                <div className="bg-card rounded-lg p-4 text-center">
+                    <div className="text-primary font-semibold">{moderators.length}</div>
+                    <div className="text-muted-foreground">إجمالي المشرفين</div>
                 </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center">
+                <div className="bg-card rounded-lg p-4 text-center">
                     <div className="text-green-400 font-semibold">
                         {moderators.filter(m => m.is_active).length}
                     </div>
-                    <div className="text-gray-400">مشرفين نشطين</div>
+                    <div className="text-muted-foreground">مشرفين نشطين</div>
                 </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center">
+                <div className="bg-card rounded-lg p-4 text-center">
                     <div className="text-amber-400 font-semibold">
                         {moderators.filter(m => m.email_verified_at).length}
                     </div>
-                    <div className="text-gray-400">بريد مؤكد</div>
+                    <div className="text-muted-foreground">بريد مؤكد</div>
                 </div>
             </div>
         </div>

@@ -55,7 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_code'
     ];
 
-     
+
      public function getAuthPassword()
      {
          return $this->password_hash; // Return the value of your custom password column
@@ -144,6 +144,10 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(DeviceToken::class);
     }
 
+    public function cars()
+    {
+        return $this->hasMany(Car::class);
+    }
     public function routeNotificationForFcm()
     {
         return $this->deviceTokens()->pluck('token')->toArray();

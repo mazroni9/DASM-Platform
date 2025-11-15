@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import LoadingLink from "@/components/LoadingLink";
 import { useAuthStore } from "@/store/authStore";
-
+import { useRouter, useSearchParams } from 'next/navigation';
 const loginSchema = z.object({
   email: z.string().email({ message: "يرجى إدخال بريد إلكتروني صالح" }),
   password: z
@@ -42,7 +42,8 @@ export default function LoginForm() {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
-
+  
+  const searchParams = useSearchParams(); 
   const {
     register,
     handleSubmit,
@@ -68,7 +69,13 @@ export default function LoginForm() {
 
       if (result.success) {
         setSuccess("تم تسجيل الدخول بنجاح");
-        router.push("/dashboard");
+        const returnUrl = searchParams.get('returnUrl');
+        if (returnUrl) {
+          router.push(returnUrl);
+        } else {
+          router.push("/dashboard");
+        }
+        
       } else {
         if (result.needsVerification) {
           setSuccess("يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني");

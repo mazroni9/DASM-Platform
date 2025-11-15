@@ -1,17 +1,10 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useAuthStore } from "@/store/authStore";
 
-import { handleRoleBasedRedirection } from "@/lib/roleNavigation";
-
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-    const pathname = usePathname();
-    const router = useLoadingRouter();
-    
-    const { isLoggedIn, user, initialized } = useAuthStore();
+    const { initialized } = useAuthStore();
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -19,12 +12,8 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
             return;
         }
 
-        if (isLoggedIn && user) {
-            handleRoleBasedRedirection(user.role, pathname, router);
-        }
-
         setIsLoading(false);
-    }, [initialized, isLoggedIn, user, pathname, router]);
+    }, [initialized]);
 
     if (isLoading) {
         return (

@@ -232,10 +232,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-400">جاري تحميل بيانات المستخدم...</p>
+                    <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+                    <p className="text-muted-foreground">جاري تحميل بيانات المستخدم...</p>
                 </div>
             </div>
         );
@@ -243,17 +243,17 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
                 <AlertTriangle className="w-20 h-20 text-amber-500 mb-6" />
-                <h1 className="text-2xl font-bold text-white mb-4 text-center">
+                <h1 className="text-2xl font-bold text-foreground mb-4 text-center">
                     لم يتم العثور على المستخدم
                 </h1>
-                <p className="text-gray-400 mb-8 text-center">
+                <p className="text-muted-foreground mb-8 text-center">
                     المستخدم المطلوب غير موجود أو تم حذفه
                 </p>
                 <LoadingLink
                     href="/admin/users"
-                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-300 flex items-center"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl transition-all duration-300 flex items-center"
                 >
                     <ArrowLeft className="w-5 h-5 ml-2" />
                     العودة إلى قائمة المستخدمين
@@ -267,21 +267,21 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+        <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
                 <div>
                     <LoadingLink
                         href="/admin/users"
-                        className="inline-flex items-center text-cyan-400 hover:text-cyan-300 transition-colors duration-300 mb-4"
+                        className="inline-flex items-center text-primary hover:text-primary/80 transition-colors duration-300 mb-4"
                     >
                         <ArrowLeft className="w-5 h-5 ml-2" />
                         العودة إلى قائمة المستخدمين
                     </LoadingLink>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                         تفاصيل المستخدم
                     </h1>
-                    <p className="text-gray-400 mt-2">
+                    <p className="text-muted-foreground mt-2">
                         عرض وإدارة معلومات المستخدم بالتفصيل
                     </p>
                 </div>
@@ -289,14 +289,12 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
                     <Button
                         variant="outline"
-                        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
                     >
                         <Download className="w-4 h-4 ml-2" />
                         تصدير البيانات
                     </Button>
                     <Button
                         variant="outline"
-                        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
                     >
                         <Share className="w-4 h-4 ml-2" />
                         مشاركة
@@ -305,23 +303,23 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* User Header Card */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-xl p-6 mb-6">
+            <div className="bg-card rounded-2xl border border-border shadow-xl p-6 mb-6">
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                     {/* User Info */}
                     <div className="flex items-center space-x-4 space-x-reverse">
                         <div className="relative">
-                            <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-3 rounded-2xl">
-                                <span className="text-white font-bold text-xl">
+                            <div className="bg-primary p-3 rounded-2xl">
+                                <span className="text-primary-foreground font-bold text-xl">
                                     {user.first_name.charAt(0).toUpperCase()}
                                 </span>
                             </div>
                             {user.is_active && (
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900"></div>
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-background"></div>
                             )}
                         </div>
                         
                         <div>
-                            <h2 className="text-xl font-bold text-white">
+                            <h2 className="text-xl font-bold text-foreground">
                                 {user.first_name} {user.last_name}
                             </h2>
                             <div className="flex flex-wrap gap-2 mt-2">
@@ -386,20 +384,20 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
-                        <Button
-                            onClick={() => setShowEditForm(true)}
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
-                        >
-                            <Edit className="w-4 h-4 ml-2" />
-                            تعديل البيانات
-                        </Button>
+                    <Button
+                        onClick={() => setShowEditForm(true)}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                        <Edit className="w-4 h-4 ml-2" />
+                        تعديل البيانات
+                    </Button>
 
                         {user.status === "pending" && (
                             <>
                                 <Button
                                     onClick={handleApproveUser}
                                     disabled={!!processingAction}
-                                    className="bg-green-600 hover:bg-green-700 text-white transition-all duration-300"
+                                    className="bg-green-600 hover:bg-green-700 text-white"
                                 >
                                     {processingAction === "approve" ? (
                                         <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -411,7 +409,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 <Button
                                     onClick={handleRejectUser}
                                     disabled={!!processingAction}
-                                    className="bg-red-600 hover:bg-red-700 text-white transition-all duration-300"
+                                    className="bg-red-600 hover:bg-red-700 text-white"
                                 >
                                     {processingAction === "reject" ? (
                                         <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -427,7 +425,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             <Button
                                 onClick={handleApproveUser}
                                 disabled={!!processingAction}
-                                className="bg-green-600 hover:bg-green-700 text-white transition-all duration-300"
+                                className="bg-green-600 hover:bg-green-700 text-white"
                             >
                                 {processingAction === "approve" ? (
                                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -443,7 +441,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 onClick={handleRejectUser}
                                 disabled={!!processingAction}
                                 variant="outline"
-                                className="border-red-500 text-red-400 hover:bg-red-500/10 transition-all duration-300"
+                                className="border-destructive text-destructive hover:bg-destructive/10"
                             >
                                 {processingAction === "reject" ? (
                                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -460,7 +458,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 <Button
                                     onClick={handleApproveDealerVerification}
                                     disabled={!!processingAction}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                     {processingAction === "verify" ? (
                                         <Loader2 className="w-4 h-4 ml-2 animate-spin" />
@@ -479,16 +477,15 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 {/* Basic Information */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Personal Information Card */}
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
+                    <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-white flex items-center">
-                                <UserIcon className="w-5 h-5 ml-2 text-cyan-400" />
+                            <h3 className="text-lg font-semibold text-foreground flex items-center">
+                                <UserIcon className="w-5 h-5 ml-2 text-primary" />
                                 المعلومات الشخصية
                             </h3>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gray-400 hover:text-white hover:bg-gray-700/50"
                             >
                                 <MoreVertical className="w-4 h-4" />
                             </Button>
@@ -496,36 +493,36 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
-                                <div className="bg-gray-700/30 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-400 mb-2">الاسم الكامل</div>
-                                    <div className="flex items-center text-white">
-                                        <UserIcon className="w-4 h-4 ml-2 text-cyan-400" />
+                                <div className="bg-muted p-4 rounded-xl">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">الاسم الكامل</div>
+                                    <div className="flex items-center text-foreground">
+                                        <UserIcon className="w-4 h-4 ml-2 text-primary" />
                                         {user.first_name} {user.last_name}
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-700/30 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-400 mb-2">البريد الإلكتروني</div>
-                                    <div className="flex items-center text-white">
-                                        <Mail className="w-4 h-4 ml-2 text-cyan-400" />
+                                <div className="bg-muted p-4 rounded-xl">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">البريد الإلكتروني</div>
+                                    <div className="flex items-center text-foreground">
+                                        <Mail className="w-4 h-4 ml-2 text-primary" />
                                         {user.email}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <div className="bg-gray-700/30 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-400 mb-2">رقم الهاتف</div>
-                                    <div className="flex items-center text-white">
-                                        <Phone className="w-4 h-4 ml-2 text-cyan-400" />
+                                <div className="bg-muted p-4 rounded-xl">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">رقم الهاتف</div>
+                                    <div className="flex items-center text-foreground">
+                                        <Phone className="w-4 h-4 ml-2 text-primary" />
                                         {user.phone || "غير متوفر"}
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-700/30 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-400 mb-2">تاريخ التسجيل</div>
-                                    <div className="flex items-center text-white">
-                                        <Calendar className="w-4 h-4 ml-2 text-cyan-400" />
+                                <div className="bg-muted p-4 rounded-xl">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">تاريخ التسجيل</div>
+                                    <div className="flex items-center text-foreground">
+                                        <Calendar className="w-4 h-4 ml-2 text-primary" />
                                         {formatDate(user.created_at)}
                                     </div>
                                 </div>
@@ -544,9 +541,9 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                     {/* Dealer Information */}
                     {user.role === "dealer" && user.dealer && (
-                        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
+                        <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-white flex items-center">
+                                <h3 className="text-lg font-semibold text-foreground flex items-center">
                                     <Building className="w-5 h-5 ml-2 text-blue-400" />
                                     معلومات التاجر
                                 </h3>
@@ -560,17 +557,17 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
-                                    <div className="bg-gray-700/30 p-4 rounded-xl">
-                                        <div className="text-sm font-medium text-gray-400 mb-2">اسم الشركة</div>
-                                        <div className="flex items-center text-white">
+                                    <div className="bg-muted p-4 rounded-xl">
+                                        <div className="text-sm font-medium text-muted-foreground mb-2">اسم الشركة</div>
+                                        <div className="flex items-center text-foreground">
                                             <Building className="w-4 h-4 ml-2 text-blue-400" />
                                             {user.dealer.company_name}
                                         </div>
                                     </div>
 
-                                    <div className="bg-gray-700/30 p-4 rounded-xl">
-                                        <div className="text-sm font-medium text-gray-400 mb-2">رقم السجل التجاري</div>
-                                        <div className="flex items-center text-white">
+                                    <div className="bg-muted p-4 rounded-xl">
+                                        <div className="text-sm font-medium text-muted-foreground mb-2">رقم السجل التجاري</div>
+                                        <div className="flex items-center text-foreground">
                                             <FileText className="w-4 h-4 ml-2 text-blue-400" />
                                             {user.dealer.commercial_registry}
                                         </div>
@@ -579,17 +576,17 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
 
                                 <div className="space-y-4">
                                     {user.dealer.address && (
-                                        <div className="bg-gray-700/30 p-4 rounded-xl">
-                                            <div className="text-sm font-medium text-gray-400 mb-2">العنوان</div>
-                                            <div className="flex items-center text-white">
+                                        <div className="bg-muted p-4 rounded-xl">
+                                            <div className="text-sm font-medium text-muted-foreground mb-2">العنوان</div>
+                                            <div className="flex items-center text-foreground">
                                                 <MapPin className="w-4 h-4 ml-2 text-blue-400" />
                                                 {user.dealer.address}
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="bg-gray-700/30 p-4 rounded-xl">
-                                        <div className="text-sm font-medium text-gray-400 mb-2">حالة التحقق</div>
+                                    <div className="bg-muted p-4 rounded-xl">
+                                        <div className="text-sm font-medium text-muted-foreground mb-2">حالة التحقق</div>
                                         <div className="flex items-center">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                                 user.dealer.status === "active" ? "bg-green-500/20 text-green-400" :
@@ -605,9 +602,9 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             </div>
 
                             {user.dealer.description && (
-                                <div className="mt-4 bg-gray-700/30 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-400 mb-2">وصف الشركة</div>
-                                    <p className="text-white leading-relaxed">
+                                <div className="mt-4 bg-muted p-4 rounded-xl">
+                                    <div className="text-sm font-medium text-muted-foreground mb-2">وصف الشركة</div>
+                                    <p className="text-foreground leading-relaxed">
                                         {user.dealer.description}
                                     </p>
                                 </div>
@@ -619,30 +616,30 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 {/* Stats & Actions Sidebar */}
                 <div className="space-y-6">
                     {/* Quick Stats */}
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                            <Activity className="w-5 h-5 ml-2 text-cyan-400" />
+                    <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
+                        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                            <Activity className="w-5 h-5 ml-2 text-primary" />
                             الإحصائيات
                         </h3>
                         
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
-                                <div className="text-gray-400 text-sm">المزادات المشارك بها</div>
-                                <div className="text-white font-semibold">12</div>
+                            <div className="flex justify-between items-center p-3 bg-muted rounded-xl">
+                                <div className="text-muted-foreground text-sm">المزادات المشارك بها</div>
+                                <div className="text-foreground font-semibold">12</div>
                             </div>
                             
-                            <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
-                                <div className="text-gray-400 text-sm">المشتريات الناجحة</div>
-                                <div className="text-white font-semibold">8</div>
+                            <div className="flex justify-between items-center p-3 bg-muted rounded-xl">
+                                <div className="text-muted-foreground text-sm">المشتريات الناجحة</div>
+                                <div className="text-foreground font-semibold">8</div>
                             </div>
                             
-                            <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
-                                <div className="text-gray-400 text-sm">المبيعات الناجحة</div>
-                                <div className="text-white font-semibold">15</div>
+                            <div className="flex justify-between items-center p-3 bg-muted rounded-xl">
+                                <div className="text-muted-foreground text-sm">المبيعات الناجحة</div>
+                                <div className="text-foreground font-semibold">15</div>
                             </div>
                             
-                            <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
-                                <div className="text-gray-400 text-sm">التقييم العام</div>
+                            <div className="flex justify-between items-center p-3 bg-muted rounded-xl">
+                                <div className="text-muted-foreground text-sm">التقييم العام</div>
                                 <div className="flex items-center text-yellow-400">
                                     <Star className="w-4 h-4 ml-1 fill-current" />
                                     4.8
@@ -652,13 +649,13 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">إجراءات سريعة</h3>
+                    <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
+                        <h3 className="text-lg font-semibold text-foreground mb-4">إجراءات سريعة</h3>
                         
                         <div className="space-y-3">
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                                className="w-full justify-start"
                             >
                                 <MessageSquare className="w-4 h-4 ml-2" />
                                 إرسال رسالة
@@ -666,7 +663,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                                className="w-full justify-start"
                             >
                                 <CreditCard className="w-4 h-4 ml-2" />
                                 عرض المعاملات
@@ -674,7 +671,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                                className="w-full justify-start"
                             >
                                 <ShoppingCart className="w-4 h-4 ml-2" />
                                 عرض المزادات
@@ -682,7 +679,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-start bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300"
+                                className="w-full justify-start"
                             >
                                 <Settings className="w-4 h-4 ml-2" />
                                 إعدادات الحساب

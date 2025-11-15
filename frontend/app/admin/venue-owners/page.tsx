@@ -18,6 +18,7 @@ import {
   Download,
   Loader2,
   ArrowUpDown,
+  Car,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,12 @@ interface VenueOwner {
   updated_at?: string | null;
   user_name?: string | null;
   user_email?: string | null;
+  user: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  venue_cars_count: number;
 }
 
 interface ApiResponse {
@@ -245,14 +252,14 @@ export default function VenueOwnersAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             مُلّاك المعارض
           </h1>
-          <p className="text-gray-400 mt-2">إدارة وعرض قائمة أصحاب/مُلّاك المعارض</p>
+          <p className="text-muted-foreground mt-2">إدارة وعرض قائمة أصحاب/مُلّاك المعارض</p>
         </div>
 
         <div className="flex items-center gap-3 mt-4 lg:mt-0">
@@ -260,7 +267,6 @@ export default function VenueOwnersAdminPage() {
             onClick={() => fetchOwners({ silent: true })}
             variant="outline"
             size="sm"
-            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
           >
             <RefreshCw className={`w-4 h-4 ml-2 ${refreshing ? "animate-spin" : ""}`} />
             تحديث البيانات
@@ -269,7 +275,6 @@ export default function VenueOwnersAdminPage() {
             onClick={exportCsv}
             variant="outline"
             size="sm"
-            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
           >
             <Download className="w-4 h-4 ml-2" />
             تصدير CSV
@@ -279,11 +284,11 @@ export default function VenueOwnersAdminPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">إجمالي المُلّاك</p>
-              <p className="text-2xl font-bold text-white mt-1">{totalCount}</p>
+              <p className="text-muted-foreground text-sm">إجمالي المُلّاك</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{totalCount}</p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Users className="w-6 h-6 text-blue-400" />
@@ -291,11 +296,11 @@ export default function VenueOwnersAdminPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">الحالة: مفعّل</p>
-              <p className="text-2xl font-bold text-white mt-1">
+              <p className="text-muted-foreground text-sm">الحالة: مفعّل</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {owners.filter((o) => o.is_active).length}
               </p>
             </div>
@@ -305,11 +310,11 @@ export default function VenueOwnersAdminPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">في الانتظار</p>
-              <p className="text-2xl font-bold text-white mt-1">
+              <p className="text-muted-foreground text-sm">في الانتظار</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {owners.filter((o) => o.status === "pending").length}
               </p>
             </div>
@@ -319,11 +324,11 @@ export default function VenueOwnersAdminPage() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">المرفوضين</p>
-              <p className="text-2xl font-bold text-white mt-1">
+              <p className="text-muted-foreground text-sm">المرفوضين</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {owners.filter((o) => o.status === "rejected").length}
               </p>
             </div>
@@ -335,14 +340,14 @@ export default function VenueOwnersAdminPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+      <div className="bg-card rounded-xl p-6 border border-border shadow-lg mb-6">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
           <div className="relative flex-grow">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               type="text"
               placeholder="ابحث بالاسم، السجل التجاري، البريد الإلكتروني..."
-              className="pr-12 w-full bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              className="pr-12 w-full bg-background border-border text-foreground placeholder:text-muted-foreground"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleSearchEnter}
@@ -356,7 +361,7 @@ export default function VenueOwnersAdminPage() {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
             >
               <option value="all">كل الحالات</option>
               <option value="pending">في الانتظار</option>
@@ -370,7 +375,7 @@ export default function VenueOwnersAdminPage() {
                 setActiveFilter(e.target.value);
                 setPage(1);
               }}
-              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
             >
               <option value="all">التفعيل (الكل)</option>
               <option value="1">مفعّل</option>
@@ -381,7 +386,6 @@ export default function VenueOwnersAdminPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                 onClick={() => toggleSort(sortBy)}
                 title="تبديل ترتيب الحقل الحالي"
               >
@@ -392,7 +396,6 @@ export default function VenueOwnersAdminPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                 onClick={() => {
                   setSearch("");
                   setStatusFilter("all");
@@ -413,10 +416,10 @@ export default function VenueOwnersAdminPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
-        <div className="p-6 border-b border-gray-700/50">
+      <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-border">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-white">قائمة مُلّاك المعارض</h2>
+            <h2 className="text-lg font-semibold text-foreground">قائمة مُلّاك المعارض</h2>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -426,7 +429,6 @@ export default function VenueOwnersAdminPage() {
                   setPage(1);
                   fetchOwners();
                 }}
-                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
               >
                 <Search className="w-4 h-4 ml-2" />
                 بحث
@@ -436,7 +438,6 @@ export default function VenueOwnersAdminPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleClearSearch}
-                  className="text-gray-300 hover:text-white hover:bg-gray-700/50"
                 >
                   مسح البحث
                 </Button>
@@ -448,54 +449,64 @@ export default function VenueOwnersAdminPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-750 border-b border-gray-700/50">
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المعرض</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">السجل التجاري</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المستخدم</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">التفعيل</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">تاريخ الإنشاء</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">إجراءات</th>
+              <tr className="bg-muted border-b border-border">
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المعرض</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السجل التجاري</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المستخدم</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السيارات</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الحالة</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">التفعيل</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">تاريخ الإنشاء</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/50">
+            <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
                     <Loader2 className="w-6 h-6 inline-block animate-spin mr-2" />
                     جاري التحميل...
                   </td>
                 </tr>
               ) : owners.length > 0 ? (
                 owners.map((v) => (
-                  <tr key={v.id} className="hover:bg-gray-750/50 transition-colors duration-200 group">
+                  <tr key={v.id} className="hover:bg-muted/50 transition-colors duration-200 group">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
-                          <Building className="w-4 h-4 text-white" />
+                        <div className="bg-primary p-2 rounded-xl">
+                          <Building className="w-4 h-4 text-primary-foreground" />
                         </div>
                         <div className="mr-4">
-                          <div className="text-sm font-medium text-white">
+                          <div className="text-sm font-medium text-foreground">
                             {v.venue_name || "—"}
                           </div>
                           {v.description && (
-                            <div className="text-xs text-gray-400 mt-1 line-clamp-1">{v.description}</div>
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-1">{v.description}</div>
                           )}
                         </div>
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      <div className="text-sm text-white flex items-center">
-                        <Hash className="w-3 h-3 ml-1 text-gray-400" />
+                      <div className="text-sm text-foreground flex items-center">
+                        <Hash className="w-3 h-3 ml-1 text-muted-foreground" />
                         {v.commercial_registry || "—"}
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      <div className="text-sm text-white flex items-center">
-                        <Mail className="w-3 h-3 ml-1 text-gray-400" />
-                        {v.user_email || "—"}
+                      <div>
+                        {v.user.first_name} {v.user.last_name}
+                      </div>
+                      <div className="text-sm text-foreground/70 flex items-center">
+                        <Mail className="w-3 h-3 ml-1 text-muted-foreground" />
+                        {v.user.email || "—"}
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-foreground flex items-center">
+                        {v.venue_cars_count || "0"}
                       </div>
                     </td>
 
@@ -518,7 +529,7 @@ export default function VenueOwnersAdminPage() {
                       <ToggleSwitch checked={!!v.is_active} />
                     </td>
 
-                    <td className="px-6 py-4 text-sm text-gray-400">
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <Calendar className="w-3 h-3 ml-1" />
                         {formatDateAr(v.created_at)}
@@ -531,7 +542,7 @@ export default function VenueOwnersAdminPage() {
                           asChild
                           variant="ghost"
                           size="sm"
-                          className="text-gray-400 hover:text-white hover:bg-gray-700/50 px-3"
+                          className="px-3"
                         >
                           <LoadingLink href={`/admin/venue-owners/${v.id}`}>
                             <Eye className="w-4 h-4" />
@@ -543,8 +554,8 @@ export default function VenueOwnersAdminPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                     <p>لا توجد نتائج مطابقة</p>
                   </td>
                 </tr>
@@ -554,7 +565,7 @@ export default function VenueOwnersAdminPage() {
         </div>
 
         {/* Pagination */}
-        <div className="p-6 border-t border-gray-700/50">
+        <div className="p-6 border-t border-border">
           <Pagination
             totalPages={lastPage}
             page={page}

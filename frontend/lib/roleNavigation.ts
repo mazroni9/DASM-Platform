@@ -50,9 +50,7 @@ export const isAuthorizedForRoute = (
 
     // Exhibitor paths (accessible by admins, moderators, and venue owners)
     if (pathname.startsWith("/exhibitor")) {
-        return userRole === UserRole.ADMIN || userRole === "admin" ||
-               userRole === UserRole.MODERATOR || userRole === "moderator" ||
-               userRole === UserRole.VENUE_OWNER || userRole === "venue_owner";
+        return  userRole === UserRole.VENUE_OWNER || userRole === "venue_owner";
     }
 
     // Investor paths
@@ -62,7 +60,8 @@ export const isAuthorizedForRoute = (
 
     // Regular dashboard paths (accessible by all authenticated users)
     if (pathname.startsWith("/dashboard")) {
-        return true;
+        return userRole === UserRole.USER || userRole === "user"
+        || userRole === UserRole.DEALER || userRole === "dealer";
     }
 
     return true;

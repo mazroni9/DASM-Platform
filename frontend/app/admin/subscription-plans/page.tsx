@@ -105,14 +105,14 @@ export default function Page() {
   }, [rows]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             إدارة خطط الاشتراك
           </h1>
-          <p className="text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             إدارة وتنظيم خطط الاشتراك والعضويات في النظام
           </p>
         </div>
@@ -122,14 +122,13 @@ export default function Page() {
             onClick={load} 
             variant="outline" 
             size="sm"
-            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300"
           >
             <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
             تحديث البيانات
           </Button>
           <Button 
             variant="default" 
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => r.push("/admin/subscription-plans/create")}
             size="sm"
           >
@@ -141,11 +140,11 @@ export default function Page() {
 
       {/* Statistics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">إجمالي الخطط</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+              <p className="text-muted-foreground text-sm">إجمالي الخطط</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Crown className="w-6 h-6 text-blue-400" />
@@ -153,11 +152,11 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">الخطط النشطة</p>
-              <p className="text-2xl font-bold text-white mt-1">{stats.active}</p>
+              <p className="text-muted-foreground text-sm">الخطط النشطة</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{stats.active}</p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
               <Zap className="w-6 h-6 text-green-400" />
@@ -165,11 +164,11 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">إجمالي الإيرادات</p>
-              <p className="text-2xl font-bold text-white mt-1">
+              <p className="text-muted-foreground text-sm">إجمالي الإيرادات</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {formatCurrency(stats.totalRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
             </div>
@@ -179,11 +178,11 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">متوسط السعر</p>
-              <p className="text-2xl font-bold text-white mt-1">
+              <p className="text-muted-foreground text-sm">متوسط السعر</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {formatCurrency(stats.averagePrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
@@ -195,15 +194,15 @@ export default function Page() {
       </div>
 
       {/* Filters and Search Section */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg mb-6">
+      <div className="bg-card rounded-xl p-6 border border-border shadow-lg mb-6">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
           {/* Search Input */}
           <div className="relative flex-grow">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               type="text"
               placeholder="ابحث باسم الخطة..."
-              className="pr-12 w-full bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              className="pr-12 w-full bg-background border-border text-foreground placeholder:text-muted-foreground"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -214,7 +213,7 @@ export default function Page() {
             <select
               value={userTypeFilter}
               onChange={(e) => setUserTypeFilter(e.target.value)}
-              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
             >
               <option value="all">كل أنواع المستخدمين</option>
               {Object.entries(userTypes).map(([key, label]) => (
@@ -225,7 +224,7 @@ export default function Page() {
             <select
               value={activeFilter}
               onChange={(e) => setActiveFilter(e.target.value)}
-              className="p-2 border border-gray-600 rounded-lg bg-gray-700 text-white text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
             >
               <option value="all">كل الحالات</option>
               <option value="active">مفعلة</option>
@@ -235,7 +234,6 @@ export default function Page() {
             <Button 
               variant="outline" 
               size="sm"
-              className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
             >
               <Filter className="w-4 h-4 ml-2" />
               المزيد من الفلاتر
@@ -245,7 +243,6 @@ export default function Page() {
             <Button 
               variant="outline" 
               size="sm"
-              className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
             >
               <Download className="w-4 h-4 ml-2" />
               تصدير التقرير
@@ -255,14 +252,14 @@ export default function Page() {
       </div>
 
       {/* Subscription Plans Table */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+      <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
         {/* Table Header */}
-        <div className="p-6 border-b border-gray-700/50">
+        <div className="p-6 border-b border-border">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-foreground">
               قائمة خطط الاشتراك ({filtered.length})
             </h2>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-muted-foreground">
               إجمالي {rows.length} خطة
             </div>
           </div>
@@ -272,42 +269,42 @@ export default function Page() {
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
-              <p className="text-gray-400">جاري تحميل خطط الاشتراك...</p>
+              <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">جاري تحميل خطط الاشتراك...</p>
             </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-750 border-b border-gray-700/50">
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الخطة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">نوع المستخدم</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">السعر</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">المدة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">السعر الشهري</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                <tr className="bg-muted border-b border-border">
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الخطة</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">نوع المستخدم</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السعر</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المدة</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السعر الشهري</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الحالة</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الإجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className="divide-y divide-border">
                 {filtered.length > 0 ? (
                   filtered.map((plan) => (
                     <tr
                       key={plan.id}
-                      className="hover:bg-gray-750/50 transition-colors duration-200 group"
+                      className="hover:bg-muted/50 transition-colors duration-200 group"
                     >
                       {/* Plan Name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
-                            <Crown className="w-4 h-4 text-white" />
+                          <div className="bg-primary p-2 rounded-xl">
+                            <Crown className="w-4 h-4 text-primary-foreground" />
                           </div>
                           <div className="mr-4">
-                            <div className="text-sm font-medium text-white">
+                            <div className="text-sm font-medium text-foreground">
                               {plan.name}
                             </div>
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className="text-xs text-muted-foreground mt-1">
                               ID: {plan.id}
                             </div>
                           </div>
@@ -329,8 +326,8 @@ export default function Page() {
 
                       {/* Duration */}
                       <td className="px-6 py-4">
-                        <div className="flex items-center text-sm text-white">
-                          <Calendar className="w-3 h-3 ml-1 text-gray-400" />
+                          <div className="flex items-center text-sm text-foreground">
+                          <Calendar className="w-3 h-3 ml-1 text-muted-foreground" />
                           {plan.durationText}
                         </div>
                       </td>
@@ -367,7 +364,6 @@ export default function Page() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
                             onClick={() => r.push(`/admin/subscription-plans/view/${plan.id}`)}
                           >
                             <Eye size={16}/>
@@ -375,7 +371,6 @@ export default function Page() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
                             onClick={() => r.push(`/admin/subscription-plans/edit/${plan.id}`)}
                           >
                             <Pencil size={16}/>
@@ -406,7 +401,6 @@ export default function Page() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="text-gray-400 hover:text-white hover:bg-gray-700/50"
                           >
                             <MoreVertical size={16}/>
                           </Button>
@@ -418,20 +412,20 @@ export default function Page() {
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
-                        <Crown className="w-16 h-16 text-gray-600 mb-4" />
-                        <p className="text-gray-400 text-lg mb-2">
+                        <Crown className="w-16 h-16 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground text-lg mb-2">
                           {searchTerm || userTypeFilter !== "all" || activeFilter !== "all"
                             ? "لا توجد نتائج مطابقة للبحث"
                             : "لا توجد خطط اشتراك مسجلة"
                           }
                         </p>
-                        <p className="text-gray-500 text-sm mb-6">
+                        <p className="text-muted-foreground text-sm mb-6">
                           {!searchTerm && userTypeFilter === "all" && activeFilter === "all" && 
                            "ابدأ بإضافة خطط اشتراك جديدة إلى النظام"}
                         </p>
                         {!searchTerm && userTypeFilter === "all" && activeFilter === "all" && (
                           <Button 
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
                             onClick={() => r.push("/admin/subscription-plans/create")}
                           >
                             <Plus className="w-4 h-4 ml-2" />
@@ -451,23 +445,23 @@ export default function Page() {
       {/* Delete Confirmation Modal */}
       {confirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl p-6 w-full max-w-md">
+          <div className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-md">
             <div className="flex items-center space-x-3 space-x-reverse mb-4">
               <div className="bg-red-500/20 p-2 rounded-xl">
                 <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">تأكيد الحذف</h2>
-                <p className="text-gray-400 text-sm">هل أنت متأكد من حذف خطة الاشتراك هذه؟</p>
+                <h2 className="text-lg font-semibold text-foreground">تأكيد الحذف</h2>
+                <p className="text-muted-foreground text-sm">هل أنت متأكد من حذف خطة الاشتراك هذه؟</p>
               </div>
             </div>
             
-            <div className="bg-gray-700/30 rounded-xl p-4 mb-6">
-              <div className="text-white font-medium">{confirm.name}</div>
-              <div className="text-gray-400 text-sm mt-1">
+            <div className="bg-muted rounded-xl p-4 mb-6">
+              <div className="text-foreground font-medium">{confirm.name}</div>
+              <div className="text-muted-foreground text-sm mt-1">
                 السعر: {formatCurrency(confirm.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="text-gray-400 text-sm">
+              <div className="text-muted-foreground text-sm">
                 النوع: {confirm.userTypeText}
               </div>
             </div>
@@ -476,14 +470,13 @@ export default function Page() {
               <Button 
                 variant="outline" 
                 onClick={() => setConfirm(null)}
-                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
               >
                 إلغاء
               </Button>
               <Button 
                 variant="destructive" 
                 onClick={doDelete}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >
                 <Trash2 className="w-4 h-4 ml-2" />
                 حذف الخطة
