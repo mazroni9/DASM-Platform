@@ -55,22 +55,82 @@ const carColors = [
 ];
 
 interface CarFormData {
-  make: string; model: string; year: string; vin: string; engine: string;
-  odometer: string; color: string; transmission: string; condition: string;
-  min_price: string; max_price: string; description: string; plate: string;
-  agency_number: string; agency_issue_date: string; registration_card_image: string;
-  city: string; province: string; market_category: string; main_auction_duration: string;
+  make: string;
+  model: string;
+  year: string;
+  vin: string;
+  engine: string;
+  odometer: string;
+  color: string;
+  transmission: string;
+  condition: string;
+  min_price: string;
+  max_price: string;
+  description: string;
+  plate: string;
+  agency_number: string;
+  agency_issue_date: string;
+  registration_card_image: string;
+  city: string;
+  province: string;
+  market_category: string;
+  main_auction_duration: string;
+
+  // 🟦 حقول الكرفان
+  usage: string;              // "سكني" / "تجاري" / "فخم" / "مخصص"
+  year_built: string;         // سنة البناء
+  length_m: string;           // الطول بالمتر
+  width_m: string;            // العرض بالمتر
+  weight_kg: string;          // الوزن
+  capacity_persons: string;   // السعة (عدد الأشخاص)
+  has_bathroom: string;       // "true" / "false"
+  has_kitchen: string;        // "true" / "false"
+  bedrooms_count: string;     // عدد غرف النوم
+  solar_power_kw: string;     // قدرة الألواح
+  license_required: string;   // "true" / "false"
 }
 
 const emptyCar: CarFormData = {
-  make:"", model:"", year:"", vin:"", engine:"", odometer:"", color:"",
-  transmission:"", condition:"", min_price:"", max_price:"", description:"",
-  plate:"", agency_number:"", agency_issue_date:"", registration_card_image:"",
-  city:"", province:"", market_category:"", main_auction_duration:"",
+  make: "",
+  model: "",
+  year: "",
+  vin: "",
+  engine: "",
+  odometer: "",
+  color: "",
+  transmission: "",
+  condition: "",
+  min_price: "",
+  max_price: "",
+  description: "",
+  plate: "",
+  agency_number: "",
+  agency_issue_date: "",
+  registration_card_image: "",
+  city: "",
+  province: "",
+  market_category: "",
+  main_auction_duration: "",
+
+  // الكرفان
+  usage: "",
+  year_built: "",
+  length_m: "",
+  width_m: "",
+  weight_kg: "",
+  capacity_persons: "",
+  has_bathroom: "",
+  has_kitchen: "",
+  bedrooms_count: "",
+  solar_power_kw: "",
+  license_required: "",
 };
 
 interface AiAnalysis {
-  marketPrice: number; demandLevel: string; similarCars: number; priceSuggestion: number;
+  marketPrice: number;
+  demandLevel: string;
+  similarCars: number;
+  priceSuggestion: number;
 }
 
 type Option = { value: string; label: string };
@@ -93,14 +153,30 @@ const pickLabel = (val: any, key?: string, translations?: Record<string, any>) =
     if (typeof t === "string") return t;
     return key ?? "";
   }
-  if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") return String(val);
-  if (typeof val === "object") return val.ar ?? val.en ?? (key && translations ? (translations[key]?.ar ?? translations[key]?.en ?? key) : key ?? "");
+  if (typeof val === "string" || typeof val === "number" || typeof val === "boolean")
+    return String(val);
+  if (typeof val === "object")
+    return (
+      val.ar ??
+      val.en ??
+      (key && translations
+        ? translations[key]?.ar ?? translations[key]?.en ?? key
+        : key ?? "")
+    );
   return String(val);
 };
 
 const DEFAULT_MARKET_OPTIONS: Option[] = [
-  "luxuryCars","classic","caravan","trucks","buses","companiesCars",
-].map((k) => ({ value: k, label: pickLabel(MARKET_TRANSLATIONS[k], k, MARKET_TRANSLATIONS) }));
+  "luxuryCars",
+  "classic",
+  "caravan",
+  "trucks",
+  "buses",
+  "companiesCars",
+].map((k) => ({
+  value: k,
+  label: pickLabel(MARKET_TRANSLATIONS[k], k, MARKET_TRANSLATIONS),
+}));
 
 const DEFAULT_CONDITION_OPTIONS: Option[] = [
   { value: "excellent", label: "ممتازة" },
@@ -147,24 +223,43 @@ export default function CarDataEntryForm() {
   const [formData, setFormData] = useState<CarFormData>(emptyCar);
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
 
-  const [conditionOptions, setConditionOptions] = useState<Option[]>(DEFAULT_CONDITION_OPTIONS);
-  const [transmissionOptions, setTransmissionOptions] = useState<Option[]>(DEFAULT_TRANSMISSION_OPTIONS);
-  const [marketOptions, setMarketOptions] = useState<Option[]>(DEFAULT_MARKET_OPTIONS);
+  const [conditionOptions, setConditionOptions] =
+    useState<Option[]>(DEFAULT_CONDITION_OPTIONS);
+  const [transmissionOptions, setTransmissionOptions] =
+    useState<Option[]>(DEFAULT_TRANSMISSION_OPTIONS);
+  const [marketOptions, setMarketOptions] =
+    useState<Option[]>(DEFAULT_MARKET_OPTIONS);
 
   const [images, setImages] = useState<File[]>([]);
   const [reports, setReports] = useState<File[]>([]);
-  const [registrationCardFile, setRegistrationCardFile] = useState<File | null>(null);
+  const [registrationCardFile, setRegistrationCardFile] =
+    useState<File | null>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [registrationCardPreview, setRegistrationCardPreview] = useState<string>("");
+  const [registrationCardPreview, setRegistrationCardPreview] =
+    useState<string>("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [submitResult, setSubmitResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const reportInputRef = useRef<HTMLInputElement>(null);
 
   const ENUMS_ENDPOINT = apiPath("/cars/enum-options");
   const CARS_ENDPOINT = apiPath("/cars");
+
+  const isCaravan = formData.market_category === "caravan";
+  const lengthNum = parseFloat(formData.length_m || "");
+  const widthNum = parseFloat(formData.width_m || "");
+  const areaM2 =
+    !Number.isNaN(lengthNum) &&
+    !Number.isNaN(widthNum) &&
+    lengthNum > 0 &&
+    widthNum > 0
+      ? lengthNum * widthNum
+      : null;
 
   // جلب خيارات الـ enums بأمان وتطبيع اللصيقات
   useEffect(() => {
@@ -194,16 +289,33 @@ export default function CarDataEntryForm() {
             .flatMap((m) => (m === "busesTrucks" ? ["buses", "trucks"] : [m]));
 
           const uniq: string[] = [];
-          cleaned.forEach((m) => { if (!uniq.includes(m)) uniq.push(m); });
+          cleaned.forEach((m) => {
+            if (!uniq.includes(m)) uniq.push(m);
+          });
 
-          const translations = (d?.markets_translations && typeof d.markets_translations === "object" && d.markets_translations) || MARKET_TRANSLATIONS;
+          const translations =
+            (d?.markets_translations &&
+              typeof d.markets_translations === "object" &&
+              d.markets_translations) ||
+            MARKET_TRANSLATIONS;
 
           opts = uniq.map((val) => ({
             value: val,
-            label: pickLabel(translations[val] ?? MARKET_TRANSLATIONS[val] ?? val, val, translations),
+            label: pickLabel(
+              translations[val] ?? MARKET_TRANSLATIONS[val] ?? val,
+              val,
+              translations
+            ),
           }));
 
-          const order = ["luxuryCars","classic","caravan","trucks","buses","companiesCars"];
+          const order = [
+            "luxuryCars",
+            "classic",
+            "caravan",
+            "trucks",
+            "buses",
+            "companiesCars",
+          ];
           opts.sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
         }
 
@@ -216,7 +328,9 @@ export default function CarDataEntryForm() {
         }
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [ENUMS_ENDPOINT]);
 
   // تحليل بسيط حسب بيانات المستخدم
@@ -229,10 +343,13 @@ export default function CarDataEntryForm() {
           Math.floor(Number(car.year)) === Number(formData.year)
       );
       if (matching.length) {
-        const avg = matching.reduce((s, c) => s + Number(c.price), 0) / matching.length;
+        const avg =
+          matching.reduce((s, c) => s + Number(c.price), 0) / matching.length;
         setAiAnalysis({
           marketPrice: Math.round(avg),
-          demandLevel: ["منخفض", "متوسط", "مرتفع"][Math.floor(Math.random() * 3)],
+          demandLevel: ["منخفض", "متوسط", "مرتفع"][
+            Math.floor(Math.random() * 3)
+          ],
           similarCars: matching.length,
           priceSuggestion: Math.round(avg * (0.95 + Math.random() * 0.1)),
         });
@@ -247,7 +364,9 @@ export default function CarDataEntryForm() {
   /* ------------ handlers ------------ */
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -283,7 +402,8 @@ export default function CarDataEntryForm() {
     setSubmitResult(null);
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
       if (!token) throw new Error("يجب تسجيل الدخول أولاً");
 
       const required = [
@@ -298,36 +418,107 @@ export default function CarDataEntryForm() {
         { field: "market_category", name: "سوق السيارة" },
         { field: "description", name: "وصف السيارة" },
       ];
-      for (const { field, name } of required) {
-        const v = (formData as any)[field];
-        if (v == null || String(v).trim() === "") throw new Error(`حقل ${name} مطلوب`);
+
+      // لو السوق كرافانات نلزم نوع الاستخدام والسعة
+      if (formData.market_category === "caravan") {
+        required.push(
+          { field: "usage", name: "نوع استخدام الكرفان" },
+          { field: "capacity_persons", name: "السعة (عدد الأشخاص)" }
+        );
       }
 
-      if (images.length === 0) throw new Error("يجب إضافة صورة واحدة على الأقل للسيارة");
+      for (const { field, name } of required) {
+        const v = (formData as any)[field];
+        if (v == null || String(v).trim() === "")
+          throw new Error(`حقل ${name} مطلوب`);
+      }
+
+      if (images.length === 0)
+        throw new Error("يجب إضافة صورة واحدة على الأقل للسيارة");
 
       const fd = new FormData();
-      ([
-        "make","model","year","vin","engine","odometer","color","transmission","condition",
-        "min_price","max_price","description","plate","agency_number","agency_issue_date",
-        "city","province","market_category","main_auction_duration",
-      ] as (keyof CarFormData)[]).forEach((k) => {
+
+      const baseFields: (keyof CarFormData)[] = [
+        "make",
+        "model",
+        "year",
+        "vin",
+        "engine",
+        "odometer",
+        "color",
+        "transmission",
+        "condition",
+        "min_price",
+        "max_price",
+        "description",
+        "plate",
+        "agency_number",
+        "agency_issue_date",
+        "city",
+        "province",
+        "market_category",
+        "main_auction_duration",
+      ];
+
+      baseFields.forEach((k) => {
         const v = formData[k];
-        if (v != null && String(v) !== "") fd.append(String(k), String(v));
+        if (v != null && String(v) !== "") {
+          fd.append(String(k), String(v));
+        }
       });
 
-      fd.append("evaluation_price", "0");
+      const isCaravanSubmit = formData.market_category === "caravan";
+
+      if (isCaravanSubmit) {
+        // نوع المركبة
+        fd.append("type", "caravan");
+
+        const caravanFields: (keyof CarFormData)[] = [
+          "usage",
+          "year_built",
+          "length_m",
+          "width_m",
+          "weight_kg",
+          "capacity_persons",
+          "has_bathroom",
+          "has_kitchen",
+          "bedrooms_count",
+          "solar_power_kw",
+          "license_required",
+        ];
+
+        caravanFields.forEach((k) => {
+          const v = formData[k];
+          if (v != null && String(v) !== "") {
+            fd.append(String(k), String(v));
+          }
+        });
+      }
+
+      // نقدر نستخدم الحد الأدنى كتقدير مبدئي للتقييم
+      fd.append("evaluation_price", formData.min_price || "0");
+
       images.forEach((img) => fd.append("images[]", img));
-      if (registrationCardFile) fd.append("registration_card_image", registrationCardFile);
+      if (registrationCardFile) {
+        fd.append("registration_card_image", registrationCardFile);
+      }
       reports.forEach((rep) => fd.append("reports_images[]", rep));
 
       const response = await api.post(CARS_ENDPOINT, fd);
       if (response?.data?.status === "success") {
-        toast.success("تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة");
-        setSubmitResult({ success: true, message: "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة" });
+        toast.success(
+          "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة"
+        );
+        setSubmitResult({
+          success: true,
+          message:
+            "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة",
+        });
 
         // reset
         previewUrls.forEach((u) => URL.revokeObjectURL(u));
-        if (registrationCardPreview) URL.revokeObjectURL(registrationCardPreview);
+        if (registrationCardPreview)
+          URL.revokeObjectURL(registrationCardPreview);
         setFormData(emptyCar);
         setImages([]);
         setReports([]);
@@ -336,7 +527,10 @@ export default function CarDataEntryForm() {
         setRegistrationCardPreview("");
       } else {
         toast.error("فشل في إضافة السيارة");
-        setSubmitResult({ success: false, message: "فشل في إضافة السيارة" });
+        setSubmitResult({
+          success: false,
+          message: "فشل في إضافة السيارة",
+        });
       }
     } catch (error: any) {
       if (error?.response?.status === 422 && error?.response?.data?.errors) {
@@ -350,26 +544,39 @@ export default function CarDataEntryForm() {
           }
         }
         toast.error(`أخطاء في التحقق: ${msgs.join(", ")}`);
-        setSubmitResult({ success: false, message: `أخطاء في التحقق: ${msgs.join(", ")}` });
+        setSubmitResult({
+          success: false,
+          message: `أخطاء في التحقق: ${msgs.join(", ")}`,
+        });
       } else if (error?.response?.status === 401) {
         toast.error("غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى");
-        setSubmitResult({ success: false, message: "غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى" });
+        setSubmitResult({
+          success: false,
+          message: "غير مصرح لك بالوصول - يرجى تسجيل الدخول مرة أخرى",
+        });
       } else if (error?.response?.status === 404) {
         toast.error("الخدمة غير متاحة - تحقق من مسار الـ API (404)");
-        setSubmitResult({ success: false, message: "الخدمة غير متاحة - تحقق من مسار الـ API (404)" });
+        setSubmitResult({
+          success: false,
+          message: "الخدمة غير متاحة - تحقق من مسار الـ API (404)",
+        });
       } else if (error?.response?.data?.message) {
         toast.error(error.response.data.message);
-        setSubmitResult({ success: false, message: error.response.data.message });
+        setSubmitResult({
+          success: false,
+          message: error.response.data.message,
+        });
       } else {
         toast.error(error?.message || "حدث خطأ أثناء إضافة السيارة");
-        setSubmitResult({ success: false, message: error?.message || "حدث خطأ أثناء إضافة السيارة" });
+        setSubmitResult({
+          success: false,
+          message: error?.message || "حدث خطأ أثناء إضافة السيارة",
+        });
       }
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const titleCls = "block text-sm font-medium text-gray-700 mb-1";
 
   /* ---------------- UI ---------------- */
 
@@ -389,7 +596,7 @@ export default function CarDataEntryForm() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:p-6">
           <div>
             <label
-              htmlFor="الماركة"
+              htmlFor="make"
               className="block text-sm font-medium text-foreground/80 mb-1"
             >
               الماركة *
@@ -403,11 +610,16 @@ export default function CarDataEntryForm() {
               required
             >
               <option value="">-- اختر الماركة --</option>
-              <option value="تويوتا">تويوتا</option><option value="نيسان">نيسان</option>
-              <option value="هونداي">هونداي</option><option value="كيا">كيا</option>
-              <option value="فورد">فورد</option><option value="شيفروليه">شيفروليه</option>
-              <option value="مرسيدس">مرسيدس</option><option value="بي إم دبليو">بي إم دبليو</option>
-              <option value="أودي">أودي</option><option value="لكزس">لكزس</option>
+              <option value="تويوتا">تويوتا</option>
+              <option value="نيسان">نيسان</option>
+              <option value="هونداي">هونداي</option>
+              <option value="كيا">كيا</option>
+              <option value="فورد">فورد</option>
+              <option value="شيفروليه">شيفروليه</option>
+              <option value="مرسيدس">مرسيدس</option>
+              <option value="بي إم دبليو">بي إم دبليو</option>
+              <option value="أودي">أودي</option>
+              <option value="لكزس">لكزس</option>
               <option value="أخرى">أخرى</option>
             </select>
           </div>
@@ -446,8 +658,13 @@ export default function CarDataEntryForm() {
               required
             >
               <option value="">-- اختر السنة --</option>
-              {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                <option key={y} value={y}>{y}</option>
+              {Array.from(
+                { length: 30 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
               ))}
             </select>
           </div>
@@ -470,6 +687,7 @@ export default function CarDataEntryForm() {
               required
             />
           </div>
+
           <div>
             <label
               htmlFor="plate"
@@ -485,7 +703,6 @@ export default function CarDataEntryForm() {
               onChange={handleInputChange}
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
               placeholder="لوحة السيارة"
-              required
             />
           </div>
 
@@ -504,8 +721,10 @@ export default function CarDataEntryForm() {
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
             >
               <option value="">-- اختر نوع الوقود --</option>
-              <option value="بنزين">بنزين</option><option value="ديزل">ديزل</option>
-              <option value="هجين">هجين</option><option value="كهربائي">كهربائي</option>
+              <option value="بنزين">بنزين</option>
+              <option value="ديزل">ديزل</option>
+              <option value="هجين">هجين</option>
+              <option value="كهربائي">كهربائي</option>
             </select>
           </div>
 
@@ -539,11 +758,16 @@ export default function CarDataEntryForm() {
             <select
               name="color"
               id="color"
+              value={formData.color}
               onChange={handleInputChange}
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
             >
               <option value="">اختر لون السيارة</option>
-              {carColors.map((c) => (<option key={c.value} value={c.name}>{c.name}</option>))}
+              {carColors.map((c) => (
+                <option key={c.value} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -562,7 +786,11 @@ export default function CarDataEntryForm() {
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
             >
               <option value="">-- اختر نوع ناقل الحركة --</option>
-              {transmissionOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+              {transmissionOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -582,7 +810,11 @@ export default function CarDataEntryForm() {
               required
             >
               <option value="">-- اختر حالة السيارة --</option>
-              {conditionOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+              {conditionOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -602,7 +834,11 @@ export default function CarDataEntryForm() {
               required
             >
               <option value="">-- أختر المنطقة --</option>
-              {emirates.map((label) => (<option key={label} value={label}>{label}</option>))}
+              {emirates.map((label) => (
+                <option key={label} value={label}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -623,6 +859,7 @@ export default function CarDataEntryForm() {
               placeholder="المدينة"
             />
           </div>
+
           <div>
             <label
               htmlFor="min_price"
@@ -699,7 +936,7 @@ export default function CarDataEntryForm() {
 
           <div>
             <label
-              htmlFor="condition"
+              htmlFor="market_category"
               className="block text-sm font-medium text-foreground/80 mb-1"
             >
               سوق السيارة
@@ -713,9 +950,13 @@ export default function CarDataEntryForm() {
               required
             >
               <option value="">-- اختر  سوق السيارة --</option>
-              {(marketOptions?.length ? marketOptions : DEFAULT_MARKET_OPTIONS).map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
+              {(marketOptions?.length ? marketOptions : DEFAULT_MARKET_OPTIONS).map(
+                (opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                )
+              )}
             </select>
           </div>
 
@@ -734,41 +975,304 @@ export default function CarDataEntryForm() {
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
             >
               <option value="">اختر مدة</option>
-              <option value="5">5 أيام</option>
-              <option value="7">7 أيام</option>
+              <option value="10">10 أيام</option>
+              <option value="20">20 يوم</option>
+              <option value="30">30 يوم</option>
             </select>
           </div>
         </div>
 
+        {/* تفاصيل الكرفان - تظهر فقط لسوق الكرفانات */}
+        {isCaravan && (
+          <div className="border-t pt-6 mt-4">
+            <h3 className="text-lg font-semibold text-foreground mb-3">
+              تفاصيل الكرفان
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="usage"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  نوع استخدام الكرفان *
+                </label>
+                <select
+                  id="usage"
+                  name="usage"
+                  value={formData.usage}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  required={isCaravan}
+                >
+                  <option value="">-- اختر نوع الاستخدام --</option>
+                  <option value="سكني">سكني</option>
+                  <option value="تجاري">تجاري</option>
+                  <option value="فخم">فخم</option>
+                  <option value="مخصص">مخصص</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="year_built"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  سنة البناء (اختياري)
+                </label>
+                <input
+                  type="number"
+                  id="year_built"
+                  name="year_built"
+                  value={formData.year_built}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="1970"
+                  max={new Date().getFullYear()}
+                  placeholder="مثال: 2020"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="length_m"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  الطول (متر)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="length_m"
+                  name="length_m"
+                  value={formData.length_m}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="0"
+                  placeholder="مثال: 7.5"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="width_m"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  العرض (متر)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="width_m"
+                  name="width_m"
+                  value={formData.width_m}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="0"
+                  placeholder="مثال: 2.5"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
+                  مساحة المعيشة (م²) - للعرض فقط
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={areaM2 != null ? areaM2.toFixed(2) : ""}
+                  className="w-full p-3 border border-dashed rounded-md bg-background/60 text-foreground/80"
+                  placeholder="تُحسب تلقائيًا = الطول × العرض"
+                />
+                <p className="text-xs text-foreground/60 mt-1">
+                  هذه القيمة تُحسب في الواجهة، ويتم حسابها مرة أخرى في الخادم
+                  تلقائيًا ولا تُحرَّر يدويًا.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="weight_kg"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  الوزن (كجم) (اختياري)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="weight_kg"
+                  name="weight_kg"
+                  value={formData.weight_kg}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="0"
+                  placeholder="مثال: 2800"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="capacity_persons"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  السعة (عدد الأشخاص) *
+                </label>
+                <input
+                  type="number"
+                  id="capacity_persons"
+                  name="capacity_persons"
+                  value={formData.capacity_persons}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="1"
+                  placeholder="مثال: 4"
+                  required={isCaravan}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="has_bathroom"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  هل يوجد دورة مياه؟
+                </label>
+                <select
+                  id="has_bathroom"
+                  name="has_bathroom"
+                  value={formData.has_bathroom}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                >
+                  <option value="">-- اختر --</option>
+                  <option value="true">نعم</option>
+                  <option value="false">لا</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="has_kitchen"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  هل يوجد مطبخ؟
+                </label>
+                <select
+                  id="has_kitchen"
+                  name="has_kitchen"
+                  value={formData.has_kitchen}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                >
+                  <option value="">-- اختر --</option>
+                  <option value="true">نعم</option>
+                  <option value="false">لا</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="bedrooms_count"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  عدد غرف النوم (اختياري)
+                </label>
+                <input
+                  type="number"
+                  id="bedrooms_count"
+                  name="bedrooms_count"
+                  value={formData.bedrooms_count}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="0"
+                  placeholder="مثال: 1"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="solar_power_kw"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  قدرة الألواح الشمسية (كيلوواط) (اختياري)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="solar_power_kw"
+                  name="solar_power_kw"
+                  value={formData.solar_power_kw}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  min="0"
+                  placeholder="مثال: 1.2"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="license_required"
+                  className="block text-sm font-medium text-foreground/80 mb-1"
+                >
+                  هل يحتاج لترخيص/تصريح خاص؟
+                </label>
+                <select
+                  id="license_required"
+                  name="license_required"
+                  value={formData.license_required}
+                  onChange={handleInputChange}
+                  className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                >
+                  <option value="">-- اختر --</option>
+                  <option value="true">نعم</option>
+                  <option value="false">لا</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* تحليل الذكاء الاصطناعي */}
-              {aiAnalysis && (
-                <div className="mt-6 bg-background border border-border rounded-lg p-4">
-                  <h3 className="font-bold text-foreground mb-3">تحليل السوق الذكي</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-card p-3 rounded-lg border border-border">
-                      <p className="text-sm text-foreground/70">متوسط السعر بالسوق</p>
-                      <p className="text-xl font-bold">{aiAnalysis.marketPrice.toLocaleString()} ر.س</p>
-                    </div>
-                    <div className="bg-card p-3 rounded-lg border border-border">
-                      <p className="text-sm text-foreground/70">مستوى الطلب</p>
-                      <p className={`text-xl font-bold ${
-                        aiAnalysis.demandLevel === 'مرتفع' ? 'text-green-600' : 
-                        aiAnalysis.demandLevel === 'متوسط' ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {aiAnalysis.demandLevel}
-                      </p>
-                    </div>
-                    <div className="bg-card p-3 rounded-lg border border-border">
-                      <p className="text-sm text-foreground/70">سيارات مشابهة</p>
-                      <p className="text-xl font-bold">{aiAnalysis.similarCars}</p>
-                    </div>
-                    <div className="bg-card p-3 rounded-lg border border-border">
-                      <p className="text-sm text-foreground/70">السعر المقترح</p>
-                      <p className="text-xl font-bold text-primary">{aiAnalysis.priceSuggestion.toLocaleString()} ر.س</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+        {aiAnalysis && (
+          <div className="mt-6 bg-background border border-border rounded-lg p-4">
+            <h3 className="font-bold text-foreground mb-3">
+              تحليل السوق الذكي
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-card p-3 rounded-lg border border-border">
+                <p className="text-sm text-foreground/70">متوسط السعر بالسوق</p>
+                <p className="text-xl font-bold">
+                  {aiAnalysis.marketPrice.toLocaleString()} ر.س
+                </p>
+              </div>
+              <div className="bg-card p-3 rounded-lg border border-border">
+                <p className="text-sm text-foreground/70">مستوى الطلب</p>
+                <p
+                  className={`text-xl font-bold ${
+                    aiAnalysis.demandLevel === "مرتفع"
+                      ? "text-green-600"
+                      : aiAnalysis.demandLevel === "متوسط"
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {aiAnalysis.demandLevel}
+                </p>
+              </div>
+              <div className="bg-card p-3 rounded-lg border border-border">
+                <p className="text-sm text-foreground/70">سيارات مشابهة</p>
+                <p className="text-xl font-bold">
+                  {aiAnalysis.similarCars}
+                </p>
+              </div>
+              <div className="bg-card p-3 rounded-lg border border-border">
+                <p className="text-sm text-foreground/70">السعر المقترح</p>
+                <p className="text-xl font-bold text-primary">
+                  {aiAnalysis.priceSuggestion.toLocaleString()} ر.س
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* كرت التسجيل */}
         <div className="border-t pt-6">
@@ -789,20 +1293,35 @@ export default function CarDataEntryForm() {
                 setRegistrationCardFile(file);
                 const previewUrl = URL.createObjectURL(file);
                 setRegistrationCardPreview(previewUrl);
-                setFormData((prev) => ({ ...prev, registration_card_image: "" }));
+                setFormData((prev) => ({
+                  ...prev,
+                  registration_card_image: "",
+                }));
               }
             }}
             className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
           />
           {registrationCardPreview && (
             <div className="mt-4">
-              <img src={registrationCardPreview} alt="معاينة كرت التسجيل" className="w-full max-w-md h-40 object-cover rounded-md border" />
-              <button type="button" onClick={() => {
-                setRegistrationCardFile(null);
-                if (registrationCardPreview) URL.revokeObjectURL(registrationCardPreview);
-                setRegistrationCardPreview("");
-                setFormData((prev) => ({ ...prev, registration_card_image: "" }));
-              }} className="mt-2 text-red-600 hover:text-red-800 text-sm">
+              <img
+                src={registrationCardPreview}
+                alt="معاينة كرت التسجيل"
+                className="w-full max-w-md h-40 object-cover rounded-md border"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setRegistrationCardFile(null);
+                  if (registrationCardPreview)
+                    URL.revokeObjectURL(registrationCardPreview);
+                  setRegistrationCardPreview("");
+                  setFormData((prev) => ({
+                    ...prev,
+                    registration_card_image: "",
+                  }));
+                }}
+                className="mt-2 text-red-600 hover:text-red-800 text-sm"
+              >
                 حذف الصورة
               </button>
             </div>
@@ -812,7 +1331,7 @@ export default function CarDataEntryForm() {
         {/* وصف */}
         <div className="border-t pt-6">
           <label
-            htmlFor="vin"
+            htmlFor="description"
             className="block text-sm font-medium text-foreground/80 mb-1"
           >
             وصف السيارة
@@ -866,9 +1385,17 @@ export default function CarDataEntryForm() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
               {previewUrls.map((url, index) => (
                 <div key={index} className="relative group">
-                  <img src={url} alt={`صورة السيارة ${index + 1}`} className="w-full h-24 object-cover rounded-md" />
-                  <button type="button" onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="حذف الصورة">
+                  <img
+                    src={url}
+                    alt={`صورة السيارة ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="حذف الصورة"
+                  >
                     <FileX className="h-4 w-4" />
                   </button>
                 </div>
@@ -941,7 +1468,8 @@ export default function CarDataEntryForm() {
 
           <div className="bg-background/50 p-4 rounded-lg border border-border mb-4">
             <p className="text-foreground/80 mb-4">
-              أقر أنا مقدم هذا النموذج بموافقتي على جميع شروط وإجراءات المنصة،
+              أقر أنا مقدم هذا النموذج بموافق
+              ي على جميع شروط وإجراءات المنصة،
               وأوافق على خصم جميع العمولات والرسوم المقررة من قيمة بيع السيارة.
               كما أتعهد بأن جميع البيانات المقدمة في هذا النموذج صحيحة وكاملة،
               وأتحمل المسؤولية القانونية الكاملة في حال ثبوت عدم صحة أي منها.
@@ -976,7 +1504,10 @@ export default function CarDataEntryForm() {
 
             <div className="flex items-center justify-center p-4 bg-background border border-dashed border-border rounded-md">
               <div className="text-center">
-                <img src="/images/sadad-logo.png" alt="شعار صادق للتوقيع الإلكتروني" className="h-10 mb-2 mx-auto"
+                <img
+                  src="/images/sadad-logo.png"
+                  alt="شعار صادق للتوقيع الإلكتروني"
+                  className="h-10 mb-2 mx-auto"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjUwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiIGZpbGw9IiNmMWYxZjEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIxNHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBhbGlnbm1lbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmaWxsPSIjODg4ODg4Ij7Ytdin2K/ZgiAtINin2YTYqtmI2YLZitisINin2YTYpdmE2YPYqtix2YjZhti5PC90ZXh0Pjwvc3ZnPg==";
@@ -1006,9 +1537,18 @@ export default function CarDataEntryForm() {
             }`}
           >
             <div className="flex items-start">
-              {submitResult.success ? (<CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />)
-               : (<AlertCircle className="h-5 w-5 text-red-500 ml-2" />)}
-              <p className={submitResult.success ? "text-green-700" : "text-red-700"}>{submitResult.message}</p>
+              {submitResult.success ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500 ml-2" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-500 ml-2" />
+              )}
+              <p
+                className={
+                  submitResult.success ? "text-green-700" : "text-red-700"
+                }
+              >
+                {submitResult.message}
+              </p>
             </div>
           </div>
         )}

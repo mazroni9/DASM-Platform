@@ -5,12 +5,13 @@ namespace App\Models;
 use App\Enums\CarCondition;
 use App\Enums\AuctionStatus;
 use App\Enums\CarTransmission;
-use App\Models\CarReportImage;
 use App\Enums\CarsMarketsCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Models\CarReportImage;
+use App\Models\CarAttribute;
 
 class Car extends Model
 {
@@ -19,18 +20,18 @@ class Car extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-        ->setDescriptionForEvent(function(string $eventName) {
-            switch ($eventName) {
-                case 'created':
-                    return "تم إنشاء السيارة رقم {$this->id}";
-                case 'updated':
-                    return "تم تحديث السيارة رقم {$this->id}";
-                case 'deleted':
-                    return "تم حذف السيارة رقم {$this->id}";
-            }
-            return "Car {$eventName}";
-        })->logFillable()
-        ->useLogName('car_log');
+            ->setDescriptionForEvent(function (string $eventName) {
+                switch ($eventName) {
+                    case 'created':
+                        return "تم إنشاء السيارة رقم {$this->id}";
+                    case 'updated':
+                        return "تم تحديث السيارة رقم {$this->id}";
+                    case 'deleted':
+                        return "تم حذف السيارة رقم {$this->id}";
+                }
+                return "Car {$eventName}";
+            })->logFillable()
+            ->useLogName('car_log');
     }
 
     protected $fillable = [
@@ -55,10 +56,10 @@ class Car extends Model
     ];
 
     protected $casts = [
-        'images' => 'array',
+        'images'          => 'array',
         'market_category' => CarsMarketsCategory::class,
-        'condition' => CarCondition::class,
-        'transmission' => CarTransmission::class,
+        'condition'       => CarCondition::class,
+        'transmission'    => CarTransmission::class,
     ];
 
     protected $hidden = [
@@ -116,5 +117,14 @@ class Car extends Model
     {
         return $this->hasManyThrough(Bid::class, Auction::class)
             ->where('auctions.status', AuctionStatus::ACTIVE);
+    }
+
+    /**
+     * خصائص إضافية للسيارة (car_attributes)
+     * JSON key في الـ API هي: car_attributes
+     */
+    public function carAttributes()
+    {
+        return $this->hasMany(CarAttribute::class);
     }
 }
