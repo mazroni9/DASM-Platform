@@ -103,6 +103,34 @@ function formatDateAr(dateString?: string | null) {
   return d.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
 }
 
+// ملف: (مثلاً) lib/utils.ts أو ملف المساعدات الخاص بك
+
+type VenueStatus = "active" | "pending" | "rejected"; // افترضت تعريف هذا النوع
+
+function getOwnerStatusMeta(status?: VenueStatus) {
+  switch (status) {
+    case "active":
+      return { 
+        label: "مفعل", 
+        classes: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600" 
+      };
+    case "pending":
+      return { 
+        label: "في الانتظار", 
+        classes: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-600" 
+      };
+    case "rejected":
+      return { 
+        label: "مرفوض", 
+        classes: "bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-600" 
+      };
+    default:
+      return { 
+        label: status ?? "غير محدد", 
+        classes: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500" 
+      };
+    }
+  }
 function formatDateTimeAr(dateString?: string | null) {
   if (!dateString) return "غير متوفر";
   const d = new Date((dateString as string).replace(" ", "T"));
@@ -124,32 +152,6 @@ function formatSar(value?: number | null) {
   });
 }
 
-/**
- * الحالة المعروضة في الـ UI مبنية أساساً على is_active:
- * - is_active = true  → "مفعل" (أخضر)
- * - is_active = false + status = "rejected" → "مرفوض" (أحمر)
- * - غير ذلك → "قيد الانتظار" (برتقالي)
- */
-function getOwnerStatusMeta(status?: VenueStatus, isActive?: boolean) {
-  if (isActive) {
-    return {
-      label: "مفعل",
-      classes: "bg-green-500/15 text-green-200 border border-green-500/30",
-    };
-  }
-
-  if (status === "rejected") {
-    return {
-      label: "مرفوض",
-      classes: "bg-red-500/15 text-red-200 border border-red-500/30",
-    };
-  }
-
-  return {
-    label: "قيد الانتظار",
-    classes: "bg-amber-500/15 text-amber-200 border border-amber-500/30",
-  };
-}
 
 function getBadgeTone(status: string) {
   const normalized = status.toLowerCase();
