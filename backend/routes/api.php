@@ -346,8 +346,8 @@ Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
-Route::get('/sessions/live', [AuctionSessionController::class, 'getActiveLiveSessions']);
-Route::get('/sessions/live/{id}', [AuctionSessionController::class, 'getLiveSession']);
+Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
+Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession']);
 
 Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
 Route::get('/car/{id}', [CarController::class, 'showOnly']);
@@ -414,6 +414,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
 
     Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
+
 
     // Bids
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index'])->whereNumber('auction');
@@ -516,6 +517,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('settings', [SettingsController::class, 'update']); // Backward compatibility
     Route::get('settings/{key}', [SettingsController::class, 'getSetting']);
 
+
     // Users
     Route::get('/users', [AdminUserController::class, 'index']);
     Route::get('/users/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId');
@@ -608,9 +610,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id');
     Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
     Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy']);
-    // Venue Owners (Admin)
-    Route::get  ('/venue-owners',      [AdminVenueOwnerController::class, 'index']);
-    Route::get  ('/venue-owners/{id}', [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
+
+// Venue Owners (Admin)
+Route::get  ('/venue-owners',                         [AdminVenueOwnerController::class, 'index']);
+Route::get  ('/venue-owners/{id}',                    [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
+Route::get  ('/venue-owners/{id}/cars',               [AdminVenueOwnerController::class, 'cars'])->whereNumber('id');
+Route::get  ('/venue-owners/{id}/wallet',             [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id');
+Route::get  ('/venue-owners/{id}/wallet/transactions',[AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id');
+Route::post ('/venue-owners/{id}/approve',            [AdminVenueOwnerController::class, 'approve'])->whereNumber('id');
+Route::post ('/venue-owners/{id}/reject',             [AdminVenueOwnerController::class, 'reject'])->whereNumber('id');
+Route::post ('/venue-owners/{id}/toggle-status',      [AdminVenueOwnerController::class, 'toggleStatus'])->whereNumber('id');
 
     // Venues (من الملف الثاني)
     Route::post('/venues', [VenueController::class, 'store']);
@@ -635,7 +644,7 @@ Route::prefix('exhibitor')
         Route::delete('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'destroy']);
 
         // Ratings (قراءة)
-        Route::get('/ratings',         [ExhibitorVenueOwnerRatingController::class ?? VenueOwnerRatingController::class, 'index']);
+        Route::get('/ratings',         [VenueOwnerRatingController::class, 'index']);
         Route::get('/ratings/summary', [VenueOwnerRatingController::class, 'summary']);
     });
 

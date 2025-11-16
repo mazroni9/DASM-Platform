@@ -4,11 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   ArrowRight,
+  ArrowDownRight,
+  ArrowUpRight,
   Building,
   Calendar,
   Car,
   Check,
-  CheckCircle,
   Clock,
   Download,
   FileCheck,
@@ -19,11 +20,9 @@ import {
   Mail,
   MoreVertical,
   RefreshCw,
-  Shield,
   User,
   Wallet,
   X,
-  XCircle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import LoadingLink from "@/components/LoadingLink";
@@ -61,12 +60,6 @@ const VEHICLES_PLACEHOLDER = [
   { id: "CAR-7712", model: "بي إم دبليو X5 2023", status: "مباع", bids: 15, date: "4 نوفمبر 2024" },
 ] as const;
 
-const FINANCIAL_PLACEHOLDER = [
-  { id: "#TX-5001", title: "إيداع رسوم الاشتراك", amount: "+ ‎5,000‎ ر.س", status: "مكتمل", date: "13 نوفمبر 2024" },
-  { id: "#TX-4981", title: "حجز مركبة - لاندكروزر", amount: "+ ‎180,000‎ ر.س", status: "قيد الانتظار", date: "11 نوفمبر 2024" },
-  { id: "#TX-4970", title: "استرداد تأمين", amount: "- ‎2,500‎ ر.س", status: "مكتمل", date: "9 نوفمبر 2024" },
-] as const;
-
 const ACTIVITY_PLACEHOLDER = [
   { id: 1, title: "تم إنشاء الحساب", detail: "بواسطة المشرف أحمد الشهري", time: "10 نوفمبر 2024 - 10:32 ص" },
   { id: 2, title: "تحديث بيانات السجل التجاري", detail: "تم رفع مستند جديد", time: "8 نوفمبر 2024 - 4:18 م" },
@@ -79,6 +72,30 @@ const LEGAL_PLACEHOLDER = [
   { id: "DOC-03", name: "شهادة الزكاة والدخل", status: "مرفوض", updated: "2 نوفمبر 2024" },
 ] as const;
 
+interface WalletSummary {
+  balance: number;
+  balance_sar: number;
+  currency: string;
+}
+
+interface WalletTransaction {
+  id: number;
+  amount: number;
+  direction?: string | null;
+  type?: string | null;
+  status?: string | null;
+  description?: string | null;
+  reference?: string | null;
+  created_at?: string | null;
+}
+
+interface TxPagination {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
 function formatDateAr(dateString?: string | null) {
   if (!dateString) return "غير متوفر";
   const d = new Date((dateString as string).replace(" ", "T"));
@@ -86,27 +103,64 @@ function formatDateAr(dateString?: string | null) {
   return d.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
 }
 
-function getOwnerStatusMeta(status?: VenueStatus) {
-  switch (status) {
-    case "active":
-      return { label: "مفعل", classes: "bg-green-500/15 text-green-200 border border-green-500/30" };
-    case "pending":
-      return { label: "في الانتظار", classes: "bg-amber-500/15 text-amber-200 border border-amber-500/30" };
-    case "rejected":
-      return { label: "مرفوض", classes: "bg-red-500/15 text-red-200 border border-red-500/30" };
-    default:
-      return { label: status ?? "غير محدد", classes: "bg-muted text-muted-foreground border border-border" };
+function formatDateTimeAr(dateString?: string | null) {
+  if (!dateString) return "غير متوفر";
+  const d = new Date((dateString as string).replace(" ", "T"));
+  if (isNaN(d.getTime())) return dateString as string;
+  return d.toLocaleString("ar-SA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatSar(value?: number | null) {
+  if (value == null) return "0.00";
+  return value.toLocaleString("ar-SA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * الحالة المعروضة في الـ UI مبنية أساساً على is_active:
+ * - is_active = true  → "مفعل" (أخضر)
+ * - is_active = false + status = "rejected" → "مرفوض" (أحمر)
+ * - غير ذلك → "قيد الانتظار" (برتقالي)
+ */
+function getOwnerStatusMeta(status?: VenueStatus, isActive?: boolean) {
+  if (isActive) {
+    return {
+      label: "مفعل",
+      classes: "bg-green-500/15 text-green-200 border border-green-500/30",
+    };
   }
+
+  if (status === "rejected") {
+    return {
+      label: "مرفوض",
+      classes: "bg-red-500/15 text-red-200 border border-red-500/30",
+    };
+  }
+
+  return {
+    label: "قيد الانتظار",
+    classes: "bg-amber-500/15 text-amber-200 border border-amber-500/30",
+  };
 }
 
 function getBadgeTone(status: string) {
-  const success = ["جاهز", "مكتمل", "مقبول"];
-  const pending = ["محجوز", "قيد الانتظار", "قيد المراجعة"];
-  const danger = ["مباع", "مرفوض"];
+  const normalized = status.toLowerCase();
 
-  if (success.includes(status)) return "bg-[#00A95C]/15 text-[#00A95C]";
-  if (pending.includes(status)) return "bg-amber-500/15 text-amber-400";
-  if (danger.includes(status)) return "bg-red-500/15 text-red-400";
+  const success = ["جاهز", "مكتمل", "مقبول", "completed", "success", "paid"];
+  const pending = ["محجوز", "قيد الانتظار", "قيد المراجعة", "pending", "processing"];
+  const danger = ["مباع", "مرفوض", "failed", "cancelled", "canceled"];
+
+  if (success.some((s) => s.toLowerCase() === normalized)) return "bg-[#00A95C]/15 text-[#00A95C]";
+  if (pending.some((s) => s.toLowerCase() === normalized)) return "bg-amber-500/15 text-amber-400";
+  if (danger.some((s) => s.toLowerCase() === normalized)) return "bg-red-500/15 text-red-400";
   return "bg-muted text-muted-foreground";
 }
 
@@ -176,7 +230,7 @@ function ActionMenu({
               onApprove();
               setOpen(false);
             }}
-            disabled={disabled || status === "active"}
+            disabled={disabled || !!isActive}
             className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span>تفعيل</span>
@@ -248,6 +302,15 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
   const [processing, setProcessing] = useState<null | "approve" | "reject" | "toggle" | "refresh">(null);
   const [activeTab, setActiveTab] = useState<TabId>("vehicles");
 
+  // Wallet state
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txPagination, setTxPagination] = useState<TxPagination | null>(null);
+
   const ownerInitials = useMemo(() => {
     if (!owner?.venue_name) return "HJ";
     return owner.venue_name
@@ -284,6 +347,82 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId]);
 
+  const fetchWalletSummary = async () => {
+    if (!owner) return;
+    try {
+      setWalletLoading(true);
+      setWalletError(null);
+      const res = await api.get(`/api/admin/venue-owners/${owner.id}/wallet`);
+      const payload = res?.data?.data ?? res?.data;
+
+      if (!payload) {
+        setWalletSummary(null);
+        return;
+      }
+
+      setWalletSummary({
+        balance: payload.balance ?? 0,
+        balance_sar: payload.balance_sar ?? payload.balance ?? 0,
+        currency: payload.currency ?? "SAR",
+      });
+    } catch (error) {
+      console.error(error);
+      setWalletSummary(null);
+      setWalletError("تعذر تحميل بيانات المحفظة");
+      toast.error("تعذر تحميل بيانات المحفظة");
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  const fetchTransactions = async (page = 1) => {
+    if (!owner) return;
+    try {
+      setTxLoading(true);
+      const res = await api.get(`/api/admin/venue-owners/${owner.id}/wallet/transactions`, {
+        params: { page },
+      });
+
+      const payload = res?.data?.data ?? res?.data;
+
+      if (Array.isArray(payload)) {
+        setTransactions(payload as WalletTransaction[]);
+        setTxPagination({
+          current_page: 1,
+          last_page: 1,
+          per_page: payload.length,
+          total: payload.length,
+        });
+      } else if (payload && Array.isArray(payload.data)) {
+        setTransactions(payload.data as WalletTransaction[]);
+        setTxPagination({
+          current_page: payload.current_page ?? page,
+          last_page: payload.last_page ?? 1,
+          per_page: payload.per_page ?? payload.data.length ?? 0,
+          total: payload.total ?? payload.data.length ?? 0,
+        });
+      } else {
+        setTransactions([]);
+        setTxPagination(null);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("تعذر تحميل الحركات المالية");
+      setTransactions([]);
+      setTxPagination(null);
+    } finally {
+      setTxLoading(false);
+    }
+  };
+
+  // تحميل بيانات المحفظة والمعاملات عند فتح تاب الحركات المالية
+  useEffect(() => {
+    if (activeTab !== "financial" || !owner) return;
+    fetchWalletSummary();
+    fetchTransactions(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, owner?.id]);
+
   const doApprove = async () => {
     if (!owner) return;
     try {
@@ -291,7 +430,7 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
       const res = await api.post(`/api/admin/venue-owners/${owner.id}/approve`);
       if (res?.data?.ok || res?.data?.status === "success") {
         toast.success("تم تفعيل مالك المعرض");
-        setOwner((o) => (o ? { ...o, status: "active", is_active: true } : o));
+        setOwner((o) => (o ? { ...o, is_active: true } : o));
       } else {
         toast("تم إرسال الطلب. تحقق من النتيجة.");
       }
@@ -374,7 +513,11 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                     <td className="px-4 py-4 text-sm">{vehicle.model}</td>
                     <td className="px-4 py-4 text-sm">{vehicle.bids}</td>
                     <td className="px-4 py-4">
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getBadgeTone(vehicle.status)}`}>
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getBadgeTone(
+                          vehicle.status,
+                        )}`}
+                      >
                         {vehicle.status}
                       </span>
                     </td>
@@ -387,32 +530,189 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
         );
       case "financial":
         return (
-          <div className="space-y-4">
-            {FINANCIAL_PLACEHOLDER.map((tx) => (
-              <div key={tx.id} className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-6">
+            {/* ملخص المحفظة */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">{tx.id}</p>
-                    <p className="text-base font-semibold text-foreground">{tx.title}</p>
+                    <p className="text-sm text-muted-foreground">الرصيد الحالي</p>
+                    {walletLoading ? (
+                      <div className="mt-3 h-8 w-40 rounded-xl bg-muted animate-pulse" />
+                    ) : walletSummary ? (
+                      <p className="mt-2 text-2xl font-bold text-foreground">
+                        {formatSar(walletSummary.balance_sar)}{" "}
+                        <span className="text-sm font-semibold text-muted-foreground">{walletSummary.currency}</span>
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">لا توجد بيانات محفظة حالياً</p>
+                    )}
+                    {walletError && (
+                      <p className="mt-2 text-xs text-red-400">
+                        {walletError}
+                      </p>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <p className={`text-lg font-bold ${tx.amount.startsWith("-") ? "text-red-500" : "text-[#00A95C]"}`}>
-                      {tx.amount}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{tx.date}</p>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground">
+                      <Wallet className="h-4 w-4" />
+                      <span>محفظة العارض</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        fetchWalletSummary();
+                        fetchTransactions(txPagination?.current_page ?? 1);
+                      }}
+                      disabled={walletLoading || txLoading}
+                      className="text-[#002D5B] dark:text-[#3B82F6]"
+                    >
+                      <RefreshCw
+                        className={`ml-2 h-4 w-4 ${walletLoading || txLoading ? "animate-spin" : ""}`}
+                      />
+                      تحديث البيانات
+                    </Button>
                   </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getBadgeTone(tx.status)}`}>
-                    {tx.status}
-                  </span>
-                  <Button variant="ghost" size="sm" className="text-[#002D5B] dark:text-[#3B82F6]">
-                    <Download className="ml-2 h-4 w-4" />
-                    تحميل السجل
-                  </Button>
                 </div>
               </div>
-            ))}
+              <div className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm flex flex-col justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">ملخص سريع</p>
+                  <div className="mt-3 space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>عدد العمليات</span>
+                      <span className="font-semibold">
+                        {txPagination?.total ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>آخر عملية</span>
+                      <span className="text-xs text-muted-foreground">
+                        {transactions[0]?.created_at
+                          ? formatDateTimeAr(transactions[0].created_at)
+                          : "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* جدول الحركات */}
+            <div className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-foreground">سجل الحركات المالية</h3>
+              </div>
+
+              {txLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-14 rounded-2xl bg-muted/60 animate-pulse" />
+                  ))}
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center text-sm text-muted-foreground">
+                  <Wallet className="mb-3 h-8 w-8 text-muted-foreground/70" />
+                  لا توجد حركات مالية لهذا المالك حتى الآن.
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[700px] text-sm">
+                      <thead>
+                        <tr className="border-b border-border/60 bg-muted/20 text-xs text-muted-foreground">
+                          <th className="px-3 py-2 text-right font-medium">رقم العملية</th>
+                          <th className="px-3 py-2 text-right font-medium">النوع</th>
+                          <th className="px-3 py-2 text-right font-medium">الوصف</th>
+                          <th className="px-3 py-2 text-right font-medium">المبلغ</th>
+                          <th className="px-3 py-2 text-right font-medium">الحالة</th>
+                          <th className="px-3 py-2 text-right font-medium">التاريخ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {transactions.map((tx) => {
+                          const isOut =
+                            tx.direction === "out" ||
+                            tx.direction === "OUT" ||
+                            (typeof tx.amount === "number" && tx.amount < 0);
+                          const amountValue = Math.abs(tx.amount ?? 0) / 100;
+                          const amountClass = isOut ? "text-red-500" : "text-[#00A95C]";
+                          const directionLabel = isOut ? "خروج" : "دخول";
+
+                          return (
+                            <tr key={tx.id} className="hover:bg-muted/30">
+                              <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
+                                {tx.reference || `TX-${tx.id}`}
+                              </td>
+                              <td className="px-3 py-3 text-sm">
+                                {tx.type || "—"}
+                                <span className="mx-1 text-xs text-muted-foreground">({directionLabel})</span>
+                              </td>
+                              <td className="px-3 py-3 text-xs text-muted-foreground">
+                                {tx.description || "—"}
+                              </td>
+                              <td className="px-3 py-3">
+                                <div className={`flex items-center justify-start gap-2 font-semibold ${amountClass}`}>
+                                  {isOut ? (
+                                    <ArrowDownRight className="h-4 w-4" />
+                                  ) : (
+                                    <ArrowUpRight className="h-4 w-4" />
+                                  )}
+                                  <span>
+                                    {formatSar(amountValue)}{" "}
+                                    <span className="text-[11px] text-muted-foreground/80">ر.س</span>
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-3">
+                                <span
+                                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                                    tx.status ? getBadgeTone(tx.status) : "bg-muted text-muted-foreground"
+                                  }`}
+                                >
+                                  {tx.status || "—"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-3 text-xs text-muted-foreground">
+                                {formatDateTimeAr(tx.created_at)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {txPagination && txPagination.last_page > 1 && (
+                    <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                      <div>
+                        صفحة {txPagination.current_page} من {txPagination.last_page} — إجمالي{" "}
+                        {txPagination.total} عملية
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={txPagination.current_page <= 1 || txLoading}
+                          onClick={() => fetchTransactions(txPagination.current_page - 1)}
+                        >
+                          السابق
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={txPagination.current_page >= txPagination.last_page || txLoading}
+                          onClick={() => fetchTransactions(txPagination.current_page + 1)}
+                        >
+                          التالي
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         );
       case "activity":
@@ -422,7 +722,9 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
               <div key={item.id} className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <span className="h-4 w-4 rounded-full border-2 border-[#00A95C] bg-background" />
-                  {index !== ACTIVITY_PLACEHOLDER.length - 1 && <span className="mt-2 h-full w-px flex-1 bg-border/70" />}
+                  {index !== ACTIVITY_PLACEHOLDER.length - 1 && (
+                    <span className="mt-2 h-full w-px flex-1 bg-border/70" />
+                  )}
                 </div>
                 <div className="flex-1 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
                   <p className="text-sm font-semibold text-foreground">{item.title}</p>
@@ -441,7 +743,10 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
         return (
           <div className="space-y-4">
             {LEGAL_PLACEHOLDER.map((doc) => (
-              <div key={doc.id} className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+              <div
+                key={doc.id}
+                className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm md:flex-row md:items-center md:justify-between"
+              >
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-[#002D5B]/10 p-3 text-[#002D5B] dark:bg-[#3B82F6]/15 dark:text-[#3B82F6]">
                     <FileCheck className="h-5 w-5" />
@@ -452,7 +757,11 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getBadgeTone(doc.status)}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getBadgeTone(
+                      doc.status,
+                    )}`}
+                  >
                     {doc.status}
                   </span>
                   <Button variant="outline" size="sm">
@@ -512,7 +821,7 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
 
   const exhibitorName = owner.venue_name?.trim() || "Huber and Jacobson Plc";
   const ownerCode = owner.id ? `المالك رقم ${owner.id}` : "المالك رقم 1";
-  const statusMeta = getOwnerStatusMeta(owner.status);
+  const statusMeta = getOwnerStatusMeta(owner.status, owner.is_active);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8" dir="rtl">
@@ -552,6 +861,10 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                 onClick={() => {
                   setProcessing("refresh");
                   fetchOwner(true);
+                  if (activeTab === "financial") {
+                    fetchWalletSummary();
+                    fetchTransactions(txPagination?.current_page ?? 1);
+                  }
                 }}
               >
                 <RefreshCw className={`ml-2 h-4 w-4 ${processing === "refresh" ? "animate-spin" : ""}`} />
@@ -634,11 +947,7 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   </LoadingLink>
                 </Button>
               ) : (
-                <Button
-                  variant="secondary"
-                  disabled
-                  className="w-full bg-muted text-muted-foreground"
-                >
+                <Button variant="secondary" disabled className="w-full bg-muted text-muted-foreground">
                   <User className="ml-2 h-4 w-4" />
                   عرض ملف المستخدم
                 </Button>
@@ -648,7 +957,9 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">الحالة الحالية</p>
-                <span className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-semibold ${statusMeta.classes}`}>
+                <span
+                  className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-semibold ${statusMeta.classes}`}
+                >
                   {statusMeta.label}
                 </span>
               </div>
@@ -669,10 +980,14 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={doApprove}
-                  disabled={processing !== null || owner.status === "active"}
+                  disabled={processing !== null || !!owner.is_active}
                   className="bg-[#00A95C] text-white hover:bg-[#009050]"
                 >
-                  {processing === "approve" ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Check className="ml-2 h-4 w-4" />}
+                  {processing === "approve" ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="ml-2 h-4 w-4" />
+                  )}
                   تفعيل
                 </Button>
                 <Button
@@ -680,7 +995,11 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   disabled={processing !== null || owner.status === "rejected"}
                   className="bg-red-600 text-white hover:bg-red-700"
                 >
-                  {processing === "reject" ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <X className="ml-2 h-4 w-4" />}
+                  {processing === "reject" ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="ml-2 h-4 w-4" />
+                  )}
                   رفض
                 </Button>
                 <Button
@@ -706,13 +1025,13 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
         <section className="rounded-3xl border border-border/50 bg-card shadow-2xl">
           <div className="flex flex-wrap gap-3 border-b border-border/60 px-4 py-4">
             {TAB_ITEMS.map((tab) => {
-              const isActive = tab.id === activeTab;
+              const isActiveTab = tab.id === activeTab;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    isActive
+                    isActiveTab
                       ? "bg-[#002D5B] text-white shadow-lg dark:bg-[#3B82F6]"
                       : "bg-muted/40 text-muted-foreground hover:text-foreground"
                   }`}
@@ -729,4 +1048,3 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     </div>
   );
 }
-
