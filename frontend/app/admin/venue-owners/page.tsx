@@ -31,6 +31,12 @@ import { toast } from "react-hot-toast";
 /** Types coming from backend */
 type VenueStatus = "pending" | "active" | "rejected" | string;
 
+interface VenueUser {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 interface VenueOwner {
   id: number;
   user_id: number | null;
@@ -43,11 +49,7 @@ interface VenueOwner {
   updated_at?: string | null;
   user_name?: string | null;
   user_email?: string | null;
-  user: {
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
+  user?: VenueUser | null;
   venue_cars_count: number;
 }
 
@@ -92,17 +94,34 @@ function formatDateAr(dateString?: string | null) {
   return d.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
 }
 
-function statusChipClasses(status?: VenueStatus) {
-  switch (status) {
-    case "active":
-      return "bg-green-500/20 text-green-400 border-green-500/30";
-    case "pending":
-      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-    case "rejected":
-      return "bg-red-500/20 text-red-400 border-red-500/30";
-    default:
-      return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+/**
+ * نفس منطق صفحة التفاصيل:
+ * - is_active = true  → مفعل (أخضر)
+ * - is_active = false + status = rejected → مرفوض (أحمر)
+ * - غير ذلك → في الانتظار (برتقالي)
+ */
+function getStatusMeta(status?: VenueStatus, isActive?: boolean) {
+  if (isActive) {
+    return {
+      label: "مفعل",
+      classes: "bg-green-500/20 text-green-400 border-green-500/30",
+      Icon: CheckCircle,
+    };
   }
+
+  if (status === "rejected") {
+    return {
+      label: "مرفوض",
+      classes: "bg-red-500/20 text-red-400 border-red-500/30",
+      Icon: XCircle,
+    };
+  }
+
+  return {
+    label: "في الانتظار",
+    classes: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    Icon: Clock,
+  };
 }
 
 export default function VenueOwnersAdminPage() {
@@ -115,7 +134,7 @@ export default function VenueOwnersAdminPage() {
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all"); // all|pending|active|rejected
   const [activeFilter, setActiveFilter] = useState<string>("all"); // all|1|0
-  const [sortBy, setSortBy] = useState<string>("vo.id");
+  const [sortBy, setSortBy] = useState<string>("id");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Pagination
@@ -124,14 +143,16 @@ export default function VenueOwnersAdminPage() {
   const [lastPage, setLastPage] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
 
+  // مفاتيح الفرز متوافقة مع الـ backend:
+  // allowedSort = ['id','venue_name','status','is_active','created_at','updated_at'] + 'user_name' الخاصة
   const canSort = useMemo(
     () => [
-      { key: "vo.id", label: "المعرف" },
-      { key: "vo.venue_name", label: "اسم المعرض" },
-      { key: "u.name", label: "اسم المستخدم" },
-      { key: "vo.status", label: "الحالة" },
-      { key: "vo.is_active", label: "التفعيل" },
-      { key: "vo.created_at", label: "التاريخ" },
+      { key: "id", label: "المعرف" },
+      { key: "venue_name", label: "اسم المعرض" },
+      { key: "user_name", label: "اسم المستخدم" },
+      { key: "status", label: "الحالة" },
+      { key: "is_active", label: "التفعيل" },
+      { key: "created_at", label: "تاريخ الإنشاء" },
     ],
     []
   );
@@ -216,24 +237,31 @@ export default function VenueOwnersAdminPage() {
         "السجل التجاري",
         "البريد الإلكتروني",
         "اسم المستخدم",
-        "الحالة",
+        "الحالة (مفعل/مرفوض/انتظار)",
         "مفعّل",
         "تاريخ الإنشاء",
       ];
       const csvLines = [
         headers.join(","),
-        ...rows.map((r) =>
-          [
+        ...rows.map((r) => {
+          const userNameRaw =
+            r.user_name ||
+            (r.user ? `${r.user.first_name} ${r.user.last_name}` : "");
+          const userEmailRaw = r.user_email || r.user?.email || "";
+
+          const statusMeta = getStatusMeta(r.status, r.is_active);
+
+          return [
             r.id ?? "",
             (r.venue_name ?? "").toString().replace(/,/g, "،"),
             (r.commercial_registry ?? "").toString(),
-            (r.user_email ?? "").toString(),
-            (r.user_name ?? "").toString().replace(/,/g, "،"),
-            r.status ?? "",
+            userEmailRaw.toString(),
+            userNameRaw.toString().replace(/,/g, "،"),
+            statusMeta.label,
             r.is_active ? "نعم" : "لا",
             r.created_at ?? "",
-          ].join(",")
-        ),
+          ].join(",");
+        }),
       ];
       const blob = new Blob(["\uFEFF" + csvLines.join("\n")], {
         type: "text/csv;charset=utf-8;",
@@ -251,6 +279,22 @@ export default function VenueOwnersAdminPage() {
     }
   };
 
+  const activeCount = useMemo(
+    () => owners.filter((o) => o.is_active).length,
+    [owners]
+  );
+
+  const pendingCount = useMemo(
+    () =>
+      owners.filter((o) => !o.is_active && o.status !== "rejected").length,
+    [owners]
+  );
+
+  const rejectedCount = useMemo(
+    () => owners.filter((o) => o.status === "rejected").length,
+    [owners]
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       {/* Header */}
@@ -259,7 +303,9 @@ export default function VenueOwnersAdminPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             مُلّاك المعارض
           </h1>
-          <p className="text-muted-foreground mt-2">إدارة وعرض قائمة أصحاب/مُلّاك المعارض</p>
+          <p className="text-muted-foreground mt-2">
+            إدارة وعرض قائمة أصحاب/مُلّاك المعارض
+          </p>
         </div>
 
         <div className="flex items-center gap-3 mt-4 lg:mt-0">
@@ -268,14 +314,14 @@ export default function VenueOwnersAdminPage() {
             variant="outline"
             size="sm"
           >
-            <RefreshCw className={`w-4 h-4 ml-2 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${
+                refreshing ? "animate-spin" : ""
+              }`}
+            />
             تحديث البيانات
           </Button>
-          <Button
-            onClick={exportCsv}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={exportCsv} variant="outline" size="sm">
             <Download className="w-4 h-4 ml-2" />
             تصدير CSV
           </Button>
@@ -288,7 +334,9 @@ export default function VenueOwnersAdminPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-sm">إجمالي المُلّاك</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{totalCount}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {totalCount}
+              </p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Users className="w-6 h-6 text-blue-400" />
@@ -301,7 +349,7 @@ export default function VenueOwnersAdminPage() {
             <div>
               <p className="text-muted-foreground text-sm">الحالة: مفعّل</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {owners.filter((o) => o.is_active).length}
+                {activeCount}
               </p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
@@ -315,7 +363,7 @@ export default function VenueOwnersAdminPage() {
             <div>
               <p className="text-muted-foreground text-sm">في الانتظار</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {owners.filter((o) => o.status === "pending").length}
+                {pendingCount}
               </p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
@@ -329,7 +377,7 @@ export default function VenueOwnersAdminPage() {
             <div>
               <p className="text-muted-foreground text-sm">المرفوضين</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {owners.filter((o) => o.status === "rejected").length}
+                {rejectedCount}
               </p>
             </div>
             <div className="bg-red-500/10 p-3 rounded-xl">
@@ -365,7 +413,7 @@ export default function VenueOwnersAdminPage() {
             >
               <option value="all">كل الحالات</option>
               <option value="pending">في الانتظار</option>
-              <option value="active">مفعل</option>
+              <option value="active">مفعل (حسب حقل الحالة)</option>
               <option value="rejected">مرفوض</option>
             </select>
 
@@ -390,7 +438,9 @@ export default function VenueOwnersAdminPage() {
                 title="تبديل ترتيب الحقل الحالي"
               >
                 <ArrowUpDown className="w-4 h-4 ml-2" />
-                ترتيب: {canSort.find((s) => s.key === sortBy)?.label ?? "المعرف"} ({sortDir})
+                ترتيب:{" "}
+                {canSort.find((s) => s.key === sortBy)?.label ?? "المعرف"} (
+                {sortDir})
               </Button>
 
               <Button
@@ -400,7 +450,7 @@ export default function VenueOwnersAdminPage() {
                   setSearch("");
                   setStatusFilter("all");
                   setActiveFilter("all");
-                  setSortBy("vo.id");
+                  setSortBy("id");
                   setSortDir("desc");
                   setPage(1);
                   fetchOwners({ silent: true });
@@ -419,7 +469,9 @@ export default function VenueOwnersAdminPage() {
       <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
         <div className="p-6 border-b border-border">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-foreground">قائمة مُلّاك المعارض</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              قائمة مُلّاك المعارض
+            </h2>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -434,11 +486,7 @@ export default function VenueOwnersAdminPage() {
                 بحث
               </Button>
               {search && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearSearch}
-                >
+                <Button variant="ghost" size="sm" onClick={handleClearSearch}>
                   مسح البحث
                 </Button>
               )}
@@ -450,111 +498,142 @@ export default function VenueOwnersAdminPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-muted border-b border-border">
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المعرض</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السجل التجاري</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المستخدم</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السيارات</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الحالة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">التفعيل</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">تاريخ الإنشاء</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">إجراءات</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  المعرض
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  السجل التجاري
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  المستخدم
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  السيارات
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  الحالة
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  التفعيل
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  تاريخ الإنشاء
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  إجراءات
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                  <td
+                    colSpan={8}
+                    className="px-6 py-12 text-center text-muted-foreground"
+                  >
                     <Loader2 className="w-6 h-6 inline-block animate-spin mr-2" />
                     جاري التحميل...
                   </td>
                 </tr>
               ) : owners.length > 0 ? (
-                owners.map((v) => (
-                  <tr key={v.id} className="hover:bg-muted/50 transition-colors duration-200 group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="bg-primary p-2 rounded-xl">
-                          <Building className="w-4 h-4 text-primary-foreground" />
-                        </div>
-                        <div className="mr-4">
-                          <div className="text-sm font-medium text-foreground">
-                            {v.venue_name || "—"}
+                owners.map((v) => {
+                  const { label, classes, Icon } = getStatusMeta(
+                    v.status,
+                    v.is_active
+                  );
+                  const userName = v.user
+                    ? `${v.user.first_name} ${v.user.last_name}`
+                    : "—";
+                  const userEmail = v.user?.email ?? "—";
+
+                  return (
+                    <tr
+                      key={v.id}
+                      className="hover:bg-muted/50 transition-colors duration-200 group"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="bg-primary p-2 rounded-xl">
+                            <Building className="w-4 h-4 text-primary-foreground" />
                           </div>
-                          {v.description && (
-                            <div className="text-xs text-muted-foreground mt-1 line-clamp-1">{v.description}</div>
-                          )}
+                          <div className="mr-4">
+                            <div className="text-sm font-medium text-foreground">
+                              {v.venue_name || "—"}
+                            </div>
+                            {v.description && (
+                              <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                {v.description}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-foreground flex items-center">
-                        <Hash className="w-3 h-3 ml-1 text-muted-foreground" />
-                        {v.commercial_registry || "—"}
-                      </div>
-                    </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-foreground flex items-center">
+                          <Hash className="w-3 h-3 ml-1 text-muted-foreground" />
+                          {v.commercial_registry || "—"}
+                        </div>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <div>
-                        {v.user.first_name} {v.user.last_name}
-                      </div>
-                      <div className="text-sm text-foreground/70 flex items-center">
-                        <Mail className="w-3 h-3 ml-1 text-muted-foreground" />
-                        {v.user.email || "—"}
-                      </div>
-                    </td>
+                      <td className="px-6 py-4">
+                        <div>{userName}</div>
+                        <div className="text-sm text-foreground/70 flex items-center">
+                          <Mail className="w-3 h-3 ml-1 text-muted-foreground" />
+                          {userEmail}
+                        </div>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-foreground flex items-center">
-                        {v.venue_cars_count || "0"}
-                      </div>
-                    </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-foreground flex items-center">
+                          <Car className="w-3 h-3 ml-1 text-muted-foreground" />
+                          {v.venue_cars_count ?? 0}
+                        </div>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusChipClasses(v.status)}`}>
-                        {v.status === "active" && <CheckCircle className="w-3 h-3 ml-1" />}
-                        {v.status === "pending" && <Clock className="w-3 h-3 ml-1" />}
-                        {v.status === "rejected" && <XCircle className="w-3 h-3 ml-1" />}
-                        {v.status === "active"
-                          ? "مفعل"
-                          : v.status === "pending"
-                          ? "في الانتظار"
-                          : v.status === "rejected"
-                          ? "مرفوض"
-                          : (v.status ?? "—")}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <ToggleSwitch checked={!!v.is_active} />
-                    </td>
-
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Calendar className="w-3 h-3 ml-1" />
-                        {formatDateAr(v.created_at)}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-1 space-x-reverse">
-                        <Button
-                          asChild
-                          variant="ghost"
-                          size="sm"
-                          className="px-3"
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${classes}`}
                         >
-                          <LoadingLink href={`/admin/venue-owners/${v.id}`}>
-                            <Eye className="w-4 h-4" />
-                          </LoadingLink>
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          <Icon className="w-3 h-3 ml-1" />
+                          {label}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <ToggleSwitch checked={!!v.is_active} />
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <Calendar className="w-3 h-3 ml-1" />
+                          {formatDateAr(v.created_at)}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-1 space-x-reverse">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="px-3"
+                          >
+                            <LoadingLink href={`/admin/venue-owners/${v.id}`}>
+                              <Eye className="w-4 h-4" />
+                            </LoadingLink>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={8}
+                    className="px-6 py-8 text-center text-muted-foreground"
+                  >
                     <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                     <p>لا توجد نتائج مطابقة</p>
                   </td>

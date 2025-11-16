@@ -24,8 +24,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Services\CloudinaryService;
 use App\Enums\CarTransmission;
 use App\Enums\CarsMarketsCategory;
-
-
+use App\Models\CarAttribute;
 use App\Notifications\NewCarAddedNotification;
 
 class CarController extends Controller
@@ -120,7 +119,10 @@ class CarController extends Controller
     public function getFeaturedCars(Request $request)
     {
         $activeStatuses = ['active', 'live'];
-        try { $activeStatuses[] = AuctionStatus::ACTIVE->value; } catch (\Throwable $e) {}
+        try {
+            $activeStatuses[] = AuctionStatus::ACTIVE->value;
+        } catch (\Throwable $e) {
+        }
 
         $cars = Car::with('activeAuction')
             ->select('id', 'make', 'model', 'year', 'images', 'evaluation_price', 'market_category')
@@ -185,7 +187,7 @@ class CarController extends Controller
         $request->merge($normalized);
 
         // أسواق مسموح بها (من غير government)
-        $allowedMarkets = array_values(array_filter(CarsMarketsCategory::values(), fn ($v) => $v !== 'government'));
+        $allowedMarkets = array_values(array_filter(CarsMarketsCategory::values(), fn($v) => $v !== 'government'));
 
         $rules = [
             'make'       => 'required|string|max:50',
@@ -207,6 +209,20 @@ class CarController extends Controller
             'transmission' => ['nullable', 'string', Rule::in(CarTransmission::values())],
             'market_category' => ['required', 'string', Rule::in($allowedMarkets)],
             'description'  => 'nullable|string',
+
+            // حقول اختيارية خاصة بالكرفانات
+            'type'             => 'nullable|string|max:50',
+            'usage'            => 'nullable|string|max:50',
+            'year_built'       => 'nullable|integer|min:1970|max:' . date('Y'),
+            'length_m'         => 'nullable|numeric|min:0',
+            'width_m'          => 'nullable|numeric|min:0',
+            'weight_kg'        => 'nullable|numeric|min:0',
+            'capacity_persons' => 'nullable|integer|min:1',
+            'has_bathroom'     => 'nullable|boolean',
+            'has_kitchen'      => 'nullable|boolean',
+            'bedrooms_count'   => 'nullable|integer|min:0',
+            'solar_power_kw'   => 'nullable|numeric|min:0',
+            'license_required' => 'nullable|boolean',
 
             'images'    => 'sometimes|array|max:10',
         ];
@@ -277,6 +293,9 @@ class CarController extends Controller
             $car->save();
         }
 
+        // خصائص إضافية للكرفانات (إن وجدت)
+        $this->syncCaravanAttributes($request, $car);
+
         // إشعار الإدمنز
         $car->refresh();
         $admins = User::where('role', 'admin')->get();
@@ -297,11 +316,17 @@ class CarController extends Controller
         $user = Auth::user();
 
         if ($user->role === 'admin') {
-            $car = Car::find($id);
+            $car = Car::with('carAttributes')->find($id);
         } elseif ($user->role === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)->where('dealer_id', $user->dealer->id)->first();
+            $car = Car::where('id', $id)
+                ->where('dealer_id', $user->dealer->id)
+                ->with('carAttributes')
+                ->first();
         } else {
-            $car = Car::where('id', $id)->where('user_id', $user->id)->first();
+            $car = Car::where('id', $id)
+                ->where('user_id', $user->id)
+                ->with('carAttributes')
+                ->first();
         }
 
         if (!$car) {
@@ -312,9 +337,20 @@ class CarController extends Controller
             ->whereIn('status', [AuctionStatus::SCHEDULED->value, AuctionStatus::ACTIVE->value])
             ->first();
 
+        $extraAttributes = [];
+        if ((string)$car->market_category === 'caravan') {
+            $extraAttributes = $car->carAttributes
+                ->pluck('value', 'key')
+                ->toArray();
+        }
+
         return response()->json([
             'status' => 'success',
-            'data'   => ['car' => $car, 'active_auction' => $activeAuction],
+            'data'   => [
+                'car'                  => $car,
+                'active_auction'       => $activeAuction,
+                'car_extra_attributes' => $extraAttributes,
+            ],
         ]);
     }
 
@@ -324,7 +360,7 @@ class CarController extends Controller
     public function showOnly($id)
     {
         $user = Auth::user();
-        $car = Car::with('reportImages','activeAuction')->find($id);
+        $car = Car::with('reportImages', 'activeAuction', 'carAttributes')->find($id);
 
         if ($car) {
             $car->load('dealer');
@@ -335,16 +371,14 @@ class CarController extends Controller
         }
 
         $activeAuction = $car->activeAuction()
-        ->withCount('bids')
-        ->first();
+            ->withCount('bids')
+            ->first();
         $total_bids = $activeAuction?->bids_count ?? 0;
         if ($activeAuction && $activeAuction->auction_type != AuctionType::SILENT_INSTANT) {
             $activeAuction->load(['bids' => function ($q) {
                 $q->select('id', 'bid_amount', 'created_at', 'user_id', 'auction_id')
                     ->orderBy('created_at', 'desc');
             }]);
-
-           // $total_bids = $activeAuction ? $activeAuction->bids->count() : 0;
         }
 
         $similar_cars = Car::where('make', $car->make)
@@ -357,13 +391,21 @@ class CarController extends Controller
             ->limit(4)
             ->get();
 
+        $extraAttributes = [];
+        if ((string)$car->market_category === 'caravan') {
+            $extraAttributes = $car->carAttributes
+                ->pluck('value', 'key')
+                ->toArray();
+        }
+
         return response()->json([
             'status' => 'success',
             'data' => [
-                'car' => $car,
-                'active_auction' => $activeAuction,
-                'similar_cars' => $similar_cars,
-                'total_bids' => $total_bids
+                'car'                  => $car,
+                'active_auction'       => $activeAuction,
+                'similar_cars'         => $similar_cars,
+                'total_bids'           => $total_bids,
+                'car_extra_attributes' => $extraAttributes,
             ]
         ]);
     }
@@ -398,7 +440,7 @@ class CarController extends Controller
         }
         $request->merge($normalized);
 
-        $allowedMarkets = array_values(array_filter(CarsMarketsCategory::values(), fn ($v) => $v !== 'government'));
+        $allowedMarkets = array_values(array_filter(CarsMarketsCategory::values(), fn($v) => $v !== 'government'));
 
         $rules = [
             'make'       => 'sometimes|string|max:50',
@@ -420,6 +462,20 @@ class CarController extends Controller
             'city'         => 'nullable|string|max:100',
             'plate'        => 'nullable|string|max:20',
             'market_category' => ['sometimes', 'string', Rule::in($allowedMarkets)],
+
+            // حقول اختيارية خاصة بالكرفانات
+            'type'             => 'sometimes|string|max:50',
+            'usage'            => 'sometimes|string|max:50',
+            'year_built'       => 'sometimes|integer|min:1970|max:' . date('Y'),
+            'length_m'         => 'sometimes|numeric|min:0',
+            'width_m'          => 'sometimes|numeric|min:0',
+            'weight_kg'        => 'sometimes|numeric|min:0',
+            'capacity_persons' => 'sometimes|integer|min:1',
+            'has_bathroom'     => 'sometimes|boolean',
+            'has_kitchen'      => 'sometimes|boolean',
+            'bedrooms_count'   => 'sometimes|integer|min:0',
+            'solar_power_kw'   => 'sometimes|numeric|min:0',
+            'license_required' => 'sometimes|boolean',
         ];
 
         [$messages, $attributes] = $this->arabicValidation();
@@ -436,13 +492,19 @@ class CarController extends Controller
 
         // تحديث الحقول
         foreach ([
-            'make','model','year','vin','odometer','evaluation_price','color','engine',
-            'description','province','city','plate','min_price','max_price','market_category'
+            'make', 'model', 'year', 'vin', 'odometer', 'evaluation_price', 'color', 'engine',
+            'description', 'province', 'city', 'plate', 'min_price', 'max_price', 'market_category'
         ] as $field) {
-            if ($request->has($field)) $car->{$field} = $request->{$field};
+            if ($request->has($field)) {
+                $car->{$field} = $request->{$field};
+            }
         }
-        if ($request->has('condition'))    $car->condition = CarCondition::from($request->condition);
-        if ($request->has('transmission')) $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
+        if ($request->has('condition')) {
+            $car->condition = CarCondition::from($request->condition);
+        }
+        if ($request->has('transmission')) {
+            $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
+        }
 
         // صور (اختياري)
         if ($request->hasFile('images')) {
@@ -466,6 +528,10 @@ class CarController extends Controller
         }
 
         $car->save();
+
+        // تحديث خصائص الكرفان إن وُجدت
+        $this->syncCaravanAttributes($request, $car);
+
         Cache::flush();
 
         return response()->json([
@@ -596,7 +662,10 @@ class CarController extends Controller
             }
 
             $activeStatuses = ['active', 'live'];
-            try { $activeStatuses[] = AuctionStatus::ACTIVE->value; } catch (\Throwable $e) {}
+            try {
+                $activeStatuses[] = AuctionStatus::ACTIVE->value;
+            } catch (\Throwable $e) {
+            }
 
             $query = Car::query()
                 ->select('id', 'make', 'model', 'year', 'images', 'evaluation_price', 'market_category')
@@ -641,7 +710,7 @@ class CarController extends Controller
     public function enumOptions()
     {
         $allMarkets = CarsMarketsCategory::values();
-        $allowedForCreate = array_values(array_filter($allMarkets, fn ($v) => $v !== 'government'));
+        $allowedForCreate = array_values(array_filter($allMarkets, fn($v) => $v !== 'government'));
 
         $translations = [];
         try {
@@ -669,7 +738,7 @@ class CarController extends Controller
         ]);
     }
 
-    /* ====== Helpers: Images & Validation ====== */
+    /* ====== Helpers: Images & Validation & Caravan Attributes ====== */
 
     private function logImageDebugInfo(Request $request)
     {
@@ -709,6 +778,60 @@ class CarController extends Controller
             ];
         }
         return $uploadedImages;
+    }
+
+    /**
+     * تخزين/تحديث خصائص الكرفان في جدول car_attributes
+     * لا يلمس جدول cars نهائيًا.
+     */
+    private function syncCaravanAttributes(Request $request, Car $car): void
+    {
+        // نحدد هل هي كرفان عن طريق type أو market_category=caravan
+        $typeFromRequest = $request->input('type');
+        $marketCategory  = $request->input('market_category');
+        $isCaravan = ($typeFromRequest === 'caravan') || ($marketCategory === 'caravan');
+
+        if (!$isCaravan) {
+            return;
+        }
+
+        $length = $request->input('length_m');
+        $width  = $request->input('width_m');
+        $area   = null;
+
+        if (is_numeric($length) && is_numeric($width)) {
+            $area = (float)$length * (float)$width;
+        }
+
+        $attrs = [
+            'usage_type'       => $request->input('usage_type', $request->input('usage')),
+            'year_built'       => $request->input('year_built'),
+            'length_m'         => $length,
+            'width_m'          => $width,
+            'weight_kg'        => $request->input('weight_kg'),
+            'capacity_persons' => $request->input('capacity_persons'),
+            'has_bathroom'     => $request->has('has_bathroom') ? ($request->boolean('has_bathroom') ? '1' : '0') : null,
+            'has_kitchen'      => $request->has('has_kitchen') ? ($request->boolean('has_kitchen') ? '1' : '0') : null,
+            'bedrooms_count'   => $request->input('bedrooms_count'),
+            'solar_power_kw'   => $request->input('solar_power_kw'),
+            'license_required' => $request->has('license_required') ? ($request->boolean('license_required') ? '1' : '0') : null,
+        ];
+
+        if (!is_null($area)) {
+            $attrs['area_m2'] = $area;
+        }
+
+        foreach ($attrs as $key => $value) {
+            if ($value === null || $value === '') {
+                // لو مش حابب تخزن القيم الفاضية ما تعملش حاجة هنا
+                continue;
+            }
+
+            CarAttribute::updateOrCreate(
+                ['car_id' => $car->id, 'key' => $key],
+                ['value'  => (string)$value]
+            );
+        }
     }
 
     private function arabicValidation(): array
@@ -751,6 +874,20 @@ class CarController extends Controller
             'images' => 'الصور',
             'images.*' => 'ملف الصورة',
             'registration_card_image' => 'استمارة المركبة',
+
+            // أسماء عربية للحقول الجديدة الخاصة بالكرفان
+            'type'             => 'نوع المركبة',
+            'usage'            => 'نوع الاستخدام',
+            'year_built'       => 'سنة البناء',
+            'length_m'         => 'الطول (متر)',
+            'width_m'          => 'العرض (متر)',
+            'weight_kg'        => 'الوزن (كجم)',
+            'capacity_persons' => 'السعة (عدد الأشخاص)',
+            'has_bathroom'     => 'وجود حمام',
+            'has_kitchen'      => 'وجود مطبخ',
+            'bedrooms_count'   => 'عدد غرف النوم',
+            'solar_power_kw'   => 'قدرة الألواح الشمسية (كيلوواط)',
+            'license_required' => 'يتطلب ترخيص خاص',
         ];
 
         return [$messages, $attributes];

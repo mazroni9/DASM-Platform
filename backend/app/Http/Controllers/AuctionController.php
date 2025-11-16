@@ -33,8 +33,6 @@ class AuctionController extends Controller
      */
     public function index(Request $request)
     {
-
-
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
 
         // Only show control room approved auctions in public listing by default
@@ -113,8 +111,6 @@ class AuctionController extends Controller
 
     public function getAllAuctionsIds(Request $request)
     {
-
-
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
 
         // Only show control room approved auctions in public listing by default
@@ -163,9 +159,8 @@ class AuctionController extends Controller
 
     public function auctionByType(Request $request)
     {
-
         $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])
-        ->where('auction_type', $request->auction_type);
+            ->where('auction_type', $request->auction_type);
 
         $brands = Auction::query()
             ->where('auction_type', $request->auction_type)
@@ -239,7 +234,8 @@ class AuctionController extends Controller
             ->with('auctions.bids')
             ->with('auctions.car.dealer')
             ->first();
-        if (! $live_session) {
+
+        if (!$live_session) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No live session found'
@@ -247,7 +243,6 @@ class AuctionController extends Controller
         }
 
         $session_data = new LiveAuctionSessionResource($live_session);
-
 
         return response()->json([
             'status' => 'success',
@@ -356,12 +351,12 @@ class AuctionController extends Controller
     public function addToAuction(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'car_id'        => 'required|integer|exists:cars,id',
-            'starting_bid'  => 'required|numeric|min:0',
-            'reserve_price' => 'nullable|numeric|min:0',
-            'min_price'     => 'required|numeric|min:0',
-            'max_price'     => 'required|numeric|min:0|gte:min_price',
-            'session_id'    => 'required|integer|exists:auction_sessions,id', // 👈 جديد
+            'car_id'           => 'required|integer|exists:cars,id',
+            'starting_bid'     => 'required|numeric|min:0',
+            'reserve_price'    => 'nullable|numeric|min:0',
+            'min_price'        => 'required|numeric|min:0',
+            'max_price'        => 'required|numeric|min:0|gte:min_price',
+            'session_id'       => 'required|integer|exists:auction_sessions,id', // 👈 جديد
             'duration_minutes' => 'nullable|integer|min:1|max:1440',          // اختياري
         ]);
 
@@ -488,7 +483,6 @@ class AuctionController extends Controller
                                 // عنده مزاد نشط بالفعل -> فقط غيّر حالة السيارة
                                 $car->auction_status = 'in_auction';
 
-
                                 if ($request->has('price') && $request->price) {
                                     $auction = $car->activeAuction;
                                     $auction->opening_price = $request->price;
@@ -513,7 +507,7 @@ class AuctionController extends Controller
                                 // لا يوجد مزاد -> أنشئ واحداً
                                 $auction = new Auction();
                                 $auction->car_id        = $car->id;
-                                $auction->opening_price  = $request->price ?? $car->starting_bid ?? $car->evaluation_price ?? 0;
+                                $auction->opening_price = $request->price ?? $car->starting_bid ?? $car->evaluation_price ?? 0;
                                 $auction->current_bid   = $car->starting_bid ?? 0;
                                 $auction->reserve_price = $car->reserve_price ?? 0;
                                 $auction->min_price     = $car->min_price ?? 0;
@@ -657,7 +651,6 @@ class AuctionController extends Controller
 
     public function approveRejectAuctionBulk1(Request $request)
     {
-
         $user = Auth::user();
         $tracking = collect([]);
 
@@ -727,7 +720,6 @@ class AuctionController extends Controller
             }
         }
 
-
         if (count($tracking) > 0) {
             return response()->json([
                 'status' => 'success',
@@ -757,13 +749,18 @@ class AuctionController extends Controller
         }
 
         $validated = $request->validate([
-            'ids'    => ['required', 'array', 'min:1'],
-            'ids.*'  => ['integer', 'distinct'],
-            'status' => ['required', 'string', 'in:active,instant,late,live,pending'],
+            'ids'           => ['required', 'array', 'min:1'],
+            'ids.*'         => ['integer', 'distinct'],
+            'status'        => ['required', 'string', 'in:active,instant,late,live,pending'],
+            // 👇 هنا نحدد مدة بقاء المزاد بالأيام (10 أو 20 أو 30)
+            'duration_days' => ['nullable', 'integer', Rule::in([10, 20, 30])],
         ]);
 
         $targetStatus = $validated['status'];
         $carIds       = array_values($validated['ids']);
+
+        // مدة المزاد الأساسية (لو مش مبعوتة، نخليها 10 أيام)
+        $durationDays = $validated['duration_days'] ?? 10;
 
         /** ---------- Status → Base Payload ---------- */
         $baseDataByStatus = [
@@ -821,7 +818,8 @@ class AuctionController extends Controller
 
         /** ---------- Process ---------- */
         $nowRiyadh  = Carbon::now('Asia/Riyadh');
-        $endDefault = (clone $nowRiyadh)->addDays(5);
+        // بدل 5 أيام ثابتة، نستخدم المدة المختارة (10 / 20 / 30)
+        $endDefault = (clone $nowRiyadh)->addDays($durationDays);
 
         $results    = [];
         $updatedCnt = 0;
@@ -831,28 +829,6 @@ class AuctionController extends Controller
         DB::beginTransaction();
         try {
             foreach ($cars as $car) {
-
-                /** ========= SKIP: if already same status/type =========
-                 * نتحقق من وجود *أي* مزاد لنفس السيارة يطابق الحالة المستهدفة،
-                 * وإذا كان للهدف auction_type (غير null) نضيف شرط النوع.
-                 */
-                // $sameExists = Auction::where('car_id', $car->id)
-                //     ->where('status', $targetData['status'])
-                //     ->when(!is_null($targetData['auction_type']), function ($q) use ($targetData) {
-                //         $q->where('auction_type', $targetData['auction_type']);
-                //     })
-                //     ->exists();
-
-                // if ($sameExists) {
-                //     $skippedCnt++;
-                //     $results[] = [
-                //         'car_id'        => $car->id,
-                //         'action'        => 'skipped',
-                //         'reason'        => 'already in same target status/type',
-                //         'target_status' => $targetStatus,
-                //     ];
-                //     continue;
-                // }
 
                 /** ========= UPDATE or CREATE ========= */
                 // نبحث عن مزاد نشط/مجدول لنعمل عليه تحديث إن توفر
@@ -980,7 +956,6 @@ class AuctionController extends Controller
 
     public function moveBetweenAuctionsBulk1(Request $request)
     {
-
         $user = Auth::user();
         $ids = $request->ids;
 
@@ -1087,7 +1062,6 @@ class AuctionController extends Controller
             }
         }
 
-
         if (count($tracking) > 0) {
             return response()->json([
                 'status' => 'success',
@@ -1160,6 +1134,7 @@ class AuctionController extends Controller
             ]
         ]);
     }
+
     public function getAuctionsByType($type)
     {
         // Update to include both dealer and user relationship
@@ -1208,11 +1183,11 @@ class AuctionController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'starting_bid' => 'sometimes|numeric|min:0',
+            'starting_bid'  => 'sometimes|numeric|min:0',
             'reserve_price' => 'nullable|numeric|min:0',
-            'start_time' => 'sometimes|date|after_or_equal:today',
-            'end_time' => 'sometimes|date|after:start_time',
-            'description' => 'nullable|string',
+            'start_time'    => 'sometimes|date|after_or_equal:today',
+            'end_time'      => 'sometimes|date|after:start_time',
+            'description'   => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -1381,9 +1356,6 @@ class AuctionController extends Controller
     }
 
 
-
-
-
     /**
      * Get analytics for a specific auction
      *
@@ -1489,10 +1461,10 @@ class AuctionController extends Controller
             'data' => [
                 'auction' => $auction,
                 'auction_price' => $auction_price,
-                'muroorFee' => (int)$muroorFee,
-                'tamFee' => (float)$tamFee,
-                'platformFee' => (int)$commission,
-                'net_amount' => (int)$net_amount
+                'muroorFee' => (int) $muroorFee,
+                'tamFee' => (float) $tamFee,
+                'platformFee' => (int) $commission,
+                'net_amount' => (int) $net_amount
             ]
         ]);
     }
@@ -1506,9 +1478,9 @@ class AuctionController extends Controller
     public function bulkUpdateStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'auction_ids' => 'required|array',
+            'auction_ids'   => 'required|array',
             'auction_ids.*' => 'integer|exists:auctions,id',
-            'status' => ['required', Rule::in(['live', 'ended', 'completed', 'cancelled', 'failed'])],
+            'status'        => ['required', Rule::in(['live', 'ended', 'completed', 'cancelled', 'failed'])],
         ]);
 
         if ($validator->fails()) {
