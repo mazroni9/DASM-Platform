@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import {
   Activity,
   ArrowRight,
@@ -54,22 +60,46 @@ const TAB_ITEMS: { id: TabId; label: string; Icon: LucideIcon }[] = [
   { id: "legal", label: "المستندات القانونية", Icon: FileText },
 ];
 
-const VEHICLES_PLACEHOLDER = [
-  { id: "CAR-9211", model: "تويوتا كامري 2022", status: "جاهز", bids: 12, date: "12 نوفمبر 2024" },
-  { id: "CAR-8834", model: "لكزس LX 600", status: "محجوز", bids: 7, date: "8 نوفمبر 2024" },
-  { id: "CAR-7712", model: "بي إم دبليو X5 2023", status: "مباع", bids: 15, date: "4 نوفمبر 2024" },
-] as const;
-
 const ACTIVITY_PLACEHOLDER = [
-  { id: 1, title: "تم إنشاء الحساب", detail: "بواسطة المشرف أحمد الشهري", time: "10 نوفمبر 2024 - 10:32 ص" },
-  { id: 2, title: "تحديث بيانات السجل التجاري", detail: "تم رفع مستند جديد", time: "8 نوفمبر 2024 - 4:18 م" },
-  { id: 3, title: "إرسال طلب تفعيل", detail: "بانتظار اعتماد الإدارة", time: "6 نوفمبر 2024 - 11:05 ص" },
+  {
+    id: 1,
+    title: "تم إنشاء الحساب",
+    detail: "بواسطة المشرف أحمد الشهري",
+    time: "10 نوفمبر 2024 - 10:32 ص",
+  },
+  {
+    id: 2,
+    title: "تحديث بيانات السجل التجاري",
+    detail: "تم رفع مستند جديد",
+    time: "8 نوفمبر 2024 - 4:18 م",
+  },
+  {
+    id: 3,
+    title: "إرسال طلب تفعيل",
+    detail: "بانتظار اعتماد الإدارة",
+    time: "6 نوفمبر 2024 - 11:05 ص",
+  },
 ] as const;
 
 const LEGAL_PLACEHOLDER = [
-  { id: "DOC-01", name: "السجل التجاري", status: "مقبول", updated: "9 نوفمبر 2024" },
-  { id: "DOC-02", name: "رخصة مزاولة النشاط", status: "قيد المراجعة", updated: "6 نوفمبر 2024" },
-  { id: "DOC-03", name: "شهادة الزكاة والدخل", status: "مرفوض", updated: "2 نوفمبر 2024" },
+  {
+    id: "DOC-01",
+    name: "السجل التجاري",
+    status: "مقبول",
+    updated: "9 نوفمبر 2024",
+  },
+  {
+    id: "DOC-02",
+    name: "رخصة مزاولة النشاط",
+    status: "قيد المراجعة",
+    updated: "6 نوفمبر 2024",
+  },
+  {
+    id: "DOC-03",
+    name: "شهادة الزكاة والدخل",
+    status: "مرفوض",
+    updated: "2 نوفمبر 2024",
+  },
 ] as const;
 
 interface WalletSummary {
@@ -89,48 +119,40 @@ interface WalletTransaction {
   created_at?: string | null;
 }
 
-interface TxPagination {
+interface PaginationMeta {
   current_page: number;
   last_page: number;
   per_page: number;
   total: number;
 }
 
+type TxPagination = PaginationMeta;
+type VehiclesPagination = PaginationMeta;
+
+interface VehicleItem {
+  id: number;
+  make?: string | null;
+  model?: string | null;
+  year?: number | string | null;
+  vin?: string | null;
+  auction_status?: string | null;
+  total_bids?: number | null;
+  updated_at?: string | null;
+}
+
+/* -------------------- Helpers -------------------- */
+
 function formatDateAr(dateString?: string | null) {
   if (!dateString) return "غير متوفر";
   const d = new Date((dateString as string).replace(" ", "T"));
   if (isNaN(d.getTime())) return dateString as string;
-  return d.toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
+  return d.toLocaleDateString("ar-SA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
-// ملف: (مثلاً) lib/utils.ts أو ملف المساعدات الخاص بك
-
-type VenueStatus = "active" | "pending" | "rejected"; // افترضت تعريف هذا النوع
-
-function getOwnerStatusMeta(status?: VenueStatus) {
-  switch (status) {
-    case "active":
-      return { 
-        label: "مفعل", 
-        classes: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600" 
-      };
-    case "pending":
-      return { 
-        label: "في الانتظار", 
-        classes: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-600" 
-      };
-    case "rejected":
-      return { 
-        label: "مرفوض", 
-        classes: "bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-600" 
-      };
-    default:
-      return { 
-        label: status ?? "غير محدد", 
-        classes: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500" 
-      };
-    }
-  }
 function formatDateTimeAr(dateString?: string | null) {
   if (!dateString) return "غير متوفر";
   const d = new Date((dateString as string).replace(" ", "T"));
@@ -152,21 +174,29 @@ function formatSar(value?: number | null) {
   });
 }
 
-
 function getBadgeTone(status: string) {
   const normalized = status.toLowerCase();
 
   const success = ["جاهز", "مكتمل", "مقبول", "completed", "success", "paid"];
-  const pending = ["محجوز", "قيد الانتظار", "قيد المراجعة", "pending", "processing"];
+  const pending = [
+    "محجوز",
+    "قيد الانتظار",
+    "قيد المراجعة",
+    "pending",
+    "processing",
+  ];
   const danger = ["مباع", "مرفوض", "failed", "cancelled", "canceled"];
 
-  if (success.some((s) => s.toLowerCase() === normalized)) return "bg-[#00A95C]/15 text-[#00A95C]";
-  if (pending.some((s) => s.toLowerCase() === normalized)) return "bg-amber-500/15 text-amber-400";
-  if (danger.some((s) => s.toLowerCase() === normalized)) return "bg-red-500/15 text-red-400";
+  if (success.some((s) => s.toLowerCase() === normalized))
+    return "bg-[#00A95C]/15 text-[#00A95C]";
+  if (pending.some((s) => s.toLowerCase() === normalized))
+    return "bg-amber-500/15 text-amber-400";
+  if (danger.some((s) => s.toLowerCase() === normalized))
+    return "bg-red-500/15 text-red-400";
   return "bg-muted text-muted-foreground";
 }
 
-function useOnClickOutside(ref: React.RefObject<HTMLElement>, handler: () => void) {
+function useOnClickOutside(ref: RefObject<HTMLElement>, handler: () => void) {
   useEffect(() => {
     const listener = (event: MouseEvent) => {
       const el = ref?.current;
@@ -184,6 +214,81 @@ function useOnClickOutside(ref: React.RefObject<HTMLElement>, handler: () => voi
     };
   }, [ref, handler]);
 }
+
+function getOwnerStatusMeta(status?: VenueStatus, isActive?: boolean) {
+  const effectiveStatus: VenueStatus | undefined =
+    status ??
+    (typeof isActive === "boolean"
+      ? (isActive ? "active" : "pending")
+      : undefined);
+
+  switch (effectiveStatus) {
+    case "active":
+      return {
+        label: "مفعل",
+        classes:
+          "bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-600",
+      };
+    case "pending":
+      return {
+        label: "في الانتظار",
+        classes:
+          "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900 dark:text-amber-300 dark:border-amber-600",
+      };
+    case "rejected":
+      return {
+        label: "مرفوض",
+        classes:
+          "bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-600",
+      };
+    default:
+      return {
+        label: status ?? (isActive ? "مفعل" : "غير محدد"),
+        classes:
+          "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500",
+      };
+  }
+}
+
+/* -------------------- ToggleSwitch داخلي -------------------- */
+
+interface ToggleSwitchProps {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+  className?: string;
+}
+
+function ToggleSwitch({
+  checked,
+  disabled,
+  onChange,
+  className,
+}: ToggleSwitchProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => {
+        if (!disabled) onChange(!checked);
+      }}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full border border-border transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+        checked ? "bg-[#00A95C]" : "bg-muted"
+      } ${className ?? ""}`}
+    >
+      <span
+        className={
+          "inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform " +
+          (checked ? "translate-x-5" : "translate-x-1")
+        }
+      />
+    </button>
+  );
+}
+
+/* -------------------- قائمة الإجراءات -------------------- */
 
 interface ActionMenuProps {
   disabled: boolean;
@@ -224,7 +329,9 @@ function ActionMenu({
 
       {open && (
         <div className="absolute left-0 z-50 mt-2 min-w-[220px] rounded-2xl border border-border/70 bg-card shadow-2xl">
-          <div className="px-4 py-2 text-xs text-muted-foreground">التحكم في حالة المالك</div>
+          <div className="px-4 py-2 text-xs text-muted-foreground">
+            التحكم في حالة المالك
+          </div>
           <div className="h-px bg-border/70" />
 
           <button
@@ -235,7 +342,7 @@ function ActionMenu({
             disabled={disabled || !!isActive}
             className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span>تفعيل</span>
+            <span>تفعيل (اعتماد)</span>
             {processing === "approve" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -251,7 +358,7 @@ function ActionMenu({
             disabled={disabled || status === "rejected"}
             className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span>رفض</span>
+            <span>رفض نهائي</span>
             {processing === "reject" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -269,7 +376,7 @@ function ActionMenu({
             disabled={disabled}
             className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span>{isActive ? "تعطيل" : "تفعيل"}</span>
+            <span>{isActive ? "تعطيل مؤقت" : "إعادة التفعيل"}</span>
             {processing === "toggle" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isActive ? (
@@ -297,15 +404,25 @@ function ActionMenu({
   );
 }
 
-export default function VenueOwnerShowPage({ params }: { params: { id: string } }) {
+/* -------------------- الصفحة الرئيسية -------------------- */
+
+export default function VenueOwnerShowPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const ownerId = Number(params.id);
   const [owner, setOwner] = useState<VenueOwner | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState<null | "approve" | "reject" | "toggle" | "refresh">(null);
+  const [processing, setProcessing] = useState<
+    null | "approve" | "reject" | "toggle" | "refresh"
+  >(null);
   const [activeTab, setActiveTab] = useState<TabId>("vehicles");
 
   // Wallet state
-  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(
+    null,
+  );
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
 
@@ -313,8 +430,14 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
   const [txLoading, setTxLoading] = useState(false);
   const [txPagination, setTxPagination] = useState<TxPagination | null>(null);
 
+  // Vehicles state
+  const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(false);
+  const [vehiclesPagination, setVehiclesPagination] =
+    useState<VehiclesPagination | null>(null);
+
   const ownerInitials = useMemo(() => {
-    if (!owner?.venue_name) return "HJ";
+    if (!owner?.venue_name) return "VO";
     return owner.venue_name
       .split(" ")
       .filter(Boolean)
@@ -349,12 +472,56 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownerId]);
 
+  const fetchVehicles = async (page = 1) => {
+    if (!owner) return;
+    try {
+      setVehiclesLoading(true);
+      const res = await api.get(`/api/admin/venue-owners/${owner.id}/cars`, {
+        params: { page },
+      });
+
+      const payload = res?.data;
+      const items: VehicleItem[] = Array.isArray(payload?.data)
+        ? (payload.data as VehicleItem[])
+        : [];
+
+      setVehicles(items);
+
+      if (payload?.meta) {
+        setVehiclesPagination({
+          current_page: payload.meta.current_page ?? page,
+          last_page: payload.meta.last_page ?? 1,
+          per_page: payload.meta.per_page ?? items.length ?? 0,
+          total: payload.meta.total ?? items.length ?? 0,
+        });
+      } else if (items.length) {
+        setVehiclesPagination({
+          current_page: page,
+          last_page: 1,
+          per_page: items.length,
+          total: items.length,
+        });
+      } else {
+        setVehiclesPagination(null);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("تعذر تحميل المركبات");
+      setVehicles([]);
+      setVehiclesPagination(null);
+    } finally {
+      setVehiclesLoading(false);
+    }
+  };
+
   const fetchWalletSummary = async () => {
     if (!owner) return;
     try {
       setWalletLoading(true);
       setWalletError(null);
-      const res = await api.get(`/api/admin/venue-owners/${owner.id}/wallet`);
+      const res = await api.get(
+        `/api/admin/venue-owners/${owner.id}/wallet`,
+      );
       const payload = res?.data?.data ?? res?.data;
 
       if (!payload) {
@@ -381,9 +548,12 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     if (!owner) return;
     try {
       setTxLoading(true);
-      const res = await api.get(`/api/admin/venue-owners/${owner.id}/wallet/transactions`, {
-        params: { page },
-      });
+      const res = await api.get(
+        `/api/admin/venue-owners/${owner.id}/wallet/transactions`,
+        {
+          params: { page },
+        },
+      );
 
       const payload = res?.data?.data ?? res?.data;
 
@@ -425,14 +595,25 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, owner?.id]);
 
+  // تحميل المركبات عند فتح تاب المركبات
+  useEffect(() => {
+    if (activeTab !== "vehicles" || !owner) return;
+    fetchVehicles(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, owner?.id]);
+
   const doApprove = async () => {
     if (!owner) return;
     try {
       setProcessing("approve");
-      const res = await api.post(`/api/admin/venue-owners/${owner.id}/approve`);
+      const res = await api.post(
+        `/api/admin/venue-owners/${owner.id}/approve`,
+      );
       if (res?.data?.ok || res?.data?.status === "success") {
-        toast.success("تم تفعيل مالك المعرض");
-        setOwner((o) => (o ? { ...o, is_active: true } : o));
+        toast.success("تم اعتماد وتفعيل مالك المعرض");
+        setOwner((o) =>
+          o ? { ...o, is_active: true, status: "active" } : o,
+        );
       } else {
         toast("تم إرسال الطلب. تحقق من النتيجة.");
       }
@@ -446,14 +627,20 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
 
   const doReject = async () => {
     if (!owner) return;
-    const confirmReject = window.confirm("هل أنت متأكد من رفض هذا المالك؟");
+    const confirmReject = window.confirm(
+      "هل أنت متأكد من رفض هذا المالك نهائياً؟",
+    );
     if (!confirmReject) return;
     try {
       setProcessing("reject");
-      const res = await api.post(`/api/admin/venue-owners/${owner.id}/reject`);
+      const res = await api.post(
+        `/api/admin/venue-owners/${owner.id}/reject`,
+      );
       if (res?.data?.ok || res?.data?.status === "success") {
         toast.success("تم رفض مالك المعرض");
-        setOwner((o) => (o ? { ...o, status: "rejected", is_active: false } : o));
+        setOwner((o) =>
+          o ? { ...o, status: "rejected", is_active: false } : o,
+        );
       } else {
         toast("تم إرسال الطلب. تحقق من النتيجة.");
       }
@@ -469,9 +656,12 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     if (!owner) return;
     try {
       setProcessing("toggle");
-      const res = await api.post(`/api/admin/venue-owners/${owner.id}/toggle-status`, {
-        is_active: !owner.is_active,
-      });
+      const res = await api.post(
+        `/api/admin/venue-owners/${owner.id}/toggle-status`,
+        {
+          is_active: !owner.is_active,
+        },
+      );
       if (res?.data?.ok || res?.data?.status === "success") {
         const next = !owner.is_active;
         toast.success(next ? "تم التفعيل" : "تم التعطيل");
@@ -497,37 +687,134 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     switch (activeTab) {
       case "vehicles":
         return (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px] text-sm">
-              <thead>
-                <tr className="border-b border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                  <th className="px-4 py-3 text-right font-medium">رقم المركبة</th>
-                  <th className="px-4 py-3 text-right font-medium">الموديل</th>
-                  <th className="px-4 py-3 text-right font-medium">العروض</th>
-                  <th className="px-4 py-3 text-right font-medium">الحالة</th>
-                  <th className="px-4 py-3 text-right font-medium">آخر تحديث</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {VEHICLES_PLACEHOLDER.map((vehicle) => (
-                  <tr key={vehicle.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-4 font-mono text-sm text-[#002D5B] dark:text-[#3B82F6]">{vehicle.id}</td>
-                    <td className="px-4 py-4 text-sm">{vehicle.model}</td>
-                    <td className="px-4 py-4 text-sm">{vehicle.bids}</td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getBadgeTone(
-                          vehicle.status,
-                        )}`}
-                      >
-                        {vehicle.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-muted-foreground">{vehicle.date}</td>
-                  </tr>
+          <div className="space-y-4">
+            {vehiclesLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-14 rounded-2xl bg-muted/60 animate-pulse"
+                  />
                 ))}
-              </tbody>
-            </table>
+              </div>
+            ) : vehicles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center text-sm text-muted-foreground">
+                <Car className="mb-3 h-8 w-8 text-muted-foreground/70" />
+                لا توجد مركبات مرتبطة بهذا المالك حتى الآن.
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border/60 bg-muted/20 text-xs text-muted-foreground">
+                        <th className="px-4 py-3 text-right font-medium">
+                          رقم المركبة
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          الموديل
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          العروض
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          الحالة
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          آخر تحديث
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {vehicles.map((vehicle) => {
+                        const labelId =
+                          vehicle.vin || `CAR-${vehicle.id}`;
+                        const modelLabel =
+                          [vehicle.make, vehicle.model, vehicle.year]
+                            .filter(Boolean)
+                            .join(" ") || `مركبة رقم ${vehicle.id}`;
+                        const bids = vehicle.total_bids ?? 0;
+                        const statusLabel =
+                          vehicle.auction_status || "غير محدد";
+
+                        return (
+                          <tr
+                            key={vehicle.id}
+                            className="hover:bg-muted/30"
+                          >
+                            <td className="px-4 py-4 font-mono text-sm text-[#002D5B] dark:text-[#3B82F6]">
+                              {labelId}
+                            </td>
+                            <td className="px-4 py-4 text-sm">
+                              {modelLabel}
+                            </td>
+                            <td className="px-4 py-4 text-sm">
+                              {bids}
+                            </td>
+                            <td className="px-4 py-4">
+                              <span
+                                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getBadgeTone(
+                                  statusLabel,
+                                )}`}
+                              >
+                                {statusLabel}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-sm text-muted-foreground">
+                              {formatDateAr(vehicle.updated_at)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {vehiclesPagination &&
+                  vehiclesPagination.last_page > 1 && (
+                    <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                      <div>
+                        صفحة {vehiclesPagination.current_page} من{" "}
+                          {vehiclesPagination.last_page} — إجمالي{" "}
+                        {vehiclesPagination.total} مركبة
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={
+                            vehiclesPagination.current_page <= 1 ||
+                            vehiclesLoading
+                          }
+                          onClick={() =>
+                            fetchVehicles(
+                              vehiclesPagination.current_page - 1,
+                            )
+                          }
+                        >
+                          السابق
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={
+                            vehiclesPagination.current_page >=
+                              vehiclesPagination.last_page ||
+                            vehiclesLoading
+                          }
+                          onClick={() =>
+                            fetchVehicles(
+                              vehiclesPagination.current_page + 1,
+                            )
+                          }
+                        >
+                          التالي
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+              </>
+            )}
           </div>
         );
       case "financial":
@@ -538,16 +825,22 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
               <div className="md:col-span-2 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">الرصيد الحالي</p>
+                    <p className="text-sm text-muted-foreground">
+                      الرصيد الحالي
+                    </p>
                     {walletLoading ? (
                       <div className="mt-3 h-8 w-40 rounded-xl bg-muted animate-pulse" />
                     ) : walletSummary ? (
                       <p className="mt-2 text-2xl font-bold text-foreground">
                         {formatSar(walletSummary.balance_sar)}{" "}
-                        <span className="text-sm font-semibold text-muted-foreground">{walletSummary.currency}</span>
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          {walletSummary.currency}
+                        </span>
                       </p>
                     ) : (
-                      <p className="mt-2 text-sm text-muted-foreground">لا توجد بيانات محفظة حالياً</p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        لا توجد بيانات محفظة حالياً
+                      </p>
                     )}
                     {walletError && (
                       <p className="mt-2 text-xs text-red-400">
@@ -565,13 +858,19 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                       size="sm"
                       onClick={() => {
                         fetchWalletSummary();
-                        fetchTransactions(txPagination?.current_page ?? 1);
+                        fetchTransactions(
+                          txPagination?.current_page ?? 1,
+                        );
                       }}
                       disabled={walletLoading || txLoading}
                       className="text-[#002D5B] dark:text-[#3B82F6]"
                     >
                       <RefreshCw
-                        className={`ml-2 h-4 w-4 ${walletLoading || txLoading ? "animate-spin" : ""}`}
+                        className={`ml-2 h-4 w-4 ${
+                          walletLoading || txLoading
+                            ? "animate-spin"
+                            : ""
+                        }`}
                       />
                       تحديث البيانات
                     </Button>
@@ -580,7 +879,9 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
               </div>
               <div className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm flex flex-col justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">ملخص سريع</p>
+                  <p className="text-sm text-muted-foreground">
+                    ملخص سريع
+                  </p>
                   <div className="mt-3 space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span>عدد العمليات</span>
@@ -592,7 +893,9 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                       <span>آخر عملية</span>
                       <span className="text-xs text-muted-foreground">
                         {transactions[0]?.created_at
-                          ? formatDateTimeAr(transactions[0].created_at)
+                          ? formatDateTimeAr(
+                              transactions[0].created_at,
+                            )
                           : "—"}
                       </span>
                     </div>
@@ -604,13 +907,18 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
             {/* جدول الحركات */}
             <div className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
               <div className="mb-4 flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-foreground">سجل الحركات المالية</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  سجل الحركات المالية
+                </h3>
               </div>
 
               {txLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-14 rounded-2xl bg-muted/60 animate-pulse" />
+                    <div
+                      key={i}
+                      className="h-14 rounded-2xl bg-muted/60 animate-pulse"
+                    />
                   ))}
                 </div>
               ) : transactions.length === 0 ? (
@@ -624,12 +932,24 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                     <table className="w-full min-w-[700px] text-sm">
                       <thead>
                         <tr className="border-b border-border/60 bg-muted/20 text-xs text-muted-foreground">
-                          <th className="px-3 py-2 text-right font-medium">رقم العملية</th>
-                          <th className="px-3 py-2 text-right font-medium">النوع</th>
-                          <th className="px-3 py-2 text-right font-medium">الوصف</th>
-                          <th className="px-3 py-2 text-right font-medium">المبلغ</th>
-                          <th className="px-3 py-2 text-right font-medium">الحالة</th>
-                          <th className="px-3 py-2 text-right font-medium">التاريخ</th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            رقم العملية
+                          </th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            النوع
+                          </th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            الوصف
+                          </th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            المبلغ
+                          </th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            الحالة
+                          </th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            التاريخ
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/40">
@@ -637,25 +957,38 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                           const isOut =
                             tx.direction === "out" ||
                             tx.direction === "OUT" ||
-                            (typeof tx.amount === "number" && tx.amount < 0);
-                          const amountValue = Math.abs(tx.amount ?? 0) / 100;
-                          const amountClass = isOut ? "text-red-500" : "text-[#00A95C]";
-                          const directionLabel = isOut ? "خروج" : "دخول";
+                            (typeof tx.amount === "number" &&
+                              tx.amount < 0);
+                          const amountValue =
+                            Math.abs(tx.amount ?? 0) / 100;
+                          const amountClass = isOut
+                            ? "text-red-500"
+                            : "text-[#00A95C]";
+                          const directionLabel = isOut
+                            ? "خروج"
+                            : "دخول";
 
                           return (
-                            <tr key={tx.id} className="hover:bg-muted/30">
+                            <tr
+                              key={tx.id}
+                              className="hover:bg-muted/30"
+                            >
                               <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
                                 {tx.reference || `TX-${tx.id}`}
                               </td>
                               <td className="px-3 py-3 text-sm">
                                 {tx.type || "—"}
-                                <span className="mx-1 text-xs text-muted-foreground">({directionLabel})</span>
+                                <span className="mx-1 text-xs text-muted-foreground">
+                                  ({directionLabel})
+                                </span>
                               </td>
                               <td className="px-3 py-3 text-xs text-muted-foreground">
                                 {tx.description || "—"}
                               </td>
                               <td className="px-3 py-3">
-                                <div className={`flex items-center justify-start gap-2 font-semibold ${amountClass}`}>
+                                <div
+                                  className={`flex items-center justify-start gap-2 font-semibold ${amountClass}`}
+                                >
                                   {isOut ? (
                                     <ArrowDownRight className="h-4 w-4" />
                                   ) : (
@@ -663,14 +996,18 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                                   )}
                                   <span>
                                     {formatSar(amountValue)}{" "}
-                                    <span className="text-[11px] text-muted-foreground/80">ر.س</span>
+                                    <span className="text-[11px] text-muted-foreground/80">
+                                      ر.س
+                                    </span>
                                   </span>
                                 </div>
                               </td>
                               <td className="px-3 py-3">
                                 <span
                                   className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                                    tx.status ? getBadgeTone(tx.status) : "bg-muted text-muted-foreground"
+                                    tx.status
+                                      ? getBadgeTone(tx.status)
+                                      : "bg-muted text-muted-foreground"
                                   }`}
                                 >
                                   {tx.status || "—"}
@@ -689,23 +1026,37 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   {txPagination && txPagination.last_page > 1 && (
                     <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                       <div>
-                        صفحة {txPagination.current_page} من {txPagination.last_page} — إجمالي{" "}
+                        صفحة {txPagination.current_page} من{" "}
+                        {txPagination.last_page} — إجمالي{" "}
                         {txPagination.total} عملية
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={txPagination.current_page <= 1 || txLoading}
-                          onClick={() => fetchTransactions(txPagination.current_page - 1)}
+                          disabled={
+                            txPagination.current_page <= 1 || txLoading
+                          }
+                          onClick={() =>
+                            fetchTransactions(
+                              txPagination.current_page - 1,
+                            )
+                          }
                         >
                           السابق
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={txPagination.current_page >= txPagination.last_page || txLoading}
-                          onClick={() => fetchTransactions(txPagination.current_page + 1)}
+                          disabled={
+                            txPagination.current_page >=
+                              txPagination.last_page || txLoading
+                          }
+                          onClick={() =>
+                            fetchTransactions(
+                              txPagination.current_page + 1,
+                            )
+                          }
                         >
                           التالي
                         </Button>
@@ -729,8 +1080,12 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   )}
                 </div>
                 <div className="flex-1 rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm">
-                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                  <p className="text-sm text-muted-foreground">{item.detail}</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {item.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.detail}
+                  </p>
                   <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
                     {item.time}
@@ -755,7 +1110,9 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   </div>
                   <div>
                     <p className="text-base font-semibold">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">آخر تحديث: {doc.updated}</p>
+                    <p className="text-xs text-muted-foreground">
+                      آخر تحديث: {doc.updated}
+                    </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -779,7 +1136,10 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground p-4 md:p-8" dir="rtl">
+      <div
+        className="min-h-screen bg-background text-foreground p-4 md:p-8"
+        dir="rtl"
+      >
         <div className="mx-auto flex max-w-5xl flex-col gap-4">
           <div className="h-10 w-32 rounded-full bg-muted animate-pulse" />
           <div className="h-48 rounded-3xl border border-border/60 bg-card animate-pulse" />
@@ -791,12 +1151,19 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
 
   if (!owner) {
     return (
-      <div className="min-h-screen bg-background text-foreground p-4 md:p-8" dir="rtl">
+      <div
+        className="min-h-screen bg-background text-foreground p-4 md:p-8"
+        dir="rtl"
+      >
         <div className="mx-auto max-w-4xl space-y-6">
           <section className="rounded-3xl border border-border/60 bg-card p-10 text-center shadow-2xl">
             <Building className="mx-auto h-10 w-10 text-muted-foreground" />
-            <h1 className="mt-4 text-2xl font-bold">لا توجد بيانات لهذا المالك</h1>
-            <p className="text-muted-foreground">تحقق من الرابط أو حاول التحديث لإعادة تحميل الصفحة.</p>
+            <h1 className="mt-4 text-2xl font-bold">
+              لا توجد بيانات لهذا المالك
+            </h1>
+            <p className="text-muted-foreground">
+              تحقق من الرابط أو حاول التحديث لإعادة تحميل الصفحة.
+            </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button
                 variant="outline"
@@ -821,12 +1188,15 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
     );
   }
 
-  const exhibitorName = owner.venue_name?.trim() || "Huber and Jacobson Plc";
-  const ownerCode = owner.id ? `المالك رقم ${owner.id}` : "المالك رقم 1";
+  const exhibitorName = owner.venue_name?.trim() || "معرض بدون اسم";
+  const ownerCode = owner.id ? `المالك رقم ${owner.id}` : "المالك";
   const statusMeta = getOwnerStatusMeta(owner.status, owner.is_active);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8" dir="rtl">
+    <div
+      className="min-h-screen bg-background text-foreground p-4 md:p-8"
+      dir="rtl"
+    >
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex justify-end">
           <Button
@@ -847,12 +1217,20 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
           <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#002D5B] text-white shadow-xl dark:bg-[#3B82F6]">
-                <span className="text-xl font-semibold">{ownerInitials}</span>
+                <span className="text-xl font-semibold">
+                  {ownerInitials}
+                </span>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground">Exhibitor</p>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">{exhibitorName}</h1>
-                <p className="text-sm text-muted-foreground">{ownerCode}</p>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground">
+                  Exhibitor
+                </p>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                  {exhibitorName}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {ownerCode}
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-3 md:justify-start">
@@ -865,11 +1243,22 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   fetchOwner(true);
                   if (activeTab === "financial") {
                     fetchWalletSummary();
-                    fetchTransactions(txPagination?.current_page ?? 1);
+                    fetchTransactions(
+                      txPagination?.current_page ?? 1,
+                    );
+                  }
+                  if (activeTab === "vehicles") {
+                    fetchVehicles(
+                      vehiclesPagination?.current_page ?? 1,
+                    );
                   }
                 }}
               >
-                <RefreshCw className={`ml-2 h-4 w-4 ${processing === "refresh" ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`ml-2 h-4 w-4 ${
+                    processing === "refresh" ? "animate-spin" : ""
+                  }`}
+                />
                 تحديث
               </Button>
               <ActionMenu
@@ -890,18 +1279,31 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">اسم المعرض</p>
-                <p className="text-lg font-semibold">{exhibitorName}</p>
+                <p className="text-sm text-muted-foreground">
+                  اسم المعرض
+                </p>
+                <p className="text-lg font-semibold">
+                  {exhibitorName}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">السجل التجاري</p>
+                <p className="text-sm text-muted-foreground">
+                  السجل التجاري
+                </p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-sm">{owner.commercial_registry ?? "—"}</span>
+                  <span className="font-mono text-sm">
+                    {owner.commercial_registry ?? "—"}
+                  </span>
                   {owner.commercial_registry && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copy(owner.commercial_registry, "تم نسخ السجل التجاري")}
+                      onClick={() =>
+                        copy(
+                          owner.commercial_registry,
+                          "تم نسخ السجل التجاري",
+                        )
+                      }
                     >
                       <Hash className="h-4 w-4" />
                     </Button>
@@ -909,29 +1311,48 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                 </div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">الوصف</p>
+                <p className="text-sm text-muted-foreground">
+                  الوصف
+                </p>
                 <p className="text-sm leading-6 text-foreground/80">
-                  {owner.description || "لا يوجد وصف مُسجّل حالياً."}
+                  {owner.description ||
+                    "لا يوجد وصف مُسجّل حالياً."}
                 </p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">المعرف</p>
-                <p className="text-lg font-semibold">{owner.user_id ?? "—"}</p>
+                <p className="text-sm text-muted-foreground">
+                  المعرف
+                </p>
+                <p className="text-lg font-semibold">
+                  {owner.user_id ?? "—"}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">البريد الإلكتروني</p>
+                <p className="text-sm text-muted-foreground">
+                  البريد الإلكتروني
+                </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <a
                     className="text-sm font-semibold text-[#002D5B] hover:underline dark:text-[#3B82F6]"
-                    href={owner.user_email ? `mailto:${owner.user_email}` : undefined}
+                    href={
+                      owner.user_email
+                        ? `mailto:${owner.user_email}`
+                        : undefined
+                    }
                   >
                     {owner.user_email ?? "—"}
                   </a>
                   {owner.user_email && (
-                    <Button variant="ghost" size="icon" onClick={() => copy(owner.user_email, "تم نسخ البريد")}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        copy(owner.user_email, "تم نسخ البريد")
+                      }
+                    >
                       <Mail className="h-4 w-4" />
                     </Button>
                   )}
@@ -949,7 +1370,11 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                   </LoadingLink>
                 </Button>
               ) : (
-                <Button variant="secondary" disabled className="w-full bg-muted text-muted-foreground">
+                <Button
+                  variant="secondary"
+                  disabled
+                  className="w-full bg-muted text-muted-foreground"
+                >
                   <User className="ml-2 h-4 w-4" />
                   عرض ملف المستخدم
                 </Button>
@@ -958,7 +1383,9 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
 
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">الحالة الحالية</p>
+                <p className="text-sm text-muted-foreground">
+                  الحالة الحالية
+                </p>
                 <span
                   className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-semibold ${statusMeta.classes}`}
                 >
@@ -966,59 +1393,44 @@ export default function VenueOwnerShowPage({ params }: { params: { id: string } 
                 </span>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">تاريخ الإنشاء</p>
+                <p className="text-sm text-muted-foreground">
+                  تاريخ الإنشاء
+                </p>
                 <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
                   <Calendar className="h-4 w-4" />
                   {formatDateAr(owner.created_at)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">آخر تحديث</p>
+                <p className="text-sm text-muted-foreground">
+                  آخر تحديث
+                </p>
                 <p className="mt-1 flex items-center gap-2 text-sm text-foreground">
                   <Calendar className="h-4 w-4" />
                   {formatDateAr(owner.updated_at)}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={doApprove}
-                  disabled={processing !== null || !!owner.is_active}
-                  className="bg-[#00A95C] text-white hover:bg-[#009050]"
-                >
-                  {processing === "approve" ? (
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="ml-2 h-4 w-4" />
-                  )}
-                  تفعيل
-                </Button>
-                <Button
-                  onClick={doReject}
-                  disabled={processing !== null || owner.status === "rejected"}
-                  className="bg-red-600 text-white hover:bg-red-700"
-                >
-                  {processing === "reject" ? (
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <X className="ml-2 h-4 w-4" />
-                  )}
-                  رفض
-                </Button>
-                <Button
-                  variant="outline"
-                  className="col-span-2 border-dashed border-[#002D5B]/40 text-[#002D5B] dark:border-[#3B82F6]/40 dark:text-[#3B82F6]"
-                  onClick={doToggleActive}
-                  disabled={processing !== null}
-                >
-                  {processing === "toggle" ? (
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  ) : owner.is_active ? (
-                    <X className="ml-2 h-4 w-4 text-red-500" />
-                  ) : (
-                    <Check className="ml-2 h-4 w-4 text-[#00A95C]" />
-                  )}
-                  {owner.is_active ? "تعطيل" : "تفعيل"}
-                </Button>
+
+              {/* كتلة التحكم في التفعيل – فقط Toggle */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/40 px-3 py-2">
+                  <div className="mr-3 text-right space-y-0.5">
+                    <p className="text-sm font-medium">
+                      حالة التفعيل
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {owner.is_active
+                        ? "الحساب مفعل ويمكنه استخدام النظام"
+                        : "الحساب معطل ولا يمكنه الدخول حالياً"}
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    checked={!!owner.is_active}
+                    disabled={processing !== null}
+                    onChange={() => doToggleActive()}
+                    className="rtl:ml-2"
+                  />
+                </div>
               </div>
             </div>
           </div>
