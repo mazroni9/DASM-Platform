@@ -77,7 +77,6 @@ class VenueOwnerController extends Controller
 
             $paginator = $query->paginate($perPage, ['*'], 'page', $request->query('page', 1));
 
-            // لو حابب تضيف user_name و user_email ممكن تعمل map هنا
             $formattedData = $paginator->getCollection();
 
             return response()->json([
@@ -358,8 +357,9 @@ class VenueOwnerController extends Controller
 
     /**
      * POST /admin/venue-owners/{id}/approve
-     * - يفعّل الحساب فقط عن طريق is_active = true
-     * - لا يغيّر status احترامًا للـ CHECK CONSTRAINT في قاعدة البيانات
+     * - يفعّل الحساب عن طريق is_active = true
+     * - يحدّث status إلى active
+     * - لا يغيّر kyc_status احترامًا للـ CHECK CONSTRAINT في جدول users
      */
     public function approve(Request $request, int $id)
     {
@@ -374,14 +374,18 @@ class VenueOwnerController extends Controller
             }
 
             DB::transaction(function () use ($venueOwner) {
+                // تحديث بيانات مالك القاعة
                 $venueOwner->is_active = true;
+                $venueOwner->status    = 'active'; // قيم مسموح بها: ['pending', 'active', 'rejected']
                 $venueOwner->save();
 
-                // لو حابب تفعل user نفسه كمان (اختياري):
-                // if ($venueOwner->user) {
-                //     $venueOwner->user->is_active = true;
-                //     $venueOwner->user->save();
-                // }
+                // تفعيل اليوزر المربوط (من غير المساس بـ kyc_status)
+                if ($venueOwner->user) {
+                    $venueOwner->user->is_active = true;
+                    $venueOwner->user->status    = 'active'; // تأكد إن 'active' من القيم المسموح بها في users.status
+                    // لا نغيّر kyc_status هنا عشان ما نكسرش users_kyc_status_check
+                    $venueOwner->user->save();
+                }
             });
 
             return response()->json([
@@ -402,7 +406,8 @@ class VenueOwnerController extends Controller
     /**
      * POST /admin/venue-owners/{id}/reject
      * - يعطّل الحساب عن طريق is_active = false
-     * - لا يغيّر status (لتجنّب كسر الـ CHECK CONSTRAINT)
+     * - يحدّث status إلى rejected
+     * - يحدّث kyc_status للـ user إلى rejected (بما إنه واضح إنه مسموح من الـ CHECK CONSTRAINT)
      * - يمكن استخدام commission_note كحقل لسبب الرفض لو حابب
      */
     public function reject(Request $request, int $id)
@@ -419,6 +424,7 @@ class VenueOwnerController extends Controller
 
             DB::transaction(function () use ($venueOwner, $request) {
                 $venueOwner->is_active = false;
+                $venueOwner->status    = 'rejected'; // ['pending', 'active', 'rejected']
 
                 // سبب الرفض (اختياري) نخزنه في commission_note أو اعمل له عمود مخصص لاحقًا
                 if ($request->filled('reject_reason')) {
@@ -426,6 +432,13 @@ class VenueOwnerController extends Controller
                 }
 
                 $venueOwner->save();
+
+                if ($venueOwner->user) {
+                    $venueOwner->user->is_active  = false;
+                    $venueOwner->user->status     = 'rejected';
+                    $venueOwner->user->kyc_status = 'rejected'; // واضح إنها قيمة مسموحة من الـ log
+                    $venueOwner->user->save();
+                }
             });
 
             return response()->json([
