@@ -17,14 +17,13 @@ import {
   Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, 
   BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, 
   Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale, Store, 
-  ShoppingBag, Gift, Search, Filter, ChevronLeft, ChevronRight,
+  ShoppingBag, Gift, Search, ChevronLeft, ChevronRight,
   Zap, Crown, TrendingUp, Users, Shield, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AuctionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const auctionsMain = [
@@ -385,7 +384,7 @@ export default function AuctionsPage() {
     },
   ];
 
-  // دمج جميع المزادات في مصفوفة واحدة للبحث والتصفية
+  // دمج جميع المزادات في مصفوفة واحدة لاستخدامها في السلايدر المميز
   const allAuctions = [
     ...auctionsMain,
     ...auctionsCar,
@@ -393,24 +392,6 @@ export default function AuctionsPage() {
     ...auctionsSpecial,
     ...auctionsGeneral,
     ...auctionsBig
-  ];
-
-  // تصفية المزادات بناءً على البحث والفئة
-  const filteredAuctions = allAuctions.filter(auction => {
-    const matchesSearch = auction.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         auction.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || auction.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const categories = [
-    { id: 'all', name: 'جميع الفئات', icon: Store, count: allAuctions.length },
-    { id: 'main', name: 'الأسواق الرئيسية', icon: Zap, count: auctionsMain.length },
-    { id: 'cars', name: 'السيارات', icon: Car, count: auctionsCar.length },
-    { id: 'quality', name: 'أسواق نوعية', icon: TrendingUp, count: auctionsQuality.length },
-    { id: 'special', name: 'تخصصية', icon: Crown, count: auctionsSpecial.length },
-    { id: 'general', name: 'عامة', icon: ShoppingBag, count: auctionsGeneral.length },
-    { id: 'big', name: 'السوق الكبير', icon: Store, count: auctionsBig.length },
   ];
 
   const featuredAuctions = allAuctions.filter(auction => auction.featured);
@@ -444,33 +425,6 @@ export default function AuctionsPage() {
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{subtitle}</p>
       )}
     </motion.div>
-  );
-
-  const CategoryFilter = () => (
-    <div className="flex flex-wrap gap-3 mb-8 justify-center">
-      {categories.map((category) => {
-        const Icon = category.icon;
-        return (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all duration-300 ${
-              selectedCategory === category.id
-                ? 'border-primary bg-primary text-primary-foreground shadow-lg'
-                : 'border-border bg-secondary text-secondary-foreground hover:border-primary hover:text-foreground hover:shadow-md'
-            }`}
-          >
-            <Icon className="w-5 h-5" />
-            <span className="font-medium">{category.name}</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-              selectedCategory === category.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}>
-              {category.count}
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 
   const AuctionCard = ({ auction, index }) => {
@@ -690,115 +644,86 @@ export default function AuctionsPage() {
         {/* السلايدر المميز */}
         {featuredAuctions.length > 0 && <FeaturedSlider />}
 
-        {/* فلاتر البحث */}
-        <CategoryFilter />
-
-        {/* نتائج البحث */}
-        {searchTerm && (
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-foreground mb-4">
-              نتائج البحث عن: "{searchTerm}" ({filteredAuctions.length} نتيجة)
-            </h3>
-          </div>
-        )}
-
-        {/* عرض المزادات */}
-        {filteredAuctions.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAuctions.map((auction, index) => (
+        {/* الأقسام الأصلية */}
+        <>
+          <Divider />
+          
+          <SectionTitle 
+            title="الأسواق الرئيسية" 
+            subtitle="المزادات الأساسية التي تعمل على مدار الساعة"
+            icon={Zap}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {auctionsMain.map((auction, index) => (
               <AuctionCard key={auction.slug} auction={auction} index={index} />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-16">
-            <Search className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-foreground mb-2">لم نعثر على نتائج</h3>
-            <p className="text-muted-foreground">جرب استخدام كلمات بحث مختلفة أو اختر فئة أخرى</p>
+
+          <Divider />
+          
+          <SectionTitle 
+            title="أسواق السيارات المتنوعة" 
+            subtitle="مجموعة واسعة من السيارات بجميع أنواعها"
+            icon={Car}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {auctionsCar.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
           </div>
-        )}
 
-        {/* الأقسام الأصلية (للحفاظ على الهيكل) */}
-        {!searchTerm && selectedCategory === 'all' && (
-          <>
-            <Divider />
-            
-            <SectionTitle 
-              title="الأسواق الرئيسية" 
-              subtitle="المزادات الأساسية التي تعمل على مدار الساعة"
-              icon={Zap}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {auctionsMain.map((auction, index) => (
-                <AuctionCard key={auction.slug} auction={auction} index={index} />
-              ))}
-            </div>
+          <Divider />
+          
+          <SectionTitle 
+            title="سوق نوعي" 
+            subtitle="منتجات ومعدات متخصصة بجودة عالية"
+            icon={TrendingUp}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {auctionsQuality.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
+          </div>
 
-            <Divider />
-            
-            <SectionTitle 
-              title="أسواق السيارات المتنوعة" 
-              subtitle="مجموعة واسعة من السيارات بجميع أنواعها"
-              icon={Car}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {auctionsCar.map((auction, index) => (
-                <AuctionCard key={auction.slug} auction={auction} index={index} />
-              ))}
-            </div>
+          <Divider />
+          
+          <SectionTitle 
+            title="أسواق تخصصية" 
+            subtitle="مزادات فريدة لمنتجات استثنائية"
+            icon={Crown}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {auctionsSpecial.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
+          </div>
 
-            <Divider />
-            
-            <SectionTitle 
-              title="سوق نوعي" 
-              subtitle="منتجات ومعدات متخصصة بجودة عالية"
-              icon={TrendingUp}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {auctionsQuality.map((auction, index) => (
-                <AuctionCard key={auction.slug} auction={auction} index={index} />
-              ))}
-            </div>
+          <Divider />
+          
+          <SectionTitle 
+            title="أسواق عامة" 
+            subtitle="منتجات متنوعة للاستخدام اليومي"
+            icon={ShoppingBag}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {auctionsGeneral.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
+          </div>
 
-            <Divider />
-            
-            <SectionTitle 
-              title="أسواق تخصصية" 
-              subtitle="مزادات فريدة لمنتجات استثنائية"
-              icon={Crown}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {auctionsSpecial.map((auction, index) => (
-                <AuctionCard key={auction.slug} auction={auction} index={index} />
-              ))}
-            </div>
-
-            <Divider />
-            
-            <SectionTitle 
-              title="أسواق عامة" 
-              subtitle="منتجات متنوعة للاستخدام اليومي"
-              icon={ShoppingBag}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {auctionsGeneral.map((auction, index) => (
-                <AuctionCard key={auction.slug} auction={auction} index={index} />
-              ))}
-            </div>
-
-            <Divider />
-            
-            <SectionTitle 
-              title="السوق الكبير" 
-              subtitle="المنصة الشاملة لكل ما تحتاجه"
-              icon={Store}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {auctionsBig.map((auction, index) => (
-                <AuctionCard key={auction.slug} auction={auction} index={index} />
-              ))}
-            </div>
-          </>
-        )}
+          <Divider />
+          
+          <SectionTitle 
+            title="السوق الكبير" 
+            subtitle="المنصة الشاملة لكل ما تحتاجه"
+            icon={Store}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {auctionsBig.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
+          </div>
+        </>
       </div>
     </main>
   );
