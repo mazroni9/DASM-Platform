@@ -24,6 +24,7 @@ import {
   Calendar,
   ChevronRight,
   Building,
+  UserCog,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -46,18 +47,32 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
     { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
+    { name: "المستخدمين والصلاحيات", href: "#", type:"header" ,icon: Users },
     { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
     { name: "ملاك المعارض", href: "/admin/venue-owners", icon: Building },
     { name: "إدارة المشرفين", href: "/admin/moderators", icon: Shield },
+    { name: "إدارة الأدوار", href: "/admin/roles", icon: UserCog },
+    { name: "شجرة الصلاحيات", href: "/admin/permissions", icon: Shield },
+    { name: "إدارة القروبات", href: "/admin/groups", icon: Users },
+    { name: "إدارة المنظمات", href: "/admin/organizations", icon: Building },
+    
+    { name: "العمولات والخطط", href: "#", type:"header" ,icon: HandCoins },
     { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
     { name: "خطط الاشتراك", href: "/admin/subscription-plans", icon: CreditCard },
+    
+    { name: "السيارات والمزادات", href: "#", type:"header" ,icon: Car },
+    { name: "السيارات", href: "/admin/cars", icon: Car },
+    { name: "المزادات", href: "/admin/auctions", icon: Car },
+    
+    { name: "الجلسات والبث", href: "#", type:"header" ,icon: Calendar },
     { name: "إدارة الجلسات", href: "/admin/sessions", icon: Calendar },
     { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
     { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
-    { name: "المزادات", href: "/admin/auctions", icon: Car },
+    { name: "السجلات", href: "#", type:"header" ,icon: FileText },
     { name: "سجلات المزايدات", href: "/admin/bids-logs", icon: FileText },
     { name: "سجلات النشاط", href: "/admin/activity-logs", icon: FileText },
-    { name: "السيارات", href: "/admin/cars", icon: Car },
+    { name: "التقارير والإعدادات", href: "#", type:"header" ,icon: BarChart },
+    
     { name: "التقارير", href: "/admin/reports", icon: BarChart },
     { name: "الإعدادات", href: "/admin/settings", icon: Settings },
   ];
@@ -99,9 +114,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <nav className="bg-card border border-border rounded-2xl p-4">
                 <h3 className="text-sm font-bold mb-3">القائمة الرئيسية</h3>
                 <ul className="space-y-2">
+                
                   {navigation.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
+                    if (item.type && item.type === "header") {
+                      return <h3 className="text-sm text-primary font-bold pb-1 pt-3 flex items-center"> <Icon style={{ width: "1em", height: "1em" }} className="ms-2 me-1" /> {item.name}</h3>;
+                    }
                     return (
                       <li key={item.name}>
                         <LoadingLink
@@ -118,7 +137,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               active ? "text-primary" : "text-foreground/70 group-hover:text-foreground"
                             }`}
                           />
-                          <span className="flex-1 text-sm font-medium">{item.name}</span>
+                          <span className="ms-1 flex-1 text-sm font-medium">{item.name}</span>
                           <ChevronRight
                             className={`w-4 h-4 ${active ? "text-primary" : "text-foreground/50"}`}
                           />
