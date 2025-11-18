@@ -53,7 +53,7 @@ class CarResource extends JsonResource
             ] : null,
             "evaluation_price" =>  $this->evaluation_price, //$this->active_auction?->current_bid ??
             "province" => $this->province,
-            "created_at" => $this->created_at->format('Y-m-d'),
+            "created_at" => $this->created_at?->format('Y-m-d'),
             'active_auction' => $this->activeAuction,
         ];
     }

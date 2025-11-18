@@ -338,7 +338,7 @@ class CarController extends Controller
             ->first();
 
         $extraAttributes = [];
-        if ((string)$car->market_category === 'caravan') {
+        if ($this->carHasCaravanMarketCategory($car)) {
             $extraAttributes = $car->carAttributes
                 ->pluck('value', 'key')
                 ->toArray();
@@ -392,7 +392,8 @@ class CarController extends Controller
             ->get();
 
         $extraAttributes = [];
-        if ((string)$car->market_category === 'caravan') {
+
+        if ($this->carHasCaravanMarketCategory($car)) {
             $extraAttributes = $car->carAttributes
                 ->pluck('value', 'key')
                 ->toArray();
@@ -778,6 +779,21 @@ class CarController extends Controller
             ];
         }
         return $uploadedImages;
+    }
+
+    private function carHasCaravanMarketCategory(Car $car): bool
+    {
+        $marketCategory = $car->market_category;
+
+        if ($marketCategory instanceof CarsMarketsCategory) {
+            return $marketCategory === CarsMarketsCategory::CARAVAN;
+        }
+
+        if (is_string($marketCategory)) {
+            return $marketCategory === CarsMarketsCategory::CARAVAN->value;
+        }
+
+        return false;
     }
 
     /**
