@@ -119,8 +119,8 @@ export default function AuctionsPage() {
       stats: { items: '80+', rating: '4.7' }
     },
     { 
-      name: 'سوق الشاحنات والحافلات', 
-      slug: 'auctions-2car/busesTrucks', 
+      name: 'سوق الشاحنات', 
+      slug: 'auctions-2car/trucks', 
       description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة', 
       icon: Truck, 
       color: 'text-primary', 
@@ -129,6 +129,18 @@ export default function AuctionsPage() {
       category: 'cars',
       featured: false,
       stats: { items: '300+', rating: '4.6' }
+    },
+    { 
+      name: 'سوق الحافلات', 
+      slug: 'auctions-2car/buses', 
+      description: 'حافلات نقل ركاب بمواصفات متنوعة وحالة ممتازة', 
+      icon: Car, 
+      color: 'text-primary', 
+      bgColor: 'bg-card',
+      borderColor: 'border-border',
+      category: 'cars',
+      featured: false,
+      stats: { items: '150+', rating: '4.5' }
     },
     { 
       name: 'سوق سيارات الشركات', 
@@ -141,18 +153,6 @@ export default function AuctionsPage() {
       category: 'cars',
       featured: false,
       stats: { items: '400+', rating: '4.5' }
-    },
-    { 
-      name: 'سوق سيارات الجهات الحكومية', 
-      slug: 'auctions-2car/government', 
-      description: 'سيارات من الجهات الحكومية بحالة جيدة', 
-      icon: Building, 
-      color: 'text-primary', 
-      bgColor: 'bg-card',
-      borderColor: 'border-border',
-      category: 'cars',
-      featured: false,
-      stats: { items: '200+', rating: '4.4' }
     },
   ];
 
