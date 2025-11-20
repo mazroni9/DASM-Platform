@@ -33,10 +33,14 @@ class Bid extends Model
         'user_id',
         'bid_amount',
         'no_account',
-        'bidder_name'
+        'bidder_name',
+        'auction_type_at_bid', // تمت إضافتها
+        'increment',           // تمت إضافتها
     ];
+
     public $timestamps = false;
     const CREATED_AT = 'created_at';
+
     protected $casts = [
         'no_account' => 'boolean',
     ];

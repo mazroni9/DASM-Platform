@@ -26,6 +26,7 @@ use App\Enums\CarTransmission;
 use App\Enums\CarsMarketsCategory;
 use App\Models\CarAttribute;
 use App\Notifications\NewCarAddedNotification;
+use Carbon\Carbon; // ✅ مضاف لاستخدام الوقت
 
 class CarController extends Controller
 {
@@ -196,7 +197,9 @@ class CarController extends Controller
             'vin'        => 'required|string|unique:cars,vin|max:17',
             'odometer'   => 'required|integer|min:0|max:2147483647',
             'condition'  => ['required', 'string', Rule::in(CarCondition::values())],
-            'main_auction_duration' => 'nullable|integer|in:5,7',
+
+            // ✅ المدة الجديدة للمزاد: 10 أو 20 أو 30 يوم
+            'main_auction_duration' => 'nullable|integer|in:10,20,30',
 
             'evaluation_price' => 'required|numeric|min:0|max:9999999999.99',
             'min_price'        => 'required|numeric|min:0|max:9999999999.99',
@@ -262,11 +265,12 @@ class CarController extends Controller
         $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
         $car->description = $request->description ?? null;
         $car->plate = $request->plate ?? null;
+        // هنعدل حالة السيارة لاحقاً بعد إنشاء المزاد
         $car->auction_status = 'available';
         $car->min_price = $request->min_price;
         $car->max_price = $request->max_price;
         $car->market_category = $request->market_category;
-        $car->main_auction_duration = $request->main_auction_duration;
+        $car->main_auction_duration = $request->main_auction_duration; // 10 أو 20 أو 30
         $car->save();
 
         // صور السيارة
@@ -295,6 +299,41 @@ class CarController extends Controller
 
         // خصائص إضافية للكرفانات (إن وجدت)
         $this->syncCaravanAttributes($request, $car);
+
+        /**
+         * ✅ إنشاء المزاد مباشرة بعد إضافة السيارة
+         * - وقت البداية: الآن
+         * - وقت النهاية: الآن + المدة التي اختارها صاحب السيارة (10 / 20 / 30 يوم)
+         */
+        try {
+            // لو ما اختارش مدة، نخليها افتراضياً 10 أيام
+            $durationDays = (int)($car->main_auction_duration ?: 10);
+
+            $startTime = Carbon::now();
+            $endTime   = (clone $startTime)->addDays($durationDays);
+
+            // تحديث حالة السيارة إلى scheduled بدلاً من available
+            $car->auction_status = 'scheduled';
+            $car->save();
+
+            Auction::create([
+                'car_id'        => $car->id,
+                'start_time'    => $startTime,
+                'end_time'      => $endTime,
+                'minimum_bid'   => $car->min_price,   // تقدر تعدليها حسب منطقكم
+                'maximum_bid'   => $car->max_price,
+                'reserve_price' => $car->min_price,
+                'current_bid'   => 0,
+                'status'        => AuctionStatus::SCHEDULED,
+                'auction_type'  => AuctionType::SILENT_INSTANT, // يبدأ كسايلنت ثم يتغير حسب الوقت
+                'control_room_approved' => false,
+                'approved_for_live'     => false,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to create auction for car ' . $car->id, [
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // إشعار الإدمنز
         $car->refresh();

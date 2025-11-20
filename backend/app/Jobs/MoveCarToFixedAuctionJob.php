@@ -27,20 +27,34 @@ class MoveCarToFixedAuctionJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $affectedRows = Auction::whereIn('auction_type', [AuctionType::LIVE_INSTANT->value, AuctionType::SILENT_INSTANT->value])
+        $now = Carbon::now();
+
+        $affectedRows = Auction::query()
+            ->whereIn('auction_type', [
+                AuctionType::LIVE_INSTANT->value,
+                AuctionType::SILENT_INSTANT->value,
+            ])
             ->where('status', AuctionStatus::ACTIVE->value)
-            ->where('end_time', '<', Carbon::now())
-            ->where(function($query) {
-                $query->where('extended_until', '<', Carbon::now())
-                    ->orWhere('extended_until', null);
+            ->where(function ($query) use ($now) {
+                $query
+                    // لو المزاد متمدّد، نعتمد على extended_until
+                    ->where(function ($q) use ($now) {
+                        $q->whereNotNull('extended_until')
+                          ->where('extended_until', '<', $now);
+                    })
+                    // لو مفيش تمديد، نعتمد على end_time
+                    ->orWhere(function ($q) use ($now) {
+                        $q->whereNull('extended_until')
+                          ->where('end_time', '<', $now);
+                    });
             })
             ->update([
                 'control_room_approved' => true,
-                'status' => AuctionStatus::ACTIVE->value,
-                'auction_type' => AuctionType::FIXED->value,
-                'approved_for_live' => false
+                'status'                => AuctionStatus::ACTIVE->value,
+                'auction_type'          => AuctionType::FIXED->value,
+                'approved_for_live'     => false,
             ]);
 
-        Log::error("Updated {$affectedRows} auctions from LIVE_instant and SILENT_INSTANT to FIXED");
+        Log::info("MoveCarToFixedAuctionJob: Updated {$affectedRows} auctions from LIVE_INSTANT/SILENT_INSTANT to FIXED.");
     }
 }

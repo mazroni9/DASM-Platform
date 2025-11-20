@@ -47,12 +47,20 @@ class AuctionController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Filter active auctions (ongoing)
+        // Filter active auctions (ongoing) - respects extended_until
         if ($request->has('active') && $request->active) {
             $now = Carbon::now();
             $query->where('start_time', '<=', $now)
-                ->where('end_time', '>=', $now)
-                ->where('status', AuctionStatus::ACTIVE->value);
+                ->where('status', AuctionStatus::ACTIVE->value)
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                        $q2->whereNull('extended_until')
+                            ->where('end_time', '>=', $now);
+                    })->orWhere(function ($q2) use ($now) {
+                        $q2->whereNotNull('extended_until')
+                            ->where('extended_until', '>=', $now);
+                    });
+                });
         }
 
         // Filter by car make/model
@@ -125,12 +133,20 @@ class AuctionController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Filter active auctions (ongoing)
+        // Filter active auctions (ongoing) - respects extended_until
         if ($request->has('active') && $request->active) {
             $now = Carbon::now();
             $query->where('start_time', '<=', $now)
-                ->where('end_time', '>=', $now)
-                ->where('status', AuctionStatus::ACTIVE->value);
+                ->where('status', AuctionStatus::ACTIVE->value)
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                        $q2->whereNull('extended_until')
+                            ->where('end_time', '>=', $now);
+                    })->orWhere(function ($q2) use ($now) {
+                        $q2->whereNotNull('extended_until')
+                            ->where('extended_until', '>=', $now);
+                    });
+                });
         }
 
         // Filter by car make/model
@@ -176,12 +192,20 @@ class AuctionController extends Controller
             $query->where('control_room_approved', true);
         }
 
-        // Filter active auctions (ongoing)
+        // Filter active auctions (ongoing) - respects extended_until
         if ($request->has('active') && $request->active) {
             $now = Carbon::now();
             $query->where('start_time', '<=', $now)
-                ->where('end_time', '>=', $now)
-                ->where('status', AuctionStatus::ACTIVE->value);
+                ->where('status', AuctionStatus::ACTIVE->value)
+                ->where(function ($q) use ($now) {
+                    $q->where(function ($q2) use ($now) {
+                        $q2->whereNull('extended_until')
+                            ->where('end_time', '>=', $now);
+                    })->orWhere(function ($q2) use ($now) {
+                        $q2->whereNotNull('extended_until')
+                            ->where('extended_until', '>=', $now);
+                    });
+                });
         }
 
         // Search by name or email
@@ -453,7 +477,9 @@ class AuctionController extends Controller
         }
 
         $tracking = []; // front-end-only per-id results
-        $now = Carbon::now();
+
+        // نستخدم توقيت الرياض (عدله لو عندك تايمزون مختلف)
+        $now = Carbon::now('Asia/Riyadh');
 
         // --- Process inside one transaction for safety ---
         DB::beginTransaction();
@@ -474,57 +500,50 @@ class AuctionController extends Controller
 
                 try {
                     if ($approve === true) {
-                        // APPROVE
+                        // ========= حالة الموافقة =========
+
                         if ($car->auction_status === 'available') {
+
+                            // نحفظ سعر التقييم لو تم إرساله
                             if ($request->has('price') && $request->price) {
                                 $car->evaluation_price = $request->price;
                             }
+
+                            /**
+                             * عدد أيام المزاد
+                             * لو عندك عمود في السيارات مثلاً main_auction_duration (10 / 20 / 30)
+                             * هنستخدمه، ولو مش موجود هنخلي الافتراضي 10 أيام.
+                             */
+                            $durationDays = (int) ($car->main_auction_duration ?? 10);
+                            if ($durationDays <= 0) {
+                                $durationDays = 10;
+                            }
+
+                            // بداية ونهاية المزاد
+                            $startTime = $now->copy();                     // يبدأ من الآن
+                            $endTime   = $startTime->copy()->addDays($durationDays); // يجمع الأيام على الـ end_time
+
                             if ($car->activeAuction) {
-                                // عنده مزاد نشط بالفعل -> فقط غيّر حالة السيارة
-                                $car->auction_status = 'in_auction';
+                                // ✅ عنده مزاد موجود مسبقاً → نعدّل عليه
+                                $auction = $car->activeAuction;
 
+                                // opening price لو تم إرساله
                                 if ($request->has('price') && $request->price) {
-                                    $auction = $car->activeAuction;
                                     $auction->opening_price = $request->price;
-                                    $auction->save();
                                 }
-                                $car->save();
 
-                                // إشعار المالك (اختياري وآمن)
-                                $this->notifyOwnerIfPossible($car, $car->activeAuction);
+                                // تحديث start & end
+                                $auction->start_time = $startTime;
+                                $auction->end_time   = $endTime;
 
-                                $tracking[] = [
-                                    'id'      => $car->id,
-                                    'outcome' => 'approved',
-                                    'message' => 'Car moved into existing auction',
-                                    'code'    => 'approved_existing',
-                                    'after'   => [
-                                        'auction_status'    => $car->auction_status,
-                                        'active_auction_id' => $car->activeAuction->id,
-                                    ],
-                                ];
-                            } else {
-                                // لا يوجد مزاد -> أنشئ واحداً
-                                $auction = new Auction();
-                                $auction->car_id        = $car->id;
-                                $auction->opening_price = $request->price ?? $car->starting_bid ?? $car->evaluation_price ?? 0;
-                                $auction->current_bid   = $car->starting_bid ?? 0;
-                                $auction->reserve_price = $car->reserve_price ?? 0;
-                                $auction->min_price     = $car->min_price ?? 0;
-                                $auction->max_price     = $car->max_price ?? 0;
-
-                                // ابدأ الآن إن لم يكن هناك start_time صالح
-                                $start = $car->start_time ? Carbon::parse($car->start_time) : $now;
-                                $auction->start_time = $start;
-                                $auction->end_time   = (clone $start)->addMinutes(60);
-
-                                $auction->status = $start->lessThanOrEqualTo($now)
+                                // نضبط الحالة حسب وقت البداية
+                                $auction->status = $startTime->lessThanOrEqualTo($now)
                                     ? AuctionStatus::ACTIVE
                                     : AuctionStatus::SCHEDULED;
 
                                 $auction->save();
 
-                                // حدث حالة السيارة
+                                // حالة السيارة
                                 $car->auction_status = 'in_auction';
                                 $car->save();
 
@@ -534,11 +553,58 @@ class AuctionController extends Controller
                                 $tracking[] = [
                                     'id'      => $car->id,
                                     'outcome' => 'approved',
-                                    'message' => 'Car approved and new auction created',
+                                    'message' => 'Car moved into existing auction and times updated',
+                                    'code'    => 'approved_existing',
+                                    'after'   => [
+                                        'auction_status'    => $car->auction_status,
+                                        'active_auction_id' => $auction->id,
+                                        'start_time'        => $auction->start_time,
+                                        'end_time'          => $auction->end_time,
+                                    ],
+                                ];
+                            } else {
+                                // ✅ لا يوجد مزاد → إنشاء مزاد جديد بضبط start_time و end_time على الأيام
+
+                                $auction = new Auction();
+                                $auction->car_id        = $car->id;
+
+                                // opening_price
+                                $auction->opening_price = $request->price
+                                    ?? ($car->starting_bid ?? $car->evaluation_price ?? 0);
+
+                                $startingBid = $car->starting_bid ?? 0;
+                                $auction->starting_bid  = $startingBid;
+                                $auction->current_bid   = $startingBid;
+                                $auction->reserve_price = $car->reserve_price ?? 0;
+                                $auction->min_price     = $car->min_price ?? 0;
+                                $auction->max_price     = $car->max_price ?? 0;
+
+                                $auction->start_time = $startTime;
+                                $auction->end_time   = $endTime;
+
+                                $auction->status = $startTime->lessThanOrEqualTo($now)
+                                    ? AuctionStatus::ACTIVE
+                                    : AuctionStatus::SCHEDULED;
+
+                                $auction->save();
+
+                                // تحديث حالة السيارة
+                                $car->auction_status = 'in_auction';
+                                $car->save();
+
+                                // إشعار المالك
+                                $this->notifyOwnerIfPossible($car, $auction);
+
+                                $tracking[] = [
+                                    'id'      => $car->id,
+                                    'outcome' => 'approved',
+                                    'message' => 'Car approved and new auction created with proper start/end times',
                                     'code'    => 'approved_created',
                                     'after'   => [
                                         'auction_status'    => $car->auction_status,
                                         'active_auction_id' => $auction->id,
+                                        'start_time'        => $auction->start_time,
+                                        'end_time'          => $auction->end_time,
                                     ],
                                 ];
                             }
@@ -556,7 +622,7 @@ class AuctionController extends Controller
                             ];
                         }
                     } else {
-                        // REJECT
+                        // ========= حالة الرفض =========
                         if ($car->auction_status === 'available') {
                             $car->auction_status = 'cancelled';
                             $car->save();
@@ -583,7 +649,7 @@ class AuctionController extends Controller
                     $tracking[] = [
                         'id'      => $car->id,
                         'outcome' => 'error',
-                        'message' => app()->hasDebugModeEnabled() && config('app.debug')
+                        'message' => config('app.debug')
                             ? $e->getMessage()
                             : 'Error while processing this car',
                         'code'    => 'exception',
@@ -617,7 +683,7 @@ class AuctionController extends Controller
             'status'   => 'success',
             'message'  => $approve ? 'تمت الموافقة على الدفعة' : 'تم رفض الدفعة',
             'summary'  => $summary,
-            'tracking' => $tracking, // استهلكها مباشرةً في الفرونت
+            'tracking' => $tracking,
         ], $hasAny ? 200 : 204);
     }
 
@@ -752,15 +818,14 @@ class AuctionController extends Controller
             'ids'           => ['required', 'array', 'min:1'],
             'ids.*'         => ['integer', 'distinct'],
             'status'        => ['required', 'string', 'in:active,instant,late,live,pending'],
-            // 👇 هنا نحدد مدة بقاء المزاد بالأيام (10 أو 20 أو 30)
+            // اختيارية – لو حابب تسمح للأدمن يختار مدة جديدة
             'duration_days' => ['nullable', 'integer', Rule::in([10, 20, 30])],
+            // للجلسات المباشرة
+            'session_id'    => ['nullable', 'integer', 'exists:auction_sessions,id'],
         ]);
 
         $targetStatus = $validated['status'];
         $carIds       = array_values($validated['ids']);
-
-        // مدة المزاد الأساسية (لو مش مبعوتة، نخليها 10 أيام)
-        $durationDays = $validated['duration_days'] ?? 10;
 
         /** ---------- Status → Base Payload ---------- */
         $baseDataByStatus = [
@@ -769,7 +834,7 @@ class AuctionController extends Controller
                 'status'                => AuctionStatus::ACTIVE->value,
                 'auction_type'          => AuctionType::LIVE_INSTANT->value,
                 'approved_for_live'     => null,
-                'extended_until'        => null
+                'extended_until'        => null,
             ],
             'instant' => [
                 'control_room_approved' => true,
@@ -783,23 +848,24 @@ class AuctionController extends Controller
                 'status'                => AuctionStatus::ACTIVE->value,
                 'auction_type'          => AuctionType::SILENT_INSTANT->value,
                 'approved_for_live'     => null,
-                'extended_until'        => null
+                'extended_until'        => null,
             ],
             'live'    => [
                 'control_room_approved' => true,
                 'status'                => AuctionStatus::ACTIVE->value,
                 'auction_type'          => AuctionType::LIVE->value,
                 'approved_for_live'     => false,
-                'extended_until'        => null
+                'extended_until'        => null,
             ],
             'pending' => [
                 'control_room_approved' => false,
                 'status'                => AuctionStatus::SCHEDULED->value,
-                'auction_type'          => null, // مهم: لا نقارن النوع هنا
+                'auction_type'          => null, // ما نجبرش نوع المزاد
                 'approved_for_live'     => null,
-                'extended_until'        => null
+                'extended_until'        => null,
             ],
         ];
+
         $targetData = $baseDataByStatus[$targetStatus];
 
         /** ---------- Fetch cars ---------- */
@@ -818,8 +884,6 @@ class AuctionController extends Controller
 
         /** ---------- Process ---------- */
         $nowRiyadh  = Carbon::now('Asia/Riyadh');
-        // بدل 5 أيام ثابتة، نستخدم المدة المختارة (10 / 20 / 30)
-        $endDefault = (clone $nowRiyadh)->addDays($durationDays);
 
         $results    = [];
         $updatedCnt = 0;
@@ -830,24 +894,55 @@ class AuctionController extends Controller
         try {
             foreach ($cars as $car) {
 
-                /** ========= UPDATE or CREATE ========= */
-                // نبحث عن مزاد نشط/مجدول لنعمل عليه تحديث إن توفر
+                // نجيب المزاد النشط/المجدول لو موجود
                 $auction = Auction::where('car_id', $car->id)
                     ->whereIn('status', [AuctionStatus::ACTIVE->value, AuctionStatus::SCHEDULED->value])
                     ->latest('id')
                     ->first();
 
+                /**
+                 * نحسب المدة لكل سيارة لو بننقلها إلى
+                 * مزاد فوري (instant) أو متأخر (late)
+                 * الأولوية:
+                 * 1) duration_days من الريكوست (اختيار الأدمن)
+                 * 2) main_auction_duration من السيارة (اختيار صاحب السيارة وقت الإضافة)
+                 * 3) 10 أيام كـ default
+                 */
+                $durationDays = null;
+                $startTime    = null;
+                $endTime      = null;
+
+                if (in_array($targetStatus, ['instant', 'late'])) {
+                    if (!empty($validated['duration_days'])) {
+                        $durationDays = (int) $validated['duration_days'];
+                    } elseif (!empty($car->main_auction_duration)) { // غيّر اسم الحقل لو مختلف عندك
+                        $durationDays = (int) $car->main_auction_duration;
+                    } else {
+                        $durationDays = 10;
+                    }
+
+                    $startTime = $nowRiyadh->copy();                      // يبدأ من الآن
+                    $endTime   = $startTime->copy()->addDays($durationDays); // ينتهي بعد X يوم
+                }
+
                 if ($auction) {
-                    // تحديث المزاد القائم
+                    // ---------- تحديث مزاد موجود ----------
                     $payload = array_filter([
                         'control_room_approved' => $targetData['control_room_approved'],
                         'status'                => $targetData['status'],
-                        'auction_type'          => $targetData['auction_type'],
+                        'auction_type'          => $targetData['auction_type'] ?? $auction->auction_type,
                         'approved_for_live'     => $targetData['approved_for_live'],
-                        'extended_until'        => $targetData['extended_until']
-                    ], fn($v) => !is_null($v));
+                        'extended_until'        => $targetData['extended_until'],
+                    ], fn ($v) => !is_null($v));
 
-                    if ($request->has('session_id')) {
+                    // لو مزاد فوري أو متأخر → نضبط وقت البداية والنهاية حسب المدة
+                    if ($startTime && $endTime && in_array($targetStatus, ['instant', 'late'])) {
+                        $payload['start_time'] = $startTime;
+                        $payload['end_time']   = $endTime;
+                    }
+
+                    // لحراج مباشر نربط الجلسة فقط، ولا نلعب في الوقت
+                    if ($targetStatus === 'live' && $request->has('session_id')) {
                         $payload['session_id'] = $request->session_id;
                     }
 
@@ -861,10 +956,21 @@ class AuctionController extends Controller
                         'target_status' => $targetStatus,
                     ];
                 } else {
-                    // إنشاء مزاد جديد
+                    // ---------- إنشاء مزاد جديد ----------
                     $startingBid = $car->starting_bid ?? 0;
-                    $startTime   = $car->start_time ? Carbon::parse($car->start_time, 'Asia/Riyadh') : $nowRiyadh;
-                    $endTime     = $car->end_time ? Carbon::parse($car->end_time, 'Asia/Riyadh') : $endDefault;
+
+                    // لو مش فوري ولا متأخر، نستخدم قيم السيارة أو ديفولت 10 أيام
+                    if (!$startTime || !$endTime) {
+                        $fallbackDuration = 10;
+
+                        $startTime = $car->start_time
+                            ? Carbon::parse($car->start_time, 'Asia/Riyadh')
+                            : $nowRiyadh->copy();
+
+                        $endTime = $car->end_time
+                            ? Carbon::parse($car->end_time, 'Asia/Riyadh')
+                            : $startTime->copy()->addDays($fallbackDuration);
+                    }
 
                     $createData = array_filter([
                         'car_id'                => $car->id,
@@ -879,7 +985,11 @@ class AuctionController extends Controller
                         'status'                => $targetData['status'],
                         'auction_type'          => $targetData['auction_type'],
                         'approved_for_live'     => $targetData['approved_for_live'],
-                    ], fn($v) => !is_null($v));
+                    ], fn ($v) => !is_null($v));
+
+                    if ($targetStatus === 'live' && $request->has('session_id')) {
+                        $createData['session_id'] = $request->session_id;
+                    }
 
                     $auction = Auction::create($createData);
                     $createdCnt++;
