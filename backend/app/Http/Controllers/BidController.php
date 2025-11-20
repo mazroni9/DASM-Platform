@@ -70,7 +70,7 @@ class BidController extends Controller
     }
 
     /**
-     * Place a bid on an auction (legacy endpoint: /auctions/{auction}/bids)
+     * Place a bid on an auction (old endpoint)
      *
      * @param Request $request
      * @param int $auctionId
@@ -106,7 +106,7 @@ class BidController extends Controller
             ], 400);
         }
 
-        // Update auction time status if needed (handles extended_until/end_time)
+        // Update auction time status if needed
         $auction->updateStatusBasedOnTime();
 
         // Double check it's still active after potential status update
@@ -156,13 +156,9 @@ class BidController extends Controller
             $bid->bid_amount = $bidAmount;
             $bid->save();
 
-            // Update auction with new current bid + last_bid_time
+            // Update auction with new current bid
             $auction->current_bid = $bidAmount;
-            $auction->last_bid_time = Carbon::now();
             $auction->save();
-
-            // تمديد المزاد لو المزايدة في آخر دقيقة
-            $this->extendAuctionIfLastMinute($auction);
 
             // Reserve the funds in wallet (Move from available to funded)
             $wallet->available_balance -= $bidAmount;
@@ -211,6 +207,7 @@ class BidController extends Controller
         }
     }
 
+
     public function UserBidHistory(Request $request)
     {
         $userId = Auth::id();
@@ -258,7 +255,7 @@ class BidController extends Controller
     }
 
     /**
-     * Get a user's bidding history
+     * Get a user's bidding history (grouped by auctions)
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -390,9 +387,10 @@ class BidController extends Controller
     }
 
     /**
-     * Place a bid using the simplified endpoint (/auctions/bid)
+     * Unified bid endpoint with advanced validation + time extension logic
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Services\BidEventService  $bidEventService
      * @return \Illuminate\Http\JsonResponse
      */
     public function placeBid(Request $request, BidEventService $bidEventService)
@@ -434,11 +432,11 @@ class BidController extends Controller
                     'status',
                     'start_time',
                     'end_time',
-                    'extended_until',
                     'starting_bid',
                     'auction_type',
                     'reserve_price',
-                    'opening_price'
+                    'opening_price',
+                    'extended_until'
                 )
                 ->withCount('bids')
                 ->with('car:id,dealer_id,user_id,min_price,max_price')
@@ -483,9 +481,8 @@ class BidController extends Controller
                 ], 400);
             }
 
-            // Check if auction has ended (باستخدام extended_until أو end_time)
-            $effectiveEnd = $auction->extended_until ?? $auction->end_time;
-            if ($effectiveEnd && now()->greaterThan($effectiveEnd)) {
+            // Check if auction has ended (لو عندك end_date عدله لو لازم)
+            if ($auction->end_time && now()->gt(Carbon::parse($auction->extended_until ?? $auction->end_time))) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'انتهى وقت المزاد'
@@ -493,15 +490,9 @@ class BidController extends Controller
             }
 
             // Enhanced bid amount validation
-            $minBidAmount = max(
-                (float) $auction->current_bid,
-                (float) $auction->minimum_bid,
-                (float) $auction->starting_bid
-            );
+            $minBidAmount = max($auction->current_bid, $auction->minimum_bid, $auction->starting_bid);
 
-            // تخطي بعض القيود في المزاد الصامت المتأخر فقط
-            if ($auction->auction_type !== AuctionType::SILENT_INSTANT) {
-
+            if ($auction->auction_type != AuctionType::SILENT_INSTANT->value) {
                 if ($data['bid_amount'] <= $minBidAmount) {
                     return response()->json([
                         'status' => 'error',
@@ -509,8 +500,8 @@ class BidController extends Controller
                     ], 400);
                 }
 
-                // Validate bid amount for instant auctions (live_instant / silent_instant)
-                if (in_array($auction->auction_type, [AuctionType::LIVE_INSTANT, AuctionType::SILENT_INSTANT], true)) {
+                // Validate bid amount for instant auctions
+                if (in_array($auction->auction_type, ['live_instant', 'silent_instant'])) {
                     $openingPrice = $auction->opening_price ?? $auction->starting_bid;
                     $minAllowed = $openingPrice * 0.9; // -10%
                     $maxAllowed = $openingPrice * 1.3; // +30%
@@ -523,7 +514,7 @@ class BidController extends Controller
                     }
                 }
 
-                // Check for reasonable bid increment (minimum 1% of current bid, at least 100)
+                // Check for reasonable bid increment (minimum 1% of current bid)
                 $minIncrement = max($auction->current_bid * 0.01, 100);
                 if ($data['bid_amount'] - $auction->current_bid < $minIncrement) {
                     return response()->json([
@@ -536,21 +527,19 @@ class BidController extends Controller
             // Log bid attempt
             AuctionLoggingService::logBidAttempt($user, $auction, $data['bid_amount'], $request);
 
-            // آخر مزايدة قبل الحالية
+            // آخر مزايدة قبل الحالية (مهم لموضوع الفائز)
             $last_bid = $auction->bids()->latest()->first();
 
             // Create the bid
             $bid = Bid::create([
-                'auction_id'         => $auction->id,
-                'user_id'            => $user->id,
-                'bid_amount'         => $data['bid_amount'],
-                'auction_type_at_bid'=> $auction->auction_type instanceof AuctionType
-                    ? $auction->auction_type->value
-                    : $auction->auction_type,
-                'increment'          => $data['bid_amount'] - $auction->current_bid,
+                'auction_id'        => $auction->id,
+                'user_id'           => $user->id,
+                'bid_amount'        => $data['bid_amount'],
+                'auction_type_at_bid' => $auction->auction_type,
+                'increment'         => $data['bid_amount'] - $auction->current_bid
             ]);
 
-            // Update the auction's current price + last_bid_time + min/max
+            // Update the auction's current price + إحصائيات
             $auction->update([
                 'current_bid'  => $data['bid_amount'],
                 'last_bid_time'=> Carbon::now()->toDateTimeString(),
@@ -558,8 +547,71 @@ class BidController extends Controller
                 'maximum_bid'  => Bid::where('auction_id', $data['auction_id'])->max('bid_amount'),
             ]);
 
-            // تمديد المزاد لو المزايدة في آخر دقيقة
-            $this->extendAuctionIfLastMinute($auction);
+            /**
+             * ================================
+             *  تمديد الوقت في آخر دقيقة
+             *  بشرط وجود "فائز" قبل المزايدة الحالية
+             *  الفائز = آخر مزايدة سابقة >= min_price للسيارة
+             * ================================
+             */
+            try {
+                // الأنواع المسموح لها بالتمديد
+                $extendableTypes = [
+                    AuctionType::LIVE->value,
+                    AuctionType::LIVE_INSTANT->value,
+                    AuctionType::SILENT_INSTANT->value,
+                ];
+
+                if (in_array($auction->auction_type, $extendableTypes, true)) {
+
+                    // min_price اللي دخّله صاحب السيارة
+                    $minPrice = $auction->car->min_price;
+
+                    // هل كان في فائز قبل المزايدة الحالية؟
+                    // "آخر مزايدة" قبل الجديدة لازم تكون >= min_price
+                    $hadWinnerBefore = $last_bid && $minPrice !== null && $last_bid->bid_amount >= $minPrice;
+
+                    if ($hadWinnerBefore) {
+                        // نحسب وقت الانتهاء الفعلي الحالي (extended_until لو موجود، غير كده end_time)
+                        $effectiveEnd = $auction->extended_until
+                            ? Carbon::parse($auction->extended_until)
+                            : Carbon::parse($auction->end_time);
+
+                        $now = Carbon::now();
+                        $secondsToEnd = $now->diffInSeconds($effectiveEnd, false); // موجب لو لسه ما انتهاش
+
+                        // آخر دقيقة (0..60 ثانية قبل النهاية)
+                        if ($secondsToEnd > 0 && $secondsToEnd <= 60) {
+                            // نمدد 5 دقائق من وقت الانتهاء الفعلي الحالي
+                            $newExtendedUntil = $effectiveEnd->copy()->addMinutes(5);
+                            $auction->extended_until = $newExtendedUntil;
+                            $auction->save();
+
+                            Log::info('Auction time extended (last minute & winner exists)', [
+                                'auction_id'        => $auction->id,
+                                'previous_end'      => $effectiveEnd->toDateTimeString(),
+                                'new_extended_until'=> $newExtendedUntil->toDateTimeString(),
+                                'last_bid_id'       => $last_bid?->id,
+                                'last_bid_amount'   => $last_bid?->bid_amount,
+                                'min_price'         => $minPrice,
+                            ]);
+                        }
+                    } else {
+                        // مفيش فائز قبل المزايدة الحالية → حتى لو آخر دقيقة، ما نمددش
+                        Log::info('No time extension: no winner before current bid', [
+                            'auction_id'      => $auction->id,
+                            'last_bid_id'     => $last_bid?->id,
+                            'last_bid_amount' => $last_bid?->bid_amount,
+                            'min_price'       => $minPrice,
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed to process auction time extension', [
+                    'auction_id' => $auction->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
 
             //bid logs
             if ($last_bid) {
@@ -574,7 +626,7 @@ class BidController extends Controller
             // Log successful bid placement
             AuctionLoggingService::logBidSuccess($bid, $auction, $user, $request);
 
-            // Broadcast the new bid event
+            // Log broadcasting attempt
             Log::info('Broadcasting bid event', [
                 'auction_id' => $auction->id,
                 'bid_id' => $bid->id,
@@ -590,6 +642,7 @@ class BidController extends Controller
             $owner = $auction->car->owner;
             $owner = User::find($owner->id);
 
+            // Log notification to auction owner
             Log::info('Sending notification to auction owner', [
                 'auction_id' => $auction->id,
                 'owner_id' => $owner->id,
@@ -606,6 +659,7 @@ class BidController extends Controller
 
             $users = User::whereIn('id', $users_ids)->get();
 
+            // Log notification to other bidders
             Log::info('Sending notifications to other bidders', [
                 'auction_id' => $auction->id,
                 'bid_id' => $bid->id,
@@ -616,7 +670,7 @@ class BidController extends Controller
 
             Notification::sendNow($users, new HigherBidNotification($auction));
 
-            // --- NEW LOGIC (min/max price) كما هو عندك ---
+            // --- NEW LOGIC: Min / Max price auto sale ---
             $min_price = $auction->car->min_price;
             $max_price = $auction->car->max_price;
             $newBidAmount = $bid->bid_amount;
@@ -646,7 +700,7 @@ class BidController extends Controller
                 // Dispatch the job with a 30-minute delay
                 ProcessAuctionSaleJob::dispatch($auction->id, $bid->id)->delay(now()->addMinutes(30));
             }
-            // --- END of min/max logic ---
+            // --- NEW LOGIC ENDS HERE ---
 
             DB::commit();
             Cache::flush();
@@ -670,8 +724,6 @@ class BidController extends Controller
                 'user_agent' => $request->userAgent()
             ]);
 
-            DB::rollBack();
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات غير صالحة',
@@ -687,8 +739,6 @@ class BidController extends Controller
                 'ip' => $request->ip()
             ]);
 
-            DB::rollBack();
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى'
@@ -700,8 +750,6 @@ class BidController extends Controller
                 'error' => $e->getMessage(),
                 'ip' => $request->ip()
             ]);
-
-            DB::rollBack();
 
             return response()->json([
                 'status' => 'error',
@@ -717,14 +765,13 @@ class BidController extends Controller
                 'user_agent' => $request->userAgent()
             ]);
 
-            DB::rollBack();
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى'
             ], 500);
         }
     }
+
 
     public function latestBids($auctionId)
     {
@@ -755,38 +802,5 @@ class BidController extends Controller
                 'time_remaining' => $auction->time_remaining
             ]
         ]);
-    }
-
-    /**
-     * تمديد المزاد في حال وجود مزايدة في آخر دقيقة
-     *
-     * @param \App\Models\Auction $auction
-     * @param int $extensionMinutes
-     * @return void
-     */
-    private function extendAuctionIfLastMinute(Auction $auction, int $extensionMinutes = 5): void
-    {
-        $now = Carbon::now();
-        $endTime = $auction->extended_until ?? $auction->end_time;
-
-        if (!$endTime instanceof Carbon) {
-            return;
-        }
-
-        // فرق الوقت بالثواني (قيمة سالبة لو المزاد منتهي)
-        $secondsRemaining = $now->diffInSeconds($endTime, false);
-
-        if ($secondsRemaining <= 60 && $secondsRemaining >= 0) {
-            $oldEnd = $endTime->copy();
-            $auction->extended_until = $endTime->copy()->addMinutes($extensionMinutes);
-            $auction->save();
-
-            Log::info('Auction extended due to last-minute bid', [
-                'auction_id' => $auction->id,
-                'old_end_time' => $oldEnd->toDateTimeString(),
-                'new_end_time' => $auction->extended_until->toDateTimeString(),
-                'seconds_remaining_at_bid' => $secondsRemaining,
-            ]);
-        }
     }
 }
