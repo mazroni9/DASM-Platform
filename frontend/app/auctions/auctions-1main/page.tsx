@@ -1,6 +1,7 @@
 'use client';
 
 import LoadingLink from "@/components/LoadingLink";
+import Link from "next/link";
 import {
   Timer,
   BellOff,
@@ -54,8 +55,8 @@ const AUCTIONS_MAIN: AuctionMain[] = [
       "بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة — تجربة تفاعلية وسريعة",
     time: "من الرابعة عصرًا إلى السابعة مساءً",
     icon: Video,
-    accent: "text-red-500", // This will be handled by card variant
-    ring: "ring-red-600/40", // This will be handled by card variant
+    accent: "text-red-500",
+    ring: "ring-red-600/40",
     bgGrad: "bg-card",
     overlayImg: "/showroom.jpg",
     overlayOpacity: "opacity-10",
@@ -66,8 +67,8 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     slug: "instant",
     href: "/auctions/auctions-1main/instant",
     description:
-      "مزايدات مفتوحة صعودًا وهبوطًا وفق مصلحة المشتري، شفافية عالية وإغلاق سريع",
-    time: "من السابعة مساءً إلى العاشرة مساءً",
+      "مزادات تصاعدية تبدأ من سعر افتتاح ثابت، ويستمر المشترون برفع عروضهم حتى الوصول للسعر المرغوب من البائع داخل مدة المزاد المحددة.",
+    time: "يومياً من الساعة 7 مساءً حتى 10 مساءً.",
     icon: Timer,
     accent: "text-primary",
     ring: "ring-primary/40",
@@ -120,7 +121,9 @@ const SectionHeader = ({
       </h1>
     </div>
     {subtitle ? (
-      <p className="text-primary max-w-2xl mx-auto leading-relaxed">{subtitle}</p>
+      <p className="text-primary max-w-2xl mx-auto leading-relaxed">
+        {subtitle}
+      </p>
     ) : null}
   </motion.div>
 );
@@ -252,7 +255,9 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         {/* خلفية صورة اختيارية */}
         {auction.overlayImg ? (
           <div
-            className={`absolute inset-0 bg-center bg-no-repeat bg-contain pointer-events-none ${auction.overlayOpacity ?? "opacity-20"}`}
+            className={`absolute inset-0 bg-center bg-no-repeat bg-contain pointer-events-none ${
+              auction.overlayOpacity ?? "opacity-20"
+            }`}
             style={{ backgroundImage: `url('${auction.overlayImg}')` }}
             aria-hidden="true"
           />
@@ -301,7 +306,10 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         </div>
 
         {/* تأثير طبقة لمعان */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/0 to-white/10 group-hover:from-white/10 group-hover:to-white/20 transition-all" aria-hidden="true" />
+        <div
+          className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/0 to-white/10 group-hover:from-white/10 group-hover:to-white/20 transition-all"
+          aria-hidden="true"
+        />
       </LoadingLink>
     </motion.div>
   );
@@ -315,15 +323,17 @@ export default function AuctionsMainPage() {
   const [currentAuction, setCurrentAuction] = useState<string>("");
 
   const cards = useMemo(() => AUCTIONS_MAIN, []);
-
   const handlePrevToggle = useCallback(() => setShowPresenter((s) => !s), []);
 
   return (
     <main className="min-h-screen bg-background" dir="rtl">
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_40%),radial-gradient(circle_at_70%_30%,rgba(168,85,247,0.14),transparent_35%)]" aria-hidden="true" />
-        <div className="container mx-auto px-4 py-10">
+        <div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_40%),radial-gradient(circle_at_70%_30%,rgba(168,85,247,0.14),transparent_35%)]"
+          aria-hidden="true"
+        />
+        <div className="container mx-auto px-4 py-10 relative">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
@@ -344,12 +354,14 @@ export default function AuctionsMainPage() {
                 <Tv className="h-5 w-5" aria-hidden="true" />
                 شاشة المعلق
               </button>
-              <LoadingLink
+
+              {/* الزر المصحّح: العودة لجميع الأسواق */}
+              <Link
                 href="/auctions"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/50 text-foreground hover:bg-border border border-border font-semibold"
               >
                 العودة لجميع الأسواق
-              </LoadingLink>
+              </Link>
             </div>
           </div>
 
@@ -363,26 +375,30 @@ export default function AuctionsMainPage() {
 
       {/* Presenter Panel */}
       <div className="container mx-auto px-4">
-        <AnimatePresence>{showPresenter && (
-          <PresenterPanel
-            current={currentAuction}
-            onClose={() => setShowPresenter(false)}
-            onSelect={(slug) => setCurrentAuction(slug)}
-          />
-        )}</AnimatePresence>
+        <AnimatePresence>
+          {showPresenter && (
+            <PresenterPanel
+              current={currentAuction}
+              onClose={() => setShowPresenter(false)}
+              onSelect={(slug) => setCurrentAuction(slug)}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Cards */}
       <div className="container mx-auto px-4 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards.map((a, i) => (
-            <AuctionCard key={a.slug} auction={a} index={i} />)
-          )}
+            <AuctionCard key={a.slug} auction={a} index={i} />
+          ))}
         </div>
 
         {/* Finished Section */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-foreground mb-4">المزادات المنتهية</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            المزادات المنتهية
+          </h2>
           <div className="rounded-2xl border border-border bg-card/5 p-4">
             <AuctionsFinished />
           </div>

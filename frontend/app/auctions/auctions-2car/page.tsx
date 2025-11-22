@@ -89,7 +89,7 @@ export default function CarAuctionsPage() {
           </div>
           
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center text-white">
-            قطاع السيارات المختلفة
+سوق السيارات المتخصص
           </h1>
           <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto text-center text-blue-100">
             تصفح أسواق متخصصة: الفارهة، الكلاسيكية، الكرفانات، الشاحنات، الحافلات
