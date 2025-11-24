@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { formatCurrency } from "@/utils/formatCurrency";
-import Pusher from 'pusher-js';
+import Pusher from "pusher-js";
 
 // =============== أنواع TypeScript ===============
 interface CarAuction {
@@ -95,18 +95,13 @@ export default function InstantAuctionPage() {
   const loadingGateRef = useRef(false);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // Removed client-side authentication redirect - now handled by middleware
-  // Public page: authentication only required for bidding actions
-
   // =============== جلب البيانات ===============
   const fetchAuctions = useCallback(async () => {
-    
-    
     loadingGateRef.current = true;
     setLoading(currentPage === 1);
 
     try {
-      const allowed = await isWithinAllowedTime('instant_auction');
+      const allowed = await isWithinAllowedTime("instant_auction");
       setIsAllowed(allowed);
 
       const params = new URLSearchParams();
@@ -115,7 +110,7 @@ export default function InstantAuctionPage() {
 
       const response = await api.get(
         `/api/approved-auctions/live_instant?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
-        { headers: { "Accept": "application/json; charset=UTF-8" } }
+        { headers: { Accept: "application/json; charset=UTF-8" } }
       );
 
       const data = response.data.data;
@@ -123,7 +118,9 @@ export default function InstantAuctionPage() {
         setCarsBrands(response.data.brands || []);
         setTotalCount(data.total);
         setCarsTotal(response.data.total?.total || 0);
-        setCars(prev => currentPage > 1 ? [...prev, ...data.data] : data.data);
+        setCars((prev) =>
+          currentPage > 1 ? [...prev, ...data.data] : data.data
+        );
       }
     } catch (err) {
       console.error("فشل تحميل المزادات", err);
@@ -140,27 +137,33 @@ export default function InstantAuctionPage() {
     fetchAuctions();
 
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "ap2",
     });
 
-    const channel = pusher.subscribe('auction.instant');
-    channel.bind('CarMovedBetweenAuctionsEvent', () => {
+    const channel = pusher.subscribe("auction.instant");
+    channel.bind("CarMovedBetweenAuctionsEvent", () => {
       setCurrentPage(1);
       setCars([]);
     });
 
-    channel.bind('AuctionStatusChangedEvent', (data: any) => {
+    channel.bind("AuctionStatusChangedEvent", (data: any) => {
       const statusLabels: Record<string, string> = {
-        live: 'مباشر', ended: 'منتهي', completed: 'مكتمل',
-        cancelled: 'ملغي', failed: 'فاشل', scheduled: 'مجدول'
+        live: "مباشر",
+        ended: "منتهي",
+        completed: "مكتمل",
+        cancelled: "ملغي",
+        failed: "فاشل",
+        scheduled: "مجدول",
       };
       const oldLabel = statusLabels[data.old_status] || data.old_status;
       const newLabel = statusLabels[data.new_status] || data.new_status;
-      toast.success(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldLabel} إلى ${newLabel}`);
+      toast.success(
+        `تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldLabel} إلى ${newLabel}`
+      );
     });
 
     return () => {
-      pusher.unsubscribe('auction.instant');
+      pusher.unsubscribe("auction.instant");
       pusher.disconnect();
     };
   }, [fetchAuctions]);
@@ -173,8 +176,13 @@ export default function InstantAuctionPage() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !loadingGateRef.current && isAllowed && currentPage < totalPages) {
-          setCurrentPage(p => p + 1);
+        if (
+          entry.isIntersecting &&
+          !loadingGateRef.current &&
+          isAllowed &&
+          currentPage < totalPages
+        ) {
+          setCurrentPage((p) => p + 1);
         }
       },
       { root: container, rootMargin: "800px" }
@@ -185,22 +193,45 @@ export default function InstantAuctionPage() {
   }, [currentPage, totalPages, isAllowed]);
 
   // =============== تصفية السيارات ===============
-  const filteredCars = cars.filter(car => {
+  const filteredCars = cars.filter((car) => {
     if (filters.brand && filters.brand !== car.car.make) return false;
     return true;
   });
 
   // =============== مكونات واجهة المستخدم ===============
   const StatusBadge = ({ status }: { status: string }) => {
-    const config = {
-      "جاري المزايدة": { bg: "bg-blue-900/30", text: "text-blue-300", border: "border-blue-700/50", icon: Play },
-      "تم البيع": { bg: "bg-emerald-900/30", text: "text-emerald-300", border: "border-emerald-700/50", icon: TrendingUp },
-      "انتهى": { bg: "bg-gray-800/50", text: "text-gray-400", border: "border-gray-700/50", icon: Clock },
-    }[status] || { bg: "bg-amber-900/30", text: "text-amber-300", border: "border-amber-700/50", icon: AlertCircle };
+    const config =
+      {
+        "جاري المزايدة": {
+          bg: "bg-blue-900/30",
+          text: "text-blue-300",
+          border: "border-blue-700/50",
+          icon: Play,
+        },
+        "تم البيع": {
+          bg: "bg-emerald-900/30",
+          text: "text-emerald-300",
+          border: "border-emerald-700/50",
+          icon: TrendingUp,
+        },
+        "انتهى": {
+          bg: "bg-gray-800/50",
+          text: "text-gray-400",
+          border: "border-gray-700/50",
+          icon: Clock,
+        },
+      }[status] || {
+        bg: "bg-amber-900/30",
+        text: "text-amber-300",
+        border: "border-amber-700/50",
+        icon: AlertCircle,
+      };
 
     const Icon = config.icon;
     return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${config.bg} ${config.text} ${config.border}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${config.bg} ${config.text} ${config.border}`}
+      >
         <Icon className="w-3 h-3" />
         {status}
       </span>
@@ -252,7 +283,14 @@ export default function InstantAuctionPage() {
 
             <div className="flex items-center gap-4 flex-wrap">
               <div className="text-sm text-foreground/80 bg-background/60 px-4.5 py-2.5 rounded-xl border border-border">
-                <span className="font-semibold text-foreground">{filteredCars.length}</span> من <span className="font-semibold text-foreground">{carsTotal}</span> سيارة
+                <span className="font-semibold text-foreground">
+                  {filteredCars.length}
+                </span>{" "}
+                من{" "}
+                <span className="font-semibold text-foreground">
+                  {carsTotal}
+                </span>{" "}
+                سيارة
               </div>
 
               <button
@@ -261,7 +299,11 @@ export default function InstantAuctionPage() {
               >
                 <Filter className="w-4.5 h-4.5" />
                 فلاتر
-                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showFilters ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-300 ${
+                    showFilters ? "rotate-180" : ""
+                  }`}
+                />
               </button>
             </div>
           </div>
@@ -271,18 +313,34 @@ export default function InstantAuctionPage() {
             <div className="mt-5 pt-5 border-t border-border/40">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground/80 mb-2">ماركة السيارة</label>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
+                    ماركة السيارة
+                  </label>
                   <select
                     value={filters.brand}
                     onChange={(e) => {
-                      setFilters(prev => ({ ...prev, brand: e.target.value }));
+                      setFilters((prev) => ({
+                        ...prev,
+                        brand: e.target.value,
+                      }));
                       setCurrentPage(1);
                     }}
                     className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
                   >
-                    <option value="" className="bg-card text-foreground/70">جميع الماركات</option>
+                    <option
+                      value=""
+                      className="bg-card text-foreground/70"
+                    >
+                      جميع الماركات
+                    </option>
                     {carsBrands.map((brand, idx) => (
-                      <option key={idx} value={brand} className="bg-card text-foreground">{brand}</option>
+                      <option
+                        key={idx}
+                        value={brand}
+                        className="bg-card text-foreground"
+                      >
+                        {brand}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -293,15 +351,17 @@ export default function InstantAuctionPage() {
 
         {/* رسائل الحالة */}
         {!isAllowed && (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>السوق غير مفتوح حاليًا. يفتح يوميًا من 7 مساءً إلى 10 مساءً.</span>
+          <div className="bg-amber-500/10 border border-amber-500/20 text-foreground rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-amber-500" />
+            <span>
+              السوق غير مفتوح حاليًا. يفتح يوميًا من 7 مساءً إلى 10 مساءً.
+            </span>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="bg-red-500/10 border border-red-500/20 text-foreground rounded-2xl p-5 mb-6 flex items-center gap-3 backdrop-blur-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
             <span>{error}</span>
           </div>
         )}
@@ -309,8 +369,12 @@ export default function InstantAuctionPage() {
         {!loading && !error && filteredCars.length === 0 && isAllowed && (
           <div className="bg-primary/10 border border-primary/20 text-primary rounded-2xl p-8 text-center backdrop-blur-sm">
             <Car className="w-14 h-14 mx-auto mb-4 text-primary/80" />
-            <p className="font-semibold text-lg">لا توجد سيارات متاحة في السوق الفوري حاليًا</p>
-            <p className="text-sm mt-2 opacity-80">سيتم تحديث القائمة تلقائيًا عند توفر سيارات جديدة</p>
+            <p className="font-semibold text-lg">
+              لا توجد سيارات متاحة في السوق الفوري حاليًا
+            </p>
+            <p className="text-sm mt-2 opacity-80">
+              سيتم تحديث القائمة تلقائيًا عند توفر سيارات جديدة
+            </p>
           </div>
         )}
 
@@ -318,15 +382,34 @@ export default function InstantAuctionPage() {
         {isAllowed && filteredCars.length > 0 && (
           <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
-              <div className="max-h-[70vh] overflow-auto" ref={scrollContainerRef}>
+              <div
+                className="max-h-[70vh] overflow-auto"
+                ref={scrollContainerRef}
+              >
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-background/70 backdrop-blur-sm sticky top-0 z-10 border-b border-border">
                       {[
-                        "رابط البث", "المنطقة", "المدينة", "الماركة", "الموديل", "السنة",
-                        "اللوحة", "العداد", "الحالة", "اللون", "الوقود", "المزايدات",
-                        "سعر الافتتاح", "أقل سعر", "أعلى سعر", "آخر سعر", "مبلغ الزيادة",
-                        "نسبة التغير", "الحالة", "التفاصيل"
+                        "رابط البث",
+                        "المنطقة",
+                        "المدينة",
+                        "الماركة",
+                        "الموديل",
+                        "السنة",
+                        "اللوحة",
+                        "العداد",
+                        "الحالة",
+                        "اللون",
+                        "الوقود",
+                        "المزايدات",
+                        "سعر الافتتاح",
+                        "أقل سعر",
+                        "أعلى سعر",
+                        "آخر سعر",
+                        "مبلغ الزيادة",
+                        "نسبة التغير",
+                        "الحالة",
+                        "التفاصيل",
                       ].map((header, idx) => (
                         <th
                           key={idx}
@@ -339,8 +422,8 @@ export default function InstantAuctionPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredCars.map((car, idx) => (
-                      <tr 
-                        key={idx} 
+                      <tr
+                        key={idx}
                         className="hover:bg-border/60 transition-colors duration-200 border-b border-border/30"
                       >
                         <td className="px-4 py-4 text-center text-sm">
@@ -356,31 +439,69 @@ export default function InstantAuctionPage() {
                             <span className="text-foreground/50">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.province}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.city}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">{car.car.make}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.model}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.year}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.plate}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.odometer}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.condition}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.color}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.car.engine}</td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">{car.bids.length}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-emerald-400">{formatCurrency(car.opening_price)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-amber-400">{formatCurrency(car.minimum_bid)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-rose-400">{formatCurrency(car.maximum_bid)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">{formatCurrency(car.current_bid)}</td>
-                        <td className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
-                          {car.bids.length > 0 ? car.bids[car.bids.length - 1].increment : 0}
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.province}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.city}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">
+                          {car.car.make}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.model}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.year}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.plate}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.odometer}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.condition}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.color}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.car.engine}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                          {car.bids.length}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-emerald-400">
+                          {formatCurrency(car.opening_price)}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-amber-400">
+                          {formatCurrency(car.minimum_bid)}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-rose-400">
+                          {formatCurrency(car.maximum_bid)}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">
+                          {formatCurrency(car.current_bid)}
                         </td>
                         <td className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
                           {car.bids.length > 0
-                            ? `${((car.bids[car.bids.length - 1].increment / car.bids[car.bids.length - 1].bid_amount) * 100).toFixed(2)}%`
+                            ? car.bids[car.bids.length - 1].increment
+                            : 0}
+                        </td>
+                        <td className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
+                          {car.bids.length > 0
+                            ? `${(
+                                (car.bids[car.bids.length - 1].increment /
+                                  car.bids[car.bids.length - 1].bid_amount) *
+                                100
+                              ).toFixed(2)}%`
                             : "0%"}
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <StatusBadge status={getAuctionStatus(car.car.auction_status)} />
+                          <StatusBadge
+                            status={getAuctionStatus(car.car.auction_status)}
+                          />
                         </td>
                         <td className="px-4 py-4 text-center">
                           <LoadingLink
@@ -402,9 +523,13 @@ export default function InstantAuctionPage() {
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )}
-                  {!loading && currentPage >= totalPages && filteredCars.length > 0 && (
-                    <p className="text-sm text-foreground/50">تم عرض جميع السيارات</p>
-                  )}
+                  {!loading &&
+                    currentPage >= totalPages &&
+                    filteredCars.length > 0 && (
+                      <p className="text-sm text-foreground/50">
+                        تم عرض جميع السيارات
+                      </p>
+                    )}
                 </div>
               </div>
             </div>
@@ -415,7 +540,9 @@ export default function InstantAuctionPage() {
         {loading && currentPage === 1 && (
           <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border p-10 text-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-foreground/70">جارٍ تحميل بيانات السوق الفوري...</p>
+            <p className="text-foreground/70">
+              جارٍ تحميل بيانات السوق الفوري...
+            </p>
           </div>
         )}
       </div>
