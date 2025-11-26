@@ -346,6 +346,10 @@ Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+
+// ✅ جعل مزادات منتهية عامة (بدون auth)
+Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
+
 Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
 Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession']);
 
@@ -400,7 +404,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auctions/{id}', [AuctionController::class, 'update'])->whereNumber('id');
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel'])->whereNumber('id');
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
+    // ⚠️ تم نقل /auctions-finished إلى القسم العام فوق
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auctions/{auction}/leave', [AuctionController::class, 'leave'])->whereNumber('auction');
@@ -611,15 +615,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
     Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
     Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy']);
 
-// Venue Owners (Admin)
-Route::get  ('/venue-owners',                         [AdminVenueOwnerController::class, 'index']);
-Route::get  ('/venue-owners/{id}',                    [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
-Route::get  ('/venue-owners/{id}/cars',               [AdminVenueOwnerController::class, 'cars'])->whereNumber('id');
-Route::get  ('/venue-owners/{id}/wallet',             [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id');
-Route::get  ('/venue-owners/{id}/wallet/transactions',[AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id');
-Route::post ('/venue-owners/{id}/approve',            [AdminVenueOwnerController::class, 'approve'])->whereNumber('id');
-Route::post ('/venue-owners/{id}/reject',             [AdminVenueOwnerController::class, 'reject'])->whereNumber('id');
-Route::post ('/venue-owners/{id}/toggle-status',      [AdminVenueOwnerController::class, 'toggleStatus'])->whereNumber('id');
+    // Venue Owners (Admin)
+    Route::get  ('/venue-owners',                         [AdminVenueOwnerController::class, 'index']);
+    Route::get  ('/venue-owners/{id}',                    [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
+    Route::get  ('/venue-owners/{id}/cars',               [AdminVenueOwnerController::class, 'cars'])->whereNumber('id');
+    Route::get  ('/venue-owners/{id}/wallet',             [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id');
+    Route::get  ('/venue-owners/{id}/wallet/transactions',[AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id');
+    Route::post ('/venue-owners/{id}/approve',            [AdminVenueOwnerController::class, 'approve'])->whereNumber('id');
+    Route::post ('/venue-owners/{id}/reject',             [AdminVenueOwnerController::class, 'reject'])->whereNumber('id');
+    Route::post ('/venue-owners/{id}/toggle-status',      [AdminVenueOwnerController::class, 'toggleStatus'])->whereNumber('id');
 
     // Venues (من الملف الثاني)
     Route::post('/venues', [VenueController::class, 'store']);

@@ -16,24 +16,23 @@ import {
   Users,
   Clock,
   Play,
+  Tag,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AuctionsFinished from "@components/AuctionsFinished"; // تأكد من المسار
-
-// (ملاحظة): تمت إزالة `export const metadata` لأن الملف "use client". ضع الميتاداتا في ملف Server مثل `layout.tsx` أو `page.tsx` بدون directive.
 
 // =====================
 // الأنواع والبيانات
 // =====================
 import type { LucideIcon } from "lucide-react";
 
-type AuctionId = "live_auction" | "instant_auction" | "late_auction";
+type AuctionId = "live_auction" | "instant_auction" | "late_auction" | "fixed_auction";
 
 type AuctionMain = {
   id: AuctionId;
   name: string;
-  slug: "live-market" | "instant" | "silent";
+  slug: "live-market" | "instant" | "silent" | "fixed";
   href: string; // المسار النهائي للصفحة
   description: string;
   time: string;
@@ -90,6 +89,19 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     bgGrad: "bg-card",
     overlayImg: "/late_auction.jpg",
     overlayOpacity: "opacity-40",
+  },
+  {
+    id: "fixed_auction",
+    name: "المزاد الثابت",
+    slug: "fixed",
+    href: "/auctions/auctions-1main/fixed",
+    description:
+      "سيارات لم تُبع في المزادات الأخرى تُعرض هنا كفرصة ثانية في مزاد تقليدي بسيط ومحدد بوقت، وعند انتهاء العداد يفوز أعلى مزايد تلقائيًا.",
+    time: "يستمر المزاد حتى انتهاء العداد ثم تُرسى السيارة تلقائيًا لأعلى عرض.",
+    icon: Tag,
+    accent: "text-emerald-500",
+    ring: "ring-emerald-500/40",
+    bgGrad: "bg-card",
   },
 ];
 
@@ -149,7 +161,7 @@ const PresenterPanel = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="mb-8 p-5 bg-card text-foreground rounded-2xl shadow-2xl border border-border"
+      className="mb-8 p-5 md:p-6 bg-card/90 text-foreground rounded-2xl shadow-xl border border-border/80 backdrop-blur-md"
       role="region"
       aria-label="لوحة تحكم المعلق"
     >
@@ -157,7 +169,7 @@ const PresenterPanel = ({
         <h2 className="text-xl font-bold">شاشة المعلق - لوحة التحكم</h2>
         <button
           onClick={onClose}
-          className="p-2 bg-background/50 hover:bg-border rounded-xl border border-border"
+          className="p-2 bg-background/60 hover:bg-border rounded-xl border border-border transition-colors"
           title="إغلاق لوحة التحكم"
           aria-label="إغلاق لوحة التحكم"
         >
@@ -166,12 +178,12 @@ const PresenterPanel = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-background/60 p-4 rounded-xl border border-border">
+        <div className="bg-background/70 p-4 rounded-xl border border-border">
           <h3 className="font-semibold mb-3 text-foreground/80">المزاد الحالي</h3>
           <select
             value={current}
             onChange={(e) => onSelect(e.target.value)}
-            className="w-full p-2 rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full p-2 rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             title="اختيار المزاد الحالي"
             aria-label="اختيار المزاد الحالي"
           >
@@ -184,27 +196,27 @@ const PresenterPanel = ({
           </select>
         </div>
 
-        <div className="bg-background/60 p-4 rounded-xl border border-border">
+        <div className="bg-background/70 p-4 rounded-xl border border-border">
           <h3 className="font-semibold mb-3 text-foreground/80">عرض البيانات</h3>
           <div className="flex gap-2">
-            <button className="flex-1 p-2 rounded-xl bg-primary hover:bg-primary/90 transition-colors">
+            <button className="flex-1 p-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors">
               <ArrowUpDown className="h-4 w-4 mx-auto" aria-hidden="true" />
               <span className="text-xs">جدول المزاد</span>
             </button>
-            <button className="flex-1 p-2 rounded-xl bg-secondary hover:bg-secondary/90 transition-colors">
+            <button className="flex-1 p-2 rounded-xl bg-secondary hover:bg-secondary/90 text-xs font-semibold transition-colors">
               <Eye className="h-4 w-4 mx-auto" aria-hidden="true" />
               <span className="text-xs">تفاصيل السلعة</span>
             </button>
           </div>
         </div>
 
-        <div className="bg-background/60 p-4 rounded-xl border border-border">
+        <div className="bg-background/70 p-4 rounded-xl border border-border">
           <h3 className="font-semibold mb-3 text-foreground/80">روابط سريعة</h3>
           {current ? (
             <LoadingLink
               href={`/auctions/auctions-1main/${current}`}
               target="_blank"
-              className="flex items-center justify-center gap-2 p-2 bg-primary hover:bg-primary/90 rounded-xl text-sm font-medium"
+              className="flex items-center justify-center gap-2 p-2 bg-primary hover:bg-primary/90 rounded-xl text-sm font-medium text-white transition-colors"
             >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               <span>فتح في نافذة جديدة</span>
@@ -215,9 +227,9 @@ const PresenterPanel = ({
         </div>
       </div>
 
-      <div className="bg-background/60 p-4 rounded-xl border border-border mt-4">
+      <div className="bg-background/70 p-4 rounded-xl border border-border mt-4">
         <h3 className="font-semibold mb-3 text-foreground/80">معاينة البث</h3>
-        <div className="aspect-video bg-black/80 rounded-xl flex items-center justify-center text-foreground/50 border border-border">
+        <div className="aspect-video bg-black/80 rounded-xl flex items-center justify-center text-foreground/50 border border-border overflow-hidden">
           {current ? (
             <iframe
               className="w-full h-full rounded-xl"
@@ -239,6 +251,8 @@ const PresenterPanel = ({
 
 const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }) => {
   const Icon = auction.icon;
+  const isLive = auction.slug === "live-market";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -249,27 +263,35 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
     >
       <LoadingLink
         href={auction.href}
-        className={`block h-full rounded-2xl border border-border ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-white/50`}
+        className={`block h-full rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
         aria-label={`الدخول إلى ${auction.name}`}
       >
-        {/* خلفية صورة اختيارية */}
-        {auction.overlayImg ? (
-          <div
-            className={`absolute inset-0 bg-center bg-no-repeat bg-contain pointer-events-none ${
-              auction.overlayOpacity ?? "opacity-20"
-            }`}
-            style={{ backgroundImage: `url('${auction.overlayImg}')` }}
-            aria-hidden="true"
-          />
-        ) : null}
+        {/* 🔹 خلفية صورة فقط للحراج المباشر، عشان الفوري والمتأخر والثابت يفضلوا نظاف */}
+        {isLive && auction.overlayImg && (
+          <>
+            <div
+              className={`absolute inset-0 bg-center bg-no-repeat bg-cover pointer-events-none ${
+                auction.overlayOpacity ?? "opacity-20"
+              }`}
+              style={{ backgroundImage: `url('${auction.overlayImg}')` }}
+              aria-hidden="true"
+            />
+            <div
+              className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent pointer-events-none"
+              aria-hidden="true"
+            />
+          </>
+        )}
 
         {/* محتوى */}
         <div className="relative z-10 p-5 lg:p-6 flex flex-col h-full">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <span className={`p-3 rounded-2xl bg-card/50 backdrop-blur-sm`}>
+            <span className="p-3 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/70">
               <Icon className={`w-6 h-6 ${auction.accent}`} aria-hidden="true" />
             </span>
-            <h3 className={`text-xl font-bold ${auction.accent}`}>{auction.name}</h3>
+            <h3 className={`text-lg md:text-xl font-bold ${auction.accent}`}>
+              {auction.name}
+            </h3>
           </div>
           <p className="text-foreground/80 text-sm leading-relaxed text-center mb-3">
             {auction.description}
@@ -280,10 +302,10 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
           </div>
 
           {/* فيديو صغير للحراج المباشر */}
-          {auction.slug === "live-market" ? (
+          {isLive ? (
             <div className="w-full max-w-[220px] mx-auto mb-4">
               <video
-                className="w-full rounded-xl border border-border"
+                className="w-full rounded-xl border border-border/80 shadow-sm"
                 poster="/showroom.jpg"
                 muted
                 loop
@@ -298,16 +320,16 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
           ) : null}
 
           <div className="mt-auto text-center">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card/50 text-foreground text-sm font-semibold border border-border group-hover:bg-primary group-hover:border-primary transition-colors">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card/60 text-foreground text-sm font-semibold border border-border group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-colors">
               ادخل السوق الآن
               <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </span>
           </div>
         </div>
 
-        {/* تأثير طبقة لمعان */}
+        {/* تأثير طبقة لمعان خفيف */}
         <div
-          className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/0 to-white/10 group-hover:from-white/10 group-hover:to-white/20 transition-all"
+          className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/0 to-white/5 group-hover:from-white/10 group-hover:to-white/20 transition-all"
           aria-hidden="true"
         />
       </LoadingLink>
@@ -326,7 +348,10 @@ export default function AuctionsMainPage() {
   const handlePrevToggle = useCallback(() => setShowPresenter((s) => !s), []);
 
   return (
-    <main className="min-h-screen bg-background" dir="rtl">
+    <main
+      className="min-h-screen bg-gradient-to-b from-background via-background to-background/95"
+      dir="rtl"
+    >
       {/* Hero */}
       <div className="relative overflow-hidden">
         <div
@@ -334,41 +359,43 @@ export default function AuctionsMainPage() {
           aria-hidden="true"
         />
         <div className="container mx-auto px-4 py-10 relative">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
-                الأسواق الرئيسية الثلاثة
-              </h1>
-              <p className="text-primary max-w-2xl">
-                نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي.
-                المنافسة تعتمد على العرض والطلب الطبيعي.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handlePrevToggle}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg transition-colors"
-                aria-pressed={showPresenter}
-                aria-label="فتح/إغلاق شاشة المعلق"
-              >
-                <Tv className="h-5 w-5" aria-hidden="true" />
-                شاشة المعلق
-              </button>
+          <div className="relative rounded-3xl border border-border bg-card/80 backdrop-blur-md shadow-xl px-5 py-7 md:px-8 md:py-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
+                  الأسواق الرئيسية الثلاثة
+                </h1>
+                <p className="text-primary max-w-2xl text-sm md:text-base leading-relaxed">
+                  نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي.
+                  المنافسة تعتمد على العرض والطلب الطبيعي.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePrevToggle}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold shadow-lg transition-colors"
+                  aria-pressed={showPresenter}
+                  aria-label="فتح/إغلاق شاشة المعلق"
+                >
+                  <Tv className="h-5 w-5" aria-hidden="true" />
+                  شاشة المعلق
+                </button>
 
-              {/* الزر المصحّح: العودة لجميع الأسواق */}
-              <Link
-                href="/auctions"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/50 text-foreground hover:bg-border border border-border font-semibold"
-              >
-                العودة لجميع الأسواق
-              </Link>
+                {/* الزر المصحّح: العودة لجميع الأسواق */}
+                <Link
+                  href="/auctions"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/50 text-foreground hover:bg-border border border-border font-semibold text-sm"
+                >
+                  العودة لجميع الأسواق
+                </Link>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-5 flex flex-wrap gap-3">
-            <StatChip icon={Shield} label="أمان تام" />
-            <StatChip icon={Users} label="+50K مشترك" />
-            <StatChip icon={Clock} label="مباشر يوميًا" />
+            <div className="mt-5 flex flex-wrap gap-3">
+              <StatChip icon={Shield} label="أمان تام" />
+              <StatChip icon={Users} label="+50K مشترك" />
+              <StatChip icon={Clock} label="مباشر يوميًا" />
+            </div>
           </div>
         </div>
       </div>
@@ -388,7 +415,7 @@ export default function AuctionsMainPage() {
 
       {/* Cards */}
       <div className="container mx-auto px-4 pb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {cards.map((a, i) => (
             <AuctionCard key={a.slug} auction={a} index={i} />
           ))}
@@ -399,7 +426,7 @@ export default function AuctionsMainPage() {
           <h2 className="text-2xl font-bold text-foreground mb-4">
             المزادات المنتهية
           </h2>
-          <div className="rounded-2xl border border-border bg-card/5 p-4">
+          <div className="rounded-2xl border border-border/70 bg-card/80 backdrop-blur-md p-4 md:p-5 shadow-md">
             <AuctionsFinished />
           </div>
         </div>
