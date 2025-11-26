@@ -16,9 +16,9 @@ import LoadingLink from "@/components/LoadingLink";
 import { 
   Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, 
   BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, 
-  Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale, Store, 
+  Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Store, 
   ShoppingBag, Gift, Search, ChevronRight,
-  Zap, Crown, TrendingUp, Users, Shield, Clock
+  Zap, Crown, TrendingUp, Users
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -70,7 +70,7 @@ export default function AuctionsPage() {
       name: 'السوق الثابت', 
       slug: 'auctions-1main/fixed', 
       description: 'فرصتك الأخيرة لصفقات سريعة. أعلى سعر يفوز عند انتهاء الوقت.', 
-      icon: Clock, 
+      icon: Timer, 
       color: 'text-primary', 
       bgColor: 'bg-card',
       borderColor: 'border-border',
@@ -422,7 +422,7 @@ export default function AuctionsPage() {
           <div className={`relative overflow-hidden rounded-2xl border ${auction.borderColor} ${auction.bgColor} p-6 transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:border-primary h-full`}>
             {/* Badge للمزادات المميزة */}
             {auction.featured && (
-              <div className="absolute top-4 left-4 flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-sm">
+              <div className="absolute top-4 left-4 flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white shadow-sm">
                 <Star className="w-3 h-3" />
                 مميز
               </div>
@@ -460,7 +460,7 @@ export default function AuctionsPage() {
 
               {/* زر الدخول */}
               <div className="mt-auto">
-                <span className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-primary text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-primary/90">
+                <span className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-primary text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-primary/90">
                   ابدأ المزايدة
                   <TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
@@ -509,38 +509,6 @@ export default function AuctionsPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* قسم البطل */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border rounded-3xl shadow-2xl p-8 mb-12 text-center text-foreground"
-        >
-          <div className="max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-3 bg-secondary/20 rounded-2xl px-6 py-3 mb-6">
-              <Scale className="w-8 h-8" />
-              <h2 className="text-2xl font-bold">منصة المزادات الرقمية</h2>
-            </div>
-            <p className="text-xl text-muted-foreground leading-relaxed mb-6">
-              نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخلي.
-              المنافسة تعتمد على العرض والطلب الطبيعي
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <div className="flex items-center gap-2 rounded-xl bg-secondary/20 px-4 py-2 text-foreground">
-                <Shield className="w-5 h-5" />
-                <span>أمان تام</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-secondary/20 px-4 py-2 text-foreground">
-                <Clock className="w-5 h-5" />
-                <span>مباشر 24/7</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-secondary/20 px-4 py-2 text-foreground">
-                <Users className="w-5 h-5" />
-                <span>+50K مشترك</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
         {/* الأقسام الأصلية */}
         <>
           <Divider />
