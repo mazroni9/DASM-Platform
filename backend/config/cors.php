@@ -6,7 +6,7 @@ return [
     //'allowed_origins' => ['*'],
     'allowed_origins' => [
         'http://localhost:3000', // للبيئة المحلية
-        'https://dasm.com.sa/'
+        'https://dasm.com.sa'
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],

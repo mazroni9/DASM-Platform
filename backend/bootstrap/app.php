@@ -26,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // $middleware->statefulApi();
         // API middleware
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+
         $middleware->api(append: [
             // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
