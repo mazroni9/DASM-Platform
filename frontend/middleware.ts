@@ -130,14 +130,10 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     console.error("Middleware auth check failed:", error);
     // CRITICAL FIX: In production, if the backend call fails (network, CORS, etc.),
-    // we should allow the request to pass through and let client-side auth handle it.
-    // The client has the token in localStorage and can authenticate properly.
-    // Only block if we're certain the user is not authenticated.
+    
   }
 
-  // Allow the request through - client-side will handle auth
-  // This prevents blocking users when there's a temporary backend issue
-  // or cross-domain fetch problems in production
+
   return NextResponse.next();
 }
 
