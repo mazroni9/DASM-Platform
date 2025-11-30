@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum UserRole: string
 {
+    case SUPER_ADMIN = 'super_admin';
     case ADMIN = 'admin';
     case MODERATOR = 'moderator';
     case VENUE_OWNER = 'venue_owner';
@@ -16,7 +17,8 @@ enum UserRole: string
      */
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
+            self::SUPER_ADMIN => 'Super Administrator',
             self::ADMIN => 'Administrator',
             self::MODERATOR => 'Moderator',
             self::VENUE_OWNER => 'Venue Owner',
@@ -31,7 +33,8 @@ enum UserRole: string
      */
     public function labelAr(): string
     {
-        return match($this) {
+        return match ($this) {
+            self::SUPER_ADMIN => 'مدير النظام الرئيسي',
             self::ADMIN => 'مدير النظام',
             self::MODERATOR => 'مشرف',
             self::VENUE_OWNER => 'مالك المعرض',
@@ -46,7 +49,8 @@ enum UserRole: string
      */
     public function color(): string
     {
-        return match($this) {
+        return match ($this) {
+            self::SUPER_ADMIN => 'red',
             self::ADMIN => 'red',
             self::MODERATOR => 'green',
             self::VENUE_OWNER => 'purple',
@@ -61,8 +65,8 @@ enum UserRole: string
      */
     public function isAdmin(): bool
     {
-        return match($this) {
-            self::ADMIN => true,
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN => true,
             default => false,
         };
     }
@@ -72,8 +76,8 @@ enum UserRole: string
      */
     public function canManageAuctions(): bool
     {
-        return match($this) {
-            self::ADMIN, self::MODERATOR, self::VENUE_OWNER => true,
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::VENUE_OWNER => true,
             default => false,
         };
     }
@@ -83,8 +87,8 @@ enum UserRole: string
      */
     public function canManageUsers(): bool
     {
-        return match($this) {
-            self::ADMIN, self::MODERATOR => true,
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR => true,
             default => false,
         };
     }
@@ -94,8 +98,8 @@ enum UserRole: string
      */
     public function canManageVenues(): bool
     {
-        return match($this) {
-            self::ADMIN, self::VENUE_OWNER => true,
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::VENUE_OWNER => true,
             default => false,
         };
     }
@@ -105,8 +109,8 @@ enum UserRole: string
      */
     public function canAccessInvestments(): bool
     {
-        return match($this) {
-            self::ADMIN, self::INVESTOR => true,
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::INVESTOR => true,
             default => false,
         };
     }

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-     /**
+    /**
      * List all users
      *
      * @param Request $request
@@ -34,10 +34,10 @@ class UserController extends Controller
         // Search by name or email
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -49,7 +49,7 @@ class UserController extends Controller
         ]);
     }
 
-       /**
+    /**
      * Find User details a dealer verification request
      *
      * @param int $userId
@@ -69,7 +69,7 @@ class UserController extends Controller
         ]);
     }
 
-      /**
+    /**
      * Update user information (admin only)
      *
      * @param int $userId
@@ -218,7 +218,6 @@ class UserController extends Controller
                     'dealer' => $userToUpdate->dealer
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error updating user', [
                 'user_id' => $userId,
@@ -235,7 +234,7 @@ class UserController extends Controller
     }
 
 
-       /**
+    /**
      * Approve a user account
      *
      * @param int $userId
@@ -309,7 +308,7 @@ class UserController extends Controller
         ]);
     }
 
-      /**
+    /**
      * Get pending verifications
      *
      * @return \Illuminate\Http\JsonResponse
@@ -326,7 +325,7 @@ class UserController extends Controller
         ]);
     }
 
-     /**
+    /**
      * Approve a dealer verification request
      *
      * @param int $userId
@@ -405,6 +404,28 @@ class UserController extends Controller
         ]);
     }
 
+    /**
+     * Get all users with venue_owner role
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOwners()
+    {
+        $owners = User::where('role', 'venue_owner')
+            ->select('id', 'first_name', 'last_name', 'email', 'phone')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->first_name . ' ' . $user->last_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ];
+            });
 
-
+        return response()->json([
+            'status' => 'success',
+            'data' => $owners
+        ]);
+    }
 }

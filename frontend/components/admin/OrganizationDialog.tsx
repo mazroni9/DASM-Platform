@@ -4,22 +4,34 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ORGANIZATION_STATUS_VALUES,
   ORGANIZATION_TYPE_VALUES,
-  getOrganizationOwnerName,
-  organizationOwnerOptions,
   organizationStatusOptions,
   organizationTypeOptions,
   type OrganizationStatusValue,
   type OrganizationTypeValue,
 } from "@/lib/organization";
 import { Textarea } from "@/components/ui/textarea";
+import api from "@/lib/axios";
 import { cn } from "@/lib/utils";
 
 const organizationSchema = z.object({
@@ -48,6 +60,9 @@ export function OrganizationDialog({
   onSubmit,
 }: OrganizationDialogProps) {
   const [ownerSearch, setOwnerSearch] = useState("");
+  const [owners, setOwners] = useState<{ id: string; name: string }[]>([]);
+  const [loadingOwners, setLoadingOwners] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -68,13 +83,37 @@ export function OrganizationDialog({
   });
 
   useEffect(() => {
+    const fetchOwners = async () => {
+      setLoadingOwners(true);
+      try {
+        const response = await api.get("api/admin/users/owners");
+        const data = response.data;
+        const users = data.data || [];
+        setOwners(
+          users.map((u: any) => ({
+            id: u.id.toString(),
+            name: u.name,
+          }))
+        );
+      } catch (error) {
+        console.error("Failed to fetch owners", error);
+      } finally {
+        setLoadingOwners(false);
+      }
+    };
+
     if (open) {
+      fetchOwners();
       reset({
         name: initialData?.name ?? "",
         description: initialData?.description ?? "",
-        type: (initialData?.type as OrganizationTypeValue) ?? organizationTypeOptions[0].value,
+        type:
+          (initialData?.type as OrganizationTypeValue) ??
+          organizationTypeOptions[0].value,
         owner: initialData?.owner ?? "",
-        status: (initialData?.status as OrganizationStatusValue) ?? organizationStatusOptions[0].value,
+        status:
+          (initialData?.status as OrganizationStatusValue) ??
+          organizationStatusOptions[0].value,
       });
       setOwnerSearch("");
     } else {
@@ -83,16 +122,17 @@ export function OrganizationDialog({
   }, [open, initialData, reset]);
 
   const selectedOwnerId = watch("owner");
-  const selectedOwnerName = getOrganizationOwnerName(selectedOwnerId);
+  // Find name from fetched owners
+  const selectedOwnerName = owners.find((o) => o.id === selectedOwnerId)?.name;
   const selectedType = watch("type") as OrganizationTypeValue;
   const selectedStatus = watch("status") as OrganizationStatusValue;
 
   const filteredOwners = useMemo(() => {
-    if (!ownerSearch.trim()) return organizationOwnerOptions;
-    return organizationOwnerOptions.filter((owner) =>
+    if (!ownerSearch.trim()) return owners;
+    return owners.filter((owner) =>
       owner.name.toLowerCase().includes(ownerSearch.trim().toLowerCase())
     );
-  }, [ownerSearch]);
+  }, [ownerSearch, owners]);
 
   const dialogTitle = mode === "create" ? "إنشاء منظمة جديدة" : "تعديل المنظمة";
   const submitLabel = mode === "create" ? "إنشاء المنظمة" : "حفظ التعديلات";
@@ -104,18 +144,24 @@ export function OrganizationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">{dialogTitle}</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            أدخل بيانات المنظمة الأساسية لتتمكن من إدارتها وربطها بالقروبات لاحقًا.
+          <DialogTitle className="text-center text-2xl font-bold">
+            {dialogTitle}
+          </DialogTitle>
+          <DialogDescription className="text-center text-muted-foreground">
+            أدخل بيانات المنظمة الأساسية لتتمكن من إدارتها وربطها بالقروبات
+            لاحقًا.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-2">
           <Card className="border border-border">
-            <CardContent className="space-y-5 pt-6">
+            <CardContent className="p-3 pt-1">
               <div className="space-y-2">
-                <label htmlFor="organization-name" className="text-sm font-medium text-foreground">
+                <label
+                  htmlFor="organization-name"
+                  className="text-sm font-medium text-foreground"
+                >
                   اسم المنظمة
                 </label>
                 <Input
@@ -123,11 +169,16 @@ export function OrganizationDialog({
                   placeholder="مثال: معرض MAZ للسيارات"
                   {...register("name")}
                 />
-                {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+                {errors.name && (
+                  <p className="text-xs text-red-500">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="organization-description" className="text-sm font-medium text-foreground">
+                <label
+                  htmlFor="organization-description"
+                  className="text-sm font-medium text-foreground"
+                >
                   وصف مختصر
                 </label>
                 <Textarea
@@ -140,11 +191,15 @@ export function OrganizationDialog({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">نوع المنظمة</label>
+                  <label className="text-sm font-medium text-foreground">
+                    نوع المنظمة
+                  </label>
                   <Select
                     value={selectedType}
                     onValueChange={(value) =>
-                      setValue("type", value as OrganizationTypeValue, { shouldValidate: true })
+                      setValue("type", value as OrganizationTypeValue, {
+                        shouldValidate: true,
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -161,11 +216,15 @@ export function OrganizationDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">الحالة</label>
+                  <label className="text-sm font-medium text-foreground">
+                    الحالة
+                  </label>
                   <Select
                     value={selectedStatus}
                     onValueChange={(value) =>
-                      setValue("status", value as OrganizationStatusValue, { shouldValidate: true })
+                      setValue("status", value as OrganizationStatusValue, {
+                        shouldValidate: true,
+                      })
                     }
                   >
                     <SelectTrigger>
@@ -183,7 +242,9 @@ export function OrganizationDialog({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">المالك</label>
+                <label className="text-sm font-medium text-foreground">
+                  المالك
+                </label>
                 <Select
                   value={selectedOwnerId}
                   onValueChange={(value) => {
@@ -207,7 +268,11 @@ export function OrganizationDialog({
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
-                      {filteredOwners.length === 0 ? (
+                      {loadingOwners ? (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">
+                          جاري التحميل...
+                        </p>
+                      ) : filteredOwners.length === 0 ? (
                         <p className="px-3 py-2 text-sm text-muted-foreground">
                           لا توجد نتائج مطابقة لبحثك.
                         </p>
@@ -222,9 +287,13 @@ export function OrganizationDialog({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {selectedOwnerName ? `تم اختيار: ${selectedOwnerName}` : "لم يتم اختيار مالك بعد."}
+                  {selectedOwnerName
+                    ? `تم اختيار: ${selectedOwnerName}`
+                    : "لم يتم اختيار مالك بعد."}
                 </p>
-                {errors.owner && <p className="text-xs text-red-500">{errors.owner.message}</p>}
+                {errors.owner && (
+                  <p className="text-xs text-red-500">{errors.owner.message}</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -238,7 +307,11 @@ export function OrganizationDialog({
             >
               إلغاء
             </Button>
-            <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full sm:w-auto"
+              disabled={isSubmitting}
+            >
               {submitLabel}
             </Button>
           </DialogFooter>
@@ -247,4 +320,3 @@ export function OrganizationDialog({
     </Dialog>
   );
 }
-

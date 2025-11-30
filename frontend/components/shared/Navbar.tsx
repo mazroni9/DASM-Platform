@@ -37,7 +37,8 @@ const Navbar = () => {
   const pathname = usePathname();
   const router = useLoadingRouter();
   const { user, logout } = useAuth();
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const isAdmin =
+    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
   const navigationItems: NavigationItem[] = [
     // { href: "/auctions", label: "الأسواق", icon: Store },
@@ -83,7 +84,10 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (mobileMenuOpen && !(e.target as Element).closest(".mobile-menu-container")) {
+      if (
+        mobileMenuOpen &&
+        !(e.target as Element).closest(".mobile-menu-container")
+      ) {
         setMobileMenuOpen(false);
       }
     };
@@ -115,14 +119,16 @@ const Navbar = () => {
                 />
               </div>
               <span className="font-bold text-lg tracking-tight text-foreground">
-                المزادات الرقمية{" "}
-                <span className="text-primary">DASMe</span>
+                المزادات الرقمية <span className="text-primary">DASMe</span>
               </span>
             </LoadingLink>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6 font-medium" dir="rtl">
+          <div
+            className="hidden md:flex items-center gap-6 font-medium"
+            dir="rtl"
+          >
             <LoadingLink
               href="/auctions"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
@@ -143,8 +149,6 @@ const Navbar = () => {
               <Book size={18} />
               <span>المدونة</span>
             </LoadingLink>
-
-           
           </div>
 
           {/* Desktop Auth & Actions */}
@@ -159,7 +163,9 @@ const Navbar = () => {
                 title="إعادة تشغيل الخوادم"
                 aria-label="إعادة تشغيل الخوادم"
               >
-                <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`}
+                />
               </Button>
             )}
             <ThemeToggle />
@@ -200,7 +206,11 @@ const Navbar = () => {
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
               aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
@@ -208,7 +218,9 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div
           className={`lg:hidden mobile-menu-container overflow-hidden transition-all duration-300 ease-in-out ${
-            mobileMenuOpen ? "max-h-96 opacity-100 mt-4 pb-4" : "max-h-0 opacity-0"
+            mobileMenuOpen
+              ? "max-h-96 opacity-100 mt-4 pb-4"
+              : "max-h-0 opacity-0"
           }`}
         >
           <div className="space-y-2 pt-3 border-t border-border">
@@ -247,7 +259,9 @@ const Navbar = () => {
                 }}
                 disabled={isRestarting}
               >
-                <RefreshCw className={`h-5 w-5 ${isRestarting ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-5 w-5 ${isRestarting ? "animate-spin" : ""}`}
+                />
                 <span className="text-base">إعادة تشغيل الخوادم</span>
               </button>
             )}

@@ -1,6 +1,7 @@
 "use client";
 import api from "@/lib/axios";
 import { useContext, createContext, useEffect, useReducer } from "react";
+import { useAuthStore } from "@/store/authStore";
 
 const notificationContext = createContext({
   notifications: [],
@@ -36,6 +37,8 @@ export default function NotificationProvider({
     unreadCount: 0,
   });
 
+  const { isLoggedIn } = useAuthStore();
+
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -54,8 +57,10 @@ export default function NotificationProvider({
       }
     };
 
-    fetchNotifications();
-  }, []);
+    if (isLoggedIn) {
+      fetchNotifications();
+    }
+  }, [isLoggedIn]);
 
   return (
     <notificationContext.Provider value={{ ...state, dispatch }}>

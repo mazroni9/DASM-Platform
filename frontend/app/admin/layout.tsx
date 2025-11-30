@@ -27,6 +27,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermission } from "@/hooks/usePermission";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AdminLayoutProps {
@@ -35,46 +36,187 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
-  const { isAdmin, logout } = useAuth();
+  const { isAdmin, isModerator, logout } = useAuth();
+  const { can, canAny } = usePermission();
   const router = useLoadingRouter();
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!isAdmin && !isModerator) {
       router.push("/auth/login?returnUrl=/admin");
     }
-  }, [isAdmin, router]);
+  }, [isAdmin, isModerator, router]);
 
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
     { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
-    { name: "المستخدمين والصلاحيات", href: "#", type:"header" ,icon: Users },
-    { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
-    { name: "ملاك المعارض", href: "/admin/venue-owners", icon: Building },
-    { name: "إدارة المشرفين", href: "/admin/moderators", icon: Shield },
-    { name: "إدارة الأدوار", href: "/admin/roles", icon: UserCog },
-    { name: "شجرة الصلاحيات", href: "/admin/permissions", icon: Shield },
-    { name: "إدارة القروبات", href: "/admin/groups", icon: Users },
-    { name: "إدارة المنظمات", href: "/admin/organizations", icon: Building },
-    
-    { name: "العمولات والخطط", href: "#", type:"header" ,icon: HandCoins },
-    { name: "إدارة العمولات", href: "/admin/commission-tiers", icon: HandCoins },
-    { name: "خطط الاشتراك", href: "/admin/subscription-plans", icon: CreditCard },
-    
-    { name: "السيارات والمزادات", href: "#", type:"header" ,icon: Car },
-    { name: "السيارات", href: "/admin/cars", icon: Car },
-    { name: "المزادات", href: "/admin/auctions", icon: Car },
-    
-    { name: "الجلسات والبث", href: "#", type:"header" ,icon: Calendar },
-    { name: "إدارة الجلسات", href: "/admin/sessions", icon: Calendar },
-    { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
-    { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
-    { name: "السجلات", href: "#", type:"header" ,icon: FileText },
-    { name: "سجلات المزايدات", href: "/admin/bids-logs", icon: FileText },
-    { name: "سجلات النشاط", href: "/admin/activity-logs", icon: FileText },
-    { name: "التقارير والإعدادات", href: "#", type:"header" ,icon: BarChart },
-    
-    { name: "التقارير", href: "/admin/reports", icon: BarChart },
-    { name: "الإعدادات", href: "/admin/settings", icon: Settings },
+
+    {
+      name: "المستخدمين والصلاحيات",
+      href: "#",
+      type: "header",
+      icon: Users,
+      permissions: [
+        "users.view",
+        "exhibitors.view",
+        "staff.view",
+        "roles.view",
+        "groups.view",
+        "organizations.view",
+      ],
+    },
+    {
+      name: "إدارة المستخدمين",
+      href: "/admin/users",
+      icon: Users,
+      permission: "users.view",
+    },
+    {
+      name: "ملاك المعارض",
+      href: "/admin/venue-owners",
+      icon: Building,
+      permission: "exhibitors.view",
+    },
+    {
+      name: "إدارة الموظفين",
+      href: "/admin/staff",
+      icon: Shield,
+      permission: "staff.view",
+    },
+    {
+      name: "إدارة الأدوار",
+      href: "/admin/roles",
+      icon: UserCog,
+      permission: "roles.view",
+    },
+    {
+      name: "شجرة الصلاحيات",
+      href: "/admin/permissions",
+      icon: Shield,
+      permission: "permissions.view",
+    },
+    {
+      name: "إدارة القروبات",
+      href: "/admin/groups",
+      icon: Users,
+      permission: "groups.view",
+    },
+    {
+      name: "إدارة المنظمات",
+      href: "/admin/organizations",
+      icon: Building,
+      permission: "organizations.view",
+    },
+
+    {
+      name: "العمولات والخطط",
+      href: "#",
+      type: "header",
+      icon: HandCoins,
+      permissions: ["commissions.view", "subscription_plans.view"],
+    },
+    {
+      name: "إدارة العمولات",
+      href: "/admin/commission-tiers",
+      icon: HandCoins,
+      permission: "commissions.view",
+    },
+    {
+      name: "خطط الاشتراك",
+      href: "/admin/subscription-plans",
+      icon: CreditCard,
+      permission: "subscription_plans.view",
+    },
+
+    {
+      name: "السيارات والمزادات",
+      href: "#",
+      type: "header",
+      icon: Car,
+      permissions: ["cars.view", "auctions.view"],
+    },
+    {
+      name: "السيارات",
+      href: "/admin/cars",
+      icon: Car,
+      permission: "cars.view",
+    },
+    {
+      name: "المزادات",
+      href: "/admin/auctions",
+      icon: Car,
+      permission: "auctions.view",
+    },
+
+    {
+      name: "الجلسات والبث",
+      href: "#",
+      type: "header",
+      icon: Calendar,
+      permissions: [
+        "sessions.view",
+        "live_streams.view",
+        "youtube_channels.view",
+      ],
+    },
+    {
+      name: "إدارة الجلسات",
+      href: "/admin/sessions",
+      icon: Calendar,
+      permission: "sessions.view",
+    },
+    {
+      name: "إدارة البث",
+      href: "/admin/live-stream",
+      icon: Youtube,
+      permission: "live_streams.view",
+    },
+    {
+      name: "قنوات YouTube",
+      href: "/admin/youtube-channels",
+      icon: Radio,
+      permission: "youtube_channels.view",
+    },
+
+    {
+      name: "السجلات",
+      href: "#",
+      type: "header",
+      icon: FileText,
+      permissions: ["auction_logs.view", "activity_logs.view"],
+    },
+    {
+      name: "سجلات المزايدات",
+      href: "/admin/bids-logs",
+      icon: FileText,
+      permission: "auction_logs.view",
+    },
+    {
+      name: "سجلات النشاط",
+      href: "/admin/activity-logs",
+      icon: FileText,
+      permission: "activity_logs.view",
+    },
+
+    {
+      name: "التقارير والإعدادات",
+      href: "#",
+      type: "header",
+      icon: BarChart,
+      // Fallback permissions since settings/reports might be missing in seeder
+      permissions: ["activity_logs.view", "users.view"],
+    },
+    {
+      name: "التقارير",
+      href: "/admin/reports",
+      icon: BarChart,
+      permission: "activity_logs.view",
+    }, // Placeholder
+    {
+      name: "الإعدادات",
+      href: "/admin/settings",
+      icon: Settings,
+      permission: "users.view",
+    }, // Placeholder
   ];
 
   const isActive = (path: string) => {
@@ -89,7 +231,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden" dir="rtl">
+    <div
+      className="min-h-screen bg-background text-foreground overflow-x-hidden"
+      dir="rtl"
+    >
       {/* حاوية واسعة ومريحة: لا تضغط المحتوى أفقيًا */}
       <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Grid: سايدبار ثابت 20rem + محتوى مرن */}
@@ -105,7 +250,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   </div>
                   <div>
                     <h2 className="font-bold text-lg">لوحة الإدارة</h2>
-                    <p className="text-xs text-foreground/70">نظام إدارة المزادات</p>
+                    <p className="text-xs text-foreground/70">
+                      نظام إدارة المزادات
+                    </p>
                   </div>
                 </div>
               </div>
@@ -114,12 +261,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <nav className="bg-card border border-border rounded-2xl p-4">
                 <h3 className="text-sm font-bold mb-3">القائمة الرئيسية</h3>
                 <ul className="space-y-2">
-                
                   {navigation.map((item) => {
+                    // Check permission
+                    if (item.type === "header") {
+                      if (item.permissions && !canAny(item.permissions))
+                        return null;
+                    } else if (item.permission) {
+                      if (!can(item.permission)) return null;
+                    }
+
                     const Icon = item.icon;
                     const active = isActive(item.href);
                     if (item.type && item.type === "header") {
-                      return <h3 className="text-sm text-primary font-bold pb-1 pt-3 flex items-center"> <Icon style={{ width: "1em", height: "1em" }} className="ms-2 me-1" /> {item.name}</h3>;
+                      return (
+                        <h3 className="text-sm text-primary font-bold pb-1 pt-3 flex items-center">
+                          {" "}
+                          <Icon
+                            style={{ width: "1em", height: "1em" }}
+                            className="ms-2 me-1"
+                          />{" "}
+                          {item.name}
+                        </h3>
+                      );
                     }
                     return (
                       <li key={item.name}>
@@ -134,12 +297,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         >
                           <Icon
                             className={`w-5 h-5 ms-2 ${
-                              active ? "text-primary" : "text-foreground/70 group-hover:text-foreground"
+                              active
+                                ? "text-primary"
+                                : "text-foreground/70 group-hover:text-foreground"
                             }`}
                           />
-                          <span className="ms-1 flex-1 text-sm font-medium">{item.name}</span>
+                          <span className="ms-1 flex-1 text-sm font-medium">
+                            {item.name}
+                          </span>
                           <ChevronRight
-                            className={`w-4 h-4 ${active ? "text-primary" : "text-foreground/50"}`}
+                            className={`w-4 h-4 ${
+                              active ? "text-primary" : "text-foreground/50"
+                            }`}
                           />
                         </LoadingLink>
                       </li>
@@ -163,9 +332,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </aside>
 
           {/* Main Content */}
-          <main className="min-w-0 w-full">
-            {children}
-          </main>
+          <main className="min-w-0 w-full">{children}</main>
         </div>
       </div>
     </div>
