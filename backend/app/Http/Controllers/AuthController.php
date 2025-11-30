@@ -540,7 +540,7 @@ class AuthController extends Controller
             true, // Secure
             true, // HttpOnly
             false, // Raw
-            'Lax' // SameSite
+            'None' // SameSite
         );
 
         return response()->json([
@@ -629,7 +629,7 @@ class AuthController extends Controller
             true, // Secure
             true, // HttpOnly
             false, // Raw
-            'Lax'
+            'None'
         );
 
         return response()->json([

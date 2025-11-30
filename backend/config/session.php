@@ -24,17 +24,17 @@ return [
 
     'cookie' => env(
         'SESSION_COOKIE',
-        Str::slug(env('APP_NAME', 'laravel'), '_').'_session'
+        Str::slug(env('APP_NAME', 'laravel'), '_') . '_session'
     ),
 
     'path' => env('SESSION_PATH', '/'),
 
     'domain' => env('SESSION_DOMAIN', null),
 
-    'secure' => env('SESSION_SECURE_COOKIE', false),
+    'secure' => env('SESSION_SECURE_COOKIE', true), // Should be true in production HTTPS
 
     'http_only' => true,
 
-    'same_site' => env('SESSION_SAME_SITE', null),
+    'same_site' => env('SESSION_SAME_SITE', 'none'), // 'none' required for cross-domain with credentials
 
 ];
