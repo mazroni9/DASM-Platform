@@ -42,7 +42,7 @@ const Navbar = () => {
 
   const navigationItems: NavigationItem[] = [
     // { href: "/auctions", label: "الأسواق", icon: Store },
-    { href: "/auctions/live-auctions", label: "الأسواق المباشرة", icon: Store },
+    { href: "/auctions", label: "الأسواق الرقمية", icon: Store },
     // { href: "/auction-archive", label: "أرشيف المزادات", icon: Archive },
   ];
 
@@ -130,15 +130,15 @@ const Navbar = () => {
             dir="rtl"
           >
             <LoadingLink
-              href="/auctions/live-auctions"
+              href="/auctions"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                isActive("/auctions/live-auctions")
+                isActive("/auctions")
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-border hover:text-primary"
               }`}
             >
               <TvMinimalPlay size={18} />
-              <span>الأسواق المباشرة</span>
+              <span>الأسواق الرقمية</span>
             </LoadingLink>
 
             <LoadingLink

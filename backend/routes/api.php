@@ -408,6 +408,10 @@ Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+
+// ✅ جعل مزادات منتهية عامة (بدون auth)
+Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
+
 Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
 Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession']);
 
@@ -465,7 +469,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auctions/{id}', [AuctionController::class, 'update'])->whereNumber('id');
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel'])->whereNumber('id');
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
+    // ⚠️ تم نقل /auctions-finished إلى القسم العام فوق
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auctions/{auction}/leave', [AuctionController::class, 'leave'])->whereNumber('auction');

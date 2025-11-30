@@ -11,13 +11,12 @@ import Stack from "@mui/material/Stack";
 import PaginationItem from '@mui/material/PaginationItem';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { title } from 'process';
 
 export default function ClassicCarsAuctionPage() {
   const [showVideo, setShowVideo] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [cars, setCars] = useState([]);
-  const [pagination, setPagination] = useState({total: 0, last_page: 1});
+  const [cars, setCars] = useState<any[]>([]);
+  const [pagination, setPagination] = useState({ total: 0, last_page: 1 });
   const [page, setPage] = useState(1);
 
   // تحديث البيانات من API
@@ -35,17 +34,22 @@ export default function ClassicCarsAuctionPage() {
   }, [page]);
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* بانر الصفحة */}
-      <div className="relative h-80 bg-gradient-to-r from-amber-800 to-amber-600 overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
+      <div className="relative h-80 bg-primary overflow-hidden">
+        <div className="absolute inset-0 bg-background/10"></div>
         <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
-          <LoadingLink href="/auctions/auctions-2car" className="flex items-center text-white/80 hover:text-white mb-6 transition">
+          <LoadingLink
+            href="/auctions/auctions-2car"
+            className="flex items-center text-primary-foreground/80 hover:text-primary-foreground mb-6 transition"
+          >
             <ArrowLeft size={20} className="ml-2" />
             <span>العودة لسوق السيارات</span>
           </LoadingLink>
-          <h1 className="text-5xl font-bold text-white mb-4">سوق السيارات الكلاسيكية</h1>
-          <p className="text-xl text-white/90 max-w-2xl">
+          <h1 className="text-5xl font-bold text-primary-foreground mb-4">
+            سوق السيارات الكلاسيكية
+          </h1>
+          <p className="text-xl text-primary-foreground/90 max-w-2xl">
             سيارات نادرة وأصيلة من الخمسينات والستينات والسبعينات بحالة ممتازة وتاريخ موثق
           </p>
         </div>
@@ -53,7 +57,7 @@ export default function ClassicCarsAuctionPage() {
       
       {/* عرض الفيديو */}
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-white p-6 rounded-xl shadow-md">
+        <div className="bg-card border border-border p-6 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold mb-6">متحف السيارات السلطانية</h2>
           
           {showVideo ? (
@@ -76,12 +80,12 @@ export default function ClassicCarsAuctionPage() {
                 fill 
                 className="object-cover" 
               />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <div className="w-20 h-20 rounded-full bg-white/80 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center bg-background/40">
+                <div className="w-20 h-20 rounded-full bg-card/80 flex items-center justify-center">
                   <Play size={36} className="text-amber-600 mr-1" />
                 </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
+              <div className="absolute bottom-0 left-0 right-0 bg-background/80 text-foreground p-4">
                 <h3 className="text-xl font-bold">متحف السيارات السلطانية</h3>
                 <p>اضغط للمشاهدة</p>
               </div>
@@ -95,17 +99,27 @@ export default function ClassicCarsAuctionPage() {
         <h2 className="text-3xl font-bold mb-8">معرض الصور</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="rounded-lg overflow-hidden shadow-md aspect-video relative group">
-            <Image src="/auctionsPIC/car-classicPIC/1969 Pontiac Grand Prix SJ.png" alt="سيارة كلاسيكية" fill className="object-cover transition-transform group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
-              <div className="p-4 text-white">
+            <Image
+              src="/auctionsPIC/car-classicPIC/1969 Pontiac Grand Prix SJ.png"
+              alt="سيارة كلاسيكية"
+              fill
+              className="object-cover transition-transform group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+              <div className="p-4 text-foreground">
                 <p className="font-bold">بونتياك جراند بريكس SJ 1969</p>
               </div>
             </div>
           </div>
           <div className="rounded-lg overflow-hidden shadow-md aspect-video relative group">
-            <Image src="/auctionsPIC/car-classicPIC/GpdqKuZXMAArNyp.jpg" alt="سيارة كلاسيكية" fill className="object-cover transition-transform group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
-              <div className="p-4 text-white">
+            <Image
+              src="/auctionsPIC/car-classicPIC/GpdqKuZXMAArNyp.jpg"
+              alt="سيارة كلاسيكية"
+              fill
+              className="object-cover transition-transform group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+              <div className="p-4 text-foreground">
                 <p className="font-bold">سيارة كلاسيكية</p>
               </div>
             </div>
@@ -115,39 +129,49 @@ export default function ClassicCarsAuctionPage() {
       
       {/* المميزات */}
       <div className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12">لماذا تشارك في سوق السيارات الكلاسيكية؟</h2>
+        <h2 className="text-3xl font-bold text-center mb-12">
+          لماذا تشارك في سوق السيارات الكلاسيكية؟
+        </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
+          <div className="bg-card border border-border p-6 rounded-xl shadow-md hover:shadow-lg transition">
             <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
               <Award size={28} />
             </div>
             <h3 className="text-xl font-bold mb-2">سيارات نادرة ومعتمدة</h3>
-            <p className="text-gray-600">جميع السيارات في سوقنا مُدققة ومعتمدة من خبراء السيارات الكلاسيكية.</p>
+            <p className="text-muted-foreground">
+              جميع السيارات في سوقنا مُدققة ومعتمدة من خبراء السيارات الكلاسيكية.
+            </p>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
+          <div className="bg-card border border-border p-6 rounded-xl shadow-md hover:shadow-lg transition">
             <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
               <Shield size={28} />
             </div>
             <h3 className="text-xl font-bold mb-2">ضمان الأصالة</h3>
-            <p className="text-gray-600">نضمن أصالة جميع السيارات وقطعها، مع توثيق كامل لتاريخ وأوراق كل سيارة.</p>
+            <p className="text-muted-foreground">
+              نضمن أصالة جميع السيارات وقطعها، مع توثيق كامل لتاريخ وأوراق كل سيارة.
+            </p>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
+          <div className="bg-card border border-border p-6 rounded-xl shadow-md hover:shadow-lg transition">
             <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
               <Star size={28} />
             </div>
             <h3 className="text-xl font-bold mb-2">تقييم عادل</h3>
-            <p className="text-gray-600">يتم تقييم جميع السيارات بدقة من قبل خبراء مستقلين لضمان سعر عادل.</p>
+            <p className="text-muted-foreground">
+              يتم تقييم جميع السيارات بدقة من قبل خبراء مستقلين لضمان سعر عادل.
+            </p>
           </div>
           
-          <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
+          <div className="bg-card border border-border p-6 rounded-xl shadow-md hover:shadow-lg transition">
             <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
               <Users size={28} />
             </div>
             <h3 className="text-xl font-bold mb-2">مجتمع المهتمين</h3>
-            <p className="text-gray-600">انضم إلى مجتمع عشاق السيارات الكلاسيكية وشارك شغفك مع الآخرين.</p>
+            <p className="text-muted-foreground">
+              انضم إلى مجتمع عشاق السيارات الكلاسيكية وشارك شغفك مع الآخرين.
+            </p>
           </div>
         </div>
       </div>
@@ -165,7 +189,7 @@ export default function ClassicCarsAuctionPage() {
           ) : cars.length === 0 ? (
             // عرض رسالة عدم وجود سيارات
             <div className="col-span-full text-center py-12">
-              <p className="text-gray-500 text-lg">
+              <p className="text-muted-foreground text-lg">
                 لا توجد سيارات كلاسيكية متاحة حالياً.
               </p>
             </div>
@@ -177,13 +201,12 @@ export default function ClassicCarsAuctionPage() {
                 id: car.id,
                 title: car.title,
                 description: car.description || `${car.make} ${car.model} ${car.year}`,
-                evaluation_price: car.evaluation_price ? 
-                  `${car.evaluation_price.toLocaleString()}` : 
-                  'غير محدد',
+                evaluation_price: car.evaluation_price
+                  ? `${car.evaluation_price.toLocaleString()}`
+                  : "غير محدد",
                 image: car.image,
-                created_at:  car.created_at,
-                status: car.active_auction?.status ,
-                //status: 'upcoming' as const
+                created_at: car.created_at,
+                status: car.active_auction?.status,
               };
               return (
                 <ClassicCarCard key={car.id} car={transformedCar} loading={false} />
@@ -201,9 +224,9 @@ export default function ClassicCarsAuctionPage() {
               count={pagination.last_page}
               variant="outlined"
               color="primary"
-              renderItem={item => (
+              renderItem={(item) => (
                 <PaginationItem
-                slots={{ previous: NavigateNextIcon, next: NavigateBeforeIcon }}
+                  slots={{ previous: NavigateNextIcon, next: NavigateBeforeIcon }}
                   {...item}
                 />
               )}
@@ -217,18 +240,22 @@ export default function ClassicCarsAuctionPage() {
       </div>
       
       {/* للاشتراك */}
-      <div className="bg-amber-100 py-16">
+      <div className="bg-muted py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6">كن أول من يعلم عن الأسواق القادمة</h2>
-            <p className="text-gray-700 mb-8">اشترك في قائمتنا البريدية للحصول على إشعارات حول الأسواق الكلاسيكية القادمة والأخبار الحصرية.</p>
+            <h2 className="text-3xl font-bold mb-6">
+              كن أول من يعلم عن الأسواق القادمة
+            </h2>
+            <p className="text-muted-foreground mb-8">
+              اشترك في قائمتنا البريدية للحصول على إشعارات حول الأسواق الكلاسيكية القادمة والأخبار الحصرية.
+            </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="email"
                 placeholder="أدخل بريدك الإلكتروني"
-                className="flex-1 px-4 py-3 rounded-md border-gray-300 focus:border-amber-500 focus:ring focus:ring-amber-200"
+                className="flex-1 px-4 py-3 rounded-md border border-border bg-background text-foreground focus:border-amber-500 focus:ring focus:ring-amber-200"
               />
-              <button className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-md font-medium transition">
+              <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-medium transition">
                 اشترك الآن
               </button>
             </div>
@@ -237,4 +264,4 @@ export default function ClassicCarsAuctionPage() {
       </div>
     </div>
   );
-} 
+}

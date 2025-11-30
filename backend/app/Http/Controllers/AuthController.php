@@ -31,6 +31,11 @@ class AuthController extends Controller
     {
         Log::info('Registration process started', ['email' => $request->email]);
 
+        // ✅ لا نسمح أبداً بتمرير id من الواجهة
+        if ($request->has('id')) {
+            $request->request->remove('id');
+        }
+
         // ✅ تطبيع/تنظيف مُسبق للمدخلات قبل التحقق
         $email = Str::lower(trim((string) $request->input('email')));
         $phone = preg_replace('/\s+/', '', (string) $request->input('phone')); // إزالة المسافات
@@ -189,6 +194,9 @@ class AuthController extends Controller
                     'is_active'                => false,
                     'area_id'                  => $request->area_id, // nullable
                 ];
+
+                // تأكد أننا لا نمرر id بالخطأ حتى لو اتضاف في مكان آخر
+                unset($userData['id']);
 
                 if (Schema::hasColumn('users', 'status') && empty($userData['status'])) {
                     $userData['status'] = 'pending';
@@ -476,11 +484,24 @@ class AuthController extends Controller
             ]);
         }
 
-        // ⚠️ لو عندك عمود password بدل password_hash غيّر السطر ده
-        if (!Hash::check($request->password, $user->password_hash)) {
-            throw ValidationException::withMessages([
-                'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
-            ]);
+        // دعم password_hash أو password حسب الموجود
+        if (Schema::hasColumn('users', 'password_hash')) {
+            if (!Hash::check($request->password, $user->password_hash)) {
+                throw ValidationException::withMessages([
+                    'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
+                ]);
+            }
+        } elseif (Schema::hasColumn('users', 'password')) {
+            if (!Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['البريد الإلكتروني أو كلمة المرور غير صحيحة.'],
+                ]);
+            }
+        } else {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'لا يوجد عمود لكلمة المرور في جدول المستخدمين.',
+            ], 500);
         }
 
         // Check if email is verified
@@ -834,6 +855,12 @@ class AuthController extends Controller
             ) {
                 $message = 'رقم السجل التجاري مستخدم بالفعل';
                 $errors  = ['commercial_registry' => ['رقم السجل التجاري مستخدم بالفعل']];
+            }
+            // ✅ حالة تعارض الـ primary key على users.id
+            elseif (($column === 'id' && $constraint === 'users_pkey') || $contains('users_pkey')) {
+                $http    = 500; // خطأ تقني داخلي
+                $reason  = 'تعارض في المفتاح الأساسي للمستخدم (id). غالباً مشكلة في الترقيم التلقائي.';
+                $message = 'حدث خطأ تقني أثناء إنشاء الحساب. يرجى المحاولة مرة أخرى، وإذا استمرت المشكلة تواصل مع الدعم.';
             } else {
                 $message = 'تعارض مع قيد فريد في قاعدة البيانات.';
             }

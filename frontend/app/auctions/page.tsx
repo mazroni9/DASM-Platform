@@ -16,15 +16,14 @@ import LoadingLink from "@/components/LoadingLink";
 import { 
   Car, Truck, Building2, Stethoscope, Printer, Server, Leaf, Timer, 
   BellOff, BadgeCheck, Building, Video, Star, Gem, Sailboat, Home, 
-  Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Scale, Store, 
-  ShoppingBag, Gift, Search, ChevronLeft, ChevronRight,
-  Zap, Crown, TrendingUp, Users, Shield, Clock
+  Plane, Watch, Brush, Smartphone, Sofa, PencilRuler, Store, 
+  ShoppingBag, Gift, Search, ChevronRight,
+  Zap, Crown, TrendingUp, Users
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function AuctionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentSlide, setCurrentSlide] = useState(0);
 
   const auctionsMain = [
     { 
@@ -71,7 +70,7 @@ export default function AuctionsPage() {
       name: 'السوق الثابت', 
       slug: 'auctions-1main/fixed', 
       description: 'فرصتك الأخيرة لصفقات سريعة. أعلى سعر يفوز عند انتهاء الوقت.', 
-      icon: Clock, 
+      icon: Timer, 
       color: 'text-primary', 
       bgColor: 'bg-card',
       borderColor: 'border-border',
@@ -384,26 +383,6 @@ export default function AuctionsPage() {
     },
   ];
 
-  // دمج جميع المزادات في مصفوفة واحدة لاستخدامها في السلايدر المميز
-  const allAuctions = [
-    ...auctionsMain,
-    ...auctionsCar,
-    ...auctionsQuality,
-    ...auctionsSpecial,
-    ...auctionsGeneral,
-    ...auctionsBig
-  ];
-
-  const featuredAuctions = allAuctions.filter(auction => auction.featured);
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % featuredAuctions.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + featuredAuctions.length) % featuredAuctions.length);
-  };
-
   const Divider = () => (
     <div className="col-span-full my-12">
       <div className="h-px w-full rounded bg-border/60"></div>
@@ -443,7 +422,7 @@ export default function AuctionsPage() {
           <div className={`relative overflow-hidden rounded-2xl border ${auction.borderColor} ${auction.bgColor} p-6 transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:border-primary h-full`}>
             {/* Badge للمزادات المميزة */}
             {auction.featured && (
-              <div className="absolute top-4 left-4 flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-sm">
+              <div className="absolute top-4 left-4 flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white shadow-sm">
                 <Star className="w-3 h-3" />
                 مميز
               </div>
@@ -459,7 +438,7 @@ export default function AuctionsPage() {
               )}
               {auction.stats.rating && (
                 <div className="flex items-center gap-1 rounded-lg bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                  <Star className="w-3 h-3 text-amber-400" />
+                  <Star className="w-3 h-3" />
                   {auction.stats.rating}
                 </div>
               )}
@@ -481,7 +460,7 @@ export default function AuctionsPage() {
 
               {/* زر الدخول */}
               <div className="mt-auto">
-                <span className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-primary text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-primary/90">
+                <span className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-xl bg-primary text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-primary/90">
                   ابدأ المزايدة
                   <TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
@@ -495,85 +474,6 @@ export default function AuctionsPage() {
       </motion.div>
     );
   };
-
-  const FeaturedSlider = () => (
-    <div className="relative mb-16 rounded-3xl overflow-hidden bg-card border border-border shadow-2xl">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentSlide}
-          initial={{ opacity: 0, x: 300 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -300 }}
-          transition={{ duration: 0.5 }}
-          className="relative h-80 md:h-96"
-        >
-          {featuredAuctions.map((auction, index) => {
-            const Icon = auction.icon;
-            if (index !== currentSlide) return null;
-            
-            return (
-              <div key={auction.slug} className="absolute inset-0 flex items-center">
-                <div className="container mx-auto px-6">
-                  <div className="grid md:grid-cols-2 gap-8 items-center">
-                    <div className="text-foreground">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 rounded-2xl bg-secondary backdrop-blur-sm">
-                          <Icon className="w-8 h-8" />
-                        </div>
-                        <h2 className="text-3xl md:text-4xl font-bold">{auction.name}</h2>
-                      </div>
-                      <p className="text-lg leading-relaxed text-muted-foreground mb-6">
-                        {auction.description}
-                      </p>
-                      <LoadingLink
-                        href={`/auctions/${auction.slug}`}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-bold text-primary-foreground transition-all duration-300 shadow-lg hover:bg-primary/90 hover:shadow-xl"
-                      >
-                        ابدأ المزايدة الآن
-                        <TrendingUp className="w-5 h-5" />
-                      </LoadingLink>
-                    </div>
-                    <div className="hidden md:flex justify-center">
-                      <div className="flex h-64 w-64 items-center justify-center rounded-3xl border border-border bg-secondary/30 backdrop-blur-sm">
-                        <Icon className="w-32 h-32 text-foreground/80" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </motion.div>
-      </AnimatePresence>
-
-      {/* عناصر التحكم */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-2xl bg-secondary p-3 text-secondary-foreground transition-all duration-300 hover:bg-secondary/80"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-2xl bg-secondary p-3 text-secondary-foreground transition-all duration-300 hover:bg-secondary/80"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-
-      {/* المؤشرات */}
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-        {featuredAuctions.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`h-3 w-3 rounded-full transition-all duration-300 ${
-              index === currentSlide ? 'bg-primary' : 'bg-muted'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
 
   return (
     <main className="min-h-screen bg-background">
@@ -609,41 +509,6 @@ export default function AuctionsPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* قسم البطل */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border rounded-3xl shadow-2xl p-8 mb-12 text-center text-foreground"
-        >
-          <div className="max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-3 bg-secondary/20 rounded-2xl px-6 py-3 mb-6">
-              <Scale className="w-8 h-8" />
-              <h2 className="text-2xl font-bold">منصة المزادات الرقمية</h2>
-            </div>
-            <p className="text-xl text-muted-foreground leading-relaxed mb-6">
-              نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخلي.
-              المنافسة تعتمد على العرض والطلب الطبيعي
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <div className="flex items-center gap-2 rounded-xl bg-secondary/20 px-4 py-2 text-foreground">
-                <Shield className="w-5 h-5" />
-                <span>أمان تام</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-secondary/20 px-4 py-2 text-foreground">
-                <Clock className="w-5 h-5" />
-                <span>مباشر 24/7</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-secondary/20 px-4 py-2 text-foreground">
-                <Users className="w-5 h-5" />
-                <span>+50K مشترك</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* السلايدر المميز */}
-        {featuredAuctions.length > 0 && <FeaturedSlider />}
-
         {/* الأقسام الأصلية */}
         <>
           <Divider />

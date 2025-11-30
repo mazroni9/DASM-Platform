@@ -18,6 +18,16 @@ class Auction extends Model
 {
     use HasFactory, LogsActivity;
 
+    /**
+     * عدد الثواني المسموح فيها بالتمديد (آخر دقيقة)
+     */
+    public const EXTENSION_THRESHOLD_SECONDS = 60;
+
+    /**
+     * مدة التمديد بالدقائق عند حدوث مزايدة في آخر دقيقة
+     */
+    public const EXTENSION_DURATION_MINUTES = 5;
+
     protected $fillable = [
         'car_id',
         'session_id',
@@ -40,23 +50,21 @@ class Auction extends Model
     {
         //events: created, updated, deleted
         return LogOptions::defaults()
-        ->setDescriptionForEvent(function(string $eventName) {
-            switch ($eventName) {
-                case 'created':
-                    return "تم إنشاء المزاد رقم {$this->id}";
-                case 'updated':
-                    return "تم تحديث المزاد رقم {$this->id}";
-                case 'deleted':
-                    return "تم حذف المزاد رقم {$this->id}";
-            }
-            return "Auction {$eventName}";
-        })->logFillable()
-        //->logOnlyDirty()
-        ->useLogName('auction_log');
+            ->setDescriptionForEvent(function (string $eventName) {
+                switch ($eventName) {
+                    case 'created':
+                        return "تم إنشاء المزاد رقم {$this->id}";
+                    case 'updated':
+                        return "تم تحديث المزاد رقم {$this->id}";
+                    case 'deleted':
+                        return "تم حذف المزاد رقم {$this->id}";
+                }
+                return "Auction {$eventName}";
+            })->logFillable()
+            //->logOnlyDirty()
+            ->useLogName('auction_log');
         //->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}");
     }
-
-
 
     protected $casts = [
         'status' => AuctionStatus::class,
@@ -73,6 +81,48 @@ class Auction extends Model
         'time_remaining',
         'status_label'
     ];
+
+    /**
+     * الوقت الفعلي لانتهاء المزاد (يا extended_until يا end_time)
+     */
+    public function getEffectiveEndTime(): ?Carbon
+    {
+        return $this->extended_until ?? $this->end_time;
+    }
+
+    /**
+     * تمديد المزاد تلقائياً لو حصلت مزايدة في آخر دقيقة
+     */
+    public function maybeExtendOnLastMinuteBid(?Carbon $bidTime = null): void
+    {
+        $bidTime = $bidTime ?? Carbon::now();
+
+        $endTime = $this->getEffectiveEndTime();
+        if (!$endTime) {
+            return;
+        }
+
+        // لو المزايدة بعد وقت الانتهاء الحقيقي، مفيش تمديد
+        if ($bidTime->greaterThanOrEqualTo($endTime)) {
+            return;
+        }
+
+        // الثواني المتبقية وقت المزايدة
+        $remainingSeconds = $bidTime->diffInSeconds($endTime, false);
+
+        // لو متبقي وقت سالب أو صفر، مفيش تمديد
+        if ($remainingSeconds <= 0) {
+            return;
+        }
+
+        // شرط التمديد: مزايدة في آخر دقيقة
+        if ($remainingSeconds <= self::EXTENSION_THRESHOLD_SECONDS) {
+            // نبدأ من وقت الانتهاء الفعلي الحالي (سواء end_time أو extended_until)
+            $newEnd = $endTime->copy()->addMinutes(self::EXTENSION_DURATION_MINUTES);
+            $this->extended_until = $newEnd;
+            $this->save();
+        }
+    }
 
     /**
      * Get the car associated with the auction.
@@ -96,7 +146,7 @@ class Auction extends Model
     public function isInLiveAuctionPeriod(): bool
     {
         $now = Carbon::now();
-        $hour = (int)$now->format('H');
+        $hour = (int) $now->format('H');
 
         // Live Auction period is 16:00 - 19:00 (4PM - 7PM)
         return $hour >= 16 && $hour < 19;
@@ -108,7 +158,7 @@ class Auction extends Model
     public function isInLiveInstantPeriod(): bool
     {
         $now = Carbon::now();
-        $hour = (int)$now->format('H');
+        $hour = (int) $now->format('H');
 
         // Live Instant period is 19:00 - 22:00 (7PM - 10PM)
         return $hour >= 19 && $hour < 22;
@@ -120,7 +170,7 @@ class Auction extends Model
     public function isInSilentPeriod(): bool
     {
         $now = Carbon::now();
-        $hour = (int)$now->format('H');
+        $hour = (int) $now->format('H');
 
         // Silent period is 22:00 - 16:00 next day (10PM - 4PM)
         return $hour >= 22 || $hour < 16;
@@ -197,15 +247,8 @@ class Auction extends Model
                     ];
                 }
 
-                // For Live Instant, extend auction if reserve price is reached
-                if (
-                    $this->auction_type === AuctionType::LIVE_INSTANT &&
-                    $amount >= $this->reserve_price &&
-                    !$this->extended_until
-                ) {
-                    $this->extended_until = Carbon::now()->addMinutes(15);
-                    $this->save();
-                }
+                // ❗ التمديد القديم 15 دقيقة عند الوصول لـ reserve_price تم إلغاؤه
+                // لأننا الآن بنستخدم منطق التمديد في آخر دقيقة فقط
 
                 // For Silent Instant, auto-accept if reserve price is reached
                 if (
@@ -230,9 +273,13 @@ class Auction extends Model
         ]);
 
         // Update auction
+        $now = Carbon::now();
         $this->current_bid = $amount;
-        $this->last_bid_time = Carbon::now();
+        $this->last_bid_time = $now;
         $this->save();
+
+        // ✅ تمديد المزاد لو المزايدة صارت في آخر دقيقة
+        $this->maybeExtendOnLastMinuteBid($now);
 
         return [
             'success' => true,
@@ -382,8 +429,8 @@ class Auction extends Model
             $this->updateAuctionTypeBasedOnTime();
 
             // Check if auction has ended
-            $endTime = $this->extended_until ?? $this->end_time;
-            if ($now > $endTime) {
+            $endTime = $this->getEffectiveEndTime();
+            if ($endTime && $now > $endTime) {
                 $this->end();
             }
         }
@@ -400,7 +447,11 @@ class Auction extends Model
             return 0;
         }
 
-        $endTime = $this->extended_until ?? $this->end_time;
+        $endTime = $this->getEffectiveEndTime();
+        if (!$endTime) {
+            return 0;
+        }
+
         $now = Carbon::now();
 
         if ($now > $endTime) {
