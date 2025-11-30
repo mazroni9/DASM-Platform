@@ -58,7 +58,7 @@ class AuthController extends Controller
             'first_name'   => 'required|string|max:255',
             'last_name'    => 'required|string|max:255',
             'email'        => 'required|string|email|max:255|unique:users,email',
-            'phone'        => ['required','string','max:15','unique:users,phone','regex:/^[\+]?[0-9\-\(\)]{10,15}$/'],
+            'phone'        => ['required', 'string', 'max:15', 'unique:users,phone', 'regex:/^[\+]?[0-9\-\(\)]{10,15}$/'],
             'password'     => 'required|string|min:8',
             'account_type' => 'nullable|string|in:user,dealer,venue_owner,investor',
             'area_id'      => 'nullable|exists:areas,id',
@@ -123,7 +123,9 @@ class AuthController extends Controller
             $businessValidator = Validator::make($request->all(), [
                 'company_name'        => 'required|string|max:255',
                 'commercial_registry' => [
-                    'required','string','max:50',
+                    'required',
+                    'string',
+                    'max:50',
                     $table ? Rule::unique($table, 'commercial_registry') : 'nullable'
                 ],
                 'description'         => 'nullable|string|max:1000',
@@ -276,7 +278,6 @@ class AuthController extends Controller
                     'area_id'    => $user->area_id,
                 ],
             ], 201);
-
         } catch (QueryException $e) {
             // 🔎 تفسير الخطأ وإرجاع سبب واضح
             $out = $this->interpretDbError($e, $request);
@@ -296,13 +297,12 @@ class AuthController extends Controller
                 'message' => $out['message'],   // رسالة عامة ملائمة
                 'reason'  => $out['reason'],    // سبب إنساني واضح
                 'errors'  => $out['errors'] ?? null, // إن وُجدت
-                'sqlstate'=> $out['sqlstate'],
+                'sqlstate' => $out['sqlstate'],
                 'details' => config('app.debug') ? $out['details'] : null,
                 'column'  => $out['column'] ?? null,
                 'value'   => $out['value'] ?? null,
                 'constraint' => $out['constraint'] ?? null,
             ]), $out['http']);
-
         } catch (\RuntimeException $e) {
             Log::error('Runtime error during registration', [
                 'message' => $e->getMessage(),
@@ -314,7 +314,6 @@ class AuthController extends Controller
                 'message' => $e->getMessage(),
                 'reason'  => 'خطأ في منطق التطبيق (RuntimeException).',
             ], 500);
-
         } catch (\Exception $e) {
             Log::error('Error during user registration process', [
                 'error' => $e->getMessage(),
@@ -450,6 +449,9 @@ class AuthController extends Controller
     /**
      * Login user and create sanctum token
      */
+    /**
+     * Login user and create sanctum token
+     */
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -499,11 +501,26 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Create a short-lived API token (15 minutes) for the user
-        $tokenExpiresAt = now()->addMinutes(15);
-        $token = $user
-            ->createToken('auth_token', ['*'], $tokenExpiresAt)
-            ->plainTextToken;
+        // 1. Create Short-lived Access Token (15 minutes)
+        $accessTokenExpiresAt = now()->addMinutes(15);
+        $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
+
+        // 2. Create Long-lived Refresh Token (7 days)
+        $refreshTokenExpiresAt = now()->addDays(7);
+        $refreshToken = $user->createToken('refresh_token', ['issue-access-token'], $refreshTokenExpiresAt)->plainTextToken;
+
+        // 3. Create HttpOnly Cookie for Refresh Token
+        $cookie = cookie(
+            'refresh_token',
+            $refreshToken,
+            60 * 24 * 7, // 7 days in minutes
+            '/',
+            null,
+            true, // Secure
+            true, // HttpOnly
+            false, // Raw
+            'Lax' // SameSite
+        );
 
         return response()->json([
             'user' => [
@@ -512,11 +529,12 @@ class AuthController extends Controller
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'permissions' => $user->getAllPermissions()->pluck('name'),
             ],
-            'access_token' => $token,
+            'access_token' => $accessToken,
             'token_type' => 'Bearer',
-            'expiresAt' => $tokenExpiresAt->toIso8601String(),
-        ]);
+            'expires_at' => $accessTokenExpiresAt->toIso8601String(),
+        ])->withCookie($cookie);
     }
 
     /**
@@ -524,45 +542,87 @@ class AuthController extends Controller
      */
     public function refresh(Request $request)
     {
-        // Get the authenticated user
-        $user = $request->user();
+        // 1. Get Refresh Token from Cookie
+        $refreshToken = $request->cookie('refresh_token');
+
+        if (!$refreshToken) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No refresh token provided',
+            ], 401);
+        }
+
+        // 2. Find the token in the database
+        // Sanctum tokens are stored as hashed values. We need to find the ID from the token string.
+        // The token format is usually "id|token_string".
+        $tokenParts = explode('|', $refreshToken);
+        if (count($tokenParts) !== 2) {
+            return response()->json(['message' => 'Invalid token format'], 401)->withCookie(cookie()->forget('refresh_token'));
+        }
+
+        $tokenId = $tokenParts[0];
+        $tokenValue = $tokenParts[1];
+
+        $dbToken = PersonalAccessToken::find($tokenId);
+
+        if (!$dbToken) {
+            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie(cookie()->forget('refresh_token'));
+        }
+
+        // 3. Validate Token (Hash check & Expiry)
+        if (!hash_equals($dbToken->token, hash('sha256', $tokenValue))) {
+            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie(cookie()->forget('refresh_token'));
+        }
+
+        if ($dbToken->expires_at && Carbon::parse($dbToken->expires_at)->isPast()) {
+            $dbToken->delete();
+            return response()->json(['message' => 'Refresh token expired'], 401)->withCookie(cookie()->forget('refresh_token'));
+        }
+
+        // 4. Get User
+        $user = $dbToken->tokenable;
 
         if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthenticated'
-            ], 401);
+            return response()->json(['message' => 'User not found'], 401)->withCookie(cookie()->forget('refresh_token'));
         }
 
-        $currentToken = $request->user()->currentAccessToken();
-        if (!$currentToken instanceof PersonalAccessToken) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'No active token to refresh',
-            ], 401);
-        }
+        // 5. Rotate Tokens (Security Best Practice)
+        // Revoke the used refresh token
+        $dbToken->delete();
 
-        // Revoke the current token
-        $currentToken->delete();
+        // Create new Access Token
+        $accessTokenExpiresAt = now()->addMinutes(15);
+        $newAccessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
 
-        // Create a new short-lived token
-        $tokenExpiresAt = now()->addMinutes(15);
-        $token = $user
-            ->createToken('auth_token', ['*'], $tokenExpiresAt)
-            ->plainTextToken;
+        // Create new Refresh Token
+        $refreshTokenExpiresAt = now()->addDays(7);
+        $newRefreshToken = $user->createToken('refresh_token', ['issue-access-token'], $refreshTokenExpiresAt)->plainTextToken;
+
+        // 6. Return Response with new Cookie
+        $cookie = cookie(
+            'refresh_token',
+            $newRefreshToken,
+            60 * 24 * 7,
+            '/',
+            null,
+            true, // Secure
+            true, // HttpOnly
+            false, // Raw
+            'Lax'
+        );
 
         return response()->json([
-            'user' => [
+            'access_token' => $newAccessToken,
+            'token_type' => 'Bearer',
+            'expires_at' => $accessTokenExpiresAt->toIso8601String(),
+            'user' => [ // Optional: return user info again if needed
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'role' => $user->role,
             ],
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'expiresAt' => $tokenExpiresAt->toIso8601String(),
-        ]);
+        ])->withCookie($cookie);
     }
 
     /**
@@ -570,18 +630,37 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke the active API token if present
-        $token = $request->user()?->currentAccessToken();
-        if ($token instanceof PersonalAccessToken) {
-            $token->delete();
+        // Revoke the active Access Token if present in header
+        $user = $request->user();
+        if ($user) {
+            $user->currentAccessToken()?->delete();
+
+            // Optionally revoke all tokens for this user if you want a full logout from all devices
+            // $user->tokens()->delete(); 
+
+            // Or just revoke the refresh token associated with the cookie if we could identify it easily
+            // But since we are stateless on the refresh endpoint until called, we might just clear the cookie
+            // and let the refresh token expire or be cleaned up later.
+            // However, for better security, if we had the refresh token in the request, we should delete it.
+
+            $refreshToken = $request->cookie('refresh_token');
+            if ($refreshToken) {
+                $tokenParts = explode('|', $refreshToken);
+                if (count($tokenParts) === 2) {
+                    $tokenId = $tokenParts[0];
+                    PersonalAccessToken::where('id', $tokenId)->delete();
+                }
+            }
         }
 
-        // Invalidate the session
-        $request->session()->invalidate();
+        // Invalidate the session (if using web middleware, but we are API)
+        // $request->session()->invalidate();
+        // $request->session()->regenerateToken();
 
-        // Regenerate the CSRF token
-        $request->session()->regenerateToken();
-        return response()->json(['message' => 'Logged out successfully']);
+        // Clear the Refresh Token Cookie
+        $cookie = cookie()->forget('refresh_token');
+
+        return response()->json(['message' => 'Logged out successfully'])->withCookie($cookie);
     }
 
     /**
@@ -664,8 +743,8 @@ class AuthController extends Controller
 
         // Find the user with this token
         $user = User::where('password_reset_token', $request->token)
-                    ->where('password_reset_expires_at', '>', now()) // Token must not be expired
-                    ->first();
+            ->where('password_reset_expires_at', '>', now()) // Token must not be expired
+            ->first();
 
         if (!$user) {
             return response()->json([
@@ -721,13 +800,13 @@ class AuthController extends Controller
 
         // ========= Mapping شائع (Postgres / MySQL) =========
         // undefined_table: 42P01 (pgsql), 42S02 (mysql)
-        if (in_array($sqlState, ['42P01','42S02'])) {
+        if (in_array($sqlState, ['42P01', '42S02'])) {
             $reason  = 'الجدول المطلوب غير موجود. تأكد من تشغيل المايجريشن.';
             $message = 'قاعدة البيانات غير مهيأة: يرجى تشغيل المايجريشن.';
             $http    = 500;
         }
         // undefined_column: 42703 (pgsql), 42S22 (mysql)
-        elseif (in_array($sqlState, ['42703','42S22'])) {
+        elseif (in_array($sqlState, ['42703', '42S22'])) {
             $reason  = 'هناك عمود مفقود في الجدول. تأكد من تحديث بنية قاعدة البيانات.';
             $message = 'عمود مفقود في الجدول. يرجى تشغيل أحدث المايجريشن.';
             $http    = 500;
@@ -746,11 +825,13 @@ class AuthController extends Controller
             } elseif ($column === 'phone' || $contains('(phone)') || $contains('users_phone_unique') || $contains("for key 'users_phone_unique'")) {
                 $message = 'رقم الهاتف مستخدم بالفعل';
                 $errors  = ['phone' => ['رقم الهاتف مستخدم بالفعل']];
-            } elseif ($column === 'commercial_registry' ||
+            } elseif (
+                $column === 'commercial_registry' ||
                 $contains('commercial_registry') ||
                 $contains('venue_owners_commercial_registry_unique') ||
                 $contains('dealers_commercial_registry_unique') ||
-                $contains('investors_commercial_registry_unique')) {
+                $contains('investors_commercial_registry_unique')
+            ) {
                 $message = 'رقم السجل التجاري مستخدم بالفعل';
                 $errors  = ['commercial_registry' => ['رقم السجل التجاري مستخدم بالفعل']];
             } else {

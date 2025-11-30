@@ -37,6 +37,8 @@ export default function UserMenu() {
     if (r == null) return undefined;
     const v = String(r).toUpperCase();
     switch (v) {
+      case "SUPER_ADMIN":
+        return UserRole.SUPER_ADMIN;
       case "ADMIN":
         return UserRole.ADMIN;
       case "MODERATOR":
@@ -50,7 +52,10 @@ export default function UserMenu() {
     }
   };
 
-  const role = useMemo<UserRole | undefined>(() => normalizeRole((user as any)?.role), [user]);
+  const role = useMemo<UserRole | undefined>(
+    () => normalizeRole((user as any)?.role),
+    [user]
+  );
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
@@ -84,7 +89,6 @@ export default function UserMenu() {
 
   const navigateTo = useCallback(
     (path: string) => {
-      
       router.push(path);
       setIsOpen(false);
     },
@@ -102,8 +106,10 @@ export default function UserMenu() {
   const roleLabel = (r?: UserRole | string) => {
     const rr = normalizeRole(r);
     switch (rr) {
+      case UserRole.SUPER_ADMIN:
+        return "مدير النظام الرئيسي";
       case UserRole.ADMIN:
-        return "مسؤول";
+        return "مدير النظام";
       case UserRole.MODERATOR:
         return "مشرف";
       case UserRole.VENUE_OWNER:
@@ -134,7 +140,11 @@ export default function UserMenu() {
       },
     ];
 
-    if (role === UserRole.ADMIN || role === UserRole.MODERATOR) {
+    if (
+      role === UserRole.ADMIN ||
+      role === UserRole.SUPER_ADMIN ||
+      role === UserRole.MODERATOR
+    ) {
       list.push({
         label: "لوحه الكنترول رووم",
         icon: <Building2 className="w-4 h-4" />,
@@ -143,7 +153,11 @@ export default function UserMenu() {
       });
     }
 
-    if (role === UserRole.ADMIN) {
+    if (
+      role === UserRole.ADMIN ||
+      role === UserRole.SUPER_ADMIN ||
+      role === UserRole.MODERATOR
+    ) {
       list.push(
         {
           label: " المسؤول",
@@ -158,15 +172,6 @@ export default function UserMenu() {
           path: "/exhibitor",
         }
       );
-    }
-
-    if (role === UserRole.MODERATOR) {
-      list.push({
-        label: "لوحة المشرف",
-        icon: <ShieldCheck className="w-4 h-4" />,
-        onClick: () => navigateTo("/moderator/dashboard"),
-        path: "/moderator/dashboard",
-      });
     }
 
     if (role === UserRole.VENUE_OWNER) {
@@ -184,7 +189,7 @@ export default function UserMenu() {
         icon: <TrendingUp className="w-4 h-4" />,
         onClick: () => navigateTo("/investor/dashboard"),
         path: "/investor/dashboard",
-        });
+      });
     }
 
     list.push(
@@ -199,7 +204,6 @@ export default function UserMenu() {
         icon: <LogOut className="w-4 h-4" />,
         onClick: handleLogout,
         kind: "danger",
-        
       }
     );
 
@@ -247,7 +251,11 @@ export default function UserMenu() {
   };
 
   // --------- تموضع المنيو: fixed + كشف التصادم ---------
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number; from: "top" | "bottom" } | null>(null);
+  const [menuPos, setMenuPos] = useState<{
+    top: number;
+    left: number;
+    from: "top" | "bottom";
+  } | null>(null);
 
   const computePosition = useCallback(() => {
     if (!isOpen || !triggerRef.current || !menuRef.current) return;
@@ -332,7 +340,9 @@ export default function UserMenu() {
 
         {/* Chevron */}
         <ChevronDown
-          className={`w-4 h-4 transition-transform text-primary/90 ${isOpen ? "rotate-180" : ""}`}
+          className={`w-4 h-4 transition-transform text-primary/90 ${
+            isOpen ? "rotate-180" : ""
+          }`}
           aria-hidden="true"
         />
       </button>
@@ -350,7 +360,8 @@ export default function UserMenu() {
             top: menuPos?.top ?? 0,
             left: menuPos?.left ?? 0,
             // origin للأنيميشن حسب اتجاه الفتح
-            transformOrigin: menuPos?.from === "top" ? "top right" : "bottom right",
+            transformOrigin:
+              menuPos?.from === "top" ? "top right" : "bottom right",
             // حماية إضافية
             maxHeight: "min(70vh, calc(100vh - 16px))",
           }}
@@ -384,7 +395,9 @@ export default function UserMenu() {
                   {roleLabel(role)}
                 </span>
               </div>
-              <div className="text-xs text-foreground/70 truncate">{user.email}</div>
+              <div className="text-xs text-foreground/70 truncate">
+                {user.email}
+              </div>
             </div>
           </div>
 
@@ -395,33 +408,37 @@ export default function UserMenu() {
             {items.map((item, idx) => (
               <li key={item.label}>
                 {item.path ? (
-                <LoadingLink href={item.path}>
-                <button
-                  ref={(el) => {
-                    itemRefs.current[idx] = el;
-                  }}
-                  role="menuitem"
-                  onKeyDown={(e) => handleItemKeyDown(e, idx)}
-                  
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
+                  <LoadingLink href={item.path}>
+                    <button
+                      ref={(el) => {
+                        itemRefs.current[idx] = el;
+                      }}
+                      role="menuitem"
+                      onKeyDown={(e) => handleItemKeyDown(e, idx)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                               transition-colors
                               hover:bg-border/70 focus:bg-border/70 focus:outline-none
-                              ${item.kind === "danger"
-                                ? "text-red-500 hover:text-red-400"
-                                : "text-foreground hover:text-primary"
+                              ${
+                                item.kind === "danger"
+                                  ? "text-red-500 hover:text-red-400"
+                                  : "text-foreground hover:text-primary"
                               }`}
-                >
-                  <span
-                    className={`inline-flex items-center justify-center w-8 h-8 rounded-md
+                    >
+                      <span
+                        className={`inline-flex items-center justify-center w-8 h-8 rounded-md
                                 bg-background/60 border border-border/70
-                                ${item.kind === "danger" ? "text-red-500" : "text-primary"}`}
-                    aria-hidden="true"
-                  >
-                    {item.icon}
-                  </span>
-                  <span className="truncate">{item.label}</span>
-                </button>
-                </LoadingLink>
+                                ${
+                                  item.kind === "danger"
+                                    ? "text-red-500"
+                                    : "text-primary"
+                                }`}
+                        aria-hidden="true"
+                      >
+                        {item.icon}
+                      </span>
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  </LoadingLink>
                 ) : (
                   <button
                     ref={(el) => {
@@ -433,9 +450,10 @@ export default function UserMenu() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
                               transition-colors
                               hover:bg-border/70 focus:bg-border/70 focus:outline-none
-                              ${item.kind === "danger"
-                                ? "text-red-500 hover:text-red-400"
-                                : "text-foreground hover:text-primary"
+                              ${
+                                item.kind === "danger"
+                                  ? "text-red-500 hover:text-red-400"
+                                  : "text-foreground hover:text-primary"
                               }`}
                   >
                     {item.icon}

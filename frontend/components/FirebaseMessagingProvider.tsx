@@ -5,12 +5,13 @@ import { getMessagingInstance } from "../lib/firebase";
 import axios from "../lib/axios";
 import NotificationSnackbar from "./ui/NotificationSnackbar";
 import { useNotification } from "@/context/NotificationContext";
+import { useAuthStore } from "@/store/authStore";
 
 const FirebaseMessagingProvider = ({ children }) => {
   const [NotificationPayload, setNotificationPayload] = useState({
     title: "",
     body: "",
-    link:"/"
+    link: "/",
   });
   const [ViewNotification, setViewNotification] = useState(false);
   const audioRef = useRef(null);
@@ -18,8 +19,12 @@ const FirebaseMessagingProvider = ({ children }) => {
   const handleCloseNotification = () => {
     setViewNotification(false);
   };
-  const {dispatch} = useNotification();
+  const { dispatch } = useNotification();
+  const { isLoggedIn } = useAuthStore();
+
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     const messaging = getMessagingInstance();
     const audio = new Audio("/sounds/default.mp3");
 
@@ -47,20 +52,20 @@ const FirebaseMessagingProvider = ({ children }) => {
           });
         }
         window.addEventListener("click", unlockAudio);
-       
+
         setNotificationPayload({
           title: payload.notification.title,
           body: payload.notification.body,
-          link:payload.fcmOptions?.link || '/'
+          link: payload.fcmOptions?.link || "/",
         });
         dispatch({
           type: "ADD_NOTIFICATION",
           payload: {
-            id:payload.messageId,
+            id: payload.messageId,
             title: payload.notification.title,
             body: payload.notification.body,
             created_at: Date.now(),
-            action: {route_name: payload.fcmOptions?.link || '/'}
+            action: { route_name: payload.fcmOptions?.link || "/" },
           },
         });
         setViewNotification(true);
@@ -100,7 +105,7 @@ const FirebaseMessagingProvider = ({ children }) => {
         unsubscribeOnMessage();
       }
     };
-  }, []);
+  }, [isLoggedIn]);
 
   return (
     <>

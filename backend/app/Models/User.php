@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Activitylog\Traits\CausesActivity;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Permission\Traits\HasRoles;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,23 +19,27 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, CausesActivity, LogsActivity;
+    use HasApiTokens, HasFactory, Notifiable, CausesActivity, LogsActivity, HasRoles;
+
+    protected $guard_name = 'sanctum'; 
+    protected function getDefaultGuardName(): string { return $this->guard_name; }
+
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-        ->setDescriptionForEvent(function(string $eventName) {
-            switch ($eventName) {
-                case 'created':
-                    return "تم إنشاء المستخدم رقم {$this->id}";
-                case 'updated':
-                    return "تم تحديث المستخدم رقم {$this->id}";
-                case 'deleted':
-                    return "تم حذف المستخدم رقم {$this->id}";
-            }
-            return "User {$eventName}";
-        })->logFillable()
-        ->useLogName('user_log');
+            ->setDescriptionForEvent(function (string $eventName) {
+                switch ($eventName) {
+                    case 'created':
+                        return "تم إنشاء المستخدم رقم {$this->id}";
+                    case 'updated':
+                        return "تم تحديث المستخدم رقم {$this->id}";
+                    case 'deleted':
+                        return "تم حذف المستخدم رقم {$this->id}";
+                }
+                return "User {$eventName}";
+            })->logFillable()
+            ->useLogName('user_log');
     }
 
     protected $fillable = [
@@ -52,14 +57,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_active',
         'status',
         'area_id',
-        'user_code'
+        'user_code',
+        'organization_id'
     ];
 
 
-     public function getAuthPassword()
-     {
-         return $this->password_hash; // Return the value of your custom password column
-     }
+    public function getAuthPassword()
+    {
+        return $this->password_hash; // Return the value of your custom password column
+    }
 
     // Casts for automatic type conversion
     protected $casts = [
@@ -76,16 +82,15 @@ class User extends Authenticatable implements MustVerifyEmail
 
         static::created(function ($user) {
             if ($user->role == UserRole::USER) {
-                $user_code = 'Usr_'.$user->area?->code.'_0'.$user->id;
-            }elseif ($user->role == UserRole::DEALER) {
-                $user_code = 'Dlr_'.$user->area?->code.'_0'.$user->id;
-            }elseif ($user->role == UserRole::VENUE_OWNER) {
-                $user_code = 'Csr_'.$user->area?->code.'_0'.$user->id;
-            }elseif ($user->role == UserRole::INVESTOR) {
-                $user_code = 'Inv_'.$user->area?->code.'_0'.$user->id;
-            }
-            else{
-                $user_code = Str::limit((ucfirst($user->role)),3,'').$user->area?->code.'_0'.$user->id;
+                $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->role == UserRole::DEALER) {
+                $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->role == UserRole::VENUE_OWNER) {
+                $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->role == UserRole::INVESTOR) {
+                $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
+            } else {
+                $user_code = Str::limit((ucfirst($user->role)), 3, '') . $user->area?->code . '_0' . $user->id;
             }
             $user->user_code = $user_code;
             $user->saveQuietly();
@@ -93,17 +98,16 @@ class User extends Authenticatable implements MustVerifyEmail
 
         static::updating(function ($user) {
             if ($user->role == UserRole::USER) {
-                $user_code = 'Usr_'.$user->area?->code.'_0'.$user->id;
-            }elseif ($user->role == UserRole::DEALER) {
-                $user_code = 'Dlr_'.$user->area?->code.'_0'.$user->id;
-            }elseif ($user->role == UserRole::VENUE_OWNER) {
-                $user_code = 'Csr_'.$user->area?->code.'_0'.$user->id;
-            }elseif ($user->role == UserRole::INVESTOR) {
-                $user_code = 'Inv_'.$user->area?->code.'_0'.$user->id;
-            }
-            else{
+                $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->role == UserRole::DEALER) {
+                $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->role == UserRole::VENUE_OWNER) {
+                $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->role == UserRole::INVESTOR) {
+                $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
+            } else {
                 $role = $user->role->value;
-                $user_code = Str::limit((ucfirst($role)),3,'_').$user->area?->code.'_0'.$user->id;
+                $user_code = Str::limit((ucfirst($role)), 3, '_') . $user->area?->code . '_0' . $user->id;
             }
             $user->user_code = $user_code;
         });
@@ -113,6 +117,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function area()
     {
         return $this->belongsTo(Area::class);
+    }
+
+    /**
+     * Get the organization that the user belongs to.
+     */
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     // A User may have many bids.
@@ -133,7 +145,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Dealer::class);
     }
 
-        // ✅ If the user is a venue owner
+    // ✅ If the user is a venue owner
     public function venueOwner()
     {
         return $this->hasOne(VenueOwner::class, 'user_id');
@@ -173,7 +185,7 @@ class User extends Authenticatable implements MustVerifyEmail
     // Role checking methods
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::ADMIN;
+        return $this->role === UserRole::ADMIN || $this->role === UserRole::SUPER_ADMIN;
     }
 
     public function isDealer(): bool
@@ -201,7 +213,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === UserRole::USER;
     }
 
-    public function hasRole(UserRole $role): bool
+    public function hasUserRole(UserRole $role): bool
     {
         return $this->role === $role;
     }
