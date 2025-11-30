@@ -71,17 +71,16 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Call the new middleware-specific endpoint to get user role using the refresh token
-    const response = await fetch(buildMiddlewareApiUrl(request), {
+    // Call the middleware-specific endpoint to get user role using the refresh token
+    const apiUrl = buildMiddlewareApiUrl(request);
+
+    const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Cookie: `refresh_token=${refreshTokenCookie}`, // Manually pass the cookie
+        Cookie: `refresh_token=${refreshTokenCookie}`,
       },
-      // We don't strictly need credentials: 'include' if we manually pass the Cookie header above,
-      // but for standard fetch behavior it's good practice.
-      // However, Next.js middleware fetch is a bit different.
-      // Passing the Cookie header explicitly is safer here since we have it.
+      credentials: "include", // Important for cross-domain cookies
     });
 
     if (response.ok) {
@@ -100,13 +99,7 @@ export async function middleware(request: NextRequest) {
         .filter(Boolean);
 
       if (dashboardRoots.includes(currentPathRoot)) {
-        // Check if the user is in the correct dashboard
-        // e.g. if role is 'admin', correct path is '/admin'
-        // if user is at '/exhibitor', we should redirect them.
-
-        // Simple check: does the current path start with the correct dashboard path?
         if (!pathname.startsWith(correctDashboardPath)) {
-          // Avoid redirect loops if the correct path is just '/'
           if (correctDashboardPath !== "/" || pathname !== "/") {
             return redirectTo(request, correctDashboardPath);
           }
@@ -131,19 +124,20 @@ export async function middleware(request: NextRequest) {
       redirectResponse.cookies.delete("refresh_token");
       return redirectResponse;
     }
+
+    // For other error responses, log and allow through
+    console.error("Middleware API returned status:", response.status);
   } catch (error) {
     console.error("Middleware auth check failed:", error);
-    // If backend is down or unreachable, we might want to allow access or redirect to login.
-    // Redirecting to login is safer but might be annoying if it's a temporary glitch.
-    // For now, let's redirect to login if it's not a guest path.
-    if (!isGuestPath(pathname)) {
-      // const loginUrl = new URL("/auth/login", request.url);
-      // return NextResponse.redirect(loginUrl);
-      // Actually, better to just let it pass or show error?
-      // Let's stick to safe fail -> login
-    }
+    // CRITICAL FIX: In production, if the backend call fails (network, CORS, etc.),
+    // we should allow the request to pass through and let client-side auth handle it.
+    // The client has the token in localStorage and can authenticate properly.
+    // Only block if we're certain the user is not authenticated.
   }
 
+  // Allow the request through - client-side will handle auth
+  // This prevents blocking users when there's a temporary backend issue
+  // or cross-domain fetch problems in production
   return NextResponse.next();
 }
 
