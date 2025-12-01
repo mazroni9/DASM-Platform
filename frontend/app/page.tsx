@@ -732,23 +732,23 @@ const BenefitsSection = () => {
   const benefits = [
     {
       title: "مزادات متطورة على مدار الساعة",
-      description: "نظام مزادات حديث ومتاح 24/7 لراحتك",
-      icon: <Shield className="w-8 h-8 md:w-10 md:h-10" />,
+      description: "نظام مزادات حديث، ومتاح 24/7 لراحتك",
+      icon: <Shield className="w-7 h-7 md:w-8 md:h-8" />,
     },
     {
       title: "فحص في ورش معتمدة",
       description: "جميع السيارات تخضع لفحص دقيق في ورش معتمدة",
-      icon: <DollarSign className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" />,
     },
     {
       title: "شحن متميز ومتابعة مباشرة لحين الوصول",
       description: "خدمة شحن موثوقة مع تتبع مباشر لشحنتك",
-      icon: <Clock className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Clock className="w-7 h-7 md:w-8 md:h-8" />,
     },
     {
       title: "أسعار متوازنة لصالح البائع والمشتري",
       description: "نضمن أفضل الأسعار للطرفين من خلال نظام عادل",
-      icon: <Award className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Award className="w-7 h-7 md:w-8 md:h-8" />,
     },
   ];
 
@@ -761,17 +761,20 @@ const BenefitsSection = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0b2d5a] dark:text-foreground mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground mb-4"
           >
             لماذا تختار داسم-اي؟
           </motion.h2>
-          <p className="text-sm md:text-base text-[#6b7280] dark:text-foreground/70 max-w-2xl mx-auto">
+          <p className="text-sm md:text-base text-foreground/70 max-w-2xl mx-auto">
             نقدم لك تجربة مزادات استثنائية بمعايير عالية من الجودة والموثوقية
           </p>
         </div>
 
-        {/* الكروت الأربع مثل التصميم في الصورة */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+        {/* الكروت الأربع – نفس ترتيب وتصميم الصورة */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
+          dir="ltr"
+        >
           {benefits.map((benefit, index) => (
             <motion.div
               key={index}
@@ -779,17 +782,17 @@ const BenefitsSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
-              className="bg-white dark:bg-card rounded-[28px] border border-slate-200/90 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col items-center text-center px-6 py-8 md:px-7 md:py-9"
+              className="bg-card rounded-[24px] border border-border/60 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col items-center text-center px-6 py-8 md:px-7 md:py-9"
             >
               <div className="mb-4">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#0b2d5a] dark:bg-primary flex items-center justify-center text-white">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary flex items-center justify-center text-white">
                   {benefit.icon}
                 </div>
               </div>
-              <h3 className="text-base md:text-lg font-semibold text-[#111827] dark:text-foreground mb-3 leading-snug">
+              <h3 className="text-base md:text-lg font-semibold text-foreground mb-3 leading-snug">
                 {benefit.title}
               </h3>
-              <p className="text-xs md:text-sm text-[#6b7280] dark:text-foreground/70 leading-relaxed">
+              <p className="text-xs md:text-sm text-foreground/70 leading-relaxed">
                 {benefit.description}
               </p>
             </motion.div>
