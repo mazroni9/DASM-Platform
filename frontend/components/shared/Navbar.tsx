@@ -8,7 +8,6 @@ import Image from "next/image";
 import {
   RefreshCw,
   Store,
-  Archive,
   LogOut,
   Menu,
   X,
@@ -41,14 +40,11 @@ const Navbar = () => {
     user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
   const navigationItems: NavigationItem[] = [
-    // { href: "/auctions", label: "الأسواق", icon: Store },
     { href: "/auctions", label: "الأسواق الرقمية", icon: Store },
-    // { href: "/auction-archive", label: "أرشيف المزادات", icon: Archive },
   ];
 
-  const isActive = (path: string) => {
-    return pathname === path || pathname?.startsWith(path + "/");
-  };
+  const isActive = (path: string) =>
+    pathname === path || pathname?.startsWith(path + "/");
 
   const handleRestartServers = async () => {
     if (!confirm("هل أنت متأكد من إعادة تشغيل الخوادم؟")) return;
@@ -95,7 +91,7 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
 
-  // 🛠️ كلاس مساعد لفرض ألوان واضحة على كل العناصر داخل UserMenu/NotificationMenu
+  // كلاس يساعد نخلي الألوان واضحة داخل UserMenu/NotificationMenu
   const forceBright =
     "[&_*]:!text-foreground [&_svg]:!text-primary [&_sup]:!bg-primary [&_sup]:!text-white";
 
@@ -118,8 +114,19 @@ const Navbar = () => {
                   className="object-cover"
                 />
               </div>
-              <span className="font-bold text-lg tracking-tight text-foreground">
-                المزادات الرقمية <span className="text-primary">DASMe</span>
+              {/* عنوان الموقع + كلمة DASMe بألوان الشعار واتجاه LTR */}
+              <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
+                <span>المزادات الرقمية</span>
+                <span
+                  dir="ltr"
+                  className="inline-flex items-baseline leading-none text-xl"
+                >
+                  <span style={{ color: "#003b70" }}>D</span>
+                  <span style={{ color: "#009345" }}>A</span>
+                  <span style={{ color: "#003b70" }}>S</span>
+                  <span style={{ color: "#003b70" }}>M</span>
+                  <span style={{ color: "#009345" }}>e</span>
+                </span>
               </span>
             </LoadingLink>
           </div>
@@ -193,7 +200,6 @@ const Navbar = () => {
 
           {/* Mobile Menu Toggle */}
           <div className="flex items-center gap-2 sm:hidden mobile-menu-container">
-            {/* ✅ نفس الإصلاح على الموبايل */}
             {user && (
               <div className={forceBright}>
                 <UserMenu />
@@ -207,7 +213,7 @@ const Navbar = () => {
               aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
-                <X className="h-5 w-5" />
+                <Menu className="h-5 w-5 rotate-90" />
               ) : (
                 <Menu className="h-5 w-5" />
               )}
@@ -243,7 +249,7 @@ const Navbar = () => {
             <LoadingLink
               target="_blank"
               href="https://blog.dasm.com.sa/"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-border hover:text-primary transition-all duration-200"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-border hover:text-primary transition-all	duration-200"
               onClick={() => setMobileMenuOpen(false)}
             >
               <Book className="h-5 w-5" />

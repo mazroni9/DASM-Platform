@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AuctionsFinished from "@components/AuctionsFinished"; // تأكد من المسار
+import AuctionsFinished from "@components/AuctionsFinished"; // تأكد من المسار الصحيح
 
 // =====================
 // الأنواع والبيانات
@@ -41,7 +41,8 @@ type AuctionMain = {
   ring: string; // لون الإطار
   bgGrad: string; // خلفية البطاقة
   overlayImg?: string; // صورة خلفية اختيارية
-  overlayOpacity?: string; // شفافية الخلفية الاختيارية
+  overlayOpacity?: string; // شفافية الخلفية
+  overlayGradient?: string; // جريدينت إضافي فوق الصورة لاحترافية أعلى
 };
 
 const AUCTIONS_MAIN: AuctionMain[] = [
@@ -58,7 +59,8 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     ring: "ring-red-600/40",
     bgGrad: "bg-card",
     overlayImg: "/showroom.jpg",
-    overlayOpacity: "opacity-10",
+    overlayOpacity: "opacity-25",
+    overlayGradient: "bg-gradient-to-t from-black/80 via-black/50 to-black/10",
   },
   {
     id: "instant_auction",
@@ -72,8 +74,11 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-primary",
     ring: "ring-primary/40",
     bgGrad: "bg-card",
+    // 🔹 استخدام احترافي لصورة grok auctioneer في السوق الفوري
     overlayImg: "/grok auctioneer.jpg",
     overlayOpacity: "opacity-40",
+    overlayGradient:
+      "bg-gradient-to-t from-slate-950/80 via-slate-950/50 to-slate-950/10",
   },
   {
     id: "late_auction",
@@ -87,8 +92,11 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-secondary",
     ring: "ring-secondary/40",
     bgGrad: "bg-card",
-    overlayImg: "/late_auction.jpg",
+    // 🔹 خلفية احترافية للسوق المتأخر
+    overlayImg: "/late_auction.webp",
     overlayOpacity: "opacity-40",
+    overlayGradient:
+      "bg-gradient-to-t from-slate-950/80 via-slate-900/45 to-transparent",
   },
   {
     id: "fixed_auction",
@@ -102,6 +110,11 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-emerald-500",
     ring: "ring-emerald-500/40",
     bgGrad: "bg-card",
+    // 🔹 خلفية احترافية للمزاد الثابت
+    overlayImg: "/fixed_auction.jpg",
+    overlayOpacity: "opacity-40",
+    overlayGradient:
+      "bg-gradient-to-t from-emerald-950/80 via-emerald-900/50 to-transparent",
   },
 ];
 
@@ -252,6 +265,7 @@ const PresenterPanel = ({
 const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }) => {
   const Icon = auction.icon;
   const isLive = auction.slug === "live-market";
+  const hasOverlay = Boolean(auction.overlayImg);
 
   return (
     <motion.div
@@ -266,8 +280,8 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         className={`block h-full rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
         aria-label={`الدخول إلى ${auction.name}`}
       >
-        {/* 🔹 خلفية صورة فقط للحراج المباشر، عشان الفوري والمتأخر والثابت يفضلوا نظاف */}
-        {isLive && auction.overlayImg && (
+        {/* 🔹 خلفية صورة ديناميكية لكل نوع مزاد */}
+        {hasOverlay && (
           <>
             <div
               className={`absolute inset-0 bg-center bg-no-repeat bg-cover pointer-events-none ${
@@ -277,7 +291,10 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
               aria-hidden="true"
             />
             <div
-              className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/20 to-transparent pointer-events-none"
+              className={`absolute inset-0 pointer-events-none ${
+                auction.overlayGradient ??
+                "bg-gradient-to-t from-black/50 via-black/30 to-transparent"
+              }`}
               aria-hidden="true"
             />
           </>
@@ -301,7 +318,7 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
             <span>{auction.time}</span>
           </div>
 
-          {/* فيديو صغير للحراج المباشر */}
+          {/* فيديو صغير للحراج المباشر فقط */}
           {isLive ? (
             <div className="w-full max-w-[220px] mx-auto mb-4">
               <video
