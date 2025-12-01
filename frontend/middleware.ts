@@ -61,6 +61,7 @@ export async function middleware(request: NextRequest) {
   // Check for the HttpOnly refresh token cookie
   const refreshTokenCookie = request.cookies.get("refresh_token")?.value;
   console.log('not_RefreshToken_Cookie',refreshTokenCookie);
+  console.log('cookie',request.headers.get('cookie'))
   console.warn('warn_not_RefreshToken_Cookie')
   if (!refreshTokenCookie) {
     if (!isGuestPath(pathname)) {
@@ -152,4 +153,5 @@ export const config = {
     "/auth/:path*",
   ],
 };
+
 
