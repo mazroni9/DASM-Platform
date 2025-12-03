@@ -7,6 +7,7 @@ return [
     'allowed_origins' => [
         'http://localhost:3000', // للبيئة المحلية
         'https://dasm.com.sa',
+        'https://www.dasm.com.sa',
         'https://dasm-laravel.onrender.com', // Backend domain for same-origin
     ],
     'allowed_origins_patterns' => [],
