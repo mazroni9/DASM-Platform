@@ -58,7 +58,6 @@ class UserController extends Controller
             return response()->json([
                 'message' => count($userFriendlyMessages) > 0 ? implode(', ', $userFriendlyMessages) : 'بيانات التسجيل غير صالحة'
             ], 422);
-
         } catch (\Exception $e) {
             // Log the detailed error for debugging
             Log::error('Error during user registration: ' . $e->getMessage(), [
@@ -144,66 +143,66 @@ class UserController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
-public function profile(Request $request)
-{
-    try {
-        $user = $request->user();
-        if (!$user) {
+    public function profile(Request $request)
+    {
+        try {
+            $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found'
+                ], 404);
+            }
+            // Load relations (dealer + venue_owner)
+            $user->load(['dealer', 'venueOwner']);
+
+            // Format the response data
+            $responseData = [
+                'id'          => $user->id,
+                'first_name'  => $user->first_name,
+                'last_name'   => $user->last_name,
+                'name'        => $user->first_name . ' ' . $user->last_name,
+                'email'       => $user->email,
+                'phone'       => $user->phone,
+                'role'        => $user->role,
+                'kyc_status'  => $user->kyc_status,
+                'created_at'  => $user->created_at,
+                'updated_at'  => $user->updated_at,
+                'is_active'   => $user->is_active,
+                'status'      => $user->status,
+                
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+            ];
+
+            // 👉 Add dealer fields if user is a dealer
+            if ($user->dealer) {
+                $responseData['address']        = $user->dealer->address ?? null;
+                $responseData['company_name']   = $user->dealer->company_name ?? null;
+                $responseData['trade_license']  = $user->dealer->trade_license ?? null;
+            }
+
+            // 👉 Add venue_owner fields if user is a venue_owner
+            if ($user->venueOwner) {
+                $responseData['venue_name']    = $user->venueOwner->venue_name ?? null;
+                $responseData['venue_address'] = $user->venueOwner->address ?? null;
+                $responseData['description']   = $user->venueOwner->description ?? null;
+                $responseData['rating']        = $user->venueOwner->rating ?? null;
+            }
+
             return response()->json([
-                'message' => 'User not found'
-            ], 404);
+                'success' => true,
+                'data'    => $responseData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching user profile: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to fetch profile. Please try again later.',
+                'error'   => $e->getMessage()
+            ], 500);
         }
-
-        // Load relations (dealer + venue_owner)
-        $user->load(['dealer', 'venueOwner']);
-
-        // Format the response data
-        $responseData = [
-            'id'          => $user->id,
-            'first_name'  => $user->first_name,
-            'last_name'   => $user->last_name,
-            'name'        => $user->first_name . ' ' . $user->last_name,
-            'email'       => $user->email,
-            'phone'       => $user->phone,
-            'role'        => $user->role,
-            'kyc_status'  => $user->kyc_status,
-            'created_at'  => $user->created_at,
-            'updated_at'  => $user->updated_at,
-            'is_active'   => $user->is_active,
-            'status'      => $user->status,
-        ];
-
-        // 👉 Add dealer fields if user is a dealer
-        if ($user->dealer) {
-            $responseData['address']        = $user->dealer->address ?? null;
-            $responseData['company_name']   = $user->dealer->company_name ?? null;
-            $responseData['trade_license']  = $user->dealer->trade_license ?? null;
-        }
-
-        // 👉 Add venue_owner fields if user is a venue_owner
-        if ($user->venueOwner) {
-            $responseData['venue_name']    = $user->venueOwner->venue_name ?? null;
-            $responseData['venue_address'] = $user->venueOwner->address ?? null;
-            $responseData['description']   = $user->venueOwner->description ?? null;
-            $responseData['rating']        = $user->venueOwner->rating ?? null;
-        }
-
-        return response()->json([
-            'success' => true,
-            'data'    => $responseData
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error fetching user profile: ' . $e->getMessage(), [
-            'exception' => $e,
-        ]);
-
-        return response()->json([
-            'message' => 'Failed to fetch profile. Please try again later.',
-            'error'   => $e->getMessage()
-        ], 500);
     }
-}
 
 
     /**
@@ -212,126 +211,134 @@ public function profile(Request $request)
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
- public function updateProfile(Request $request)
-{
-    try {
-        $user = $request->user();
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = $request->user();
 
-        if (!$user) {
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Validation rules (مشتركة + حسب الدور)
+            $rules = [
+                'first_name' => 'sometimes|string|max:255',
+                'last_name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|email|unique:users,email,' . $user->id,
+                'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
+                'area_id' => 'sometimes|exists:areas,id'
+            ];
+
+            if ($user->isDealer()) {
+                $rules = array_merge($rules, [
+                    'address' => 'sometimes|string|nullable',
+                    'company_name' => 'sometimes|string|nullable',
+                    'trade_license' => 'sometimes|string|nullable',
+                ]);
+            }
+
+            if ($user->isVenueOwner()) {
+                $rules = array_merge($rules, [
+                    'venue_name' => 'sometimes|string|nullable',
+                    'venue_address' => 'sometimes|string|nullable',
+                    'description' => 'sometimes|string|nullable',
+                ]);
+            }
+
+            $data = $request->validate($rules);
+
+            // تحديث بيانات المستخدم الأساسية
+            $userFields = array_intersect_key($data, array_flip([
+                'first_name',
+                'last_name',
+                'email',
+                'phone',
+                'area_id'
+            ]));
+
+            if (!empty($userFields)) {
+                $user->update($userFields);
+            }
+
+            // تحديث بيانات التاجر إذا كان تاجر
+            if ($user->isDealer()) {
+                $dealerData = array_intersect_key($data, array_flip([
+                    'address',
+                    'company_name',
+                    'trade_license'
+                ]));
+
+                if (!empty($dealerData)) {
+                    $user->dealer()
+                        ? $user->dealer->update($dealerData)
+                        : $user->dealer()->create($dealerData);
+                }
+            }
+
+            // تحديث بيانات صاحب المعرض إذا كان صاحب معرض
+            if ($user->isVenueOwner()) {
+                $venueData = array_intersect_key($data, array_flip([
+                    'venue_name',
+                    'venue_address',
+                    'description'
+                ]));
+
+                if (!empty($venueData)) {
+                    $user->venueOwner()
+                        ? $user->venueOwner->update($venueData)
+                        : $user->venueOwner()->create($venueData);
+                }
+            }
+
+            // إعادة تحميل العلاقات
+            $user->refresh()->load(['dealer', 'venueOwner']);
+
+            // بناء الاستجابة
+            $responseData = [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'kyc_status' => $user->kyc_status,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+
+            if ($user->dealer) {
+                $responseData['address'] = $user->dealer->address ?? null;
+                $responseData['company_name'] = $user->dealer->company_name ?? null;
+                $responseData['trade_license'] = $user->dealer->trade_license ?? null;
+            }
+
+            if ($user->venueOwner) {
+                $responseData['venue_name'] = $user->venueOwner->venue_name ?? null;
+                $responseData['venue_address'] = $user->venueOwner->address ?? null;
+                $responseData['description'] = $user->venueOwner->description ?? null;
+                $responseData['rating'] = $user->venueOwner->rating ?? null;
+            }
+
             return response()->json([
-                'message' => 'User not found'
-            ], 404);
-        }
-
-        // Validation rules (مشتركة + حسب الدور)
-        $rules = [
-            'first_name' => 'sometimes|string|max:255',
-            'last_name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
-            'area_id' => 'sometimes|exists:areas,id'
-        ];
-
-        if ($user->isDealer()) {
-            $rules = array_merge($rules, [
-                'address' => 'sometimes|string|nullable',
-                'company_name' => 'sometimes|string|nullable',
-                'trade_license' => 'sometimes|string|nullable',
+                'success' => true,
+                'message' => 'تم تحديث الملف الشخصي بنجاح',
+                'data' => $responseData
             ]);
-        }
-
-        if ($user->isVenueOwner()) {
-            $rules = array_merge($rules, [
-                'venue_name' => 'sometimes|string|nullable',
-                'venue_address' => 'sometimes|string|nullable',
-                'description' => 'sometimes|string|nullable',
+        } catch (\Exception $e) {
+            \Log::error('Error updating user profile: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $request->user()?->id,
+                'request_data' => $request->all(),
             ]);
+
+            return response()->json([
+                'message' => 'فشل تحديث الملف الشخصي، حاول مرة أخرى لاحقاً.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $data = $request->validate($rules);
-
-        // تحديث بيانات المستخدم الأساسية
-        $userFields = array_intersect_key($data, array_flip([
-            'first_name', 'last_name', 'email', 'phone','area_id'
-        ]));
-
-        if (!empty($userFields)) {
-            $user->update($userFields);
-        }
-
-        // تحديث بيانات التاجر إذا كان تاجر
-        if ($user->isDealer()) {
-            $dealerData = array_intersect_key($data, array_flip([
-                'address', 'company_name', 'trade_license'
-            ]));
-
-            if (!empty($dealerData)) {
-                $user->dealer()
-                    ? $user->dealer->update($dealerData)
-                    : $user->dealer()->create($dealerData);
-            }
-        }
-
-        // تحديث بيانات صاحب المعرض إذا كان صاحب معرض
-        if ($user->isVenueOwner()) {
-            $venueData = array_intersect_key($data, array_flip([
-                'venue_name', 'venue_address', 'description'
-            ]));
-
-            if (!empty($venueData)) {
-                $user->venueOwner()
-                    ? $user->venueOwner->update($venueData)
-                    : $user->venueOwner()->create($venueData);
-            }
-        }
-
-        // إعادة تحميل العلاقات
-        $user->refresh()->load(['dealer', 'venueOwner']);
-
-        // بناء الاستجابة
-        $responseData = [
-            'id' => $user->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'role' => $user->role,
-            'kyc_status' => $user->kyc_status,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
-        ];
-
-        if ($user->dealer) {
-            $responseData['address'] = $user->dealer->address ?? null;
-            $responseData['company_name'] = $user->dealer->company_name ?? null;
-            $responseData['trade_license'] = $user->dealer->trade_license ?? null;
-        }
-
-        if ($user->venueOwner) {
-            $responseData['venue_name'] = $user->venueOwner->venue_name ?? null;
-            $responseData['venue_address'] = $user->venueOwner->address ?? null;
-            $responseData['description'] = $user->venueOwner->description ?? null;
-            $responseData['rating'] = $user->venueOwner->rating ?? null;
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تحديث الملف الشخصي بنجاح',
-            'data' => $responseData
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Error updating user profile: ' . $e->getMessage(), [
-            'exception' => $e,
-            'user_id' => $request->user()?->id,
-            'request_data' => $request->all(),
-        ]);
-
-        return response()->json([
-            'message' => 'فشل تحديث الملف الشخصي، حاول مرة أخرى لاحقاً.',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
 
 
     /**
@@ -342,38 +349,14 @@ public function profile(Request $request)
     public function getPermissions()
     {
         $user = auth()->user();
-        $permissions = [];
-
-        // Add default permissions for all users
-        $permissions[] = 'view_auctions';
-        $permissions[] = 'place_bids';
-
-        // Add role-specific permissions
-        if ($user->role === 'admin') {
-            $permissions = array_merge($permissions, [
-                'manage_users',
-                'manage_auctions',
-                'manage_cars',
-                'manage_blog',
-                'broadcast',
-                'manage_venues',
-                'view_analytics',
-                'approve_auctions',
-                'manage_settings'
-            ]);
-        } elseif ($user->role === 'dealer') {
-            $permissions = array_merge($permissions, [
-                'create_auctions',
-                'manage_own_auctions',
-                'manage_own_cars',
-                'broadcast',
-                'view_own_analytics'
-            ]);
-        }
 
         return response()->json([
             'status' => 'success',
-            'permissions' => $permissions
+            'permissions' => tap($user, function ($u) {
+                if ($u->organization_id) {
+                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($u->organization_id);
+                }
+            })->getAllPermissions()->pluck('name')
         ]);
     }
 }

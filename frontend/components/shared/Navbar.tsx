@@ -8,7 +8,6 @@ import Image from "next/image";
 import {
   RefreshCw,
   Store,
-  Archive,
   LogOut,
   Menu,
   X,
@@ -37,17 +36,15 @@ const Navbar = () => {
   const pathname = usePathname();
   const router = useLoadingRouter();
   const { user, logout } = useAuth();
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const isAdmin =
+    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
   const navigationItems: NavigationItem[] = [
-    // { href: "/auctions", label: "الأسواق", icon: Store },
-    { href: "/auctions/live-auctions", label: "الأسواق المباشرة", icon: Store },
-    // { href: "/auction-archive", label: "أرشيف المزادات", icon: Archive },
+    { href: "/auctions", label: "الأسواق الرقمية", icon: Store },
   ];
 
-  const isActive = (path: string) => {
-    return pathname === path || pathname?.startsWith(path + "/");
-  };
+  const isActive = (path: string) =>
+    pathname === path || pathname?.startsWith(path + "/");
 
   const handleRestartServers = async () => {
     if (!confirm("هل أنت متأكد من إعادة تشغيل الخوادم؟")) return;
@@ -83,7 +80,10 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (mobileMenuOpen && !(e.target as Element).closest(".mobile-menu-container")) {
+      if (
+        mobileMenuOpen &&
+        !(e.target as Element).closest(".mobile-menu-container")
+      ) {
         setMobileMenuOpen(false);
       }
     };
@@ -91,7 +91,7 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
 
-  // 🛠️ كلاس مساعد لفرض ألوان واضحة على كل العناصر داخل UserMenu/NotificationMenu
+  // كلاس يساعد نخلي الألوان واضحة داخل UserMenu/NotificationMenu
   const forceBright =
     "[&_*]:!text-foreground [&_svg]:!text-primary [&_sup]:!bg-primary [&_sup]:!text-white";
 
@@ -114,25 +114,38 @@ const Navbar = () => {
                   className="object-cover"
                 />
               </div>
-              <span className="font-bold text-lg tracking-tight text-foreground">
-                المزادات الرقمية{" "}
-                <span className="text-primary">DASMe</span>
+              {/* عنوان الموقع + كلمة DASMe بألوان الشعار واتجاه LTR */}
+              <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
+                <span>المزادات الرقمية</span>
+                <span
+                  dir="ltr"
+                  className="inline-flex items-baseline leading-none text-xl"
+                >
+                  <span style={{ color: "#003b70" }}>D</span>
+                  <span style={{ color: "#009345" }}>A</span>
+                  <span style={{ color: "#003b70" }}>S</span>
+                  <span style={{ color: "#003b70" }}>M</span>
+                  <span style={{ color: "#009345" }}>e</span>
+                </span>
               </span>
             </LoadingLink>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6 font-medium" dir="rtl">
+          <div
+            className="hidden md:flex items-center gap-6 font-medium"
+            dir="rtl"
+          >
             <LoadingLink
-              href="/auctions/live-auctions"
+              href="/auctions"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                isActive("/auctions/live-auctions")
+                isActive("/auctions")
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-border hover:text-primary"
               }`}
             >
               <TvMinimalPlay size={18} />
-              <span>الأسواق المباشرة</span>
+              <span>الأسواق الرقمية</span>
             </LoadingLink>
 
             <LoadingLink
@@ -143,8 +156,6 @@ const Navbar = () => {
               <Book size={18} />
               <span>المدونة</span>
             </LoadingLink>
-
-           
           </div>
 
           {/* Desktop Auth & Actions */}
@@ -159,7 +170,9 @@ const Navbar = () => {
                 title="إعادة تشغيل الخوادم"
                 aria-label="إعادة تشغيل الخوادم"
               >
-                <RefreshCw className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`}
+                />
               </Button>
             )}
             <ThemeToggle />
@@ -187,7 +200,6 @@ const Navbar = () => {
 
           {/* Mobile Menu Toggle */}
           <div className="flex items-center gap-2 sm:hidden mobile-menu-container">
-            {/* ✅ نفس الإصلاح على الموبايل */}
             {user && (
               <div className={forceBright}>
                 <UserMenu />
@@ -200,7 +212,11 @@ const Navbar = () => {
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
               aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? (
+                <Menu className="h-5 w-5 rotate-90" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
@@ -208,7 +224,9 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div
           className={`lg:hidden mobile-menu-container overflow-hidden transition-all duration-300 ease-in-out ${
-            mobileMenuOpen ? "max-h-96 opacity-100 mt-4 pb-4" : "max-h-0 opacity-0"
+            mobileMenuOpen
+              ? "max-h-96 opacity-100 mt-4 pb-4"
+              : "max-h-0 opacity-0"
           }`}
         >
           <div className="space-y-2 pt-3 border-t border-border">
@@ -231,7 +249,7 @@ const Navbar = () => {
             <LoadingLink
               target="_blank"
               href="https://blog.dasm.com.sa/"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-border hover:text-primary transition-all duration-200"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-border hover:text-primary transition-all	duration-200"
               onClick={() => setMobileMenuOpen(false)}
             >
               <Book className="h-5 w-5" />
@@ -247,7 +265,9 @@ const Navbar = () => {
                 }}
                 disabled={isRestarting}
               >
-                <RefreshCw className={`h-5 w-5 ${isRestarting ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-5 w-5 ${isRestarting ? "animate-spin" : ""}`}
+                />
                 <span className="text-base">إعادة تشغيل الخوادم</span>
               </button>
             )}

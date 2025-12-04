@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import LoadingLink from "@/components/LoadingLink";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from "next/navigation";
 const loginSchema = z.object({
   email: z.string().email({ message: "يرجى إدخال بريد إلكتروني صالح" }),
   password: z
@@ -42,8 +42,8 @@ export default function LoginForm() {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
-  
-  const searchParams = useSearchParams(); 
+
+  const searchParams = useSearchParams();
   const {
     register,
     handleSubmit,
@@ -69,13 +69,20 @@ export default function LoginForm() {
 
       if (result.success) {
         setSuccess("تم تسجيل الدخول بنجاح");
-        const returnUrl = searchParams.get('returnUrl');
+        const returnUrl = searchParams.get("returnUrl");
         if (returnUrl) {
           router.push(returnUrl);
         } else {
-          router.push("/dashboard");
+          const user = useAuthStore.getState().user;
+          if (
+            user &&
+            ["admin", "super_admin", "moderator"].includes(user.role)
+          ) {
+            router.push("/admin");
+          } else {
+            router.push("/dashboard");
+          }
         }
-        
       } else {
         if (result.needsVerification) {
           setSuccess("يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني");
@@ -267,7 +274,11 @@ export default function LoginForm() {
               onClick={togglePasswordVisibility}
               className="absolute inset-y-0 left-3 flex items-center text-foreground/50 hover:text-primary"
             >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
             </button>
           </div>
           {errors.password && (
@@ -282,7 +293,10 @@ export default function LoginForm() {
             {...register("remember")}
             className="h-4 w-4 text-primary border-border rounded focus:ring-primary bg-card"
           />
-          <Label htmlFor="remember" className="text-sm text-foreground font-normal">
+          <Label
+            htmlFor="remember"
+            className="text-sm text-foreground font-normal"
+          >
             تذكرني
           </Label>
         </div>
@@ -302,15 +316,15 @@ export default function LoginForm() {
           )}
         </Button>
       </div>
-<div className="text-center text-sm text-foreground">
-  ليس لديك حساب؟
-  <LoadingLink
-    href="/auth/register"
-    className="text-primary hover:text-primary/80 font-medium mr-1"
-  >
-    إنشاء حساب جديد
-  </LoadingLink>
-</div>
+      <div className="text-center text-sm text-foreground">
+        ليس لديك حساب؟
+        <LoadingLink
+          href="/auth/register"
+          className="text-primary hover:text-primary/80 font-medium mr-1"
+        >
+          إنشاء حساب جديد
+        </LoadingLink>
+      </div>
     </form>
   );
 }

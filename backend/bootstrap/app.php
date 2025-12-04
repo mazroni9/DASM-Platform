@@ -4,6 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Auth\Access\AuthorizationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,8 +24,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\PerformanceHeaders::class, // <-- تم التبديل ليتطابق مع اسم الكلاس/الملف
         ]);
 
-       // $middleware->statefulApi();
+        // $middleware->statefulApi();
         // API middleware
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+
         $middleware->api(append: [
             // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
@@ -37,7 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // role middleware with parameters ->middleware('role:venue_owner,dealer')
             'role'              => \App\Http\Middleware\RoleMiddleware::class,
-
+            'set.organization' => \App\Http\Middleware\SetSpatieTeamContext::class,
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
 
             // aliases محدثة:
@@ -51,5 +58,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'ليس لديك صلاحية للقيام بهذا الإجراء.',
+                ], 403);
+            }
+        });
     })->create();

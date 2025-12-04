@@ -26,8 +26,11 @@ class AdminMiddleware
             ], 401);
         }
 
-        // Check if the authenticated user is an admin
-        if (!Auth::user()->isAdmin()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Check if the authenticated user is an admin, super_admin, or moderator
+        if (!$user->isAdmin() && !$user->isModerator()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Admin privileges required.'

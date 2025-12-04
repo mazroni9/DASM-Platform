@@ -6,16 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
-class ModeratorController extends Controller
+class StaffController extends Controller
 {
     /**
-     * Display a listing of moderators.
+     * Display a listing of staff (admins and moderators).
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -23,16 +24,16 @@ class ModeratorController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::where('role', UserRole::MODERATOR);
+            $query = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR]);
 
             // Search functionality
             if ($request->has('search') && !empty($request->search)) {
                 $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             }
 
@@ -52,20 +53,20 @@ class ModeratorController extends Controller
                 'data' => $moderators
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching moderators', [
+            Log::error('Error fetching staff', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'فشل في تحميل بيانات المشرفين'
+                'message' => 'فشل في تحميل بيانات الموظفين'
             ], 500);
         }
     }
 
     /**
-     * Store a newly created moderator.
+     * Store a newly created staff member (admin or moderator).
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -78,6 +79,8 @@ class ModeratorController extends Controller
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:15|unique:users,phone',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|in:admin,moderator',
+            'spatie_role_id' => 'nullable|exists:roles,id',
         ], [
             'first_name.required' => 'الاسم الأول مطلوب',
             'first_name.string' => 'الاسم الأول يجب أن يكون نصًا',
@@ -96,6 +99,9 @@ class ModeratorController extends Controller
             'password.string' => 'كلمة المرور يجب أن تكون نصًا',
             'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
             'password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
+            'role.required' => 'نوع المستخدم مطلوب',
+            'role.in' => 'نوع المستخدم يجب أن يكون مدير أو مشرف',
+            'spatie_role_id.exists' => 'الدور الوظيفي المختار غير صالح',
         ]);
 
         if ($validator->fails()) {
@@ -106,26 +112,51 @@ class ModeratorController extends Controller
             ], 422);
         }
 
+        // Security Check: Prevent assigning super_admin role if not super_admin
+        if ($request->has('spatie_role_id') && !empty($request->spatie_role_id)) {
+            $spatieRole = \Spatie\Permission\Models\Role::find($request->spatie_role_id);
+            if ($spatieRole && $spatieRole->name === 'super_admin') {
+                /** @var \App\Models\User $currentUser */
+                $currentUser = Auth::user();
+                if (!$currentUser->hasRole('super_admin')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'لا تملك صلاحية تعيين دور مدير النظام الرئيسي'
+                    ], 403);
+                }
+            }
+        }
+
         try {
-            $moderator = User::create([
+            $platform_organization = Organization::where('slug', 'dasm-e-platform')
+                ->where('type', 'platform')
+                ->first();
+
+            $staff = User::create([
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password_hash' => Hash::make($request->password),
-                'role' => UserRole::MODERATOR,
+                'role' => $request->role,
                 'is_active' => true,
                 'status' => UserStatus::ACTIVE,
-                'email_verified_at' => now(), // Auto-verify admin-created moderators
+                'organization_id' => $platform_organization->id,
+                'email_verified_at' => now(), // Auto-verify admin-created staff
             ]);
+
+            if ($request->has('spatie_role_id') && !empty($request->spatie_role_id)) {
+                app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($platform_organization->id);
+                $staff->syncRoles([$request->spatie_role_id]);
+            }
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'تم إنشاء المشرف بنجاح',
-                'data' => $moderator
+                'message' => 'تم إنشاء الموظف بنجاح',
+                'data' => $staff
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Error creating moderator', [
+            Log::error('Error creating staff member', [
                 'error' => $e->getMessage(),
                 'data' => $request->except(['password', 'password_confirmation']),
                 'trace' => $e->getTraceAsString()
@@ -133,13 +164,13 @@ class ModeratorController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء إنشاء المشرف'
+                'message' => 'حدث خطأ أثناء إنشاء الموظف'
             ], 500);
         }
     }
 
     /**
-     * Display the specified moderator.
+     * Display the specified staff member.
      *
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
@@ -147,27 +178,27 @@ class ModeratorController extends Controller
     public function show($id)
     {
         try {
-            $moderator = User::where('role', UserRole::MODERATOR)->findOrFail($id);
+            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->with('roles')->findOrFail($id);
 
             return response()->json([
                 'status' => 'success',
-                'data' => $moderator
+                'data' => $staff
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching moderator details', [
-                'moderator_id' => $id,
+            Log::error('Error fetching staff details', [
+                'staff_id' => $id,
                 'error' => $e->getMessage()
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'لم يتم العثور على المشرف'
+                'message' => 'لم يتم العثور على الموظف'
             ], 404);
         }
     }
 
     /**
-     * Update the specified moderator.
+     * Update the specified staff member.
      *
      * @param Request $request
      * @param int $id
@@ -176,7 +207,7 @@ class ModeratorController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $moderator = User::where('role', UserRole::MODERATOR)->findOrFail($id);
+            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'first_name' => 'sometimes|required|string|max:255',
@@ -184,6 +215,8 @@ class ModeratorController extends Controller
                 'email' => 'sometimes|required|email|unique:users,email,' . $id,
                 'phone' => 'sometimes|required|string|max:15|unique:users,phone,' . $id,
                 'password' => 'sometimes|nullable|string|min:8|confirmed',
+                'role' => 'sometimes|required|in:admin,moderator',
+                'spatie_role_id' => 'nullable|exists:roles,id',
             ], [
                 'first_name.required' => 'الاسم الأول مطلوب',
                 'first_name.string' => 'الاسم الأول يجب أن يكون نصًا',
@@ -201,6 +234,9 @@ class ModeratorController extends Controller
                 'password.string' => 'كلمة المرور يجب أن تكون نصًا',
                 'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
                 'password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
+                'role.required' => 'نوع المستخدم مطلوب',
+                'role.in' => 'نوع المستخدم يجب أن يكون مدير أو مشرف',
+                'spatie_role_id.exists' => 'الدور المختار غير صالح',
             ]);
 
             if ($validator->fails()) {
@@ -211,35 +247,68 @@ class ModeratorController extends Controller
                 ], 422);
             }
 
+            // Security Check: Prevent assigning super_admin role if not super_admin
+            if ($request->has('spatie_role_id') && !empty($request->spatie_role_id)) {
+                $spatieRole = \Spatie\Permission\Models\Role::find($request->spatie_role_id);
+                if ($spatieRole && $spatieRole->name === 'super_admin') {
+                    /** @var \App\Models\User $currentUser */
+                    $currentUser = Auth::user();
+                    if (!$currentUser->hasRole('super_admin')) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'لا تملك صلاحية تعيين دور مدير النظام الرئيسي'
+                        ], 403);
+                    }
+                }
+            }
+
+            $platform_organization = Organization::where('slug', 'dasm-e-platform')
+                ->where('type', 'platform')
+                ->first();
+
             // Update basic information
             if ($request->has('first_name')) {
-                $moderator->first_name = $request->first_name;
+                $staff->first_name = $request->first_name;
             }
             if ($request->has('last_name')) {
-                $moderator->last_name = $request->last_name;
+                $staff->last_name = $request->last_name;
             }
             if ($request->has('email')) {
-                $moderator->email = $request->email;
+                $staff->email = $request->email;
             }
             if ($request->has('phone')) {
-                $moderator->phone = $request->phone;
+                $staff->phone = $request->phone;
             }
+            if ($request->has('role')) {
+                $staff->role = $request->role;
+            }
+
+            $staff->organization_id = $platform_organization->id;
 
             // Update password only if provided
             if ($request->has('password') && !empty($request->password)) {
-                $moderator->password_hash = Hash::make($request->password);
+                $staff->password_hash = Hash::make($request->password);
             }
 
-            $moderator->save();
+            if ($request->has('spatie_role_id')) {
+                if (!empty($request->spatie_role_id)) {
+                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($platform_organization->id);
+                    $staff->syncRoles([$request->spatie_role_id]);
+                } else {
+                    $staff->syncRoles([]);
+                }
+            }
+
+            $staff->save();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'تم تحديث بيانات المشرف بنجاح',
-                'data' => $moderator
+                'message' => 'تم تحديث بيانات الموظف بنجاح',
+                'data' => $staff
             ]);
         } catch (\Exception $e) {
-            Log::error('Error updating moderator', [
-                'moderator_id' => $id,
+            Log::error('Error updating staff member', [
+                'staff_id' => $id,
                 'error' => $e->getMessage(),
                 'data' => $request->except(['password', 'password_confirmation']),
                 'trace' => $e->getTraceAsString()
@@ -247,13 +316,13 @@ class ModeratorController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء تحديث بيانات المشرف'
+                'message' => 'حدث خطأ أثناء تحديث بيانات الموظف'
             ], 500);
         }
     }
 
     /**
-     * Remove the specified moderator.
+     * Remove the specified staff member.
      *
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
@@ -261,39 +330,39 @@ class ModeratorController extends Controller
     public function destroy($id)
     {
         try {
-            $moderator = User::where('role', UserRole::MODERATOR)->findOrFail($id);
+            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
 
             // Prevent deletion of currently authenticated admin if they're deleting themselves
             $currentUser = Auth::user();
-            if ($currentUser && $currentUser->id === $moderator->id) {
+            if ($currentUser && $currentUser->id === $staff->id) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'لا يمكنك حذف حسابك الشخصي'
                 ], 403);
             }
 
-            $moderator->delete();
+            $staff->delete();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'تم حذف المشرف بنجاح'
+                'message' => 'تم حذف الموظف بنجاح'
             ]);
         } catch (\Exception $e) {
-            Log::error('Error deleting moderator', [
-                'moderator_id' => $id,
+            Log::error('Error deleting staff member', [
+                'staff_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء حذف المشرف'
+                'message' => 'حدث خطأ أثناء حذف الموظف'
             ], 500);
         }
     }
 
     /**
-     * Update moderator status (active/inactive).
+     * Update staff member status (active/inactive).
      *
      * @param Request $request
      * @param int $id
@@ -317,33 +386,33 @@ class ModeratorController extends Controller
         }
 
         try {
-            $moderator = User::where('role', UserRole::MODERATOR)->findOrFail($id);
+            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
 
             // Prevent deactivation of currently authenticated admin if they're deactivating themselves
             $currentUser = Auth::user();
-            if ($currentUser && $currentUser->id === $moderator->id && !$request->is_active) {
+            if ($currentUser && $currentUser->id === $staff->id && !$request->is_active) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'لا يمكنك إلغاء تفعيل حسابك الشخصي'
                 ], 403);
             }
 
-            $moderator->is_active = $request->is_active;
-            $moderator->status = $request->is_active ? UserStatus::ACTIVE : UserStatus::PENDING;
-            $moderator->save();
+            $staff->is_active = $request->is_active;
+            $staff->status = $request->is_active ? UserStatus::ACTIVE : UserStatus::PENDING;
+            $staff->save();
 
             $message = $request->is_active
-                ? 'تم تفعيل المشرف بنجاح'
-                : 'تم إلغاء تفعيل المشرف بنجاح';
+                ? 'تم تفعيل الموظف بنجاح'
+                : 'تم إلغاء تفعيل الموظف بنجاح';
 
             return response()->json([
                 'status' => 'success',
                 'message' => $message,
-                'data' => $moderator
+                'data' => $staff
             ]);
         } catch (\Exception $e) {
-            Log::error('Error updating moderator status', [
-                'moderator_id' => $id,
+            Log::error('Error updating staff status', [
+                'staff_id' => $id,
                 'is_active' => $request->is_active,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -351,42 +420,46 @@ class ModeratorController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء تحديث حالة المشرف'
+                'message' => 'حدث خطأ أثناء تحديث حالة الموظف'
             ], 500);
         }
     }
 
     /**
-     * Get moderator dashboard statistics.
+     * Get staff dashboard statistics.
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function dashboard()
     {
         try {
-            // Get basic statistics for moderator dashboard
+            // Get basic statistics for staff dashboard
+            $totalStaff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->count();
+            $totalAdmins = User::where('role', UserRole::ADMIN)->count();
             $totalModerators = User::where('role', UserRole::MODERATOR)->count();
-            $activeModerators = User::where('role', UserRole::MODERATOR)
+            $activeStaff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])
                 ->where('is_active', true)->count();
-            $inactiveModerators = $totalModerators - $activeModerators;
+            $inactiveStaff = $totalStaff - $activeStaff;
 
-            // Recent moderators
-            $recentModerators = User::where('role', UserRole::MODERATOR)
+            // Recent staff
+            $recentStaff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])
                 ->orderBy('created_at', 'desc')
                 ->take(5)
-                ->get(['id', 'first_name', 'last_name', 'email', 'is_active', 'created_at']);
+                ->get(['id', 'first_name', 'last_name', 'email', 'role', 'is_active', 'created_at']);
 
             return response()->json([
                 'status' => 'success',
                 'data' => [
+                    'total_staff' => $totalStaff,
+                    'total_admins' => $totalAdmins,
                     'total_moderators' => $totalModerators,
-                    'active_moderators' => $activeModerators,
-                    'inactive_moderators' => $inactiveModerators,
-                    'recent_moderators' => $recentModerators
+                    'active_staff' => $activeStaff,
+                    'inactive_staff' => $inactiveStaff,
+                    'recent_staff' => $recentStaff
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching moderator dashboard', [
+            Log::error('Error fetching staff dashboard', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

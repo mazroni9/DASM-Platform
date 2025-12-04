@@ -8,11 +8,14 @@ import { useEffect } from "react";
 export default function VenuesDashboard() {
   const { user, isLoading } = useAuth();
   const router = useLoadingRouter();
-  
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== UserRole.ADMIN)) {
-      router.replace("/auth/login");
+    if (
+      !isLoading &&
+      (!user ||
+        (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN))
+    ) {
+      router.push("/auth/login");
     }
   }, [user, isLoading, router]);
 
@@ -27,7 +30,10 @@ export default function VenuesDashboard() {
     );
   }
 
-  if (!user || user.role !== UserRole.ADMIN) {
+  if (
+    !user ||
+    (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN)
+  ) {
     return null;
   }
 
@@ -37,9 +43,7 @@ export default function VenuesDashboard() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-900">لوحة المعارض</h1>
-            <div className="text-sm text-gray-500">
-              إدارة المعارض في النظام
-            </div>
+            <div className="text-sm text-gray-500">إدارة المعارض في النظام</div>
           </div>
 
           <div className="text-center py-12">
@@ -66,9 +70,7 @@ export default function VenuesDashboard() {
             <p className="text-gray-500 mb-4">
               هذه الصفحة ستكون متاحة قريباً لإدارة المعارض في النظام
             </p>
-            <div className="text-sm text-gray-400">
-              قيد التطوير...
-            </div>
+            <div className="text-sm text-gray-400">قيد التطوير...</div>
           </div>
         </div>
       </div>

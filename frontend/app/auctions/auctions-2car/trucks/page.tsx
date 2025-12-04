@@ -7,20 +7,20 @@ import { ArrowLeft } from 'lucide-react';
 import axios from '@/lib/axios';
 
 type CarItem = {
-  id: number|string;
+  id: number | string;
   make?: string;
   model?: string;
-  year?: number|string;
+  year?: number | string;
   images?: string[] | string | null;
   status?: string | boolean;            // approved/accepted/true
   approved?: boolean;
   is_approved?: boolean;
   approval_status?: string;
-  active_auction?: { id: number|string; current_price?: number|string; status?: string } | null;
-  activeAuction?: { id: number|string; current_price?: number|string; status?: string } | null;
+  active_auction?: { id: number | string; current_price?: number | string; status?: string } | null;
+  activeAuction?: { id: number | string; current_price?: number | string; status?: string } | null;
   auction_status?: string;
   active_status?: string;
-  current_price?: number|string;
+  current_price?: number | string;
   auction_result?: any;
 };
 
@@ -45,8 +45,16 @@ const isApproved = (it: CarItem) => {
 };
 
 const isActiveAuction = (it: CarItem) => {
-  const s = (it.active_auction?.status ?? it.activeAuction?.status ?? it.auction_status ?? it.active_status ?? '')
-    .toString().toLowerCase();
+  const s = (
+    it.active_auction?.status ??
+    it.activeAuction?.status ??
+    it.auction_status ??
+    it.active_status ??
+    ''
+  )
+    .toString()
+    .toLowerCase();
+
   return s === 'active' || s === 'on' || s === 'running';
 };
 
@@ -73,7 +81,8 @@ const titleOf = (item: CarItem) => {
 const priceOf = (item: CarItem) =>
   item.active_auction?.current_price ??
   item.activeAuction?.current_price ??
-  item.current_price ?? null;
+  item.current_price ??
+  null;
 
 export default function TrucksMarketPage() {
   const [items, setItems] = useState<CarItem[]>([]);
@@ -96,7 +105,9 @@ export default function TrucksMarketPage() {
         else if (Array.isArray(d)) list = d;
 
         // فلترة المقبول + مزاد Active
-        const filtered = (list as CarItem[]).filter((it) => isApproved(it) && isActiveAuction(it));
+        const filtered = (list as CarItem[]).filter(
+          (it) => isApproved(it) && isActiveAuction(it)
+        );
 
         if (mounted) {
           setItems(filtered);
@@ -108,48 +119,77 @@ export default function TrucksMarketPage() {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black py-12 px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* رجوع */}
-        <div className="flex justify-start mb-6">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* بانر الهيرو (بنفس ستايل صفحة الكلاسيك تقريبًا) */}
+      <div className="relative h-64 md:h-72 bg-primary overflow-hidden">
+        <div className="absolute inset-0 bg-background/10" />
+        <div className="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
           <LoadingLink
             href="/auctions/auctions-2car"
-            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-full border border-blue-500 hover:border-blue-400 bg-opacity-20 bg-blue-900 hover:bg-opacity-30"
+            className="flex items-center text-primary-foreground/80 hover:text-primary-foreground mb-6 transition"
           >
-            <ArrowLeft className="h-4 w-4 ml-2" />
-            <span>العودة إلى سوق السيارات</span>
+            <ArrowLeft size={20} className="ml-2" />
+            <span>العودة لسوق السيارات</span>
           </LoadingLink>
+
+          <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-3">
+            سوق الشاحنات
+          </h1>
+          <p className="text-lg md:text-xl text-primary-foreground/90 max-w-2xl">
+            يُعرض هنا فقط الشاحنات المقبولة والتي لديها مزاد بحالة فعّالة (Active)،
+            لتضمن صفقة واضحة ومباشرة.
+          </p>
         </div>
+      </div>
 
-        <h1 className="text-4xl font-serif text-center text-blue-300 mb-2">سوق الشاحنات</h1>
-        <p className="text-center text-gray-400 mb-10">يُعرض هنا فقط الشاحنات المقبولة والتي لديها مزاد بحالة Active</p>
+      {/* المحتوى الرئيسي */}
+      <div className="container mx-auto px-4 py-10">
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 md:p-8">
+          {/* حالة التحميل / الخطأ / عدد النتائج */}
+          {loading && (
+            <p className="text-center text-muted-foreground mb-6">
+              جاري تحميل الشاحنات المتاحة...
+            </p>
+          )}
 
-        {loading && <p className="text-center text-white mb-6">جاري التحميل...</p>}
-        {err && <div className="text-center text-red-400 mb-6 p-4 bg-gray-800 rounded">خطأ: {err}</div>}
-        {!loading && typeof count === 'number' && (
-          <div className="mb-6 text-center text-xs text-gray-400">عدد النتائج: {count}</div>
-        )}
+          {err && (
+            <div className="mb-6 text-center text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3">
+              خطأ: {err}
+            </div>
+          )}
 
-        {!loading && items.length === 0 ? (
-          <p className="text-center text-gray-300">لا توجد شاحنات متاحة حالياً.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {items.map((it) => {
-              const cardProps: any = {
-                // نمرر كـ any لتفادي اختلاف أنواع AuctionCardProps
-                title: titleOf(it),
-                image: firstImage(it.images),
-                current_price: priceOf(it),
-                auction_result: it.auction_result ?? null,
-              };
-              return <AuctionCard key={String(it.id)} {...cardProps} />;
-            })}
-          </div>
-        )}
+          {!loading && typeof count === 'number' && (
+            <p className="text-center text-xs text-muted-foreground mb-6">
+              عدد النتائج: {count}
+            </p>
+          )}
+
+          {/* الشبكة */}
+          {!loading && items.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              لا توجد شاحنات متاحة حالياً في هذا السوق.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.map((it) => {
+                const cardProps: any = {
+                  // نمرر كـ any لتفادي اختلاف أنواع AuctionCardProps
+                  title: titleOf(it),
+                  image: firstImage(it.images),
+                  current_price: priceOf(it),
+                  auction_result: it.auction_result ?? null,
+                };
+                return <AuctionCard key={String(it.id)} {...cardProps} />;
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

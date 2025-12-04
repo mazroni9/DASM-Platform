@@ -1,77 +1,101 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import LoadingLink from "@/components/LoadingLink";
-import {
-  Car,
-  Star,
-  Gem,
-  Home,
-  Store,
-} from 'lucide-react';
+import { Car, Star, Gem, Home, Store } from "lucide-react";
 import { motion } from "framer-motion";
 
 // ========== عناصر الأسواق ==========
 const marketItems = [
   // المجموعة اليمنى - السيارات
-  { name: 'سوق معارض السيارات', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
-  { name: 'سوق السيارات المتخصص', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
-  { name: 'سوق الاجهزة النوعية', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
+  {
+    name: "سوق معارض السيارات",
+    icon: Car,
+    href: "/auctions/auctions-1main",
+    group: "right",
+  },
+  {
+    name: "سوق السيارات المتخصص",
+    icon: Car,
+    href: "/auctions/auctions-2car",
+    group: "right",
+  },
+  {
+    name: "سوق الاجهزة النوعية",
+    icon: Star,
+    href: "/auctions/auctions-3quality",
+    group: "right",
+  },
 
   // المجموعة اليسرى - العامة
-  { name: 'السوق الفريد', icon: Gem, href: '/auctions/auctions-4special', group: 'left' },
-  { name: 'الأسواق العامة', icon: Home, href: '/auctions/auctions-5general', group: 'left' },
-  { name: 'السوق الكبير', icon: Store, href: '/auctions/auctions-6big', group: 'left' },
+  {
+    name: "السوق الفريد",
+    icon: Gem,
+    href: "/auctions/auctions-4special",
+    group: "left",
+  },
+  {
+    name: "الأسواق العامة",
+    icon: Home,
+    href: "/auctions/auctions-5general",
+    group: "left",
+  },
+  {
+    name: "السوق الكبير",
+    icon: Store,
+    href: "/auctions/auctions-6big",
+    group: "left",
+  },
 ];
 
-// ========== زر السوق المتطور ==========
-const MarketCard = ({ item, index }) => {
+// ========== بطاقة سوق واحد ==========
+const MarketCard = ({ item, index }: any) => {
   const Icon = item.icon;
-  const isRight = item.group === 'right';
+  const isRight = item.group === "right";
 
-  const bgColor = 
-    item.group === 'right'
-      ? 'bg-primary'
-      : 'bg-secondary';
+  const bgColor =
+    item.group === "right" ? "bg-primary" : "bg-secondary";
 
-  const shadowColor = 
-    item.group === 'right'
-      ? 'shadow-primary/20'
-      : 'shadow-secondary/20';
+  const shadowColor =
+    item.group === "right"
+      ? "shadow-primary/20"
+      : "shadow-secondary/20";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.5, delay: index * 0.05 }}
-      className="w-full max-w-xs"
+      transition={{ duration: 0.5, delay: index * 0.06 }}
+      className="w-full max-w-sm"
     >
       <LoadingLink
         href={item.href}
         className={`
-          group relative block
-          h-full
+          group relative block h-full
           ${bgColor}
-          rounded-2xl
-          p-1
-          shadow-lg hover:shadow-2xl hover:${shadowColor}
-          transition-all duration-300
-          overflow-hidden
+          rounded-2xl p-1
+          shadow-lg ${shadowColor} hover:shadow-2xl
+          transition-all duration-300 overflow-hidden
         `}
         aria-label={`الذهاب إلى ${item.name}`}
       >
-        {/* طبقة داخلية لفصل التدرج */}
-        <div className="bg-card h-full rounded-xl flex flex-col items-center justify-center p-5 text-center">
-          <div className="mb-3">
-            <div className="w-12 h-12 rounded-full bg-background/50 flex items-center justify-center">
-              <Icon className={`h-6 w-6 text-foreground ${isRight ? 'ml-0.5' : 'mr-0.5'}`} />
+        {/* طبقة داخلية */}
+        <div className="bg-card h-full rounded-xl flex flex-col items-center justify-center px-6 py-6 text-center">
+          <div className="mb-4">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-background/60 flex items-center justify-center">
+              <Icon
+                className={`h-8 w-8 md:h-9 md:w-9 text-foreground ${
+                  isRight ? "ml-0.5" : "mr-0.5"
+                }`}
+              />
             </div>
           </div>
-          <h3 className="text-foreground font-bold text-base leading-tight">
+          <h3 className="text-foreground font-semibold text-lg md:text-xl leading-snug">
             {item.name}
           </h3>
-          <div className="absolute inset-0 bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+
+          <div className="absolute inset-0 bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
         </div>
       </LoadingLink>
     </motion.div>
@@ -81,24 +105,24 @@ const MarketCard = ({ item, index }) => {
 // ========== شريط تنقل الأسواق ==========
 export default function MarketTypeNav() {
   return (
-    <div className="w-full py-10">
-      <div className="container mx-auto px-4">
-        {/* العنوان الرئيسي */}
+    <div className="w-full py-8 md:py-10">
+      <div className="max-w-6xl mx-auto">
+        {/* العنوان الرئيسي للسكيشن */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="text-center mb-8 md:mb-10"
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-emerald-700 dark:text-emerald-300 mb-3">
             اختر سوقك المتخصص
           </h2>
-          <p className="text-base max-w-lg mx-auto text-foreground">
+          <p className="text-sm md:text-base max-w-xl mx-auto text-foreground/70">
             كل سوق مصمم ليلبي احتياجات فئة محددة من البائعين والمشترين
           </p>
         </motion.div>
 
-        {/* العناصر مرتبة في صف واحد على الديسكتوب، و2 في التابلت، و1 في الجوال */}
+        {/* العناصر */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {marketItems.map((item, index) => (
             <MarketCard key={item.href} item={item} index={index} />

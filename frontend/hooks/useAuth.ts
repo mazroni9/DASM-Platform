@@ -3,33 +3,34 @@ import { UserRole } from "@/types/types";
 
 // This is a wrapper around the authStore to maintain compatibility with existing code
 export function useAuth() {
-    const {
-        user,
-        token,
-        isLoggedIn,
-        loading,
-        error,
-        login,
-        logout,
-        refreshToken,
-    } = useStoreAuth();
+  const {
+    user,
+    token,
+    isLoggedIn,
+    loading,
+    error,
+    login,
+    logout,
+    refreshToken,
+  } = useStoreAuth();
 
-    return {
-        user,
-        isAdmin: user?.role === UserRole.ADMIN,
-        isModerator: user?.role === UserRole.MODERATOR,
-        isDealer: user?.role === UserRole.DEALER,
-        isVenueOwner: user?.role === UserRole.VENUE_OWNER,
-        isInvestor: user?.role === UserRole.INVESTOR,
-        isUser: user?.role === UserRole.USER,
-        isLoading: loading,
-        login,
-        logout,
-        refreshToken,
-        token,
-        isLoggedIn,
-        error,
-    };
+  return {
+    user,
+    isAdmin:
+      user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
+    isModerator: user?.role === UserRole.MODERATOR,
+    isDealer: user?.role === UserRole.DEALER,
+    isVenueOwner: user?.role === UserRole.VENUE_OWNER,
+    isInvestor: user?.role === UserRole.INVESTOR,
+    isUser: user?.role === UserRole.USER,
+    isLoading: loading,
+    login,
+    logout,
+    refreshToken,
+    token,
+    isLoggedIn,
+    error,
+  };
 }
 
 // Also export as default for compatibility

@@ -38,9 +38,10 @@ use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
 use App\Http\Controllers\Admin\CommissionTierController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Admin\ModeratorController as AdminModeratorController;
+use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
+use App\Http\Controllers\Admin\RoleController;
 
 // ========= Auction Sessions =========
 use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController; // للجمهور
@@ -68,6 +69,7 @@ use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExt
 | Diagnostics / Health
 |--------------------------------------------------------------------------
 */
+
 Route::get('/health', function () {
     return response()->json([
         'ok'   => true,
@@ -79,29 +81,57 @@ Route::get('/diag-lite', function () {
     $started = microtime(true);
 
     // DB
-    $dbMs = -1; $dbOk = false;
+    $dbMs = -1;
+    $dbOk = false;
     $t = microtime(true);
-    try { DB::select('SELECT 1'); $dbMs = (microtime(true) - $t) * 1000; $dbOk = true; } catch (\Throwable $e) { $dbMs = -1; }
+    try {
+        DB::select('SELECT 1');
+        $dbMs = (microtime(true) - $t) * 1000;
+        $dbOk = true;
+    } catch (\Throwable $e) {
+        $dbMs = -1;
+    }
 
     // Cache
-    $cacheMs = -1; $cacheOk = false;
+    $cacheMs = -1;
+    $cacheOk = false;
     $t = microtime(true);
-    try { Cache::put('diag_lite_key', '1', 60); Cache::get('diag_lite_key'); $cacheMs = (microtime(true) - $t) * 1000; $cacheOk = true; } catch (\Throwable $e) { $cacheMs = -1; }
+    try {
+        Cache::put('diag_lite_key', '1', 60);
+        Cache::get('diag_lite_key');
+        $cacheMs = (microtime(true) - $t) * 1000;
+        $cacheOk = true;
+    } catch (\Throwable $e) {
+        $cacheMs = -1;
+    }
 
     // Redis
-    $redisMs = -1; $redisOk = false; $redisPong = null;
+    $redisMs = -1;
+    $redisOk = false;
+    $redisPong = null;
     $t = microtime(true);
     try {
         $raw = Redis::connection('default')->ping();
         $redisMs = (microtime(true) - $t) * 1000;
         $redisOk = is_string($raw) ? stripos($raw, 'PONG') !== false : (bool) $raw;
         $redisPong = is_string($raw) ? $raw : 'PONG';
-    } catch (\Throwable $e) { $redisMs = -1; }
+    } catch (\Throwable $e) {
+        $redisMs = -1;
+    }
 
     // Disk 1KB
-    $diskMs = -1; $diskOk = false;
+    $diskMs = -1;
+    $diskOk = false;
     $t = microtime(true);
-    try { $f = storage_path('app/diag_lite.tmp'); file_put_contents($f, str_repeat('x', 1024)); @unlink($f); $diskMs = (microtime(true) - $t) * 1000; $diskOk = true; } catch (\Throwable $e) { $diskMs = -1; }
+    try {
+        $f = storage_path('app/diag_lite.tmp');
+        file_put_contents($f, str_repeat('x', 1024));
+        @unlink($f);
+        $diskMs = (microtime(true) - $t) * 1000;
+        $diskOk = true;
+    } catch (\Throwable $e) {
+        $diskMs = -1;
+    }
 
     $totalMs = (microtime(true) - $started) * 1000;
 
@@ -120,11 +150,15 @@ Route::get('/diag-lite', function () {
         ],
         'status' => ['db' => $dbOk, 'cache' => $cacheOk, 'redis' => $redisOk, 'disk' => $diskOk, 'pong' => $redisPong],
     ], 200)->header('Cache-Control', 'no-store')
-      ->header('X-Response-Time', sprintf('%.1fms', $totalMs))
-      ->header('Server-Timing', sprintf(
-        'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
-        $totalMs, max(0,$dbMs), max(0,$cacheMs), max(0,$redisMs), max(0,$diskMs)
-      ));
+        ->header('X-Response-Time', sprintf('%.1fms', $totalMs))
+        ->header('Server-Timing', sprintf(
+            'app;dur=%.1f, db;dur=%.1f, cache;dur=%.1f, redis;dur=%.1f, disk;dur=%.1f',
+            $totalMs,
+            max(0, $dbMs),
+            max(0, $cacheMs),
+            max(0, $redisMs),
+            max(0, $diskMs)
+        ));
 })->middleware('throttle:10,1');
 
 Route::get('/diag-bench', function (Request $request) {
@@ -133,29 +167,49 @@ Route::get('/diag-bench', function (Request $request) {
     $payload = str_repeat('x', $kb * 1024);
 
     $benchDb = function (int $n) {
-        $first = null; $sum = 0.0; $ok = 0;
-        for ($i=0; $i<$n; $i++) {
+        $first = null;
+        $sum = 0.0;
+        $ok = 0;
+        for ($i = 0; $i < $n; $i++) {
             $t = microtime(true);
-            try { DB::select('SELECT 1'); $ms = (microtime(true) - $t) * 1000; $ok++; }
-            catch (\Throwable $e) { $ms = -1; }
-            if ($i===0) $first = $ms;
+            try {
+                DB::select('SELECT 1');
+                $ms = (microtime(true) - $t) * 1000;
+                $ok++;
+            } catch (\Throwable $e) {
+                $ms = -1;
+            }
+            if ($i === 0) $first = $ms;
             if ($ms >= 0) $sum += $ms;
         }
-        return ['first_ms' => $first !== null ? round($first,1) : -1, 'avg_ms' => $ok ? round($sum/$ok,1) : -1, 'ok' => $ok, 'loops' => $n];
+        return ['first_ms' => $first !== null ? round($first, 1) : -1, 'avg_ms' => $ok ? round($sum / $ok, 1) : -1, 'ok' => $ok, 'loops' => $n];
     };
 
     $benchCache = function (string $store, int $n) use ($payload) {
-        $sum = 0.0; $ok = 0; $available = true;
-        try { $cache = $store === 'default' ? Cache::store(config('cache.default')) : Cache::store($store); }
-        catch (\Throwable $e) { return ['store' => $store, 'available' => false, 'avg_ms' => -1]; }
-        for ($i=0; $i<$n; $i++) {
-            $key = "diag_bench:{$store}:".Str::random(8);
+        $sum = 0.0;
+        $ok = 0;
+        $available = true;
+        try {
+            $cache = $store === 'default' ? Cache::store(config('cache.default')) : Cache::store($store);
+        } catch (\Throwable $e) {
+            return ['store' => $store, 'available' => false, 'avg_ms' => -1];
+        }
+        for ($i = 0; $i < $n; $i++) {
+            $key = "diag_bench:{$store}:" . Str::random(8);
             $t = microtime(true);
-            try { $cache->put($key, $payload, 60); $cache->get($key); $ms = (microtime(true) - $t) * 1000; $ok++; }
-            catch (\Throwable $e) { $ms = -1; $available = false; break; }
+            try {
+                $cache->put($key, $payload, 60);
+                $cache->get($key);
+                $ms = (microtime(true) - $t) * 1000;
+                $ok++;
+            } catch (\Throwable $e) {
+                $ms = -1;
+                $available = false;
+                break;
+            }
             if ($ms >= 0) $sum += $ms;
         }
-        return ['store' => $store, 'available' => $available, 'avg_ms' => $ok ? round($sum/$ok,1) : -1, 'loops' => $n];
+        return ['store' => $store, 'available' => $available, 'avg_ms' => $ok ? round($sum / $ok, 1) : -1, 'loops' => $n];
     };
 
     $redisPing = (function () {
@@ -163,12 +217,12 @@ Route::get('/diag-bench', function (Request $request) {
             $t = microtime(true);
             $raw = Redis::connection('default')->ping();
             return [
-                'ok'  => is_string($raw) ? stripos($raw,'PONG') !== false : (bool) $raw,
-                'ms'  => round((microtime(true)-$t)*1000,1),
-                'pong'=> is_string($raw) ? $raw : 'PONG'
+                'ok'  => is_string($raw) ? stripos($raw, 'PONG') !== false : (bool) $raw,
+                'ms'  => round((microtime(true) - $t) * 1000, 1),
+                'pong' => is_string($raw) ? $raw : 'PONG'
             ];
         } catch (\Throwable $e) {
-            return ['ok'=>false,'ms'=>-1,'pong'=>null];
+            return ['ok' => false, 'ms' => -1, 'pong' => null];
         }
     })();
 
@@ -176,7 +230,7 @@ Route::get('/diag-bench', function (Request $request) {
     $cDef  = $benchCache('default', $loops);
     $cArr  = $benchCache('array',   $loops);
     $cFile = $benchCache('file',    $loops);
-    $cRedis= $benchCache('redis',   $loops);
+    $cRedis = $benchCache('redis',   $loops);
 
     $tips = [];
     if (config('app.debug') === true) $tips[] = 'APP_DEBUG=false في الإنتاج.';
@@ -197,7 +251,7 @@ Route::get('/diag-bench', function (Request $request) {
             'redis_ping' => $redisPing,
         ],
         'advice' => $tips,
-    ], 200)->header('Cache-Control','no-store');
+    ], 200)->header('Cache-Control', 'no-store');
 })->middleware('throttle:5,1');
 
 // Requires header X-Diag-Token or ?token=
@@ -207,24 +261,32 @@ Route::get('/diag-redis', function (Request $request) {
         abort(404);
     }
 
-    $err = null; $pong = null; $ok = false; $pingMs = -1;
+    $err = null;
+    $pong = null;
+    $ok = false;
+    $pingMs = -1;
 
     try {
         $t = microtime(true);
         $raw = Redis::connection('default')->ping();
         $pingMs = round((microtime(true) - $t) * 1000, 1);
-        $ok  = is_string($raw) ? stripos($raw,'PONG') !== false : (bool) $raw;
+        $ok  = is_string($raw) ? stripos($raw, 'PONG') !== false : (bool) $raw;
         $pong = is_string($raw) ? $raw : 'PONG';
-    } catch (\Throwable $e) { $err = $e->getMessage(); }
+    } catch (\Throwable $e) {
+        $err = $e->getMessage();
+    }
 
-    $cacheMs = -1; $cacheOk = false;
+    $cacheMs = -1;
+    $cacheOk = false;
     try {
         $t = microtime(true);
         Cache::store('redis')->put('diag_r_key', '1', 60);
         $val = Cache::store('redis')->get('diag_r_key');
         $cacheOk = ($val === '1');
         $cacheMs = round((microtime(true) - $t) * 1000, 1);
-    } catch (\Throwable $e) { $err = ($err ? $err.' | ' : '').$e->getMessage(); }
+    } catch (\Throwable $e) {
+        $err = ($err ? $err . ' | ' : '') . $e->getMessage();
+    }
 
     $cfg = config('database.redis.default');
     if (isset($cfg['password']) && is_string($cfg['password'])) {
@@ -242,7 +304,7 @@ Route::get('/diag-redis', function (Request $request) {
         'cache_ms' => $cacheMs,
         'config_default' => $cfg,
         'error' => $err,
-    ], 200)->header('Cache-Control','no-store');
+    ], 200)->header('Cache-Control', 'no-store');
 })->middleware('throttle:10,1');
 
 Route::post('/diag-reload', function (Request $request) {
@@ -254,7 +316,7 @@ Route::post('/diag-reload', function (Request $request) {
     Artisan::call('cache:clear');
     Artisan::call('route:clear');
     return response()->json(['ok' => true, 'message' => 'config/cache/routes cleared'], 200)
-        ->header('Cache-Control','no-store');
+        ->header('Cache-Control', 'no-store');
 })->middleware('throttle:2,1');
 
 /*
@@ -346,6 +408,10 @@ Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+
+// ✅ جعل مزادات منتهية عامة (بدون auth)
+Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
+
 Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
 Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession']);
 
@@ -366,6 +432,9 @@ Route::get('/market/cars',    [CarController::class, 'publicMarketCars']);
 Route::get('/market/trucks',  [CarController::class, 'publicMarketCars'])->defaults('market', 'trucks');
 Route::get('/market/buses',   [CarController::class, 'publicMarketCars'])->defaults('market', 'buses');
 
+Route::post('/refresh', [AuthController::class, 'refresh']);
+Route::get('/middleware/user-role', [App\Http\Controllers\Auth\MiddlewareAuthController::class, 'getUserRole']);
+
 /*
 |--------------------------------------------------------------------------
 | Protected (auth:sanctum)
@@ -374,10 +443,10 @@ Route::get('/market/buses',   [CarController::class, 'publicMarketCars'])->defau
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
+    // Route::post('/refresh', [AuthController::class, 'refresh']); // Moved to public/cookie-based section
     // User routes
     Route::get('/user', [UserController::class, 'profile']);
-    Route::get('/user/profile', [UserController::class, 'profile']);
+    Route::get('/user/profile', [UserController::class, 'profile'])->middleware('set.organization');
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::get('/user/permissions', [UserController::class, 'getPermissions']);
 
@@ -400,7 +469,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/auctions/{id}', [AuctionController::class, 'update'])->whereNumber('id');
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel'])->whereNumber('id');
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
+    // ⚠️ تم نقل /auctions-finished إلى القسم العام فوق
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auctions/{auction}/leave', [AuctionController::class, 'leave'])->whereNumber('auction');
@@ -455,9 +524,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Exhibitor Ratings (write ops)
     Route::prefix('exhibitor')->group(function () {
-        Route::post   ('/ratings',          [VenueOwnerRatingController::class, 'store']);
-        Route::put    ('/ratings/{review}', [VenueOwnerRatingController::class, 'update'])->whereNumber('review');
-        Route::delete ('/ratings/{review}', [VenueOwnerRatingController::class, 'destroy'])->whereNumber('review');
+        Route::post('/ratings',          [VenueOwnerRatingController::class, 'store']);
+        Route::put('/ratings/{review}', [VenueOwnerRatingController::class, 'update'])->whereNumber('review');
+        Route::delete('/ratings/{review}', [VenueOwnerRatingController::class, 'destroy'])->whereNumber('review');
     });
 });
 
@@ -506,126 +575,138 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 | Admin (AdminMiddleware + prefix: admin)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])
+Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class,])
     ->prefix('admin')->group(function () {
 
-    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->middleware('can:activity_logs.view');
 
-    Route::get('dashboard', [AdminController::class, 'dashboard']);
-    Route::get('settings', [SettingsController::class, 'index']);
-    Route::put('settings', [SettingsController::class, 'update']);
-    Route::post('settings', [SettingsController::class, 'update']); // Backward compatibility
-    Route::get('settings/{key}', [SettingsController::class, 'getSetting']);
+        Route::get('dashboard', [AdminController::class, 'dashboard']);
+        Route::get('settings', [SettingsController::class, 'index']);
+        Route::put('settings', [SettingsController::class, 'update']);
+        Route::post('settings', [SettingsController::class, 'update']); // Backward compatibility
+        Route::get('settings/{key}', [SettingsController::class, 'getSetting']);
 
 
-    // Users
-    Route::get('/users', [AdminUserController::class, 'index']);
-    Route::get('/users/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId');
-    Route::put('/users/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId');
-    Route::post('/users/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId');
-    Route::post('/users/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId');
-    Route::post('/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus'])->whereNumber('userId');
-    Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications']);
-    Route::post('/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification'])->whereNumber('userId');
-    Route::post('/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification'])->whereNumber('userId');
+        // Users
+        Route::get('/users/owners', [AdminUserController::class, 'getOwners'])->middleware('can:users.view');
+        Route::get('/users', [AdminUserController::class, 'index'])->middleware('can:users.view');
+        Route::get('/users/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId')->middleware('can:users.view_details');
+        Route::put('/users/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId')->middleware('can:users.update');
+        Route::post('/users/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId')->middleware('can:users.update');
+        Route::post('/users/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId')->middleware('can:users.update');
+        Route::post('/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus'])->whereNumber('userId')->middleware('can:users.update');
+        Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications'])->middleware('can:users.view');
+        Route::post('/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification'])->whereNumber('userId')->middleware('can:users.update');
+        Route::post('/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification'])->whereNumber('userId')->middleware('can:users.update');
 
-    // Moderators
-    Route::get('/moderators', [AdminModeratorController::class, 'index']);
-    Route::post('/moderators', [AdminModeratorController::class, 'store']);
-    Route::get('/moderators/{id}', [AdminModeratorController::class, 'show'])->whereNumber('id');
-    Route::put('/moderators/{id}', [AdminModeratorController::class, 'update'])->whereNumber('id');
-    Route::delete('/moderators/{id}', [AdminModeratorController::class, 'destroy'])->whereNumber('id');
-    Route::patch('/moderators/{id}/status', [AdminModeratorController::class, 'updateStatus'])->whereNumber('id');
+        // Roles & Permissions
+        Route::get('/roles-list', [RoleController::class, 'list'])->middleware('can:roles.view');
+        Route::get('/permissions/tree', [RoleController::class, 'permissionsTree'])->middleware('can:roles.view');
+        Route::apiResource('roles', RoleController::class)->middleware('can:roles.view'); // Resource controller handles specific permissions inside or we can group it
 
-    // Auctions (Admin)
-    Route::get('/auctions', [AdminAuctionController::class, 'index']);
-    Route::get('/auctions/{id}', [AdminAuctionController::class, 'show'])->whereNumber('id');
-    Route::put('/auctions/{id}', [AdminAuctionController::class, 'update'])->whereNumber('id');
-    Route::post('/auctions/{id}/approve', [AdminAuctionController::class, 'approve'])->whereNumber('id');
-    Route::post('/auctions/{id}/reject', [AdminAuctionController::class, 'reject'])->whereNumber('id');
-    Route::put('/auctions/{id}/status', [AdminAuctionController::class, 'updateStatus'])->whereNumber('id');
-    Route::put('/auctions/{id}/auction-type', [AdminAuctionController::class, 'updateType'])->whereNumber('id');
-    Route::post('/auctions/bulk-status', [AuctionController::class, 'bulkUpdateStatus']);
-    Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk']);
-    Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk']);
-    Route::put('/auctions/{id}/set-open-price', [AdminAuctionController::class, 'setOpeningPrice'])->whereNumber('id');
-    Route::post('/auctions/bulk-approve', [AdminAuctionController::class, 'bulkApprove']);
-    Route::post('/auctions/bulk-reject',  [AdminAuctionController::class, 'bulkReject']);
+        // Staff (Admins & Moderators)
+        Route::get('/staff', [AdminStaffController::class, 'index'])->middleware('can:staff.view');
+        Route::post('/staff', [AdminStaffController::class, 'store'])->middleware('can:staff.create');
+        Route::get('/staff/{id}', [AdminStaffController::class, 'show'])->whereNumber('id')->middleware('can:staff.view_details');
+        Route::put('/staff/{id}', [AdminStaffController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
+        Route::delete('/staff/{id}', [AdminStaffController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
+        Route::patch('/staff/{id}/status', [AdminStaffController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
 
-    // Bid events
-    Route::get('/bids/events', [BidEventController::class, 'index']);
-    Route::get('/bids/events/{id}', [BidEventController::class, 'show'])->whereNumber('id');
+        // Auctions (Admin)
+        Route::get('/auctions', [AdminAuctionController::class, 'index'])->middleware('can:auctions.view');
+        Route::get('/auctions/{id}', [AdminAuctionController::class, 'show'])->whereNumber('id')->middleware('can:auctions.view_details');
+        Route::put('/auctions/{id}', [AdminAuctionController::class, 'update'])->whereNumber('id')->middleware('can:auctions.update');
+        Route::post('/auctions/{id}/approve', [AdminAuctionController::class, 'approve'])->whereNumber('id')->middleware('can:auctions.approve');
+        Route::post('/auctions/{id}/reject', [AdminAuctionController::class, 'reject'])->whereNumber('id')->middleware('can:auctions.reject');
+        Route::put('/auctions/{id}/status', [AdminAuctionController::class, 'updateStatus'])->whereNumber('id')->middleware('can:auctions.manage_status');
+        Route::put('/auctions/{id}/auction-type', [AdminAuctionController::class, 'updateType'])->whereNumber('id')->middleware('can:auctions.update');
+        Route::post('/auctions/bulk-status', [AuctionController::class, 'bulkUpdateStatus'])->middleware('can:auctions.manage_status');
+        Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
+        Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
+        Route::put('/auctions/{id}/set-open-price', [AdminAuctionController::class, 'setOpeningPrice'])->whereNumber('id')->middleware('can:auctions.update');
+        Route::post('/auctions/bulk-approve', [AdminAuctionController::class, 'bulkApprove'])->middleware('can:auctions.approve');
+        Route::post('/auctions/bulk-reject',  [AdminAuctionController::class, 'bulkReject'])->middleware('can:auctions.reject');
 
-    // Cars (Admin)
-    Route::get('/cars', [AdminCarController::class, 'index']);
-    Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id');
-    Route::put('/cars/{id}', [AdminCarController::class, 'update'])->whereNumber('id');
-    Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id');
-    Route::delete('/cars/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id');
+        // Bid events
+        Route::get('/bids/events', [BidEventController::class, 'index']);
+        Route::get('/bids/events/{id}', [BidEventController::class, 'show'])->whereNumber('id');
 
-    // Blogs (إدارة العلامات والحالة عبر AdminController)
-    Route::get('/blogs', [AdminController::class, 'blogs']);
-    Route::post('/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus'])->whereNumber('id');
-    Route::post('/blog-tags', [AdminController::class, 'manageTags']);
-    Route::get('/blogs/tags', [AdminController::class, 'getBlogTags']);
+        // Cars (Admin)
+        Route::get('/cars', [AdminCarController::class, 'index'])->middleware('can:cars.view');
+        Route::get('/cars/{id}', [AdminCarController::class, 'show'])->whereNumber('id')->middleware('can:cars.view_details');
+        Route::put('/cars/{id}', [AdminCarController::class, 'update'])->whereNumber('id')->middleware('can:cars.update');
+        Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id')->middleware('can:cars.update');
+        Route::delete('/cars/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id')->middleware('can:cars.delete');
 
-    // Blog CRUD (admin فقط – من الملف الثاني)
-    Route::post('/blog', [BlogController::class, 'store']);
-    Route::put('/blog/{id}', [BlogController::class, 'update'])->whereNumber('id');
-    Route::delete('/blog/{id}', [BlogController::class, 'destroy'])->whereNumber('id');
+        // Blogs (إدارة العلامات والحالة عبر AdminController)
+        Route::get('/blogs', [AdminController::class, 'blogs']);
+        Route::post('/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus'])->whereNumber('id');
+        Route::post('/blog-tags', [AdminController::class, 'manageTags']);
+        Route::get('/blogs/tags', [AdminController::class, 'getBlogTags']);
 
-    // Finance
-    Route::get('/transactions', [AdminController::class, 'getTransactions']);
-    Route::get('/settlements', [AdminController::class, 'getSettlements']);
+        // Blog CRUD (admin فقط – من الملف الثاني)
+        Route::post('/blog', [BlogController::class, 'store']);
+        Route::put('/blog/{id}', [BlogController::class, 'update'])->whereNumber('id');
+        Route::delete('/blog/{id}', [BlogController::class, 'destroy'])->whereNumber('id');
 
-    // Broadcast (Admin)
-    Route::get('/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts']);
-    Route::get('/broadcast', [BroadcastController::class, 'show']);
-    Route::post('/broadcast', [BroadcastController::class, 'store']);
-    Route::put('/broadcast', [BroadcastController::class, 'update']);
-    Route::put('/broadcast/status', [BroadcastController::class, 'updateStatus']);
-    Route::delete('/broadcast/{id}', [BroadcastController::class, 'destroy'])->whereNumber('id');
+        // Finance
+        Route::get('/transactions', [AdminController::class, 'getTransactions'])->middleware('can:commissions.view');
+        Route::get('/settlements', [AdminController::class, 'getSettlements'])->middleware('can:commissions.view');
 
-    // Commission Tiers
-    Route::get('/commission-tiers', [CommissionTierController::class, 'index']);
-    Route::post('/commission-tiers', [CommissionTierController::class, 'store']);
-    Route::get('/commission-tiers/{id}', [CommissionTierController::class, 'show'])->whereNumber('id');
-    Route::put('/commission-tiers/{id}', [CommissionTierController::class, 'update'])->whereNumber('id');
-    Route::delete('/commission-tiers/{id}', [CommissionTierController::class, 'destroy'])->whereNumber('id');
-    Route::post('/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission']);
+        // Broadcast (Admin)
+        Route::get('/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts'])->middleware('can:live_streams.view');
+        Route::get('/broadcast', [BroadcastController::class, 'show'])->middleware('can:live_streams.view');
+        Route::post('/broadcast', [BroadcastController::class, 'store'])->middleware('can:live_streams.manage');
+        Route::put('/broadcast', [BroadcastController::class, 'update'])->middleware('can:live_streams.manage');
+        Route::put('/broadcast/status', [BroadcastController::class, 'updateStatus'])->middleware('can:live_streams.manage');
+        Route::delete('/broadcast/{id}', [BroadcastController::class, 'destroy'])->whereNumber('id')->middleware('can:live_streams.manage');
 
-    // Subscription Plans
-    Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index']);
-    Route::post('/subscription-plans', [SubscriptionPlanController::class, 'store']);
-    Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show'])->whereNumber('id');
-    Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])->whereNumber('id');
-    Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])->whereNumber('id');
-    Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus']);
+        // Commission Tiers
+        Route::get('/commission-tiers', [CommissionTierController::class, 'index'])->middleware('can:commissions.view');
+        Route::post('/commission-tiers', [CommissionTierController::class, 'store'])->middleware('can:commissions.manage');
+        Route::get('/commission-tiers/{id}', [CommissionTierController::class, 'show'])->whereNumber('id')->middleware('can:commissions.view');
+        Route::put('/commission-tiers/{id}', [CommissionTierController::class, 'update'])->whereNumber('id')->middleware('can:commissions.manage');
+        Route::delete('/commission-tiers/{id}', [CommissionTierController::class, 'destroy'])->whereNumber('id')->middleware('can:commissions.manage');
+        Route::post('/commission-tiers/calculate', [CommissionTierController::class, 'calculateCommission'])->middleware('can:commissions.view');
 
-    // Auction Sessions (Admin)
-    Route::get('/sessions', [AdminAuctionSessionController::class, 'index']);
-    Route::get('/sessions/active-scheduled', [AdminAuctionSessionController::class, 'getActiveAndScheduledSessions']);
-    Route::post('/sessions', [AdminAuctionSessionController::class, 'store']);
-    Route::get('/sessions/{id}', [AdminAuctionSessionController::class, 'show'])->whereNumber('id');
-    Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id');
-    Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
-    Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy']);
+        // Subscription Plans
+        Route::get('/subscription-plans', [SubscriptionPlanController::class, 'index'])->middleware('can:subscription_plans.view');
+        Route::post('/subscription-plans', [SubscriptionPlanController::class, 'store'])->middleware('can:subscription_plans.manage');
+        Route::get('/subscription-plans/{id}', [SubscriptionPlanController::class, 'show'])->whereNumber('id')->middleware('can:subscription_plans.view');
+        Route::put('/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])->whereNumber('id')->middleware('can:subscription_plans.manage');
+        Route::delete('/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])->whereNumber('id')->middleware('can:subscription_plans.manage');
+        Route::post('/subscription-plans/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus'])->middleware('can:subscription_plans.manage');
 
-// Venue Owners (Admin)
-Route::get  ('/venue-owners',                         [AdminVenueOwnerController::class, 'index']);
-Route::get  ('/venue-owners/{id}',                    [AdminVenueOwnerController::class, 'show'])->whereNumber('id');
-Route::get  ('/venue-owners/{id}/cars',               [AdminVenueOwnerController::class, 'cars'])->whereNumber('id');
-Route::get  ('/venue-owners/{id}/wallet',             [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id');
-Route::get  ('/venue-owners/{id}/wallet/transactions',[AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id');
-Route::post ('/venue-owners/{id}/approve',            [AdminVenueOwnerController::class, 'approve'])->whereNumber('id');
-Route::post ('/venue-owners/{id}/reject',             [AdminVenueOwnerController::class, 'reject'])->whereNumber('id');
-Route::post ('/venue-owners/{id}/toggle-status',      [AdminVenueOwnerController::class, 'toggleStatus'])->whereNumber('id');
+        // Auction Sessions (Admin)
+        Route::get('/sessions', [AdminAuctionSessionController::class, 'index'])->middleware('can:sessions.view');
+        Route::get('/sessions/active-scheduled', [AdminAuctionSessionController::class, 'getActiveAndScheduledSessions'])->middleware('can:sessions.view');
+        Route::post('/sessions', [AdminAuctionSessionController::class, 'store'])->middleware('can:sessions.create');
+        Route::get('/sessions/{id}', [AdminAuctionSessionController::class, 'show'])->whereNumber('id')->middleware('can:sessions.view_details');
+        Route::put('/sessions/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id')->middleware('can:sessions.update');
+        Route::post('/sessions/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id')->middleware('can:sessions.update');
+        Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy'])->middleware('can:sessions.delete');
 
-    // Venues (من الملف الثاني)
-    Route::post('/venues', [VenueController::class, 'store']);
-    Route::put('/venues/{id}', [VenueController::class, 'update'])->whereNumber('id');
-    Route::delete('/venues/{id}', [VenueController::class, 'destroy'])->whereNumber('id');
-});
+        // Venue Owners (Admin)
+        Route::get('/venue-owners',                         [AdminVenueOwnerController::class, 'index'])->middleware('can:exhibitors.view');
+        Route::get('/venue-owners/{id}',                    [AdminVenueOwnerController::class, 'show'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::get('/venue-owners/{id}/cars',               [AdminVenueOwnerController::class, 'cars'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::get('/venue-owners/{id}/wallet',             [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::get('/venue-owners/{id}/wallet/transactions', [AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::post('/venue-owners/{id}/approve',            [AdminVenueOwnerController::class, 'approve'])->whereNumber('id')->middleware('can:exhibitors.approve');
+        Route::post('/venue-owners/{id}/reject',             [AdminVenueOwnerController::class, 'reject'])->whereNumber('id')->middleware('can:exhibitors.approve');
+        Route::post('/venue-owners/{id}/toggle-status',      [AdminVenueOwnerController::class, 'toggleStatus'])->whereNumber('id')->middleware('can:exhibitors.update');
+
+        // Organizations
+        Route::get('/organizations/{id}/members', [\App\Http\Controllers\Admin\OrganizationController::class, 'getMembers'])->middleware('can:organizations.view');
+        Route::post('/organizations/{id}/members', [\App\Http\Controllers\Admin\OrganizationController::class, 'addMember'])->middleware('can:organizations.update');
+        Route::delete('/organizations/{id}/members/{userId}', [\App\Http\Controllers\Admin\OrganizationController::class, 'removeMember'])->middleware('can:organizations.update');
+        Route::apiResource('organizations', \App\Http\Controllers\Admin\OrganizationController::class)->middleware('can:organizations.view'); // Basic protection, refined in controller/policy
+
+        // Venues (من الملف الثاني)
+        Route::post('/venues', [VenueController::class, 'store']);
+        Route::put('/venues/{id}', [VenueController::class, 'update'])->whereNumber('id');
+        Route::delete('/venues/{id}', [VenueController::class, 'destroy'])->whereNumber('id');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -633,14 +714,14 @@ Route::post ('/venue-owners/{id}/toggle-status',      [AdminVenueOwnerController
 |--------------------------------------------------------------------------
 */
 Route::prefix('exhibitor')
-    ->middleware(['auth:sanctum','role:admin,venue_owner,dealer'])
+    ->middleware(['auth:sanctum', 'role:admin,venue_owner,dealer'])
     ->group(function () {
         // Sessions CRUD
-        Route::get   ('/sessions',             [ExhibitorAuctionSessionController::class, 'index']);
-        Route::post  ('/sessions',             [ExhibitorAuctionSessionController::class, 'store']);
-        Route::get   ('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'show'])->whereNumber('id');
-        Route::put   ('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'update'])->whereNumber('id');
-        Route::post  ('/sessions/{id}/status', [ExhibitorAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
+        Route::get('/sessions',             [ExhibitorAuctionSessionController::class, 'index']);
+        Route::post('/sessions',             [ExhibitorAuctionSessionController::class, 'store']);
+        Route::get('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'show'])->whereNumber('id');
+        Route::put('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'update'])->whereNumber('id');
+        Route::post('/sessions/{id}/status', [ExhibitorAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
         Route::delete('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'destroy']);
 
         // Ratings (قراءة)
@@ -662,25 +743,25 @@ Route::prefix('exhibitor')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/wallet/withdraw', [ExhibitorWalletWithdrawController::class, 'requestPayout']);
 
     // Shipments
-    Route::get   ('/shipments',                   [ExhibitorShipmentController::class, 'index']);
-    Route::get   ('/shipments/{shipment}',        [ExhibitorShipmentController::class, 'show'])->whereNumber('shipment');
-    Route::post  ('/shipments',                   [ExhibitorShipmentController::class, 'store']);
-    Route::patch ('/shipments/{shipment}/status', [ExhibitorShipmentController::class, 'updateStatus'])->whereNumber('shipment');
+    Route::get('/shipments',                   [ExhibitorShipmentController::class, 'index']);
+    Route::get('/shipments/{shipment}',        [ExhibitorShipmentController::class, 'show'])->whereNumber('shipment');
+    Route::post('/shipments',                   [ExhibitorShipmentController::class, 'store']);
+    Route::patch('/shipments/{shipment}/status', [ExhibitorShipmentController::class, 'updateStatus'])->whereNumber('shipment');
     Route::delete('/shipments/{shipment}',        [ExhibitorShipmentController::class, 'destroy'])->whereNumber('shipment');
 
     // Commission
-    Route::get ('/commission/summary',    [ExhibitorCommissionController::class, 'summary']);
-    Route::put ('/commission/settings',   [ExhibitorCommissionController::class, 'updateSettings']);
-    Route::get ('/commission/operations', [ExhibitorCommissionController::class, 'index']);
+    Route::get('/commission/summary',    [ExhibitorCommissionController::class, 'summary']);
+    Route::put('/commission/settings',   [ExhibitorCommissionController::class, 'updateSettings']);
+    Route::get('/commission/operations', [ExhibitorCommissionController::class, 'index']);
     Route::post('/commission/operations', [ExhibitorCommissionController::class, 'storeOperation']);
-    Route::get ('/commission/tiers',      [ExhibitorCommissionController::class, 'tiers']);
+    Route::get('/commission/tiers',      [ExhibitorCommissionController::class, 'tiers']);
     Route::post('/commission/estimate',   [ExhibitorCommissionController::class, 'estimate']);
 
     // Extra Services
-    Route::get ('/extra-services',                 [ExhibitorExtraServiceController::class, 'index']);
-    Route::get ('/extra-services/{extraService}',  [ExhibitorExtraServiceController::class, 'show'])->whereNumber('extraService');
+    Route::get('/extra-services',                 [ExhibitorExtraServiceController::class, 'index']);
+    Route::get('/extra-services/{extraService}',  [ExhibitorExtraServiceController::class, 'show'])->whereNumber('extraService');
     Route::post('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'store']);
-    Route::get ('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'index']);
+    Route::get('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'index']);
 
     // Marketplace
     Route::get('/market/cars', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'index']);

@@ -15,6 +15,7 @@ interface User {
   kyc_status?: string;
   is_active?: boolean;
   status?: string;
+  permissions?: string[];
 
   // صاحب المعرض
   venue_name?: string;
@@ -48,7 +49,10 @@ interface AuthState {
   closeAuthModal: () => void;
 
   initializeFromStorage: () => Promise<boolean>;
-  fetchProfile: (opts?: { force?: boolean; silent?: boolean }) => Promise<boolean>;
+  fetchProfile: (opts?: {
+    force?: boolean;
+    silent?: boolean;
+  }) => Promise<boolean>;
 
   login: (
     email: string,
@@ -61,33 +65,28 @@ interface AuthState {
     pendingApproval?: boolean;
   }>;
 
-  logout: (opts?: { skipRequest?: boolean; redirectToLogin?: boolean }) => Promise<void>;
+  verifyCode: (
+    email: string,
+    code: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+
+  logout: (opts?: {
+    skipRequest?: boolean;
+    redirectToLogin?: boolean;
+  }) => Promise<void>;
   refreshToken: () => Promise<boolean>;
 }
 
 const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
-const TOKEN_EXPIRY_MINUTES = 15;
-const AUTH_COOKIE_NAME = "auth-token";
+// const TOKEN_EXPIRY_MINUTES = 15; // Not used for cookie anymore
+// const AUTH_COOKIE_NAME = "auth-token"; // Not used for access token anymore
 
 const isBrowser = () => typeof window !== "undefined";
 
-const setAuthCookie = (token: string, minutes = TOKEN_EXPIRY_MINUTES) => {
-  if (!isBrowser()) return;
-
-  const expires = new Date(Date.now() + minutes * 60 * 1000).toUTCString();
-  const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
-
-  document.cookie = `${AUTH_COOKIE_NAME}=${token}; Path=/; Expires=${expires}; SameSite=Lax${secureFlag}`;
-};
-
-const clearAuthCookie = () => {
-  if (!isBrowser()) return;
-
-  const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${AUTH_COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secureFlag}`;
-};
-
-// ✅ موحّد شكل المستخدم من أي رد (يدعم {success,data} و {data:{}} و {…user})
+// Helper to extract user data
 const extractUser = (respOrObj: any): User | null => {
   const root = respOrObj?.data ?? respOrObj;
   if (!root) return null;
@@ -121,21 +120,23 @@ export const useAuthStore = create<AuthState>()(
 
         const token = isBrowser() ? localStorage.getItem("token") : null;
         if (!token) {
-          clearAuthCookie();
+          // No token in storage, assume logged out
           set({ loading: false, initialized: true });
           return false;
         }
 
-        // ضع التوكن في الرؤوس
+        // Set token in headers
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        setAuthCookie(token);
+        if (api.defaults)
+          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         set({ token, isLoggedIn: true });
 
-        get().fetchProfile({ force: true, silent: true }).finally(() => {
-          set({ loading: false, initialized: true });
-        });
+        get()
+          .fetchProfile({ force: true, silent: true })
+          .finally(() => {
+            set({ loading: false, initialized: true });
+          });
 
         return true;
       },
@@ -158,12 +159,18 @@ export const useAuthStore = create<AuthState>()(
 
           let resp: any;
           if (force) {
-            resp = await api.get("/api/user/profile"); // تخطّي الكاش
+            resp = await api.get("/api/user/profile"); // Skip cache
           } else {
             const { cachedApiRequest } = await import("@/lib/request-cache");
             resp = await cachedApiRequest(
               "/api/user/profile",
-              { headers: api.defaults?.headers?.common },
+              {
+                headers: {
+                  Authorization: api.defaults?.headers?.common?.[
+                    "Authorization"
+                  ] as string,
+                },
+              },
               PROFILE_CACHE_DURATION
             );
           }
@@ -174,7 +181,6 @@ export const useAuthStore = create<AuthState>()(
             return false;
           }
 
-          // ✅ دمج بدل الاستبدال
           set((s) => ({
             user: { ...(s.user ?? {}), ...userData },
             isLoggedIn: true,
@@ -186,13 +192,25 @@ export const useAuthStore = create<AuthState>()(
           return true;
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {
-            console.error("fetchProfile error:", error?.response?.data || error);
+            console.error(
+              "fetchProfile error:",
+              error?.response?.data || error
+            );
           }
 
           if (error?.response?.status === 401) {
+            // Let the interceptor handle 401s usually, but if this is called directly and fails:
+            // The interceptor might have already tried to refresh.
+            // If we are here, it means refresh failed or wasn't possible.
+            // We should probably logout locally.
+
+            // However, fetchProfile is often called after login or init.
+            // If it fails with 401, it means the token is invalid.
+
             if (typeof window !== "undefined") localStorage.removeItem("token");
             delete axios.defaults.headers.common["Authorization"];
-            if (api.defaults) delete api.defaults.headers.common["Authorization"];
+            if (api.defaults)
+              delete api.defaults.headers.common["Authorization"];
 
             set({
               user: null,
@@ -218,22 +236,28 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         set({ loading: true, error: null });
         try {
+          // Login request - backend sets HttpOnly cookie for refresh token
           const response = await api.post(`/api/login`, { email, password });
           const data = response.data;
 
-          if (data.status === "error" && data.message === "Email not verified") {
+          if (
+            data.status === "error" &&
+            data.message === "Email not verified"
+          ) {
             set({ loading: false });
             return { success: false, needsVerification: true };
           }
 
           const token = data.access_token;
+
+          // Store access token in localStorage (and state)
           if (isBrowser() && token) {
             localStorage.setItem("token", token);
           }
           if (token) {
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            setAuthCookie(token);
+            if (api.defaults)
+              api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           }
 
           const loginUser = extractUser(data);
@@ -262,22 +286,81 @@ export const useAuthStore = create<AuthState>()(
 
             if (err.response.status === 403 && responseData.message) {
               set({ loading: false });
-              return { success: false, pendingApproval: true, error: responseData.message };
+              return {
+                success: false,
+                pendingApproval: true,
+                error: responseData.message,
+              };
             }
-            if (err.response.status === 401 && responseData.message === "Email not verified") {
+            if (
+              err.response.status === 401 &&
+              responseData.message === "Email not verified"
+            ) {
               set({ loading: false });
               return { success: false, needsVerification: true };
             }
             if (err.response.status === 422) {
               if (responseData.error) errorMessage = responseData.error;
-              else if (responseData.message) errorMessage = responseData.message;
-              else if (responseData.first_error) errorMessage = responseData.first_error;
-            } else if (responseData.message) errorMessage = responseData.message;
+              else if (responseData.message)
+                errorMessage = responseData.message;
+              else if (responseData.first_error)
+                errorMessage = responseData.first_error;
+            } else if (responseData.message)
+              errorMessage = responseData.message;
             else if (responseData.error) errorMessage = responseData.error;
           } else if (err.request) {
-            errorMessage = "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
+            errorMessage =
+              "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
           }
 
+          set({ loading: false, error: errorMessage });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      verifyCode: async (email, code) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await api.post(`/api/verify-otp`, {
+            email,
+            otp: code,
+          });
+          const data = response.data;
+
+          const token = data.access_token;
+
+          // Store access token in localStorage (and state)
+          if (isBrowser() && token) {
+            localStorage.setItem("token", token);
+          }
+          if (token) {
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (api.defaults)
+              api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          }
+
+          const loginUser = extractUser(data);
+          if (loginUser) {
+            set((s) => ({
+              user: { ...(s.user ?? {}), ...loginUser },
+              token,
+              isLoggedIn: true,
+              error: null,
+              lastProfileFetch: 0,
+            }));
+          } else {
+            set({ token, isLoggedIn: true, error: null, lastProfileFetch: 0 });
+          }
+
+          await get().fetchProfile({ force: true, silent: true });
+
+          set({ loading: false });
+          return { success: true };
+        } catch (err: any) {
+          let errorMessage = "فشل التحقق من الرمز";
+          if (err.response?.data?.message) {
+            errorMessage = err.response.data.message;
+          }
           set({ loading: false, error: errorMessage });
           return { success: false, error: errorMessage };
         }
@@ -289,6 +372,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           if (!skipRequest) {
+            // Call backend to revoke tokens and clear cookie
             await api.post(`/api/logout`).catch((error) => {
               console.error("Logout API error:", error);
             });
@@ -297,9 +381,19 @@ export const useAuthStore = create<AuthState>()(
           if (isBrowser()) localStorage.removeItem("token");
           delete axios.defaults.headers.common["Authorization"];
           if (api.defaults) delete api.defaults.headers.common["Authorization"];
-          clearAuthCookie();
 
-          set({ user: null, token: null, isLoggedIn: false, lastProfileFetch: 0 });
+          // We don't manually clear the cookie here because it's HttpOnly.
+          // The backend logout endpoint should have cleared it.
+          // If the backend call failed, the cookie might still be there,
+          // but the access token is gone from client, so they are effectively logged out
+          // until they try to refresh (which will fail if we implement it right) or login again.
+
+          set({
+            user: null,
+            token: null,
+            isLoggedIn: false,
+            lastProfileFetch: 0,
+          });
 
           if (redirectToLogin && isBrowser()) {
             window.location.href = "/auth/login";
@@ -309,16 +403,23 @@ export const useAuthStore = create<AuthState>()(
 
       refreshToken: async () => {
         try {
-          const currentToken =
-            get().token ||
-            (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+          // We do NOT send the old access token in the header for the refresh request
+          // The backend relies solely on the HttpOnly cookie.
+          // However, we might want to ensure we don't send an invalid Bearer token if it's set in defaults.
+          // But usually, it doesn't hurt if the backend ignores it.
+          // To be safe and clean, we can explicitly unset it for this request or create a new instance.
+          // But since api.post uses the instance with interceptors, we need to be careful not to trigger a loop.
+          // The interceptor handles the loop check.
 
+          // Note: We need { withCredentials: true } to send the cookie.
           const response = await api.post(
             `/api/refresh`,
             {},
             {
               withCredentials: true,
-              headers: { ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}) },
+              // Explicitly remove Authorization header for this request to avoid confusion,
+              // though the backend logic I wrote ignores it for the refresh token itself.
+              headers: { Authorization: "" },
             }
           );
 
@@ -328,43 +429,41 @@ export const useAuthStore = create<AuthState>()(
             if (isBrowser()) {
               localStorage.setItem("token", access_token);
             }
-            axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
-            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
-            setAuthCookie(access_token);
+            axios.defaults.headers.common[
+              "Authorization"
+            ] = `Bearer ${access_token}`;
+            if (api.defaults)
+              api.defaults.headers.common[
+                "Authorization"
+              ] = `Bearer ${access_token}`;
 
             const state = get();
             const now = Date.now();
-            const needsUserData =
-              !state.user || now - state.lastProfileFetch > PROFILE_CACHE_DURATION;
+            // Optionally update user data if returned or needed
 
-            if (needsUserData) {
-              try {
-                await get().fetchProfile({ force: true, silent: true });
-              } catch (userError) {
-                console.error("Failed to get user data after token refresh:", userError);
-                set({ token: access_token, isLoggedIn: true });
-              }
-            } else {
-              set({ token: access_token, isLoggedIn: true });
-            }
+            set({ token: access_token, isLoggedIn: true });
             return true;
           } else {
-            console.error("Token refresh response missing access_token:", response.data);
+            console.error(
+              "Token refresh response missing access_token:",
+              response.data
+            );
             return false;
           }
         } catch (error: any) {
           console.error("Token refresh failed:", error);
+          // If refresh fails, we should logout locally
 
-          if (error?.response?.status === 401) {
-            if (isBrowser()) localStorage.removeItem("token");
-            delete axios.defaults.headers.common["Authorization"];
-            if (api.defaults) delete api.defaults.headers.common["Authorization"];
-            clearAuthCookie();
+          if (isBrowser()) localStorage.removeItem("token");
+          delete axios.defaults.headers.common["Authorization"];
+          if (api.defaults) delete api.defaults.headers.common["Authorization"];
 
-            set({ user: null, token: null, isLoggedIn: false, lastProfileFetch: 0 });
-          }
-
-          clearAuthCookie();
+          set({
+            user: null,
+            token: null,
+            isLoggedIn: false,
+            lastProfileFetch: 0,
+          });
           return false;
         }
       },
@@ -378,15 +477,12 @@ export const useAuthStore = create<AuthState>()(
         isLoggedIn: state.isLoggedIn,
         lastProfileFetch: state.lastProfileFetch,
       }),
-      // 🔁 مهم جدًا: زودنا version + migrate لتنظيف الشكل القديم بالفلاتة
       version: 2,
       migrate: (persisted: any, _version) => {
         try {
           if (!persisted) return persisted;
           const u = persisted.user;
           if (!u) return persisted;
-
-          // دعم أي لفّافات سابقة
           const flattened = extractUser(u) || u;
           return { ...persisted, user: flattened };
         } catch {
