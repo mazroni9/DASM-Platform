@@ -124,64 +124,65 @@ export default function LoginForm() {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   if (showVerification) {
-    return (
-      <form onSubmit={handleVerifyCode} className="space-y-5 w-full">
-        <div className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+    router.push("/verify-email");
+    // return (
+    //   <form onSubmit={handleVerifyCode} className="space-y-5 w-full">
+    //     <div className="space-y-4">
+    //       {error && (
+    //         <Alert variant="destructive">
+    //           <AlertCircle className="h-4 w-4" />
+    //           <AlertDescription>{error}</AlertDescription>
+    //         </Alert>
+    //       )}
 
-          {success && (
-            <Alert variant="success">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
+    //       {success && (
+    //         <Alert variant="success">
+    //           <CheckCircle2 className="h-4 w-4" />
+    //           <AlertDescription>{success}</AlertDescription>
+    //         </Alert>
+    //       )}
 
-          <div className="space-y-2">
-            <Label htmlFor="verificationCode" className="text-foreground font-medium">
-              رمز التحقق
-            </Label>
-            <Input
-              id="verificationCode"
-              type="text"
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-              disabled={isLoading}
-              dir="ltr"
-            />
-          </div>
+    //       <div className="space-y-2">
+    //         <Label htmlFor="verificationCode" className="text-foreground font-medium">
+    //           رمز التحقق
+    //         </Label>
+    //         <Input
+    //           id="verificationCode"
+    //           type="text"
+    //           value={verificationCode}
+    //           onChange={(e) => setVerificationCode(e.target.value)}
+    //           disabled={isLoading}
+    //           dir="ltr"
+    //         />
+    //       </div>
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2.5"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
-                جاري التحقق...
-              </span>
-            ) : (
-              "تحقق من الرمز"
-            )}
-          </Button>
+    //       <Button
+    //         type="submit"
+    //         disabled={isLoading}
+    //         className="w-full py-2.5"
+    //       >
+    //         {isLoading ? (
+    //           <span className="flex items-center justify-center">
+    //             <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
+    //             جاري التحقق...
+    //           </span>
+    //         ) : (
+    //           "تحقق من الرمز"
+    //         )}
+    //       </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowVerification(false)}
-            disabled={isLoading}
-            className="w-full"
-          >
-            العودة للخلف
-          </Button>
-        </div>
-      </form>
-    );
+    //       <Button
+    //         type="button"
+    //         variant="outline"
+    //         onClick={() => setShowVerification(false)}
+    //         disabled={isLoading}
+    //         className="w-full"
+    //       >
+    //         العودة للخلف
+    //       </Button>
+    //     </div>
+    //   </form>
+    // );
   }
 
   return (
