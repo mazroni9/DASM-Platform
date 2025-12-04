@@ -536,7 +536,7 @@ class AuthController extends Controller
             $refreshToken,
             60 * 24 * 7, // 7 days in minutes
             '/',
-            null,
+            config('session.domain'),
             true, // Secure
             true, // HttpOnly
             false, // Raw
@@ -625,7 +625,7 @@ class AuthController extends Controller
             $newRefreshToken,
             60 * 24 * 7,
             '/',
-            null,
+            config('session.domain'),
             true, // Secure
             true, // HttpOnly
             false, // Raw
@@ -679,7 +679,7 @@ class AuthController extends Controller
         // $request->session()->regenerateToken();
 
         // Clear the Refresh Token Cookie
-        $cookie = cookie()->forget('refresh_token');
+        $cookie = cookie()->forget('refresh_token', '/', config('session.domain'));
 
         return response()->json(['message' => 'Logged out successfully'])->withCookie($cookie);
     }
