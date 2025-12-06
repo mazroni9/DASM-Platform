@@ -247,9 +247,9 @@ const LiveBroadcastSection = () => {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 relative">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-8 md:mb-10">
-          <div className="flex items-center gap-3">
+        {/* Header – وسط الصفحة */}
+        <div className="flex flex-col items-center gap-4 mb-8 md:mb-10 text-center">
+          <div className="flex items-center justify-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
               <Radio className="w-5 h-5 md:w-6 md:h-6" />
             </div>
@@ -277,7 +277,7 @@ const LiveBroadcastSection = () => {
         >
           {/* Top bar */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border">
-            <div className="flex items_center gap-2">
+            <div className="flex items-center gap-2">
               <PlayCircle className="w-5 h-5 text-primary" />
               <span className="text-foreground font-semibold text-sm md:text-base line-clamp-1">
                 {data?.title || "البث المباشر من DASM"}
