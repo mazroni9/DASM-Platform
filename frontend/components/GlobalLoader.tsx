@@ -1,18 +1,20 @@
 "use client";
 
-import React from 'react';
-import { useLoading } from '@/contexts/LoadingContext';
-import '/public/assets/css/loading.scss';
-import { ToastBar } from 'react-hot-toast';
-import Snackbar from '@mui/material/Snackbar';
-import Slide from '@mui/material/Slide';
+import React from "react";
+import { useLoading } from "@/contexts/LoadingContext";
+import "../public/assets/css/loading.scss";
+import { ToastBar } from "react-hot-toast";
+import Snackbar from "@mui/material/Snackbar";
+import Slide from "@mui/material/Slide";
 
 export default function GlobalLoader() {
-    const loadingContainerStyle = { 
-      backgroundColor: "rgba(255, 255, 255, 0.3)", /* Semi-transparent background */
-      backdropFilter: "blur(5px)", /* Apply blur to the background behind this element */
-      //-webkit-backdrop-filter: blur(10px);
-    }
+  const loadingContainerStyle = {
+    backgroundColor:
+      "rgba(255, 255, 255, 0.3)" /* Semi-transparent background */,
+    backdropFilter:
+      "blur(5px)" /* Apply blur to the background behind this element */,
+    //-webkit-backdrop-filter: blur(10px);
+  };
   const { isLoading } = useLoading();
 
   if (!isLoading) {
@@ -26,7 +28,7 @@ export default function GlobalLoader() {
     top: `${Math.random() * 100}%`,
     delay: `${Math.random() * 3}s`,
     // Base duration; will scale via inline style with CSS clamp
-    duration: 2 + Math.random() * 2
+    duration: 2 + Math.random() * 2,
   }));
 
   // const handleClose = (event, reason) => {
@@ -39,17 +41,16 @@ export default function GlobalLoader() {
 
   return (
     <>
-    <Snackbar
-    anchorOrigin={{vertical: 'bottom', horizontal: 'center' }}
-    open={isLoading}
-    slots={{ transition: Slide }}
-    message={<div className='font-bold'>جار التحميل...</div>}
-    
-  />
-  </>
+      <Snackbar
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        open={isLoading}
+        slots={{ transition: Slide }}
+        message={<div className="font-bold">جار التحميل...</div>}
+      />
+    </>
     // <div style={loadingContainerStyle} className="fixed inset-0 z-50 flex items-center justify-center">
     //   {/* Animated Background */}
-      
+
     //   <div className="loading-container absolute inset-0 bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-50">
     //     <div className="absolute inset-0 bg-white opacity-0"></div> {/* Overlay opacity 0 */}
 
@@ -58,7 +59,7 @@ export default function GlobalLoader() {
     //       {particles.map(p => (
     //         <div
     //           key={p.key}
-    //           className="absolute rounded-full opacity-30 animate-pulse 
+    //           className="absolute rounded-full opacity-30 animate-pulse
     //                      w-[2px] h-[2px] sm:w-[3px] sm:h-[3px] md:w-[4px] md:h-[4px] bg-blue-300"
     //           style={{
     //             left: p.left,
@@ -73,12 +74,11 @@ export default function GlobalLoader() {
     //   </div>
 
     //   {/* Main Loader Container */}
-    //   <div className="relative z-10 flex flex-col items-center justify-center 
+    //   <div className="relative z-10 flex flex-col items-center justify-center
     //                    p-6 sm:p-8 md:p-12">
-        
+
     //     {/* Premium Spinner */}
-       
-        
+
     //     {/* Premium Text */}
     //     <div className="text-center space-y-2">
     //       <div className="flex items-center justify-center gap-2">
@@ -94,15 +94,13 @@ export default function GlobalLoader() {
     //           </svg>
     //       </div>
     //       <h5 className=" font-bold text-gray-700 tracking-wide ">
-    //         جارِ التحميل...          
+    //         جارِ التحميل...
     //       </h5>
     //      {/*  <p className="text-sm sm:text-base md:text-lg text-gray-500 font-medium">
     //         يرجى الانتظار قليلاً
     //       </p> */}
     //     </div>
 
-
-     
     //   </div>
     // </div>
   );
