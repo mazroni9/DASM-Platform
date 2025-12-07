@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import {
-  Car,
+  Car as CarIcon,
   Search,
   Filter,
   ChevronDown,
@@ -21,6 +21,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { formatCurrency } from "@/utils/formatCurrency";
 import Pusher from "pusher-js";
+
+import { AgGridReact } from "ag-grid-react";
+import type { ColDef, ICellRendererParams } from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 
 // =============== أنواع TypeScript ===============
 interface CarAuction {
@@ -94,6 +99,224 @@ export default function InstantAuctionPage() {
   const sentryRef = useRef<HTMLDivElement>(null);
   const loadingGateRef = useRef(false);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // =============== مكون حالة المزاد ===============
+  const StatusBadge = ({ status }: { status: string }) => {
+    const config =
+      {
+        "جاري المزايدة": {
+          bg: "bg-blue-900/30",
+          text: "text-blue-300",
+          border: "border-blue-700/50",
+          icon: Play,
+        },
+        "تم البيع": {
+          bg: "bg-emerald-900/30",
+          text: "text-emerald-300",
+          border: "border-emerald-700/50",
+          icon: TrendingUp,
+        },
+        "انتهى": {
+          bg: "bg-gray-800/50",
+          text: "text-gray-400",
+          border: "border-gray-700/50",
+          icon: Clock,
+        },
+      }[status] || {
+        bg: "bg-amber-900/30",
+        text: "text-amber-300",
+        border: "border-amber-700/50",
+        icon: AlertCircle,
+      };
+
+    const Icon = config.icon;
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${config.bg} ${config.text} ${config.border}`}
+      >
+        <Icon className="w-3 h-3" />
+        {status}
+      </span>
+    );
+  };
+
+  // =============== إعداد أعمدة AG Grid ===============
+  const columnDefs = useMemo<ColDef<CarAuction>[]>(
+    () => [
+      {
+        headerName: "رابط البث",
+        field: "broadcasts",
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: ICellRendererParams<CarAuction>) => {
+          const broadcasts = params.data?.broadcasts || [];
+          if (!broadcasts.length) {
+            return <span className="text-foreground/50">—</span>;
+          }
+          return (
+            <LoadingLink
+              target="_blank"
+              href={broadcasts[0].stream_url}
+              className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
+            >
+              مشاهدة البث
+            </LoadingLink>
+          );
+        },
+      },
+      {
+        headerName: "المنطقة",
+        valueGetter: (params) => params.data?.car.province || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "المدينة",
+        valueGetter: (params) => params.data?.car.city || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "الماركة",
+        valueGetter: (params) => params.data?.car.make || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "الموديل",
+        valueGetter: (params) => params.data?.car.model || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "السنة",
+        valueGetter: (params) => params.data?.car.year ?? "",
+        filter: "agNumberColumnFilter",
+        type: "numericColumn",
+      },
+      {
+        headerName: "اللوحة",
+        valueGetter: (params) => params.data?.car.plate || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "العداد",
+        valueGetter: (params) => params.data?.car.odometer || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "الحالة",
+        valueGetter: (params) => params.data?.car.condition || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "اللون",
+        valueGetter: (params) => params.data?.car.color || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "الوقود",
+        valueGetter: (params) => params.data?.car.engine || "",
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "المزايدات",
+        valueGetter: (params) => params.data?.bids.length ?? 0,
+        type: "numericColumn",
+        filter: "agNumberColumnFilter",
+      },
+      {
+        headerName: "سعر الافتتاح",
+        valueGetter: (params) => params.data?.opening_price ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
+        type: "numericColumn",
+        filter: "agNumberColumnFilter",
+      },
+      {
+        headerName: "أقل سعر",
+        valueGetter: (params) => params.data?.minimum_bid ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
+        type: "numericColumn",
+        filter: "agNumberColumnFilter",
+      },
+      {
+        headerName: "أعلى سعر",
+        valueGetter: (params) => params.data?.maximum_bid ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
+        type: "numericColumn",
+        filter: "agNumberColumnFilter",
+      },
+      {
+        headerName: "آخر سعر",
+        valueGetter: (params) => params.data?.current_bid ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
+        type: "numericColumn",
+        filter: "agNumberColumnFilter",
+      },
+      {
+        headerName: "مبلغ الزيادة",
+        valueGetter: (params) => {
+          const bids = params.data?.bids || [];
+          if (!bids.length) return 0;
+          return bids[bids.length - 1].increment;
+        },
+        type: "numericColumn",
+        filter: "agNumberColumnFilter",
+      },
+      {
+        headerName: "نسبة التغير",
+        valueGetter: (params) => {
+          const bids = params.data?.bids || [];
+          if (!bids.length) return "0%";
+          const lastBid = bids[bids.length - 1];
+          if (!lastBid.bid_amount) return "0%";
+          const percent = (lastBid.increment / lastBid.bid_amount) * 100;
+          return `${percent.toFixed(2)}%`;
+        },
+        filter: "agTextColumnFilter",
+      },
+      {
+        headerName: "الحالة",
+        field: "car.auction_status",
+        sortable: true,
+        filter: false,
+        cellRenderer: (params: ICellRendererParams<CarAuction>) => {
+          const status = getAuctionStatus(
+            params.data?.car.auction_status || ""
+          );
+          return <StatusBadge status={status} />;
+        },
+      },
+      {
+        headerName: "التفاصيل",
+        field: "car_id",
+        sortable: false,
+        filter: false,
+        cellRenderer: (params: ICellRendererParams<CarAuction>) => {
+          const carId = params.data?.car_id;
+          if (!carId) return null;
+          return (
+            <LoadingLink
+              href={`/carDetails/${carId}`}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl border border-primary/30"
+            >
+              <Eye className="w-4.5 h-4.5" />
+            </LoadingLink>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const defaultColDef = useMemo<ColDef>(
+    () => ({
+      sortable: true,
+      filter: true,
+      resizable: true,
+      flex: 1,
+      minWidth: 120,
+      // مفيش منيو للأعمدة في النسخة المجانية، فبنخفي زرار المينيو لو موجود
+      suppressHeaderMenuButton: true,
+    }),
+    []
+  );
 
   // =============== جلب البيانات ===============
   const fetchAuctions = useCallback(async () => {
@@ -198,46 +421,6 @@ export default function InstantAuctionPage() {
     return true;
   });
 
-  // =============== مكونات واجهة المستخدم ===============
-  const StatusBadge = ({ status }: { status: string }) => {
-    const config =
-      {
-        "جاري المزايدة": {
-          bg: "bg-blue-900/30",
-          text: "text-blue-300",
-          border: "border-blue-700/50",
-          icon: Play,
-        },
-        "تم البيع": {
-          bg: "bg-emerald-900/30",
-          text: "text-emerald-300",
-          border: "border-emerald-700/50",
-          icon: TrendingUp,
-        },
-        "انتهى": {
-          bg: "bg-gray-800/50",
-          text: "text-gray-400",
-          border: "border-gray-700/50",
-          icon: Clock,
-        },
-      }[status] || {
-        bg: "bg-amber-900/30",
-        text: "text-amber-300",
-        border: "border-amber-700/50",
-        icon: AlertCircle,
-      };
-
-    const Icon = config.icon;
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${config.bg} ${config.text} ${config.border}`}
-      >
-        <Icon className="w-3 h-3" />
-        {status}
-      </span>
-    );
-  };
-
   // =============== العرض الرئيسي ===============
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
@@ -327,10 +510,7 @@ export default function InstantAuctionPage() {
                     }}
                     className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
                   >
-                    <option
-                      value=""
-                      className="bg-card text-foreground/70"
-                    >
+                    <option value="" className="bg-card text-foreground/70">
                       جميع الماركات
                     </option>
                     {carsBrands.map((brand, idx) => (
@@ -368,7 +548,7 @@ export default function InstantAuctionPage() {
 
         {!loading && !error && filteredCars.length === 0 && isAllowed && (
           <div className="bg-primary/10 border border-primary/20 text-primary rounded-2xl p-8 text-center backdrop-blur-sm">
-            <Car className="w-14 h-14 mx-auto mb-4 text-primary/80" />
+            <CarIcon className="w-14 h-14 mx-auto mb-4 text-primary/80" />
             <p className="font-semibold text-lg">
               لا توجد سيارات متاحة في السوق الفوري حاليًا
             </p>
@@ -378,143 +558,29 @@ export default function InstantAuctionPage() {
           </div>
         )}
 
-        {/* جدول السيارات */}
+        {/* جدول السيارات باستخدام AG Grid */}
         {isAllowed && filteredCars.length > 0 && (
           <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
               <div
-                className="max-h-[70vh] overflow-auto"
                 ref={scrollContainerRef}
+                className="max-h-[70vh] overflow-auto px-2 py-2"
               >
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="bg-background/70 backdrop-blur-sm sticky top-0 z-10 border-b border-border">
-                      {[
-                        "رابط البث",
-                        "المنطقة",
-                        "المدينة",
-                        "الماركة",
-                        "الموديل",
-                        "السنة",
-                        "اللوحة",
-                        "العداد",
-                        "الحالة",
-                        "اللون",
-                        "الوقود",
-                        "المزايدات",
-                        "سعر الافتتاح",
-                        "أقل سعر",
-                        "أعلى سعر",
-                        "آخر سعر",
-                        "مبلغ الزيادة",
-                        "نسبة التغير",
-                        "الحالة",
-                        "التفاصيل",
-                      ].map((header, idx) => (
-                        <th
-                          key={idx}
-                          className="px-4 py-4 text-right text-xs font-semibold text-foreground/70 uppercase tracking-wider whitespace-nowrap"
-                        >
-                          {header}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filteredCars.map((car, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-border/60 transition-colors duration-200 border-b border-border/30"
-                      >
-                        <td className="px-4 py-4 text-center text-sm">
-                          {car.broadcasts.length > 0 ? (
-                            <LoadingLink
-                              target="_blank"
-                              href={car.broadcasts[0].stream_url}
-                              className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
-                            >
-                              مشاهدة البث
-                            </LoadingLink>
-                          ) : (
-                            <span className="text-foreground/50">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.province}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.city}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">
-                          {car.car.make}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.model}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.year}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.plate}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.odometer}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.condition}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.color}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.car.engine}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                          {car.bids.length}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-emerald-400">
-                          {formatCurrency(car.opening_price)}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-amber-400">
-                          {formatCurrency(car.minimum_bid)}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-rose-400">
-                          {formatCurrency(car.maximum_bid)}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-medium text-foreground">
-                          {formatCurrency(car.current_bid)}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
-                          {car.bids.length > 0
-                            ? car.bids[car.bids.length - 1].increment
-                            : 0}
-                        </td>
-                        <td className="px-4 py-4 text-center text-sm font-semibold text-emerald-400">
-                          {car.bids.length > 0
-                            ? `${(
-                                (car.bids[car.bids.length - 1].increment /
-                                  car.bids[car.bids.length - 1].bid_amount) *
-                                100
-                              ).toFixed(2)}%`
-                            : "0%"}
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <StatusBadge
-                            status={getAuctionStatus(car.car.auction_status)}
-                          />
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <LoadingLink
-                            href={`/carDetails/${car.car_id}`}
-                            className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl border border-primary/30"
-                          >
-                            <Eye className="w-4.5 h-4.5" />
-                          </LoadingLink>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div
+                  className="ag-theme-alpine"
+                  style={{ width: "100%", height: "60vh", direction: "rtl" }}
+                >
+                  <AgGridReact<CarAuction>
+                    rowData={filteredCars}
+                    columnDefs={columnDefs}
+                    defaultColDef={defaultColDef}
+                    animateRows
+                    enableRtl
+                    suppressCellFocus
+                    rowHeight={52}
+                    headerHeight={48}
+                  />
+                </div>
 
                 {/* مؤشر التمرير اللامتناهي */}
                 <div ref={sentryRef} className="py-6 text-center">
