@@ -30,7 +30,7 @@ interface User {
     last_name: string;
     email: string;
     phone: string;
-    role: string;
+    type: string;
     status: string;
     is_active: boolean;
     dealer?: {
@@ -67,7 +67,7 @@ export default function EditUserForm({
         last_name: "string",
         email:"",
         phone:"",
-        role:"",
+        type:"",
         status:"",
         is_active: false,
         dealer: {
@@ -84,7 +84,7 @@ export default function EditUserForm({
         last_name: user.last_name || "",
         email: user.email || "",
         phone: user.phone || "",
-        role: user.role || "user",
+        type: user.type || "user",
         status: user.status || "pending",
         is_active: user.is_active || false,
         // Dealer fields
@@ -101,10 +101,10 @@ export default function EditUserForm({
             if (response.data && response.data.status === "success") {
                 let user = response.data.data.user;
                 //check if user role
-                if (user.role == "admin") {
-                    response.data.data.user.role = "user";
+                if (user.type == "admin") {
+                    response.data.data.user.type = "user";
                 }
-                if (user.role == "dealer") {
+                if (user.type == "dealer") {
                     //check rating if it is null or assign default value
                     let rating = response.data.data.dealer?.rating || 4.5;
                     response.data.data.dealer = {rating:rating};
@@ -117,7 +117,7 @@ export default function EditUserForm({
                     last_name: user.last_name || "",
                     email: user.email || "",
                     phone: user.phone || "",
-                    role: user.role || "user",
+                    type: user.type || "user",
                     status: user.status || "pending",
                     is_active: user.is_active || false,
                     // Dealer fields
@@ -161,13 +161,13 @@ export default function EditUserForm({
                 last_name: formData.last_name,
                 email: formData.email,
                 phone: formData.phone,
-                role: formData.role,
+                type: formData.type,
                 status: formData.status,
                 is_active: formData.is_active,
             };
 
             // Only include dealer fields if the role is dealer
-            if (formData.role === UserRole.DEALER) {
+            if (formData.type === UserRole.DEALER) {
                 dataToSend.company_name = formData.company_name;
                 dataToSend.commercial_registry = formData.commercial_registry;
                 dataToSend.description = formData.description;
@@ -305,7 +305,7 @@ export default function EditUserForm({
                             <div>
                                 <Label htmlFor="role">الدور</Label>
                                 <Select
-                                    value={formData.role}
+                                    value={formData.type}
                                     onValueChange={(value) =>
                                         handleInputChange("role", value)
                                     }
@@ -329,7 +329,7 @@ export default function EditUserForm({
                                         <SelectItem value="investor">
                                             مستثمر
                                         </SelectItem>
-                                        {(user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR || user.role === UserRole.USER) && (
+                                        {(user.type === UserRole.ADMIN || user.type === UserRole.MODERATOR || user.type === UserRole.USER) && (
                                             <SelectItem value="admin">
                                                 مدير
                                             </SelectItem>
@@ -384,7 +384,7 @@ export default function EditUserForm({
                     </div>
 
                     {/* Dealer Information - Only show if role is dealer */}
-                    {(formData.role === UserRole.DEALER || user.dealer) && (
+                    {(formData.type === UserRole.DEALER || user.dealer) && (
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
                                 معلومات التاجر

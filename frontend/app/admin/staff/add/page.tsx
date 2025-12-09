@@ -34,7 +34,7 @@ interface FormData {
   phone: string;
   password: string;
   password_confirmation: string;
-  role: string; // User Type (admin/moderator)
+  type: string; // User Type (admin/moderator)
   spatie_role_id: string; // Spatie Role ID
 }
 
@@ -51,7 +51,7 @@ interface FormErrors {
   phone?: string[];
   password?: string[];
   password_confirmation?: string[];
-  role?: string[];
+  type?: string[];
   spatie_role_id?: string[];
 }
 
@@ -68,7 +68,7 @@ export default function AddStaffPage() {
     phone: "",
     password: "",
     password_confirmation: "",
-    role: "",
+    type: "",
     spatie_role_id: "",
   });
   const [roles, setRoles] = useState<Role[]>([]);
@@ -406,12 +406,12 @@ export default function AddStaffPage() {
                 <div className="relative">
                   <Shield className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <select
-                    id="role"
-                    name="role"
-                    value={formData.role}
+                    id="type"
+                    name="type"
+                    value={formData.type}
                     onChange={handleSelectChange}
                     className={`w-full bg-background border-border text-foreground placeholder:text-muted-foreground pl-10 pr-10 py-2 rounded-md border ${
-                      errors.role
+                      errors.type
                         ? "border-destructive focus:ring-destructive"
                         : "focus:ring-primary"
                     }`}
@@ -422,10 +422,10 @@ export default function AddStaffPage() {
                     <option value="moderator">مشرف</option>
                   </select>
                 </div>
-                {errors.role && (
+                {errors.type && (
                   <p className="mt-2 text-sm text-destructive flex items-center">
                     <AlertTriangle className="w-3 h-3 ml-1" />
-                    {errors.role[0]}
+                    {errors.type[0]}
                   </p>
                 )}
               </div>

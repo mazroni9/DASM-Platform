@@ -160,7 +160,7 @@ export default function PublicCarsPage() {
         if (!isLoggedIn) return false;
 
         // Admin and moderator can edit any car
-        if (user?.role === "admin" || user?.role === "moderator") return true;
+        if (user?.type === "admin" || user?.type === "moderator") return true;
 
         // Car owner can edit their own car
         if (car.dealer && user?.dealer?.id === car.dealer.id) return true;

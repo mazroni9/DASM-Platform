@@ -177,7 +177,7 @@ export default function DashboardPage() {
             
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
-                {user?.role === "user" || user?.role === "dealer" ? "الاشتراك: مجاني" : ""}
+                {user?.type === "user" || user?.type === "dealer" ? "الاشتراك: مجاني" : ""}
               </span>
               <span className="px-2 py-1 bg-primary/20 text-primary rounded-lg text-xs border border-primary/30">
                 عضو منذ {user?.created_at ? new Date(user.created_at).getFullYear() : ""}

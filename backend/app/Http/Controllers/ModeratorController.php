@@ -22,7 +22,7 @@ class ModeratorController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'moderator') {
+        if ($user->type !== 'moderator') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Moderator role required.'
@@ -59,7 +59,7 @@ class ModeratorController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'moderator') {
+        if ($user->type !== 'moderator') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Moderator role required.'
@@ -159,7 +159,7 @@ class ModeratorController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'moderator') {
+        if ($user->type !== 'moderator') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Moderator role required.'
@@ -222,7 +222,7 @@ class ModeratorController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'moderator') {
+        if ($user->type !== 'moderator') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Moderator role required.'
@@ -295,7 +295,7 @@ class ModeratorController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'moderator') {
+        if ($user->type !== 'moderator') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Moderator role required.'

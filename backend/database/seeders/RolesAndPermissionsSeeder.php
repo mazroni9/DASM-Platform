@@ -138,7 +138,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         // Create permissions
-        $super_admin = User::where('role','super_admin')->first();
+        $super_admin = User::where('type','super_admin')->first();
         $platform_org =  Organization::firstOrCreate([
             'name' => 'DASMe Platform',
             'slug' => 'dasm-e-platform',
@@ -160,7 +160,7 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // Create super_admin role
-        $super_admin = User::where('role','super_admin')->first();
+        $super_admin = User::where('type','super_admin')->first();
 
         $superAdminRole = Role::updateOrCreate(
             ['name' => 'super_admin', 'guard_name' => 'sanctum'],

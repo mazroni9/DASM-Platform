@@ -11,7 +11,7 @@ class ShipmentPolicy
     protected function roleOf(User $user): ?string
     {
         // يدعم لو role مخزّنة كسلسلة أو Enum
-        return is_string($user->role) ? $user->role : ($user->role?->value ?? null);
+        return is_string($user->type) ? $user->type : ($user->type?->value ?? null);
     }
 
     public function viewAny(User $user): bool

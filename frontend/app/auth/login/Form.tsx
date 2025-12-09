@@ -76,7 +76,7 @@ export default function LoginForm() {
           const user = useAuthStore.getState().user;
           if (
             user &&
-            ["admin", "super_admin", "moderator"].includes(user.role)
+            ["admin", "super_admin", "moderator"].includes(user.type)
           ) {
             router.push("/admin");
           } else {

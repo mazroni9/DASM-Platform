@@ -78,7 +78,7 @@ interface UserData {
   last_name: string;
   email: string;
   phone: string;
-  role: string;
+  type: string;
   is_active: boolean;
   email_verified_at: string | null;
   created_at: string;
@@ -168,7 +168,7 @@ export default function UsersManagementPage() {
     }
 
     if (roleFilter !== "all") {
-      result = result.filter((user) => user.role === roleFilter);
+      result = result.filter((user) => user.type === roleFilter);
     }
 
     if (statusFilter !== "all") {
@@ -181,7 +181,7 @@ export default function UsersManagementPage() {
       } else if (statusFilter === "dealer_pending") {
         result = result.filter(
           (user) =>
-            user.role === "dealer" &&
+            user.type === "dealer" &&
             user.dealer &&
             user.dealer.status === "pending"
         );
@@ -613,27 +613,27 @@ export default function UsersManagementPage() {
                     {/* Role */}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        {getRoleIcon(user.role)}
+                        {getRoleIcon(user.type)}
                         <span
                           className={`text-sm mr-2 ${
-                            user.role === "admin"
+                            user.type === "admin"
                               ? "text-purple-400"
-                              : user.role === "moderator"
+                              : user.type === "moderator"
                               ? "text-orange-400"
-                              : user.role === "dealer"
+                              : user.type === "dealer"
                               ? "text-blue-400"
-                              : user.role === "venue_owner"
+                              : user.type === "venue_owner"
                               ? "text-cyan-400"
                               : "text-gray-400"
                           }`}
                         >
-                          {user.role === "dealer"
+                          {user.type === "dealer"
                             ? "تاجر"
-                            : user.role === "admin"
+                            : user.type === "admin"
                             ? "مدير"
-                            : user.role === "moderator"
+                            : user.type === "moderator"
                             ? "مشرف"
-                            : user.role === "venue_owner"
+                            : user.type === "venue_owner"
                             ? "صاحب معرض"
                             : "مستخدم"}
                         </span>
@@ -664,7 +664,7 @@ export default function UsersManagementPage() {
                             : "مرفوض"}
                         </span>
 
-                        {user.role === "dealer" && user.dealer && (
+                        {user.type === "dealer" && user.dealer && (
                           <div>
                             {user.dealer.is_active ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
@@ -737,7 +737,7 @@ export default function UsersManagementPage() {
                             </>
                           )}
 
-                          {user.role === "dealer" &&
+                          {user.type === "dealer" &&
                             user.dealer &&
                             user.dealer.status === "pending" && (
                               <Button

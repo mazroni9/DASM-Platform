@@ -95,7 +95,7 @@ class AuctionSessionController extends Controller
             ->findOrFail($id);
 
         // تحقّق الملكية (الأدمن يمر)
-        if ($session->user_id !== $user->id && strtolower((string)$user->role) !== 'admin') {
+        if ($session->user_id !== $user->id && strtolower((string)$user->type) !== 'admin') {
             return response()->json(['message' => 'Forbidden. You do not own this session.'], 403);
         }
 
@@ -115,7 +115,7 @@ class AuctionSessionController extends Controller
 
         $session = AuctionSession::findOrFail($id);
 
-        if ($session->user_id !== $user->id && strtolower((string)$user->role) !== 'admin') {
+        if ($session->user_id !== $user->id && strtolower((string)$user->type) !== 'admin') {
             return response()->json(['message' => 'Forbidden. You do not own this session.'], 403);
         }
 
@@ -149,7 +149,7 @@ class AuctionSessionController extends Controller
 
         $session = AuctionSession::findOrFail($id);
 
-        if ($session->user_id !== $user->id && strtolower((string)$user->role) !== 'admin') {
+        if ($session->user_id !== $user->id && strtolower((string)$user->type) !== 'admin') {
             return response()->json(['message' => 'Forbidden. You do not own this session.'], 403);
         }
 
@@ -177,7 +177,7 @@ class AuctionSessionController extends Controller
 
         $session = AuctionSession::withCount('auctions')->findOrFail($id);
 
-        if ($session->user_id !== $user->id && strtolower((string)$user->role) !== 'admin') {
+        if ($session->user_id !== $user->id && strtolower((string)$user->type) !== 'admin') {
             return response()->json(['message' => 'Forbidden. You do not own this session.'], 403);
         }
 

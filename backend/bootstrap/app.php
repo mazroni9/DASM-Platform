@@ -43,7 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
 
             // role middleware with parameters ->middleware('role:venue_owner,dealer')
-            'role'              => \App\Http\Middleware\RoleMiddleware::class,
+            'type'              => \App\Http\Middleware\RoleMiddleware::class,
             'set.organization' => \App\Http\Middleware\SetSpatieTeamContext::class,
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
 

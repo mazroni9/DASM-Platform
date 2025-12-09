@@ -19,7 +19,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   const { user, isLoggedIn } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isAdmin = user?.type === "admin" || user?.type === "super_admin";
 
   useEffect(() => {
     // تأخير قصير لتجنب وميض شاشة التحميل

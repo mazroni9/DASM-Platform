@@ -48,7 +48,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'phone',
         'password_hash',
-        'role',
+        'type',
         'kyc_status',
         'email_verified_at',
         'email_verification_token',
@@ -73,7 +73,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password_reset_expires_at' => 'datetime',
         'status' => UserStatus::class,
-        'role' => UserRole::class,
+        'type' => UserRole::class,
     ];
 
     protected static function boot()
@@ -81,32 +81,32 @@ class User extends Authenticatable implements MustVerifyEmail
         parent::boot();
 
         static::created(function ($user) {
-            if ($user->role == UserRole::USER) {
+            if ($user->type == UserRole::USER) {
                 $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->role == UserRole::DEALER) {
+            } elseif ($user->type == UserRole::DEALER) {
                 $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->role == UserRole::VENUE_OWNER) {
+            } elseif ($user->type == UserRole::VENUE_OWNER) {
                 $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->role == UserRole::INVESTOR) {
+            } elseif ($user->type == UserRole::INVESTOR) {
                 $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
             } else {
-                $user_code = Str::limit((ucfirst($user->role)), 3, '') . $user->area?->code . '_0' . $user->id;
+                $user_code = Str::limit((ucfirst($user->type)), 3, '') . $user->area?->code . '_0' . $user->id;
             }
             $user->user_code = $user_code;
             $user->saveQuietly();
         });
 
         static::updating(function ($user) {
-            if ($user->role == UserRole::USER) {
+            if ($user->type == UserRole::USER) {
                 $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->role == UserRole::DEALER) {
+            } elseif ($user->type == UserRole::DEALER) {
                 $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->role == UserRole::VENUE_OWNER) {
+            } elseif ($user->type == UserRole::VENUE_OWNER) {
                 $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->role == UserRole::INVESTOR) {
+            } elseif ($user->type == UserRole::INVESTOR) {
                 $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
             } else {
-                $role = $user->role->value;
+                $role = $user->type->value;
                 $user_code = Str::limit((ucfirst($role)), 3, '_') . $user->area?->code . '_0' . $user->id;
             }
             $user->user_code = $user_code;
@@ -185,57 +185,57 @@ class User extends Authenticatable implements MustVerifyEmail
     // Role checking methods
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::ADMIN || $this->role === UserRole::SUPER_ADMIN;
+        return $this->type === UserRole::ADMIN || $this->type === UserRole::SUPER_ADMIN;
     }
 
     public function isDealer(): bool
     {
-        return $this->role === UserRole::DEALER;
+        return $this->type === UserRole::DEALER;
     }
 
     public function isModerator(): bool
     {
-        return $this->role === UserRole::MODERATOR;
+        return $this->type === UserRole::MODERATOR;
     }
 
     public function isVenueOwner(): bool
     {
-        return $this->role === UserRole::VENUE_OWNER;
+        return $this->type === UserRole::VENUE_OWNER;
     }
 
     public function isInvestor(): bool
     {
-        return $this->role === UserRole::INVESTOR;
+        return $this->type === UserRole::INVESTOR;
     }
 
     public function isUser(): bool
     {
-        return $this->role === UserRole::USER;
+        return $this->type === UserRole::USER;
     }
 
     public function hasUserRole(UserRole $role): bool
     {
-        return $this->role === $role;
+        return $this->type === $role;
     }
 
     public function canManageAuctions(): bool
     {
-        return $this->role->canManageAuctions();
+        return $this->type->canManageAuctions();
     }
 
     public function canManageUsers(): bool
     {
-        return $this->role->canManageUsers();
+        return $this->type->canManageUsers();
     }
 
     public function canManageVenues(): bool
     {
-        return $this->role->canManageVenues();
+        return $this->type->canManageVenues();
     }
 
     public function canAccessInvestments(): bool
     {
-        return $this->role->canAccessInvestments();
+        return $this->type->canAccessInvestments();
     }
 
     public function getNameAttribute(): string

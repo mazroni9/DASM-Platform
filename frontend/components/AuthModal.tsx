@@ -80,7 +80,7 @@ export default function AuthModal() {
         phone: regPhone,
         password: regPassword,
         password_confirmation: regPasswordConfirmation,
-        role: "user", // As requested
+        type: "user", // As requested
       });
 
       toast.success("تم تسجيل حسابك بنجاح! جاري تسجيل الدخول...");

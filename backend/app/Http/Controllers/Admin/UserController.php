@@ -22,11 +22,11 @@ class UserController extends Controller
     {
         $query = User::query();
 
-        // Filter by role
-        if ($request->has('role')) {
-            if ($request->role === 'dealer') {
+        // Filter by type (user / dealer)
+        if ($request->has('type')) {
+            if ($request->type === 'dealer') {
                 $query->whereHas('dealer');
-            } else if ($request->role === 'user') {
+            } elseif ($request->type === 'user') {
                 $query->whereDoesntHave('dealer');
             }
         }
@@ -45,7 +45,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $users
+            'data' => $users,
         ]);
     }
 
@@ -59,13 +59,14 @@ class UserController extends Controller
     {
         $user = User::findOrFail($userId);
         $dealer = $user->dealer;
+
         return response()->json([
             'status' => 'success',
             'message' => 'User Details retrieved successfully',
             'data' => [
                 'user' => $user,
-                'dealer' => $dealer
-            ]
+                'dealer' => $dealer,
+            ],
         ]);
     }
 
@@ -82,18 +83,18 @@ class UserController extends Controller
         $userToUpdate = User::with('dealer')->findOrFail($userId);
 
         // Prevent admin from editing other admin accounts
-        if ($userToUpdate->role === 'admin' && $currentUser->id !== $userToUpdate->id) {
+        if ($userToUpdate->type === 'admin' && $currentUser->id !== $userToUpdate->id) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'لا يمكن تعديل بيانات مدير آخر'
+                'message' => 'لا يمكن تعديل بيانات مدير آخر',
             ], 403);
         }
 
-        // Prevent admin from changing their own role
-        if ($currentUser->id === $userToUpdate->id && $request->has('role') && $request->role !== 'admin') {
+        // Prevent admin from changing their own type
+        if ($currentUser->id === $userToUpdate->id && $request->has('type') && $request->type !== 'admin') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'لا يمكن تغيير دورك كمدير'
+                'message' => 'لا يمكن تغيير دورك كمدير',
             ], 403);
         }
 
@@ -102,7 +103,7 @@ class UserController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $userId,
             'phone' => 'sometimes|string|max:15|unique:users,phone,' . $userId,
-            'role' => 'sometimes|in:user,dealer,moderator,admin',
+            'type' => 'sometimes|in:user,dealer,moderator,admin',
             'status' => 'sometimes|in:pending,active,rejected',
             'is_active' => 'sometimes|boolean',
             // Dealer specific fields
@@ -120,7 +121,7 @@ class UserController extends Controller
             'phone.string' => 'رقم الهاتف يجب أن يكون نصًا',
             'phone.max' => 'رقم الهاتف يجب ألا يتجاوز 15 رقمًا',
             'phone.unique' => 'رقم الهاتف هذا مستخدم بالفعل',
-            'role.in' => 'الدور المحدد غير صالح',
+            'type.in' => 'الدور المحدد غير صالح',
             'status.in' => 'الحالة المحددة غير صالحة',
             'company_name.string' => 'اسم الشركة يجب أن يكون نصًا',
             'commercial_registry.string' => 'رقم السجل التجاري يجب أن يكون نصًا',
@@ -130,7 +131,7 @@ class UserController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'بيانات غير صالحة',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -155,13 +156,13 @@ class UserController extends Controller
                 $userToUpdate->is_active = $request->is_active;
             }
 
-            // Handle role changes
-            $oldRole = $userToUpdate->role;
-            if ($request->has('role') && $request->role !== $oldRole) {
-                $newRole = $request->role;
+            // Handle type changes
+            $oldType = $userToUpdate->type;
+            if ($request->has('type') && $request->type !== $oldType) {
+                $newType = $request->type;
 
                 // If changing to dealer, create dealer record if it doesn't exist
-                if ($newRole === 'dealer' && !$userToUpdate->dealer) {
+                if ($newType === 'dealer' && !$userToUpdate->dealer) {
                     Dealer::create([
                         'user_id' => $userToUpdate->id,
                         'company_name' => $request->company_name ?? 'شركة غير محددة',
@@ -173,19 +174,19 @@ class UserController extends Controller
                     ]);
                 }
 
-                // If changing from dealer to another role, deactivate dealer record
-                if ($oldRole === 'dealer' && $newRole !== 'dealer' && $userToUpdate->dealer) {
+                // If changing from dealer to another type, deactivate dealer record
+                if ($oldType === 'dealer' && $newType !== 'dealer' && $userToUpdate->dealer) {
                     $userToUpdate->dealer->update([
                         'is_active' => false,
-                        'status' => 'inactive'
+                        'status' => 'inactive',
                     ]);
                 }
 
-                $userToUpdate->role = $newRole;
+                $userToUpdate->type = $newType;
             }
 
-            // Update dealer information if user is/becoming a dealer
-            if (($userToUpdate->role === 'dealer' || $request->role === 'dealer') && $userToUpdate->dealer) {
+            // Update dealer information if user is / becoming a dealer
+            if (($userToUpdate->type === 'dealer' || $request->type === 'dealer') && $userToUpdate->dealer) {
                 $dealer = $userToUpdate->dealer;
 
                 if ($request->has('company_name')) {
@@ -215,24 +216,23 @@ class UserController extends Controller
                 'message' => 'تم تحديث بيانات المستخدم بنجاح',
                 'data' => [
                     'user' => $userToUpdate,
-                    'dealer' => $userToUpdate->dealer
-                ]
+                    'dealer' => $userToUpdate->dealer,
+                ],
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating user', [
                 'user_id' => $userId,
                 'admin_id' => $currentUser->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'حدث خطأ أثناء تحديث بيانات المستخدم'
+                'message' => 'حدث خطأ أثناء تحديث بيانات المستخدم',
             ], 500);
         }
     }
-
 
     /**
      * Approve a user account
@@ -252,10 +252,9 @@ class UserController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'User approved successfully',
-            'data' => $user
+            'data' => $user,
         ]);
     }
-
 
     /**
      * Reject a user account
@@ -268,11 +267,6 @@ class UserController extends Controller
     {
         $user = User::findOrFail($userId);
 
-        // Optionally, you could add a reason for rejection
-        // if ($request->has('reason')) {
-        //     $user->rejection_reason = $request->reason;
-        // }
-
         // Update user status to rejected
         $user->status = 'rejected';
         $user->is_active = false; // Keep is_active for backward compatibility
@@ -281,10 +275,9 @@ class UserController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'User rejection processed successfully',
-            'data' => $user
+            'data' => $user,
         ]);
     }
-
 
     /**
      * Toggle user status
@@ -293,18 +286,18 @@ class UserController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-
     public function toggleUserStatus($userId, Request $request)
     {
         $user = User::findOrFail($userId);
-        $status = $request->is_active ? "active" : "rejected";
+        $status = $request->is_active ? 'active' : 'rejected';
         $user->status = $status;
         $user->is_active = $request->is_active;
         $user->save();
+
         return response()->json([
             'status' => 'success',
             'message' => 'تم تغيير حالة المستخدم بنجاح',
-            'data' => $user
+            'data' => $user,
         ]);
     }
 
@@ -321,7 +314,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $pendingDealers
+            'data' => $pendingDealers,
         ]);
     }
 
@@ -339,7 +332,7 @@ class UserController extends Controller
         if (!$dealer) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'User is not a dealer'
+                'message' => 'User is not a dealer',
             ], 400);
         }
 
@@ -348,9 +341,9 @@ class UserController extends Controller
         $dealer->status = 'active';
         $dealer->save();
 
-        // Update user role if needed
-        if ($user->role !== 'dealer') {
-            $user->role = 'dealer';
+        // Update user type if needed
+        if ($user->type !== 'dealer') {
+            $user->type = 'dealer';
             $user->save();
         }
 
@@ -359,11 +352,10 @@ class UserController extends Controller
             'message' => 'Dealer verification approved successfully',
             'data' => [
                 'user' => $user,
-                'dealer' => $dealer
-            ]
+                'dealer' => $dealer,
+            ],
         ]);
     }
-
 
     /**
      * Reject a dealer verification request
@@ -380,7 +372,7 @@ class UserController extends Controller
         if (!$dealer) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'User is not a dealer'
+                'message' => 'User is not a dealer',
             ], 400);
         }
 
@@ -399,8 +391,8 @@ class UserController extends Controller
             'message' => 'Dealer verification rejected successfully',
             'data' => [
                 'user' => $user,
-                'dealer' => $dealer
-            ]
+                'dealer' => $dealer,
+            ],
         ]);
     }
 
@@ -411,7 +403,7 @@ class UserController extends Controller
      */
     public function getOwners()
     {
-        $owners = User::where('role', 'venue_owner')
+        $owners = User::where('type', 'venue_owner')
             ->select('id', 'first_name', 'last_name', 'email', 'phone')
             ->get()
             ->map(function ($user) {
@@ -425,7 +417,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $owners
+            'data' => $owners,
         ]);
     }
 }

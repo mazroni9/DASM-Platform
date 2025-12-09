@@ -22,7 +22,7 @@ class UserObserver
         if (
             $user->isDirty('status') &&
             $user->status === UserStatus::ACTIVE &&
-            $user->role === UserRole::VENUE_OWNER
+            $user->type === UserRole::VENUE_OWNER
         ) {
 
             if (!$user->organization_id) {

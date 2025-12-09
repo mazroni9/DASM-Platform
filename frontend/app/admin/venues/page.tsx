@@ -13,7 +13,7 @@ export default function VenuesDashboard() {
     if (
       !isLoading &&
       (!user ||
-        (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN))
+        (user.type !== UserRole.ADMIN && user.type !== UserRole.SUPER_ADMIN))
     ) {
       router.push("/auth/login");
     }
@@ -32,7 +32,7 @@ export default function VenuesDashboard() {
 
   if (
     !user ||
-    (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN)
+    (user.type !== UserRole.ADMIN && user.type !== UserRole.SUPER_ADMIN)
   ) {
     return null;
   }

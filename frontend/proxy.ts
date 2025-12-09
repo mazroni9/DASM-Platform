@@ -90,7 +90,7 @@ export async function proxy(request: NextRequest) {
     
     if (response.ok) {
       const userData = await response.json();
-      const userRole = userData.role;
+      const userRole = userData.type;
       const correctDashboardPath = ROLE_DASHBOARD_PATHS[userRole] || "/";
 
       if (isGuestPath(pathname)) {

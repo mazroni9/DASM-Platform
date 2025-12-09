@@ -17,12 +17,12 @@ export function useAuth() {
   return {
     user,
     isAdmin:
-      user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
-    isModerator: user?.role === UserRole.MODERATOR,
-    isDealer: user?.role === UserRole.DEALER,
-    isVenueOwner: user?.role === UserRole.VENUE_OWNER,
-    isInvestor: user?.role === UserRole.INVESTOR,
-    isUser: user?.role === UserRole.USER,
+      user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN,
+    isModerator: user?.type === UserRole.MODERATOR,
+    isDealer: user?.type === UserRole.DEALER,
+    isVenueOwner: user?.type === UserRole.VENUE_OWNER,
+    isInvestor: user?.type === UserRole.INVESTOR,
+    isUser: user?.type === UserRole.USER,
     isLoading: loading,
     login,
     logout,

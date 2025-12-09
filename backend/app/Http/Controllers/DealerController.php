@@ -116,7 +116,7 @@ class DealerController extends Controller
         $user = Auth::user();
         
         // Check if user is already a dealer
-        if ($user->role === 'dealer') {
+        if ($user->type === 'dealer') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'You are already registered as a dealer'
@@ -134,7 +134,7 @@ class DealerController extends Controller
         ]);
 
         // Update user role to dealer
-        $user->role = 'dealer';
+        $user->type = 'dealer';
         $user->save();
 
         return response()->json([

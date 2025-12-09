@@ -49,7 +49,7 @@ export function LoginForm() {
 
         // Check role and redirect accordingly
         const user = useAuthStore.getState().user;
-        if (user?.role === "admin" || user?.role === "super_admin") {
+        if (user?.type === "admin" || user?.type === "super_admin") {
           router.push("/admin/dashboard");
         } else {
           router.push("/dashboard");

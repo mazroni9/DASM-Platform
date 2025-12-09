@@ -189,7 +189,7 @@ class AuthController extends Controller
                     'email'                    => $request->email,
                     'phone'                    => $request->phone,
                     $passwordColumn            => Hash::make($request->password),
-                    'role'                     => $request->account_type ?? 'user',
+                    'type'                     => $request->account_type ?? 'user',
                     'email_verification_token' => $verificationToken,
                     'is_active'                => false,
                     'area_id'                  => $request->area_id, // nullable
@@ -210,7 +210,7 @@ class AuthController extends Controller
                 Log::info('User created successfully', [
                     'user_id' => $user->id,
                     'email'   => $user->email,
-                    'role'    => $user->role,
+                    'type'    => $user->type,
                 ]);
 
                 if ($isBusinessAccount) {
@@ -282,7 +282,7 @@ class AuthController extends Controller
                     'first_name' => $user->first_name,
                     'last_name'  => $user->last_name,
                     'email'      => $user->email,
-                    'role'       => $user->role,
+                    'type'       => $user->type,
                     'area_id'    => $user->area_id,
                 ],
             ], 201);
@@ -549,7 +549,7 @@ class AuthController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'type' => $user->type,
                 'permissions' => $user->getAllPermissions()->pluck('name'),
             ],
             'access_token' => $accessToken,
@@ -641,7 +641,7 @@ class AuthController extends Controller
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
-                'role' => $user->role,
+                'type' => $user->type,
             ],
         ])->withCookie($cookie);
     }

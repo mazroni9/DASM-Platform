@@ -61,7 +61,7 @@ class MiddlewareAuthController extends Controller
         // 5. Return minimal user info
         return response()->json([
             'id' => $user->id,
-            'role' => $user->role,
+            'type' => $user->type,
         ]);
     }
 }

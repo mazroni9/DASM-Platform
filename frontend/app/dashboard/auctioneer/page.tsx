@@ -20,7 +20,7 @@ interface User {
     id: number;
     name: string;
     email: string;
-    role: string;
+    type: string;
 }
 
 export default function AuctioneerPage() {
@@ -63,8 +63,8 @@ function AuctioneerDashboard() {
         try {
             const parsedUser = JSON.parse(userData) as User;
             if (
-                parsedUser.role !== "auctioneer" &&
-                parsedUser.role !== "admin"
+                parsedUser.type !== "auctioneer" &&
+                parsedUser.type !== "admin"
             ) {
                 // Let ProtectedRoute handle this redirection
                 return;
