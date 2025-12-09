@@ -45,7 +45,7 @@ interface UserDetail {
     last_name: string;
     email: string;
     phone: string;
-    role: string;
+    type: string;
     is_active: boolean;
     status: string;
     kyc_status: string;
@@ -79,10 +79,10 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
             const response = await api.get(`/api/admin/users/${params.id}`);
             if (response.data && response.data.status === "success") {
                 let user = response.data.data.user;
-                if (user.role == "admin") {
-                    response.data.data.user.role = "user";
+                if (user.type == "admin") {
+                    response.data.data.user.type = "user";
                 }
-                if (user.role == "dealer") {
+                if (user.type == "dealer") {
                     let rating = response.data.data.dealer?.rating || 4.5;
                     response.data.data.dealer = {rating: rating};
                 }
@@ -325,16 +325,16 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {/* Role Badge */}
                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                                    user.role === 'admin' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
-                                    user.role === 'moderator' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                                    user.role === 'dealer' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                    user.type === 'admin' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                                    user.type === 'moderator' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                                    user.type === 'dealer' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
                                     'bg-gray-500/20 text-gray-400 border-gray-500/30'
                                 }`}>
-                                    {getRoleIcon(user.role)}
+                                    {getRoleIcon(user.type)}
                                     <span className="mr-2">
-                                        {user.role === 'dealer' ? 'تاجر' :
-                                         user.role === 'admin' ? 'مدير' :
-                                         user.role === 'moderator' ? 'مشرف' : 'مستخدم'}
+                                        {user.type === 'dealer' ? 'تاجر' :
+                                         user.type === 'admin' ? 'مدير' :
+                                         user.type === 'moderator' ? 'مشرف' : 'مستخدم'}
                                     </span>
                                 </span>
 
@@ -363,7 +363,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                                 )}
 
                                 {/* Dealer Verification Badge */}
-                                {user.role === "dealer" && user.dealer && (
+                                {user.type === "dealer" && user.dealer && (
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
                                         user.dealer.status === "active" ? "bg-green-500/20 text-green-400 border-green-500/30" :
                                         user.dealer.status === "pending" ? "bg-amber-500/20 text-amber-400 border-amber-500/30" :
@@ -452,7 +452,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                             </Button>
                         )}
 
-                        {user.role === "dealer" &&
+                        {user.type === "dealer" &&
                             user.dealer &&
                             user.dealer.status === "pending" && (
                                 <Button
@@ -540,7 +540,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                     </div>
 
                     {/* Dealer Information */}
-                    {user.role === "dealer" && user.dealer && (
+                    {user.type === "dealer" && user.dealer && (
                         <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold text-foreground flex items-center">

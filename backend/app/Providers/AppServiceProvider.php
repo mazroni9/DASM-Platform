@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Super Admin bypass
         Gate::before(function ($user, $ability) {
-            if ($user->role === \App\Enums\UserRole::SUPER_ADMIN) {
+            if ($user->type === \App\Enums\UserRole::SUPER_ADMIN) {
                 return true;
             }
         });

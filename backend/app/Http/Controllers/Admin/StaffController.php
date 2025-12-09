@@ -24,7 +24,7 @@ class StaffController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR]);
+            $query = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR]);
 
             // Search functionality
             if ($request->has('search') && !empty($request->search)) {
@@ -79,7 +79,7 @@ class StaffController extends Controller
             'email' => 'required|email|unique:users,email',
             'phone' => 'required|string|max:15|unique:users,phone',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,moderator',
+            'type' => 'required|in:admin,moderator',
             'spatie_role_id' => 'nullable|exists:roles,id',
         ], [
             'first_name.required' => 'الاسم الأول مطلوب',
@@ -138,7 +138,7 @@ class StaffController extends Controller
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password_hash' => Hash::make($request->password),
-                'role' => $request->role,
+                'type' => $request->type,
                 'is_active' => true,
                 'status' => UserStatus::ACTIVE,
                 'organization_id' => $platform_organization->id,
@@ -178,7 +178,7 @@ class StaffController extends Controller
     public function show($id)
     {
         try {
-            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->with('roles')->findOrFail($id);
+            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->with('roles')->findOrFail($id);
 
             return response()->json([
                 'status' => 'success',
@@ -207,7 +207,7 @@ class StaffController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
+            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'first_name' => 'sometimes|required|string|max:255',
@@ -215,7 +215,7 @@ class StaffController extends Controller
                 'email' => 'sometimes|required|email|unique:users,email,' . $id,
                 'phone' => 'sometimes|required|string|max:15|unique:users,phone,' . $id,
                 'password' => 'sometimes|nullable|string|min:8|confirmed',
-                'role' => 'sometimes|required|in:admin,moderator',
+                'type' => 'sometimes|required|in:admin,moderator',
                 'spatie_role_id' => 'nullable|exists:roles,id',
             ], [
                 'first_name.required' => 'الاسم الأول مطلوب',
@@ -280,7 +280,7 @@ class StaffController extends Controller
                 $staff->phone = $request->phone;
             }
             if ($request->has('role')) {
-                $staff->role = $request->role;
+                $staff->type = $request->type;
             }
 
             $staff->organization_id = $platform_organization->id;
@@ -330,7 +330,7 @@ class StaffController extends Controller
     public function destroy($id)
     {
         try {
-            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
+            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
 
             // Prevent deletion of currently authenticated admin if they're deleting themselves
             $currentUser = Auth::user();
@@ -386,7 +386,7 @@ class StaffController extends Controller
         }
 
         try {
-            $staff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
+            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
 
             // Prevent deactivation of currently authenticated admin if they're deactivating themselves
             $currentUser = Auth::user();
@@ -434,18 +434,18 @@ class StaffController extends Controller
     {
         try {
             // Get basic statistics for staff dashboard
-            $totalStaff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])->count();
-            $totalAdmins = User::where('role', UserRole::ADMIN)->count();
-            $totalModerators = User::where('role', UserRole::MODERATOR)->count();
-            $activeStaff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])
+            $totalStaff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->count();
+            $totalAdmins = User::where('type', UserRole::ADMIN)->count();
+            $totalModerators = User::where('type', UserRole::MODERATOR)->count();
+            $activeStaff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])
                 ->where('is_active', true)->count();
             $inactiveStaff = $totalStaff - $activeStaff;
 
             // Recent staff
-            $recentStaff = User::whereIn('role', [UserRole::ADMIN, UserRole::MODERATOR])
+            $recentStaff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])
                 ->orderBy('created_at', 'desc')
                 ->take(5)
-                ->get(['id', 'first_name', 'last_name', 'email', 'role', 'is_active', 'created_at']);
+                ->get(['id', 'first_name', 'last_name', 'email', 'type', 'is_active', 'created_at']);
 
             return response()->json([
                 'status' => 'success',

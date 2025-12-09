@@ -34,7 +34,7 @@ interface FormData {
   phone: string;
   password: string;
   password_confirmation: string;
-  role: string; // User Type
+  type: string; // User Type
   spatie_role_id: string; // Spatie Role ID
 }
 
@@ -51,7 +51,7 @@ interface FormErrors {
   phone?: string[];
   password?: string[];
   password_confirmation?: string[];
-  role?: string[];
+  type?: string[];
   spatie_role_id?: string[];
 }
 
@@ -86,7 +86,7 @@ export default function EditModeratorPage({
     phone: "",
     password: "",
     password_confirmation: "",
-    role: "",
+    type: "",
     spatie_role_id: "",
   });
   const [roles, setRoles] = useState<Role[]>([]);
@@ -126,7 +126,7 @@ export default function EditModeratorPage({
           phone: moderatorData.phone,
           password: "",
           password_confirmation: "",
-          role: moderatorData.role,
+          type: moderatorData.type,
           spatie_role_id:
             moderatorData.roles && moderatorData.roles.length > 0
               ? moderatorData.roles[0].id.toString()
@@ -228,7 +228,7 @@ export default function EditModeratorPage({
         last_name: formData.last_name,
         email: formData.email,
         phone: formData.phone,
-        role: formData.role,
+        type: formData.type,
         spatie_role_id: formData.spatie_role_id,
       };
 
@@ -599,10 +599,10 @@ export default function EditModeratorPage({
                   <select
                     id="role"
                     name="role"
-                    value={formData.role}
+                    value={formData.type}
                     onChange={handleSelectChange}
                     className={`w-full bg-background border-border text-foreground placeholder:text-muted-foreground pl-10 pr-10 py-2 rounded-md border ${
-                      errors.role
+                      errors.type
                         ? "border-destructive focus:ring-destructive"
                         : "focus:ring-primary"
                     }`}
@@ -613,10 +613,10 @@ export default function EditModeratorPage({
                     <option value="moderator">مشرف</option>
                   </select>
                 </div>
-                {errors.role && (
+                {errors.type && (
                   <p className="mt-2 text-sm text-destructive flex items-center">
                     <AlertTriangle className="w-3 h-3 ml-1" />
-                    {errors.role[0]}
+                    {errors.type[0]}
                   </p>
                 )}
               </div>

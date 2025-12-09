@@ -107,7 +107,7 @@ const offlineBidSchema = z.object({
 });
 
 interface Props {
-  role: Role;
+  type: Role;
 }
 
 export default function UnifiedBroadcastManagement({ role }: Props) {

@@ -35,7 +35,7 @@ interface Member {
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  type: string;
 }
 
 interface ManageOrganizationMembersDialogProps {
@@ -285,7 +285,7 @@ export function ManageOrganizationMembersDialog({
                     </TableCell>
                     <TableCell>{member.email}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{member.role}</Badge>
+                      <Badge variant="outline">{member.type}</Badge>
                     </TableCell>
                     <TableCell>
                       <Button

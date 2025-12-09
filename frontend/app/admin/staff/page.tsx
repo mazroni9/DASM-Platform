@@ -37,7 +37,7 @@ interface StaffData {
   last_name: string;
   email: string;
   phone: string;
-  role: string;
+  type: string;
   is_active: boolean;
   created_at: string;
   email_verified_at: string | null;
@@ -411,7 +411,7 @@ export default function StaffPage() {
 
                     {/* Type Column */}
                     <td className="px-6 py-4">
-                      {member.role === "admin" ? (
+                      {member.type === "admin" ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
                           <Crown className="w-3 h-3 ml-1" />
                           مدير

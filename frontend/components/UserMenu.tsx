@@ -53,7 +53,7 @@ export default function UserMenu() {
   };
 
   const role = useMemo<UserRole | undefined>(
-    () => normalizeRole((user as any)?.role),
+    () => normalizeRole((user as any)?.type),
     [user]
   );
 

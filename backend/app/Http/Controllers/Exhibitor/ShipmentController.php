@@ -32,7 +32,7 @@ class ShipmentController extends Controller
         ]);
 
         $perPage = $validated['per_page'] ?? 10;
-        $role = is_string($user->role) ? $user->role : ($user->role?->value ?? null);
+        $role = is_string($user->type) ? $user->type : ($user->type?->value ?? null);
 
         $q = Shipment::query()->with('items');
 
@@ -79,7 +79,7 @@ class ShipmentController extends Controller
     public function store(StoreShipmentRequest $request)
     {
         $user = $request->user();
-        $role = is_string($user->role) ? $user->role : ($user->role?->value ?? null);
+        $role = is_string($user->type) ? $user->type : ($user->type?->value ?? null);
 
         Gate::authorize('create', Shipment::class);
 
