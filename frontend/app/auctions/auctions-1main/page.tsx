@@ -105,7 +105,8 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     href: "/auctions/auctions-1main/fixed",
     description:
       "سيارات لم تُبع في المزادات الأخرى تُعرض هنا كفرصة ثانية في مزاد تقليدي بسيط ومحدد بوقت، وعند انتهاء العداد يفوز أعلى مزايد تلقائيًا.",
-    time: "يستمر المزاد حتى انتهاء العداد ثم تُرسى السيارة تلقائيًا لأعلى عرض.",
+    // ✅ تعديل النص المطلوب على الغلاف:
+    time: "يقام أسبوعيًا كل يوم سبت لمدة 4 ساعات.",
     icon: Tag,
     accent: "text-emerald-500",
     ring: "ring-emerald-500/40",
@@ -277,7 +278,7 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
     >
       <LoadingLink
         href={auction.href}
-        className={`block h-full rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
+        className={`block h-full max-w-sm mx-auto rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
         aria-label={`الدخول إلى ${auction.name}`}
       >
         {/* 🔹 خلفية صورة ديناميكية لكل نوع مزاد */}
@@ -301,26 +302,26 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         )}
 
         {/* محتوى */}
-        <div className="relative z-10 p-5 lg:p-6 flex flex-col h-full">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <span className="p-3 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/70">
-              <Icon className={`w-6 h-6 ${auction.accent}`} aria-hidden="true" />
+        <div className="relative z-10 p-4 lg:p-5 flex flex-col h-full">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <span className="p-2.5 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/70">
+              <Icon className={`w-5 h-5 ${auction.accent}`} aria-hidden="true" />
             </span>
-            <h3 className={`text-lg md:text-xl font-bold ${auction.accent}`}>
+            <h3 className={`text-base md:text-lg font-bold ${auction.accent}`}>
               {auction.name}
             </h3>
           </div>
-          <p className="text-foreground/80 text-sm leading-relaxed text-center mb-3">
+          <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
             {auction.description}
           </p>
-          <div className="flex items-center justify-center gap-2 text-foreground/90 text-sm mb-4">
+          <div className="flex items-center justify-center gap-2 text-foreground/90 text-xs md:text-sm mb-3">
             <Clock className="w-4 h-4" aria-hidden="true" />
             <span>{auction.time}</span>
           </div>
 
           {/* فيديو صغير للحراج المباشر فقط */}
           {isLive ? (
-            <div className="w-full max-w-[220px] mx-auto mb-4">
+            <div className="w-full max-w-[200px] mx-auto mb-4">
               <video
                 className="w-full rounded-xl border border-border/80 shadow-sm"
                 poster="/showroom.jpg"
@@ -337,7 +338,7 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
           ) : null}
 
           <div className="mt-auto text-center">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card/60 text-foreground text-sm font-semibold border border-border group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-colors">
+            <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card/60 text-foreground text-xs md:text-sm font-semibold border border-border group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-colors">
               ادخل السوق الآن
               <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </span>
@@ -432,7 +433,7 @@ export default function AuctionsMainPage() {
 
       {/* Cards */}
       <div className="container mx-auto px-4 pb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {cards.map((a, i) => (
             <AuctionCard key={a.slug} auction={a} index={i} />
           ))}
