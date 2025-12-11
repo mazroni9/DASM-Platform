@@ -119,7 +119,7 @@ export default function AuctionsPage() {
     },
     {
       currentPage: 'late_auction',
-      name: 'السوق المتاخر',
+      name: 'السوق الصامت',
       slug: 'auctions-1main/silent',
       description:
         'مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض\nيبدأ من 10 مساءا الى 4 عصرا اليوم التالي',
@@ -505,13 +505,7 @@ export default function AuctionsPage() {
           <div
             className={`relative overflow-hidden rounded-2xl border ${auction.borderColor} ${auction.bgColor} p-5 transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:border-primary h-full`}
           >
-            {/* Badge للمزادات المميزة */}
-            {auction.featured && (
-              <div className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white shadow-sm">
-                <Star className="w-3 h-3" />
-                مميز
-              </div>
-            )}
+            {/* تم حذف البادج الخاصة بالمزادات المميزة بالكامل */}
 
             {/* الإحصائيات */}
             <div className="absolute top-3 right-3 flex gap-2">
@@ -613,7 +607,6 @@ export default function AuctionsPage() {
             title="الأسواق الرئيسية"
             subtitle="أسواق تلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي؛ المنافسة تعتمد على العرض والطلب الطبيعي."
             icon={Zap}
-            // هنا subtitlePosition الافتراضي "below" فبتظهر تحت العنوان
           />
           {/* 4 أعمدة على الشاشات الكبيرة */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
