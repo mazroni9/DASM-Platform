@@ -11,7 +11,14 @@
 "use client";
 
 import { useState, useRef, FormEvent, ChangeEvent, useEffect } from "react";
-import { Upload, FileX, Car, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  FileX,
+  Car,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+} from "lucide-react";
 import carsData from "@/components/shared/cars_syarah.en.json";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
@@ -30,27 +37,59 @@ const apiPath = (p: string) => {
 };
 
 const emirates = [
-  "منطقة الرياض","منطقة مكة المكرمة","منطقة المدينة المنورة","المنطقة الشرقية","منطقة القصيم",
-  "منطقة عسير","منطقة حائل","منطقة تبوك","منطقة الباحة","منطقة الحدود الشمالية",
-  "منطقة الجوف","منطقة جازان","منطقة نجران",
+  "منطقة الرياض",
+  "منطقة مكة المكرمة",
+  "منطقة المدينة المنورة",
+  "المنطقة الشرقية",
+  "منطقة القصيم",
+  "منطقة عسير",
+  "منطقة حائل",
+  "منطقة تبوك",
+  "منطقة الباحة",
+  "منطقة الحدود الشمالية",
+  "منطقة الجوف",
+  "منطقة جازان",
+  "منطقة نجران",
 ];
 
 const carColors = [
-  { name: "أسود", value: "black" },{ name: "أبيض", value: "white" },{ name: "أحمر", value: "red" },
-  { name: "أخضر", value: "green" },{ name: "أزرق", value: "blue" },{ name: "أصفر", value: "yellow" },
-  { name: "برتقالي", value: "orange" },{ name: "أرجواني", value: "purple" },{ name: "وردي", value: "pink" },
-  { name: "بني", value: "brown" },{ name: "رمادي", value: "gray" },{ name: "سماوي", value: "cyan" },
-  { name: "أرجواني فاتح", value: "magenta" },{ name: "ليموني", value: "lime" },{ name: "أخضر مزرق", value: "teal" },
-  { name: "كحلي", value: "navy" },{ name: "خمري", value: "maroon" },{ name: "زيتي", value: "olive" },
-  { name: "ذهبي", value: "gold" },{ name: "فضي", value: "silver" },{ name: "أبيض لؤلؤي", value: "Pearl White" },
-  { name: "أسود معدني", value: "Metallic Black" },{ name: "فضي معدني", value: "Silver Metallic" },
-  { name: "رمادي جرافيت", value: "Graphite Gray" },{ name: "أزرق داكن", value: "Deep Blue" },
-  { name: "أحمر قاني", value: "Crimson Red" },{ name: "أحمر حلوى", value: "Candy Apple Red" },
-  { name: "أخضر بريطاني سباق", value: "British Racing Green" },{ name: "رمادي ناردو", value: "Nardo Grey" },
-  { name: "أخضر جرينتا مانتس", value: "Verde Mantis" },{ name: "أحمر هيلروت", value: "Hellrot" },
-  { name: "ليلكي غامق", value: "Nightshade Purple" },{ name: "أزرق ليلى", value: "Lapis Blue" },
-  { name: "أحمر روسّو كورسا", value: "Rosso Corsa" },{ name: "أصفر لامع", value: "Solar Yellow" },
-  { name: "برتقالي لهب", value: "Flame Red (or Orange)" },{ name: "بيج شوكولاتة", value: "Champagne Beige" },
+  { name: "أسود", value: "black" },
+  { name: "أبيض", value: "white" },
+  { name: "أحمر", value: "red" },
+  { name: "أخضر", value: "green" },
+  { name: "أزرق", value: "blue" },
+  { name: "أصفر", value: "yellow" },
+  { name: "برتقالي", value: "orange" },
+  { name: "أرجواني", value: "purple" },
+  { name: "وردي", value: "pink" },
+  { name: "بني", value: "brown" },
+  { name: "رمادي", value: "gray" },
+  { name: "سماوي", value: "cyan" },
+  { name: "أرجواني فاتح", value: "magenta" },
+  { name: "ليموني", value: "lime" },
+  { name: "أخضر مزرق", value: "teal" },
+  { name: "كحلي", value: "navy" },
+  { name: "خمري", value: "maroon" },
+  { name: "زيتي", value: "olive" },
+  { name: "ذهبي", value: "gold" },
+  { name: "فضي", value: "silver" },
+  { name: "أبيض لؤلؤي", value: "Pearl White" },
+  { name: "أسود معدني", value: "Metallic Black" },
+  { name: "فضي معدني", value: "Silver Metallic" },
+  { name: "رمادي جرافيت", value: "Graphite Gray" },
+  { name: "أزرق داكن", value: "Deep Blue" },
+  { name: "أحمر قاني", value: "Crimson Red" },
+  { name: "أحمر حلوى", value: "Candy Apple Red" },
+  { name: "أخضر بريطاني سباق", value: "British Racing Green" },
+  { name: "رمادي ناردو", value: "Nardo Grey" },
+  { name: "أخضر جرينتا مانتس", value: "Verde Mantis" },
+  { name: "أحمر هيلروت", value: "Hellrot" },
+  { name: "ليلكي غامق", value: "Nightshade Purple" },
+  { name: "أزرق ليلى", value: "Lapis Blue" },
+  { name: "أحمر روسّو كورسا", value: "Rosso Corsa" },
+  { name: "أصفر لامع", value: "Solar Yellow" },
+  { name: "برتقالي لهب", value: "Flame Red (or Orange)" },
+  { name: "بيج شوكولاتة", value: "Champagne Beige" },
   { name: "أزرق رالي العالم", value: "World Rally Blue" },
 ];
 
@@ -77,17 +116,17 @@ interface CarFormData {
   main_auction_duration: string;
 
   // 🟦 حقول الكرفان
-  usage: string;              // "سكني" / "تجاري" / "فخم" / "مخصص"
-  year_built: string;         // سنة البناء
-  length_m: string;           // الطول بالمتر
-  width_m: string;            // العرض بالمتر
-  weight_kg: string;          // الوزن
-  capacity_persons: string;   // السعة (عدد الأشخاص)
-  has_bathroom: string;       // "true" / "false"
-  has_kitchen: string;        // "true" / "false"
-  bedrooms_count: string;     // عدد غرف النوم
-  solar_power_kw: string;     // قدرة الألواح
-  license_required: string;   // "true" / "false"
+  usage: string; // "سكني" / "تجاري" / "فخم" / "مخصص"
+  year_built: string; // سنة البناء
+  length_m: string; // الطول بالمتر
+  width_m: string; // العرض بالمتر
+  weight_kg: string; // الوزن
+  capacity_persons: string; // السعة (عدد الأشخاص)
+  has_bathroom: string; // "true" / "false"
+  has_kitchen: string; // "true" / "false"
+  bedrooms_count: string; // عدد غرف النوم
+  solar_power_kw: string; // قدرة الألواح
+  license_required: string; // "true" / "false"
 }
 
 const emptyCar: CarFormData = {
@@ -145,7 +184,11 @@ const MARKET_TRANSLATIONS: Record<string, any> = {
   companiesCars: { ar: "سوق سيارات الشركات", en: "Company Cars" },
 };
 
-const pickLabel = (val: any, key?: string, translations?: Record<string, any>) => {
+const pickLabel = (
+  val: any,
+  key?: string,
+  translations?: Record<string, any>
+) => {
   // يحوّل أي قيمة إلى نص آمن للعرض
   if (val == null) {
     const t = key && translations ? translations[key] : undefined;
@@ -153,7 +196,11 @@ const pickLabel = (val: any, key?: string, translations?: Record<string, any>) =
     if (typeof t === "string") return t;
     return key ?? "";
   }
-  if (typeof val === "string" || typeof val === "number" || typeof val === "boolean")
+  if (
+    typeof val === "string" ||
+    typeof val === "number" ||
+    typeof val === "boolean"
+  )
     return String(val);
   if (typeof val === "object")
     return (
@@ -191,7 +238,10 @@ const DEFAULT_TRANSMISSION_OPTIONS: Option[] = [
   { value: "cvt", label: "نصف أوتوماتيك" },
 ];
 
-const toOptions = (input: any, translations?: Record<string, any>): Option[] => {
+const toOptions = (
+  input: any,
+  translations?: Record<string, any>
+): Option[] => {
   // يحول array/object إلى مصفوفة Options مع تحويل اللصيقات لنص
   try {
     if (Array.isArray(input)) {
@@ -223,17 +273,21 @@ export default function CarDataEntryForm() {
   const [formData, setFormData] = useState<CarFormData>(emptyCar);
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
 
-  const [conditionOptions, setConditionOptions] =
-    useState<Option[]>(DEFAULT_CONDITION_OPTIONS);
-  const [transmissionOptions, setTransmissionOptions] =
-    useState<Option[]>(DEFAULT_TRANSMISSION_OPTIONS);
-  const [marketOptions, setMarketOptions] =
-    useState<Option[]>(DEFAULT_MARKET_OPTIONS);
+  const [conditionOptions, setConditionOptions] = useState<Option[]>(
+    DEFAULT_CONDITION_OPTIONS
+  );
+  const [transmissionOptions, setTransmissionOptions] = useState<Option[]>(
+    DEFAULT_TRANSMISSION_OPTIONS
+  );
+  const [marketOptions, setMarketOptions] = useState<Option[]>(
+    DEFAULT_MARKET_OPTIONS
+  );
 
   const [images, setImages] = useState<File[]>([]);
   const [reports, setReports] = useState<File[]>([]);
-  const [registrationCardFile, setRegistrationCardFile] =
-    useState<File | null>(null);
+  const [registrationCardFile, setRegistrationCardFile] = useState<File | null>(
+    null
+  );
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [registrationCardPreview, setRegistrationCardPreview] =
     useState<string>("");
@@ -243,6 +297,8 @@ export default function CarDataEntryForm() {
     success: boolean;
     message: string;
   } | null>(null);
+
+  const [maxPriceError, setMaxPriceError] = useState<string | null>(null);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const reportInputRef = useRef<HTMLInputElement>(null);
@@ -277,8 +333,12 @@ export default function CarDataEntryForm() {
 
         // markets
         let markets: string[] = [];
-        if (Array.isArray(d?.markets_allowed)) markets = d.markets_allowed.slice();
-        else if (d?.market_categories && typeof d.market_categories === "object") {
+        if (Array.isArray(d?.markets_allowed))
+          markets = d.markets_allowed.slice();
+        else if (
+          d?.market_categories &&
+          typeof d.market_categories === "object"
+        ) {
           markets = Object.keys(d.market_categories);
         }
 
@@ -364,12 +424,39 @@ export default function CarDataEntryForm() {
   /* ------------ handlers ------------ */
 
   const handleInputChange = (
-    e: ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Real-time validation for max price
+    if (name === "min_price" || name === "max_price") {
+      const minVal =
+        name === "min_price" ? Number(value) : Number(formData.min_price);
+      const maxVal =
+        name === "max_price" ? Number(value) : Number(formData.max_price);
+
+      if (!isNaN(minVal) && !isNaN(maxVal) && maxVal > 0) {
+        let limit = 0;
+        if (minVal >= 40000) {
+          limit = minVal * 1.1;
+        } else {
+          limit = minVal * 1.15;
+        }
+
+        if (maxVal > limit) {
+          const formattedMin = minVal.toLocaleString();
+          const formattedLimit = Math.floor(limit).toLocaleString();
+          setMaxPriceError(
+            `بناءً على الحد الأدنى المدخل (${formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي ${formattedLimit} ريال.`
+          );
+        } else {
+          setMaxPriceError(null);
+        }
+      } else {
+        setMaxPriceError(null);
+      }
+    }
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -400,6 +487,12 @@ export default function CarDataEntryForm() {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitResult(null);
+
+    if (maxPriceError) {
+      toast.error("الرجاء تصحيح خطأ الحد الأعلى للسعر");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const token =
@@ -511,8 +604,7 @@ export default function CarDataEntryForm() {
         );
         setSubmitResult({
           success: true,
-          message:
-            "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة",
+          message: "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة",
         });
 
         // reset
@@ -897,6 +989,51 @@ export default function CarDataEntryForm() {
               min="0"
               placeholder="السعر المستهدف للبيع"
             />
+            {maxPriceError && (
+              <p className="mt-2 text-xs text-red-500 font-medium animate-pulse">
+                {maxPriceError}
+              </p>
+            )}
+          </div>
+
+          <div className="col-span-1 sm:col-span-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-emerald-500/10 bg-emerald-500/10">
+              <Info className="h-5 w-5 text-emerald-600" />
+              <h3 className="font-semibold text-foreground">
+                كيف تعمل حدود السعر؟
+              </h3>
+            </div>
+            <div className="p-4 text-sm text-foreground/70 space-y-3 leading-relaxed">
+              <p>
+                <strong className="text-foreground block mb-1">
+                  الحد الأعلى (Maximum Price):
+                </strong>
+                وصول المزايدة لهذا السعر ينهي المزاد فوراً ويعلن فوز صاحبها.
+              </p>
+              <div>
+                <strong className="text-foreground block mb-1">
+                  الحد الأدنى (Minimum Price):
+                </strong>
+                <ul className="list-disc list-inside space-y-2 mr-2 mt-1">
+                  <li>
+                    <strong className="text-foreground">
+                      في المزادات العادية:
+                    </strong>{" "}
+                    وصول السعر له يُدخل المزاد في مرحلة العد التنازلي النهائي.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">
+                      في السوق المتأخر (Delayed Market):
+                    </strong>{" "}
+                    أي مزايدة تصل لهذا السعر أو تتجاوزه تؤدي لإنهاء المزاد فوراً
+                    وإعلان الفوز.
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-xs text-yellow-600">
+                ملاحظة: يضمن النظام هامشاً محدداً بين الحدين لعدالة المزاد.
+              </div>
+            </div>
           </div>
 
           <div>
@@ -949,14 +1086,15 @@ export default function CarDataEntryForm() {
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
               required
             >
-              <option value="">-- اختر  سوق السيارة --</option>
-              {(marketOptions?.length ? marketOptions : DEFAULT_MARKET_OPTIONS).map(
-                (opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                )
-              )}
+              <option value="">-- اختر سوق السيارة --</option>
+              {(marketOptions?.length
+                ? marketOptions
+                : DEFAULT_MARKET_OPTIONS
+              ).map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -1260,9 +1398,7 @@ export default function CarDataEntryForm() {
               </div>
               <div className="bg-card p-3 rounded-lg border border-border">
                 <p className="text-sm text-foreground/70">سيارات مشابهة</p>
-                <p className="text-xl font-bold">
-                  {aiAnalysis.similarCars}
-                </p>
+                <p className="text-xl font-bold">{aiAnalysis.similarCars}</p>
               </div>
               <div className="bg-card p-3 rounded-lg border border-border">
                 <p className="text-sm text-foreground/70">السعر المقترح</p>
@@ -1468,8 +1604,7 @@ export default function CarDataEntryForm() {
 
           <div className="bg-background/50 p-4 rounded-lg border border-border mb-4">
             <p className="text-foreground/80 mb-4">
-              أقر أنا مقدم هذا النموذج بموافق
-              ي على جميع شروط وإجراءات المنصة،
+              أقر أنا مقدم هذا النموذج بموافق ي على جميع شروط وإجراءات المنصة،
               وأوافق على خصم جميع العمولات والرسوم المقررة من قيمة بيع السيارة.
               كما أتعهد بأن جميع البيانات المقدمة في هذا النموذج صحيحة وكاملة،
               وأتحمل المسؤولية القانونية الكاملة في حال ثبوت عدم صحة أي منها.
@@ -1578,9 +1713,9 @@ export default function CarDataEntryForm() {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !!maxPriceError}
             className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${
-              isSubmitting
+              isSubmitting || !!maxPriceError
                 ? "bg-border/50 cursor-not-allowed"
                 : "bg-primary hover:bg-primary/90"
             }`}
