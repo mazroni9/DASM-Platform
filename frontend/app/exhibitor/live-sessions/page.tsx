@@ -66,7 +66,11 @@ function extractPaged(js: any) {
   const data = js?.data?.data ?? js?.data ?? js;
   const last_page =
     js?.data?.last_page ?? js?.last_page ?? data?.last_page ?? 1;
-  const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  const rows = Array.isArray(data?.data)
+    ? data.data
+    : Array.isArray(data)
+    ? data
+    : [];
   return { rows, last_page: Number(last_page || 1) };
 }
 
@@ -204,7 +208,9 @@ export default function ExhibitorLiveSessionsPage() {
       const list = await fetchMyAuctionsBroadcasts();
       setBroadcasts(list);
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "تعذر تحديث القائمة");
+      setError(
+        e?.response?.data?.message || e?.message || "تعذر تحديث القائمة"
+      );
     } finally {
       setBgLoading(false);
     }
@@ -217,9 +223,9 @@ export default function ExhibitorLiveSessionsPage() {
     return broadcasts.filter((b) => {
       const title = (b.title || "").toLowerCase();
       const desc = (b.description || "").toLowerCase();
-      const carTxt = `${b.auction?.car?.make || ""} ${b.auction?.car?.model || ""} ${
-        b.auction?.car?.year || ""
-      }`.toLowerCase();
+      const carTxt = `${b.auction?.car?.make || ""} ${
+        b.auction?.car?.model || ""
+      } ${b.auction?.car?.year || ""}`.toLowerCase();
       return title.includes(q) || desc.includes(q) || carTxt.includes(q);
     });
   }, [broadcasts, search]);
@@ -229,12 +235,16 @@ export default function ExhibitorLiveSessionsPage() {
   // إيقاف البث (مسموح فقط للمشرفين/الأدمن لأن الروت Admin)
   const stopBroadcast = async () => {
     if (!canModerate) {
-      return toast("لا تملك صلاحية إيقاف البث. تواصل مع الإدارة.", { icon: "ℹ️" });
+      return toast("لا تملك صلاحية إيقاف البث. تواصل مع الإدارة.", {
+        icon: "ℹ️",
+      });
     }
     try {
       const ok = window.confirm("هل تريد إيقاف البث المباشر؟");
       if (!ok) return;
-      const res = await api.put("/api/admin/broadcast/status", { is_live: false });
+      const res = await api.put("/api/admin/broadcast/status", {
+        is_live: false,
+      });
       if (res?.data?.status === "success" || res?.status === 200) {
         toast.success(res?.data?.message || "تم إيقاف البث");
         await refresh();
@@ -249,10 +259,14 @@ export default function ExhibitorLiveSessionsPage() {
   // حذف جلسة بث محددة (مسموح فقط للمشرفين/الأدمن)
   const deleteBroadcast = async (b: UiBroadcast) => {
     if (!canModerate) {
-      return toast("لا تملك صلاحية حذف البث. تواصل مع الإدارة.", { icon: "ℹ️" });
+      return toast("لا تملك صلاحية حذف البث. تواصل مع الإدارة.", {
+        icon: "ℹ️",
+      });
     }
     try {
-      const ok = window.confirm("هل أنت متأكد من حذف هذه الجلسة؟ لا يمكن التراجع.");
+      const ok = window.confirm(
+        "هل أنت متأكد من حذف هذه الجلسة؟ لا يمكن التراجع."
+      );
       if (!ok) return;
       const res = await api.delete(`/api/admin/broadcast/${b.id}`);
       if (res?.status === 200) {
@@ -274,7 +288,7 @@ export default function ExhibitorLiveSessionsPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100">
+    <div dir="rtl" className="min-h-screen bg-background text-foreground">
       <Header />
       <div className="flex">
         <Sidebar />
@@ -282,32 +296,41 @@ export default function ExhibitorLiveSessionsPage() {
           {/* العنوان والشريط العلوي */}
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600">
-                <Video size={22} className="text-white" />
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Video size={22} className="text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold">جلسات البث المباشر</h1>
-                <p className="text-slate-400">تعرض فقط البثوث المرتبطة بمزادات سياراتك.</p>
+                <h1 className="text-2xl md:text-3xl font-extrabold text-foreground">
+                  جلسات البث المباشر
+                </h1>
+                <p className="text-muted-foreground">
+                  تعرض فقط البثوث المرتبطة بمزادات سياراتك.
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  size={16}
+                />
                 <input
                   type="text"
                   placeholder="ابحث بعنوان البث أو السيارة..."
-                  className="pl-10 pr-3 py-2 rounded-lg bg-slate-900/70 border border-slate-700 outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20"
+                  className="pl-10 pr-3 py-2 rounded-lg bg-background border border-border outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
               <button
                 onClick={refresh}
-                className="flex items-center justify-center px-4 py-2 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-200 hover:bg-slate-900"
+                className="flex items-center justify-center px-4 py-2 rounded-lg bg-secondary border border-border text-foreground hover:bg-secondary/80"
                 title="تحديث"
               >
-                <RefreshCw className={`ml-2 ${bgLoading ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`ml-2 ${bgLoading ? "animate-spin" : ""}`}
+                />
                 {bgLoading ? "جارٍ التحديث..." : "تحديث"}
               </button>
             </div>
@@ -315,36 +338,42 @@ export default function ExhibitorLiveSessionsPage() {
 
           {/* إحصائيات سريعة */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800">
+            <div className="bg-card p-6 rounded-xl shadow-xl border border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">إجمالي جلساتي</p>
-                  <p className="text-3xl font-bold text-slate-100">{filtered.length}</p>
+                  <p className="text-muted-foreground text-sm">إجمالي جلساتي</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {filtered.length}
+                  </p>
                 </div>
-                <div className="p-3 rounded-xl bg-sky-500/10">
-                  <Video className="text-sky-400" />
+                <div className="p-3 rounded-xl bg-primary/10">
+                  <Video className="text-primary" />
                 </div>
               </div>
             </div>
-            <div className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800">
+            <div className="bg-card p-6 rounded-xl shadow-xl border border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">مباشر الآن</p>
-                  <p className="text-3xl font-bold text-emerald-400">{liveCount}</p>
+                  <p className="text-muted-foreground text-sm">مباشر الآن</p>
+                  <p className="text-3xl font-bold text-emerald-500">
+                    {liveCount}
+                  </p>
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-500/10">
-                  <Radio className="text-emerald-400" />
+                  <Radio className="text-emerald-500" />
                 </div>
               </div>
             </div>
-            <div className="bg-slate-900/70 p-6 rounded-xl shadow-xl border border-slate-800">
+            <div className="bg-card p-6 rounded-xl shadow-xl border border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">غير مباشر</p>
-                  <p className="text-3xl font-bold text-rose-400">{filtered.length - liveCount}</p>
+                  <p className="text-muted-foreground text-sm">غير مباشر</p>
+                  <p className="text-3xl font-bold text-destructive">
+                    {filtered.length - liveCount}
+                  </p>
                 </div>
-                <div className="p-3 rounded-xl bg-rose-500/10">
-                  <Pause className="text-rose-400" />
+                <div className="p-3 rounded-xl bg-destructive/10">
+                  <Pause className="text-destructive" />
                 </div>
               </div>
             </div>
@@ -352,7 +381,7 @@ export default function ExhibitorLiveSessionsPage() {
 
           {/* رسائل الأخطاء */}
           {error && (
-            <div className="mb-6 p-4 bg-rose-900/30 border border-rose-700 text-rose-200 rounded-lg whitespace-pre-wrap">
+            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg whitespace-pre-wrap">
               {error}
             </div>
           )}
@@ -361,19 +390,26 @@ export default function ExhibitorLiveSessionsPage() {
           {loading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-56 bg-slate-900/60 border border-slate-800 rounded-xl animate-pulse" />
+                <div
+                  key={i}
+                  className="h-56 bg-card border border-border rounded-xl animate-pulse"
+                />
               ))}
             </div>
           )}
 
           {/* لا توجد جلسات */}
           {!loading && filtered.length === 0 && (
-            <div className="bg-slate-900/70 border border-slate-800 rounded-xl shadow-xl p-12 text-center">
-              <div className="text-slate-500 mb-4">
+            <div className="bg-card border border-border rounded-xl shadow-xl p-12 text-center">
+              <div className="text-muted-foreground mb-4">
                 <AlertTriangle size={48} className="mx-auto" />
               </div>
-              <h3 className="text-xl font-medium text-slate-100 mb-2">لا توجد جلسات بث خاصة بك</h3>
-              <p className="text-slate-400">عند إنشاء بث لأي مزاد من مزاداتك، سيظهر هنا تلقائيًا.</p>
+              <h3 className="text-xl font-medium text-foreground mb-2">
+                لا توجد جلسات بث خاصة بك
+              </h3>
+              <p className="text-muted-foreground">
+                عند إنشاء بث لأي مزاد من مزاداتك، سيظهر هنا تلقائيًا.
+              </p>
             </div>
           )}
 
@@ -383,7 +419,9 @@ export default function ExhibitorLiveSessionsPage() {
               {filtered.map((b, idx) => {
                 const embed = toEmbedUrl(b);
                 const carTxt = b?.auction?.car
-                  ? `${b.auction.car.make || ""} ${b.auction.car.model || ""} ${b.auction.car.year || ""}`.trim()
+                  ? `${b.auction.car.make || ""} ${b.auction.car.model || ""} ${
+                      b.auction.car.year || ""
+                    }`.trim()
                   : `#${b.auction_id}`;
 
                 return (
@@ -393,26 +431,32 @@ export default function ExhibitorLiveSessionsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.04 }}
                     className={`rounded-2xl overflow-hidden shadow-2xl border ${
-                      b.is_live ? "border-emerald-700/40" : "border-slate-800"
-                    } bg-slate-900/70`}
+                      b.is_live ? "border-emerald-500/40" : "border-border"
+                    } bg-card`}
                   >
                     {/* رأس البطاقة */}
                     <div
                       className={`px-5 py-3 flex items-center justify-between ${
-                        b.is_live ? "bg-gradient-to-r from-emerald-600/20 to-teal-600/20" : "bg-slate-900/40"
-                      } border-b border-slate-800`}
+                        b.is_live ? "bg-emerald-500/10" : "bg-secondary/40"
+                      } border-b border-border`}
                     >
                       <div className="flex items-center gap-2">
                         <div
                           className={`w-2.5 h-2.5 rounded-full ${
-                            b.is_live ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
+                            b.is_live
+                              ? "bg-emerald-500 animate-pulse"
+                              : "bg-muted-foreground"
                           }`}
                         />
-                        <span className="text-sm">{b.is_live ? "مباشر الآن" : "غير مباشر"}</span>
+                        <span className="text-sm">
+                          {b.is_live ? "مباشر الآن" : "غير مباشر"}
+                        </span>
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-muted-foreground">
                         {b.scheduled_start_time
-                          ? new Date(b.scheduled_start_time).toLocaleString("ar-SA")
+                          ? new Date(b.scheduled_start_time).toLocaleString(
+                              "ar-SA"
+                            )
                           : b.created_at
                           ? new Date(b.created_at).toLocaleString("ar-SA")
                           : ""}
@@ -421,15 +465,22 @@ export default function ExhibitorLiveSessionsPage() {
 
                     {/* المحتوى */}
                     <div className="p-5 space-y-3">
-                      <h3 className="text-lg font-bold text-slate-100">{b.title}</h3>
-                      <p className="text-slate-300 text-sm">
-                        السيارة: <span className="text-slate-100">{carTxt}</span>
+                      <h3 className="text-lg font-bold text-foreground">
+                        {b.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        السيارة:{" "}
+                        <span className="text-foreground">{carTxt}</span>
                       </p>
-                      {b.description && <p className="text-slate-400 text-sm line-clamp-3">{b.description}</p>}
+                      {b.description && (
+                        <p className="text-muted-foreground text-sm line-clamp-3">
+                          {b.description}
+                        </p>
+                      )}
 
                       {/* معاينة */}
                       {embed && (
-                        <div className="mt-3 aspect-video rounded-lg overflow-hidden border border-slate-800">
+                        <div className="mt-3 aspect-video rounded-lg overflow-hidden border border-border">
                           <iframe
                             width="100%"
                             height="100%"
@@ -446,7 +497,7 @@ export default function ExhibitorLiveSessionsPage() {
                       <div className="pt-3 flex items-center gap-2">
                         <button
                           onClick={() => openStream(b)}
-                          className="flex-1 py-2 rounded-lg text-white bg-sky-600 hover:bg-sky-700 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 py-2 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
                           title="فتح البث"
                         >
                           <ExternalLink size={16} />
@@ -459,10 +510,14 @@ export default function ExhibitorLiveSessionsPage() {
                             disabled={!canModerate}
                             className={`px-3 py-2 rounded-lg text-white flex items-center gap-2 ${
                               canModerate
-                                ? "bg-rose-600 hover:bg-rose-700"
-                                : "bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed"
+                                ? "bg-destructive hover:bg-destructive/90"
+                                : "bg-muted border border-border text-muted-foreground cursor-not-allowed"
                             }`}
-                            title={canModerate ? "إيقاف البث" : "غير متاح — يتطلب صلاحيات مشرف"}
+                            title={
+                              canModerate
+                                ? "إيقاف البث"
+                                : "غير متاح — يتطلب صلاحيات مشرف"
+                            }
                           >
                             <Pause size={16} />
                             إيقاف
@@ -470,7 +525,7 @@ export default function ExhibitorLiveSessionsPage() {
                         ) : (
                           <button
                             disabled
-                            className="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed flex items-center gap-2"
+                            className="px-3 py-2 rounded-lg bg-secondary border border-border text-muted-foreground cursor-not-allowed flex items-center gap-2"
                             title="متوقّف"
                           >
                             <Pause size={16} />
@@ -483,10 +538,14 @@ export default function ExhibitorLiveSessionsPage() {
                           disabled={!canModerate}
                           className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
                             canModerate
-                              ? "bg-slate-900 border border-slate-800 hover:bg-slate-800 text-rose-300 hover:text-rose-200"
-                              : "bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed"
+                              ? "bg-secondary border border-border hover:bg-secondary/80 text-destructive hover:text-destructive/80"
+                              : "bg-muted border border-border text-muted-foreground cursor-not-allowed"
                           }`}
-                          title={canModerate ? "حذف الجلسة" : "غير متاح — يتطلب صلاحيات مشرف"}
+                          title={
+                            canModerate
+                              ? "حذف الجلسة"
+                              : "غير متاح — يتطلب صلاحيات مشرف"
+                          }
                         >
                           <Trash2 size={16} />
                           حذف

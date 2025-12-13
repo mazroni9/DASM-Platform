@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { Header } from '../../../components/exhibitor/Header';
-import { Sidebar } from '../../../components/exhibitor/sidebar';
-import { FiMenu } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from "react";
+import { Header } from "../../../components/exhibitor/Header";
+import { Sidebar } from "../../../components/exhibitor/sidebar";
+import { FiMenu } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Filter,
@@ -16,9 +16,9 @@ import {
   Calendar,
   Layers,
   Eye,
-} from 'lucide-react';
-import api from '@/lib/axios';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import api from "@/lib/axios";
+import toast from "react-hot-toast";
 
 /* =========================
    Types
@@ -52,14 +52,17 @@ type MarketCar = {
    Helpers
 ========================= */
 const fmtInt = (n?: number | null) =>
-  typeof n === 'number' ? new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 0 }).format(n) : '—';
+  typeof n === "number"
+    ? new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(n)
+    : "—";
 
 const fmtMoney = (n?: number | null) =>
-  typeof n === 'number'
-    ? new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 0 }).format(n)
-    : '—';
+  typeof n === "number"
+    ? new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(n)
+    : "—";
 
-const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('ar-SA') : '—');
+const fmtDate = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("ar-SA") : "—";
 
 /* =========================
    Page
@@ -69,21 +72,23 @@ export default function ExhibitorDashboard() {
   const [isClient, setIsClient] = useState(false);
 
   // === Filters / query
-  const [q, setQ] = useState('');
-  const [make, setMake] = useState('');
-  const [model, setModel] = useState('');
-  const [yearFrom, setYearFrom] = useState('');
-  const [yearTo, setYearTo] = useState('');
-  const [priceFrom, setPriceFrom] = useState('');
-  const [priceTo, setPriceTo] = useState('');
-  const [odoFrom, setOdoFrom] = useState('');
-  const [odoTo, setOdoTo] = useState('');
-  const [condition, setCondition] = useState('');
-  const [auctionStatus, setAuctionStatus] = useState('');
+  const [q, setQ] = useState("");
+  const [make, setMake] = useState("");
+  const [model, setModel] = useState("");
+  const [yearFrom, setYearFrom] = useState("");
+  const [yearTo, setYearTo] = useState("");
+  const [priceFrom, setPriceFrom] = useState("");
+  const [priceTo, setPriceTo] = useState("");
+  const [odoFrom, setOdoFrom] = useState("");
+  const [odoTo, setOdoTo] = useState("");
+  const [condition, setCondition] = useState("");
+  const [auctionStatus, setAuctionStatus] = useState("");
   const [includeMine, setIncludeMine] = useState(true); // ✅ افتراضيًا مفعّل
   const [perPage, setPerPage] = useState(12);
-  const [sortBy, setSortBy] = useState<'created_at' | 'year' | 'odometer' | 'evaluation_price'>('created_at');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<
+    "created_at" | "year" | "odometer" | "evaluation_price"
+  >("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // === Data
   const [loading, setLoading] = useState(true);
@@ -122,18 +127,26 @@ export default function ExhibitorDashboard() {
   const fetchCars = async (page = 1, opts?: Partial<Record<string, any>>) => {
     setLoading(true);
     try {
-      const { data } = await api.get('/api/exhibitor/market/cars', { params: buildParams(page, opts) });
+      const { data } = await api.get("/api/exhibitor/market/cars", {
+        params: buildParams(page, opts),
+      });
       setPager({
         data: data.data ?? [],
         current_page: data.meta?.current_page ?? data.current_page ?? page,
         per_page: data.meta?.per_page ?? data.per_page ?? perPage,
         last_page: data.meta?.last_page ?? data.last_page ?? 1,
-        total: data.meta?.total ?? data.total ?? (data.data?.length ?? 0),
+        total: data.meta?.total ?? data.total ?? data.data?.length ?? 0,
       });
     } catch (e: any) {
       console.error(e);
-      toast.error('تعذّر تحميل السيارات');
-      setPager({ data: [], current_page: 1, per_page: perPage, last_page: 1, total: 0 });
+      toast.error("تعذّر تحميل السيارات");
+      setPager({
+        data: [],
+        current_page: 1,
+        per_page: perPage,
+        last_page: 1,
+        total: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -144,35 +157,35 @@ export default function ExhibitorDashboard() {
   const applyFilters = () => fetchCars(1);
 
   const resetFilters = () => {
-    setQ('');
-    setMake('');
-    setModel('');
-    setYearFrom('');
-    setYearTo('');
-    setPriceFrom('');
-    setPriceTo('');
-    setOdoFrom('');
-    setOdoTo('');
-    setCondition('');
-    setAuctionStatus('');
-    setSortBy('created_at');
-    setSortDir('desc');
+    setQ("");
+    setMake("");
+    setModel("");
+    setYearFrom("");
+    setYearTo("");
+    setPriceFrom("");
+    setPriceTo("");
+    setOdoFrom("");
+    setOdoTo("");
+    setCondition("");
+    setAuctionStatus("");
+    setSortBy("created_at");
+    setSortDir("desc");
     setPerPage(12);
     // نحتفظ بـ includeMine كما هو (مفعّل افتراضيًا)
     fetchCars(1, {
-      q: '',
-      make: '',
-      model: '',
-      year_from: '',
-      year_to: '',
-      price_from: '',
-      price_to: '',
-      odometer_from: '',
-      odometer_to: '',
-      condition: '',
-      auction_status: '',
-      sort_by: 'created_at',
-      sort_dir: 'desc',
+      q: "",
+      make: "",
+      model: "",
+      year_from: "",
+      year_to: "",
+      price_from: "",
+      price_to: "",
+      odometer_from: "",
+      odometer_to: "",
+      condition: "",
+      auction_status: "",
+      sort_by: "created_at",
+      sort_dir: "desc",
       per_page: 12,
     });
   };
@@ -218,18 +231,24 @@ export default function ExhibitorDashboard() {
   ------------------------- */
   if (!isClient) {
     return (
-      <div dir="rtl" className="flex min-h-screen bg-slate-950 overflow-x-hidden">
-        <div className="hidden md:block w-72 bg-slate-900/80 border-l border-slate-800 animate-pulse" />
+      <div
+        dir="rtl"
+        className="flex min-h-screen bg-background overflow-x-hidden"
+      >
+        <div className="hidden md:block w-72 bg-card border-l border-border animate-pulse" />
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-slate-900/70 border-b border-slate-800 animate-pulse" />
-          <main className="p-6 flex-1 bg-slate-950" />
+          <div className="h-16 bg-secondary/50 border-b border-border animate-pulse" />
+          <main className="p-6 flex-1 bg-background" />
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="flex min-h-screen bg-slate-950 relative overflow-x-hidden">
+    <div
+      dir="rtl"
+      className="flex min-h-screen bg-background relative overflow-x-hidden"
+    >
       {/* Sidebar (desktop) */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
@@ -239,10 +258,10 @@ export default function ExhibitorDashboard() {
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-40 md:hidden flex"
           >
             <motion.button
@@ -254,7 +273,7 @@ export default function ExhibitorDashboard() {
               onClick={() => setIsSidebarOpen(false)}
               aria-label="إغلاق القائمة"
             />
-            <motion.div className="relative w-72 ml-auto h-full bg-slate-950 border-l border-slate-800 shadow-2xl">
+            <motion.div className="relative w-72 ml-auto h-full bg-background border-l border-border shadow-2xl">
               <Sidebar />
             </motion.div>
           </motion.div>
@@ -265,16 +284,16 @@ export default function ExhibitorDashboard() {
       <div className="flex-1 flex flex-col w-0">
         <Header />
 
-        <main className="p-4 md:p-6 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
+        <main className="p-4 md:p-6 flex-1 overflow-y-auto overflow-x-hidden bg-background">
           <div className="max-w-7xl mx-auto">
             {/* Title + refresh */}
             <div className="mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-slate-100 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-violet-400" />
+                <h1 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-primary" />
                   قاعدة بيانات السيارات (سوق المعارض)
                 </h1>
-                <p className="text-slate-400 text-sm mt-1">
+                <p className="text-muted-foreground text-sm mt-1">
                   تصميم داكن متّسق مع فلترة مرتبة بدون أي overflow.
                 </p>
               </div>
@@ -282,7 +301,7 @@ export default function ExhibitorDashboard() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={refresh}
-                  className="h-11 inline-flex items-center gap-2 px-3 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60"
+                  className="h-11 inline-flex items-center gap-2 px-3 rounded-lg border border-border text-foreground hover:bg-secondary"
                 >
                   <RefreshCw className="w-4 h-4" />
                   تحديث
@@ -291,20 +310,20 @@ export default function ExhibitorDashboard() {
             </div>
 
             {/* ===================== FILTERS ===================== */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-5 mb-5">
+            <div className="rounded-2xl border border-border bg-card p-4 md:p-5 mb-5">
               {/* Row 1 */}
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-3">
                 {/* Search */}
                 <div className="xl:col-span-5">
                   <label className="sr-only">بحث</label>
                   <div className="relative">
-                    <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Search className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                      onKeyDown={(e) => e.key === "Enter" && applyFilters()}
                       placeholder="بحث عام (الماركة / الموديل / اللون / الوصف)"
-                      className="w-full h-12 pr-9 pl-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                      className="w-full h-12 pr-9 pl-3 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
@@ -315,7 +334,7 @@ export default function ExhibitorDashboard() {
                     value={make}
                     onChange={(e) => setMake(e.target.value)}
                     placeholder="الماركة"
-                    className="w-full h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="w-full h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div className="xl:col-span-2">
@@ -323,7 +342,7 @@ export default function ExhibitorDashboard() {
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     placeholder="الموديل"
-                    className="w-full h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="w-full h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
@@ -335,7 +354,7 @@ export default function ExhibitorDashboard() {
                     value={yearFrom}
                     onChange={(e) => setYearFrom(e.target.value)}
                     placeholder="من سنة"
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   <input
                     type="number"
@@ -343,7 +362,7 @@ export default function ExhibitorDashboard() {
                     value={yearTo}
                     onChange={(e) => setYearTo(e.target.value)}
                     placeholder="إلى سنة"
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
               </div>
@@ -358,7 +377,7 @@ export default function ExhibitorDashboard() {
                     value={priceFrom}
                     onChange={(e) => setPriceFrom(e.target.value)}
                     placeholder="سعر من"
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   <input
                     type="number"
@@ -366,7 +385,7 @@ export default function ExhibitorDashboard() {
                     value={priceTo}
                     onChange={(e) => setPriceTo(e.target.value)}
                     placeholder="سعر إلى"
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
@@ -378,7 +397,7 @@ export default function ExhibitorDashboard() {
                     value={odoFrom}
                     onChange={(e) => setOdoFrom(e.target.value)}
                     placeholder="عداد من"
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   <input
                     type="number"
@@ -386,7 +405,7 @@ export default function ExhibitorDashboard() {
                     value={odoTo}
                     onChange={(e) => setOdoTo(e.target.value)}
                     placeholder="عداد إلى"
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
@@ -396,7 +415,7 @@ export default function ExhibitorDashboard() {
                     value={condition}
                     onChange={(e) => setCondition(e.target.value)}
                     placeholder="الحالة"
-                    className="w-full h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="w-full h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
                 <div className="xl:col-span-2">
@@ -404,7 +423,7 @@ export default function ExhibitorDashboard() {
                     value={auctionStatus}
                     onChange={(e) => setAuctionStatus(e.target.value)}
                     placeholder="حالة المزاد"
-                    className="w-full h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+                    className="w-full h-12 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
 
@@ -413,7 +432,7 @@ export default function ExhibitorDashboard() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground"
                   >
                     <option value="created_at">الأحدث</option>
                     <option value="evaluation_price">السعر</option>
@@ -423,7 +442,7 @@ export default function ExhibitorDashboard() {
                   <select
                     value={sortDir}
                     onChange={(e) => setSortDir(e.target.value as any)}
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground"
                   >
                     <option value="desc">تنازلي</option>
                     <option value="asc">تصاعدي</option>
@@ -434,19 +453,19 @@ export default function ExhibitorDashboard() {
               {/* Row 3: include + perPage + actions */}
               <div className="mt-3 grid grid-cols-1 xl:grid-cols-12 gap-3">
                 <div className="xl:col-span-4 grid grid-cols-2 gap-2">
-                  <label className="h-12 inline-flex items-center gap-2 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200 cursor-pointer select-none">
+                  <label className="h-12 inline-flex items-center gap-2 px-3 rounded-lg bg-background border border-border text-foreground cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={includeMine}
                       onChange={(e) => setIncludeMine(e.target.checked)} // auto refresh via useEffect
-                      className="accent-fuchsia-500"
+                      className="accent-primary"
                     />
                     تضمين سيارتي
                   </label>
                   <select
                     value={perPage}
                     onChange={(e) => setPerPage(parseInt(e.target.value) || 12)}
-                    className="h-12 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100"
+                    className="h-12 px-3 rounded-lg bg-background border border-border text-foreground"
                     title="لكل صفحة"
                   >
                     <option value={8}>8 / صفحة</option>
@@ -459,14 +478,14 @@ export default function ExhibitorDashboard() {
                 <div className="xl:col-span-8 flex gap-2 justify-start xl:justify-end">
                   <button
                     onClick={applyFilters}
-                    className="h-12 inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60"
+                    className="h-12 inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-border text-foreground hover:bg-secondary"
                   >
                     <Filter className="w-4 h-4" />
                     تطبيق
                   </button>
                   <button
                     onClick={resetFilters}
-                    className="h-12 inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-slate-800 text-slate-200 hover:bg-slate-900/60"
+                    className="h-12 inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-border text-foreground hover:bg-secondary"
                   >
                     إعادة
                   </button>
@@ -475,10 +494,10 @@ export default function ExhibitorDashboard() {
             </div>
 
             {/* ===================== TABLE ===================== */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
               <div className="w-full overflow-x-auto">
                 <table className="w-full table-auto text-sm">
-                  <thead className="bg-slate-900/80 backdrop-blur border-b border-slate-800 text-slate-300">
+                  <thead className="bg-secondary/50 backdrop-blur border-b border-border text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 text-right">#</th>
                       <th className="px-4 py-3 text-right">السيارة</th>
@@ -494,66 +513,82 @@ export default function ExhibitorDashboard() {
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-slate-800">
+                  <tbody className="divide-y divide-border">
                     {loading ? (
                       Array.from({ length: 8 }).map((_, i) => (
                         <tr key={i} className="animate-pulse">
                           {Array.from({ length: 11 }).map((__, j) => (
                             <td key={j} className="px-4 py-3">
-                              <div className="h-4 w-full bg-slate-800/70 rounded" />
+                              <div className="h-4 w-full bg-secondary rounded" />
                             </td>
                           ))}
                         </tr>
                       ))
                     ) : cars.length ? (
                       cars.map((c) => (
-                        <tr key={c.id} className="hover:bg-slate-900/40">
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{c.id}</td>
-                          <td className="px-4 py-3 text-slate-200">
+                        <tr key={c.id} className="hover:bg-muted/50">
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                            {c.id}
+                          </td>
+                          <td className="px-4 py-3 text-foreground">
                             <div className="flex items-center gap-2">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-950/60 border border-slate-800 shrink-0">
-                                <Car className="w-4 h-4 text-violet-300" />
+                              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary border border-border shrink-0">
+                                <Car className="w-4 h-4 text-primary" />
                               </div>
                               <div className="min-w-0">
                                 <div className="font-semibold truncate">
-                                  {c.make || '—'} {c.model || ''} {c.year ? `• ${c.year}` : ''}
+                                  {c.make || "—"} {c.model || ""}{" "}
+                                  {c.year ? `• ${c.year}` : ""}
                                 </div>
                                 {c.dealer_label && (
-                                  <div className="text-[10px] text-slate-400 truncate">{c.dealer_label}</div>
+                                  <div className="text-[10px] text-muted-foreground truncate">
+                                    {c.dealer_label}
+                                  </div>
                                 )}
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="font-bold text-fuchsia-300">
-                              {fmtMoney(c.evaluation_price)} <span className="text-xs text-slate-400">SAR</span>
+                            <span className="font-bold text-primary">
+                              {fmtMoney(c.evaluation_price)}{" "}
+                              <span className="text-xs text-muted-foreground">
+                                SAR
+                              </span>
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                             <div className="inline-flex items-center gap-1">
-                              <Gauge className="w-3.5 h-3.5 text-slate-400" />
+                              <Gauge className="w-3.5 h-3.5 text-muted-foreground" />
                               {fmtInt(c.odometer)} كم
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{c.condition || '—'}</td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{c.transmission || '—'}</td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{c.engine || '—'}</td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{c.color || '—'}</td>
-                          <td className="px-4 py-3 text-slate-300">
-                            <span className="px-2 py-0.5 rounded-full bg-slate-950/60 border border-slate-800 text-slate-400 inline-block">
-                              {c.auction_status || 'غير محدد'}
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                            {c.condition || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                            {c.transmission || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                            {c.engine || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                            {c.color || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            <span className="px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground inline-block">
+                              {c.auction_status || "غير محدد"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                             <div className="inline-flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                               {fmtDate(c.created_at)}
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <button
                               onClick={() => openDetails(c)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800/60 text-slate-200"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border hover:bg-secondary text-foreground"
                             >
                               <Eye className="w-4 h-4" />
                               تفاصيل
@@ -563,7 +598,10 @@ export default function ExhibitorDashboard() {
                       ))
                     ) : (
                       <tr>
-                        <td className="px-4 py-10 text-center text-slate-400" colSpan={11}>
+                        <td
+                          className="px-4 py-10 text-center text-muted-foreground"
+                          colSpan={11}
+                        >
                           لا توجد نتائج مطابقة
                         </td>
                       </tr>
@@ -575,24 +613,26 @@ export default function ExhibitorDashboard() {
 
             {/* Pagination */}
             {!loading && pager && pager.last_page > 1 && (
-              <div className="mt-4 flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-300">
+              <div className="mt-4 flex items-center justify-between rounded-2xl border border-border bg-card p-3 text-sm text-foreground">
                 <button
                   onClick={prevPage}
                   disabled={pager.current_page <= 1}
                   className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border ${
                     pager.current_page <= 1
-                      ? 'border-slate-800 text-slate-500 cursor-not-allowed'
-                      : 'border-slate-700 hover:bg-slate-800/60'
+                      ? "border-border text-muted-foreground cursor-not-allowed"
+                      : "border-border hover:bg-secondary"
                   }`}
                 >
                   <ChevronRight className="w-4 h-4" />
                   السابق
                 </button>
 
-                <div className="text-slate-400">
-                  صفحة <span className="text-slate-200">{pager.current_page}</span> من{' '}
-                  <span className="text-slate-200">{pager.last_page}</span> — إجمالي{' '}
-                  <span className="text-slate-200">{fmtInt(pager.total)}</span>
+                <div className="text-muted-foreground">
+                  صفحة{" "}
+                  <span className="text-foreground">{pager.current_page}</span>{" "}
+                  من <span className="text-foreground">{pager.last_page}</span>{" "}
+                  — إجمالي{" "}
+                  <span className="text-foreground">{fmtInt(pager.total)}</span>
                 </div>
 
                 <button
@@ -600,8 +640,8 @@ export default function ExhibitorDashboard() {
                   disabled={pager.current_page >= pager.last_page}
                   className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg border ${
                     pager.current_page >= pager.last_page
-                      ? 'border-slate-800 text-slate-500 cursor-not-allowed'
-                      : 'border-slate-700 hover:bg-slate-800/60'
+                      ? "border-border text-muted-foreground cursor-not-allowed"
+                      : "border-border hover:bg-secondary"
                   }`}
                 >
                   التالي
@@ -616,8 +656,11 @@ export default function ExhibitorDashboard() {
       {/* FAB (mobile) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-4 rounded-full shadow-xl z-40 hover:from-violet-700 hover:to-fuchsia-700 transition-all duration-200 flex items-center justify-center"
-        style={{ boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.35), 0 4px 6px -4px rgba(0,0,0,.35)' }}
+        className="md:hidden fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-40 hover:bg-primary/90 transition-all duration-200 flex items-center justify-center"
+        style={{
+          boxShadow:
+            "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+        }}
         aria-label="القائمة"
         title="القائمة"
       >
@@ -637,15 +680,16 @@ export default function ExhibitorDashboard() {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 30, opacity: 0 }}
-              className="w-full md:max-w-2xl bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden"
+              className="w-full md:max-w-2xl bg-card border border-border rounded-2xl overflow-hidden"
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-                <div className="text-slate-100 font-semibold truncate">
-                  {selected.make || '—'} {selected.model || ''} {selected.year ? `• ${selected.year}` : ''}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div className="text-foreground font-semibold truncate">
+                  {selected.make || "—"} {selected.model || ""}{" "}
+                  {selected.year ? `• ${selected.year}` : ""}
                 </div>
                 <button
                   onClick={() => setSelected(null)}
-                  className="text-slate-400 hover:text-slate-200 px-2 py-1 rounded-lg"
+                  className="text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg"
                   aria-label="إغلاق"
                 >
                   ×
@@ -653,29 +697,40 @@ export default function ExhibitorDashboard() {
               </div>
 
               <div className="p-4 md:p-5">
-                <div className="h-40 rounded-xl mb-4 bg-gradient-to-r from-violet-700/20 via-fuchsia-600/20 to-indigo-600/10 border border-slate-800 flex items-center justify-center">
-                  <Car className="w-10 h-10 text-violet-300/80" />
+                <div className="h-40 rounded-xl mb-4 bg-muted border border-border flex items-center justify-center">
+                  <Car className="w-10 h-10 text-primary/80" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoRow label="السعر المرجعي">
-                    <span className="text-fuchsia-300 font-bold">
-                      {fmtMoney(selected.evaluation_price)} <span className="text-xs text-slate-400">SAR</span>
+                    <span className="text-primary font-bold">
+                      {fmtMoney(selected.evaluation_price)}{" "}
+                      <span className="text-xs text-muted-foreground">SAR</span>
                     </span>
                   </InfoRow>
-                  <InfoRow label="العداد">{fmtInt(selected.odometer)} كم</InfoRow>
-                  <InfoRow label="الحالة">{selected.condition || '—'}</InfoRow>
-                  <InfoRow label="ناقل الحركة">{selected.transmission || '—'}</InfoRow>
-                  <InfoRow label="المحرك">{selected.engine || '—'}</InfoRow>
-                  <InfoRow label="اللون">{selected.color || '—'}</InfoRow>
-                  <InfoRow label="تاريخ الإضافة">{fmtDate(selected.created_at)}</InfoRow>
-                  <InfoRow label="حالة المزاد">{selected.auction_status || '—'}</InfoRow>
+                  <InfoRow label="العداد">
+                    {fmtInt(selected.odometer)} كم
+                  </InfoRow>
+                  <InfoRow label="الحالة">{selected.condition || "—"}</InfoRow>
+                  <InfoRow label="ناقل الحركة">
+                    {selected.transmission || "—"}
+                  </InfoRow>
+                  <InfoRow label="المحرك">{selected.engine || "—"}</InfoRow>
+                  <InfoRow label="اللون">{selected.color || "—"}</InfoRow>
+                  <InfoRow label="تاريخ الإضافة">
+                    {fmtDate(selected.created_at)}
+                  </InfoRow>
+                  <InfoRow label="حالة المزاد">
+                    {selected.auction_status || "—"}
+                  </InfoRow>
                 </div>
 
                 <div className="mt-4">
-                  <div className="text-slate-300 text-sm mb-1">وصف مختصر</div>
-                  <p className="text-slate-400 text-sm whitespace-pre-wrap">
-                    {loadingDetails ? 'جارِ التحميل…' : selected.description || '—'}
+                  <div className="text-foreground text-sm mb-1">وصف مختصر</div>
+                  <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+                    {loadingDetails
+                      ? "جارِ التحميل…"
+                      : selected.description || "—"}
                   </p>
                 </div>
               </div>
@@ -690,11 +745,17 @@ export default function ExhibitorDashboard() {
 /* =========================
    Small helper
 ========================= */
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+function InfoRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-lg bg-slate-900/60 border border-slate-800 px-3 py-2 flex items-center justify-between gap-2">
-      <span className="text-slate-400">{label}</span>
-      <span className="text-slate-200 break-words text-left">{children}</span>
+    <div className="rounded-lg bg-secondary/50 border border-border px-3 py-2 flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground break-words text-left">{children}</span>
     </div>
   );
 }
