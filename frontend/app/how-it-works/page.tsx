@@ -59,9 +59,9 @@ const HowItWorksPage = () => {
             <span className="text-primary font-bold">4</span>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-2">المزاد الفوري والمزاد الصامت</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">المزاد الفوري والمزاد المتأخر</h2>
             <p className="text-foreground">
-              تنتقل السيارات غير المباعة تلقائيًا إلى المزاد الفوري، ثم المزاد الصامت لبقية اليوم، مما يمنح فرصًا أكبر للبيع.
+              تنتقل السيارات غير المباعة تلقائيًا إلى المزاد الفوري، ثم المزاد المتأخر لبقية اليوم، مما يمنح فرصًا أكبر للبيع.
             </p>
           </div>
         </section>

@@ -35,8 +35,7 @@ const almarai = localFont({
 
 export const metadata: Metadata = {
   title: "DASM - منصة المزادات الرقمية للأسواق",
-  description: "منصة رقمية للمزادات المباشرة والفورية والصامتة",
-};
+description: "منصة رقمية للمزادات المباشرة والفورية والمتأخرة",};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

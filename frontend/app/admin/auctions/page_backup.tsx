@@ -471,7 +471,7 @@ export default function AdminAuctionsPage() {
                                                         )
                                                     }
                                                     className="text-green-600 hover:text-yellow-900"
-                                                    title="الى الحراج الصامت"
+                                                    title="الى الحراج المتأخر"
                                                 >
                                                     <ArrowRightLeft className="h-4 w-4" />
                                                 </button>
@@ -486,7 +486,7 @@ export default function AdminAuctionsPage() {
                                                         )
                                                     }
                                                     className="text-green-600 hover:text-yellow-900"
-                                                    title="الى الحراج الصامت"
+                                                    title="الى الحراج المتأخر"
                                                 >
                                                     <ArrowRightLeft className="h-4 w-4" />
                                                 </button>

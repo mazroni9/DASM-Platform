@@ -58,7 +58,7 @@ function getCurrentAuctionType(time: Date = new Date()): {
   } else if (h >= 19 && h < 22) {
     return { label: "السوق الفوري المباشر", isLive: true };
   } else {
-    return { label: "السوق الصامت", isLive: true };
+    return { label: "السوق المتأخر", isLive: true };
   }
 }
 
