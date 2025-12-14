@@ -29,7 +29,7 @@ const Navbar = () => {
   const router = useLoadingRouter();
   const { user, logout } = useAuth();
   const isAdmin =
-    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+    user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN;
 
   const navigationItems: NavigationItem[] = [
     { href: "/auctions", label: "الأسواق الرقمية", icon: TvMinimalPlay },

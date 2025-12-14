@@ -47,7 +47,7 @@ interface UserProfile {
     name?: string;
     email: string;
     phone: string;
-    role: string;
+    type: string;
     area_id?: string;
     address?: string;
     company_name?: string;
@@ -208,7 +208,7 @@ export default function ProfilePage() {
                 area_id: formData.area_id,
             };
 
-            if (profile?.role === UserRole.DEALER) {
+            if (profile?.type === UserRole.DEALER) {
                 Object.assign(personalData, {
                     company_name: formData.company_name,
                     trade_license: formData.trade_license,
@@ -480,7 +480,7 @@ export default function ProfilePage() {
         );
     }
 
-    const roleConfig = getRoleConfig(profile.role);
+    const roleConfig = getRoleConfig(profile.type);
 
     return (
         <div className="space-y-6" dir="rtl">
@@ -804,7 +804,7 @@ export default function ProfilePage() {
                                     </div>
 
                                     {/* Dealer-specific fields */}
-                                    {profile.role === UserRole.DEALER && (
+                                    {profile.type === UserRole.DEALER && (
                                         <div className="mt-8 pt-6 border-t border-border">
                                             <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                                                 <Building className="w-5 h-5 text-purple-400" />

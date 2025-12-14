@@ -9,7 +9,7 @@ interface User {
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  type: string;
   phone?: string;
   name?: string;
   kyc_status?: string;

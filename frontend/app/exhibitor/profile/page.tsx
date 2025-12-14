@@ -400,10 +400,8 @@ function ProfileSection() {
               <div className="text-lg font-semibold text-foreground">
                 {profile.first_name} {profile.last_name}
               </div>
-              <div className="mt-1 text-xs inline-block bg-muted text-muted-foreground px-3 py-1 rounded-full border border-border">
-                {(user?.role === "venue_owner" && "صاحب معرض") ||
-                  user?.role ||
-                  "مستخدم"}
+              <div className="mt-1 text-xs inline-block bg-slate-800/70 text-slate-300 px-3 py-1 rounded-full border border-slate-700">
+                {(user?.type === 'venue_owner' && 'صاحب معرض') || user?.type || 'مستخدم'}
               </div>
               {profile.rating !== "" && (
                 <div className="mt-3 text-foreground text-sm">

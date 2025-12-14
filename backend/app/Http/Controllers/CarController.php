@@ -48,7 +48,7 @@ class CarController extends Controller
         $user = Auth::user();
 
         $query = Car::where('user_id', $user->id);
-        if ($user->role === 'dealer' && $user->dealer) {
+        if ($user->type === 'dealer' && $user->dealer) {
             $query->where('dealer_id', $user->dealer->id);
         }
 
@@ -152,7 +152,7 @@ class CarController extends Controller
         $user = Auth::user();
         $query = Car::query();
 
-        if ($user->role === 'dealer' && $user->dealer) {
+        if ($user->type === 'dealer' && $user->dealer) {
             $query->where('dealer_id', $user->dealer->id);
         } else {
             $query->where('user_id', $user->id);
@@ -263,7 +263,7 @@ class CarController extends Controller
         $user = Auth::user();
         $car = new Car();
 
-        if ($user->role === 'dealer' && $user->dealer) {
+        if ($user->type === 'dealer' && $user->dealer) {
             $car->dealer_id = $user->dealer->id;
         }
         $car->user_id = $user->id;
@@ -355,7 +355,7 @@ class CarController extends Controller
 
         // إشعار الإدمنز
         $car->refresh();
-        $admins = User::where('role', 'admin')->get();
+        $admins = User::where('type', 'admin')->get();
         Notification::send($admins, new NewCarAddedNotification($car->load('user')));
 
         return response()->json([
@@ -372,9 +372,9 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role === 'admin') {
+        if ($user->type === 'admin') {
             $car = Car::with('carAttributes')->find($id);
-        } elseif ($user->role === 'dealer' && $user->dealer) {
+        } elseif ($user->type === 'dealer' && $user->dealer) {
             $car = Car::where('id', $id)
                 ->where('dealer_id', $user->dealer->id)
                 ->with('carAttributes')
@@ -475,7 +475,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role === 'dealer' && $user->dealer) {
+        if ($user->type === 'dealer' && $user->dealer) {
             $car = Car::where('id', $id)->where('dealer_id', $user->dealer->id)->first();
         } else {
             $car = Car::where('id', $id)->where('user_id', $user->id)->first();
@@ -639,7 +639,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role === 'dealer' && $user->dealer) {
+        if ($user->type === 'dealer' && $user->dealer) {
             $car = Car::where('id', $id)->where('dealer_id', $user->dealer->id)->first();
         } else {
             $car = Car::where('id', $id)->where('user_id', $user->id)->first();
@@ -669,7 +669,7 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        $query = ($user->role === 'dealer' && $user->dealer)
+        $query = ($user->type === 'dealer' && $user->dealer)
             ? Car::where('dealer_id', $user->dealer->id)
             : Car::where('user_id', $user->id);
 

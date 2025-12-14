@@ -100,7 +100,7 @@ function toEmbedUrl(b: UiBroadcast): string | null {
 /** ========= الصفحة ========= **/
 export default function ExhibitorLiveSessionsPage() {
   const { user } = useAuth();
-  const role = (user?.role || "").toString().toLowerCase();
+  const role = (user?.type || "").toString().toLowerCase();
   const canModerate = role === "admin" || role === "moderator";
 
   const [loading, setLoading] = useState(true);
