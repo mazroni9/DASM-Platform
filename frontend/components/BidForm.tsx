@@ -169,7 +169,7 @@ export default function BidForm({
               key={option.value}
               type="button"
               onClick={() => selectQuickBid(option.value)}
-              className="group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border border-border/60 bg-white hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 active:scale-95"
+              className="group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border border-border/60 bg-background dark:bg-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-200 active:scale-95"
             >
               <span className="text-xs text-foreground/50 mb-0.5 group-hover:text-primary/70">
                 زيادة
