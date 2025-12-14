@@ -17,16 +17,16 @@ return new class extends Migration
         
         // Get all users with invalid roles
         $usersWithInvalidRoles = DB::table('users')
-            ->whereNotIn('role', $validRoles)
+            ->whereNotIn('type', $validRoles)
             ->get();
         
         // Update invalid roles to 'user' as default
         foreach ($usersWithInvalidRoles as $user) {
             DB::table('users')
                 ->where('id', $user->id)
-                ->update(['role' => 'user']);
+                ->update(['type' => 'user']);
             
-            echo "Updated user ID {$user->id} role from '{$user->role}' to 'user'\n";
+            echo "Updated user ID {$user->id} role from '{$user->type}' to 'user'\n";
         }
         
         // Drop the existing role constraint

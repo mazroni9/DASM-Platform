@@ -326,7 +326,7 @@ class AuctionController extends Controller
         // تأكد أن السيارة تابعة للمستخدم
         $user = Auth::user();
         $car  = Car::find($request->car_id);
-        $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
+        $isOwner = ($user->type === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
             || ($car->user_id === $user->id);
 
         if (!$isOwner) {
@@ -394,7 +394,7 @@ class AuctionController extends Controller
         $user = Auth::user();
         $car  = Car::findOrFail($request->car_id);
 
-        $isOwner = ($user->role === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
+        $isOwner = ($user->type === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
             || ($car->user_id === $user->id);
 
         if (!$isOwner) {
@@ -1271,7 +1271,7 @@ class AuctionController extends Controller
 
         // Verify ownership based on user role
         $isOwner = false;
-        if ($user->role === 'dealer' && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
+        if ($user->type === 'dealer' && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
             $isOwner = true;
         } elseif ($auction->car->user_id === $user->id) {
             $isOwner = true;
@@ -1352,7 +1352,7 @@ class AuctionController extends Controller
 
         // Verify ownership based on user role
         $isOwner = false;
-        if ($user->role === 'dealer' && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
+        if ($user->type === 'dealer' && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
             $isOwner = true;
         } elseif ($auction->car->user_id === $user->id) {
             $isOwner = true;
@@ -1400,7 +1400,7 @@ class AuctionController extends Controller
         $user = Auth::user();
         $query = null;
 
-        if ($user->role === 'dealer' && $user->dealer) {
+        if ($user->type === 'dealer' && $user->dealer) {
             // Get auctions for dealer's cars
             $query = Auction::whereHas('car', function ($q) use ($user) {
                 $q->where('dealer_id', $user->dealer->id);

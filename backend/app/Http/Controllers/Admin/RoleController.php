@@ -42,7 +42,7 @@ class RoleController extends Controller
         // User model has isAdmin() which checks ADMIN or SUPER_ADMIN.
         // Let's check specifically for SUPER_ADMIN enum.
 
-        if ($user->role !== \App\Enums\UserRole::SUPER_ADMIN) {
+        if ($user->type !== \App\Enums\UserRole::SUPER_ADMIN) {
             $query->where('name', '!=', 'super_admin');
         }
 

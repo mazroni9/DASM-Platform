@@ -14,7 +14,7 @@ class RoleMiddleware
      *   ->middleware('role:admin,venue_owner,dealer')
      *
      * - Supports multiple role parameters and comma/pipe separated lists.
-     * - Works whether $user->role is a string or a PHP 8.1 BackedEnum.
+     * - Works whether $user->type is a string or a PHP 8.1 BackedEnum.
      * - Admin bypass is enabled (admin always allowed).
      */
     public function handle(Request $request, Closure $next, ...$roles)
@@ -37,7 +37,7 @@ class RoleMiddleware
         $allowed = array_values(array_unique($flat)); // final allowed roles (lowercased)
 
         // Resolve user's role (string or BackedEnum)
-        $userRole = $user->role;
+        $userRole = $user->type;
         if ($userRole instanceof \BackedEnum) {
             $userRole = $userRole->value;
         }

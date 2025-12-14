@@ -116,7 +116,7 @@ export interface User {
   last_name: string;
   email: string;
   phone: string;
-  role: UserRole;
+  type: UserRole;
   dealer_id?: number;
   dealer?: {
     id: number;
