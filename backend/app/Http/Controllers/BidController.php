@@ -423,21 +423,21 @@ class BidController extends Controller
             ]);
 
             $auction = Auction::select(
-                    'id',
-                    'car_id',
-                    'current_bid',
-                    'minimum_bid',
-                    'maximum_bid',
-                    'last_bid_time',
-                    'status',
-                    'start_time',
-                    'end_time',
-                    'starting_bid',
-                    'auction_type',
-                    'reserve_price',
-                    'opening_price',
-                    'extended_until'
-                )
+                'id',
+                'car_id',
+                'current_bid',
+                'minimum_bid',
+                'maximum_bid',
+                'last_bid_time',
+                'status',
+                'start_time',
+                'end_time',
+                'starting_bid',
+                'auction_type',
+                'reserve_price',
+                'opening_price',
+                'extended_until'
+            )
                 ->withCount('bids')
                 ->with('car:id,dealer_id,user_id,min_price,max_price')
                 ->find($data['auction_id']);
@@ -542,7 +542,7 @@ class BidController extends Controller
             // Update the auction's current price + إحصائيات
             $auction->update([
                 'current_bid'  => $data['bid_amount'],
-                'last_bid_time'=> Carbon::now()->toDateTimeString(),
+                'last_bid_time' => Carbon::now()->toDateTimeString(),
                 'minimum_bid'  => Bid::where('auction_id', $data['auction_id'])->min('bid_amount'),
                 'maximum_bid'  => Bid::where('auction_id', $data['auction_id'])->max('bid_amount'),
             ]);
@@ -590,7 +590,7 @@ class BidController extends Controller
                             Log::info('Auction time extended (last minute & winner exists)', [
                                 'auction_id'        => $auction->id,
                                 'previous_end'      => $effectiveEnd->toDateTimeString(),
-                                'new_extended_until'=> $newExtendedUntil->toDateTimeString(),
+                                'new_extended_until' => $newExtendedUntil->toDateTimeString(),
                                 'last_bid_id'       => $last_bid?->id,
                                 'last_bid_amount'   => $last_bid?->bid_amount,
                                 'min_price'         => $minPrice,
@@ -693,12 +693,29 @@ class BidController extends Controller
                 ]);
             }
 
-            // Check Min Price (Delayed Sale)
+            // Check Min Price - Instant Sale for SILENT_INSTANT (Delayed Market), Delayed Sale for others
             if ($min_price > 0 && $newBidAmount >= $min_price) {
-                Log::info("Min price reached for auction {$auction->id}. Dispatching delayed sale job (30 mins).");
+                // SILENT_INSTANT (السوق المتأخر / Delayed Market): Instant sale on min price
+                if ($auction->auction_type == AuctionType::SILENT_INSTANT->value) {
+                    Log::info("Min price reached for SILENT_INSTANT auction {$auction->id}. Dispatching immediate sale job.");
 
-                // Dispatch the job with a 30-minute delay
-                ProcessAuctionSaleJob::dispatch($auction->id, $bid->id)->delay(now()->addMinutes(30));
+                    // Dispatch the job immediately for instant sale
+                    ProcessAuctionSaleJob::dispatch($auction->id, $bid->id);
+
+                    DB::commit();
+                    Cache::flush();
+
+                    // Return a special status for the frontend indicating instant win
+                    return response()->json([
+                        'status' => 'success_sold',
+                        'message' => 'تهانينا! لقد وصلت للحد الأدنى في السوق المتأخر وفزت بالمزاد فوراً.',
+                        'data' => ['bid_id' => $bid->id, 'current_bid' => $auction->current_bid]
+                    ]);
+                } else {
+                    // Other auction types: Delayed sale (30 minutes countdown)
+                    Log::info("Min price reached for auction {$auction->id}. Dispatching delayed sale job (30 mins).");
+                    ProcessAuctionSaleJob::dispatch($auction->id, $bid->id)->delay(now()->addMinutes(30));
+                }
             }
             // --- NEW LOGIC ENDS HERE ---
 

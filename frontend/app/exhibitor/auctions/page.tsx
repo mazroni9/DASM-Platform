@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Header } from '../../../components/exhibitor/Header';
-import { Sidebar } from '../../../components/exhibitor/sidebar';
-import AuctionPage from '../../../components/exhibitor/AuctionPage';
-import { FiMenu } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { Header } from "../../../components/exhibitor/Header";
+import { Sidebar } from "../../../components/exhibitor/sidebar";
+import AuctionPage from "../../../components/exhibitor/AuctionPage";
+import { FiMenu } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ExhibitorDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -20,38 +20,44 @@ export default function ExhibitorDashboard() {
   useEffect(() => {
     if (!isClient) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = isSidebarOpen ? 'hidden' : prev || '';
+    document.body.style.overflow = isSidebarOpen ? "hidden" : prev || "";
     return () => {
-      document.body.style.overflow = prev || '';
+      document.body.style.overflow = prev || "";
     };
   }, [isSidebarOpen, isClient]);
 
   // ✅ إغلاق بالق клавиш Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsSidebarOpen(false);
+      if (e.key === "Escape") setIsSidebarOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   // ⏳ Placeholder أثناء التحميل الأول (داكن وموحّد)
   if (!isClient) {
     return (
-      <div dir="rtl" className="flex min-h-screen bg-slate-950 text-slate-100">
+      <div
+        dir="rtl"
+        className="flex min-h-screen bg-background text-foreground"
+      >
         {/* Sidebar skeleton */}
-        <div className="hidden md:block w-72 bg-slate-900/80 border-r border-slate-800 animate-pulse" />
+        <div className="hidden md:block w-72 bg-card border-r border-border animate-pulse" />
         {/* Header & Main skeleton */}
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-slate-900/80 border-b border-slate-800 animate-pulse" />
-          <main className="p-6 flex-1 bg-slate-950" />
+          <div className="h-16 bg-card border-b border-border animate-pulse" />
+          <main className="p-6 flex-1 bg-background" />
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="flex min-h-screen bg-slate-950 text-slate-100 relative">
+    <div
+      dir="rtl"
+      className="flex min-h-screen bg-background text-foreground relative"
+    >
       {/* Sidebar (Desktop) */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
@@ -61,10 +67,10 @@ export default function ExhibitorDashboard() {
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-[60] md:hidden flex"
             aria-modal="true"
             role="dialog"
@@ -97,8 +103,11 @@ export default function ExhibitorDashboard() {
       {/* Mobile FAB */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed bottom-6 left-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-4 rounded-full shadow-xl z-50 hover:from-violet-700 hover:to-fuchsia-700 transition-all duration-200"
-        style={{ boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.4)' }}
+        className="md:hidden fixed bottom-6 left-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-50 hover:bg-primary/90 transition-all duration-200"
+        style={{
+          boxShadow:
+            "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+        }}
         aria-label="فتح القائمة"
       >
         <FiMenu size={22} />

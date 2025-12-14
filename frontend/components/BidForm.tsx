@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
@@ -10,6 +10,9 @@ import {
   CheckCircle2,
   TrendingUp,
   Loader2,
+  AlertTriangle,
+  Gavel,
+  Plus,
   SaudiRiyal,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -20,6 +23,7 @@ interface BidFormProps {
   auction_type: string;
   onSuccess?: () => void;
 }
+
 export default function BidForm({
   auction_id,
   bid_amount,
@@ -28,23 +32,33 @@ export default function BidForm({
 }: BidFormProps) {
   const [bidAmount, setBidAmount] = useState<number | string>(bid_amount);
   const [customAmount, setCustomAmount] = useState<string>("");
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const { isLoggedIn, user } = useAuth(); // حساب خيارات المزايدة السريعة
-  const quickBidOptions = [100, 200, 300, 400, 500, 1000].map((increment) => ({
+  const { isLoggedIn, user } = useAuth();
+
+  // خيارات المزايدة السريعة
+  let BidOptions = [];
+  if (bid_amount > 100000) {
+    BidOptions = [100, 300, 1000];
+  } else {
+    BidOptions = [100, 300, 500];
+  }
+  const quickBidOptions = BidOptions.map((increment) => ({
     value: increment,
-    label: formatCurrency(bid_amount + increment),
+    label: `+${increment}`,
   }));
+
   const roundToNearest5 = (number: number): number => {
     return Math.round(number / 5) * 5;
   };
+
   const selectQuickBid = (increment: number) => {
     const newBid = roundToNearest5(bid_amount + increment);
     setBidAmount(newBid);
     setCustomAmount(newBid.toString());
   };
+
   const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === "") {
@@ -66,24 +80,28 @@ export default function BidForm({
       toast.error("يرجى تسجيل الدخول أولاً للمزايدة");
       return;
     }
+
     const numericBid =
       typeof bidAmount === "string"
         ? parseInt(bidAmount.replace(/,/g, ""))
         : bidAmount;
+
     if (!numericBid || isNaN(numericBid)) {
       setError("الرجاء إدخال مبلغ صحيح");
       return;
     }
-    if (auction_type !== 'silent_instant') {
+
+    if (auction_type !== "silent_instant") {
       if (numericBid <= bid_amount) {
-        setError(`يجب أن يكون المبلغ أكبر من ${formatCurrency(bid_amount)}`);
+        setError("يجب أن يكون المبلغ أعلى من السعر الحالي");
         return;
       }
-    } 
-    
+    }
+
     setError(null);
     setIsSubmitting(true);
     const client_ts = new Date().toISOString();
+
     try {
       const response = await api.post("/api/auctions/bid", {
         auction_id,
@@ -91,11 +109,16 @@ export default function BidForm({
         bid_amount: numericBid,
         client_ts,
       });
+
       if (response.data.status === "success") {
         setSuccess("تم تقديم العرض بنجاح!");
         toast.success("تم تقديم العرض بنجاح!");
         setBidAmount(bid_amount);
         setCustomAmount("");
+        if (onSuccess) onSuccess();
+      } else if (response.data.status === "success_sold") {
+        setSuccess(response.data.message);
+        toast.success(response.data.message);
         setTimeout(() => window.location.reload(), 1500);
         if (onSuccess) onSuccess();
       } else {
@@ -111,111 +134,127 @@ export default function BidForm({
       setIsSubmitting(false);
     }
   };
-  return !isLoggedIn ? (
-    <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border/50 p-5 shadow-2xl text-center">
-      <h3 className="text-xl font-bold text-primary mb-4">
-        يرجى تسجيل الدخول للمزايدة
-      </h3>
-      <p className="text-foreground/80 mb-6">
-        يجب أن تكون مسجلاً لتتمكن من تقديم عرضك.
-      </p>
-      <button
-        type="button"
-        onClick={() => useAuthStore.getState().openAuthModal("login")}
-        className="w-full py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90"
-      >
-        تسجيل الدخول أو إنشاء حساب
-      </button>
-    </div>
-  ) : (
-    <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border/50 p-5 shadow-2xl">
-      <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-xl mb-3 border border-border">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          <h3 className="font-bold text-primary">قدم عرضك الآن</h3>
+
+  // حالة عدم تسجيل الدخول
+  if (!isLoggedIn) {
+    return (
+      <div className="text-center py-6 bg-primary/5 rounded-2xl border border-primary/10">
+        <div className="bg-white p-3 rounded-full w-14 h-14 mx-auto mb-4 shadow-sm flex items-center justify-center">
+          <TrendingUp className="w-6 h-6 text-primary" />
         </div>
-        <p className="flex justify-center items-center text-sm text-foreground/80">
-          السعر الحالي:{" "}
-          <span className="font-semibold text-secondary">
-            <PriceWithIcon price={Number(bid_amount)} />
-          </span>
+        <h3 className="text-lg font-bold text-foreground mb-2">
+          ترغب في المزايدة؟
+        </h3>
+        <p className="text-foreground/60 text-sm mb-5 px-4">
+          قم بتسجيل الدخول للبدء في المزايدة على هذه السيارة
         </p>
+        <button
+          type="button"
+          onClick={() => useAuthStore.getState().openAuthModal("login")}
+          className="w-[90%] mx-auto py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+        >
+          تسجيل الدخول
+        </button>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* أزرار المزايدة السريعة */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {quickBidOptions.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => selectQuickBid(option.value)}
-              className="flex items-center bg-card/60 hover:bg-card/70 text-foreground/70 text-sm py-2.5 px-3 rounded-xl border border-border/50 hover:border-border transition-colors duration-200"
+              className="group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border border-border/60 bg-white hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 active:scale-95"
             >
-              + <PriceWithIcon price={Number(option.value)} />
+              <span className="text-xs text-foreground/50 mb-0.5 group-hover:text-primary/70">
+                زيادة
+              </span>
+              <span className="font-bold text-foreground text-lg group-hover:text-primary flex items-center gap-0.5">
+                {option.value}+
+              </span>
             </button>
           ))}
         </div>
-        {/* مربع إدخال المبلغ */}
+
+        {/* مربع إدخال المبلغ المخصص */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground/50">
-            أو أدخل مبلغًا مخصصًا
+          <label className="text-xs font-bold text-foreground/50 pr-1">
+            أو أدخل مبلغاً مخصصاً
           </label>
           <div className="relative">
             <input
               type="text"
               value={customAmount}
               onChange={handleCustomAmountChange}
-              placeholder={`أدخل مبلغًا أعلى من ${bid_amount.toLocaleString()} ريال`}
-              className="w-full bg-card/70 border border-border rounded-xl px-4 py-3.5 text-foreground/80 placeholder-foreground/50 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none backdrop-blur-sm"
+              placeholder={bid_amount.toLocaleString()}
+              className="w-full bg-background border-2 border-border/50 rounded-xl px-4 py-4 pl-16 text-foreground text-lg font-bold placeholder-foreground/30 focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all outline-none"
             />
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/80 text-sm">
-              <SaudiRiyal />
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-primary">
+              <span className="text-sm font-bold bg-primary/10 px-2 py-1 rounded-md">
+                ر.س
+              </span>
             </div>
           </div>
         </div>
+
+        {/* رسائل التنبيه والخطأ */}
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 border border-red-100 animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-bold">{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="p-4 bg-green-50 text-green-600 rounded-xl flex items-center gap-3 border border-green-100 animate-in fade-in slide-in-from-top-1">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-bold">{success}</span>
+          </div>
+        )}
+
+        {/* التحذير الإلزامي */}
+        <div className="p-4 bg-amber-50 rounded-xl border border-amber-100/50">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-amber-700">
+                تنبيه قبل التأكيد
+              </p>
+              <p className="text-xs text-amber-600/80 leading-relaxed">
+                تأكد من أن المبلغ المدخل أعلى من السعر الحالي بحد أدنى 100 ريال.
+                المزايدة ملزمة قانونياً.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* زر الإرسال */}
         <button
           type="submit"
-          disabled={
-            isSubmitting || !bidAmount || Number(bidAmount) <= bid_amount
-          }
-          className={`w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-2 ${
-            isSubmitting || !bidAmount || Number(bidAmount) <= bid_amount
-              ? "bg-card cursor-not-allowed"
-              : "bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl border border-primary/30"
+          disabled={isSubmitting}
+          className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center gap-2 text-lg shadow-lg ${
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-600/30 hover:-translate-y-0.5"
           }`}
         >
           {isSubmitting ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              جاري الإرسال...
+              جاري التنفيذ...
             </>
           ) : (
             <>
-              <TrendingUp className="w-5 h-5" />
+              <Gavel className="w-5 h-5" />
               إرسال العرض
             </>
           )}
         </button>
-        {/* رسائل الحالة */}
-        {error && (
-          <div className="p-3 bg-destructive/20 border border-destructive/40 text-destructive rounded-xl flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">{error}</span>
-          </div>
-        )}
-        {success && (
-          <div className="p-3 bg-secondary/20 border border-secondary/40 text-secondary rounded-xl flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">{success}</span>
-          </div>
-        )}
-        {/* ملاحظة للمستخدم */}
-        <div className="text-xs text-foreground/70 bg-card/30 p-3 rounded-xl border border-border/30">
-          <p className="text-center">
-            ⚠️ تأكد من أن المبلغ الذي تقدمه أعلى من السعر الحالي.
-          </p>
-        </div>
       </form>
     </div>
   );

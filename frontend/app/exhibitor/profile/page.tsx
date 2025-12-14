@@ -1,16 +1,27 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Header } from '../../../components/exhibitor/Header';
-import { Sidebar } from '../../../components/exhibitor/sidebar';
-import { FiMenu, FiUser, FiMail, FiPhone, FiEdit2, FiSave, FiLock, FiEye, FiEyeOff, FiCamera } from 'react-icons/fi';
-import { FaStar } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion';
-import api from '@/lib/axios';
-import { useAuthStore } from '@/store/authStore';
-import toast from 'react-hot-toast';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Header } from "../../../components/exhibitor/Header";
+import { Sidebar } from "../../../components/exhibitor/sidebar";
+import {
+  FiMenu,
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiEdit2,
+  FiSave,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiCamera,
+} from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import api from "@/lib/axios";
+import { useAuthStore } from "@/store/authStore";
+import toast from "react-hot-toast";
 
-type Tab = 'info' | 'password';
+type Tab = "info" | "password";
 
 type RatingSummary = {
   average: number;
@@ -34,18 +45,21 @@ export default function ExhibitorDashboard() {
 
   if (!isClient) {
     return (
-      <div dir="rtl" className="flex min-h-screen bg-slate-950">
-        <div className="hidden md:block w-72 bg-slate-900/80 animate-pulse" />
+      <div dir="rtl" className="flex min-h-screen bg-background">
+        <div className="hidden md:block w-72 bg-card border-r border-border animate-pulse" />
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-slate-900/60 animate-pulse" />
-          <main className="p-6 flex-1 bg-slate-950" />
+          <div className="h-16 bg-card border-b border-border animate-pulse" />
+          <main className="p-6 flex-1 bg-background" />
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="flex min-h-screen bg-slate-950 relative">
+    <div
+      dir="rtl"
+      className="flex min-h-screen bg-background relative text-foreground"
+    >
       {/* Sidebar (desktop) */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
@@ -55,10 +69,10 @@ export default function ExhibitorDashboard() {
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-40 md:hidden flex"
           >
             <motion.button
@@ -66,11 +80,11 @@ export default function ExhibitorDashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.55 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black"
+              className="absolute inset-0 bg-black/60"
               onClick={() => setIsSidebarOpen(false)}
               aria-label="إغلاق القائمة"
             />
-            <motion.div className="relative w-72 ml-auto h-full bg-slate-950 border-l border-slate-800 shadow-2xl">
+            <motion.div className="relative w-72 ml-auto h-full">
               <Sidebar />
             </motion.div>
           </motion.div>
@@ -80,7 +94,7 @@ export default function ExhibitorDashboard() {
       {/* Main */}
       <div className="flex-1 flex flex-col w-0">
         <Header />
-        <main className="p-4 md:p-6 flex-1 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900">
+        <main className="p-4 md:p-6 flex-1 overflow-y-auto bg-background">
           <div className="max-w-5xl mx-auto">
             <ProfileSection />
           </div>
@@ -90,8 +104,7 @@ export default function ExhibitorDashboard() {
       {/* FAB (mobile) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-4 rounded-full shadow-xl z-40 hover:from-violet-700 hover:to-fuchsia-700 transition-all duration-200 flex items-center justify-center"
-        style={{ boxShadow: '0 10px 15px -3px rgba(139, 92, 246, 0.35), 0 4px 6px -4px rgba(0,0,0,.35)' }}
+        className="md:hidden fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-40 hover:bg-primary/90 transition-all duration-200 flex items-center justify-center"
         aria-label="القائمة"
         title="القائمة"
       >
@@ -107,22 +120,22 @@ export default function ExhibitorDashboard() {
 function ProfileSection() {
   const { user } = useAuthStore();
   const [editMode, setEditMode] = useState(false);
-  const [tab, setTab] = useState<Tab>('info');
+  const [tab, setTab] = useState<Tab>("info");
   const [showPassword, setShowPassword] = useState(false);
-  const [passwords, setPasswords] = useState({ old: '', new: '', confirm: '' });
-  const [passwordError, setPasswordError] = useState('');
+  const [passwords, setPasswords] = useState({ old: "", new: "", confirm: "" });
+  const [passwordError, setPasswordError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    venue_name: '',
-    venue_address: '',
-    description: '',
-    rating: '',
-    avatar: 'https://saraahah.com/images/profile.png',
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    venue_name: "",
+    venue_address: "",
+    description: "",
+    rating: "",
+    avatar: "https://saraahah.com/images/profile.png",
   });
 
   const [saving, setSaving] = useState(false);
@@ -136,35 +149,37 @@ function ProfileSection() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get('/api/user/profile');
+        const { data } = await api.get("/api/user/profile");
         const u = data?.data ?? user ?? {};
         setProfile((p) => ({
           ...p,
-          first_name: u.first_name || '',
-          last_name: u.last_name || '',
-          email: u.email || '',
-          phone: u.phone || '',
-          venue_name: u.venue_name || '',
-          venue_address: u.venue_address || u.address || '',
-          description: u.description || '',
-          rating: (u.rating ?? '') + '',
+          first_name: u.first_name || "",
+          last_name: u.last_name || "",
+          email: u.email || "",
+          phone: u.phone || "",
+          venue_name: u.venue_name || "",
+          venue_address: u.venue_address || u.address || "",
+          description: u.description || "",
+          rating: (u.rating ?? "") + "",
           avatar: u.avatar_url || p.avatar,
         }));
         // sync store بخلاصة التعديل
-        useAuthStore.setState({ user: { ...(useAuthStore.getState().user ?? {}), ...u } });
+        useAuthStore.setState({
+          user: { ...(useAuthStore.getState().user ?? {}), ...u },
+        });
       } catch (e) {
         // fallback: حمّل من الستور فقط
         const u = user ?? {};
         setProfile((p) => ({
           ...p,
-          first_name: (u as any).first_name || '',
-          last_name: (u as any).last_name || '',
-          email: (u as any).email || '',
-          phone: (u as any).phone || '',
-          venue_name: (u as any).venue_name || '',
-          venue_address: (u as any).venue_address || (u as any).address || '',
-          description: (u as any).description || '',
-          rating: ((u as any).rating ?? '') + '',
+          first_name: (u as any).first_name || "",
+          last_name: (u as any).last_name || "",
+          email: (u as any).email || "",
+          phone: (u as any).phone || "",
+          venue_name: (u as any).venue_name || "",
+          venue_address: (u as any).venue_address || (u as any).address || "",
+          description: (u as any).description || "",
+          rating: ((u as any).rating ?? "") + "",
           avatar: (u as any).avatar_url || p.avatar,
         }));
       }
@@ -179,21 +194,22 @@ function ProfileSection() {
       setLoadingRatings(true);
       try {
         const [s, r] = await Promise.all([
-          api.get('/api/exhibitor/ratings/summary'),
-          api.get('/api/exhibitor/ratings', { params: { per_page: 5 } }),
+          api.get("/api/exhibitor/ratings/summary"),
+          api.get("/api/exhibitor/ratings", { params: { per_page: 5 } }),
         ]);
         if (!mounted) return;
         setSummary({
           average: Number(s?.data?.data?.average ?? s?.data?.average ?? 0),
           count: Number(s?.data?.data?.count ?? s?.data?.count ?? 0),
-          distribution: s?.data?.data?.distribution ?? s?.data?.distribution ?? undefined,
+          distribution:
+            s?.data?.data?.distribution ?? s?.data?.distribution ?? undefined,
         });
         const reviews = (r?.data?.data ?? r?.data ?? []) as any[];
         setRecent(
           reviews.map((x) => ({
             id: Number(x.id),
             rating: Number(x.rating ?? x.stars ?? 0),
-            comment: x.comment ?? '',
+            comment: x.comment ?? "",
             user_name: x.user_name ?? x.author_name ?? null,
             created_at: x.created_at ?? null,
           }))
@@ -209,7 +225,10 @@ function ProfileSection() {
     };
   }, []);
 
-  const averageStars = useMemo(() => Math.round((summary?.average ?? 0) * 10) / 10, [summary]);
+  const averageStars = useMemo(
+    () => Math.round((summary?.average ?? 0) * 10) / 10,
+    [summary]
+  );
 
   // Save profile
   const handleSave = async () => {
@@ -225,21 +244,21 @@ function ProfileSection() {
         description: profile.description,
         // avatar_url: profile.avatar  // فعّل لو الباك إند يدعم الحقل
       };
-      const res = await api.put('/api/user/profile', payload);
+      const res = await api.put("/api/user/profile", payload);
       const fresh = res.data?.data ?? {};
       useAuthStore.setState({
         user: { ...(useAuthStore.getState().user ?? {}), ...fresh },
         lastProfileFetch: Date.now(),
       });
-      toast.success('تم حفظ البيانات بنجاح ✅');
+      toast.success("تم حفظ البيانات بنجاح ✅");
       setEditMode(false);
     } catch (err: any) {
       // eslint-disable-next-line no-console
-      console.error('Update profile error:', err?.response?.data || err);
+      console.error("Update profile error:", err?.response?.data || err);
       toast.error(
         err?.response?.data?.message ||
           err?.response?.data?.first_error ||
-          'فشل في حفظ البيانات ❌'
+          "فشل في حفظ البيانات ❌"
       );
     } finally {
       setSaving(false);
@@ -249,32 +268,32 @@ function ProfileSection() {
   // Change password (best-effort: يستخدم reset-password لو متاح)
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordError('');
+    setPasswordError("");
     if (!passwords.old || !passwords.new || !passwords.confirm) {
-      setPasswordError('جميع الحقول مطلوبة');
+      setPasswordError("جميع الحقول مطلوبة");
       return;
     }
     if (passwords.new.length < 8) {
-      setPasswordError('كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف');
+      setPasswordError("كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف");
       return;
     }
     if (passwords.new !== passwords.confirm) {
-      setPasswordError('كلمتا المرور غير متطابقتين');
+      setPasswordError("كلمتا المرور غير متطابقتين");
       return;
     }
     try {
       // لو عندك إندبوينت خاص بـ change-password بدّل السطر التالي به.
-      await api.post('/api/reset-password', {
+      await api.post("/api/reset-password", {
         current_password: passwords.old,
         password: passwords.new,
         password_confirmation: passwords.confirm,
       });
-      toast.success('تم تغيير كلمة المرور ✅');
-      setPasswords({ old: '', new: '', confirm: '' });
+      toast.success("تم تغيير كلمة المرور ✅");
+      setPasswords({ old: "", new: "", confirm: "" });
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ||
-          'تغيير كلمة المرور غير متاح حاليًا على الخادم'
+          "تغيير كلمة المرور غير متاح حاليًا على الخادم"
       );
     }
   };
@@ -288,9 +307,9 @@ function ProfileSection() {
 
     try {
       const form = new FormData();
-      form.append('image', file);
-      const res = await api.post('/api/upload-image', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      form.append("image", file);
+      const res = await api.post("/api/upload-image", form, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       const uploaded =
         res?.data?.url ||
@@ -302,10 +321,10 @@ function ProfileSection() {
         setProfile((p) => ({ ...p, avatar: uploaded }));
         // بإمكانك هنا إرسال avatar_url للبروفايل لو الخادم يدعم ذلك
       } else {
-        toast('تم الرفع لكن لم يصلنا رابط الصورة من الخادم', { icon: 'ℹ️' });
+        toast("تم الرفع لكن لم يصلنا رابط الصورة من الخادم", { icon: "ℹ️" });
       }
     } catch (err) {
-      toast.error('فشل رفع الصورة');
+      toast.error("فشل رفع الصورة");
     }
   };
 
@@ -314,18 +333,22 @@ function ProfileSection() {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
-      className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6"
+      className="rounded-2xl border border-border bg-card p-4 md:p-6"
     >
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-4 mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-slate-100">ملف المعرض</h1>
-          <p className="text-slate-400 text-sm mt-1">تحكم كامل في بياناتك + نظرة سريعة على تقييم المعرض.</p>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">
+            ملف المعرض
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            تحكم كامل في بياناتك + نظرة سريعة على تقييم المعرض.
+          </p>
         </div>
         {!editMode ? (
           <button
             onClick={() => setEditMode(true)}
-            className="inline-flex items-center gap-2 px-4 h-11 rounded-lg border border-slate-700 text-slate-200 hover:bg-slate-800/60"
+            className="inline-flex items-center gap-2 px-4 h-11 rounded-lg border border-border text-foreground hover:bg-muted"
           >
             <FiEdit2 />
             تعديل البيانات
@@ -337,7 +360,7 @@ function ProfileSection() {
             className="inline-flex items-center gap-2 px-4 h-11 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
           >
             <FiSave />
-            {saving ? 'جارِ الحفظ…' : 'حفظ التعديلات'}
+            {saving ? "جارِ الحفظ…" : "حفظ التعديلات"}
           </button>
         )}
       </div>
@@ -345,18 +368,18 @@ function ProfileSection() {
       {/* Top profile card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: avatar & role */}
-        <div className="lg:col-span-1 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+        <div className="lg:col-span-1 rounded-xl border border-border bg-background p-4">
           <div className="flex flex-col items-center">
             <div className="relative group">
               <img
                 src={profile.avatar}
                 alt="الصورة الشخصية"
-                className="w-32 h-32 rounded-full border border-slate-800 object-cover shadow-lg"
+                className="w-32 h-32 rounded-full border border-border object-cover shadow-sm"
               />
               {editMode && (
                 <>
                   <button
-                    className="absolute bottom-2 left-2 bg-slate-900 text-white p-2 rounded-full shadow-lg border border-slate-700 hover:bg-slate-800 transition"
+                    className="absolute bottom-2 left-2 bg-background text-foreground p-2 rounded-full shadow-lg border border-border hover:bg-muted transition"
                     onClick={() => fileInputRef.current?.click()}
                     aria-label="تغيير الصورة"
                   >
@@ -374,36 +397,38 @@ function ProfileSection() {
             </div>
 
             <div className="mt-4 text-center">
-              <div className="text-lg font-semibold text-slate-100">
+              <div className="text-lg font-semibold text-foreground">
                 {profile.first_name} {profile.last_name}
               </div>
               <div className="mt-1 text-xs inline-block bg-slate-800/70 text-slate-300 px-3 py-1 rounded-full border border-slate-700">
                 {(user?.type === 'venue_owner' && 'صاحب معرض') || user?.type || 'مستخدم'}
               </div>
-              {profile.rating !== '' && (
-                <div className="mt-3 text-slate-300 text-sm">
-                  التقييم: <span className="font-semibold">{profile.rating}</span>
+              {profile.rating !== "" && (
+                <div className="mt-3 text-foreground text-sm">
+                  التقييم:{" "}
+                  <span className="font-semibold">{profile.rating}</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Ratings summary */}
-          <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+          <div className="mt-6 rounded-lg border border-border bg-card p-3">
             <div className="flex items-center justify-between">
-              <div className="text-slate-200 font-semibold">ملخص التقييم</div>
+              <div className="text-foreground font-semibold">ملخص التقييم</div>
               <div className="flex items-center gap-1">
-                <FaStar className="text-yellow-400" />
-                <span className="text-slate-100">{averageStars || 0}</span>
+                <FaStar className="text-amber-500" />
+                <span className="text-foreground">{averageStars || 0}</span>
               </div>
             </div>
-            <div className="mt-2 text-slate-400 text-sm">
-              إجمالي المراجعات: <span className="text-slate-200">{summary?.count ?? 0}</span>
+            <div className="mt-2 text-muted-foreground text-sm">
+              إجمالي المراجعات:{" "}
+              <span className="text-foreground">{summary?.count ?? 0}</span>
             </div>
 
             {/* Distribution bars */}
             {loadingRatings ? (
-              <div className="mt-3 h-16 rounded bg-slate-800/50 animate-pulse" />
+              <div className="mt-3 h-16 rounded bg-muted animate-pulse" />
             ) : (
               <div className="mt-3 space-y-1">
                 {[5, 4, 3, 2, 1].map((s) => {
@@ -412,14 +437,18 @@ function ProfileSection() {
                   const pct = Math.min(100, Math.round((count / total) * 100));
                   return (
                     <div key={s} className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400 w-4">{s}</span>
-                      <div className="flex-1 h-2 rounded bg-slate-800 overflow-hidden">
+                      <span className="text-xs text-muted-foreground w-4">
+                        {s}
+                      </span>
+                      <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-yellow-500 to-amber-400"
+                          className="h-full bg-primary"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-xs text-slate-400 w-10 text-left">{pct}%</span>
+                      <span className="text-xs text-muted-foreground w-10 text-left">
+                        {pct}%
+                      </span>
                     </div>
                   );
                 })}
@@ -429,13 +458,16 @@ function ProfileSection() {
         </div>
 
         {/* Right: tabs */}
-        <div className="lg:col-span-2 rounded-xl border border-slate-800 bg-slate-950/60">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-background">
           {/* Tabs */}
-          <div className="flex items-center gap-2 p-2 border-b border-slate-800">
-            <TabButton active={tab === 'info'} onClick={() => setTab('info')}>
+          <div className="flex items-center gap-2 p-2 border-b border-border">
+            <TabButton active={tab === "info"} onClick={() => setTab("info")}>
               المعلومات الشخصية
             </TabButton>
-            <TabButton active={tab === 'password'} onClick={() => setTab('password')}>
+            <TabButton
+              active={tab === "password"}
+              onClick={() => setTab("password")}
+            >
               تغيير كلمة المرور
             </TabButton>
           </div>
@@ -443,7 +475,7 @@ function ProfileSection() {
           {/* Content */}
           <div className="p-4 md:p-6">
             <AnimatePresence mode="wait">
-              {tab === 'info' && (
+              {tab === "info" && (
                 <motion.div
                   key="info"
                   initial={{ opacity: 0, y: 16 }}
@@ -456,13 +488,17 @@ function ProfileSection() {
                       <Field
                         label="الاسم الأول"
                         value={profile.first_name}
-                        onChange={(v) => setProfile((p) => ({ ...p, first_name: v }))}
+                        onChange={(v) =>
+                          setProfile((p) => ({ ...p, first_name: v }))
+                        }
                         disabled={!editMode}
                       />
                       <Field
                         label="الاسم الأخير"
                         value={profile.last_name}
-                        onChange={(v) => setProfile((p) => ({ ...p, last_name: v }))}
+                        onChange={(v) =>
+                          setProfile((p) => ({ ...p, last_name: v }))
+                        }
                         disabled={!editMode}
                       />
                     </div>
@@ -472,41 +508,52 @@ function ProfileSection() {
                       value={profile.email}
                       onChange={(v) => setProfile((p) => ({ ...p, email: v }))}
                       disabled={!editMode}
-                      inputProps={{ type: 'email', dir: 'ltr' }}
-                      iconRight={<FiMail className="text-slate-500" />}
+                      inputProps={{ type: "email", dir: "ltr" }}
+                      iconRight={<FiMail className="text-muted-foreground" />}
                     />
                     <Field
                       label="رقم الجوال"
                       value={profile.phone}
                       onChange={(v) => setProfile((p) => ({ ...p, phone: v }))}
                       disabled={!editMode}
-                      inputProps={{ dir: 'ltr' }}
-                      iconRight={<FiPhone className="text-slate-500" />}
+                      inputProps={{ dir: "ltr" }}
+                      iconRight={<FiPhone className="text-muted-foreground" />}
                     />
 
                     {/* Venue fields */}
                     <Field
                       label="اسم المعرض"
                       value={profile.venue_name}
-                      onChange={(v) => setProfile((p) => ({ ...p, venue_name: v }))}
+                      onChange={(v) =>
+                        setProfile((p) => ({ ...p, venue_name: v }))
+                      }
                       disabled={!editMode}
-                      iconRight={<FiUser className="text-slate-500" />}
+                      iconRight={<FiUser className="text-muted-foreground" />}
                     />
                     <Field
                       label="عنوان المعرض"
                       value={profile.venue_address}
-                      onChange={(v) => setProfile((p) => ({ ...p, venue_address: v }))}
+                      onChange={(v) =>
+                        setProfile((p) => ({ ...p, venue_address: v }))
+                      }
                       disabled={!editMode}
                     />
 
                     <div>
-                      <label className="block text-slate-300 mb-1">وصف المعرض</label>
+                      <label className="block text-muted-foreground mb-1">
+                        وصف المعرض
+                      </label>
                       <textarea
                         rows={3}
                         disabled={!editMode}
                         value={profile.description}
-                        onChange={(e) => setProfile((p) => ({ ...p, description: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40 disabled:opacity-70"
+                        onChange={(e) =>
+                          setProfile((p) => ({
+                            ...p,
+                            description: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-70"
                       />
                     </div>
 
@@ -519,7 +566,7 @@ function ProfileSection() {
                           className="inline-flex items-center gap-2 px-5 h-11 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
                         >
                           <FiSave />
-                          {saving ? 'جارِ الحفظ…' : 'حفظ التعديلات'}
+                          {saving ? "جارِ الحفظ…" : "حفظ التعديلات"}
                         </button>
                       </div>
                     )}
@@ -527,7 +574,7 @@ function ProfileSection() {
                 </motion.div>
               )}
 
-              {tab === 'password' && (
+              {tab === "password" && (
                 <motion.div
                   key="password"
                   initial={{ opacity: 0, y: 16 }}
@@ -551,15 +598,21 @@ function ProfileSection() {
                     <PasswordField
                       label="تأكيد كلمة المرور الجديدة"
                       value={passwords.confirm}
-                      onChange={(v) => setPasswords((p) => ({ ...p, confirm: v }))}
+                      onChange={(v) =>
+                        setPasswords((p) => ({ ...p, confirm: v }))
+                      }
                     />
 
-                    {passwordError && <div className="text-rose-400 text-sm">{passwordError}</div>}
+                    {passwordError && (
+                      <div className="text-destructive text-sm">
+                        {passwordError}
+                      </div>
+                    )}
 
                     <div className="flex justify-end">
                       <button
                         type="submit"
-                        className="inline-flex items-center gap-2 px-5 h-11 rounded-lg border border-slate-700 hover:bg-slate-800/60 text-slate-200"
+                        className="inline-flex items-center gap-2 px-5 h-11 rounded-lg border border-border hover:bg-muted text-foreground"
                       >
                         <FiLock />
                         تغيير كلمة المرور
@@ -574,30 +627,40 @@ function ProfileSection() {
       </div>
 
       {/* Recent reviews */}
-      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="mt-6 rounded-xl border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-slate-200 font-semibold">آخر المراجعات</div>
+          <div className="text-foreground font-semibold">آخر المراجعات</div>
         </div>
         {loadingRatings ? (
-          <div className="h-24 rounded bg-slate-800/50 animate-pulse" />
+          <div className="h-24 rounded bg-muted animate-pulse" />
         ) : recent.length ? (
-          <ul className="divide-y divide-slate-800">
+          <ul className="divide-y divide-border">
             {recent.map((rev) => (
               <li key={rev.id} className="py-3 flex items-start gap-3">
-                <FaStar className="text-yellow-400 mt-1" />
+                <FaStar className="text-amber-500 mt-1" />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-slate-200">
-                    <span className="font-semibold">{rev.user_name || 'مستخدم'}</span>
-                    <span className="text-xs text-slate-400">{formatDate(rev.created_at)}</span>
+                  <div className="flex items-center gap-2 text-foreground">
+                    <span className="font-semibold">
+                      {rev.user_name || "مستخدم"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(rev.created_at)}
+                    </span>
                   </div>
-                  <div className="text-sm text-slate-300 mt-1">{rev.comment || 'بدون تعليق'}</div>
+                  <div className="text-sm text-foreground mt-1">
+                    {rev.comment || "بدون تعليق"}
+                  </div>
                 </div>
-                <div className="shrink-0 text-slate-300">{rev.rating}/5</div>
+                <div className="shrink-0 text-muted-foreground">
+                  {rev.rating}/5
+                </div>
               </li>
             ))}
           </ul>
         ) : (
-          <div className="text-slate-400 text-sm">لا توجد مراجعات بعد.</div>
+          <div className="text-muted-foreground text-sm">
+            لا توجد مراجعات بعد.
+          </div>
         )}
       </div>
     </motion.div>
@@ -621,8 +684,8 @@ function TabButton({
       onClick={onClick}
       className={`px-4 h-10 rounded-lg text-sm font-semibold border ${
         active
-          ? 'bg-slate-900/70 text-slate-100 border-slate-700'
-          : 'text-slate-300 border-transparent hover:bg-slate-900/40'
+          ? "bg-muted text-foreground border-border"
+          : "text-muted-foreground border-transparent hover:bg-muted/50"
       }`}
     >
       {children}
@@ -647,14 +710,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-slate-300 mb-1">{label}</label>
+      <label className="block text-muted-foreground mb-1">{label}</label>
       <div className="relative flex items-center">
         <input
           {...inputProps}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          className="w-full h-11 px-3 pr-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40 disabled:opacity-70"
+          className="w-full h-11 px-3 pr-3 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-70"
         />
         {iconRight && <div className="absolute left-3">{iconRight}</div>}
       </div>
@@ -677,18 +740,18 @@ function PasswordField({
 }) {
   return (
     <div>
-      <label className="block text-slate-300 mb-1">{label}</label>
+      <label className="block text-muted-foreground mb-1">{label}</label>
       <div className="relative">
         <input
-          type={show ? 'text' : 'password'}
+          type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full h-11 px-3 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40"
+          className="w-full h-11 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
         {toggleShow && (
           <button
             type="button"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             onClick={toggleShow}
             tabIndex={-1}
           >
@@ -701,9 +764,9 @@ function PasswordField({
 }
 
 function formatDate(iso?: string | null) {
-  if (!iso) return '—';
+  if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString('ar-SA');
+    return new Date(iso).toLocaleDateString("ar-SA");
   } catch {
     return iso;
   }

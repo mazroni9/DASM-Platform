@@ -234,8 +234,26 @@ class CarController extends Controller
 
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
         $validator->after(function ($v) use ($request) {
-            if ($request->filled(['min_price', 'max_price']) && (float)$request->min_price > (float)$request->max_price) {
-                $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
+            if ($request->filled(['min_price', 'max_price'])) {
+                $min = (float) $request->min_price;
+                $max = (float) $request->max_price;
+
+                if ($min > $max) {
+                    $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
+                } else {
+                    $limit = 0;
+                    if ($min >= 40000) {
+                        $limit = $min * 1.10; // Tier 1: 10%
+                    } else {
+                        $limit = $min * 1.15; // Tier 2: 15%
+                    }
+
+                    if ($max > $limit) {
+                        $formattedMin = number_format($min);
+                        $formattedLimit = number_format(floor($limit));
+                        $v->errors()->add('max_price', "بناءً على الحد الأدنى المدخل ({$formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي {$formattedLimit} ريال.");
+                    }
+                }
             }
         });
         if ($validator->fails()) {
@@ -522,8 +540,26 @@ class CarController extends Controller
 
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
         $validator->after(function ($v) use ($request) {
-            if ($request->filled(['min_price', 'max_price']) && (float)$request->min_price > (float)$request->max_price) {
-                $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
+            if ($request->filled(['min_price', 'max_price'])) {
+                $min = (float) $request->min_price;
+                $max = (float) $request->max_price;
+
+                if ($min > $max) {
+                    $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
+                } else {
+                    $limit = 0;
+                    if ($min >= 40000) {
+                        $limit = $min * 1.10; // Tier 1: 10%
+                    } else {
+                        $limit = $min * 1.15; // Tier 2: 15%
+                    }
+
+                    if ($max > $limit) {
+                        $formattedMin = number_format($min);
+                        $formattedLimit = number_format(floor($limit));
+                        $v->errors()->add('max_price', "بناءً على الحد الأدنى المدخل ({$formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي {$formattedLimit} ريال.");
+                    }
+                }
             }
         });
         if ($validator->fails()) {
@@ -531,10 +567,25 @@ class CarController extends Controller
         }
 
         // تحديث الحقول
-        foreach ([
-            'make', 'model', 'year', 'vin', 'odometer', 'evaluation_price', 'color', 'engine',
-            'description', 'province', 'city', 'plate', 'min_price', 'max_price', 'market_category'
-        ] as $field) {
+        foreach (
+            [
+                'make',
+                'model',
+                'year',
+                'vin',
+                'odometer',
+                'evaluation_price',
+                'color',
+                'engine',
+                'description',
+                'province',
+                'city',
+                'plate',
+                'min_price',
+                'max_price',
+                'market_category'
+            ] as $field
+        ) {
             if ($request->has($field)) {
                 $car->{$field} = $request->{$field};
             }
@@ -643,7 +694,7 @@ class CarController extends Controller
             'data'   => [
                 'total_cars'            => $totalCars,
                 'cars_by_condition'     => $carsByCondition,
-                'cars_by_auction_status'=> $carsByAuctionStatus,
+                'cars_by_auction_status' => $carsByAuctionStatus,
                 'total_inventory_value' => $inventoryValue,
                 'recent_cars'           => $recentCars,
             ]

@@ -408,7 +408,7 @@ Route::get('/auctions', [AuctionController::class, 'index']);
 Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
-
+Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
 // ✅ جعل مزادات منتهية عامة (بدون auth)
 Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
 
@@ -482,7 +482,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
     Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
 
-    Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
+   // Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
 
 
     // Bids

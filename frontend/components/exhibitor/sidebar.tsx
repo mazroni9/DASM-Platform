@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import LoadingLink from "@/components/LoadingLink";
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 import {
   FiRadio,
   FiHome,
@@ -17,43 +17,47 @@ import {
   FiDatabase,
   FiLogOut,
   FiCalendar,
-} from 'react-icons/fi';
-import { FaWallet, FaMoneyCheckAlt, FaChartBar } from 'react-icons/fa';
-import { usePathname } from 'next/navigation';
-import { Avatar } from 'antd';
+} from "react-icons/fi";
+import { FaWallet, FaMoneyCheckAlt, FaChartBar } from "react-icons/fa";
+import { usePathname } from "next/navigation";
+import { Avatar } from "antd";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from "@/store/authStore";
 
 /* ===== أدوات مساعدة ===== */
 function cx(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 const normalizePath = (p?: string) => {
-  if (!p) return '/';
-  const trimmed = p.replace(/\/+$/, '');
-  return trimmed.length ? trimmed : '/';
+  if (!p) return "/";
+  const trimmed = p.replace(/\/+$/, "");
+  return trimmed.length ? trimmed : "/";
 };
 
 /* ===== عناصر القائمة ===== */
 const navItems = [
-  { href: '/exhibitor',               icon: FiHome,         label: 'الرئيسية' },
-  { href: '/exhibitor/add-car',       icon: FiPlusSquare,   label: 'إضافة سيارة' },
-  { href: '/exhibitor/all-cars',      icon: FiLayers,       label: 'جميع السيارات' },
-  { href: '/exhibitor/auctions',      icon: FiDollarSign,   label: 'المزادات' },
+  { href: "/exhibitor", icon: FiHome, label: "الرئيسية" },
+  { href: "/exhibitor/add-car", icon: FiPlusSquare, label: "إضافة سيارة" },
+  { href: "/exhibitor/all-cars", icon: FiLayers, label: "جميع السيارات" },
+  { href: "/exhibitor/auctions", icon: FiDollarSign, label: "المزادات" },
 
   // ✅ جلسات المزاد
-  { href: '/exhibitor/sessions',      icon: FiCalendar,     label: 'جلسات المزاد' },
+  { href: "/exhibitor/sessions", icon: FiCalendar, label: "جلسات المزاد" },
 
-  { href: '/exhibitor/live-sessions', icon: FiRadio,        label: 'جلسات البث المباشر' },
-  { href: '/exhibitor/analytics',     icon: FiBarChart2,    label: 'التحليلات' },
-  { href: '/exhibitor/wallet',        icon: FaWallet,       label: 'رصيد المحفظة' },
-  { href: '/exhibitor/ratings',       icon: FiStar,         label: 'التقييمات' },
-  { href: '/exhibitor/shipping',      icon: FiTruck,        label: 'الشحن' },
-  { href: '/exhibitor/commission',    icon: FaMoneyCheckAlt,label: 'خانة السعي' },
-  { href: '/exhibitor/extra-services',icon: FiGift,         label: 'خدمات إضافية' },
-  { href: '/exhibitor/financial',     icon: FaChartBar,     label: 'العمليات المالية' },
-  { href: '/exhibitor/cars-data',     icon: FiDatabase,     label: 'بيانات السيارات' },
-  { href: '/exhibitor/profile',       icon: FiUser,         label: 'الملف الشخصي' },
+  {
+    href: "/exhibitor/live-sessions",
+    icon: FiRadio,
+    label: "جلسات البث المباشر",
+  },
+  { href: "/exhibitor/analytics", icon: FiBarChart2, label: "التحليلات" },
+  { href: "/exhibitor/wallet", icon: FaWallet, label: "رصيد المحفظة" },
+  { href: "/exhibitor/ratings", icon: FiStar, label: "التقييمات" },
+  { href: "/exhibitor/shipping", icon: FiTruck, label: "الشحن" },
+  { href: "/exhibitor/commission", icon: FaMoneyCheckAlt, label: "خانة السعي" },
+  { href: "/exhibitor/extra-services", icon: FiGift, label: "خدمات إضافية" },
+  { href: "/exhibitor/financial", icon: FaChartBar, label: "العمليات المالية" },
+  { href: "/exhibitor/cars-data", icon: FiDatabase, label: "بيانات السيارات" },
+  { href: "/exhibitor/profile", icon: FiUser, label: "الملف الشخصي" },
 ];
 
 export function Sidebar() {
@@ -66,10 +70,10 @@ export function Sidebar() {
   // ✅ الرئيسية exact فقط، وباقي العناصر exact أو يبدأ بمسار فرعي
   const isItemActive = (href: string) => {
     const h = normalizePath(href);
-    if (h === '/exhibitor') {
+    if (h === "/exhibitor") {
       return currentPath === h; // الرئيسية لا تكون Active إلا لو المسار مطابق تمامًا
     }
-    return currentPath === h || currentPath.startsWith(h + '/');
+    return currentPath === h || currentPath.startsWith(h + "/");
   };
 
   return (
@@ -77,10 +81,9 @@ export function Sidebar() {
       dir="rtl"
       initial={{ x: -40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       className="relative w-72 h-screen flex flex-col sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-r border-border shadow-2xl"
     >
-
       {/* Header */}
       <div className="relative p-6 border-b border-border flex items-center gap-4">
         <Avatar
@@ -90,9 +93,11 @@ export function Sidebar() {
         />
         <div className="min-w-0">
           <h2 className="font-bold text-sm md:text-base text-foreground truncate">
-            {user?.venue_name || 'معرض السيارات'}
+            {user?.venue_name || "معرض السيارات"}
           </h2>
-          <p className="text-xs text-foreground/70">مرحباً، {user?.first_name || 'زائر'}</p>
+          <p className="text-xs text-foreground/70">
+            مرحباً، {user?.first_name || "زائر"}
+          </p>
         </div>
       </div>
 
@@ -109,25 +114,39 @@ export function Sidebar() {
                   <motion.div
                     whileHover={{ x: 2, scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
-                    aria-current={active ? 'page' : undefined}
+                    aria-current={active ? "page" : undefined}
                     className={cx(
-                      'group flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-foreground',
-                      'border border-transparent hover:border-border/60 hover:bg-background/5',
+                      "group flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-foreground",
+                      "border border-transparent hover:border-border/60 hover:bg-background/5",
                       active &&
-                        'bg-primary/10 ring-1 ring-primary/40 shadow-[0_8px_24px_-12px_rgba(139,92,246,0.45)]'
+                        "bg-primary/10 ring-1 ring-primary/40 shadow-[0_8px_24px_-12px_rgba(139,92,246,0.45)]"
                     )}
                   >
                     <span
                       className={cx(
-                        'grid place-items-center rounded-lg w-9 h-9',
-                        'border border-border/60',
-                        'bg-background/50 group-hover:bg-background/70',
-                        active && 'bg-primary/25 ring-1 ring-primary/40'
+                        "grid place-items-center rounded-lg w-9 h-9",
+                        "border border-border/60",
+                        "bg-background/50 group-hover:bg-background/70",
+                        active && "bg-primary/25 ring-1 ring-primary/40"
                       )}
                     >
-                      <Icon size={18} className={cx(active ? 'text-white' : 'text-foreground/80 group-hover:text-white')} />
+                      <Icon
+                        size={18}
+                        className={cx(
+                          active
+                            ? "text-primary"
+                            : "text-foreground/80 group-hover:text-primary"
+                        )}
+                      />
                     </span>
-                    <span className={cx('truncate text-sm', active ? 'font-semibold text-white' : 'text-foreground')}>
+                    <span
+                      className={cx(
+                        "truncate text-sm",
+                        active
+                          ? "font-semibold text-primary"
+                          : "text-foreground"
+                      )}
+                    >
                       {item.label}
                     </span>
                   </motion.div>
@@ -141,26 +160,34 @@ export function Sidebar() {
       {/* Footer */}
       <div className="relative p-4 border-t border-border">
         <button
-          onClick={logout}
+          onClick={() => logout()}
           className="w-full flex items-center gap-3 p-3 rounded-xl text-red-500 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/30 transition-all duration-200 group"
         >
-          <FiLogOut size={18} className="text-red-500 group-hover:text-red-400" />
+          <FiLogOut
+            size={18}
+            className="text-red-500 group-hover:text-red-400"
+          />
           <span className="font-medium text-sm">تسجيل الخروج</span>
         </button>
       </div>
 
       {/* Scrollbar styles */}
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, rgba(139,92,246,0.45), rgba(34,211,238,0.25));
+          background-color: hsl(var(--primary) / 0.5);
           border-radius: 8px;
-          border: 2px solid rgba(2,6,23,0.7);
+          border: 2px solid transparent;
+          background-clip: content-box;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, rgba(139,92,246,0.7), rgba(34,211,238,0.45));
+          background-color: hsl(var(--primary) / 0.8);
         }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
       `}</style>
     </motion.aside>
   );
