@@ -5,15 +5,7 @@ import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Image from "next/image";
-import {
-  RefreshCw,
-  Store,
-  LogOut,
-  Menu,
-  X,
-  Book,
-  TvMinimalPlay,
-} from "lucide-react";
+import { RefreshCw, LogOut, Menu, TvMinimalPlay } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
@@ -40,7 +32,7 @@ const Navbar = () => {
     user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN;
 
   const navigationItems: NavigationItem[] = [
-    { href: "/auctions", label: "الأسواق الرقمية", icon: Store },
+    { href: "/auctions", label: "الأسواق الرقمية", icon: TvMinimalPlay },
   ];
 
   const isActive = (path: string) =>
@@ -114,6 +106,7 @@ const Navbar = () => {
                   className="object-cover"
                 />
               </div>
+
               {/* عنوان الموقع + كلمة DASMe بألوان الشعار واتجاه LTR */}
               <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
                 <span>المزادات الرقمية</span>
@@ -146,15 +139,6 @@ const Navbar = () => {
             >
               <TvMinimalPlay size={18} />
               <span>الأسواق الرقمية</span>
-            </LoadingLink>
-
-            <LoadingLink
-              target="_blank"
-              href="https://blog.dasm.com.sa/"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-border hover:text-primary transition-all duration-200"
-            >
-              <Book size={18} />
-              <span>المدونة</span>
             </LoadingLink>
           </div>
 
@@ -212,11 +196,7 @@ const Navbar = () => {
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
               aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? (
-                <Menu className="h-5 w-5 rotate-90" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
+              <Menu className={`h-5 w-5 ${mobileMenuOpen ? "rotate-90" : ""}`} />
             </button>
           </div>
         </div>
@@ -245,16 +225,6 @@ const Navbar = () => {
                 <span className="text-base">{item.label}</span>
               </LoadingLink>
             ))}
-
-            <LoadingLink
-              target="_blank"
-              href="https://blog.dasm.com.sa/"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-border hover:text-primary transition-all	duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Book className="h-5 w-5" />
-              <span className="text-base">المدونة</span>
-            </LoadingLink>
 
             {isAdmin && (
               <button

@@ -375,7 +375,7 @@ export default function AdminAuctionsPage() {
       case "live_instant":
         return "الحراج الفوري";
       case "silent_instant":
-        return "الحراج الصامت";
+        return "الحراج المتأخر";
       default:
         return status;
     }

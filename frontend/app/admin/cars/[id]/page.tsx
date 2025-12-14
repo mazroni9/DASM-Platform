@@ -12,7 +12,7 @@
 
 "use client";
 
-// ✅ صفحة عرض المزاد الصامت مع رابط للتفاصيل السيارة
+// ✅ صفحة عرض المزاد المتأخر مع رابط للتفاصيل السيارة
 // المسار: /pages/silent/page.tsx
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";

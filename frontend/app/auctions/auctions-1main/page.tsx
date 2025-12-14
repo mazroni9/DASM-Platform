@@ -381,7 +381,7 @@ export default function AuctionsMainPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
-                  الأسواق الرئيسية الثلاثة
+                  محرك المزادات الرباعي لأسواق المنصة
                 </h1>
                 <p className="text-primary max-w-2xl text-sm md:text-base leading-relaxed">
                   نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي.
