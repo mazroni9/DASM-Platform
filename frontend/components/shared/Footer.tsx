@@ -9,15 +9,18 @@ import {
   ShieldCheck,
   Sparkles,
   Book,
+  Instagram,
+  Ghost,
+  Music2,
 } from "lucide-react";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
+  // ✅ التعديل: شلنا فقط "الأسواق الرقمية" من روابط مهمة
   const mainLinks = [
     { href: "/about", label: "من نحن", icon: <Sparkles className="h-4 w-4" /> },
     { href: "/how-it-works", label: "كيف نعمل", icon: <Gavel className="h-4 w-4" /> },
-    { href: "/auctions", label: "الأسواق الرقمية", icon: <ArrowUpRight className="h-4 w-4" /> },
     { href: "/faq", label: "الأسئلة الشائعة", icon: <HelpCircle className="h-4 w-4" /> },
   ];
 
@@ -27,8 +30,30 @@ const Footer = () => {
     { href: "/fees-and-subscriptions", label: "سياسة الرسوم والاشتراكات", icon: <Gavel className="h-4 w-4" /> },
   ];
 
+  // ✅ سوشيال ميديا (مكان الروابط اللي عليها X تحت)
+  const socialLinks = [
+    {
+      href: "https://snapchat.com/t/4IDzLfrK",
+      label: "Snapchat",
+      icon: <Ghost className="h-4 w-4" />,
+    },
+    {
+      href: "https://www.instagram.com/dasm_net?igsh=eW44aW5mcWFkcjkw&utm_source=qr",
+      label: "Instagram",
+      icon: <Instagram className="h-4 w-4" />,
+    },
+    {
+      href: "https://www.tiktok.com/@dasm0202",
+      label: "TikTok",
+      icon: <Music2 className="h-4 w-4" />,
+    },
+  ];
+
   return (
-    <footer dir="rtl" className="relative overflow-hidden border-t border-border bg-background text-foreground">
+    <footer
+      dir="rtl"
+      className="relative overflow-hidden border-t border-border bg-background text-foreground"
+    >
       {/* Soft background glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 right-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
@@ -63,15 +88,8 @@ const Footer = () => {
                 شفافية مطلقة، ووصول عالمي. هدفنا تجربة واضحة، سريعة، وموثوقة للجميع.
               </p>
 
+              {/* ✅ التعديل: شيلنا زر "استكشف الأسواق" الأزرق فقط */}
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <LoadingLink
-                  href="/auctions"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-white px-4 py-3 text-sm font-bold hover:bg-primary/90 transition"
-                >
-                  استكشف الأسواق
-                  <ArrowUpRight className="h-4 w-4" />
-                </LoadingLink>
-
                 <LoadingLink
                   href="/how-it-works"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold hover:bg-border/60 transition"
@@ -118,7 +136,7 @@ const Footer = () => {
                     </li>
                   ))}
 
-                  {/* ✅ المدونة هنا بدل النافبار */}
+                  {/* ✅ المدونة */}
                   <li>
                     <a
                       href="https://blog.dasm.com.sa/"
@@ -188,27 +206,20 @@ const Footer = () => {
             © {currentYear} منصة DASMe. جميع الحقوق محفوظة.
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
-            <LoadingLink
-              href="/privacy"
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              سياسة الخصوصية
-            </LoadingLink>
-            <span className="text-border">|</span>
-            <LoadingLink
-              href="/terms"
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              الشروط والأحكام
-            </LoadingLink>
-            <span className="text-border">|</span>
-            <LoadingLink
-              href="/fees-and-subscriptions"
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              الرسوم والاشتراكات
-            </LoadingLink>
+          {/* ✅ التعديل: شيلنا روابط (سياسة الخصوصية/الشروط/الرسوم) من تحت وحطينا سوشيال */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {socialLinks.map((s) => (
+              <a
+                key={s.href}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1.5 text-xs sm:text-sm text-muted-foreground hover:text-primary hover:bg-background transition-colors"
+              >
+                <span className="text-primary">{s.icon}</span>
+                {s.label}
+              </a>
+            ))}
           </div>
         </div>
       </div>
