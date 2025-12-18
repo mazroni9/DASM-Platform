@@ -13,27 +13,54 @@ use Illuminate\Http\Request;
 use App\Models\AuctionSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Carbon;
 
 class AdminController extends Controller
 {
     /**
-     * Blogs list (with filters)
+     * Blogs list (with filters) - Legacy endpoint
+     * ✅ FIX: supports new schema (is_published) and old schema (status) if exists
      */
     public function blogs(Request $request)
     {
-        $query = BlogPost::with(['user:id,first_name,last_name', 'tags']);
+        $query = BlogPost::query();
 
+        // علاقات legacy (لو موجودة)
+        $with = [];
+        if (method_exists(BlogPost::class, 'user')) $with[] = 'user:id,first_name,last_name';
+        if (method_exists(BlogPost::class, 'tags')) $with[] = 'tags';
+        if (!empty($with)) $query->with($with);
+
+        $hasStatusColumn = Schema::hasColumn('blog_posts', 'status');
+        $hasIsPublished  = Schema::hasColumn('blog_posts', 'is_published');
+
+        // فلتر الحالة
         if ($request->has('status')) {
-            $query->where('status', $request->status);
+            $status = (string) $request->status;
+
+            if ($hasStatusColumn) {
+                $query->where('status', $status);
+            } elseif ($hasIsPublished) {
+                // map: published/draft -> is_published true/false
+                if ($status === 'published') $query->where('is_published', true);
+                if ($status === 'draft')     $query->where('is_published', false);
+            }
         }
-        if ($request->has('tag')) {
-            $query->whereHas('tags', fn($q) => $q->where('name', $request->tag));
+
+        // فلتر بالـ Tag (لو علاقة tags موجودة)
+        if ($request->has('tag') && method_exists(BlogPost::class, 'tags')) {
+            $query->whereHas('tags', fn ($q) => $q->where('name', $request->tag));
         }
+
+        // بحث
         if ($request->has('search')) {
-            $search = $request->search;
+            $search = (string) $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%");
+                $q->where('title', 'like', "%{$search}%");
+
+                // content موجود في BlogPost v2 عندك، فده آمن
+                $q->orWhere('content', 'like', "%{$search}%");
             });
         }
 
@@ -46,19 +73,47 @@ class AdminController extends Controller
     }
 
     /**
-     * Publish or unpublish a blog post
+     * Publish or unpublish a blog post (Legacy endpoint)
+     * ✅ FIX: writes to is_published + published_at (and status if exists)
      */
     public function toggleBlogStatus($id, Request $request)
     {
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:published,draft',
         ]);
+
         if ($validator->fails()) {
-            return response()->json(['status' => 'error','errors' => $validator->errors()], 422);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
 
         $blog = BlogPost::findOrFail($id);
-        $blog->status = $request->status;
+
+        $hasStatusColumn = Schema::hasColumn('blog_posts', 'status');
+        $hasIsPublished  = Schema::hasColumn('blog_posts', 'is_published');
+        $hasPublishedAt  = Schema::hasColumn('blog_posts', 'published_at');
+
+        $newStatus = (string) $request->status;
+
+        // لو عندك status (نسخة قديمة)
+        if ($hasStatusColumn) {
+            $blog->status = $newStatus;
+        }
+
+        // النسخة الجديدة
+        if ($hasIsPublished) {
+            $blog->is_published = ($newStatus === 'published');
+        }
+
+        if ($hasPublishedAt) {
+            if ($newStatus === 'published') {
+                // لو مفيش تاريخ نشر حطه الآن
+                $blog->published_at = $blog->published_at ?: Carbon::now();
+            } else {
+                // draft => امسح تاريخ النشر
+                $blog->published_at = null;
+            }
+        }
+
         $blog->save();
 
         return response()->json([
@@ -69,7 +124,7 @@ class AdminController extends Controller
     }
 
     /**
-     * Manage blog tags
+     * Manage blog tags (Legacy)
      */
     public function manageTags(Request $request)
     {
@@ -78,8 +133,9 @@ class AdminController extends Controller
             'id'     => 'required_if:action,update,delete|integer',
             'name'   => 'required_if:action,create,update|string|max:50',
         ]);
+
         if ($validator->fails()) {
-            return response()->json(['status' => 'error','errors' => $validator->errors()], 422);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
 
         switch ($request->action) {
@@ -87,12 +143,14 @@ class AdminController extends Controller
                 $tag = BlogTag::create(['name' => $request->name]);
                 $message = 'Tag created successfully';
                 break;
+
             case 'update':
                 $tag = BlogTag::findOrFail($request->id);
                 $tag->name = $request->name;
                 $tag->save();
                 $message = 'Tag updated successfully';
                 break;
+
             case 'delete':
                 $tag = BlogTag::findOrFail($request->id);
                 $tag->delete();
@@ -109,6 +167,7 @@ class AdminController extends Controller
 
     /**
      * Admin dashboard stats
+     * ✅ FIX: blog counts use is_published instead of status (and support old status if exists)
      */
     public function dashboard()
     {
@@ -124,47 +183,73 @@ class AdminController extends Controller
 
         $pendingVerifications = Dealer::where('status', 'pending')->count();
 
-        $totalBlogs     = BlogPost::count();
-        $publishedBlogs = BlogPost::where('status', 'published')->count();
-        $draftBlogs     = BlogPost::where('status', 'draft')->count();
+        // ===== Blogs (FIXED) =====
+        $hasStatusColumn = Schema::hasColumn('blog_posts', 'status');
+        $hasIsPublished  = Schema::hasColumn('blog_posts', 'is_published');
+        $hasViews        = Schema::hasColumn('blog_posts', 'views');
 
-        $popularBlogs = BlogPost::orderBy('views', 'desc')->take(5)->get(['id', 'title', 'slug', 'views']);
+        $totalBlogs = BlogPost::count();
+
+        if ($hasStatusColumn) {
+            $publishedBlogs = BlogPost::where('status', 'published')->count();
+            $draftBlogs     = BlogPost::where('status', 'draft')->count();
+        } elseif ($hasIsPublished) {
+            $publishedBlogs = BlogPost::where('is_published', true)->count();
+            $draftBlogs     = BlogPost::where('is_published', false)->count();
+        } else {
+            // fallback آمن لو لا هذا ولا ذاك
+            $publishedBlogs = 0;
+            $draftBlogs     = 0;
+        }
+
+        // popular blogs: لو views مش موجود ما تعملش orderBy عليه
+        if ($hasViews) {
+            $popularBlogs = BlogPost::orderBy('views', 'desc')
+                ->take(5)
+                ->get(['id', 'title', 'slug', 'views']);
+        } else {
+            $popularBlogs = BlogPost::orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(['id', 'title', 'slug']);
+        }
 
         $recentAuctions = Auction::with(['car:id,make,model,year'])
             ->orderBy('created_at', 'desc')->take(5)->get();
 
         $recentUsers = User::orderBy('created_at', 'desc')
-            ->take(5)->get(['id', 'first_name', 'last_name', 'email', 'created_at','is_active', 'status']);
+            ->take(5)->get(['id', 'first_name', 'last_name', 'email', 'created_at', 'is_active', 'status']);
 
         return response()->json([
             'status' => 'success',
             'data'   => [
-                'total_users'         => $totalUsers,
-                'dealers_count'       => $dealerCount,
-                'regular_users_count' => $regularUserCount,
-                'total_auctions'      => $totalAuctions,
-                'active_auctions'     => $activeAuctions,
-                'completed_auctions'  => $completedAuctions,
-                'pending_auctions'    => $pendingAuctions,
+                'total_users'          => $totalUsers,
+                'dealers_count'        => $dealerCount,
+                'regular_users_count'  => $regularUserCount,
+                'total_auctions'       => $totalAuctions,
+                'active_auctions'      => $activeAuctions,
+                'completed_auctions'   => $completedAuctions,
+                'pending_auctions'     => $pendingAuctions,
                 'pending_verifications'=> $pendingVerifications,
-                'pending_users'       => $pendingUsers,
-                'total_blogs'         => $totalBlogs,
-                'published_blogs'     => $publishedBlogs,
-                'draft_blogs'         => $draftBlogs,
-                'popular_blogs'       => $popularBlogs,
-                'recent_auctions'     => $recentAuctions,
-                'recent_users'        => $recentUsers
+                'pending_users'        => $pendingUsers,
+
+                'total_blogs'          => $totalBlogs,
+                'published_blogs'      => $publishedBlogs,
+                'draft_blogs'          => $draftBlogs,
+                'popular_blogs'        => $popularBlogs,
+
+                'recent_auctions'      => $recentAuctions,
+                'recent_users'         => $recentUsers
             ]
         ]);
     }
 
     /**
-     * Tags list
+     * Tags list (Legacy)
      */
     public function getBlogTags()
     {
         $tags = BlogTag::all();
-        return response()->json(['status' => 'success','data' => $tags]);
+        return response()->json(['status' => 'success', 'data' => $tags]);
     }
 
     /**
@@ -178,7 +263,7 @@ class AdminController extends Controller
 
         $transactions = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return response()->json(['status' => 'success','data' => $transactions]);
+        return response()->json(['status' => 'success', 'data' => $transactions]);
     }
 
     /**
@@ -191,7 +276,7 @@ class AdminController extends Controller
 
         $settlements = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return response()->json(['status' => 'success','data' => $settlements]);
+        return response()->json(['status' => 'success', 'data' => $settlements]);
     }
 
     /**
@@ -213,19 +298,20 @@ class AdminController extends Controller
     public function updateAuction($id, Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'start_time'           => 'required|date',
-            'end_time'             => 'required|date|after:start_time',
-            'minimum_bid'          => 'required|numeric|min:0',
-            'maximum_bid'          => 'nullable|numeric|min:0',
-            'reserve_price'        => 'required|numeric|min:0',
-            'opening_price'        => 'nullable|numeric|min:0',
-            'status'               => 'required|string|in:scheduled,active,ended,completed,cancelled,failed',
-            'auction_type'         => 'required|string|in:live,live_instant,silent_instant',
-            'control_room_approved'=> 'required|boolean',
-            'approved_for_live'    => 'required|boolean',
+            'start_time'            => 'required|date',
+            'end_time'              => 'required|date|after:start_time',
+            'minimum_bid'           => 'required|numeric|min:0',
+            'maximum_bid'           => 'nullable|numeric|min:0',
+            'reserve_price'         => 'required|numeric|min:0',
+            'opening_price'         => 'nullable|numeric|min:0',
+            'status'                => 'required|string|in:scheduled,active,ended,completed,cancelled,failed',
+            'auction_type'          => 'required|string|in:live,live_instant,silent_instant',
+            'control_room_approved' => 'required|boolean',
+            'approved_for_live'     => 'required|boolean',
         ]);
+
         if ($validator->fails()) {
-            return response()->json(['status' => 'error','errors' => $validator->errors()], 422);
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
 
         $auction = Auction::findOrFail($id);
