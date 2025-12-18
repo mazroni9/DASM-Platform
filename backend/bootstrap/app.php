@@ -17,42 +17,65 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Global middleware
-        // ملاحظة: PerformanceHeaders يضيف هيدرز قياس فقط إذا PERF_HEADERS=true في .env
+        /**
+         * Global middleware
+         */
         $middleware->append([
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
-            \App\Http\Middleware\PerformanceHeaders::class, // <-- تم التبديل ليتطابق مع اسم الكلاس/الملف
+            \App\Http\Middleware\PerformanceHeaders::class,
         ]);
 
-        // $middleware->statefulApi();
-        // API middleware
+        /**
+         * API middleware
+         */
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
 
         $middleware->api(append: [
-            // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
+            // \App\Http\Middleware\ApiCacheMiddleware::class, // فعّلها فقط لو موجودة فعلاً
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
             \App\Http\Middleware\ResponseOptimizationMiddleware::class,
         ]);
 
-        // Register your custom middleware alias here
+        /**
+         * Middleware aliases
+         */
         $middleware->alias([
+            // Project middlewares
             'dealer'            => \App\Http\Middleware\DealerMiddleware::class,
             'admin'             => \App\Http\Middleware\AdminMiddleware::class,
             'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
 
-            // role middleware with parameters ->middleware('role:venue_owner,dealer')
-            'type'              => \App\Http\Middleware\RoleMiddleware::class,
-            'set.organization' => \App\Http\Middleware\SetSpatieTeamContext::class,
+            'set.organization'  => \App\Http\Middleware\SetSpatieTeamContext::class,
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
 
-            // aliases محدثة:
-            'performance'       => \App\Http\Middleware\PerformanceHeaders::class, // <-- بدل PerformanceMiddleware
-            'api.cache'         => \App\Http\Middleware\ApiCacheMiddleware::class,
+            // Utility aliases
+            'performance'       => \App\Http\Middleware\PerformanceHeaders::class,
             'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
+
+            // ✅ Spatie Permission (Laravel 11 + spatie v6) - namespace singular
+            'role'              => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'        => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+
+            /**
+             * اختياري:
+             * لو عندك Middleware اسمها App\Http\Middleware\RoleMiddleware فعلاً وكنت بتستخدم 'type'
+             * سيب السطر ده. لو مش موجودة احذفه لتجنب أخطاء مستقبلية.
+             */
+            // 'type'           => \App\Http\Middleware\RoleMiddleware::class,
+
+            /**
+             * اختياري:
+             * لو عندك ApiCacheMiddleware فعلاً وعايز alias ليها
+             */
+            // 'api.cache'       => \App\Http\Middleware\ApiCacheMiddleware::class,
         ]);
 
+        /**
+         * Web middleware (Inertia)
+         */
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);
@@ -61,9 +84,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => 'ليس لديك صلاحية للقيام بهذا الإجراء.',
                 ], 403);
             }
         });
-    })->create();
+    })
+    ->create();

@@ -1,4 +1,3 @@
-// src/components/shared/Footer.tsx
 import LoadingLink from "@/components/LoadingLink";
 import {
   ArrowUpRight,
@@ -14,10 +13,274 @@ import {
   Music2,
 } from "lucide-react";
 
+/** =========================
+ *  Inline SVG Logos (Guaranteed)
+ *  ========================= */
+
+const LogoCard = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => {
+  return (
+    <div
+      title={title}
+      aria-label={title}
+      className="
+        flex items-center justify-center
+        rounded-2xl border border-border/70
+        bg-white dark:bg-white
+        px-4 py-3
+        shadow-sm transition
+        hover:shadow-md
+      "
+    >
+      {children}
+    </div>
+  );
+};
+
+const AmexLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 180 70"
+    role="img"
+    aria-label="American Express"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>American Express</title>
+    <rect x="0" y="0" width="180" height="70" rx="14" fill="#1A73E8" />
+    <rect x="10" y="10" width="160" height="50" rx="10" fill="#0B4CC2" opacity="0.35" />
+    <text
+      x="90"
+      y="45"
+      textAnchor="middle"
+      fontFamily="Arial, Helvetica, sans-serif"
+      fontSize="32"
+      fontWeight="900"
+      fill="#FFFFFF"
+      letterSpacing="1"
+    >
+      AMEX
+    </text>
+  </svg>
+);
+
+const MastercardLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 200 70"
+    role="img"
+    aria-label="Mastercard"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>Mastercard</title>
+    <g transform="translate(20,12)">
+      <circle cx="52" cy="23" r="23" fill="#EB001B" />
+      <circle cx="86" cy="23" r="23" fill="#F79E1B" />
+      <path
+        d="M69 0c7.8 4.4 13 12.8 13 23s-5.2 18.6-13 23c-7.8-4.4-13-12.8-13-23S61.2 4.4 69 0z"
+        fill="#FF5F00"
+      />
+    </g>
+    <text
+      x="125"
+      y="46"
+      fontFamily="Arial, Helvetica, sans-serif"
+      fontSize="22"
+      fontWeight="800"
+      fill="#111827"
+    >
+      mastercard
+    </text>
+  </svg>
+);
+
+const VisaLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 200 70"
+    role="img"
+    aria-label="Visa"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>Visa</title>
+    <text
+      x="90"
+      y="48"
+      textAnchor="middle"
+      fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+      fontSize="44"
+      fontWeight="900"
+      fill="#1A3D8F"
+      letterSpacing="-1"
+    >
+      VISA
+    </text>
+    <path d="M70 54h40" stroke="#F59E0B" strokeWidth="6" strokeLinecap="round" />
+  </svg>
+);
+
+const MadaLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 220 70"
+    role="img"
+    aria-label="Mada"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>Mada</title>
+
+    {/* bars */}
+    <rect x="18" y="16" width="66" height="12" rx="6" fill="#1E88E5" />
+    <rect x="18" y="34" width="66" height="12" rx="6" fill="#43A047" />
+
+    {/* Arabic wordmark "مدى" - stylized */}
+    <text
+      x="140"
+      y="46"
+      textAnchor="middle"
+      fontFamily="Tahoma, Arial, sans-serif"
+      fontSize="34"
+      fontWeight="900"
+      fill="#111827"
+    >
+      مدى
+    </text>
+
+    {/* small latin */}
+    <text
+      x="192"
+      y="46"
+      textAnchor="end"
+      fontFamily="Arial, Helvetica, sans-serif"
+      fontSize="18"
+      fontWeight="800"
+      fill="#111827"
+    >
+      mada
+    </text>
+  </svg>
+);
+
+const SamsungPayLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 240 70"
+    role="img"
+    aria-label="Samsung Pay"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>Samsung Pay</title>
+    <text
+      x="88"
+      y="32"
+      textAnchor="middle"
+      fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+      fontSize="22"
+      fontWeight="900"
+      fill="#111827"
+      letterSpacing="1"
+    >
+      SAMSUNG
+    </text>
+    <text
+      x="88"
+      y="56"
+      textAnchor="middle"
+      fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+      fontSize="28"
+      fontWeight="900"
+      fill="#111827"
+      letterSpacing="-0.5"
+    >
+      Pay
+    </text>
+  </svg>
+);
+
+const ApplePayLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 240 70"
+    role="img"
+    aria-label="Apple Pay"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>Apple Pay</title>
+
+    {/* simple apple mark */}
+    <path
+      d="M70 38c0-10 8-18 18-18 1 0 2 0 3 .2 1-4 4-8 8-10-1 5-3 9-7 11 6 2 10 8 10 16 0 12-8 22-18 22S70 50 70 38z"
+      fill="#111827"
+    />
+    <path
+      d="M96 14c-2 2-5 3-8 3 .2-3 2-6 4-8 2-2 6-3 8-3-.1 3-2 6-4 8z"
+      fill="#111827"
+    />
+
+    <text
+      x="160"
+      y="48"
+      textAnchor="middle"
+      fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+      fontSize="34"
+      fontWeight="900"
+      fill="#111827"
+      letterSpacing="-1"
+    >
+      Pay
+    </text>
+  </svg>
+);
+
+const StcBankLogo = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 240 70"
+    role="img"
+    aria-label="STC Bank"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>STC Bank</title>
+    <text
+      x="70"
+      y="46"
+      textAnchor="middle"
+      fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+      fontSize="42"
+      fontWeight="900"
+      fill="#6C2BD9"
+      letterSpacing="-1"
+    >
+      STC
+    </text>
+    <text
+      x="172"
+      y="46"
+      textAnchor="middle"
+      fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+      fontSize="38"
+      fontWeight="900"
+      fill="#24B47E"
+      letterSpacing="-0.5"
+    >
+      Bank
+    </text>
+  </svg>
+);
+
+type Payment = {
+  key: string;
+  title: string;
+  node: React.ReactNode;
+};
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  // ✅ التعديل: شلنا فقط "الأسواق الرقمية" من روابط مهمة
   const mainLinks = [
     { href: "/about", label: "من نحن", icon: <Sparkles className="h-4 w-4" /> },
     { href: "/how-it-works", label: "كيف نعمل", icon: <Gavel className="h-4 w-4" /> },
@@ -30,7 +293,6 @@ const Footer = () => {
     { href: "/fees-and-subscriptions", label: "سياسة الرسوم والاشتراكات", icon: <Gavel className="h-4 w-4" /> },
   ];
 
-  // ✅ سوشيال ميديا (مكان الروابط اللي عليها X تحت)
   const socialLinks = [
     {
       href: "https://snapchat.com/t/4IDzLfrK",
@@ -47,6 +309,16 @@ const Footer = () => {
       label: "TikTok",
       icon: <Music2 className="h-4 w-4" />,
     },
+  ];
+
+  const payments: Payment[] = [
+    { key: "amex", title: "American Express", node: <AmexLogo className="h-9 w-auto" /> },
+    { key: "mc", title: "Mastercard", node: <MastercardLogo className="h-9 w-auto" /> },
+    { key: "visa", title: "Visa", node: <VisaLogo className="h-9 w-auto" /> },
+    { key: "mada", title: "Mada", node: <MadaLogo className="h-9 w-auto" /> },
+    { key: "samsung", title: "Samsung Pay", node: <SamsungPayLogo className="h-9 w-auto" /> },
+    { key: "apple", title: "Apple Pay", node: <ApplePayLogo className="h-9 w-auto" /> },
+    { key: "stc", title: "STC Bank", node: <StcBankLogo className="h-9 w-auto" /> },
   ];
 
   return (
@@ -88,7 +360,6 @@ const Footer = () => {
                 شفافية مطلقة، ووصول عالمي. هدفنا تجربة واضحة، سريعة، وموثوقة للجميع.
               </p>
 
-              {/* ✅ التعديل: شيلنا زر "استكشف الأسواق" الأزرق فقط */}
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <LoadingLink
                   href="/how-it-works"
@@ -136,12 +407,10 @@ const Footer = () => {
                     </li>
                   ))}
 
-                  {/* ✅ المدونة */}
+                  {/* ✅ المدونة: داخلية /blog */}
                   <li>
-                    <a
-                      href="https://blog.dasm.com.sa/"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <LoadingLink
+                      href="/blog"
                       className="group flex items-center justify-between rounded-xl border border-transparent bg-background/40 px-4 py-3 hover:bg-background hover:border-border transition"
                     >
                       <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -151,7 +420,7 @@ const Footer = () => {
                         المدونة
                       </span>
                       <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </a>
+                    </LoadingLink>
                   </li>
                 </ul>
               </nav>
@@ -200,13 +469,30 @@ const Footer = () => {
           </div>
         </div>
 
+        {/* ✅ وسائل الدفع (مضمون + ثابت في الداكن/الفاتح) */}
+        <div className="mt-10">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm font-bold">وسائل الدفع المتاحة</div>
+            <div className="hidden sm:block text-xs text-muted-foreground">
+              آمن — سريع — موثوق
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            {payments.map((p) => (
+              <LogoCard key={p.key} title={p.title}>
+                {p.node}
+              </LogoCard>
+            ))}
+          </div>
+        </div>
+
         {/* Bottom bar */}
         <div className="mt-10 border-t border-border pt-5 flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="text-xs sm:text-sm text-muted-foreground text-center md:text-right">
             © {currentYear} منصة DASMe. جميع الحقوق محفوظة.
           </div>
 
-          {/* ✅ التعديل: شيلنا روابط (سياسة الخصوصية/الشروط/الرسوم) من تحت وحطينا سوشيال */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             {socialLinks.map((s) => (
               <a
