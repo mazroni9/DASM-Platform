@@ -52,7 +52,15 @@ const AmexLogo = ({ className = "" }: { className?: string }) => (
   >
     <title>American Express</title>
     <rect x="0" y="0" width="180" height="70" rx="14" fill="#1A73E8" />
-    <rect x="10" y="10" width="160" height="50" rx="10" fill="#0B4CC2" opacity="0.35" />
+    <rect
+      x="10"
+      y="10"
+      width="160"
+      height="50"
+      rx="10"
+      fill="#0B4CC2"
+      opacity="0.35"
+    />
     <text
       x="90"
       y="45"
@@ -119,7 +127,12 @@ const VisaLogo = ({ className = "" }: { className?: string }) => (
     >
       VISA
     </text>
-    <path d="M70 54h40" stroke="#F59E0B" strokeWidth="6" strokeLinecap="round" />
+    <path
+      d="M70 54h40"
+      stroke="#F59E0B"
+      strokeWidth="6"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -272,6 +285,25 @@ const StcBankLogo = ({ className = "" }: { className?: string }) => (
   </svg>
 );
 
+/** =========================
+ *  X (Twitter) Icon (Inline SVG)
+ *  ========================= */
+const XIcon = ({ className = "" }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    role="img"
+    aria-label="X (Twitter)"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>X (Twitter)</title>
+    <path
+      fill="currentColor"
+      d="M18.285 2H21.7l-7.46 8.53L23 22h-7.27l-5.68-7.39L3.4 22H0l8.03-9.18L0 2h7.45l5.1 6.72L18.285 2Zm-1.27 18h1.89L7.04 3.93H5.01L17.015 20Z"
+    />
+  </svg>
+);
+
 type Payment = {
   key: string;
   title: string;
@@ -308,6 +340,11 @@ const Footer = () => {
       href: "https://www.tiktok.com/@dasm0202",
       label: "TikTok",
       icon: <Music2 className="h-4 w-4" />,
+    },
+    {
+      href: "https://x.com/DASM0909",
+      label: "Twitter",
+      icon: <XIcon className="h-4 w-4" />,
     },
   ];
 
@@ -406,22 +443,6 @@ const Footer = () => {
                       </LoadingLink>
                     </li>
                   ))}
-
-                  {/* ✅ المدونة: داخلية /blog */}
-                  <li>
-                    <LoadingLink
-                      href="/blog"
-                      className="group flex items-center justify-between rounded-xl border border-transparent bg-background/40 px-4 py-3 hover:bg-background hover:border-border transition"
-                    >
-                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                        <span className="text-primary">
-                          <Book className="h-4 w-4" />
-                        </span>
-                        المدونة
-                      </span>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </LoadingLink>
-                  </li>
                 </ul>
               </nav>
 
@@ -492,6 +513,18 @@ const Footer = () => {
           <div className="text-xs sm:text-sm text-muted-foreground text-center md:text-right">
             © {currentYear} منصة DASMe. جميع الحقوق محفوظة.
           </div>
+
+          {/* ✅ المدونة في النصف السفلي من الفوتر (بالنص) */}
+          <LoadingLink
+            href="/blog"
+            className="group inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-4 py-2 text-xs sm:text-sm text-muted-foreground hover:text-primary hover:bg-background transition-colors"
+          >
+            <span className="text-primary">
+              <Book className="h-4 w-4" />
+            </span>
+            المدونة
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </LoadingLink>
 
           <div className="flex flex-wrap items-center justify-center gap-2">
             {socialLinks.map((s) => (
