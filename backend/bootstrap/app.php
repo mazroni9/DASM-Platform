@@ -17,23 +17,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
         /**
          * Global middleware
+         * ✅ خلي CORS هنا علشان يشتغل لكل الطلبات + preflight OPTIONS قبل أي ميدلوير
          */
         $middleware->append([
+            \Illuminate\Http\Middleware\HandleCors::class, // ✅ moved here
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
             \App\Http\Middleware\PerformanceHeaders::class,
         ]);
 
         /**
          * API middleware
+         * (شيلنا HandleCors من هنا لأنه بقى Global)
          */
-        $middleware->api(prepend: [
-            \Illuminate\Http\Middleware\HandleCors::class,
-        ]);
-
         $middleware->api(append: [
-            // \App\Http\Middleware\ApiCacheMiddleware::class, // فعّلها فقط لو موجودة فعلاً
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
             \App\Http\Middleware\ResponseOptimizationMiddleware::class,
         ]);
@@ -50,27 +49,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'set.organization'  => \App\Http\Middleware\SetSpatieTeamContext::class,
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
 
+            // ✅ IMPORTANT: Super Admin middleware alias (fix employees routes)
+            'super_admin'       => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'admin_or_super_admin' => \App\Http\Middleware\EnsureAdminOrSuperAdmin::class,
+
             // Utility aliases
             'performance'       => \App\Http\Middleware\PerformanceHeaders::class,
             'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
 
-            // ✅ Spatie Permission (Laravel 11 + spatie v6) - namespace singular
+            // ✅ Spatie Permission (Laravel 11 + spatie v6)
             'role'              => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission'        => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-
-            /**
-             * اختياري:
-             * لو عندك Middleware اسمها App\Http\Middleware\RoleMiddleware فعلاً وكنت بتستخدم 'type'
-             * سيب السطر ده. لو مش موجودة احذفه لتجنب أخطاء مستقبلية.
-             */
-            // 'type'           => \App\Http\Middleware\RoleMiddleware::class,
-
-            /**
-             * اختياري:
-             * لو عندك ApiCacheMiddleware فعلاً وعايز alias ليها
-             */
-            // 'api.cache'       => \App\Http\Middleware\ApiCacheMiddleware::class,
         ]);
 
         /**
