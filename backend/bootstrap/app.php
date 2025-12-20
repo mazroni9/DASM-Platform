@@ -20,19 +20,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         /**
          * Global middleware
+         * ✅ خلي CORS هنا علشان يشتغل لكل الطلبات + preflight OPTIONS قبل أي ميدلوير
          */
         $middleware->append([
+            \Illuminate\Http\Middleware\HandleCors::class, // ✅ moved here
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
             \App\Http\Middleware\PerformanceHeaders::class,
         ]);
 
         /**
          * API middleware
+         * (شيلنا HandleCors من هنا لأنه بقى Global)
          */
-        $middleware->api(prepend: [
-            \Illuminate\Http\Middleware\HandleCors::class,
-        ]);
-
         $middleware->api(append: [
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
             \App\Http\Middleware\ResponseOptimizationMiddleware::class,
