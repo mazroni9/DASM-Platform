@@ -1,0 +1,256 @@
+services:
+  - type: web
+    name: dasm-platform-backend
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://dasm-platform-backend.onrender.com
+      - key: FRONTEND_URL
+        fromService:
+          name: dasm-platform-frontend
+          type: web
+          property: url
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: error
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_LIFETIME
+        value: 120
+      - key: FILESYSTEM_DISK
+        value: cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: APP_KEY
+        generateValue: true
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: dasm-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: dasm-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: dasm-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: dasm-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: dasm-db
+          property: password
+
+  - type: worker
+    name: dasm-platform-queue
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    command: php artisan queue:work --tries=3 --timeout=90
+    envVars:
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_ENV
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_DEBUG
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_URL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: FRONTEND_URL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: LOG_CHANNEL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: LOG_LEVEL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CACHE_STORE
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: QUEUE_CONNECTION
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: SESSION_DRIVER
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: SESSION_LIFETIME
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: FILESYSTEM_DISK
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CLOUDINARY_API_SECRET
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_KEY
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_CONNECTION
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_HOST
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_PORT
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_DATABASE
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_USERNAME
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_PASSWORD
+
+  - type: cron
+    name: dasm-platform-scheduler
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    schedule: "* * * * *"
+    command: php artisan schedule:run
+    envVars:
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_ENV
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_DEBUG
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_URL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: FRONTEND_URL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: LOG_CHANNEL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: LOG_LEVEL
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CACHE_STORE
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: QUEUE_CONNECTION
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: SESSION_DRIVER
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: SESSION_LIFETIME
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: FILESYSTEM_DISK
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: CLOUDINARY_API_SECRET
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: APP_KEY
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_CONNECTION
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_HOST
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_PORT
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_DATABASE
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_USERNAME
+      - fromService:
+          type: web
+          name: dasm-platform-backend
+          envVarKey: DB_PASSWORD
+
+databases:
+  - name: dasm-db
+    plan: starter
+    ipAllowList: []

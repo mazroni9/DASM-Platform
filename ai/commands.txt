@@ -1,0 +1,17 @@
+cd /d D:\Work\DASM\DASM-Platform\ai
+
+python -m venv .venv
+
+.\.venv\Scripts\python.exe -m ensurepip --upgrade
+
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+
+
+.\.venv\Scripts\python.exe -c "from huggingface_hub import hf_hub_download; import os; os.makedirs('models', exist_ok=True); hf_hub_download(repo_id='Ultralytics/YOLOv8', filename='yolov8n.pt', local_dir='models'); print('Downloaded yolov8n.pt')"
+.\.venv\Scripts\python.exe -c "from huggingface_hub import hf_hub_download; import os; os.makedirs('models', exist_ok=True); hf_hub_download(repo_id='TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF', filename='tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf', local_dir='models'); print('Downloaded tinyllama gguf')"
+
+
+
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+
