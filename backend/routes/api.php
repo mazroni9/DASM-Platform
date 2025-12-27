@@ -862,3 +862,53 @@ Route::post('/exhibitor/wallet/deposit/webhook', [ExhibitorWalletDepositControll
 |--------------------------------------------------------------------------
 */
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
+
+
+/*
+|--------------------------------------------------------------------------
+| Monitoring Dashboard Routes (Super Admin Only)
+|--------------------------------------------------------------------------
+*/
+use App\Http\Controllers\Monitoring\{
+    MonitoringController,
+    DeveloperMetricsController,
+    PlatformHealthController
+};
+
+Route::prefix('monitoring')
+    ->middleware(['auth:sanctum'])
+    ->group(function () {
+        
+        // Main Dashboard
+        Route::get('/dashboard', [MonitoringController::class, 'dashboard']);
+        Route::get('/error-logs', [MonitoringController::class, 'errorLogs']);
+        Route::post('/error-logs/{errorId}/resolve', [MonitoringController::class, 'resolveError']);
+        Route::get('/deployments', [MonitoringController::class, 'deploymentHistory']);
+        Route::get('/alerts', [MonitoringController::class, 'alerts']);
+        Route::post('/alerts/{alertId}/acknowledge', [MonitoringController::class, 'acknowledgeAlert']);
+
+        // Developer Metrics
+        Route::prefix('developers')->group(function () {
+            Route::get('/', [DeveloperMetricsController::class, 'index']);
+            Route::get('/top-performers', [DeveloperMetricsController::class, 'topPerformers']);
+            Route::get('/needs-attention', [DeveloperMetricsController::class, 'needsAttention']);
+            Route::get('/team-stats', [DeveloperMetricsController::class, 'teamStats']);
+            Route::post('/compare', [DeveloperMetricsController::class, 'compare']);
+            Route::get('/{developerId}', [DeveloperMetricsController::class, 'show']);
+            Route::put('/{developerId}', [DeveloperMetricsController::class, 'update']);
+            Route::get('/{developerId}/snapshots', [DeveloperMetricsController::class, 'dailySnapshots']);
+            Route::post('/{developerId}/snapshots', [DeveloperMetricsController::class, 'createSnapshot']);
+        });
+
+        // Platform Health
+        Route::prefix('health')->group(function () {
+            Route::get('/current', [PlatformHealthController::class, 'currentStatus']);
+            Route::get('/history', [PlatformHealthController::class, 'history']);
+            Route::get('/summary', [PlatformHealthController::class, 'summary']);
+            Route::post('/check', [PlatformHealthController::class, 'recordHealthCheck']);
+            Route::get('/api-performance', [PlatformHealthController::class, 'apiPerformance']);
+            Route::get('/database-performance', [PlatformHealthController::class, 'databasePerformance']);
+            Route::get('/page-performance', [PlatformHealthController::class, 'pagePerformance']);
+            Route::get('/feature-usage', [PlatformHealthController::class, 'featureUsage']);
+        });
+    });

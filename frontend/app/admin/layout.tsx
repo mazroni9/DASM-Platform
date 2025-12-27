@@ -24,6 +24,9 @@ import {
   UserCog,
   Tags,
   Newspaper,
+  Activity,
+  AlertCircle,
+  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -143,6 +146,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
     { name: "التقارير", href: "/admin/reports", icon: BarChart, permission: "activity_logs.view" },
     { name: "الإعدادات", href: "/admin/settings", icon: Settings, permission: "users.view" },
+
+    {
+      name: "المراقبة والتحليل",
+      href: "#",
+      type: "header",
+      icon: Activity,
+      permissions: ["users.view"], // Super Admin only
+    },
+    { name: "لوحة المراقبة", href: "/admin/monitoring", icon: Activity, permission: "users.view" },
+    { name: "أداء الفريق", href: "/admin/monitoring/developers", icon: TrendingUp, permission: "users.view" },
+    { name: "صحة المنصة", href: "/admin/monitoring/health", icon: BarChart, permission: "users.view" },
+    { name: "سجلات الأخطاء", href: "/admin/monitoring/errors", icon: AlertCircle, permission: "users.view" },
   ];
 
   const isActive = (path: string) => {
