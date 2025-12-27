@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    
+    'moyasar' => [
+        'secret_key' => env('MOYASAR_SECRET_KEY'),
+        'publishable_key' => env('MOYASAR_PUBLISHABLE_KEY'),
+    ],
 ];

@@ -394,7 +394,8 @@ Route::get('/check-time', function (Request $request) {
     return response()->json([
         'page' => $page,
         'current_time' => $now->format('H:i:s'),
-        'allowed' => $isAllowed,
+        'allowed' => true,
+        //'allowed' => $isAllowed,
         'remaining_seconds' => $remainingSeconds,
         'remaining_time' => $remainingSeconds ? gmdate("H:i:s", $remainingSeconds) : null,
         'timezone' => 'GMT+3'
@@ -491,6 +492,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
     Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
 
+    // Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
+
+
+    // Bids
     Route::get('/auctions/{auction}/bids', [BidController::class, 'index'])->whereNumber('auction');
     Route::post('/auctions/{auction}/bids', [BidController::class, 'store'])->middleware('bid.rate.limit')->whereNumber('auction');
     Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard'])->whereNumber('auction');
@@ -537,6 +542,21 @@ Route::get('/wallet/error', [UserWalletController::class, 'handleError'])->name(
 
 /*
 |--------------------------------------------------------------------------
+| ClickPay Payment Routes (DASM Dual-Page Model)
+|--------------------------------------------------------------------------
+*/
+// Authenticated: Initiate payment
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/payment/initiate', [\App\Http\Controllers\Payment\ClickPayController::class, 'initiatePayment']);
+});
+
+// Public: Payment callbacks (no auth - called by payment gateways)
+Route::any('/payment/return', [\App\Http\Controllers\Payment\ClickPayController::class, 'handleReturn'])->name('payment.return');
+Route::post('/payment/webhook', [\App\Http\Controllers\Payment\ClickPayController::class, 'handleWebhook'])->name('payment.webhook');
+Route::get('/payment/callback/moyasar', [\App\Http\Controllers\Payment\ClickPayController::class, 'handleMoyasarCallback'])->name('payment.moyasar.callback');
+
+/*
+|--------------------------------------------------------------------------
 | Dealer (DealerMiddleware)
 |--------------------------------------------------------------------------
 */
@@ -544,6 +564,29 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
     Route::get('/dealer/dashboard', [DealerController::class, 'dashboard']);
     Route::get('/auctions/{id}/analytics', [AuctionController::class, 'analytics'])->whereNumber('id');
 
+    // Pro Dealer Dashboard API
+    Route::get('/dealer/dashboard/init', [\App\Http\Controllers\Dealer\DashboardController::class, 'init']);
+    Route::get('/dealer/wallet/transactions', [\App\Http\Controllers\Dealer\WalletController::class, 'transactions']);
+    Route::post('/dealer/bid', [\App\Http\Controllers\Dealer\BidController::class, 'placeBid']);
+    Route::post('/dealer/ai/toggle', [\App\Http\Controllers\Dealer\AiController::class, 'toggle']);
+
+    // Dashboard Charts API
+    Route::get('/dealer/dashboard/liquidity-stats', [\App\Http\Controllers\Dealer\DashboardController::class, 'liquidityStats']);
+    Route::get('/dealer/dashboard/bidding-stats', [\App\Http\Controllers\Dealer\DashboardController::class, 'biddingStats']);
+
+    // Watchlist API
+    Route::get('/dealer/watchlists', [\App\Http\Controllers\Dealer\WatchlistController::class, 'index']);
+    Route::post('/dealer/watchlists', [\App\Http\Controllers\Dealer\WatchlistController::class, 'store']);
+    Route::post('/dealer/watchlists/quick-add', [\App\Http\Controllers\Dealer\WatchlistController::class, 'quickAdd']);
+    Route::post('/dealer/watchlists/quick-remove', [\App\Http\Controllers\Dealer\WatchlistController::class, 'quickRemove']);
+    Route::put('/dealer/watchlists/{id}', [\App\Http\Controllers\Dealer\WatchlistController::class, 'update'])->whereNumber('id');
+    Route::delete('/dealer/watchlists/{id}', [\App\Http\Controllers\Dealer\WatchlistController::class, 'destroy'])->whereNumber('id');
+    Route::get('/dealer/watchlists/all-items', [\App\Http\Controllers\Dealer\WatchlistController::class, 'allItems']);
+    Route::get('/dealer/watchlists/{id}/items', [\App\Http\Controllers\Dealer\WatchlistController::class, 'items'])->whereNumber('id');
+    Route::post('/dealer/watchlists/{id}/items', [\App\Http\Controllers\Dealer\WatchlistController::class, 'addItem'])->whereNumber('id');
+    Route::delete('/dealer/watchlists/{menuId}/items/{carId}', [\App\Http\Controllers\Dealer\WatchlistController::class, 'removeItem'])->whereNumber('menuId')->whereNumber('carId');
+
+    // Legacy dealer cars (للتوافق)
     Route::get('/dealer/cars', [CarController::class, 'index']);
     Route::post('/dealer/cars', [CarController::class, 'store']);
     Route::get('/dealer/cars/{id}', [CarController::class, 'show'])->whereNumber('id');
