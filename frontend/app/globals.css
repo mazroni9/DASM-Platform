@@ -5,57 +5,120 @@
 @layer base {
   :root {
     /* Light Mode */
-    --color-background: 255 255 255; /* White */
-    --color-foreground: 0 0 0;     /* Black */
-    --color-card-background: 248 250 252; /* e.g., slate-50 */
-    --color-border: 226 232 240; /* e.g., slate-200 */
-    
-    /* Brand Colors (Solid) */
-    --color-primary: 0 45 91;     /* DASM Blue: #002D5B */
-    --color-secondary: 0 169 92;   /* DASM Green: #00A95C */
+    --color-background: 255 255 255;
+    --color-foreground: 15 23 42;
+
+    --color-card-background: 248 250 252;
+    --color-card-foreground: 15 23 42;
+
+    --color-border: 226 232 240;
+
+    --color-primary: 0 45 91;
+    --color-primary-foreground: 255 255 255;
+
+    --color-secondary: 0 169 92;
+    --color-secondary-foreground: 255 255 255;
+
     --radius: 0.5rem;
+    color-scheme: light;
   }
 
   .dark {
-    /* Dark Mode */
-    --color-background: 15 23 42; /* e.g., slate-900 */
-    --color-foreground: 255 255 255; /* White */
-    --color-card-background: 30 41 59; /* e.g., slate-800 */
-    --color-border: 51 65 85; /* e.g., slate-700 */
-    
-    /* Brand Colors (Solid) */
-    --color-primary: 74 144 226;     /* DASM Blue: #4A90E2  */
-    --color-secondary: 0 169 92;   /* DASM Green: #00A95C */
+    --color-background: 15 23 42;
+    --color-foreground: 255 255 255;
+
+    --color-card-background: 30 41 59;
+    --color-card-foreground: 255 255 255;
+
+    --color-border: 51 65 85;
+
+    --color-primary: 74 144 226;
+    --color-primary-foreground: 255 255 255;
+
+    --color-secondary: 0 169 92;
+    --color-secondary-foreground: 255 255 255;
+
+    color-scheme: dark;
   }
 
   body {
     background-color: rgb(var(--color-background));
     color: rgb(var(--color-foreground));
-    font-family: var(--font-almarai),var(--font-lama) , sans-serif;
+    font-family: var(--font-almarai), var(--font-lama), sans-serif;
     margin: 0;
     padding: 0;
   }
-  
+
   * {
-    @apply border-border;
+    border-color: rgb(var(--color-border));
   }
 
-  /* تحسينات تيبوغرافيا خفيفة */
   h1, h2, h3, h4, h5, h6 { @apply font-bold tracking-tight; }
   h1 { @apply text-3xl md:text-4xl; }
   h2 { @apply text-2xl md:text-3xl; }
   h3 { @apply text-xl md:text-2xl; }
 
   a { @apply transition-colors; }
-  a:hover { color: rgb(34 211 238 / var(--tw-text-opacity, 1)); }
+  a:hover { color: rgb(var(--color-primary)); }
+}
+
+@layer utilities {
+  .bg-background { background-color: rgb(var(--color-background)) !important; }
+  .text-foreground { color: rgb(var(--color-foreground)) !important; }
+
+  /* ✅ Card */
+  .bg-card {
+    background-color: rgb(var(--color-card-background)) !important;
+    color: rgb(var(--color-card-foreground)) !important;
+  }
+  .text-card-foreground { color: rgb(var(--color-card-foreground)) !important; }
+
+  .border-border { border-color: rgb(var(--color-border)) !important; }
+
+  .bg-primary { background-color: rgb(var(--color-primary)) !important; }
+  .text-primary-foreground { color: rgb(var(--color-primary-foreground)) !important; }
+
+  .bg-secondary { background-color: rgb(var(--color-secondary)) !important; }
+  .text-secondary-foreground { color: rgb(var(--color-secondary-foreground)) !important; }
+
+  /* ✅ Ring */
+  .ring-border { --tw-ring-color: rgb(var(--color-border)) !important; }
+  .ring-primary { --tw-ring-color: rgb(var(--color-primary)) !important; }
+
+  /* ✅ Buttons only */
+  :is(button, a, [role="button"], input[type="button"], input[type="submit"]).bg-primary {
+    color: rgb(var(--color-primary-foreground)) !important;
+  }
+  :is(button, a, [role="button"], input[type="button"], input[type="submit"]).bg-secondary {
+    color: rgb(var(--color-secondary-foreground)) !important;
+  }
+
+  /* ✅✅✅ Avatars/Badges (أي عنصر دائري rounded-full + bg-primary/bg-secondary) */
+  :is(span, div, a, button).rounded-full.bg-primary {
+    color: rgb(var(--color-primary-foreground)) !important;
+  }
+  :is(span, div, a, button).rounded-full.bg-secondary {
+    color: rgb(var(--color-secondary-foreground)) !important;
+  }
 }
 
 @layer components {
-  .bg-background { @apply bg-white; }
-  .text-foreground { @apply text-gray-900; }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition;
+    background-color: rgb(var(--color-primary));
+    color: rgb(var(--color-primary-foreground));
+  }
+  .btn-primary:hover { background-color: rgb(var(--color-primary) / 0.9); }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition;
+    background-color: rgb(var(--color-secondary));
+    color: rgb(var(--color-secondary-foreground));
+  }
+  .btn-secondary:hover { background-color: rgb(var(--color-secondary) / 0.9); }
 }
 
-/* ---------------- Pagination styles (كما هي مع تحسين RTL) ---------------- */
+/* Pagination (كما هي) */
 .pagination-container {
   display: flex;
   list-style: none;
@@ -73,10 +136,7 @@
   border-radius: 4px;
   transition: background-color 0.2s, color 0.2s;
 }
-.page-link:hover {
-  background-color: #e9ecef;
-  color: #0056b3;
-}
+.page-link:hover { background-color: #e9ecef; color: #0056b3; }
 .page-item.active .page-link {
   background-color: #007bff;
   color: white;
@@ -90,5 +150,3 @@
   border-color: #dee2e6;
 }
 html[dir="rtl"] .pagination-container { flex-direction: row-reverse; }
-
-/* .bg-gradient-to-br{ opacity: 0.3 !important; } */

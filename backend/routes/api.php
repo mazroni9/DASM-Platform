@@ -31,6 +31,9 @@ use App\Http\Controllers\CarSimilarityController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\ActivityLogController;
 
+// ✅ Blog V2 Public Controller (NEW)
+use App\Http\Controllers\BlogPublicController;
+
 // ========= Admin (namespaced) =========
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\BidEventController;
@@ -42,6 +45,17 @@ use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserModerationController;
+
+// ✅ Employees Controller (NEW)
+use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
+
+// ✅ Blog V2 Admin Controllers (NEW)
+use App\Http\Controllers\Admin\BlogCategoryAdminController;
+use App\Http\Controllers\Admin\BlogPostAdminController;
+
+// ✅ YouTube Channels Admin Controller (NEW)  ✅✅✅
+use App\Http\Controllers\Admin\YouTubeChannelController as AdminYouTubeChannelController;
 
 // ========= Auction Sessions =========
 use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController; // للجمهور
@@ -410,7 +424,6 @@ Route::get('/auctions/fixed', [AuctionController::class, 'getFixedAuctions']);
 Route::get('/auctions/{id}', [AuctionController::class, 'show']);
 Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
 Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
-// ✅ جعل مزادات منتهية عامة (بدون auth)
 Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
 
 Route::get('/sessions/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
@@ -419,7 +432,12 @@ Route::get('/sessions/live/{id}', [PublicAuctionSessionController::class, 'getLi
 Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
 Route::get('/car/{id}', [CarController::class, 'showOnly']);
 
-// Public blog routes
+// ✅ Blog V2 Public Routes (NEW) — لازم قبل /blog/{slug}
+Route::get('/blog/categories', [BlogPublicController::class, 'categories']);
+Route::get('/blog/posts', [BlogPublicController::class, 'posts']);
+Route::get('/blog/posts/{slug}', [BlogPublicController::class, 'show']);
+
+// Public blog routes (Legacy)
 Route::get('/blog', [BlogController::class, 'index']);
 Route::get('/blog/latest/{count?}', [BlogController::class, 'latest'])->whereNumber('count');
 Route::get('/blog/tags', [BlogController::class, 'tags']);
@@ -429,7 +447,6 @@ Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
 
 // ✅ عام: أسواق السيارات
 Route::get('/market/cars',    [CarController::class, 'publicMarketCars']);
-// ✅ روابط ثابتة اختيارية لكل سوق (تسهل على الفرونت والـSEO)
 Route::get('/market/trucks',  [CarController::class, 'publicMarketCars'])->defaults('market', 'trucks');
 Route::get('/market/buses',   [CarController::class, 'publicMarketCars'])->defaults('market', 'buses');
 
@@ -442,42 +459,34 @@ Route::get('/middleware/user-role', [App\Http\Controllers\Auth\MiddlewareAuthCon
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
-    // Route::post('/refresh', [AuthController::class, 'refresh']); // Moved to public/cookie-based section
-    // User routes
+
     Route::get('/user', [UserController::class, 'profile']);
     Route::get('/user/profile', [UserController::class, 'profile'])->middleware('set.organization');
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
     Route::get('/user/permissions', [UserController::class, 'getPermissions']);
 
-    // Dealer application
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
 
-    // Cars
     Route::get('/cars', [CarController::class, 'index']);
-    Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']); // يدعم ?only_approved=1 و ?market_category=trucks|buses|...
+    Route::get('/cars/in-auctions', [CarController::class, 'CarsInAuction']);
     Route::post('/cars', [CarController::class, 'store']);
     Route::get('/cars/enum-options', [CarController::class, 'enumOptions']);
     Route::get('/cars/{id}', [CarController::class, 'show']);
-
     Route::put('/cars/{id}', [CarController::class, 'update']);
     Route::delete('/cars/{id}', [CarController::class, 'destroy']);
     Route::get('/car-statistics', [CarController::class, 'statistics']);
 
-    // Auction management for all users
     Route::post('/auctions', [AuctionController::class, 'store']);
     Route::put('/auctions/{id}', [AuctionController::class, 'update'])->whereNumber('id');
     Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel'])->whereNumber('id');
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    // ⚠️ تم نقل /auctions-finished إلى القسم العام فوق
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auctions/{auction}/leave', [AuctionController::class, 'leave'])->whereNumber('auction');
     Route::get('/auctions/{auction}/status', [AuctionController::class, 'status'])->whereNumber('auction');
     Route::post('/auctions/test-bid', [AuctionController::class, 'testBid']);
 
-    // Endpoints الإضافية (من الملف الثاني للحفاظ على التوافق)
     Route::get('/sessions/active-scheduled', [AdminController::class, 'getActiveAndScheduledSessions']);
     Route::get('/sessions/{id}', [AdminController::class, 'showSessionPublic'])->whereNumber('id');
     Route::get('/approved-auctions', [AuctionController::class, 'index']);
@@ -493,37 +502,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus'])->whereNumber('bid');
     Route::get('/bids-history', [BidController::class, 'UserBidHistory']);
-    // Unified bid endpoints
     Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids'])->whereNumber('id');
 
-    // Auto-bid
     Route::post('/auctions/auto-bid', [AutoBidController::class, 'store']);
     Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus'])->whereNumber('itemId');
     Route::delete('/auctions/auto-bid/{itemId}', [AutoBidController::class, 'destroy'])->whereNumber('itemId');
 
-    // Purchase confirmation
     Route::get('/auctions/purchase-confirmation/{auction_id}', [AuctionController::class, 'purchaseConfirmation'])->whereNumber('auction_id');
-
-    // Broadcast (read-only extras)
     Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
 
-    // User Wallet
     Route::get('/wallet', [UserWalletController::class, 'show']);
     Route::post('/wallet/deposit', [UserWalletController::class, 'deposit']);
     Route::get('/wallet/transactions', [UserWalletController::class, 'transactions']);
     Route::post('/wallet/recharge', [UserWalletController::class, 'recharge']);
 
-    // Settlements
     Route::get('/auctions/calculate-settlement/{car_id}', [SettlementController::class, 'calculateSettlement'])->whereNumber('car_id');
     Route::post('/auctions/confirm-sale', [SettlementController::class, 'confirmSale']);
 
-    // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
     Route::get('/settlements', [SettlementController::class, 'index']);
 
-    // Exhibitor Ratings (write ops)
     Route::prefix('exhibitor')->group(function () {
         Route::post('/ratings',          [VenueOwnerRatingController::class, 'store']);
         Route::put('/ratings/{review}', [VenueOwnerRatingController::class, 'update'])->whereNumber('review');
@@ -610,10 +610,76 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
 
 /*
 |--------------------------------------------------------------------------
+| ✅ Admin Panel Routes (SAFE) - NEW
+| الهدف: صفحة Admin Panel للمستخدمين بدون وجع دماغ 403
+| Base: /api/admin-panel/...
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureAdminOrSuperAdmin::class])
+    ->prefix('admin-panel')
+    ->group(function () {
+
+        Route::get('/whoami', function (Request $request) {
+            $u = $request->user();
+
+            $roles = null;
+            try {
+                if ($u && method_exists($u, 'getRoleNames')) {
+                    $roles = $u->getRoleNames();
+                }
+            } catch (\Throwable $e) {
+                $roles = null;
+            }
+
+            return response()->json([
+                'id' => $u?->id,
+                'email' => $u?->email,
+                'type' => $u?->type,
+                'role' => $u?->role ?? null,
+                'roles' => $roles,
+            ]);
+        });
+
+        // Users
+        Route::get('/users', [\App\Http\Controllers\AdminPanel\UserController::class, 'index']);
+        Route::get('/users/{userId}', [\App\Http\Controllers\AdminPanel\UserController::class, 'show'])->whereNumber('userId');
+        Route::put('/users/{userId}', [\App\Http\Controllers\AdminPanel\UserController::class, 'update'])->whereNumber('userId');
+
+        // Actions used by the Admin Panel UI
+        Route::patch('/users/{userId}/active', [\App\Http\Controllers\AdminPanel\UserController::class, 'updateActive'])->whereNumber('userId');
+        Route::patch('/users/{userId}/kyc', [\App\Http\Controllers\AdminPanel\UserController::class, 'updateKyc'])->whereNumber('userId');
+        Route::delete('/users/{userId}', [\App\Http\Controllers\AdminPanel\UserController::class, 'destroy'])->whereNumber('userId');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| ✅ Admin Users (SAFE) - بدون AdminMiddleware وبدون can:*
+| الهدف: حل 403 في PUT /api/admin/users/{id} فورًا (Legacy)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureAdminOrSuperAdmin::class])
+    ->prefix('admin')
+    ->group(function () {
+        Route::get('/users/owners', [AdminUserController::class, 'getOwners']);
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::get('/users/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId');
+
+        Route::put('/users/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId');
+
+        Route::post('/users/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId');
+        Route::post('/users/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId');
+        Route::post('/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus'])->whereNumber('userId');
+        Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications']);
+        Route::post('/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification'])->whereNumber('userId');
+        Route::post('/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification'])->whereNumber('userId');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Admin (AdminMiddleware + prefix: admin)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class,])
+Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class])
     ->prefix('admin')->group(function () {
 
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->middleware('can:activity_logs.view');
@@ -624,23 +690,10 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::post('settings', [SettingsController::class, 'update']); // Backward compatibility
         Route::get('settings/{key}', [SettingsController::class, 'getSetting']);
 
-
-        // Users
-        Route::get('/users/owners', [AdminUserController::class, 'getOwners'])->middleware('can:users.view');
-        Route::get('/users', [AdminUserController::class, 'index'])->middleware('can:users.view');
-        Route::get('/users/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId')->middleware('can:users.view_details');
-        Route::put('/users/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId')->middleware('can:users.update');
-        Route::post('/users/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId')->middleware('can:users.update');
-        Route::post('/users/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId')->middleware('can:users.update');
-        Route::post('/users/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus'])->whereNumber('userId')->middleware('can:users.update');
-        Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications'])->middleware('can:users.view');
-        Route::post('/dealers/{userId}/approve-verification', [AdminUserController::class, 'approveVerification'])->whereNumber('userId')->middleware('can:users.update');
-        Route::post('/dealers/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification'])->whereNumber('userId')->middleware('can:users.update');
-
         // Roles & Permissions
         Route::get('/roles-list', [RoleController::class, 'list'])->middleware('can:roles.view');
         Route::get('/permissions/tree', [RoleController::class, 'permissionsTree'])->middleware('can:roles.view');
-        Route::apiResource('roles', RoleController::class)->middleware('can:roles.view'); // Resource controller handles specific permissions inside or we can group it
+        Route::apiResource('roles', RoleController::class)->middleware('can:roles.view');
 
         // Staff (Admins & Moderators)
         Route::get('/staff', [AdminStaffController::class, 'index'])->middleware('can:staff.view');
@@ -649,6 +702,16 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::put('/staff/{id}', [AdminStaffController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
         Route::delete('/staff/{id}', [AdminStaffController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
         Route::patch('/staff/{id}/status', [AdminStaffController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
+
+        // ✅ Employees (Super Admin only)
+        Route::middleware('super_admin')->group(function () {
+            Route::get('/employees', [AdminEmployeeController::class, 'index']);
+            Route::post('/employees', [AdminEmployeeController::class, 'store']);
+            Route::get('/employees/{id}', [AdminEmployeeController::class, 'show'])->whereNumber('id');
+            Route::put('/employees/{id}', [AdminEmployeeController::class, 'update'])->whereNumber('id');
+            Route::patch('/employees/{id}/status', [AdminEmployeeController::class, 'updateStatus'])->whereNumber('id');
+            Route::delete('/employees/{id}', [AdminEmployeeController::class, 'destroy'])->whereNumber('id');
+        });
 
         // Auctions (Admin)
         Route::get('/auctions', [AdminAuctionController::class, 'index'])->middleware('can:auctions.view');
@@ -676,16 +739,32 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::put('/cars/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id')->middleware('can:cars.update');
         Route::delete('/cars/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id')->middleware('can:cars.delete');
 
-        // Blogs (إدارة العلامات والحالة عبر AdminController)
+        // Blogs (Legacy)
         Route::get('/blogs', [AdminController::class, 'blogs']);
         Route::post('/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus'])->whereNumber('id');
         Route::post('/blog-tags', [AdminController::class, 'manageTags']);
         Route::get('/blogs/tags', [AdminController::class, 'getBlogTags']);
 
-        // Blog CRUD (admin فقط – من الملف الثاني)
+        // Blog CRUD (Legacy)
         Route::post('/blog', [BlogController::class, 'store']);
         Route::put('/blog/{id}', [BlogController::class, 'update'])->whereNumber('id');
         Route::delete('/blog/{id}', [BlogController::class, 'destroy'])->whereNumber('id');
+
+        // ✅ Blog V2 Admin Routes
+        Route::prefix('blog')->group(function () {
+            // Categories
+            Route::get('/categories', [BlogCategoryAdminController::class, 'index']);
+            Route::post('/categories', [BlogCategoryAdminController::class, 'store']);
+            Route::put('/categories/{id}', [BlogCategoryAdminController::class, 'update'])->whereNumber('id');
+            Route::delete('/categories/{id}', [BlogCategoryAdminController::class, 'destroy'])->whereNumber('id');
+
+            // Posts
+            Route::get('/posts', [BlogPostAdminController::class, 'index']);
+            Route::post('/posts', [BlogPostAdminController::class, 'store']);
+            Route::get('/posts/{id}', [BlogPostAdminController::class, 'show'])->whereNumber('id');
+            Route::put('/posts/{id}', [BlogPostAdminController::class, 'update'])->whereNumber('id');
+            Route::delete('/posts/{id}', [BlogPostAdminController::class, 'destroy'])->whereNumber('id');
+        });
 
         // Finance
         Route::get('/transactions', [AdminController::class, 'getTransactions'])->middleware('can:commissions.view');
@@ -698,6 +777,14 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::put('/broadcast', [BroadcastController::class, 'update'])->middleware('can:live_streams.manage');
         Route::put('/broadcast/status', [BroadcastController::class, 'updateStatus'])->middleware('can:live_streams.manage');
         Route::delete('/broadcast/{id}', [BroadcastController::class, 'destroy'])->whereNumber('id')->middleware('can:live_streams.manage');
+
+        // ✅ YouTube Channels (Admin) (NEW) ✅✅✅
+        Route::get('/youtube-channels', [AdminYouTubeChannelController::class, 'index'])->middleware('can:live_streams.view');
+        Route::post('/youtube-channels', [AdminYouTubeChannelController::class, 'store'])->middleware('can:live_streams.manage');
+        Route::get('/youtube-channels/{id}', [AdminYouTubeChannelController::class, 'show'])->whereNumber('id')->middleware('can:live_streams.view');
+        Route::put('/youtube-channels/{id}', [AdminYouTubeChannelController::class, 'update'])->whereNumber('id')->middleware('can:live_streams.manage');
+        Route::delete('/youtube-channels/{id}', [AdminYouTubeChannelController::class, 'destroy'])->whereNumber('id')->middleware('can:live_streams.manage');
+        Route::post('/youtube-channels/{id}/sync', [AdminYouTubeChannelController::class, 'sync'])->whereNumber('id')->middleware('can:live_streams.manage');
 
         // Commission Tiers
         Route::get('/commission-tiers', [CommissionTierController::class, 'index'])->middleware('can:commissions.view');
@@ -725,10 +812,10 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::delete('/sessions/{id}', [AdminAuctionSessionController::class, 'destroy'])->middleware('can:sessions.delete');
 
         // Venue Owners (Admin)
-        Route::get('/venue-owners',                         [AdminVenueOwnerController::class, 'index'])->middleware('can:exhibitors.view');
-        Route::get('/venue-owners/{id}',                    [AdminVenueOwnerController::class, 'show'])->whereNumber('id')->middleware('can:exhibitors.view_details');
-        Route::get('/venue-owners/{id}/cars',               [AdminVenueOwnerController::class, 'cars'])->whereNumber('id')->middleware('can:exhibitors.view_details');
-        Route::get('/venue-owners/{id}/wallet',             [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::get('/venue-owners',                          [AdminVenueOwnerController::class, 'index'])->middleware('can:exhibitors.view');
+        Route::get('/venue-owners/{id}',                     [AdminVenueOwnerController::class, 'show'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::get('/venue-owners/{id}/cars',                [AdminVenueOwnerController::class, 'cars'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+        Route::get('/venue-owners/{id}/wallet',              [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id')->middleware('can:exhibitors.view_details');
         Route::get('/venue-owners/{id}/wallet/transactions', [AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id')->middleware('can:exhibitors.view_details');
         Route::post('/venue-owners/{id}/approve',            [AdminVenueOwnerController::class, 'approve'])->whereNumber('id')->middleware('can:exhibitors.approve');
         Route::post('/venue-owners/{id}/reject',             [AdminVenueOwnerController::class, 'reject'])->whereNumber('id')->middleware('can:exhibitors.approve');
@@ -738,9 +825,9 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::get('/organizations/{id}/members', [\App\Http\Controllers\Admin\OrganizationController::class, 'getMembers'])->middleware('can:organizations.view');
         Route::post('/organizations/{id}/members', [\App\Http\Controllers\Admin\OrganizationController::class, 'addMember'])->middleware('can:organizations.update');
         Route::delete('/organizations/{id}/members/{userId}', [\App\Http\Controllers\Admin\OrganizationController::class, 'removeMember'])->middleware('can:organizations.update');
-        Route::apiResource('organizations', \App\Http\Controllers\Admin\OrganizationController::class)->middleware('can:organizations.view'); // Basic protection, refined in controller/policy
+        Route::apiResource('organizations', \App\Http\Controllers\Admin\OrganizationController::class)->middleware('can:organizations.view');
 
-        // Venues (من الملف الثاني)
+        // Venues
         Route::post('/venues', [VenueController::class, 'store']);
         Route::put('/venues/{id}', [VenueController::class, 'update'])->whereNumber('id');
         Route::delete('/venues/{id}', [VenueController::class, 'destroy'])->whereNumber('id');
@@ -752,17 +839,15 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
 |--------------------------------------------------------------------------
 */
 Route::prefix('exhibitor')
-    ->middleware(['auth:sanctum', 'role:admin,venue_owner,dealer'])
+    ->middleware(['auth:sanctum', 'set.organization'])
     ->group(function () {
-        // Sessions CRUD
-        Route::get('/sessions',             [ExhibitorAuctionSessionController::class, 'index']);
+        Route::get('/sessions',              [ExhibitorAuctionSessionController::class, 'index']);
         Route::post('/sessions',             [ExhibitorAuctionSessionController::class, 'store']);
-        Route::get('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'show'])->whereNumber('id');
-        Route::put('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'update'])->whereNumber('id');
+        Route::get('/sessions/{id}',         [ExhibitorAuctionSessionController::class, 'show'])->whereNumber('id');
+        Route::put('/sessions/{id}',         [ExhibitorAuctionSessionController::class, 'update'])->whereNumber('id');
         Route::post('/sessions/{id}/status', [ExhibitorAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
-        Route::delete('/sessions/{id}',        [ExhibitorAuctionSessionController::class, 'destroy']);
+        Route::delete('/sessions/{id}',      [ExhibitorAuctionSessionController::class, 'destroy']);
 
-        // Ratings (قراءة)
         Route::get('/ratings',         [VenueOwnerRatingController::class, 'index']);
         Route::get('/ratings/summary', [VenueOwnerRatingController::class, 'summary']);
     });
@@ -772,40 +857,34 @@ Route::prefix('exhibitor')
 | Exhibitor Wallet + Shipments + Commission + Extra Services + Marketplace + Analytics
 |--------------------------------------------------------------------------
 */
-Route::prefix('exhibitor')->middleware(['auth:sanctum'])->group(function () {
-    // Wallet
+Route::prefix('exhibitor')->middleware(['auth:sanctum', 'set.organization'])->group(function () {
     Route::get('/wallet', [ExhibitorWalletController::class, 'show']);
     Route::get('/wallet/transcations', [ExhibitorWalletController::class, 'transactions']); // legacy typo
     Route::get('/wallet/transactions', [ExhibitorWalletController::class, 'transactions']);
     Route::post('/wallet/deposit/initiate', [ExhibitorWalletDepositController::class, 'initiate']);
     Route::post('/wallet/withdraw', [ExhibitorWalletWithdrawController::class, 'requestPayout']);
 
-    // Shipments
-    Route::get('/shipments',                   [ExhibitorShipmentController::class, 'index']);
-    Route::get('/shipments/{shipment}',        [ExhibitorShipmentController::class, 'show'])->whereNumber('shipment');
+    Route::get('/shipments',                    [ExhibitorShipmentController::class, 'index']);
+    Route::get('/shipments/{shipment}',         [ExhibitorShipmentController::class, 'show'])->whereNumber('shipment');
     Route::post('/shipments',                   [ExhibitorShipmentController::class, 'store']);
-    Route::patch('/shipments/{shipment}/status', [ExhibitorShipmentController::class, 'updateStatus'])->whereNumber('shipment');
-    Route::delete('/shipments/{shipment}',        [ExhibitorShipmentController::class, 'destroy'])->whereNumber('shipment');
+    Route::patch('/shipments/{shipment}/status',[ExhibitorShipmentController::class, 'updateStatus'])->whereNumber('shipment');
+    Route::delete('/shipments/{shipment}',      [ExhibitorShipmentController::class, 'destroy'])->whereNumber('shipment');
 
-    // Commission
-    Route::get('/commission/summary',    [ExhibitorCommissionController::class, 'summary']);
-    Route::put('/commission/settings',   [ExhibitorCommissionController::class, 'updateSettings']);
-    Route::get('/commission/operations', [ExhibitorCommissionController::class, 'index']);
-    Route::post('/commission/operations', [ExhibitorCommissionController::class, 'storeOperation']);
-    Route::get('/commission/tiers',      [ExhibitorCommissionController::class, 'tiers']);
-    Route::post('/commission/estimate',   [ExhibitorCommissionController::class, 'estimate']);
+    Route::get('/commission/summary',      [ExhibitorCommissionController::class, 'summary']);
+    Route::put('/commission/settings',     [ExhibitorCommissionController::class, 'updateSettings']);
+    Route::get('/commission/operations',   [ExhibitorCommissionController::class, 'index']);
+    Route::post('/commission/operations',  [ExhibitorCommissionController::class, 'storeOperation']);
+    Route::get('/commission/tiers',        [ExhibitorCommissionController::class, 'tiers']);
+    Route::post('/commission/estimate',    [ExhibitorCommissionController::class, 'estimate']);
 
-    // Extra Services
     Route::get('/extra-services',                 [ExhibitorExtraServiceController::class, 'index']);
     Route::get('/extra-services/{extraService}',  [ExhibitorExtraServiceController::class, 'show'])->whereNumber('extraService');
-    Route::post('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'store']);
+    Route::post('/extra-services/requests',       [ExhibitorExtraServiceRequestController::class, 'store']);
     Route::get('/extra-services/requests',        [ExhibitorExtraServiceRequestController::class, 'index']);
 
-    // Marketplace
     Route::get('/market/cars', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'index']);
     Route::get('/market/cars/{car}', [\App\Http\Controllers\Exhibitor\CarExplorerController::class, 'show'])->whereNumber('car');
 
-    // Analytics
     Route::get('/analytics/overview',     [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'overview']);
     Route::get('/analytics/timeseries',   [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'timeseries']);
     Route::get('/analytics/top-models',   [\App\Http\Controllers\Exhibitor\AnalyticsController::class, 'topModels']);
