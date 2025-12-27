@@ -29,7 +29,7 @@ class CommissionTier extends Model
         'name',
         'minPrice',
         'maxPrice',
-        'commissionAmount',
+        'commissionAmount', // نسبة مئوية
         'isProgressive',
         'isActive',
     ];
@@ -76,8 +76,7 @@ class CommissionTier extends Model
     }
 
     /**
-     * حساب عمولة بنمط flat (مبلغ ثابت حسب الشريحة المختارة).
-     * commissionAmount يمثل مبلغ ثابت بالريال وليس نسبة مئوية.
+     * حساب عمولة بنمط flat (نسبة الشريحة المختارة على كامل السعر).
      */
     public static function flatCommission(float $price): float
     {
@@ -85,19 +84,41 @@ class CommissionTier extends Model
         if (!$tier) {
             return 0.0;
         }
-        // commissionAmount هو مبلغ ثابت بالريال وليس نسبة مئوية
-        return round($tier->commissionAmount, 2);
+        return round($price * ($tier->commissionAmount / 100.0), 2);
     }
 
     /**
-     * حساب عمولة بنمط progressive.
-     * بما أن commissionAmount يمثل مبلغ ثابت لكل شريحة (وليس نسبة مئوية)،
-     * فإن النتيجة هي نفس طريقة flat.
+     * حساب عمولة بنمط progressive (تجزئة السعر على الشرائح المتعاقبة).
+     * مثال: لو الشرائح 0-100k (1%)، 100k-200k (0.8%)، 200k+ (0.5%)
+     * سيتم حساب كل جزء بنسبة شريحته ثم الجمع.
      */
     public static function progressiveCommission(float $price): float
     {
-        // مع المبالغ الثابتة لكل شريحة، النتيجة هي نفس flat
-        return self::flatCommission($price);
+        $tiers = self::active()->orderBy('minPrice')->get();
+        if ($tiers->isEmpty() || $price <= 0) {
+            return 0.0;
+        }
+
+        $amount = 0.0;
+        foreach ($tiers as $t) {
+            $start = (float) $t->minPrice;
+            $end   = is_null($t->maxPrice) ? $price : min((float) $t->maxPrice, $price);
+
+            if ($price <= $start) {
+                break; // لا مزيد من الأجزاء
+            }
+
+            $segment = max(0.0, $end - $start);
+            if ($segment > 0) {
+                $amount += $segment * ($t->commissionAmount / 100.0);
+            }
+
+            if (!is_null($t->maxPrice) && $price <= (float) $t->maxPrice) {
+                break;
+            }
+        }
+
+        return round($amount, 2);
     }
 
     /**
@@ -121,46 +142,5 @@ class CommissionTier extends Model
     {
         $price = (float) $price;
         return self::estimate($price, 'flat');
-    }
-
-    /**
-     * Calculate complete service fees breakdown for DASM Dual-Page Model
-     * 
-     * Business Decision (2025-12-22): Platform absorbs payment gateway fees.
-     * Customer is NOT charged for payment processing fees anymore.
-     * 
-     * @param float $carPrice The car's auction price
-     * @return array{commission: float, vat: float, admin_fee: float, subtotal: float, gateway_fee: float, gateway_vat: float, total: float}
-     */
-    public static function calculateServiceFees(float $carPrice): array
-    {
-        // Platform commission from commission tiers
-        $commission = self::getCommissionForPrice($carPrice);
-
-        // VAT on commission (15%)
-        $commissionVat = round($commission * 0.15, 2);
-
-        // Fixed admin + transfer fee (600 SAR covers Traffic, Tam, Ownership Transfer)
-        $adminFee = 600.00;
-
-        // Subtotal before gateway fees
-        $subtotal = $commission + $commissionVat + $adminFee;
-
-        // Gateway fees: Platform absorbs these - customer pays 0
-        $gatewayFee = 0.00;
-        $gatewayFeeVat = 0.00;
-
-        // Total service fees = Commission + VAT + Admin Fee (no gateway fees)
-        $total = round($subtotal, 2);
-
-        return [
-            'commission' => $commission,
-            'vat' => $commissionVat,
-            'admin_fee' => $adminFee,
-            'subtotal' => $subtotal,
-            'gateway_fee' => $gatewayFee,
-            'gateway_vat' => $gatewayFeeVat,
-            'total' => $total,
-        ];
     }
 }

@@ -64,61 +64,21 @@ class SettlementController extends Controller
                 'data' => null
             ], 404);
         }
-
         $auctionPrice = $auction->current_bid;
-        $seller = $auction->car?->owner;
-        $isPartner = $seller?->isVenueOwner() ?? false;
-
-        // Calculate fees based on seller type
-        if ($isPartner) {
-            // Partner Showroom: 0% commission
-            $platformFee = 0;
-            $platformFeeVat = 0;
-            $totalDeduction = 0;
-            $netAmount = $auctionPrice;
-        } else {
-            // Individual Seller: Commission + 15% VAT
-            $platformFee = CommissionTier::getCommissionForPrice($auctionPrice);
-            $platformFeeVat = round($platformFee * 0.15, 2);
-            $totalDeduction = $platformFee + $platformFeeVat;
-            $netAmount = $auctionPrice - $totalDeduction;
-        }
-
-        // Get highest bidder info
-        $highestBid = $auction->bids()
-            ->orderBy('bid_amount', 'desc')
-            ->first();
-        $buyer = $highestBid?->user;
-
+        $platformFee  = CommissionTier::getCommissionForPrice($auctionPrice);
+        $myfatoorahFee = 200;
+        $netAmount = $auctionPrice - ($platformFee + $myfatoorahFee);
         return response()->json([
             'status' => 'success',
             'message' => 'Settlement calculated successfully',
             'data' => [
                 'car' => $auction->car,
                 'active_auction' => $auction,
-
-                // Seller info
-                'seller' => [
-                    'id' => $seller?->id,
-                    'name' => trim(($seller?->first_name ?? '') . ' ' . ($seller?->last_name ?? '')),
-                    'is_partner' => $isPartner,
-                ],
-
-                // Buyer info
-                'buyer' => $buyer ? [
-                    'id' => $buyer->id,
-                    'name' => trim(($buyer->first_name ?? '') . ' ' . ($buyer->last_name ?? '')),
-                ] : null,
-
-                // Financial breakdown
-                'auction_price' => $auctionPrice,
                 'platform_fee' => $platformFee,
-                'platform_fee_vat' => $platformFeeVat,
-                'total_deduction' => $totalDeduction,
+                'myfatoorah_fee' => $myfatoorahFee,
                 'net_amount' => $netAmount,
 
-                // Legacy fields (for backward compatibility)
-                'myfatoorah_fee' => 0,
+                'auction_price' => $auctionPrice
             ]
         ]);
     }
@@ -162,7 +122,7 @@ class SettlementController extends Controller
             $tamFee = $tamFeeSetting->value;
             $muroorFee = Setting::where('key', 'muroorFee')->first()->value;
             //$myfatoorahFee = 200;
-            $netAmount = $highestBid->highest_bid - ($platformFee);
+            $netAmount = $highestBid->highest_bid - ($platformFee );
             $buyerNetAmount = $highestBid->highest_bid + $platformFee + $tamFee + $muroorFee;
 
             $settlements = Settlement::create([

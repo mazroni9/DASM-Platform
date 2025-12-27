@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Car;
 use App\Models\User;
-use Inertia\Inertia;
-use Inertia\Response;
-use App\Models\Dealer;
 use App\Models\Auction;
 use App\Enums\AuctionType;
 use App\Enums\CarCondition;
@@ -17,7 +14,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\CarCollection;
 use Illuminate\Support\Facades\Cache;
-use App\Http\Resources\CarCardResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
@@ -26,7 +22,10 @@ use App\Enums\CarTransmission;
 use App\Enums\CarsMarketsCategory;
 use App\Models\CarAttribute;
 use App\Notifications\NewCarAddedNotification;
-use Carbon\Carbon; // ✅ مضاف لاستخدام الوقت
+use Carbon\Carbon;
+
+use App\Jobs\CarAnalyticsJob; // ✅ مهم
+use Illuminate\Support\Str;
 
 class CarController extends Controller
 {
@@ -98,7 +97,6 @@ class CarController extends Controller
             $query->where('market_category', $request->market_category);
         }
 
-        // only_approved يعمل فقط لو عندنا عمود status في cars
         if ($request->boolean('only_approved') && Schema::hasColumn('cars', 'status')) {
             $query->where('status', 'approved');
         }
@@ -195,10 +193,12 @@ class CarController extends Controller
             'model'      => 'required|string|max:50',
             'year'       => 'required|integer|min:1900|max:' . (date('Y') + 1),
             'vin'        => 'required|string|unique:cars,vin|max:17',
+
+            // ✅ مهم: نفس حد PG integer
             'odometer'   => 'required|integer|min:0|max:2147483647',
+
             'condition'  => ['required', 'string', Rule::in(CarCondition::values())],
 
-            // ✅ المدة الجديدة للمزاد: 10 أو 20 أو 30 يوم
             'main_auction_duration' => 'nullable|integer|in:10,20,30',
 
             'evaluation_price' => 'required|numeric|min:0|max:9999999999.99',
@@ -212,8 +212,9 @@ class CarController extends Controller
             'transmission' => ['nullable', 'string', Rule::in(CarTransmission::values())],
             'market_category' => ['required', 'string', Rule::in($allowedMarkets)],
             'description'  => 'nullable|string',
+            'plate'        => 'nullable|string|max:20',
 
-            // حقول اختيارية خاصة بالكرفانات
+            // حقول الكرفان
             'type'             => 'nullable|string|max:50',
             'usage'            => 'nullable|string|max:50',
             'year_built'       => 'nullable|integer|min:1970|max:' . date('Y'),
@@ -227,7 +228,16 @@ class CarController extends Controller
             'solar_power_kw'   => 'nullable|numeric|min:0',
             'license_required' => 'nullable|boolean',
 
+            // صور
             'images'    => 'sometimes|array|max:10',
+            'images.*'  => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+
+            'reports_images'    => 'sometimes|array|max:10',
+            'reports_images.*'  => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+
+            // بطاقة التسجيل (هنا خليتها صورة فقط لأنك بترفعها على Cloudinary uploadImage)
+            'registration_card_image' => 'nullable|file|mimes:jpg,jpeg,png,webp,heic,heif,pdf|max:10240',
+
         ];
 
         [$messages, $attributes] = $this->arabicValidation();
@@ -235,18 +245,13 @@ class CarController extends Controller
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
         $validator->after(function ($v) use ($request) {
             if ($request->filled(['min_price', 'max_price'])) {
-                $min = (float) $request->min_price;
-                $max = (float) $request->max_price;
+                $min = (float)$request->min_price;
+                $max = (float)$request->max_price;
 
                 if ($min > $max) {
                     $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
                 } else {
-                    $limit = 0;
-                    if ($min >= 40000) {
-                        $limit = $min * 1.10; // Tier 1: 10%
-                    } else {
-                        $limit = $min * 1.15; // Tier 2: 15%
-                    }
+                    $limit = ($min >= 40000) ? ($min * 1.10) : ($min * 1.15);
 
                     if ($max > $limit) {
                         $formattedMin = number_format($min);
@@ -256,6 +261,7 @@ class CarController extends Controller
                 }
             }
         });
+
         if ($validator->fails()) {
             return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
@@ -283,12 +289,14 @@ class CarController extends Controller
         $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
         $car->description = $request->description ?? null;
         $car->plate = $request->plate ?? null;
-        // هنعدل حالة السيارة لاحقاً بعد إنشاء المزاد
+
+        // ✅ مهم: scheduled مش موجودة في CHECK بتاعك → نخليها available هنا
         $car->auction_status = 'available';
+
         $car->min_price = $request->min_price;
         $car->max_price = $request->max_price;
         $car->market_category = $request->market_category;
-        $car->main_auction_duration = $request->main_auction_duration; // 10 أو 20 أو 30
+        $car->main_auction_duration = $request->main_auction_duration;
         $car->save();
 
         // صور السيارة
@@ -308,48 +316,75 @@ class CarController extends Controller
 
         // بطاقة التسجيل
         if ($request->hasFile('registration_card_image')) {
-            $image = $request->file('registration_card_image');
-            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
-            $uploadedRegistrationCardImage = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
-            $car->registration_card_image = $uploadedRegistrationCardImage;
-            $car->save();
+            try {
+                $image = $request->file('registration_card_image');
+                $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+                $uploadedRegistrationCardImage = $this->cloudinaryService->uploadAuto($image, 'cars', $publicId);
+                $car->registration_card_image = $uploadedRegistrationCardImage;
+                $car->save();
+            } catch (\Throwable $e) {
+                Log::error('Failed to upload registration card', [
+                    'car_id' => $car->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // خصائص إضافية للكرفانات (إن وجدت)
         $this->syncCaravanAttributes($request, $car);
 
         /**
-         * ✅ إنشاء المزاد مباشرة بعد إضافة السيارة
-         * - وقت البداية: الآن
-         * - وقت النهاية: الآن + المدة التي اختارها صاحب السيارة (10 / 20 / 30 يوم)
+         * إنشاء المزاد مباشرة بعد إضافة السيارة
          */
         try {
-            // لو ما اختارش مدة، نخليها افتراضياً 10 أيام
             $durationDays = (int)($car->main_auction_duration ?: 10);
 
             $startTime = Carbon::now();
             $endTime   = (clone $startTime)->addDays($durationDays);
 
-            // تحديث حالة السيارة إلى scheduled بدلاً من available
-            $car->auction_status = 'scheduled';
+            // ✅ مهم: car.auction_status ما ينفعش scheduled → نخليها pending (موجودة عندك في CHECK)
+            $car->auction_status = 'pending';
             $car->save();
 
             Auction::create([
                 'car_id'        => $car->id,
                 'start_time'    => $startTime,
                 'end_time'      => $endTime,
-                'minimum_bid'   => $car->min_price,   // تقدر تعدليها حسب منطقكم
+                'minimum_bid'   => $car->min_price,
                 'maximum_bid'   => $car->max_price,
                 'reserve_price' => $car->min_price,
                 'current_bid'   => 0,
                 'status'        => AuctionStatus::SCHEDULED,
-                'auction_type'  => AuctionType::SILENT_INSTANT, // يبدأ كسايلنت ثم يتغير حسب الوقت
+                'auction_type'  => AuctionType::SILENT_INSTANT,
                 'control_room_approved' => false,
                 'approved_for_live'     => false,
             ]);
         } catch (\Throwable $e) {
             Log::error('Failed to create auction for car ' . $car->id, [
                 'error' => $e->getMessage(),
+            ]);
+        }
+
+        /**
+         * ✅ CarAnalyticsJob
+         */
+        try {
+            // اختياري: لو عندك أعمدة للحالة
+            if (Schema::hasColumn('cars', 'analytics_status')) {
+                $car->analytics_status = 'processing';
+            }
+            if (Schema::hasColumn('cars', 'analytics_request_id')) {
+                $car->analytics_request_id = (string) Str::uuid();
+            }
+            if ($car->isDirty()) {
+                $car->save();
+            }
+
+            CarAnalyticsJob::dispatch($car->id);
+        } catch (\Throwable $e) {
+            Log::error('Failed to dispatch CarAnalyticsJob', [
+                'car_id' => $car->id,
+                'error'  => $e->getMessage(),
             ]);
         }
 
@@ -370,6 +405,12 @@ class CarController extends Controller
      */
     public function show($id)
     {
+        // ✅ حماية ضد /cars/similar-cars و أي string يدخل هنا
+        if (!ctype_digit((string)$id)) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid car id.'], 404);
+        }
+
+        $id = (int)$id;
         $user = Auth::user();
 
         if ($user->type === 'admin') {
@@ -411,12 +452,31 @@ class CarController extends Controller
         ]);
     }
 
+    public function status(\App\Models\Car $car)
+{
+    // لو عندك صلاحيات: تأكد إن صاحب السيارة هو المستخدم الحالي أو exhibitor
+    // abort_if($car->user_id !== auth()->id(), 403);
+
+    return response()->json([
+        'car_id' => $car->id,
+        'review_status' => $car->review_status ?? 'processing',
+        'review_reason' => $car->review_reason,
+        'updated_at' => $car->updated_at,
+    ]);
+}
+
+
     /**
      * عرض سيارة (للعرض فقط) (محمي)
      */
     public function showOnly($id)
     {
-        $user = Auth::user();
+        if (!ctype_digit((string)$id)) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid car id.'], 404);
+        }
+
+        $id = (int)$id;
+
         $car = Car::with('reportImages', 'activeAuction', 'carAttributes')->find($id);
 
         if ($car) {
@@ -430,7 +490,9 @@ class CarController extends Controller
         $activeAuction = $car->activeAuction()
             ->withCount('bids')
             ->first();
+
         $total_bids = $activeAuction?->bids_count ?? 0;
+
         if ($activeAuction && $activeAuction->auction_type != AuctionType::SILENT_INSTANT) {
             $activeAuction->load(['bids' => function ($q) {
                 $q->select('id', 'bid_amount', 'created_at', 'user_id', 'auction_id')
@@ -449,7 +511,6 @@ class CarController extends Controller
             ->get();
 
         $extraAttributes = [];
-
         if ($this->carHasCaravanMarketCategory($car)) {
             $extraAttributes = $car->carAttributes
                 ->pluck('value', 'key')
@@ -473,6 +534,11 @@ class CarController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!ctype_digit((string)$id)) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid car id.'], 404);
+        }
+        $id = (int)$id;
+
         $user = Auth::user();
 
         if ($user->type === 'dealer' && $user->dealer) {
@@ -485,7 +551,12 @@ class CarController extends Controller
             return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لتعديلها.'], 404);
         }
 
-        if (in_array($car->auction_status, ['scheduled', 'active'], true)) {
+        // ✅ بدل ما نعتمد على car.auction_status (اللي عليه CHECK)، نعتمد على auctions نفسها
+        $lockedByAuction = $car->auctions()
+            ->whereIn('status', [AuctionStatus::SCHEDULED->value, AuctionStatus::ACTIVE->value])
+            ->exists();
+
+        if ($lockedByAuction) {
             return response()->json(['status' => 'error', 'message' => 'لا يمكن تعديل بيانات السيارة أثناء وجود مزاد نشط أو مجدول.'], 400);
         }
 
@@ -505,7 +576,10 @@ class CarController extends Controller
             'model'      => 'sometimes|string|max:50',
             'year'       => 'sometimes|integer|min:1900|max:' . (date('Y') + 1),
             'vin'        => 'sometimes|string|unique:cars,vin,' . $id . '|max:17',
+
+            // ✅ مهم
             'odometer'   => 'sometimes|integer|min:0|max:2147483647',
+
             'condition'  => ['sometimes', 'string', Rule::in(CarCondition::values())],
 
             'evaluation_price' => 'sometimes|numeric|min:0|max:9999999999.99',
@@ -521,7 +595,11 @@ class CarController extends Controller
             'plate'        => 'nullable|string|max:20',
             'market_category' => ['sometimes', 'string', Rule::in($allowedMarkets)],
 
-            // حقول اختيارية خاصة بالكرفانات
+            // صور
+            'images'    => 'sometimes|array|max:10',
+            'images.*'  => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+
+            // حقول الكرفان
             'type'             => 'sometimes|string|max:50',
             'usage'            => 'sometimes|string|max:50',
             'year_built'       => 'sometimes|integer|min:1970|max:' . date('Y'),
@@ -541,18 +619,13 @@ class CarController extends Controller
         $validator = Validator::make($request->all(), $rules, $messages, $attributes);
         $validator->after(function ($v) use ($request) {
             if ($request->filled(['min_price', 'max_price'])) {
-                $min = (float) $request->min_price;
-                $max = (float) $request->max_price;
+                $min = (float)$request->min_price;
+                $max = (float)$request->max_price;
 
                 if ($min > $max) {
                     $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
                 } else {
-                    $limit = 0;
-                    if ($min >= 40000) {
-                        $limit = $min * 1.10; // Tier 1: 10%
-                    } else {
-                        $limit = $min * 1.15; // Tier 2: 15%
-                    }
+                    $limit = ($min >= 40000) ? ($min * 1.10) : ($min * 1.15);
 
                     if ($max > $limit) {
                         $formattedMin = number_format($min);
@@ -562,37 +635,26 @@ class CarController extends Controller
                 }
             }
         });
+
         if ($validator->fails()) {
             return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
 
         // تحديث الحقول
-        foreach (
-            [
-                'make',
-                'model',
-                'year',
-                'vin',
-                'odometer',
-                'evaluation_price',
-                'color',
-                'engine',
-                'description',
-                'province',
-                'city',
-                'plate',
-                'min_price',
-                'max_price',
-                'market_category'
-            ] as $field
-        ) {
+        foreach ([
+            'make', 'model', 'year', 'vin', 'odometer',
+            'evaluation_price', 'color', 'engine', 'description',
+            'province', 'city', 'plate', 'min_price', 'max_price', 'market_category'
+        ] as $field) {
             if ($request->has($field)) {
                 $car->{$field} = $request->{$field};
             }
         }
+
         if ($request->has('condition')) {
             $car->condition = CarCondition::from($request->condition);
         }
+
         if ($request->has('transmission')) {
             $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
         }
@@ -620,7 +682,7 @@ class CarController extends Controller
 
         $car->save();
 
-        // تحديث خصائص الكرفان إن وُجدت
+        // تحديث خصائص الكرفان
         $this->syncCaravanAttributes($request, $car);
 
         Cache::flush();
@@ -637,6 +699,11 @@ class CarController extends Controller
      */
     public function destroy($id)
     {
+        if (!ctype_digit((string)$id)) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid car id.'], 404);
+        }
+        $id = (int)$id;
+
         $user = Auth::user();
 
         if ($user->type === 'dealer' && $user->dealer) {
@@ -692,24 +759,23 @@ class CarController extends Controller
         return response()->json([
             'status' => 'success',
             'data'   => [
-                'total_cars'            => $totalCars,
-                'cars_by_condition'     => $carsByCondition,
+                'total_cars'             => $totalCars,
+                'cars_by_condition'      => $carsByCondition,
                 'cars_by_auction_status' => $carsByAuctionStatus,
-                'total_inventory_value' => $inventoryValue,
-                'recent_cars'           => $recentCars,
+                'total_inventory_value'  => $inventoryValue,
+                'recent_cars'            => $recentCars,
             ]
         ]);
     }
 
     /**
-     * عام: قائمة سيارات لسوق محدد (Active Auction) + (اختياري approved لو العمود موجود)
-     * GET /api/market/cars?market=trucks|buses|...
+     * عام: قائمة سيارات لسوق محدد (Active Auction)
      */
     public function publicMarketCars(Request $request)
     {
         try {
             $perPage = max(1, min((int)$request->query('per_page', 12), 48));
-            $market  = $request->query('market', $request->route('market')); // يدعم defaults في الراوت
+            $market  = $request->query('market', $request->route('market'));
 
             if (!$market) {
                 return response()->json(['status' => 'error', 'message' => 'باراميتر market مطلوب.'], 422);
@@ -717,7 +783,6 @@ class CarController extends Controller
 
             $enumValues = CarsMarketsCategory::values();
 
-            // منع الحكومة
             if (strtolower($market) === 'government') {
                 return response()->json([
                     'status'     => 'success',
@@ -727,7 +792,6 @@ class CarController extends Controller
                 ], 200);
             }
 
-            // تطبيع مع دعم الفصل القديم/الجديد
             $normalize = function (string $m) use ($enumValues) {
                 $m = strtolower(trim($m));
                 if (in_array($m, $enumValues, true)) return $m;
@@ -829,7 +893,7 @@ class CarController extends Controller
         ]);
     }
 
-    /* ====== Helpers: Images & Validation & Caravan Attributes ====== */
+    /* ====== Helpers ====== */
 
     private function logImageDebugInfo(Request $request)
     {
@@ -888,11 +952,9 @@ class CarController extends Controller
 
     /**
      * تخزين/تحديث خصائص الكرفان في جدول car_attributes
-     * لا يلمس جدول cars نهائيًا.
      */
     private function syncCaravanAttributes(Request $request, Car $car): void
     {
-        // نحدد هل هي كرفان عن طريق type أو market_category=caravan
         $typeFromRequest = $request->input('type');
         $marketCategory  = $request->input('market_category');
         $isCaravan = ($typeFromRequest === 'caravan') || ($marketCategory === 'caravan');
@@ -929,7 +991,6 @@ class CarController extends Controller
 
         foreach ($attrs as $key => $value) {
             if ($value === null || $value === '') {
-                // لو مش حابب تخزن القيم الفاضية ما تعملش حاجة هنا
                 continue;
             }
 
@@ -979,9 +1040,10 @@ class CarController extends Controller
             'market_category' => 'فئة السوق',
             'images' => 'الصور',
             'images.*' => 'ملف الصورة',
+            'reports_images' => 'صور التقارير',
+            'reports_images.*' => 'ملف صورة التقرير',
             'registration_card_image' => 'استمارة المركبة',
 
-            // أسماء عربية للحقول الجديدة الخاصة بالكرفان
             'type'             => 'نوع المركبة',
             'usage'            => 'نوع الاستخدام',
             'year_built'       => 'سنة البناء',

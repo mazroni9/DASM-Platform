@@ -49,7 +49,6 @@ import toast from "react-hot-toast";
 import Pusher from "pusher-js";
 import BidForm from "@/components/BidForm";
 import { motion } from "framer-motion";
-import AddToWatchlistButton from "@/components/dealer/AddToWatchlistButton";
 
 // ========== أنواع مراحل السوق ==========
 type MarketPhase = "live" | "instant" | "late" | "fixed";
@@ -776,10 +775,6 @@ export default function CarDetailPage() {
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         {car.condition}
                       </span>
-                    )}
-                    {/* Watchlist Button */}
-                    {car?.id && (
-                      <AddToWatchlistButton carId={car.id} size="md" />
                     )}
                   </div>
                 </div>

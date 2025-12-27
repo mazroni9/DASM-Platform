@@ -933,7 +933,7 @@ class AuctionController extends Controller
                         'auction_type'          => $targetData['auction_type'] ?? $auction->auction_type,
                         'approved_for_live'     => $targetData['approved_for_live'],
                         'extended_until'        => $targetData['extended_until'],
-                    ], fn($v) => !is_null($v));
+                    ], fn ($v) => !is_null($v));
 
                     // لو مزاد فوري أو متأخر → نضبط وقت البداية والنهاية حسب المدة
                     if ($startTime && $endTime && in_array($targetStatus, ['instant', 'late'])) {
@@ -985,7 +985,7 @@ class AuctionController extends Controller
                         'status'                => $targetData['status'],
                         'auction_type'          => $targetData['auction_type'],
                         'approved_for_live'     => $targetData['approved_for_live'],
-                    ], fn($v) => !is_null($v));
+                    ], fn ($v) => !is_null($v));
 
                     if ($targetStatus === 'live' && $request->has('session_id')) {
                         $createData['session_id'] = $request->session_id;
@@ -1537,7 +1537,6 @@ class AuctionController extends Controller
 
         $settlement = Settlement::where('auction_id', $auction_id)
             ->select([
-                'id',
                 'auction_id',
                 'buyer_id',
                 'car_id',
@@ -1546,11 +1545,9 @@ class AuctionController extends Controller
                 'tam_fee',
                 'muroor_fee',
                 'buyer_net_amount',
-                'status',
-                'service_fees_payment_status',
-                'escrow_payment_status',
-                'verification_code',
+                'status'
             ])
+            ->where('status', 'pending')
             ->where('buyer_id', $user->id)
             ->first();
 
@@ -1563,52 +1560,21 @@ class AuctionController extends Controller
             ], 404);
         }
 
-        $carPrice = (float) $settlement->final_price;
+        $muroorFee = $settlement->muroor_fee;
+        $tamFee = $settlement->tam_fee;
 
-        // Calculate service fees using DASM Dual-Page Model
-        $serviceFees = CommissionTier::calculateServiceFees($carPrice);
-
-        // Use existing verification code or generate new one
-        $verificationCode = $settlement->verification_code
-            ?? 'DASM-' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
-
+        $auction_price = $settlement->final_price;
+        $commission = $settlement->platform_fee;
+        $net_amount = $settlement->buyer_net_amount;
         return response()->json([
             'status' => 'success',
             'data' => [
-                'id' => $settlement->id, // Settlement ID for ClickPay payment
-                'settlement_id' => $settlement->id, // Alias for clarity
                 'auction' => $auction,
-                'car_price' => $carPrice,
-
-                // Payment Status (for smart state restoration)
-                'service_fees_payment_status' => $settlement->service_fees_payment_status ?? 'PENDING',
-                'escrow_payment_status' => $settlement->escrow_payment_status ?? 'PENDING',
-
-                // Step 1: Service Fees (Online Payment via ClickPay)
-                'service_fees' => [
-                    'commission' => $serviceFees['commission'],
-                    'commission_vat' => $serviceFees['vat'],
-                    'admin_fee' => $serviceFees['admin_fee'], // Fixed 600 SAR
-                    'subtotal' => $serviceFees['subtotal'],
-                    'gateway_fee' => $serviceFees['gateway_fee'],
-                    'gateway_vat' => $serviceFees['gateway_vat'],
-                    'total' => $serviceFees['total'],
-                ],
-
-                // Step 2: Bank Transfer (Offline)
-                'bank_transfer' => [
-                    'amount' => $carPrice,
-                    'iban' => 'SA0380000000608010167519', // DASM Escrow IBAN
-                    'bank_name' => 'Riyad Bank',
-                    'account_name' => 'DASM للمزادات الرقمية',
-                ],
-
-                'verification_code' => $verificationCode,
-
-                // Legacy fields (backward compatibility)
-                'auction_price' => $carPrice,
-                'platformFee' => (int) $serviceFees['commission'],
-                'net_amount' => (int) $settlement->buyer_net_amount
+                'auction_price' => $auction_price,
+                'muroorFee' => (int) $muroorFee,
+                'tamFee' => (float) $tamFee,
+                'platformFee' => (int) $commission,
+                'net_amount' => (int) $net_amount
             ]
         ]);
     }

@@ -14,25 +14,7 @@ class Transcation extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'wallet_id',
-        'type',
-        'amount',
-        'related_auction',
-        'description',
-        'created_at',
-        // DASM Dual-Page Model fields
-        'transaction_ref',
-        'car_price',
-        'platform_commission',
-        'vat_amount',
-        'transfer_fee',           // Fixed 600 SAR admin fee
-        'gateway_fee',
-        'service_fees_total',     // Total for Step 1 online payment
-        'service_fees_status',    // PENDING, PAID, FAILED
-        'vehicle_price_total',    // Car price for Step 2
-        'escrow_payment_status',  // PENDING, VERIFIED, FAILED
-        'escrow_iban',
-        'verification_code',      // e.g., DASM-1234
+        'wallet_id', 'type', 'amount', 'related_auction', 'description', 'created_at'
     ];
 
     protected $casts = [
