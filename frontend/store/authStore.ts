@@ -70,6 +70,7 @@ interface AuthState {
     code: string
   ) => Promise<{
     success: boolean;
+    redirectTo?: string;
     error?: string;
   }>;
 
@@ -275,8 +276,25 @@ export const useAuthStore = create<AuthState>()(
 
           await get().fetchProfile({ force: true, silent: true });
 
+          // Get user role for redirect
+          const currentUser = get().user;
+          const userRole = currentUser?.type || loginUser?.type || "user";
+
+          // Role-based redirect mapping
+          const roleRedirectMap: { [key: string]: string } = {
+            admin: "/admin",
+            super_admin: "/admin",
+            venue_owner: "/exhibitor",
+            dealer: "/dealer",
+            user: "/dashboard",
+            moderator: "/admin",
+            investor: "/investor/dashboard",
+          };
+
+          const redirectTo = roleRedirectMap[userRole] || "/dashboard";
+
           set({ loading: false });
-          return { success: true };
+          return { success: true, redirectTo };
         } catch (err: any) {
           console.error("Login error details:", err);
           let errorMessage = "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.";
@@ -354,8 +372,25 @@ export const useAuthStore = create<AuthState>()(
 
           await get().fetchProfile({ force: true, silent: true });
 
+          // Get user role for redirect
+          const currentUser = get().user;
+          const userRole = currentUser?.type || loginUser?.type || "user";
+
+          // Role-based redirect mapping
+          const roleRedirectMap: { [key: string]: string } = {
+            admin: "/admin",
+            super_admin: "/admin",
+            venue_owner: "/exhibitor",
+            dealer: "/dealer",
+            user: "/dashboard",
+            moderator: "/admin",
+            investor: "/investor/dashboard",
+          };
+
+          const redirectTo = roleRedirectMap[userRole] || "/dashboard";
+
           set({ loading: false });
-          return { success: true };
+          return { success: true, redirectTo };
         } catch (err: any) {
           let errorMessage = "فشل التحقق من الرمز";
           if (err.response?.data?.message) {

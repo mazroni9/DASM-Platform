@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إتمام عملية الشراء | المزادات الرقمية</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Cairo) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Checkbox */
+        .custom-checkbox:checked {
+            background-color: #1e3a8a; /* blue-900 */
+            border-color: #1e3a8a;
+        }
+        /* Smooth Transition for Step Switching */
+        .step-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+        .step-content.active {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* Moyasar Form Simulation Styles */
+        .moyasar-input {
+            transition: all 0.2s;
+        }
+        .moyasar-input:focus {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); 
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Distraction-Free Header (Best Practice for Checkout) -->
+    <header class="bg-white border-b border-slate-200 py-4 sticky top-0 z-30">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-900 rounded-lg flex items-center justify-center text-white font-bold">D</div>
+                <span class="font-bold text-xl text-blue-900">المزادات الرقمية</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-500 text-sm">
+                <i class="fa-solid fa-lock text-green-600"></i>
+                <span class="hidden sm:inline">دفع آمن ومشفّر 100%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress Steps -->
+    <div class="bg-white border-b border-slate-100 py-6">
+        <div class="container mx-auto px-4 max-w-3xl">
+            <div class="flex items-center justify-between relative">
+                <!-- Connecting Line -->
+                <div class="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -z-10 -translate-y-1/2"></div>
+                
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center gap-2 bg-white px-2">
+                    <div id="indicator-1" class="w-8 h-8 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-sm ring-4 ring-white transition-colors">1</div>
+                    <span class="text-xs font-bold text-blue-900">مراجعة الطلب</span>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center gap-2 bg-white px-2">
+                    <div id="indicator-2" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm ring-4 ring-white transition-colors">2</div>
+                    <span class="text-xs font-semibold text-slate-400">الدفع</span>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center gap-2 bg-white px-2">
+                    <div id="indicator-3" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm ring-4 ring-white transition-colors">3</div>
+                    <span class="text-xs font-semibold text-slate-400">اكتمال</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- ================= PAGE 1: REVIEW & CONFIRMATION ================= -->
+        <div id="step-1" class="step-content active">
+            <h1 class="text-2xl font-bold text-slate-800 mb-6">تأكيد تفاصيل الشراء</h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Left Column: Details (span 8) -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- Car Item Card -->
+                    <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row gap-6 shadow-sm">
+                        <div class="w-full sm:w-48 h-32 bg-slate-100 rounded-xl overflow-hidden shrink-0">
+                            <img src="https://images.unsplash.com/photo-1628815582393-27150a2339d1?q=80&w=400&auto=format&fit=crop" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-grow flex flex-col justify-center">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">فورد تورس تيتانيوم 2023</h3>
+                                    <p class="text-sm text-slate-500">رقم اللوحة: أ ب ج 1234</p>
+                                </div>
+                                <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded">تمت الترسية</span>
+                            </div>
+                            <div class="h-px bg-slate-100 my-3"></div>
+                            <div class="flex gap-6 text-sm">
+                                <div>
+                                    <span class="text-slate-400 block text-xs">سعر المزاد الفائز</span>
+                                    <span class="font-bold text-slate-800 text-lg">8,000 <small>ر.س</small></span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-400 block text-xs">رقم المزاد</span>
+                                    <span class="font-medium text-slate-800">#982210</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fees Breakdown Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                            <h3 class="font-bold text-slate-800">تفاصيل الفاتورة والرسوم</h3>
+                        </div>
+                        <div class="p-6">
+                            <table class="w-full text-sm">
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="group">
+                                        <td class="py-3 text-slate-600 font-medium">سعر المزاد الفائز</td>
+                                        <td class="py-3 text-left font-bold text-slate-900 text-base">8,000.00 ر.س</td>
+                                    </tr>
+                                    <!-- Fees Section -->
+                                    <tr class="bg-slate-50/50">
+                                        <td class="py-3 text-slate-500 pr-4"><i class="fa-solid fa-server text-slate-300 ml-2"></i>رسوم المنصة</td>
+                                        <td class="py-3 text-left text-slate-600">350.00 ر.س</td>
+                                    </tr>
+                                    <tr class="bg-slate-50/50">
+                                        <td class="py-3 text-slate-500 pr-4"><i class="fa-solid fa-road text-slate-300 ml-2"></i>رسوم المرور</td>
+                                        <td class="py-3 text-left text-slate-600">150.00 ر.س</td>
+                                    </tr>
+                                    <tr class="bg-slate-50/50">
+                                        <td class="py-3 text-slate-500 pr-4"><i class="fa-solid fa-building-columns text-slate-300 ml-2"></i>رسوم "تم" (شركة علم)</td>
+                                        <td class="py-3 text-left text-slate-600">232.50 ر.س</td>
+                                    </tr>
+                                    <tr class="bg-slate-50/50">
+                                        <td class="py-3 text-slate-500 pr-4"><i class="fa-solid fa-file-signature text-slate-300 ml-2"></i>رسوم نقل الملكية</td>
+                                        <td class="py-3 text-left text-slate-600">200.00 ر.س</td>
+                                    </tr>
+                                    <!-- Total Row -->
+                                    <tr class="border-t-2 border-slate-100">
+                                        <td class="pt-4 font-bold text-lg text-blue-900">الإجمالي المستحق</td>
+                                        <td class="pt-4 text-left font-bold text-2xl text-blue-900">8,932.50 <span class="text-sm font-normal">ر.س</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="text-xs text-slate-400 mt-4">* جميع الأسعار تشمل ضريبة القيمة المضافة حيثما ينطبق ذلك.</p>
+                        </div>
+                    </div>
+
+                    <!-- What Happens Next (Timeline) -->
+                    <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+                        <h3 class="font-bold text-blue-900 mb-4 text-sm">ماذا يحدث بعد الدفع؟</h3>
+                        <div class="flex flex-col md:flex-row justify-between gap-6 relative">
+                            <!-- Dashed Line (Desktop only) -->
+                            <div class="hidden md:block absolute top-5 right-0 left-0 h-0.5 border-t-2 border-dashed border-blue-200 -z-10 mt-1"></div>
+
+                            <!-- Step A -->
+                            <div class="flex md:flex-col gap-4 md:items-center md:text-center bg-blue-50 z-10 pr-2 md:pr-0">
+                                <div class="w-12 h-12 rounded-full bg-white border-2 border-blue-200 flex items-center justify-center text-blue-600 shadow-sm">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-800">1. معالجة الدفع</h4>
+                                    <p class="text-xs text-slate-500 mt-1">تأكيد فوري للعملية</p>
+                                </div>
+                            </div>
+                             <!-- Step B -->
+                             <div class="flex md:flex-col gap-4 md:items-center md:text-center bg-blue-50 z-10 pr-2 md:pr-0">
+                                <div class="w-12 h-12 rounded-full bg-white border-2 border-blue-200 flex items-center justify-center text-slate-400 shadow-sm">
+                                    <i class="fa-solid fa-file-contract"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-800">2. نقل الملكية</h4>
+                                    <p class="text-xs text-slate-500 mt-1">يتم آلياً عبر نظام "تم"</p>
+                                </div>
+                            </div>
+                             <!-- Step C -->
+                             <div class="flex md:flex-col gap-4 md:items-center md:text-center bg-blue-50 z-10 pr-2 md:pr-0">
+                                <div class="w-12 h-12 rounded-full bg-white border-2 border-blue-200 flex items-center justify-center text-slate-400 shadow-sm">
+                                    <i class="fa-solid fa-key"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-800">3. استلام السيارة</h4>
+                                    <p class="text-xs text-slate-500 mt-1">من ساحة المزاد بالرياض</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Summary Sticky (span 4) -->
+                <div class="lg:col-span-4">
+                    <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 sticky top-24">
+                        <h3 class="font-bold text-slate-800 mb-4">ملخص الطلب</h3>
+                        
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-slate-500 text-sm">المجموع الفرعي</span>
+                            <span class="font-semibold">8,000.00 ر.س</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+                            <span class="text-slate-500 text-sm">مجموع الرسوم</span>
+                            <span class="font-semibold text-red-600">+ 932.50 ر.س</span>
+                        </div>
+
+                        <div class="flex justify-between items-center mb-6">
+                            <span class="font-bold text-slate-800">الإجمالي النهائي</span>
+                            <span class="font-bold text-xl text-blue-900">8,932.50 ر.س</span>
+                        </div>
+
+                        <!-- Terms Checkbox -->
+                        <div class="flex gap-3 items-start mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <input type="checkbox" id="terms" class="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <label for="terms" class="text-xs text-slate-600 cursor-pointer select-none">
+                                أقر بأني راجعت جميع التفاصيل المالية وأوافق على <a href="#" class="text-blue-600 underline">الشروط والأحكام</a> الخاصة بالمنصة وعملية الشراء.
+                            </label>
+                        </div>
+
+                        <!-- CTA Button -->
+                        <button onclick="goToPayment()" id="confirmBtn" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/20 transition transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                            تأكيد واستمرار للدفع
+                            <i class="fa-solid fa-arrow-left mr-2"></i>
+                        </button>
+
+                        <div class="mt-4 flex justify-center gap-2 grayscale opacity-60">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" class="h-6">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" class="h-6">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b0/Mada_Logo.svg" class="h-6">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 2: PAYMENT (MOYASAR STYLE) ================= -->
+        <div id="step-2" class="step-content">
+            
+            <button onclick="backToReview()" class="text-slate-500 hover:text-blue-900 mb-6 flex items-center gap-2 text-sm font-semibold transition">
+                <i class="fa-solid fa-arrow-right"></i>
+                العودة للمراجعة
+            </button>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Payment Form Area (span 7) -->
+                <div class="lg:col-span-7">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                            <h2 class="font-bold text-lg text-slate-800">بيانات البطاقة البنكية</h2>
+                            <div class="flex gap-2">
+                                <i class="fa-brands fa-cc-visa text-2xl text-blue-900"></i>
+                                <i class="fa-brands fa-cc-mastercard text-2xl text-red-600"></i>
+                                <i class="fa-regular fa-credit-card text-2xl text-slate-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 md:p-8">
+                            <!-- Simulated Moyasar Form -->
+                            <form onsubmit="event.preventDefault(); alert('تمت عملية الدفع بنجاح! (محاكاة)');" class="space-y-5">
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">اسم حامل البطاقة</label>
+                                    <input type="text" placeholder="مثال: MOHAMMED ALSAUD" class="moyasar-input w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none" required>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">رقم البطاقة</label>
+                                    <div class="relative">
+                                        <input type="text" placeholder="0000 0000 0000 0000" class="moyasar-input w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none" dir="ltr" maxlength="19" required>
+                                        <div class="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400">
+                                            <i class="fa-solid fa-lock text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">تاريخ الانتهاء</label>
+                                        <input type="text" placeholder="MM / YY" class="moyasar-input w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none text-center" dir="ltr" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">رمز التحقق (CVC)</label>
+                                        <div class="relative">
+                                            <input type="text" placeholder="123" class="moyasar-input w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none text-center" dir="ltr" maxlength="3" required>
+                                            <div class="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400 cursor-help" title="الرقم خلف البطاقة">
+                                                <i class="fa-regular fa-circle-question"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4">
+                                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition flex justify-center items-center gap-2">
+                                        <i class="fa-solid fa-lock"></i>
+                                        دفع مبلغ 8,932.50 ر.س
+                                    </button>
+                                    <p class="text-center text-xs text-slate-400 mt-3 flex justify-center items-center gap-1">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                        معالجة آمنة ومشفرة بواسطة <strong>Moyasar</strong>
+                                    </p>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Small Summary Sidebar (span 5) -->
+                <div class="lg:col-span-5">
+                    <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-lg relative overflow-hidden">
+                        <!-- Decorative Circle -->
+                        <div class="absolute -top-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
+
+                        <h3 class="font-bold text-lg mb-4 relative z-10">ملخص سريع</h3>
+                        
+                        <div class="flex gap-4 items-center mb-6 bg-white/10 p-3 rounded-xl backdrop-blur-sm">
+                            <img src="https://images.unsplash.com/photo-1628815582393-27150a2339d1?q=80&w=200" class="w-16 h-12 object-cover rounded-lg">
+                            <div>
+                                <p class="text-sm font-bold">فورد تورس 2023</p>
+                                <p class="text-xs text-slate-300">اللوحة: ا ب ج 1234</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 border-t border-white/10 pt-4 text-sm">
+                            <div class="flex justify-between text-slate-300">
+                                <span>قيمة المزاد</span>
+                                <span>8,000.00 ر.س</span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>الرسوم والضرائب</span>
+                                <span>932.50 ر.س</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-white/20 mt-6 pt-4">
+                            <div class="flex justify-between items-end">
+                                <span class="text-slate-300 text-sm">الإجمالي للدفع</span>
+                                <span class="font-bold text-2xl">8,932.50 <small>ر.س</small></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Badge -->
+                    <div class="mt-6 bg-white border border-slate-200 rounded-xl p-4 flex gap-4 items-center shadow-sm">
+                        <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 text-xl">
+                            <i class="fa-solid fa-shield-check"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800">حماية المشتري</h4>
+                            <p class="text-xs text-slate-500">نضمن لك انتقال الملكية أو استرداد المبلغ بالكامل في حال حدوث أي خطأ.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-auto py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-xs text-slate-400">© 2025 المزادات الرقمية. جميع الحقوق محفوظة.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Checkbox Logic to Enable Button
+        const termsCheckbox = document.getElementById('terms');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        // Initially disabled
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        termsCheckbox.addEventListener('change', function() {
+            if(this.checked) {
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        // Navigation Logic
+        function goToPayment() {
+            // UI Transition
+            document.getElementById('step-1').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('step-2').classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Update Progress Indicator
+                const ind1 = document.getElementById('indicator-1');
+                const ind2 = document.getElementById('indicator-2');
+                
+                ind1.classList.remove('bg-blue-900', 'text-white');
+                ind1.classList.add('bg-green-500', 'text-white'); // Completed Step 1
+                ind1.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+                ind2.classList.remove('bg-slate-200', 'text-slate-500');
+                ind2.classList.add('bg-blue-900', 'text-white'); // Active Step 2
+            }, 400);
+        }
+
+        function backToReview() {
+            document.getElementById('step-2').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('step-1').classList.add('active');
+                
+                // Revert Progress Indicator
+                const ind1 = document.getElementById('indicator-1');
+                const ind2 = document.getElementById('indicator-2');
+                
+                ind1.classList.add('bg-blue-900', 'text-white');
+                ind1.classList.remove('bg-green-500', 'text-white');
+                ind1.innerHTML = '1';
+
+                ind2.classList.add('bg-slate-200', 'text-slate-500');
+                ind2.classList.remove('bg-blue-900', 'text-white');
+            }, 400);
+        }
+    </script>
+</body>
+</html>
