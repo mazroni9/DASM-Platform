@@ -35,32 +35,50 @@ class Car extends Model
     }
 
     protected $fillable = [
-        'dealer_id',
-        'user_id',  // Added user_id to fillable
-        'make',
-        'model',
-        'year',
-        'vin',
-        'odometer',
-        'condition',
-        'evaluation_price',
-        'auction_status',
-        'market_category',
-        'color',
-        'engine',
-        'transmission',
-        'description',
-        'registration_card_image',
-        'images',
-        'main_auction_duration'
-    ];
+    'dealer_id',
+    'user_id',
+    'make',
+    'model',
+    'year',
+    'vin',
+    'odometer',
+    'condition',
+    'evaluation_price',
+    'auction_status',
+    'market_category',
+    'color',
+    'engine',
+    'transmission',
+    'description',
+    'registration_card_image',
+    'images',
+    'main_auction_duration',
+    'province',
+    'city',
+    'plate',
+    'min_price',
+    'max_price',
+
+    // AI Review
+    'review_status',
+    'review_request_id',
+    'review_score',
+    'review_details',
+    'review_reason',
+    'reviewed_at',
+];
 
     protected $casts = [
-        'images'          => 'array',
-        'market_category' => CarsMarketsCategory::class,
-        'condition'       => CarCondition::class,
-        'transmission'    => CarTransmission::class,
-    ];
+    'images'          => 'array',
+    'market_category' => CarsMarketsCategory::class,
+    'condition'       => CarCondition::class,
+    'transmission'    => CarTransmission::class,
+
+    // AI Review
+    'review_details'  => 'array',
+    'reviewed_at'     => 'datetime',
+];
+
 
     protected $hidden = [
         'min_price',
@@ -97,10 +115,11 @@ class Car extends Model
         return $this->hasMany(Auction::class);
     }
 
-    public function activeAuction()
-    {
-        return $this->hasOne(Auction::class)->where('status', AuctionStatus::ACTIVE);
-    }
+   public function activeAuction()
+{
+    return $this->hasOne(Auction::class)->where('status', AuctionStatus::ACTIVE->value);
+}
+
 
     // Get the owner of the car (either dealer or user)
     public function getOwnerAttribute()

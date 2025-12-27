@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
-import {
-  ShoppingBag,
-  CreditCard,
-  Truck,
-  CheckCircle,
+import { 
+  ShoppingBag, 
+  CreditCard, 
+  Truck, 
+  CheckCircle, 
   AlertCircle,
   Filter,
   Search,
@@ -18,192 +18,170 @@ import {
   Clock,
   Eye,
   ArrowLeft,
-  Sparkles,
-} from "lucide-react";
-import api from "@/lib/axios";
-import { useAuth } from "@/hooks/useAuth";
+  Sparkles
+} from 'lucide-react';
+import api from '@/lib/axios';
+import { useAuth } from '@/hooks/useAuth';
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 // Helper to get status text and color
 const getStatusConfig = (status: string) => {
-  const statusMap: {
-    [key: string]: {
-      text: string;
-      color: string;
-      bg: string;
-      border: string;
-      icon: React.ElementType;
-    };
-  } = {
-    pending: {
-      text: "بانتظار الدفع",
-      color: "text-amber-400",
-      bg: "bg-amber-500/20",
-      border: "border-amber-500/30",
-      icon: CreditCard,
+  const statusMap: { [key: string]: { text: string; color: string; bg: string; border: string; icon: React.ElementType } } = {
+    'pending': { 
+      text: 'بانتظار الدفع', 
+      color: 'text-amber-400',
+      bg: 'bg-amber-500/20',
+      border: 'border-amber-500/30',
+      icon: CreditCard
     },
-    paid_pending_delivery: {
-      text: "تم الدفع - بانتظار التسليم",
-      color: "text-blue-400",
-      bg: "bg-blue-500/20",
-      border: "border-blue-500/30",
-      icon: ShoppingBag,
+    'paid_pending_delivery': { 
+      text: 'تم الدفع - بانتظار التسليم', 
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/20',
+      border: 'border-blue-500/30',
+      icon: ShoppingBag
     },
-    shipped: {
-      text: "جاري الشحن",
-      color: "text-cyan-400",
-      bg: "bg-cyan-500/20",
-      border: "border-cyan-500/30",
-      icon: Truck,
+    'shipped': { 
+      text: 'جاري الشحن', 
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-500/20',
+      border: 'border-cyan-500/30',
+      icon: Truck
     },
-    delivered_pending_confirmation: {
-      text: "تم التسليم - بانتظار التأكيد",
-      color: "text-purple-400",
-      bg: "bg-purple-500/20",
-      border: "border-purple-500/30",
-      icon: Truck,
+    'delivered_pending_confirmation': { 
+      text: 'تم التسليم - بانتظار التأكيد', 
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/20',
+      border: 'border-purple-500/30',
+      icon: Truck
     },
-    completed: {
-      text: "مكتملة",
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/20",
-      border: "border-emerald-500/30",
-      icon: CheckCircle,
+    'completed': { 
+      text: 'مكتملة', 
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/20',
+      border: 'border-emerald-500/30',
+      icon: CheckCircle
     },
-    disputed: {
-      text: "نزاع مفتوح",
-      color: "text-rose-400",
-      bg: "bg-rose-500/20",
-      border: "border-rose-500/30",
-      icon: AlertCircle,
-    },
-  };
-
-  return (
-    statusMap[status] || {
-      text: status,
-      color: "text-gray-400",
-      bg: "bg-gray-500/20",
-      border: "border-gray-500/30",
-      icon: Clock,
+    'disputed': { 
+      text: 'نزاع مفتوح', 
+      color: 'text-rose-400',
+      bg: 'bg-rose-500/20',
+      border: 'border-rose-500/30',
+      icon: AlertCircle
     }
-  );
+  };
+  
+  return statusMap[status] || { 
+    text: status, 
+    color: 'text-gray-400',
+    bg: 'bg-gray-500/20',
+    border: 'border-gray-500/30',
+    icon: Clock
+  };
 };
 
 export default function MyPurchasesPage() {
-  const [purchases, setPurchases] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { isLoggedIn } = useAuth();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+    const [purchases, setPurchases] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const { isLoggedIn } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const router = useLoadingRouter();
-
+  
   useEffect(() => {
     if (!isLoggedIn) {
       router.push("/auth/login?returnUrl=/dashboard/my-purchases");
     }
   }, [isLoggedIn, router]);
 
-  useEffect(() => {
-    async function fetchPurchases() {
-      if (!isLoggedIn) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const response = await api.get("/api/settlements");
-        if (response.data.status === "success") {
-          setPurchases(response.data.data.data);
-          console.log("purchases", response.data.data.data);
-          console.log("purchases", purchases);
-        } else {
-          setError("Failed to fetch purchases.");
+    useEffect(() => {
+        async function fetchPurchases() {
+            if (!isLoggedIn) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const response = await api.get('/api/settlements');
+                if (response.data.status === 'success') {
+                    setPurchases(response.data.data.data); 
+                    console.log('purchases', response.data.data.data);
+                    console.log('purchases', purchases);
+                } else {
+                    setError("Failed to fetch purchases.");
+                }
+            } catch (err) {
+                setError("An error occurred while fetching purchases.");
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
         }
-      } catch (err) {
-        setError("An error occurred while fetching purchases.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
 
-    fetchPurchases();
-  }, [isLoggedIn]);
+        fetchPurchases();
+    }, [isLoggedIn]);
 
   // Filter purchases
   const filteredPurchases = useMemo(() => {
     return purchases.filter((purchase: any) => {
-      const itemName = `${purchase.car.make} ${purchase.car.model}`;
-      const category = purchase.car.market_category || "سيارات";
-      const matchesSearch =
-        itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        category.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || purchase.status === statusFilter;
-      const matchesCategory =
-        categoryFilter === "all" || category === categoryFilter;
-
+        const itemName = `${purchase.car.make} ${purchase.car.model}`;
+        const category = purchase.car.market_category || 'سيارات';
+      const matchesSearch = itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || purchase.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || category === categoryFilter;
+      
       return matchesSearch && matchesStatus && matchesCategory;
     });
   }, [purchases, searchTerm, statusFilter, categoryFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
-    const totalAmount = purchases.reduce(
-      (sum, purchase: any) => sum + (Number(purchase.buyer_net_amount) || 0),
-      0
-    );
+    const totalAmount = purchases.reduce((sum, purchase: any) => sum + purchase.buyer_net_amount, 0);
     return {
       total: purchases.length,
-      completed: purchases.filter((p: any) => p.status === "completed").length,
-      pending: purchases.filter((p: any) => p.status === "pending").length,
+      completed: purchases.filter((p: any) => p.status === 'completed').length,
+      pending: purchases.filter((p: any) => p.status === 'pending').length,
       totalAmount: totalAmount,
     };
   }, [purchases]);
 
   const handlePayNow = (purchaseId: string) => {
     // Simulate payment process
-    setPurchases(
-      purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "paid_pending_delivery" } : p
-      )
-    );
+    setPurchases(purchases.map((p: any) => 
+      p.id === purchaseId ? { ...p, status: 'paid_pending_delivery' } : p
+    ));
   };
 
   const handleConfirmReceipt = (purchaseId: string) => {
     // Simulate receipt confirmation
-    setPurchases(
-      purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "completed" } : p
-      )
-    );
+    setPurchases(purchases.map((p: any) => 
+      p.id === purchaseId ? { ...p, status: 'completed' } : p
+    ));
   };
 
   const handleOpenDispute = (purchaseId: string) => {
     // Simulate opening dispute
-    alert("سيتم فتح صفحة النزاع (محاكاة).");
+    alert('سيتم فتح صفحة النزاع (محاكاة).');
   };
 
   const getCategories = () => {
-    return [
-      ...new Set(purchases.map((p: any) => p.car.market_category || "سيارات")),
-    ];
+    return [...new Set(purchases.map((p: any) => p.car.market_category || 'سيارات'))];
   };
 
-  if (loading) {
-    return <div className="text-center py-10">جاري تحميل مشترياتك...</div>;
-  }
+    if (loading) {
+        return <div className="text-center py-10">جاري تحميل مشترياتك...</div>
+    }
 
-  if (error) {
-    return <div className="text-center py-10 text-red-600">{error}</div>;
-  }
+    if (error) {
+        return <div className="text-center py-10 text-red-600">{error}</div>
+    }
 
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header Section */}
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
@@ -218,9 +196,7 @@ export default function MyPurchasesPage() {
                 <h1 className="text-2xl font-bold text-foreground">
                   مشترياتي <span className="text-primary">({stats.total})</span>
                 </h1>
-                <p className="text-foreground/70 text-sm mt-1">
-                  إدارة وتتبع جميع مشترياتك من المزادات
-                </p>
+                <p className="text-foreground/70 text-sm mt-1">إدارة وتتبع جميع مشترياتك من المزادات</p>
               </div>
             </div>
 
@@ -233,9 +209,7 @@ export default function MyPurchasesPage() {
                   </div>
                   <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-foreground mt-1">
-                  {stats.total}
-                </p>
+                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
               </div>
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
@@ -244,34 +218,26 @@ export default function MyPurchasesPage() {
                   </div>
                   <span className="text-xs text-foreground/70">مكتملة</span>
                 </div>
-                <p className="text-lg font-bold text-emerald-400 mt-1">
-                  {stats.completed}
-                </p>
+                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.completed}</p>
               </div>
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Clock className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">
-                    بانتظار الدفع
-                  </span>
+                  <span className="text-xs text-foreground/70">بانتظار الدفع</span>
                 </div>
-                <p className="text-lg font-bold text-amber-400 mt-1">
-                  {stats.pending}
-                </p>
+                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
               </div>
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-cyan-500/20 rounded">
                     <DollarSign className="w-3 h-3 text-cyan-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">
-                    إجمالي المشتريات
-                  </span>
+                  <span className="text-xs text-foreground/70">إجمالي المشتريات</span>
                 </div>
-                <p className="text-lg font-bold text-cyan-600 dark:text-cyan-400 mt-1">
-                  {(stats.totalAmount || 0).toLocaleString("ar-SA")} ريال
+                <p className="text-lg font-bold text-cyan-400 mt-1">
+                  {stats.totalAmount.toLocaleString('ar-EG')}
                 </p>
               </div>
             </div>
@@ -290,7 +256,7 @@ export default function MyPurchasesPage() {
       </motion.div>
 
       {/* Filters and Search Section */}
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -320,9 +286,7 @@ export default function MyPurchasesPage() {
               <option value="pending">بانتظار الدفع</option>
               <option value="paid_pending_delivery">تم الدفع</option>
               <option value="shipped">جاري الشحن</option>
-              <option value="delivered_pending_confirmation">
-                بانتظار التأكيد
-              </option>
+              <option value="delivered_pending_confirmation">بانتظار التأكيد</option>
               <option value="completed">مكتملة</option>
               <option value="disputed">نزاع</option>
             </select>
@@ -334,25 +298,21 @@ export default function MyPurchasesPage() {
               className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-green-500/50 transition-colors"
             >
               <option value="all">جميع الفئات</option>
-              {getCategories().map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
+              {getCategories().map(category => (
+                <option key={category} value={category}>{category}</option>
               ))}
             </select>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-foreground/70">
             <Filter className="w-4 h-4" />
-            <span>
-              عرض {filteredPurchases.length} من {purchases.length} عملية شراء
-            </span>
+            <span>عرض {filteredPurchases.length} من {purchases.length} عملية شراء</span>
           </div>
         </div>
       </motion.div>
 
       {/* Purchases List */}
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -363,27 +323,23 @@ export default function MyPurchasesPage() {
             <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
               <ShoppingBag className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground/70 mb-2">
-                {searchTerm ||
-                statusFilter !== "all" ||
-                categoryFilter !== "all"
-                  ? "لا توجد نتائج"
-                  : "لا توجد مشتريات"}
+                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' 
+                  ? 'لا توجد نتائج' 
+                  : 'لا توجد مشتريات'
+                }
               </h3>
               <p className="text-foreground/50 text-sm mb-4">
-                {searchTerm ||
-                statusFilter !== "all" ||
-                categoryFilter !== "all"
-                  ? "لم نتمكن من العثور على مشتريات تطابق معايير البحث"
-                  : "لم تقم بشراء أي عناصر من المزادات بعد"}
+                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
+                  ? 'لم نتمكن من العثور على مشتريات تطابق معايير البحث'
+                  : 'لم تقم بشراء أي عناصر من المزادات بعد'
+                }
               </p>
-              {searchTerm ||
-              statusFilter !== "all" ||
-              categoryFilter !== "all" ? (
+              {(searchTerm || statusFilter !== 'all' || categoryFilter !== 'all') ? (
                 <button
                   onClick={() => {
-                    setSearchTerm("");
-                    setStatusFilter("all");
-                    setCategoryFilter("all");
+                    setSearchTerm('');
+                    setStatusFilter('all');
+                    setCategoryFilter('all');
                   }}
                   className="px-4 py-2 bg-primary/20 text-primary rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors"
                 >
@@ -404,7 +360,7 @@ export default function MyPurchasesPage() {
           filteredPurchases.map((purchase: any, index) => {
             const statusConfig = getStatusConfig(purchase.status);
             const StatusIcon = statusConfig.icon;
-
+            
             return (
               <motion.div
                 key={purchase.id}
@@ -417,14 +373,13 @@ export default function MyPurchasesPage() {
                   {/* Product Image */}
                   <div className="flex-shrink-0">
                     <div className="w-24 h-24 lg:w-32 lg:h-32 bg-background rounded-xl overflow-hidden">
-                      <img
-                        src={purchase.car.images?.[0] || "/placeholder-car.jpg"}
+                      <img 
+                        src={purchase.car.images?.[0] || '/placeholder-car.jpg'} 
                         alt={`${purchase.car.make} ${purchase.car.model}`}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/200x200?text=No+Image";
+                          e.currentTarget.src = "https://via.placeholder.com/200x200?text=No+Image";
                         }}
                       />
                     </div>
@@ -437,36 +392,25 @@ export default function MyPurchasesPage() {
                         <h3 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors mb-2">
                           {purchase.car.make} {purchase.car.model}
                         </h3>
-
+                        
                         <div className="flex flex-wrap gap-3 text-sm text-foreground/70 mb-3">
                           <div className="flex items-center gap-1">
                             <Package className="w-3 h-3" />
-                            <span>
-                              {purchase.car.market_category || "سيارات"}
-                            </span>
+                            <span>{purchase.car.market_category || 'سيارات'}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            <span>
-                              انتهى في{" "}
-                              {new Date(purchase.created_at).toLocaleDateString(
-                                "ar-SA"
-                              )}
-                            </span>
+                            <span>انتهى في {new Date(purchase.created_at).toLocaleDateString("ar-SA")}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
-                            <span>
-                              {purchase.auction?.bids_count || 0} مزايدة
-                            </span>
+                            <span>{purchase.auction?.bids_count || 0} مزايدة</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 text-sm text-foreground/70">
                           <span>البائع:</span>
-                          <span className="text-blue-300">
-                            {purchase.seller.name}
-                          </span>
+                          <span className="text-blue-300">{purchase.seller.name}</span>
                         </div>
                       </div>
 
@@ -474,15 +418,13 @@ export default function MyPurchasesPage() {
                         <div className="text-2xl font-bold text-secondary">
                           {purchase.buyer_net_amount} ريال
                         </div>
-
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
-                            statusConfig.bg,
-                            statusConfig.border,
-                            statusConfig.color
-                          )}
-                        >
+                        
+                        <div className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
+                          statusConfig.bg,
+                          statusConfig.border,
+                          statusConfig.color
+                        )}>
                           <StatusIcon className="w-3 h-3" />
                           {statusConfig.text}
                         </div>
@@ -491,20 +433,20 @@ export default function MyPurchasesPage() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
-                      {purchase.status === "pending" && (
+                      {purchase.status === 'pending' && (
                         <LoadingLink
                           href={`/auctions/purchase-confirmation/${purchase.auction_id}`}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg border border-emerald-700 hover:bg-emerald-700 transition-all duration-300 group/pay"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/20 text-emerald-300 rounded-lg border border-emerald-500/30 hover:bg-emerald-500/30 transition-all duration-300 group/pay"
                         >
                           <CreditCard className="w-4 h-4 transition-transform group-hover/pay:scale-110" />
                           <span className="font-medium">إتمام الدفع</span>
                         </LoadingLink>
                       )}
-
-                      {purchase.status === "delivered_pending_confirmation" && (
-                        <button
+                      
+                      {purchase.status === 'delivered_pending_confirmation' && (
+                        <button 
                           onClick={() => handleConfirmReceipt(purchase.id)}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg border border-blue-700 hover:bg-blue-700 transition-all duration-300 group/confirm"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300 group/confirm"
                         >
                           <CheckCircle className="w-4 h-4 transition-transform group-hover/confirm:scale-110" />
                           <span className="font-medium">تأكيد الاستلام</span>
@@ -513,16 +455,16 @@ export default function MyPurchasesPage() {
 
                       <LoadingLink
                         href={`/carDetails/${purchase.car.id}`}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card text-foreground rounded-lg border border-border hover:bg-muted transition-all duration-300 group/view"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/20 text-blue-300 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300 group/view"
                       >
                         <Eye className="w-4 h-4 transition-transform group-hover/view:scale-110" />
                         <span className="font-medium">عرض تفاصيل العنصر</span>
                       </LoadingLink>
 
-                      {purchase.status !== "completed" && (
-                        <button
+                      {purchase.status !== 'completed' && (
+                        <button 
                           onClick={() => handleOpenDispute(purchase.id)}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg border border-red-700 hover:bg-red-700 transition-all duration-300 group/dispute"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500/20 text-rose-300 rounded-lg border border-rose-500/30 hover:bg-rose-500/30 transition-all duration-300 group/dispute"
                         >
                           <AlertCircle className="w-4 h-4 transition-transform group-hover/dispute:scale-110" />
                           <span className="font-medium">فتح نزاع</span>

@@ -1,2 +1,9 @@
 .vercel
 node_modules
+
+ai/.venv/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc

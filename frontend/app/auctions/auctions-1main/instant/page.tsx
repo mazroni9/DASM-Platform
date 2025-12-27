@@ -24,12 +24,8 @@ import Pusher from "pusher-js";
 
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
-import { ModuleRegistry, AllCommunityModule } from "ag-grid-community";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
-
-// تسجيل جميع وحدات AG Grid المجتمعية (مطلوب في الإصدار 34+)
-ModuleRegistry.registerModules([AllCommunityModule]);
 
 // =============== أنواع TypeScript ===============
 interface CarAuction {
@@ -106,41 +102,37 @@ export default function InstantAuctionPage() {
 
   // =============== مكون حالة المزاد ===============
   const StatusBadge = ({ status }: { status: string }) => {
-    const config: Record<
-      string,
-      { bg: string; text: string; border: string; icon: typeof Play }
-    > = {
-      "جاري المزايدة": {
-        bg: "bg-blue-500",
-        text: "text-white",
-        border: "border-blue-600",
-        icon: Play,
-      },
-      "تم البيع": {
-        bg: "bg-emerald-500",
-        text: "text-white",
-        border: "border-emerald-600",
-        icon: TrendingUp,
-      },
-      انتهى: {
-        bg: "bg-gray-500",
-        text: "text-white",
-        border: "border-gray-600",
-        icon: Clock,
-      },
-    };
+    const config =
+      {
+        "جاري المزايدة": {
+          bg: "bg-blue-900/30",
+          text: "text-blue-300",
+          border: "border-blue-700/50",
+          icon: Play,
+        },
+        "تم البيع": {
+          bg: "bg-emerald-900/30",
+          text: "text-emerald-300",
+          border: "border-emerald-700/50",
+          icon: TrendingUp,
+        },
+        "انتهى": {
+          bg: "bg-gray-800/50",
+          text: "text-gray-400",
+          border: "border-gray-700/50",
+          icon: Clock,
+        },
+      }[status] || {
+        bg: "bg-amber-900/30",
+        text: "text-amber-300",
+        border: "border-amber-700/50",
+        icon: AlertCircle,
+      };
 
-    const statusConfig = config[status] || {
-      bg: "bg-amber-500",
-      text: "text-white",
-      border: "border-amber-600",
-      icon: AlertCircle,
-    };
-
-    const Icon = statusConfig.icon;
+    const Icon = config.icon;
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
+        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${config.bg} ${config.text} ${config.border}`}
       >
         <Icon className="w-3 h-3" />
         {status}
@@ -231,45 +223,29 @@ export default function InstantAuctionPage() {
       },
       {
         headerName: "سعر الافتتاح",
-        valueGetter: (params) => {
-          const val = params.data?.opening_price;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
-        cellRenderer: (params: ICellRendererParams<CarAuction>) =>
-          formatCurrency(params.value ?? 0),
+        valueGetter: (params) => params.data?.opening_price ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
         type: "numericColumn",
         filter: "agNumberColumnFilter",
       },
       {
         headerName: "أقل سعر",
-        valueGetter: (params) => {
-          const val = params.data?.minimum_bid;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
-        cellRenderer: (params: ICellRendererParams<CarAuction>) =>
-          formatCurrency(params.value ?? 0),
+        valueGetter: (params) => params.data?.minimum_bid ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
         type: "numericColumn",
         filter: "agNumberColumnFilter",
       },
       {
         headerName: "أعلى سعر",
-        valueGetter: (params) => {
-          const val = params.data?.maximum_bid;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
-        cellRenderer: (params: ICellRendererParams<CarAuction>) =>
-          formatCurrency(params.value ?? 0),
+        valueGetter: (params) => params.data?.maximum_bid ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
         type: "numericColumn",
         filter: "agNumberColumnFilter",
       },
       {
         headerName: "آخر سعر",
-        valueGetter: (params) => {
-          const val = params.data?.current_bid;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
-        cellRenderer: (params: ICellRendererParams<CarAuction>) =>
-          formatCurrency(params.value ?? 0),
+        valueGetter: (params) => params.data?.current_bid ?? 0,
+        valueFormatter: (params) => formatCurrency(params.value ?? 0),
         type: "numericColumn",
         filter: "agNumberColumnFilter",
       },

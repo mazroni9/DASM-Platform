@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, usePathname } from "next/navigation";
 import api from "@/lib/axios";
 import Footer from "@/components/shared/Footer";
 import LoadingLink from "@/components/LoadingLink";
@@ -14,7 +15,6 @@ type BlogPost = {
   content?: string | null;
   excerpt?: string | null;
 
-  // ✅ الصحيح حسب الموديل
   cover_image?: string | null;
   is_published?: boolean | number | null;
 
@@ -23,7 +23,6 @@ type BlogPost = {
 
   category?: { name: string; slug: string } | null;
 
-  // fallback لو data قديمة
   thumbnail?: string | null;
 };
 
@@ -40,9 +39,54 @@ function safeDateLabel(iso?: string | null) {
   }
 }
 
-export default function BlogSinglePage({ params }: { params: { slug: string } }) {
+function isBadSlug(s: string) {
+  const v = (s || "").trim();
+  return !v || v === "undefined" || v === "null";
+}
+
+function safeDecode(v: string) {
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    return v;
+  }
+}
+
+export default function BlogSinglePage({
+  params,
+}: {
+  params?: { slug?: string | string[] };
+}) {
+  const routeParams = useParams();
+  const pathname = usePathname();
+
+  // ✅ استخراج slug بشكل مضمون (params -> useParams -> pathname)
+  const slug = useMemo(() => {
+    // 1) من props params لو موجودة
+    const p = params?.slug;
+    const fromProps =
+      typeof p === "string" ? p : Array.isArray(p) ? p[0] : "";
+
+    // 2) من useParams لو موجود
+    const rp: any = routeParams as any;
+    const r = rp?.slug;
+    const fromRoute =
+      typeof r === "string" ? r : Array.isArray(r) ? r[0] : "";
+
+    // 3) fallback من الـ URL نفسه (آخر جزء في المسار)
+    const parts = (pathname || "").split("/").filter(Boolean);
+    const last = parts.length ? parts[parts.length - 1] : "";
+    const fromPath = last ? safeDecode(last) : "";
+
+    const chosen = (fromProps || fromRoute || fromPath || "").trim();
+    return safeDecode(chosen).trim();
+  }, [params?.slug, routeParams, pathname]);
+
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const lastFetchedSlugRef = useRef<string>("");
+  const abortRef = useRef<AbortController | null>(null);
 
   const cover = useMemo(() => {
     if (!post) return "";
@@ -54,23 +98,63 @@ export default function BlogSinglePage({ params }: { params: { slug: string } })
     return safeDateLabel(post.published_at || post.created_at);
   }, [post]);
 
-  const fetchPost = async () => {
+  const fetchPost = async (slugValue: string) => {
+    const clean = (slugValue || "").trim();
+
+    // ✅ ممنوع أي طلب لو slug بايظ
+    if (isBadSlug(clean)) {
+      setPost(null);
+      setLoading(false);
+      return;
+    }
+
+    // ✅ ممنوع تكرار نفس الطلب
+    if (lastFetchedSlugRef.current === clean) return;
+    lastFetchedSlugRef.current = clean;
+
+    // ✅ الغاء أي طلب سابق لو موجود
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setLoading(true);
-      const res = await api.get(`/api/blog/posts/${params.slug}`);
+
+      // ✅ مهم للعربي
+      const encoded = encodeURIComponent(clean);
+
+      const res = await api.get(`/api/blog/posts/${encoded}`, {
+        signal: controller.signal,
+      });
+
       const data = res?.data?.data ?? res?.data ?? null;
-      setPost(data);
+
+      // لو الـ API رجّع فاضي أو مش نفس المقال
+      if (!data || !data?.title) {
+        setPost(null);
+      } else {
+        setPost(data);
+      }
     } catch {
       setPost(null);
     } finally {
-      setLoading(false);
+      // لو الطلب ده اتلغى بسبب تغيير slug، ما نوقف loading هنا
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchPost();
+    // كل مرة slug يتغير → نجرب نجيب المقال
+    // ولو slug بايظ نعرض Not Found من غير أي request
+    fetchPost(slug);
+
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.slug]);
+  }, [slug]);
 
   return (
     <>
@@ -117,7 +201,9 @@ export default function BlogSinglePage({ params }: { params: { slug: string } })
           ) : !post ? (
             <div className="bg-card border border-border rounded-3xl p-10 text-center">
               <p className="text-foreground font-bold text-lg">المقال غير موجود</p>
-              <p className="text-foreground/60 text-sm mt-2">قد يكون تم حذفه أو تغيير الرابط.</p>
+              <p className="text-foreground/60 text-sm mt-2">
+                قد يكون تم حذفه أو تغيير الرابط.
+              </p>
 
               <div className="mt-6 flex justify-center">
                 <LoadingLink
@@ -141,7 +227,8 @@ export default function BlogSinglePage({ params }: { params: { slug: string } })
                         alt={post.title}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
                         }}
                       />
                     ) : (
@@ -187,7 +274,9 @@ export default function BlogSinglePage({ params }: { params: { slug: string } })
               <div className="lg:col-span-8">
                 <article className="bg-card border border-border rounded-3xl p-6 md:p-10 shadow-sm">
                   <div className="prose prose-zinc dark:prose-invert max-w-none prose-p:leading-8 prose-li:leading-8">
-                    <div dangerouslySetInnerHTML={{ __html: post.content || "" }} />
+                    <div
+                      dangerouslySetInnerHTML={{ __html: post.content || "" }}
+                    />
                   </div>
                 </article>
               </div>
@@ -197,7 +286,9 @@ export default function BlogSinglePage({ params }: { params: { slug: string } })
                 <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm sticky top-6 space-y-4">
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
                     <p className="text-sm text-foreground/70">التصنيف</p>
-                    <p className="font-extrabold text-foreground mt-1">{post.category?.name || "عام"}</p>
+                    <p className="font-extrabold text-foreground mt-1">
+                      {post.category?.name || "عام"}
+                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
