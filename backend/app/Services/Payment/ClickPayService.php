@@ -167,10 +167,9 @@ class ClickPayService
             'cart_description' => "Service Fees for Auction #{$settlement->auction_id}",
             'cart_currency' => config('clickpay.currency', 'SAR'),
             'cart_amount' => number_format($settlement->service_fees_total, 2, '.', ''),
-            #'callback' => route('payment.webhook'),
-            #'return' => route('payment.return'),
-            'callback' => "https://c6319cacb0c9.ngrok-free.app/api/payment/webhook",
-            'return' => "https://c6319cacb0c9.ngrok-free.app/api/payment/return",
+            'callback' => route('payment.webhook'),
+            'return' => route('payment.return'),
+            
             'customer_details' => [
                 'name' => trim("{$user->first_name} {$user->last_name}"),
                 'email' => $user->email,
