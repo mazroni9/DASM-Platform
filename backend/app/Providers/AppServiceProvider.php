@@ -3,17 +3,13 @@
 namespace App\Providers;
 
 use App\Http\Middleware\SetSpatieTeamContext;
-use App\Models\Organization;
 use App\Models\Shipment;
-use App\Models\User;
-use App\Observers\UserObserver;
-use App\Policies\OrganizationPolicy;
 use App\Policies\ShipmentPolicy;
-use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Http\Kernel;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,54 +29,24 @@ class AppServiceProvider extends ServiceProvider
         // إخراج الـ JSON Resources بدون الطبقة الخارجية "data"
         JsonResource::withoutWrapping();
 
-        // ربط السياسات
+        // ربط سياسة الوصول لشحنات المعارض
         Gate::policy(Shipment::class, ShipmentPolicy::class);
-        Gate::policy(Organization::class, OrganizationPolicy::class);
+        Gate::policy(\App\Models\Organization::class, \App\Policies\OrganizationPolicy::class);
 
-        /**
-         * ✅ Super Admin + Admin bypass (حل مشكلة 403 مع can:*)
-         * - يدعم Enum أو string
-         */
-        Gate::before(function ($user, string $ability) {
-            if (!$user) {
-                return null;
-            }
-
-            $type = $user->type ?? null;
-
-            // Normalize role/type to string (supports BackedEnum or anything with ->value)
-            $typeValue = '';
-            if ($type instanceof \BackedEnum) {
-                $typeValue = (string) $type->value;
-            } elseif (is_object($type) && property_exists($type, 'value')) {
-                $typeValue = (string) $type->value;
-            } elseif (is_string($type)) {
-                $typeValue = $type;
-            }
-
-            $typeValue = strtolower(trim($typeValue));
-
-            // ✅ Full admin freedom
-            if (in_array($typeValue, ['super_admin', 'admin'], true)) {
+        // Super Admin bypass
+        Gate::before(function ($user, $ability) {
+            if ($user->type === \App\Enums\UserRole::SUPER_ADMIN) {
                 return true;
             }
-
-            return null; // ✅ كمل باقي الصلاحيات/السياسات
         });
 
-        // Observers
-        User::observe(UserObserver::class);
+        \App\Models\User::observe(\App\Observers\UserObserver::class);
 
-        /**
-         * ✅ تأكد إن SetSpatieTeamContext ييجي قبل SubstituteBindings
-         * (تصحيح ترتيب arguments)
-         */
-        $kernel = app()->make(HttpKernel::class);
+         $kernel = app()->make(Kernel::class);
 
-        // addToMiddlewarePriorityBefore($before, $middlewareToAdd)
         $kernel->addToMiddlewarePriorityBefore(
+            SetSpatieTeamContext::class,
             SubstituteBindings::class,
-            SetSpatieTeamContext::class
         );
     }
 }

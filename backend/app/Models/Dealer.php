@@ -17,9 +17,10 @@ class Dealer extends Model
         'is_active',
         'status',
         'rating',
-        'description'
+        'description',
+        'ai_recommendations_enabled',
     ];
-    
+
     protected $casts = [
         'status' => DealerStatus::class,
     ];

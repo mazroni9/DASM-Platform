@@ -33,26 +33,30 @@ export default function UserMenu() {
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // --------- تطبيع الدور إذا جاء كسلسلة نصية ---------
-  const normalizeRole = (r: unknown): UserRole | undefined => {
+  const normalizeRole = (r: unknown): UserRole | string | undefined => {
     if (r == null) return undefined;
-    const v = String(r).toUpperCase();
+    const v = String(r).toLowerCase();
     switch (v) {
-      case "SUPER_ADMIN":
+      case "super_admin":
         return UserRole.SUPER_ADMIN;
-      case "ADMIN":
+      case "admin":
         return UserRole.ADMIN;
-      case "MODERATOR":
+      case "moderator":
         return UserRole.MODERATOR;
-      case "VENUE_OWNER":
+      case "venue_owner":
         return UserRole.VENUE_OWNER;
-      case "INVESTOR":
+      case "investor":
         return UserRole.INVESTOR;
+      case "dealer":
+        return "dealer";
+      case "user":
+        return "user";
       default:
-        return undefined;
+        return v; // Return the original value for unknown roles
     }
   };
 
-  const role = useMemo<UserRole | undefined>(
+  const role = useMemo<UserRole | string | undefined>(
     () => normalizeRole((user as any)?.type),
     [user]
   );
@@ -116,6 +120,10 @@ export default function UserMenu() {
         return "مالك معرض";
       case UserRole.INVESTOR:
         return "مستثمر";
+      case "dealer":
+        return "تاجر";
+      case "user":
+        return "مستخدم";
       default:
         return "مستخدم";
     }
@@ -131,12 +139,28 @@ export default function UserMenu() {
   };
 
   const items = useMemo<MenuItem[]>(() => {
+    // Role-based dashboard path mapping
+    const roleDashboardPaths: { [key: string]: string } = {
+      admin: "/admin",
+      super_admin: "/admin",
+      venue_owner: "/exhibitor",
+      dealer: "/dealer",
+      user: "/dashboard",
+      moderator: "/admin",
+      investor: "/investor/dashboard",
+    };
+
+    const roleKey = String(role || "user").toLowerCase();
+    const userDashboardPath = roleDashboardPaths[roleKey] || "/dashboard";
+    const userProfilePath =
+      roleKey === "dealer" ? "/dealer/profile" : "/dashboard/profile";
+
     const list: MenuItem[] = [
       {
         label: "لوحة التحكم",
         icon: <LayoutDashboard className="w-4 h-4" />,
-        onClick: () => navigateTo("/dashboard"),
-        path: "/dashboard",
+        onClick: () => navigateTo(userDashboardPath),
+        path: userDashboardPath,
       },
     ];
 
@@ -192,12 +216,22 @@ export default function UserMenu() {
       });
     }
 
+    // Dealer-specific menu item
+    // if (roleKey === "dealer") {
+    //   list.push({
+    //     label: "لوحة التاجر المحترف",
+    //     icon: <TrendingUp className="w-4 h-4" />,
+    //     onClick: () => navigateTo("/dealer/dashboard"),
+    //     path: "/dealer/dashboard",
+    //   });
+    // }
+
     list.push(
       {
         label: "إعدادات الحساب",
         icon: <Settings className="w-4 h-4" />,
-        onClick: () => navigateTo("/dashboard/profile"),
-        path: "/dashboard/profile",
+        onClick: () => navigateTo(userProfilePath),
+        path: userProfilePath,
       },
       {
         label: "تسجيل الخروج",

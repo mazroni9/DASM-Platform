@@ -1,6 +1,5 @@
+// src/components/shared/Footer.tsx
 import LoadingLink from "@/components/LoadingLink";
-import Image from "next/image";
-import type { ReactNode } from "react";
 import {
   ArrowUpRight,
   Gavel,
@@ -10,118 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
   Book,
-  Instagram,
-  Ghost,
-  Music2,
 } from "lucide-react";
-
-/** =========================
- *  Payment Logos (Unified + Bigger)
- *  ========================= */
-
-const LogoCard = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) => {
-  return (
-    <div
-      title={title}
-      aria-label={title}
-      className="
-        flex items-center justify-center
-        rounded-2xl border border-border/70
-        bg-white dark:bg-white
-        shadow-sm transition
-        hover:shadow-md
-        px-4
-        h-[72px]
-      "
-    >
-      {children}
-    </div>
-  );
-};
-
-const PaymentLogo = ({ src, alt }: { src: string; alt: string }) => {
-  return (
-    <div className="relative w-[140px] h-[46px] sm:w-[150px] sm:h-[50px]">
-      <Image
-        src={src}
-        alt={alt}
-        title={alt}
-        fill
-        className="object-contain"
-        sizes="(max-width: 640px) 140px, 150px"
-        priority={false}
-      />
-    </div>
-  );
-};
-
-/** =========================
- *  Twitter Bird (to match screenshot style)
- *  ========================= */
-const TwitterBirdIcon = ({ className = "" }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    role="img"
-    aria-label="Twitter"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <title>Twitter</title>
-    <path
-      fill="currentColor"
-      d="M19.944 7.926c.013.18.013.36.013.54 0 5.49-4.18 11.82-11.82 11.82-2.35 0-4.53-.69-6.37-1.88.33.04.65.05.99.05 1.94 0 3.73-.66 5.15-1.78-1.82-.03-3.35-1.23-3.88-2.88.25.04.5.06.77.06.36 0 .73-.05 1.07-.14-1.9-.38-3.33-2.06-3.33-4.07v-.05c.55.31 1.19.5 1.86.52-1.12-.75-1.86-2.03-1.86-3.48 0-.77.21-1.48.57-2.1 2.03 2.5 5.08 4.14 8.51 4.31-.06-.3-.1-.61-.1-.93 0-2.25 1.82-4.08 4.08-4.08 1.17 0 2.23.49 2.97 1.29.93-.18 1.8-.52 2.58-.99-.3.95-.95 1.75-1.79 2.25.82-.1 1.61-.32 2.34-.64-.55.81-1.24 1.52-2.04 2.09Z"
-    />
-  </svg>
-);
-
-/** =========================
- *  Social Icon Button (Like Screenshot)
- *  ========================= */
-const SocialIconButton = ({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: ReactNode;
-}) => {
-  const isMail = href.startsWith("mailto:");
-
-  return (
-    <a
-      href={href}
-      target={isMail ? undefined : "_blank"}
-      rel={isMail ? undefined : "noopener noreferrer"}
-      aria-label={label}
-      title={label}
-      className="
-        inline-flex items-center justify-center
-        h-10 w-10
-        rounded-lg
-        bg-[#CBD5D1]        /* ✅ رمادي فاتح زي الصورة */
-        text-[#0F3D2E]      /* ✅ لون الايقونة غامق */
-        hover:bg-[#D9E2DE]
-        transition
-        shadow-sm
-      "
-    >
-      {children}
-    </a>
-  );
-};
-
-type Payment = {
-  key: string;
-  title: string;
-  node: ReactNode;
-};
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -129,6 +17,7 @@ const Footer = () => {
   const mainLinks = [
     { href: "/about", label: "من نحن", icon: <Sparkles className="h-4 w-4" /> },
     { href: "/how-it-works", label: "كيف نعمل", icon: <Gavel className="h-4 w-4" /> },
+    { href: "/auctions", label: "الأسواق الرقمية", icon: <ArrowUpRight className="h-4 w-4" /> },
     { href: "/faq", label: "الأسئلة الشائعة", icon: <HelpCircle className="h-4 w-4" /> },
   ];
 
@@ -138,51 +27,8 @@ const Footer = () => {
     { href: "/fees-and-subscriptions", label: "سياسة الرسوم والاشتراكات", icon: <Gavel className="h-4 w-4" /> },
   ];
 
-  // ✅ نفس روابطك الحالية + أضفت البريد (زي الصورة)
-  const socialLinks = [
-    {
-      href: "mailto:mazroni@dasm.host",
-      label: "البريد",
-      icon: <Mail className="h-5 w-5" />,
-    },
-    {
-      href: "https://snapchat.com/t/4IDzLfrK",
-      label: "Snapchat",
-      icon: <Ghost className="h-5 w-5" />,
-    },
-    {
-      href: "https://www.instagram.com/dasm_net?igsh=eW44aW5mcWFkcjkw&utm_source=qr",
-      label: "Instagram",
-      icon: <Instagram className="h-5 w-5" />,
-    },
-    {
-      href: "https://www.tiktok.com/@dasm0202",
-      label: "TikTok",
-      icon: <Music2 className="h-5 w-5" />,
-    },
-    {
-      href: "https://x.com/DASM0909",
-      label: "Twitter",
-      icon: <TwitterBirdIcon className="h-5 w-5" />,
-    },
-  ];
-
-  // ✅ تأكد أن هذه الملفات موجودة داخل: public/payments/
-  const payments: Payment[] = [
-    { key: "amex", title: "American Express", node: <PaymentLogo src="/payments/amex.png" alt="American Express" /> },
-    { key: "mc", title: "Mastercard", node: <PaymentLogo src="/payments/mastercard.png" alt="Mastercard" /> },
-    { key: "visa", title: "Visa", node: <PaymentLogo src="/payments/visa.png" alt="Visa" /> },
-    { key: "mada", title: "Mada", node: <PaymentLogo src="/payments/mada.png" alt="Mada" /> },
-    { key: "samsung", title: "Samsung Pay", node: <PaymentLogo src="/payments/samsung-pay.png" alt="Samsung Pay" /> },
-    { key: "apple", title: "Apple Pay", node: <PaymentLogo src="/payments/apple-pay.png" alt="Apple Pay" /> },
-    { key: "stc", title: "STC Bank", node: <PaymentLogo src="/payments/stc-bank.png" alt="STC Bank" /> },
-  ];
-
   return (
-    <footer
-      dir="rtl"
-      className="relative overflow-hidden border-t border-border bg-background text-foreground"
-    >
+    <footer dir="rtl" className="relative overflow-hidden border-t border-border bg-background text-foreground">
       {/* Soft background glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 right-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
@@ -218,6 +64,14 @@ const Footer = () => {
               </p>
 
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <LoadingLink
+                  href="/auctions"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-white px-4 py-3 text-sm font-bold hover:bg-primary/90 transition"
+                >
+                  استكشف الأسواق
+                  <ArrowUpRight className="h-4 w-4" />
+                </LoadingLink>
+
                 <LoadingLink
                   href="/how-it-works"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold hover:bg-border/60 transition"
@@ -263,6 +117,24 @@ const Footer = () => {
                       </LoadingLink>
                     </li>
                   ))}
+
+                  {/* ✅ المدونة هنا بدل النافبار */}
+                  <li>
+                    <a
+                      href="https://blog.dasm.com.sa/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center justify-between rounded-xl border border-transparent bg-background/40 px-4 py-3 hover:bg-background hover:border-border transition"
+                    >
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        <span className="text-primary">
+                          <Book className="h-4 w-4" />
+                        </span>
+                        المدونة
+                      </span>
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </a>
+                  </li>
                 </ul>
               </nav>
 
@@ -310,52 +182,34 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* ✅ وسائل الدفع */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-bold">وسائل الدفع المتاحة</div>
-            <div className="hidden sm:block text-xs text-muted-foreground">
-              آمن — سريع — موثوق
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-            {payments.map((p) => (
-              <LogoCard key={p.key} title={p.title}>
-                {p.node}
-              </LogoCard>
-            ))}
-          </div>
-        </div>
-
-        {/* ✅ Social Icons (Like Screenshot) */}
-        <div className="mt-10">
-          <div className="flex items-center justify-center gap-2">
-            {socialLinks.map((s) => (
-              <SocialIconButton key={s.href} href={s.href} label={s.label}>
-                {s.icon}
-              </SocialIconButton>
-            ))}
-          </div>
-        </div>
-
         {/* Bottom bar */}
         <div className="mt-10 border-t border-border pt-5 flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="text-xs sm:text-sm text-muted-foreground text-center md:text-right">
             © {currentYear} منصة DASMe. جميع الحقوق محفوظة.
           </div>
 
-          {/* المدونة */}
-          <LoadingLink
-            href="/blog"
-            className="group inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-4 py-2 text-xs sm:text-sm text-muted-foreground hover:text-primary hover:bg-background transition-colors"
-          >
-            <span className="text-primary">
-              <Book className="h-4 w-4" />
-            </span>
-            المدونة
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-          </LoadingLink>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm">
+            <LoadingLink
+              href="/privacy"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              سياسة الخصوصية
+            </LoadingLink>
+            <span className="text-border">|</span>
+            <LoadingLink
+              href="/terms"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              الشروط والأحكام
+            </LoadingLink>
+            <span className="text-border">|</span>
+            <LoadingLink
+              href="/fees-and-subscriptions"
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              الرسوم والاشتراكات
+            </LoadingLink>
+          </div>
         </div>
       </div>
     </footer>

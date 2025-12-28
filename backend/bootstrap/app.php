@@ -17,55 +17,42 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-
-        /**
-         * Global middleware
-         * ✅ خلي CORS هنا علشان يشتغل لكل الطلبات + preflight OPTIONS قبل أي ميدلوير
-         */
+        // Global middleware
+        // ملاحظة: PerformanceHeaders يضيف هيدرز قياس فقط إذا PERF_HEADERS=true في .env
         $middleware->append([
-            \Illuminate\Http\Middleware\HandleCors::class, // ✅ moved here
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
-            \App\Http\Middleware\PerformanceHeaders::class,
+            \App\Http\Middleware\PerformanceHeaders::class, // <-- تم التبديل ليتطابق مع اسم الكلاس/الملف
         ]);
 
-        /**
-         * API middleware
-         * (شيلنا HandleCors من هنا لأنه بقى Global)
-         */
+        // $middleware->statefulApi();
+        // API middleware
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
+
         $middleware->api(append: [
+            // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
             \App\Http\Middleware\ResponseOptimizationMiddleware::class,
         ]);
 
-        /**
-         * Middleware aliases
-         */
+        // Register your custom middleware alias here
         $middleware->alias([
-            // Project middlewares
             'dealer'            => \App\Http\Middleware\DealerMiddleware::class,
             'admin'             => \App\Http\Middleware\AdminMiddleware::class,
             'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
 
-            'set.organization'  => \App\Http\Middleware\SetSpatieTeamContext::class,
+            // role middleware with parameters ->middleware('role:venue_owner,dealer')
+            'type'              => \App\Http\Middleware\RoleMiddleware::class,
+            'set.organization' => \App\Http\Middleware\SetSpatieTeamContext::class,
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
 
-            // ✅ IMPORTANT: Super Admin middleware alias (fix employees routes)
-            'super_admin'       => \App\Http\Middleware\EnsureSuperAdmin::class,
-            'admin_or_super_admin' => \App\Http\Middleware\EnsureAdminOrSuperAdmin::class,
-
-            // Utility aliases
-            'performance'       => \App\Http\Middleware\PerformanceHeaders::class,
+            // aliases محدثة:
+            'performance'       => \App\Http\Middleware\PerformanceHeaders::class, // <-- بدل PerformanceMiddleware
+            'api.cache'         => \App\Http\Middleware\ApiCacheMiddleware::class,
             'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
-
-            // ✅ Spatie Permission (Laravel 11 + spatie v6)
-            'role'              => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission'        => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
-        /**
-         * Web middleware (Inertia)
-         */
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);
@@ -74,10 +61,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'ليس لديك صلاحية للقيام بهذا الإجراء.',
                 ], 403);
             }
         });
-    })
-    ->create();
+    })->create();

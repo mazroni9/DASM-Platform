@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Users,
   Award,
+  CheckCircle,
   ArrowRight,
   Radio,
   PlayCircle,
@@ -122,7 +123,7 @@ const RotatingSentences = ({
     const deletingSpeed = 40;
     const pauseAtEnd = 1400;
 
-    const delay = isDeleting ? deletingSpeed : typingSpeed;
+    let delay = isDeleting ? deletingSpeed : typingSpeed;
 
     const timer = setTimeout(() => {
       if (!isDeleting) {
@@ -199,7 +200,7 @@ type Broadcast = {
   started_at?: string | null;
 };
 
-const LiveBadge = ({ label = "مباشر" }: { label?: string }) => (
+const LiveBadge = ({ label = "مباشر" }) => (
   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/90 text-white shadow-lg animate-pulse">
     <span className="relative flex h-2.5 w-2.5">
       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
@@ -221,7 +222,7 @@ const LiveBroadcastSection = () => {
         const res = await api.get("/api/broadcast");
         const b = res?.data?.data ?? null;
         if (mounted) setData(b);
-      } catch {
+      } catch (e) {
         if (mounted) setData(null);
       } finally {
         if (mounted) setLoading(false);
@@ -378,7 +379,7 @@ const FeaturedCars = () => {
         const response = await api.get("/api/featured-cars");
         const data = response?.data?.data ?? [];
         if (mounted) setCars(Array.isArray(data) ? data : []);
-      } catch {
+      } catch (e) {
         if (mounted) setCars([]);
       }
     };
@@ -681,7 +682,6 @@ const StatsSection = () => {
       color: "bg-secondary",
     },
   ];
-
   return (
     <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
@@ -698,7 +698,6 @@ const StatsSection = () => {
             إحصائيات حقيقية تثبت جودة خدماتنا وثقة عملائنا
           </p>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {stats.map((stat, index) => (
             <motion.div
@@ -756,6 +755,7 @@ const BenefitsSection = () => {
   return (
     <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+        {/* العنوان مثل الصورة */}
         <div className="text-center mb-10 md:mb-14">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -770,6 +770,7 @@ const BenefitsSection = () => {
           </p>
         </div>
 
+        {/* الكروت الأربع – نفس ترتيب وتصميم الصورة */}
         <div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
           dir="ltr"
@@ -802,6 +803,111 @@ const BenefitsSection = () => {
   );
 };
 
+// ========== قسم الأسئلة الشائعة ==========
+const FAQSection = () => {
+  const faqs = [
+    {
+      question: "كيف يمكنني المشاركة في المزاد؟",
+      answer:
+        "يمكنك المشاركة بالتسجيل في المنصة، ثم اختيار السيارة المناسبة ووضع مزايدتك خلال فترة المزاد.",
+    },
+    {
+      question: "هل يمكنني استرجاع السيارة بعد الشراء؟",
+      answer:
+        "نعم، يوجد سياسة استرجاع محددة توضح شروط وإجراءات استرجاع السيارة في حال وجود عيوب خفية.",
+    },
+    {
+      question: "ما هي طرق الدفع المتاحة؟",
+      answer:
+        "نوفر طرق دفع متعددة تشمل التحويل البنكي وبطاقات الائتمان والدفع الإلكتروني عبر منصات آمنة.",
+    },
+    {
+      question: "كيف يتم فحص السيارات قبل المزاد؟",
+      answer:
+        "جميع السيارات تخضع لفحص فني دقيق يشمل المحرك، الهيكل، النظام الكهربائي، والتأكد من عدم وجود عيوب هيكلية.",
+    },
+  ];
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const toggleFAQ = (index: number) =>
+    setActiveIndex(activeIndex === index ? null : index);
+
+  return (
+    <section className="py-16 md:py-20 bg-background">
+      <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
+        <div className="text-center mb-12 md:mb-16">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
+          >
+            الأسئلة الشائعة
+          </motion.h2>
+          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
+            إجابات على أكثر الأسئلة شيوعًا حول منصة داسم للمزادات
+          </p>
+        </div>
+        <div className="space-y-3 md:space-y-4">
+          {faqs.map((faq, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="bg-card rounded-xl md:rounded-2xl overflow-hidden border border-border hover:border-border transition-colors duration-300"
+            >
+              <button
+                className="w-full text-right p-4 md:p-6 flex justify-between items-center text-foreground font-medium text-base md:text-lg hover:bg-border transition-colors duration-200"
+                onClick={() => toggleFAQ(index)}
+                aria-expanded={activeIndex === index}
+                aria-controls={`faq-panel-${index}`}
+              >
+                <span className="flex-1 text-right pr-3 md:pr-4">
+                  {faq.question}
+                </span>
+                <motion.div
+                  animate={{ rotate: activeIndex === index ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </motion.div>
+              </button>
+              <motion.div
+                id={`faq-panel-${index}`}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{
+                  height: activeIndex === index ? "auto" : 0,
+                  opacity: activeIndex === index ? 1 : 0,
+                }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 md:p-6 pt-0 text-foreground border-t border-border text-sm md:text-base leading-relaxed">
+                  {faq.answer}
+                </div>
+              </motion.div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ========== الصفحة الرئيسية ==========
 export default function Page() {
   const [titleDone, setTitleDone] = useState(false);
@@ -826,8 +932,8 @@ export default function Page() {
             />
             <RotatingSentences start={mounted && titleDone} />
             <p className="text-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 md:mt-6 leading-relaxed px-4">
-              منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات ذكية،
-              شفافية مطلقة، ووصول عالمي.
+              منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات
+              ذكية، شفافية مطلقة، ووصول عالمي.
             </p>
           </motion.div>
         </div>
@@ -848,6 +954,7 @@ export default function Page() {
       <AuctionTimeline />
       <StatsSection />
       <BenefitsSection />
+      <FAQSection />
 
       <Footer />
     </>

@@ -11,7 +11,6 @@ enum UserRole: string
     case INVESTOR = 'investor';
     case DEALER = 'dealer';
     case USER = 'user';
-    case EMPLOYEE = 'employee';
 
     /**
      * Get the display label for the role
@@ -26,7 +25,6 @@ enum UserRole: string
             self::INVESTOR => 'Investor',
             self::DEALER => 'Dealer',
             self::USER => 'User',
-            self::EMPLOYEE => 'Employee',
         };
     }
 
@@ -43,7 +41,6 @@ enum UserRole: string
             self::INVESTOR => 'مستثمر',
             self::DEALER => 'تاجر',
             self::USER => 'مستخدم',
-            self::EMPLOYEE => 'موظف',
         };
     }
 
@@ -60,7 +57,6 @@ enum UserRole: string
             self::INVESTOR => 'yellow',
             self::DEALER => 'blue',
             self::USER => 'gray',
-            self::EMPLOYEE => 'orange',
         };
     }
 
@@ -81,10 +77,7 @@ enum UserRole: string
     public function canManageAuctions(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN,
-            self::ADMIN,
-            self::MODERATOR,
-            self::VENUE_OWNER => true,
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::VENUE_OWNER => true,
             default => false,
         };
     }
@@ -95,9 +88,7 @@ enum UserRole: string
     public function canManageUsers(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN,
-            self::ADMIN,
-            self::MODERATOR => true,
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR => true,
             default => false,
         };
     }
@@ -108,9 +99,7 @@ enum UserRole: string
     public function canManageVenues(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN,
-            self::ADMIN,
-            self::VENUE_OWNER => true,
+            self::SUPER_ADMIN, self::ADMIN, self::VENUE_OWNER => true,
             default => false,
         };
     }
@@ -121,9 +110,7 @@ enum UserRole: string
     public function canAccessInvestments(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN,
-            self::ADMIN,
-            self::INVESTOR => true,
+            self::SUPER_ADMIN, self::ADMIN, self::INVESTOR => true,
             default => false,
         };
     }
@@ -142,15 +129,13 @@ enum UserRole: string
     public static function getTranslations(): array
     {
         $translations = [];
-
         foreach (self::cases() as $role) {
             $translations[$role->value] = [
                 'en' => $role->label(),
                 'ar' => $role->labelAr(),
-                'color' => $role->color(),
+                'color' => $role->color()
             ];
         }
-
         return $translations;
     }
 
@@ -159,7 +144,7 @@ enum UserRole: string
      */
     public static function isValid(string $value): bool
     {
-        return in_array($value, self::values(), true);
+        return in_array($value, self::values());
     }
 
     /**
