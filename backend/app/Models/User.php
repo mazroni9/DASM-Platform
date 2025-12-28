@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use Illuminate\Support\Facades\Hash;
+use App\Models\DeviceToken;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
@@ -21,8 +21,9 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable, CausesActivity, LogsActivity, HasRoles;
 
-    protected $guard_name = 'sanctum';
+    protected $guard_name = 'sanctum'; 
     protected function getDefaultGuardName(): string { return $this->guard_name; }
+
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -60,18 +61,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'organization_id'
     ];
 
-    protected $hidden = [
-        'password',
-        'password_hash',
-        'remember_token',
-        'email_verification_token',
-        'password_reset_token',
-    ];
 
     public function getAuthPassword()
     {
-        // Laravel auth will use this column instead of "password"
-        return $this->password_hash;
+        return $this->password_hash; // Return the value of your custom password column
     }
 
     // Casts for automatic type conversion
@@ -83,99 +76,41 @@ class User extends Authenticatable implements MustVerifyEmail
         'type' => UserRole::class,
     ];
 
-    /**
-     * ✅ مهم: لو أي كود بيعمل $user->password = ...
-     * هنضمن إن password_hash يتعبّي تلقائيًا (ومايبقاش null)
-     */
-    public function setPasswordAttribute($value): void
-    {
-        if ($value === null || $value === '') {
-            return;
-        }
-
-        $hashed = $this->normalizePasswordValue((string) $value);
-
-        // نخزن في العمود الأساسي عندك
-        $this->attributes['password_hash'] = $hashed;
-
-        // لو عندك عمود password في قاعدة البيانات (واضح من اللوج إنه موجود)
-        $this->attributes['password'] = $hashed;
-    }
-
-    /**
-     * ✅ لو حد بيعمل $user->password_hash = ...
-     * نخزنها هاش برضو (بدون double hashing)
-     */
-    public function setPasswordHashAttribute($value): void
-    {
-        if ($value === null || $value === '') {
-            return;
-        }
-
-        $hashed = $this->normalizePasswordValue((string) $value);
-        $this->attributes['password_hash'] = $hashed;
-
-        // مزامنة password لو موجود
-        $this->attributes['password'] = $hashed;
-    }
-
-    private function normalizePasswordValue(string $value): string
-    {
-        // لو already hashed (bcrypt/argon) ما نعملش re-hash
-        if (Str::startsWith($value, ['$2y$', '$argon2i$', '$argon2id$'])) {
-            return $value;
-        }
-        return Hash::make($value);
-    }
-
     protected static function boot()
     {
         parent::boot();
 
-        static::created(function (self $user) {
-            $user->user_code = self::makeUserCode($user);
+        static::created(function ($user) {
+            if ($user->type == UserRole::USER) {
+                $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->type == UserRole::DEALER) {
+                $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->type == UserRole::VENUE_OWNER) {
+                $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->type == UserRole::INVESTOR) {
+                $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
+            } else {
+                $user_code = Str::limit((ucfirst($user->type)), 3, '') . $user->area?->code . '_0' . $user->id;
+            }
+            $user->user_code = $user_code;
             $user->saveQuietly();
         });
 
-        static::updating(function (self $user) {
-            $user->user_code = self::makeUserCode($user);
+        static::updating(function ($user) {
+            if ($user->type == UserRole::USER) {
+                $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->type == UserRole::DEALER) {
+                $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->type == UserRole::VENUE_OWNER) {
+                $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
+            } elseif ($user->type == UserRole::INVESTOR) {
+                $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
+            } else {
+                $role = $user->type->value;
+                $user_code = Str::limit((ucfirst($role)), 3, '_') . $user->area?->code . '_0' . $user->id;
+            }
+            $user->user_code = $user_code;
         });
-    }
-
-    private static function makeUserCode(self $user): string
-    {
-        $areaCode = $user->area?->code ?? '';
-
-        // type عندك cast إلى Enum، لكن نخليها آمنة لأي حالة
-        $roleEnum = $user->type instanceof UserRole
-            ? $user->type
-            : UserRole::tryFrom((string) $user->type);
-
-        // لو معرفناش الدور لأي سبب: fallback
-        $roleValue = $roleEnum?->value ?? (string) $user->type;
-
-        // نفس منطقك للأدوار الأساسية
-        if ($roleEnum === UserRole::USER) {
-            return 'Usr_' . $areaCode . '_0' . $user->id;
-        }
-
-        if ($roleEnum === UserRole::DEALER) {
-            return 'Dlr_' . $areaCode . '_0' . $user->id;
-        }
-
-        if ($roleEnum === UserRole::VENUE_OWNER) {
-            return 'Csr_' . $areaCode . '_0' . $user->id;
-        }
-
-        if ($roleEnum === UserRole::INVESTOR) {
-            return 'Inv_' . $areaCode . '_0' . $user->id;
-        }
-
-        // ✅ FIX: هنا كان ucfirst بياخد Enum object وده سبب crash
-        // هنطلع abbreviation محترم لأي role (Admin/SuperAdmin/Moderator/Employee...)
-        $abbr = Str::substr(Str::studly($roleValue), 0, 3); // e.g. SuperAdmin => Sup, Employee => Emp
-
-        return $abbr . '_' . $areaCode . '_0' . $user->id;
     }
 
     // Relationships
@@ -184,26 +119,33 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Area::class);
     }
 
+    /**
+     * Get the organization that the user belongs to.
+     */
     public function organization()
     {
         return $this->belongsTo(Organization::class);
     }
 
+    // A User may have many bids.
     public function bids()
     {
         return $this->hasMany(Bid::class);
     }
 
+    // A User may have one wallet.
     public function wallet()
     {
         return $this->hasOne(Wallet::class);
     }
 
+    // If the user is a dealer, they have one dealer record.
     public function dealer()
     {
         return $this->hasOne(Dealer::class);
     }
 
+    // ✅ If the user is a venue owner
     public function venueOwner()
     {
         return $this->hasOne(VenueOwner::class, 'user_id');
@@ -218,17 +160,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Car::class);
     }
-
     public function routeNotificationForFcm()
     {
         return $this->deviceTokens()->pluck('token')->toArray();
     }
 
+    // Check if email is verified
     public function hasVerifiedEmail()
     {
         return $this->email_verified_at !== null;
     }
 
+    // Mark email as verified
     public function markEmailAsVerified()
     {
         return $this->forceFill([

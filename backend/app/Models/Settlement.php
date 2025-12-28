@@ -20,7 +20,21 @@ class Settlement extends Model
         'net_amount',
         'muroor_fee',
         'buyer_net_amount',
-        'status'
+        'status',
+        // DASM Dual-Page Payment Model - Multi-Gateway Support
+        'car_price',
+        'platform_commission',
+        'service_fees_total',
+        'service_fees_payment_status',
+        'service_fees_payment_ref',      // Generic reference (was clickpay_transaction_ref)
+        'service_fees_gateway',           // MOYASAR | CLICKPAY
+        'vehicle_price_total',
+        'escrow_payment_status',
+        'seller_type',
+        'seller_commission_deduction',
+        'partner_incentive',
+        'escrow_release_status',
+        'verification_code',
     ];
 
     public $timestamps = false;

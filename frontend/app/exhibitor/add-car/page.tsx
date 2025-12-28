@@ -77,8 +77,12 @@ export default function ExhibitorDashboard() {
         </header>
 
         <main className="flex-1 min-h-0 overflow-y-auto">
-          <div className="relative" />
+          {/* خلفيات ناعمة موحّدة مع الثيم */}
+          <div className="relative">{/* Removed gradients */}</div>
+
+          {/* محتوى الصفحة */}
           <div className="relative px-3 md:px-6 py-4">
+            {/* بطاقات/نموذج متمركزة داخل كونتينر متجاوب */}
             <div className="max-w-7xl mx-auto">
               <div className="rounded-2xl border border-border bg-card p-3 md:p-6 shadow-sm">
                 <AddCar />

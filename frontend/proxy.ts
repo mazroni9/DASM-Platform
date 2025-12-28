@@ -9,7 +9,7 @@ const ROLE_DASHBOARD_PATHS: { [key: string]: string } = {
   admin: "/admin",
   super_admin: "/admin",
   venue_owner: "/exhibitor",
-  dealer: "/dashboard",
+  dealer: "/dealer",
   user: "/dashboard",
   moderator: "/admin",
   investor: "/investor/dashboard",
@@ -60,9 +60,9 @@ export async function proxy(request: NextRequest) {
 
   // Check for the HttpOnly refresh token cookie
   const refreshTokenCookie = request.cookies.get("refresh_token")?.value;
-  console.log('not_RefreshToken_Cookie',refreshTokenCookie);
-  console.log('cookie',request.headers.get('cookie'))
-  console.warn('warn_not_RefreshToken_Cookie')
+  console.log("not_RefreshToken_Cookie", refreshTokenCookie);
+  console.log("cookie", request.headers.get("cookie"));
+  console.warn("warn_not_RefreshToken_Cookie");
   if (!refreshTokenCookie) {
     if (!isGuestPath(pathname)) {
       const loginUrl = new URL("/auth/login", request.url);
@@ -75,7 +75,7 @@ export async function proxy(request: NextRequest) {
   try {
     // Call the middleware-specific endpoint to get user role using the refresh token
     const apiUrl = buildMiddlewareApiUrl(request);
-    console.log('refreshTokenCookie',refreshTokenCookie);
+    console.log("refreshTokenCookie", refreshTokenCookie);
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
@@ -84,10 +84,9 @@ export async function proxy(request: NextRequest) {
       },
       credentials: "include", // Important for cross-domain cookies
     });
-    
-    
+
     console.log(response);
-    
+
     if (response.ok) {
       const userData = await response.json();
       const userRole = userData.type;
@@ -135,9 +134,7 @@ export async function proxy(request: NextRequest) {
   } catch (error) {
     console.error("Middleware auth check failed:", error);
     // CRITICAL FIX: In production, if the backend call fails (network, CORS, etc.),
-    
   }
-
 
   return NextResponse.next();
 }
@@ -153,5 +150,3 @@ export const config = {
     "/auth/:path*",
   ],
 };
-
-

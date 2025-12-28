@@ -1,291 +1,440 @@
 "use client";
 
 import api from "@/lib/axios";
-import { useState, useEffect } from "react";
-import { CheckCircle, Car, SaudiRiyal, Settings, Loader2 } from "lucide-react";
+import { useState, useEffect, use } from "react";
+import {
+  CheckCircle,
+  XCircle,
+  Wallet,
+  FileText,
+  ArrowRight,
+  Loader2,
+  Car,
+  User,
+  Shield,
+  Sparkles,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
-type PageProps = { params: { car_id: string } };
+type PageProps = { params: Promise<{ car_id: string }> };
+
+// Currency formatter using Intl.NumberFormat
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat("ar-SA", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
 
 export default function ConfirmSalePage({ params }: PageProps) {
   const router = useLoadingRouter();
-  const { car_id } = params;
+  const { car_id } = use(params);
 
-  const roundToNearest5or0 = (number: number): number => Math.round(number / 5) * 5;
-
-  const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
-  const [lastBid, setLastBid] = useState(0);
-  const [item, setItem] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    auction_id: null as number | null,
-    user_id: null as number | null,
-  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
   const [isChecked, setIsChecked] = useState(false);
 
-  const handleConfirmSale = async () => {
-    if (item?.active_auction) {
-      try {
-        const response = await api.post("/api/auctions/confirm-sale", {
-          auction_id: item.active_auction.id,
-          final_price: item.active_auction.current_bid,
-        });
-
-        if (response.data.status === "success") {
-          toast.success("تم تأكيد البيع بنجاح!");
-          router.push(`/dashboard/carDetails/${car_id}`);
-        }
-      } catch (error) {
-        console.error("Error confirming sale:", error);
-        toast.error("حدث خطأ في تأكيد البيع. يرجى المحاولة مرة أخرى.");
-      }
-    }
-  };
-
   useEffect(() => {
-    async function fetchCarData() {
+    async function fetchSettlement() {
       try {
-        const response = await api.get(`/api/auctions/calculate-settlement/${car_id}`);
-        if (response.data.data) {
-          const responseData = response.data.data.data || response.data.data;
-          setCar(responseData.car);
-          setLastBid(roundToNearest5or0(responseData.auction_price || 0));
-          setItem(responseData);
-          setFormData((prev) => ({
-            ...prev,
-            auction_id: responseData.auction_id,
-            user_id: null,
-          }));
+        const response = await api.get(
+          `/api/auctions/calculate-settlement/${car_id}`
+        );
+        if (response.data?.status === "success") {
+          const responseData = response.data.data?.data || response.data.data;
+          setData(responseData);
+        } else {
+          setError(response.data?.message || "خطأ في تحميل البيانات");
         }
-      } catch (error) {
-        console.error("Error fetching car data:", error);
-        setError(error);
+      } catch (err: any) {
+        console.error("Error fetching settlement:", err);
+        setError(err?.response?.data?.message || "حدث خطأ غير متوقع");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchCarData();
+    fetchSettlement();
   }, [car_id]);
 
-  // Loading
+  const handleConfirmSale = async () => {
+    if (!data?.active_auction?.id || !isChecked) return;
+
+    setSubmitting(true);
+    try {
+      const response = await api.post("/api/auctions/confirm-sale", {
+        auction_id: data.active_auction.id,
+        final_price: data.auction_price,
+      });
+
+      if (response.data?.status === "success") {
+        toast.success("تم تأكيد البيع بنجاح!");
+        router.push(`/dashboard/carDetails/${car_id}`);
+      } else {
+        toast.error(response.data?.message || "خطأ في تأكيد البيع");
+      }
+    } catch (err: any) {
+      console.error("Error confirming sale:", err);
+      toast.error(err?.response?.data?.message || "حدث خطأ في تأكيد البيع");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    router.back();
+  };
+
+  // Loading State
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center px-4">
-        <div className="flex items-center gap-3 bg-slate-900/60 border border-slate-800 px-4 py-3 rounded-xl shadow-2xl">
-          <Loader2 className="w-5 h-5 animate-spin text-fuchsia-400" />
-          <span className="text-sm text-slate-300">جاري تحميل تفاصيل الصفقة...</span>
-        </div>
+      <div
+        dir="rtl"
+        className="min-h-screen bg-background text-foreground grid place-items-center px-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4 bg-card border border-border px-8 py-6 rounded-2xl shadow-2xl"
+        >
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <span className="text-foreground/70">
+            جاري تحميل تفاصيل الصفقة...
+          </span>
+        </motion.div>
       </div>
     );
   }
 
-  // Error
-  if (error) {
+  // Error State
+  if (error || !data) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center px-4" dir="rtl">
-        <div className="bg-rose-500/10 border border-rose-400/30 text-rose-200 px-5 py-4 rounded-xl shadow-2xl">
-          خطأ في تحميل بيانات السيارة. يرجى المحاولة مرة أخرى.
-        </div>
+      <div
+        dir="rtl"
+        className="min-h-screen bg-background text-foreground grid place-items-center px-4"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-4 bg-destructive/10 border border-destructive/30 px-8 py-6 rounded-2xl max-w-md text-center"
+        >
+          <AlertCircle className="w-12 h-12 text-destructive" />
+          <p className="text-destructive">
+            {error || "لم يتم العثور على البيانات"}
+          </p>
+          <button
+            onClick={() => router.back()}
+            className="mt-2 px-4 py-2 bg-card border border-border rounded-lg text-foreground/70 hover:bg-muted transition-colors"
+          >
+            العودة
+          </button>
+        </motion.div>
       </div>
     );
   }
 
-  // Not found
-  if (!item) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 grid place-items-center px-4" dir="rtl">
-        <div className="bg-slate-900/60 border border-slate-800 text-slate-200 px-5 py-4 rounded-xl shadow-2xl">
-          لم يتم العثور على بيانات السيارة.
-        </div>
-      </div>
-    );
-  }
-
-  // Financials
-  const finalSalePrice = item.auction_price;
-  const platformFee = item.platform_fee;
-  const myfatoorahFee = item.myfatoorah_fee;
-  const netAmount = item.net_amount;
+  // Extract data
+  const car = data.car;
+  const seller = data.seller;
+  const buyer = data.buyer;
+  const isPartner = seller?.is_partner ?? false;
+  const auctionPrice = data.auction_price ?? 0;
+  const platformFee = data.platform_fee ?? 0;
+  const platformFeeVat = data.platform_fee_vat ?? 0;
+  const totalDeduction = data.total_deduction ?? 0;
+  const netAmount = data.net_amount ?? 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4" dir="rtl">
-      <div className="max-w-5xl mx-auto">
+    <div
+      dir="rtl"
+      className="min-h-screen bg-background text-foreground py-8 px-4"
+    >
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 text-slate-100 px-4 py-2 rounded-xl mb-3">
-            <Settings className="w-4 h-4 text-fuchsia-300" />
-            <span className="text-sm text-slate-200">مراجعة الصفقة</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold">مراجعة وتأكيد البيع</h1>
-          <p className="text-slate-400 mt-2">يرجى مراجعة جميع التفاصيل قبل إتمام بيع سيارتك</p>
-        </div>
-
-        {/* Deal Summary */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur p-6 mb-8">
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-            {/* Car image & title */}
-            <div className="flex-shrink-0">
-              <img
-                src={car?.images?.[0] || "/placeholder-car.jpg"}
-                alt={`${car?.make ?? ""} ${car?.model ?? ""}`}
-                className="w-52 h-36 object-cover rounded-xl border border-slate-800"
-              />
-              <h5 className="text-lg font-bold text-slate-100 mt-3">
-                {car?.make} {car?.model} {car?.year}
-              </h5>
-            </div>
-
-            {/* Price boxes */}
-            <div className="flex-grow w-full text-center lg:text-right">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-100 mb-2">
-                {car?.make} {car?.model} {car?.year}
-              </h2>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
-                  <p className="text-slate-400 text-sm mb-1">سعر البيع النهائي</p>
-                  <div className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-fuchsia-400 flex items-center gap-1 justify-center sm:justify-start">
-                    {finalSalePrice?.toLocaleString?.() ?? finalSalePrice}
-                    <SaudiRiyal className="w-5 h-5" />
-                  </div>
-                </div>
-
-                <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4">
-                  <p className="text-slate-400 text-sm mb-1">المبلغ الصافي لك</p>
-                  <div className="text-3xl font-extrabold text-fuchsia-300 flex items-center gap-1 justify-center sm:justify-start">
-                    {netAmount?.toLocaleString?.() ?? netAmount}
-                    <SaudiRiyal className="w-6 h-6" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Financial Breakdown */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur p-6 mb-8">
-          <h3 className="text-xl md:text-2xl font-bold text-slate-100 mb-6">التفصيل المالي</h3>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-center py-3 px-4 rounded-xl bg-slate-950/50 border border-slate-800">
-              <span className="text-slate-300">سعر البيع النهائي</span>
-              <span className="font-bold text-slate-100 flex items-center gap-1">
-                {finalSalePrice?.toLocaleString?.() ?? finalSalePrice}
-                <SaudiRiyal className="w-4 h-4" />
-              </span>
-            </div>
-
-            <div className="text-sm text-rose-300/90 mt-4">الخصومات</div>
-
-            <div className="flex justify-between items-center py-3 px-4 rounded-xl bg-slate-950/40 border border-slate-800">
-              <span className="text-slate-400">رسوم المنصة</span>
-              <span className="text-rose-300 font-semibold flex items-center gap-1">
-                - {platformFee?.toLocaleString?.() ?? platformFee}
-                <SaudiRiyal className="w-4 h-4" />
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center py-3 px-4 rounded-xl bg-slate-950/40 border border-slate-800">
-              <span className="text-slate-400">رسوم بوابة الدفع</span>
-              <span className="text-rose-300 font-semibold flex items-center gap-1">
-                - {myfatoorahFee?.toLocaleString?.() ?? myfatoorahFee}
-                <SaudiRiyal className="w-4 h-4" />
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center py-4 px-4 rounded-xl bg-gradient-to-r from-violet-600/15 to-fuchsia-600/15 border border-fuchsia-500/30 mt-2">
-              <span className="text-slate-200 font-bold">المبلغ الصافي المستحق لك</span>
-              <span className="text-2xl font-extrabold text-fuchsia-300 flex items-center gap-1">
-                {netAmount?.toLocaleString?.() ?? netAmount}
-                <SaudiRiyal className="w-5 h-5" />
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Next Steps */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur p-6 mb-8">
-          <h3 className="text-xl md:text-2xl font-bold text-slate-100 mb-6">ما يحدث بعد ذلك</h3>
-
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="grid place-items-center w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/30">
-                <Settings className="text-violet-300 w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-slate-100 mb-1">الخطوة الأولى: نقل الملكية</h4>
-                <p className="text-slate-400">
-                  سيتم معالجة نقل الملكية إلكترونياً من خلال نظام "تام". يضمن ذلك نقل ملكية آمن وقانوني للمشتري.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="grid place-items-center w-10 h-10 rounded-xl bg-fuchsia-600/20 border border-fuchsia-500/30">
-                <Car className="text-fuchsia-300 w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-slate-100 mb-1">الخطوة الثانية: تسليم السيارة</h4>
-                <p className="text-slate-400">
-                  يرجى تسليم سيارتك إلى معرض الشريك المخصص لدينا. سيقوم فريقنا بفحص المركبة والتعامل مع عملية التسليم مع المشتري.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="grid place-items-center w-10 h-10 rounded-xl bg-amber-600/20 border border-amber-500/30">
-                <SaudiRiyal className="text-amber-300 w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-lg font-semibold text-slate-100 mb-1">الخطوة الثالثة: استلام الدفعة</h4>
-                <p className="text-slate-400">
-                  المبلغ الصافي البالغ {netAmount?.toLocaleString?.() ?? netAmount} سيتم تحويله إلى حسابك خلال 24-48 ساعة بعد
-                  تأكيد معرضنا استلام السيارة.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Final Confirmation */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur p-6">
-          <h3 className="text-xl md:text-2xl font-bold text-slate-100 mb-6">التأكيد النهائي</h3>
-
-          <div className="space-y-6">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                id="agreement"
-                checked={isChecked}
-                onChange={(e) => setIsChecked(e.target.checked)}
-                className="mt-1 h-5 w-5 rounded border-slate-600 bg-slate-900 text-fuchsia-600 focus:ring-fuchsia-500/60 focus:ring-2"
-              />
-              <span className="text-slate-300 text-base leading-relaxed">
-                لقد راجعت جميع التفاصيل المالية وأوافق على الشروط والأحكام لإتمام هذا البيع. أتفهم تفصيل الخصومات وأؤكد
-                المبلغ الصافي المستحق لي.
-              </span>
-            </label>
-
-            <button
-              onClick={handleConfirmSale}
-              disabled={!isChecked}
-              className={`w-full py-4 px-6 rounded-xl text-lg font-bold transition-all duration-200 flex items-center justify-center gap-3 ${
-                isChecked
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shadow-lg hover:shadow-xl"
-                  : "bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700"
-              }`}
-            >
-              <CheckCircle className="w-6 h-6" />
-              تأكيد البيع النهائي واستلام الدفعة
-            </button>
-
-            <p className="text-xs text-slate-500 text-center">
-              بالضغط على زر التأكيد، أنت توافق على الشروط والأحكام وسياسة الخصوصية.
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 mb-8"
+        >
+          <button
+            onClick={() => router.back()}
+            className="p-2 bg-card border border-border rounded-xl hover:bg-muted transition-colors"
+          >
+            <ArrowRight className="w-5 h-5 text-foreground/60" />
+          </button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              تأكيد البيع
+            </h1>
+            <p className="text-foreground/60 text-sm mt-1">
+              مراجعة التفاصيل المالية قبل إتمام الصفقة
             </p>
           </div>
+        </motion.div>
+
+        {/* Split Layout */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left: Car & Buyer Info */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-6"
+          >
+            {/* Car Card */}
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl">
+              <div className="aspect-video relative">
+                <img
+                  src={car?.images?.[0] || "/placeholder-car.jpg"}
+                  alt={`${car?.make ?? ""} ${car?.model ?? ""}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src =
+                      "https://via.placeholder.com/600x400?text=No+Image";
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/50" />
+                <div className="absolute bottom-4 right-4 left-4">
+                  <h2 className="text-xl font-bold text-white">
+                    {car?.make} {car?.model} {car?.year}
+                  </h2>
+                  {car?.plate_number && (
+                    <p className="text-white/80 text-sm mt-1">
+                      رقم اللوحة: {car.plate_number}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Buyer Info */}
+            {buyer && (
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-primary/20 border border-primary/30 rounded-lg">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    معلومات المشتري
+                  </h3>
+                </div>
+                <div className="bg-muted border border-border rounded-xl p-4">
+                  <p className="text-foreground font-medium">{buyer.name}</p>
+                  <p className="text-foreground/60 text-sm mt-1">
+                    رقم المشتري: #{buyer.id}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Trust Note - Escrow Explanation */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-500/20 rounded-lg mt-0.5">
+                  <Shield className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                    ضمان الدفع الآمن
+                  </h4>
+                  <p className="text-amber-700 dark:text-amber-300/80 text-sm leading-relaxed">
+                    يتم الاحتفاظ بمبلغ البيع في حساب الضمان (Escrow) حتى اكتمال
+                    عملية نقل الملكية وتسليم السيارة. سيتم تحويل المبلغ إلى
+                    حسابك خلال 24-48 ساعة عمل.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right: Financial Receipt Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-6"
+          >
+            {/* Receipt Card */}
+            <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+              {/* Receipt Header */}
+              <div className="bg-primary/10 border-b border-border p-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/20 rounded-lg">
+                    <FileText className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">
+                      كشف الحساب المالي
+                    </h3>
+                    <p className="text-foreground/60 text-xs">
+                      Financial Statement
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Receipt Body */}
+              <div className="p-6 space-y-4">
+                {/* Winning Bid */}
+                <div className="flex justify-between items-center py-3 px-4 bg-muted border border-border rounded-xl">
+                  <span className="text-foreground/70 font-medium">
+                    سعر الفوز (Winning Bid)
+                  </span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {formatCurrency(auctionPrice)}{" "}
+                    <span className="text-sm text-foreground/60">ر.س</span>
+                  </span>
+                </div>
+
+                {/* Dashed Separator */}
+                <div className="border-t-2 border-dashed border-border my-4" />
+
+                {/* Deductions Section - Only for Individual Sellers */}
+                {!isPartner && (
+                  <>
+                    <p className="text-sm text-destructive font-medium px-1">
+                      الخصومات:
+                    </p>
+
+                    {/* Platform Commission */}
+                    <div className="flex justify-between items-center py-2.5 px-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+                      <span className="text-foreground/60">عمولة المنصة</span>
+                      <span className="text-destructive font-semibold">
+                        - {formatCurrency(platformFee)} ر.س
+                      </span>
+                    </div>
+
+                    {/* VAT on Commission */}
+                    <div className="flex justify-between items-center py-2.5 px-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+                      <span className="text-foreground/60">
+                        ضريبة القيمة المضافة (15%)
+                      </span>
+                      <span className="text-destructive font-semibold">
+                        - {formatCurrency(platformFeeVat)} ر.س
+                      </span>
+                    </div>
+
+                    {/* Total Deduction */}
+                    <div className="flex justify-between items-center py-2 px-4 text-sm">
+                      <span className="text-foreground/50">
+                        إجمالي الخصومات
+                      </span>
+                      <span className="text-destructive/80">
+                        - {formatCurrency(totalDeduction)} ر.س
+                      </span>
+                    </div>
+
+                    {/* Dashed Separator */}
+                    <div className="border-t-2 border-dashed border-border my-4" />
+                  </>
+                )}
+
+                {/* Partner Privilege Box */}
+                {isPartner && (
+                  <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 my-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/20 rounded-lg">
+                        <Sparkles className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-primary">
+                          امتياز الشريك
+                        </p>
+                        <p className="text-primary/80 text-sm">
+                          لا يتم خصم أي عمولة من حسابك
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Net Payout - Prominent Section */}
+                <div className="bg-emerald-500/10 border-2 border-emerald-500/40 rounded-xl p-5">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-6 h-6 text-emerald-500" />
+                      <span className="text-foreground font-bold text-lg">
+                        صافي المستحقات
+                      </span>
+                    </div>
+                    <span className="text-3xl font-extrabold text-emerald-500">
+                      {formatCurrency(netAmount)}{" "}
+                      <span className="text-base text-emerald-600 dark:text-emerald-400">
+                        ر.س
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Timeline Note */}
+                <div className="flex items-center gap-2 text-foreground/50 text-sm mt-4 px-1">
+                  <Clock className="w-4 h-4" />
+                  <span>سيتم التحويل خلال 24-48 ساعة عمل</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Agreement & Actions */}
+            <div className="bg-card border border-border rounded-2xl p-6">
+              {/* Checkbox Agreement */}
+              <label className="flex items-start gap-3 cursor-pointer mb-6">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => setIsChecked(e.target.checked)}
+                  className="mt-1 h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary/60 focus:ring-2"
+                />
+                <span className="text-foreground/70 text-sm leading-relaxed">
+                  لقد راجعت جميع التفاصيل المالية وأوافق على{" "}
+                  <a href="/terms" className="text-primary hover:underline">
+                    الشروط والأحكام
+                  </a>{" "}
+                  لإتمام هذا البيع. أتفهم أن المبلغ سيُحتجز في حساب الضمان حتى
+                  اكتمال الإجراءات.
+                </span>
+              </label>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Confirm Sale Button */}
+                <button
+                  onClick={handleConfirmSale}
+                  disabled={!isChecked || submitting}
+                  className={cn(
+                    "flex-1 py-4 px-6 rounded-xl text-lg font-bold transition-all duration-200 flex items-center justify-center gap-3",
+                    isChecked && !submitting
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl"
+                      : "bg-muted text-foreground/50 cursor-not-allowed border border-border"
+                  )}
+                >
+                  {submitting ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-6 h-6" />
+                  )}
+                  {submitting ? "جاري التأكيد..." : "تأكيد البيع"}
+                </button>
+
+                {/* Cancel Button */}
+                <button
+                  onClick={handleCancel}
+                  disabled={submitting}
+                  className="px-6 py-4 bg-secondary border border-border rounded-xl text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" />
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

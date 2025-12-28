@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "633d5967360f168a35c5ef8c7353758f",
+    "content-hash": "cafe7209db790a9a49e3f5d905d84cb7",
     "packages": [
         {
             "name": "beste/clock",
@@ -409,16 +409,16 @@
         },
         {
             "name": "cloudinary/cloudinary_php",
-            "version": "3.1.2",
+            "version": "3.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cloudinary/cloudinary_php.git",
-                "reference": "c373c01db4ecfe9637b1cb384ab1587c4af86793"
+                "reference": "5b7d5480ba91d1df19ebb0041b23d85a228845ba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cloudinary/cloudinary_php/zipball/c373c01db4ecfe9637b1cb384ab1587c4af86793",
-                "reference": "c373c01db4ecfe9637b1cb384ab1587c4af86793",
+                "url": "https://api.github.com/repos/cloudinary/cloudinary_php/zipball/5b7d5480ba91d1df19ebb0041b23d85a228845ba",
+                "reference": "5b7d5480ba91d1df19ebb0041b23d85a228845ba",
                 "shasum": ""
             },
             "require": {
@@ -468,9 +468,9 @@
             "support": {
                 "email": "info@cloudinary.com",
                 "issues": "https://github.com/cloudinary/cloudinary_php/issues",
-                "source": "https://github.com/cloudinary/cloudinary_php/tree/3.1.2"
+                "source": "https://github.com/cloudinary/cloudinary_php/tree/3.1.1"
             },
-            "time": "2025-09-21T10:52:52+00:00"
+            "time": "2025-06-17T17:17:38+00:00"
         },
         {
             "name": "cloudinary/transformation-builder-sdk",
@@ -5624,16 +5624,16 @@
         },
         {
             "name": "spatie/laravel-permission",
-            "version": "6.24.0",
+            "version": "6.23.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-permission.git",
-                "reference": "76adb1fc8d07c16a0721c35c4cc330b7a12598d7"
+                "reference": "9e41247bd512b1e6c229afbc1eb528f7565ae3bb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-permission/zipball/76adb1fc8d07c16a0721c35c4cc330b7a12598d7",
-                "reference": "76adb1fc8d07c16a0721c35c4cc330b7a12598d7",
+                "url": "https://api.github.com/repos/spatie/laravel-permission/zipball/9e41247bd512b1e6c229afbc1eb528f7565ae3bb",
+                "reference": "9e41247bd512b1e6c229afbc1eb528f7565ae3bb",
                 "shasum": ""
             },
             "require": {
@@ -5695,7 +5695,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-permission/issues",
-                "source": "https://github.com/spatie/laravel-permission/tree/6.24.0"
+                "source": "https://github.com/spatie/laravel-permission/tree/6.23.0"
             },
             "funding": [
                 {
@@ -5703,7 +5703,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-13T21:45:21+00:00"
+            "time": "2025-11-03T20:16:13+00:00"
         },
         {
             "name": "symfony/cache",

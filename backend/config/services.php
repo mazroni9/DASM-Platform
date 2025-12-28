@@ -34,18 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
-    'ai' => [
-    'url' => env('AI_SERVICE_URL', 'http://127.0.0.1:8001'),
-],
-
-'cloudinary' => [
-    'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-    'api_key'    => env('CLOUDINARY_API_KEY'),
-    'api_secret' => env('CLOUDINARY_API_SECRET'),
-    'secure'     => true,
-],
-
-
-
+    
+    'moyasar' => [
+        'secret_key' => env('MOYASAR_SECRET_KEY'),
+        'publishable_key' => env('MOYASAR_PUBLISHABLE_KEY'),
+    ],
 ];
