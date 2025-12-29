@@ -50,6 +50,8 @@ class NewSaleConfirmedNotification extends Notification
                 'settlement_id' => (string)$this->settlement->id,
                 'auction_id' => (string)$this->settlement->auction_id,
                 'car_id' => (string)$this->settlement->car_id,
+                'icon' => 'banknote',
+                'color' => 'emerald',
             ])
             ->custom([
                 "webpush" => [
@@ -95,6 +97,8 @@ class NewSaleConfirmedNotification extends Notification
         return [
             'title' => 'تم تأكيد عملية بيع جديدة',
             'body' => "تم بيع {$carName} بسعر {$price} ر.س. يرجى متابعة المدفوعات.",
+            'icon' => 'banknote',
+            'color' => 'emerald',
             'data' => [
                 'settlement_id' => $this->settlement->id,
                 'auction_id' => $this->settlement->auction_id,

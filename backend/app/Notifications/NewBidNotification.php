@@ -43,6 +43,8 @@ class NewBidNotification extends Notification
                 'car_id' => (string) $this->auction->car_id,
                 'auction_id' => (string)$this->auction->id,
                 'type' => 'new_bid',
+                'icon' => 'gavel',
+                'color' => 'blue',
             ])
             ->custom([
                 "webpush" => [
@@ -85,6 +87,8 @@ class NewBidNotification extends Notification
         return [
             'title' => 'مزايدة جديدة',
             'body' => 'تم وضع مزايدة جديدة على سيارتك ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' بمبلغ ' . $this->auction->current_bid,
+            'icon' => 'gavel',
+            'color' => 'blue',
             'data' => [
                 'car_id' => $this->auction->car_id,
                 'auction_id' => $this->auction->id,

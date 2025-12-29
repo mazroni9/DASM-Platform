@@ -42,7 +42,9 @@ class HigherBidNotification extends Notification
             ->data([
                 'car_id' => (string) $this->auction->car_id,
                 'auction_id' => (string)$this->auction->id,
-                'type' => 'new_bid',
+                'type' => 'higher_bid',
+                'icon' => 'trending-up',
+                'color' => 'amber',
             ])
             ->custom([
                 "webpush" => [
@@ -85,10 +87,12 @@ class HigherBidNotification extends Notification
         return [
             'title' => 'مزايدة جديدة',
             'body' => 'قام مزايد آخر بتقديم عرض أعلى على سيارة ' . $this->auction->car->make . ' ' . $this->auction->car->model . ' ' . $this->auction->car->year . ' بقيمة ' . number_format($this->auction->current_bid) . ' ريال',
+            'icon' => 'trending-up',
+            'color' => 'amber',
             'data' => [
                 'car_id' => $this->auction->car_id,
                 'auction_id' => $this->auction->id,
-                'type' => 'new_bid',
+                'type' => 'higher_bid',
                 'bid_amount' => $this->auction->current_bid,
             ],
             'action' => [

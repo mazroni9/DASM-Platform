@@ -44,8 +44,8 @@ class ProcessAuctionSaleJob implements ShouldQueue
         DB::beginTransaction();
         try {
             $auction = Auction::with('car', 'bids')->lockForUpdate()->find($this->auctionId);
-
-            if (!$auction || $auction->status !== AuctionStatus::ACTIVE->value) {
+            Log::info("ProcessAuctionSaleJob: Auction", [$auction]);
+            if (!$auction || $auction->status !== AuctionStatus::ACTIVE) {
                 Log::info("ProcessAuctionSaleJob: Auction {$this->auctionId} not active or not found. Aborting job.");
                 DB::rollBack();
                 return;

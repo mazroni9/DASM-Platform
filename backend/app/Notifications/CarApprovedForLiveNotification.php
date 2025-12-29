@@ -46,6 +46,8 @@ class CarApprovedForLiveNotification extends Notification
                 'car_id' => (string) $this->car->id,
                 'auction_id' => (string) $this->auction->id,
                 'type' => 'car_approved_for_live',
+                'icon' => 'radio',
+                'color' => 'violet',
             ])
             ->custom([
                 "webpush" => [
@@ -88,6 +90,8 @@ class CarApprovedForLiveNotification extends Notification
         return [
             'title' => 'تمت الموافقة على سيارتك للمزاد المباشر',
             'body' => 'تمت الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد المباشر. السيارة الآن مؤهلة للبث المباشر ويمكن للعملاء المزايدة عليها.',
+            'icon' => 'radio',
+            'color' => 'violet',
             'data' => [
                 'car_id' => $this->car->id,
                 'auction_id' => $this->auction->id,

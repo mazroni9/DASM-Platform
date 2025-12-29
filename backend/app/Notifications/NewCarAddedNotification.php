@@ -43,7 +43,7 @@ class NewCarAddedNotification extends Notification
             body: "تم إضافة سيارة جديدة ({$this->car->make} {$this->car->model}) من قبل المستخدم {$this->car->user->name}.",
             image: $this->car->images[0] ?? asset('assets/images/logo.jpg')
         )))
-            ->data(['car_id' => (string)$this->car->id, 'user_id' => (string)$this->car->user_id])
+            ->data(['car_id' => (string)$this->car->id, 'user_id' => (string)$this->car->user_id, 'icon' => 'car', 'color' => 'slate'])
             ->custom([
                 "webpush" => [
                     "headers" => [
@@ -80,6 +80,8 @@ class NewCarAddedNotification extends Notification
         return [
             'title' => 'سيارة جديدة بانتظار المراجعة',
             'body' => "تم إضافة سيارة جديدة ({$this->car->make} {$this->car->model}) من قبل المستخدم {$this->car->user->name}.",
+            'icon' => 'car',
+            'color' => 'slate',
             'data' => [
                 'car_id' => $this->car->id,
                 'user_id' => $this->car->user_id,
