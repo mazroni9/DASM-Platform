@@ -11,6 +11,7 @@ enum UserRole: string
     case INVESTOR = 'investor';
     case DEALER = 'dealer';
     case USER = 'user';
+    case EMPLOYEE = 'employee';  // ✅ تمت الإضافة
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum UserRole: string
             self::INVESTOR => 'Investor',
             self::DEALER => 'Dealer',
             self::USER => 'User',
+            self::EMPLOYEE => 'Employee',  // ✅ تمت الإضافة
         };
     }
 
@@ -35,6 +37,7 @@ enum UserRole: string
             self::INVESTOR => 'مستثمر',
             self::DEALER => 'تاجر',
             self::USER => 'مستخدم',
+            self::EMPLOYEE => 'موظف',  // ✅ تمت الإضافة
         };
     }
 
@@ -48,6 +51,7 @@ enum UserRole: string
             self::INVESTOR => 'yellow',
             self::DEALER => 'blue',
             self::USER => 'gray',
+            self::EMPLOYEE => 'orange',  // ✅ تمت الإضافة
         };
     }
 
@@ -55,6 +59,17 @@ enum UserRole: string
     {
         return match ($this) {
             self::SUPER_ADMIN, self::ADMIN => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Check if role is staff level (can access admin panel)
+     */
+    public function isStaff(): bool
+    {
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE => true,
             default => false,
         };
     }
@@ -91,6 +106,17 @@ enum UserRole: string
         };
     }
 
+    /**
+     * Check if role can access admin dashboard
+     */
+    public function canAccessDashboard(): bool
+    {
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE, self::VENUE_OWNER => true,
+            default => false,
+        };
+    }
+
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
@@ -117,5 +143,41 @@ enum UserRole: string
     public static function fromString(string $value): ?self
     {
         return self::tryFrom($value);
+    }
+
+    /**
+     * Get admin-level roles
+     */
+    public static function adminRoles(): array
+    {
+        return [
+            self::SUPER_ADMIN,
+            self::ADMIN,
+        ];
+    }
+
+    /**
+     * Get staff-level roles (can access backend)
+     */
+    public static function staffRoles(): array
+    {
+        return [
+            self::SUPER_ADMIN,
+            self::ADMIN,
+            self::MODERATOR,
+            self::EMPLOYEE,
+        ];
+    }
+
+    /**
+     * Get business roles
+     */
+    public static function businessRoles(): array
+    {
+        return [
+            self::VENUE_OWNER,
+            self::INVESTOR,
+            self::DEALER,
+        ];
     }
 }
