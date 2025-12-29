@@ -49,67 +49,34 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // ═══════════════════════════════════════════════════════════════
-        // MIDDLEWARE ALIASES
+        // MIDDLEWARE ALIASES (Only for custom middleware that EXISTS)
         // ═══════════════════════════════════════════════════════════════
         $middleware->alias([
-            // ─────────────────────────────────────────────────────────────
-            // Authentication & Authorization
-            // ─────────────────────────────────────────────────────────────
-            'auth'              => \App\Http\Middleware\Authenticate::class,
-            'auth.basic'        => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-            'auth.session'      => \Illuminate\Session\Middleware\AuthenticateSession::class,
-            'guest'             => \App\Http\Middleware\RedirectIfAuthenticated::class,
-            'verified'          => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-            
-            // ─────────────────────────────────────────────────────────────
-            // Role-based Access Control
-            // ─────────────────────────────────────────────────────────────
+            // Role-based Access Control (Custom)
             'admin'             => \App\Http\Middleware\AdminMiddleware::class,
             'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
             'dealer'            => \App\Http\Middleware\DealerMiddleware::class,
             
             // Role middleware with parameters: ->middleware('role:venue_owner,dealer')
             'role'              => \App\Http\Middleware\RoleMiddleware::class,
-            'type'              => \App\Http\Middleware\RoleMiddleware::class, // Alias for 'role'
+            'type'              => \App\Http\Middleware\RoleMiddleware::class,
             
-            // ─────────────────────────────────────────────────────────────
             // Organization & Team Context
-            // ─────────────────────────────────────────────────────────────
             'set.organization'  => \App\Http\Middleware\SetSpatieTeamContext::class,
             
-            // ─────────────────────────────────────────────────────────────
-            // Rate Limiting
-            // ─────────────────────────────────────────────────────────────
-            'throttle'          => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            // Rate Limiting (Custom)
             'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
             
-            // ─────────────────────────────────────────────────────────────
-            // Security & Diagnostics
-            // ─────────────────────────────────────────────────────────────
+            // Diagnostics (Custom)
             'diag.token'        => \App\Http\Middleware\DiagTokenMiddleware::class,
-            'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
-            'signed'            => \App\Http\Middleware\ValidateSignature::class,
             
-            // ─────────────────────────────────────────────────────────────
-            // Performance & Caching
-            // ─────────────────────────────────────────────────────────────
+            // Performance & Caching (Custom)
             'performance'       => \App\Http\Middleware\PerformanceHeaders::class,
             'api.cache'         => \App\Http\Middleware\ApiCacheMiddleware::class,
-            'cache.headers'     => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-            
-            // ─────────────────────────────────────────────────────────────
-            // Laravel Defaults
-            // ─────────────────────────────────────────────────────────────
-            'can'               => \Illuminate\Auth\Middleware\Authorize::class,
-            'password.confirm'  => \Illuminate\Auth\Middleware\RequirePassword::class,
-            'precognitive'      => \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
+            'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        
-        // ═══════════════════════════════════════════════════════════════
-        // CUSTOM EXCEPTION HANDLING
-        // ═══════════════════════════════════════════════════════════════
         
         // Authorization exceptions (403)
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, Request $request) {
@@ -166,27 +133,5 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 429);
             }
         });
-
-        // Generic server errors (500) - Only in production
-        if (app()->environment('production')) {
-            $exceptions->render(function (\Throwable $e, Request $request) {
-                if ($request->expectsJson() && !$e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
-                    \Illuminate\Support\Facades\Log::error('Unhandled exception', [
-                        'exception' => get_class($e),
-                        'message'   => $e->getMessage(),
-                        'file'      => $e->getFile(),
-                        'line'      => $e->getLine(),
-                        'url'       => $request->fullUrl(),
-                        'user_id'   => auth()->id(),
-                    ]);
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً.',
-                        'error'   => 'server_error',
-                    ], 500);
-                }
-            });
-        }
     })
     ->create();
