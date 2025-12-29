@@ -691,6 +691,19 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::get('/transactions', [AdminController::class, 'getTransactions'])->middleware('can:commissions.view');
         Route::get('/settlements', [AdminController::class, 'getSettlements'])->middleware('can:commissions.view');
 
+        // Sales Management (Financial Control Center)
+        Route::get('/sales', [\App\Http\Controllers\Admin\SalesController::class, 'index'])->middleware('can:commissions.view');
+        Route::get('/sales/{id}', [\App\Http\Controllers\Admin\SalesController::class, 'show'])->whereNumber('id')->middleware('can:commissions.view');
+        Route::post('/sales/{id}/release-funds', [\App\Http\Controllers\Admin\SalesController::class, 'releaseFunds'])->whereNumber('id')->middleware('can:commissions.manage');
+        Route::post('/sales/{id}/refund', [\App\Http\Controllers\Admin\SalesController::class, 'refundBuyer'])->whereNumber('id')->middleware('can:commissions.manage');
+        Route::post('/sales/{id}/verify-transfer', [\App\Http\Controllers\Admin\SalesController::class, 'verifyBankTransfer'])->whereNumber('id')->middleware('can:commissions.manage');
+
+        // Admin Notifications
+        Route::get('/notifications', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'markAsRead']);
+        Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'markAllAsRead']);
+
         // Broadcast (Admin)
         Route::get('/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts'])->middleware('can:live_streams.view');
         Route::get('/broadcast', [BroadcastController::class, 'show'])->middleware('can:live_streams.view');

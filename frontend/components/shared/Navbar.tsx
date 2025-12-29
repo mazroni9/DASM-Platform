@@ -13,6 +13,7 @@ import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
 import NotificationMenu from "@/components/NotificationMenu";
+import AdminNotificationsMenu from "@/components/admin/AdminNotificationsMenu";
 import { ThemeToggle } from "../ThemeToggle";
 
 interface NavigationItem {
@@ -163,7 +164,7 @@ const Navbar = () => {
             {user ? (
               <>
                 <div className={forceBright}>
-                  <NotificationMenu />
+                  {isAdmin ? <AdminNotificationsMenu /> : <NotificationMenu />}
                 </div>
                 <div className={forceBright}>
                   <UserMenu />
@@ -196,7 +197,9 @@ const Navbar = () => {
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
               aria-expanded={mobileMenuOpen}
             >
-              <Menu className={`h-5 w-5 ${mobileMenuOpen ? "rotate-90" : ""}`} />
+              <Menu
+                className={`h-5 w-5 ${mobileMenuOpen ? "rotate-90" : ""}`}
+              />
             </button>
           </div>
         </div>

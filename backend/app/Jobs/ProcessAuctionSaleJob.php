@@ -9,6 +9,8 @@ use App\Models\Setting;
 use App\Models\Settlement;
 use App\Models\User;
 use App\Notifications\NewSaleNotification;
+use App\Notifications\NewSaleConfirmedNotification;
+use App\Enums\UserRole;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,6 +18,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class ProcessAuctionSaleJob implements ShouldQueue
 {
@@ -85,6 +88,10 @@ class ProcessAuctionSaleJob implements ShouldQueue
             ]);
 
             $buyer->notify(new NewSaleNotification($settlement));
+
+            // Notify all admins about the new sale
+            $admins = User::whereIn('type', [UserRole::ADMIN, UserRole::SUPER_ADMIN])->get();
+            Notification::send($admins, new NewSaleConfirmedNotification($settlement));
 
             DB::commit();
             Log::info("ProcessAuctionSaleJob: Sale confirmed successfully for auction {$this->auctionId} triggered by bid {$this->triggeringBidId}.");

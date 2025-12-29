@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Building,
   UserCog,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -125,6 +126,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/subscription-plans",
       icon: CreditCard,
       permission: "subscription_plans.view",
+    },
+    {
+      name: "إدارة المبيعات",
+      href: "/admin/sales",
+      icon: DollarSign,
+      permission: "commissions.view",
     },
 
     {

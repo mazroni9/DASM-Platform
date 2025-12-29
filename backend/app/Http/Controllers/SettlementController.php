@@ -12,7 +12,10 @@ use App\Models\CommissionTier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Enums\UserRole;
 use App\Notifications\NewSaleNotification;
+use App\Notifications\NewSaleConfirmedNotification;
+use Illuminate\Support\Facades\Notification;
 
 class SettlementController extends Controller
 {
@@ -180,6 +183,10 @@ class SettlementController extends Controller
             ]);
 
             $buyer->notify(new NewSaleNotification($settlements));
+
+            // Notify all admins about the new sale
+            $admins = User::whereIn('type', [UserRole::ADMIN, UserRole::SUPER_ADMIN])->get();
+            Notification::send($admins, new NewSaleConfirmedNotification($settlements));
 
             DB::commit();
             return response()->json([
