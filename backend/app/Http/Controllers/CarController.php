@@ -355,7 +355,7 @@ class CarController extends Controller
 
         // إشعار الإدمنز
         $car->refresh();
-        $admins = User::where('type', 'admin')->get();
+        $admins = User::whereIn('type', ['admin','super_admin'])->get();
         Notification::send($admins, new NewCarAddedNotification($car->load('user')));
 
         return response()->json([

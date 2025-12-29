@@ -57,6 +57,8 @@ class CarMovedToAuctionNotification extends Notification
                 'auction_id' => (string) $this->auction->id,
                 'auction_type' => $this->auctionType,
                 'type' => 'car_moved_to_auction',
+                'icon' => 'arrow-right-circle',
+                'color' => 'blue',
             ])
             ->custom([
                 "webpush" => [
@@ -109,6 +111,8 @@ class CarMovedToAuctionNotification extends Notification
         return [
             'title' => 'تم نقل سيارتك إلى مزاد جديد',
             'body' => 'تم نقل سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') إلى ' . $auctionLabel . '. يمكنك متابعة حالة المزاد الآن.',
+            'icon' => 'arrow-right-circle',
+            'color' => 'blue',
             'data' => [
                 'car_id' => $this->car->id,
                 'auction_id' => $this->auction->id,
