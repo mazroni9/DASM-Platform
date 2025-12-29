@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Auction;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -10,96 +11,75 @@ use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 
-class CarApprovedForLiveNotification extends Notification
+class CarApprovedForLiveNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct(public $car, public $auction)
+    public Auction $auction;
+
+    public function __construct(Auction $auction)
     {
-        //
+        $this->auction = $auction;
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
-    public function via(object $notifiable): array
+    public function via($notifiable): array
     {
-        return [FcmChannel::class, 'database'];
+        $channels = ['database'];
+        
+        if ($notifiable->email) {
+            $channels[] = 'mail';
+        }
+        
+        if ($notifiable->deviceTokens()->exists()) {
+            $channels[] = FcmChannel::class;
+        }
+
+        return $channels;
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
+    public function toMail($notifiable): MailMessage
+    {
+        $car = $this->auction->car;
+        $carName = $car ? "{$car->make} {$car->model} {$car->year}" : 'سيارتك';
+
+        return (new MailMessage)
+            ->subject('تمت الموافقة على سيارتك للبث المباشر')
+            ->greeting("مرحباً {$notifiable->first_name}")
+            ->line("تمت الموافقة على {$carName} للمشاركة في المزاد المباشر.")
+            ->line("سعر الافتتاح: {$this->auction->opening_price} ريال")
+            ->action('عرض المزاد', url("/auctions/{$this->auction->id}"))
+            ->line('شكراً لاستخدامك منصتنا!');
+    }
+
     public function toFcm($notifiable): FcmMessage
     {
-        return (new FcmMessage(notification: new FcmNotification(
-            title: 'تمت الموافقة على سيارتك للمزاد المباشر!',
-            body: 'تمت الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد المباشر. السيارة الآن مؤهلة للبث المباشر ويمكن للعملاء المزايدة عليها.',
-            image: asset('assets/images/logo.jpg')
-        )))
-            ->data([
-                'car_id' => (string) $this->car->id,
+        $car = $this->auction->car;
+        $carName = $car ? "{$car->make} {$car->model}" : 'سيارتك';
+
+        return FcmMessage::create()
+            ->setNotification(
+                FcmNotification::create()
+                    ->setTitle('تمت الموافقة على سيارتك')
+                    ->setBody("تمت الموافقة على {$carName} للمزاد المباشر")
+            )
+            ->setData([
+                'type'       => 'car_approved_for_live',
                 'auction_id' => (string) $this->auction->id,
-                'type' => 'car_approved_for_live',
-            ])
-            ->custom([
-                "webpush" => [
-                    "headers" => [
-                        "Urgency" => "high"
-                    ],
-                    'fcm_options' => [
-                        "link" => "/carDetails/" . $this->car->id,
-                    ]
-                ],
-                'android' => [
-                    'notification' => [
-                        'color' => '#0A0A0A',
-                        'sound' => 'default',
-                    ],
-                    'fcm_options' => [
-                        'analytics_label' => 'analytics',
-                    ],
-                ],
-                'apns' => [
-                    'payload' => [
-                        'aps' => [
-                            'sound' => 'default'
-                        ],
-                    ],
-                    'fcm_options' => [
-                        'analytics_label' => 'analytics',
-                    ],
-                ],
+                'car_id'     => (string) ($car?->id ?? ''),
             ]);
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable): array
     {
+        $car = $this->auction->car;
+
         return [
-            'title' => 'تمت الموافقة على سيارتك للمزاد المباشر',
-            'body' => 'تمت الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد المباشر. السيارة الآن مؤهلة للبث المباشر ويمكن للعملاء المزايدة عليها.',
-            'data' => [
-                'car_id' => $this->car->id,
-                'auction_id' => $this->auction->id,
-                'type' => 'car_approved_for_live',
-            ],
-            'action' => [
-                'type' => 'VIEW_CAR_DETAILS',
-                'route_name' => '/carDetails/[car_id]',
-                'route_params' => [
-                    'car_id' => $this->car->id
-                ]
-            ]
+            'type'          => 'car_approved_for_live',
+            'auction_id'    => $this->auction->id,
+            'car_id'        => $car?->id,
+            'car_name'      => $car ? "{$car->make} {$car->model} {$car->year}" : null,
+            'opening_price' => $this->auction->opening_price,
+            'message'       => 'تمت الموافقة على سيارتك للمشاركة في المزاد المباشر',
         ];
     }
 }

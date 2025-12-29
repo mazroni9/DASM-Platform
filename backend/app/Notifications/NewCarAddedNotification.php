@@ -2,53 +2,55 @@
 
 namespace App\Notifications;
 
+use App\Models\Car;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Car;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 
-class NewCarAddedNotification extends Notification
+class NewCarAddedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
+    public bool $afterCommit = true;
+
     public function __construct(public Car $car)
     {
-        //
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via(object $notifiable): array
     {
         return [FcmChannel::class, 'database'];
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
     public function toFcm($notifiable): FcmMessage
     {
+        $userName = $this->car->user?->name ?? 'مستخدم';
+        $img = null;
+
+        try {
+            $imgs = is_array($this->car->images) ? $this->car->images : [];
+            $img = $imgs[0] ?? null;
+        } catch (\Throwable $e) {
+            $img = null;
+        }
+
+        $img = $img ?: asset('assets/images/logo.jpg');
+
         return (new FcmMessage(notification: new FcmNotification(
             title: 'سيارة جديدة بانتظار المراجعة',
-            body: "تم إضافة سيارة جديدة ({$this->car->make} {$this->car->model}) من قبل المستخدم {$this->car->user->name}.",
-            image: $this->car->images[0] ?? asset('assets/images/logo.jpg')
+            body: "تم إضافة سيارة جديدة ({$this->car->make} {$this->car->model}) من قبل المستخدم {$userName}.",
+            image: $img
         )))
-            ->data(['car_id' => (string)$this->car->id, 'user_id' => (string)$this->car->user_id])
+            ->data([
+                'car_id' => (string)$this->car->id,
+                'user_id' => (string)$this->car->user_id
+            ])
             ->custom([
                 "webpush" => [
-                    "headers" => [
-                        "Urgency" => "high"
-                    ],
+                    "headers" => ["Urgency" => "high"],
                     'fcm_options' => [
                         "link" => "/admin/cars/{$this->car->id}",
                     ]
@@ -69,17 +71,13 @@ class NewCarAddedNotification extends Notification
             ]);
     }
 
-
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(object $notifiable): array
     {
+        $userName = $this->car->user?->name ?? 'مستخدم';
+
         return [
             'title' => 'سيارة جديدة بانتظار المراجعة',
-            'body' => "تم إضافة سيارة جديدة ({$this->car->make} {$this->car->model}) من قبل المستخدم {$this->car->user->name}.",
+            'body' => "تم إضافة سيارة جديدة ({$this->car->make} {$this->car->model}) من قبل المستخدم {$userName}.",
             'data' => [
                 'car_id' => $this->car->id,
                 'user_id' => $this->car->user_id,

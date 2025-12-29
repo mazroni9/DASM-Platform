@@ -16,8 +16,7 @@ class UpdateVenueOwnerReviewRequest extends FormRequest
         return [
             'rating' => ['sometimes', 'numeric', 'min:1', 'max:5'],
             'comment' => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'is_approved' => ['sometimes', 'boolean'],
-            'verified' => ['sometimes', 'boolean'],
+            // ❌ تم حذف 'is_approved' و 'verified' - للأدمن فقط
         ];
     }
 }

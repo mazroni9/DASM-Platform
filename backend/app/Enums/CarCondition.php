@@ -48,10 +48,11 @@ enum CarCondition: string
     {
         $translations = [];
         foreach (self::cases() as $condition) {
-            $translations[$condition->value] =  $condition->label();
+            $translations[$condition->value] = $condition->label();
         }
         return $translations;
     }
+
     public static function getTranslations(): array
     {
         $translations = [];

@@ -17,7 +17,7 @@ class StoreVenueOwnerReviewRequest extends FormRequest
             'venue_owner_id' => ['required', 'exists:venue_owners,id'],
             'rating' => ['required', 'numeric', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string', 'max:2000'],
-            'verified' => ['sometimes', 'boolean'],
+            // ❌ تم حذف 'verified' - لا يجب للمستخدم تحديدها
         ];
     }
 

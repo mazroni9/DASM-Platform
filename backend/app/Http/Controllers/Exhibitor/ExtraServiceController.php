@@ -10,7 +10,6 @@ use Illuminate\Validation\Rule;
 
 class ExtraServiceController extends Controller
 {
-    // GET /api/exhibitor/extra-services
     public function services(Request $request)
     {
         $list = ExtraService::active()
@@ -20,7 +19,6 @@ class ExtraServiceController extends Controller
         return response()->json(['success' => true, 'data' => $list]);
     }
 
-    // GET /api/exhibitor/extra-services/requests
     public function index(Request $request)
     {
         $user = $request->user();
@@ -60,7 +58,6 @@ class ExtraServiceController extends Controller
         return response()->json($query->paginate($perPage));
     }
 
-    // POST /api/exhibitor/extra-services/requests
     public function store(Request $request)
     {
         $user = $request->user();
@@ -74,13 +71,12 @@ class ExtraServiceController extends Controller
             'service_id' => ['required', 'exists:extra_services,id'],
             'car'        => ['nullable', 'string', 'max:255'],
             'notes'      => ['nullable', 'string', 'max:5000'],
-            'price'      => ['nullable', 'numeric', 'min:0'],
             'currency'   => ['nullable', 'string', 'max:8'],
         ]);
 
         $service = ExtraService::active()->findOrFail($data['service_id']);
 
-        $price    = array_key_exists('price', $data) ? $data['price'] : $service->base_price;
+        $price    = $service->base_price;
         $currency = $data['currency'] ?? $service->currency ?? 'SAR';
 
         $sr = ServiceRequest::create([
@@ -95,10 +91,13 @@ class ExtraServiceController extends Controller
             'requested_at'     => now(),
         ]);
 
-        return response()->json(['success' => true, 'data' => $sr->load('service'), 'message' => 'تم إنشاء طلب الخدمة.'], 201);
+        return response()->json([
+            'success' => true, 
+            'data' => $sr->load('service'), 
+            'message' => 'تم إنشاء طلب الخدمة.'
+        ], 201);
     }
 
-    // GET /api/exhibitor/extra-services/requests/{requestModel}
     public function show(ServiceRequest $requestModel, Request $request)
     {
         $user = $request->user();
@@ -108,7 +107,6 @@ class ExtraServiceController extends Controller
         return response()->json(['success' => true, 'data' => $requestModel->load('service')]);
     }
 
-    // PATCH /api/exhibitor/extra-services/requests/{requestModel}/status
     public function updateStatus(ServiceRequest $requestModel, Request $request)
     {
         $user = $request->user();
@@ -127,10 +125,13 @@ class ExtraServiceController extends Controller
         $requestModel->status = $data['status'];
         $requestModel->save();
 
-        return response()->json(['success' => true, 'data' => $requestModel->load('service'), 'message' => 'تم تحديث الحالة.']);
+        return response()->json([
+            'success' => true, 
+            'data' => $requestModel->load('service'), 
+            'message' => 'تم تحديث الحالة.'
+        ]);
     }
 
-    // DELETE /api/exhibitor/extra-services/requests/{requestModel}
     public function destroy(ServiceRequest $requestModel, Request $request)
     {
         $user = $request->user();

@@ -15,7 +15,6 @@ class AuctionSession extends Model
         'status',
         'type',
         'description',
-        'user_id',
     ];
 
     protected $casts = [

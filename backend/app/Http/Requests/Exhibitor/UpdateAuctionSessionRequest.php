@@ -17,7 +17,7 @@ class UpdateAuctionSessionRequest extends FormRequest
         return [
             'name'         => ['sometimes','required','string','max:255'],
             'session_date' => ['sometimes','required','date'],
-            'status'       => ['sometimes','required','in:scheduled,active,completed,cancelled'],
+            'status'       => ['sometimes','required','in:scheduled,active,completed,cancelled,canceled'],
             'type'         => ['sometimes','required','in:live,instant,silent'],
             'description'  => ['nullable','string'],
         ];

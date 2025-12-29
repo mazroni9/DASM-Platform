@@ -15,11 +15,10 @@ class StoreAuctionSessionRequest extends FormRequest
     {
         return [
             'name'         => ['required','string','max:255'],
-            'session_date' => ['required','date'], // يفضل datetime
-            'status'       => ['required','in:scheduled,active,completed,cancelled'],
+            'session_date' => ['required','date'],
+            'status'       => ['required','in:scheduled,active,completed,cancelled,canceled'],
             'type'         => ['required','in:live,instant,silent'],
             'description'  => ['nullable','string'],
-            // مفيش user_id من الواجهة للمعرض — هانضبطه من auth()->id()
         ];
     }
 }

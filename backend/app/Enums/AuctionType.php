@@ -31,25 +31,33 @@ enum AuctionType: string
 
     public function requiresLivestream(): bool
     {
-        return match($this) {
-            self::LIVE => true,
-            default => false,
-        };
+        return $this === self::LIVE;
     }
 
     public function allowsAutoExtension(): bool
     {
-        return match($this) {
-            self::LIVE_INSTANT => true,
-            default => false,
-        };
+        return $this === self::LIVE_INSTANT;
     }
 
     public function allowsAutoAcceptance(): bool
     {
-        return match($this) {
-            self::SILENT_INSTANT => true,
-            default => false,
-        };
+        return $this === self::SILENT_INSTANT;
+    }
+
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
+    public static function getTranslations(): array
+    {
+        $translations = [];
+        foreach (self::cases() as $t) {
+            $translations[$t->value] = [
+                'ar' => $t->labelAr(),
+                'en' => $t->getLabel(),
+            ];
+        }
+        return $translations;
     }
 }

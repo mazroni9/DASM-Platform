@@ -11,17 +11,7 @@ class CarExplorerController extends Controller
 {
     /**
      * GET /api/exhibitor/market/cars
-     * Query Params:
-     *  per_page=12
-     *  q (make/model/color/description)
-     *  make, model
-     *  year_from, year_to
-     *  odometer_from, odometer_to
-     *  condition, auction_status
-     *  price_from, price_to    (evaluation_price)
-     *  include_mine=0/1        (افتراضياً 0: استبعاد سياراتي)
-     *  sort_by=created_at|year|odometer|evaluation_price
-     *  sort_dir=asc|desc
+     * ✅ Performance Fix: إضافة eager loading
      */
     public function index(Request $request)
     {
@@ -29,6 +19,9 @@ class CarExplorerController extends Controller
         $perPage = max(1, (int) $request->query('per_page', 12));
 
         $query = Car::query();
+
+        // ✅ Performance: Eager loading للـ relations
+        $query->with(['dealer:id,user_id', 'user:id,name']);
 
         // افتراضياً: إخفاء سيارات المستخدم نفسه من السوق
         $includeMine = (bool) $request->boolean('include_mine', false);
@@ -83,6 +76,9 @@ class CarExplorerController extends Controller
      */
     public function show(Request $request, Car $car)
     {
+        // ✅ Performance: Load relations
+        $car->load(['dealer:id,user_id', 'user:id,name']);
+        
         return (new MarketCarResource($car))->additional(['success' => true]);
     }
 }

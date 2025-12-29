@@ -44,10 +44,11 @@ enum CarTransmission: string
     {
         $transmissions = [];
         foreach (self::cases() as $transmission) {
-            $transmissions[$transmission->value] =  $transmission->label();
+            $transmissions[$transmission->value] = $transmission->label();
         }
         return $transmissions;
     }
+
     public static function getTranslations(): array
     {
         $translations = [];

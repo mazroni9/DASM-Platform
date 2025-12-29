@@ -11,13 +11,9 @@ use Illuminate\Validation\Rule;
 
 class CommissionController extends Controller
 {
-    /**
-     * GET /api/exhibitor/commission/summary
-     * قيمة السعي + عملة + ملاحظة + آخر عمليات (recent=N)
-     */
     public function summary(Request $request)
     {
-        $venue = VenueOwner::where('user_id', $request->user()->id)->firstOrFail();
+        $venue = $this->getVenueOwner($request);
 
         $per = (int) $request->integer('recent', 5);
         $ops = VenueCommissionOperation::where('venue_owner_id', $venue->id)
@@ -42,10 +38,6 @@ class CommissionController extends Controller
         ]);
     }
 
-    /**
-     * PUT /api/exhibitor/commission/settings
-     * تحديث إعدادات السعي لصاحب المعرض
-     */
     public function updateSettings(Request $request)
     {
         $request->validate([
@@ -54,7 +46,7 @@ class CommissionController extends Controller
             'commission_note'     => ['nullable','string','max:2000'],
         ]);
 
-        $venue = VenueOwner::where('user_id', $request->user()->id)->firstOrFail();
+        $venue = $this->getVenueOwner($request);
 
         $venue->commission_value = (float) $request->commission_value;
         if ($request->filled('commission_currency')) {
@@ -68,13 +60,9 @@ class CommissionController extends Controller
         return response()->json(['success' => true, 'message' => 'تم تحديث الإعدادات.']);
     }
 
-    /**
-     * GET /api/exhibitor/commission/operations
-     * قائمة العمليات مع فلترة وتصفح
-     */
     public function index(Request $request)
     {
-        $venue = VenueOwner::where('user_id', $request->user()->id)->firstOrFail();
+        $venue = $this->getVenueOwner($request);
 
         $perPage = (int) $request->integer('per_page', 10);
         $q       = trim((string) $request->get('q', ''));
@@ -107,13 +95,9 @@ class CommissionController extends Controller
         return response()->json($ops);
     }
 
-    /**
-     * POST /api/exhibitor/commission/operations
-     * إضافة عملية سعي (اختبار/تكامل لاحقًا)
-     */
     public function storeOperation(Request $request)
     {
-        $venue = VenueOwner::where('user_id', $request->user()->id)->firstOrFail();
+        $venue = $this->getVenueOwner($request);
 
         $data = $request->validate([
             'amount'      => ['required','numeric','min:0'],
@@ -133,10 +117,6 @@ class CommissionController extends Controller
         return response()->json(['success' => true, 'data' => $op], 201);
     }
 
-    /**
-     * GET /api/exhibitor/commission/tiers
-     * عرض الشرائح الفعّالة
-     */
     public function tiers(Request $request)
     {
         $tiers = CommissionTier::query()
@@ -155,11 +135,6 @@ class CommissionController extends Controller
         return response()->json(['success' => true, 'data' => $tiers]);
     }
 
-    /**
-     * POST /api/exhibitor/commission/estimate
-     * حساب تقديري: price + mode (flat|progressive)
-     * نفترض commissionAmount = نسبة مئوية.
-     */
     public function estimate(Request $request)
     {
         $data = $request->validate([
@@ -170,39 +145,7 @@ class CommissionController extends Controller
         $price = (float) $data['price'];
         $mode  = $data['mode'] ?? 'flat';
 
-        $tiers = CommissionTier::query()
-            ->where('isActive', true)
-            ->orderBy('minPrice')
-            ->get();
-
-        if ($tiers->isEmpty()) {
-            return response()->json(['success' => true, 'data' => ['amount' => 0.0, 'currency' => 'SAR', 'note' => 'لا توجد شرائح مفعّلة']], 200);
-        }
-
-        $amount = 0.0;
-        if ($mode === 'flat') {
-            $tier = $tiers->first(function ($t) use ($price) {
-                $min = (float) $t->minPrice;
-                $max = is_null($t->maxPrice) ? INF : (float) $t->maxPrice;
-                return $price >= $min && $price <= $max;
-            });
-            if ($tier) {
-                $amount = $price * ((float) $tier->commissionAmount) / 100.0;
-            }
-        } else {
-            foreach ($tiers as $t) {
-                $brStart = (float) $t->minPrice;
-                $brEnd   = is_null($t->maxPrice) ? $price : min((float) $t->maxPrice, $price);
-                if ($price <= $brStart) break;
-                $segment = max(0.0, $brEnd - $brStart);
-                if ($segment > 0) {
-                    $amount += $segment * ((float) $t->commissionAmount) / 100.0;
-                }
-                if (!is_null($t->maxPrice) && $price <= (float) $t->maxPrice) {
-                    break;
-                }
-            }
-        }
+        $amount = CommissionTier::estimate($price, $mode);
 
         return response()->json([
             'success' => true,
@@ -212,5 +155,16 @@ class CommissionController extends Controller
                 'mode'     => $mode,
             ],
         ]);
+    }
+
+    private function getVenueOwner(Request $request): VenueOwner
+    {
+        $venue = VenueOwner::where('user_id', $request->user()->id)->first();
+        
+        if (!$venue) {
+            abort(403, 'ليس لديك ملف معرض.');
+        }
+        
+        return $venue;
     }
 }
