@@ -22,7 +22,7 @@ class DashboardController extends Controller
         $wallet = Wallet::where('user_id', $user->id)->first();
 
         // Get active auctions the dealer might be interested in
-        $activeAuctions = Auction::with(['car:id,brand,model,year,image'])
+        $activeAuctions = Auction::with(['car:id,make,model,year,image'])
             ->where('status', AuctionStatus::ACTIVE)
             ->orderBy('end_time', 'asc')
             ->limit(10)
@@ -162,7 +162,7 @@ class DashboardController extends Controller
         // Get car details
         $carIds = $dealerBids->pluck('car_id')->toArray();
         $cars = \App\Models\Car::whereIn('id', $carIds)
-            ->get(['id', 'brand', 'model', 'year'])
+            ->get(['id', 'make', 'model', 'year'])
             ->keyBy('id');
 
         $labels = [];

@@ -65,7 +65,38 @@ class CarApprovedForLiveNotification extends Notification implements ShouldQueue
             ->setData([
                 'type'       => 'car_approved_for_live',
                 'auction_id' => (string) $this->auction->id,
-                'car_id'     => (string) ($car?->id ?? ''),
+                'type' => 'car_approved_for_live',
+                'icon' => 'radio',
+                'color' => 'violet',
+            ])
+            ->custom([
+                "webpush" => [
+                    "headers" => [
+                        "Urgency" => "high"
+                    ],
+                    'fcm_options' => [
+                        "link" => "/carDetails/" . $this->car->id,
+                    ]
+                ],
+                'android' => [
+                    'notification' => [
+                        'color' => '#0A0A0A',
+                        'sound' => 'default',
+                    ],
+                    'fcm_options' => [
+                        'analytics_label' => 'analytics',
+                    ],
+                ],
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default'
+                        ],
+                    ],
+                    'fcm_options' => [
+                        'analytics_label' => 'analytics',
+                    ],
+                ],
             ]);
     }
 
@@ -74,12 +105,22 @@ class CarApprovedForLiveNotification extends Notification implements ShouldQueue
         $car = $this->auction->car;
 
         return [
-            'type'          => 'car_approved_for_live',
-            'auction_id'    => $this->auction->id,
-            'car_id'        => $car?->id,
-            'car_name'      => $car ? "{$car->make} {$car->model} {$car->year}" : null,
-            'opening_price' => $this->auction->opening_price,
-            'message'       => 'تمت الموافقة على سيارتك للمشاركة في المزاد المباشر',
+            'title' => 'تمت الموافقة على سيارتك للمزاد المباشر',
+            'body' => 'تمت الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد المباشر. السيارة الآن مؤهلة للبث المباشر ويمكن للعملاء المزايدة عليها.',
+            'icon' => 'radio',
+            'color' => 'violet',
+            'data' => [
+                'car_id' => $this->car->id,
+                'auction_id' => $this->auction->id,
+                'type' => 'car_approved_for_live',
+            ],
+            'action' => [
+                'type' => 'VIEW_CAR_DETAILS',
+                'route_name' => '/carDetails/[car_id]',
+                'route_params' => [
+                    'car_id' => $this->car->id
+                ]
+            ]
         ];
     }
 }

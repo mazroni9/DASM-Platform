@@ -42,7 +42,7 @@ class NewSaleNotification extends Notification
             body: 'قام البائع بتأكيد فوزك. اضغط هنا لإكمال الدفع واستلام سيارتك.',
             image: asset('assets/images/logo.jpg')
         )))
-            ->data(['car_id' => (string)$this->settlements?->car_id, 'auction_id' => (string)  $this->settlements?->auction_id])
+            ->data(['car_id' => (string)$this->settlements?->car_id, 'auction_id' => (string)$this->settlements?->auction_id, 'icon' => 'trophy', 'color' => 'emerald'])
             ->custom([
                 "webpush" => [
                     "headers" => [
@@ -85,6 +85,8 @@ class NewSaleNotification extends Notification
         return [
             'title' => 'لقد فزت بالمزاد!',
             'body' => 'قام البائع بتأكيد فوزك. اضغط هنا لإكمال الدفع واستلام سيارتك.',
+            'icon' => 'trophy',
+            'color' => 'emerald',
             'data' => [
                 'car_id' => $this->settlements?->car_id,
                 'auction_id' => $this->settlements?->auction_id,

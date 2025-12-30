@@ -46,6 +46,8 @@ class CarApprovedForAuctionNotification extends Notification
                 'car_id' => (string) $this->car->id,
                 'auction_id' => $this->auction ? (string) $this->auction->id : null,
                 'type' => 'car_approved_for_auction',
+                'icon' => 'badge-check',
+                'color' => 'emerald',
             ])
             ->custom([
                 "webpush" => [
@@ -88,6 +90,8 @@ class CarApprovedForAuctionNotification extends Notification
         return [
             'title' => 'تم الموافقة على سيارتك للمزاد',
             'body' => 'تم الموافقة على سيارتك ' . $this->car->make . ' ' . $this->car->model . ' (' . $this->car->year . ') للدخول في المزاد. يمكنك الآن متابعة حالة المزاد.',
+            'icon' => 'badge-check',
+            'color' => 'emerald',
             'data' => [
                 'car_id' => $this->car->id,
                 'auction_id' => $this->auction ? $this->auction->id : null,
