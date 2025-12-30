@@ -22,11 +22,13 @@ return [
             'secret' => env('PUSHER_APP_SECRET'),
             'app_id' => env('PUSHER_APP_ID'),
             'options' => [
-                'host' => env('PUSHER_HOST'),
+                //'host' => env('PUSHER_HOST'),
+                'cluster' => env('PUSHER_APP_CLUSTER', 'ap2'),
                 'port' => env('PUSHER_PORT'),
                 'scheme' => env('PUSHER_SCHEME', 'https'),
                 'encrypted' => true,
                 'useTLS' => true,
+                //'timeout' => 50000
             ],
         ],
     ],
