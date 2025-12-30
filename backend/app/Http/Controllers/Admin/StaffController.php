@@ -12,22 +12,30 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
 {
     /**
+     * Staff types allowed
+     */
+    private const STAFF_TYPES = [UserRole::ADMIN, UserRole::MODERATOR];
+
+    /**
+     * Protected role names
+     */
+    private const PROTECTED_ROLES = ['super_admin', 'platform_super_admin'];
+
+    /**
      * Display a listing of staff (admins and moderators).
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
         try {
-            $query = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR]);
+            $query = User::whereIn('type', self::STAFF_TYPES)
+                ->with('roles:id,name,display_name');
 
-            // Search functionality
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'like', "%{$search}%")
@@ -37,8 +45,7 @@ class StaffController extends Controller
                 });
             }
 
-            // Status filter
-            if ($request->has('status') && !empty($request->status)) {
+            if ($request->filled('status')) {
                 if ($request->status === 'active') {
                     $query->where('is_active', true);
                 } elseif ($request->status === 'inactive') {
@@ -46,85 +53,58 @@ class StaffController extends Controller
                 }
             }
 
+            if ($request->filled('type')) {
+                $type = UserRole::tryFrom($request->type);
+                if ($type && in_array($type, self::STAFF_TYPES)) {
+                    $query->where('type', $type);
+                }
+            }
+
             $moderators = $query->orderBy('created_at', 'desc')->paginate(15);
 
             return response()->json([
                 'status' => 'success',
-                'data' => $moderators
+                'data'   => $moderators
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching staff', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error fetching staff', ['error' => $e->getMessage()]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'فشل في تحميل بيانات الموظفين'
             ], 500);
         }
     }
 
     /**
-     * Store a newly created staff member (admin or moderator).
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * Store a newly created staff member.
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone' => 'required|string|max:15|unique:users,phone',
-            'password' => 'required|string|min:8|confirmed',
-            'type' => 'required|in:admin,moderator',
+            'first_name'     => 'required|string|max:255',
+            'last_name'      => 'required|string|max:255',
+            'email'          => 'required|email|unique:users,email',
+            'phone'          => 'required|string|max:15|unique:users,phone',
+            'password'       => 'required|string|min:8|confirmed',
+            'type'           => 'required|in:admin,moderator',
             'spatie_role_id' => 'nullable|exists:roles,id',
-        ], [
-            'first_name.required' => 'الاسم الأول مطلوب',
-            'first_name.string' => 'الاسم الأول يجب أن يكون نصًا',
-            'first_name.max' => 'الاسم الأول يجب ألا يتجاوز 255 حرفًا',
-            'last_name.required' => 'الاسم الأخير مطلوب',
-            'last_name.string' => 'الاسم الأخير يجب أن يكون نصًا',
-            'last_name.max' => 'الاسم الأخير يجب ألا يتجاوز 255 حرفًا',
-            'email.required' => 'البريد الإلكتروني مطلوب',
-            'email.email' => 'يرجى إدخال بريد إلكتروني صالح',
-            'email.unique' => 'هذا البريد الإلكتروني مستخدم بالفعل',
-            'phone.required' => 'رقم الهاتف مطلوب',
-            'phone.string' => 'رقم الهاتف يجب أن يكون نصًا',
-            'phone.max' => 'رقم الهاتف يجب ألا يتجاوز 15 رقمًا',
-            'phone.unique' => 'رقم الهاتف هذا مستخدم بالفعل',
-            'password.required' => 'كلمة المرور مطلوبة',
-            'password.string' => 'كلمة المرور يجب أن تكون نصًا',
-            'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
-            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
-            'role.required' => 'نوع المستخدم مطلوب',
-            'role.in' => 'نوع المستخدم يجب أن يكون مدير أو مشرف',
-            'spatie_role_id.exists' => 'الدور الوظيفي المختار غير صالح',
-        ]);
+        ], $this->validationMessages());
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'بيانات غير صالحة',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
-        // Security Check: Prevent assigning super_admin role if not super_admin
-        if ($request->has('spatie_role_id') && !empty($request->spatie_role_id)) {
-            $spatieRole = \Spatie\Permission\Models\Role::find($request->spatie_role_id);
-            if ($spatieRole && $spatieRole->name === 'super_admin') {
-                /** @var \App\Models\User $currentUser */
-                $currentUser = Auth::user();
-                if (!$currentUser->hasRole('super_admin')) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'لا تملك صلاحية تعيين دور مدير النظام الرئيسي'
-                    ], 403);
-                }
-            }
+        // ✅ Security: Check super_admin role assignment
+        if (!$this->canAssignRole($request->spatie_role_id)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'لا تملك صلاحية تعيين هذا الدور'
+            ], 403);
         }
 
         try {
@@ -132,38 +112,47 @@ class StaffController extends Controller
                 ->where('type', 'platform')
                 ->first();
 
+            if (!$platform_organization) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'لم يتم العثور على المنظمة الأساسية'
+                ], 500);
+            }
+
             $staff = User::create([
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'password_hash' => Hash::make($request->password),
-                'type' => $request->type,
-                'is_active' => true,
-                'status' => UserStatus::ACTIVE,
-                'organization_id' => $platform_organization->id,
-                'email_verified_at' => now(), // Auto-verify admin-created staff
+                'first_name'        => $request->first_name,
+                'last_name'         => $request->last_name,
+                'email'             => $request->email,
+                'phone'             => $request->phone,
+                'password_hash'     => Hash::make($request->password),
+                'type'              => $request->type,
+                'is_active'         => true,
+                'status'            => UserStatus::ACTIVE,
+                'organization_id'   => $platform_organization->id,
+                'email_verified_at' => now(),
             ]);
 
-            if ($request->has('spatie_role_id') && !empty($request->spatie_role_id)) {
-                app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($platform_organization->id);
+            if ($request->filled('spatie_role_id')) {
+                app(\Spatie\Permission\PermissionRegistrar::class)
+                    ->setPermissionsTeamId($platform_organization->id);
                 $staff->syncRoles([$request->spatie_role_id]);
             }
 
+            Log::info('Staff created', ['staff_id' => $staff->id, 'by' => auth()->id()]);
+
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'تم إنشاء الموظف بنجاح',
-                'data' => $staff
+                'data'    => $staff->load('roles:id,name,display_name')
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Error creating staff member', [
+            Log::error('Error creating staff', [
                 'error' => $e->getMessage(),
-                'data' => $request->except(['password', 'password_confirmation']),
-                'trace' => $e->getTraceAsString()
+                'data'  => $request->except(['password', 'password_confirmation']),
             ]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'حدث خطأ أثناء إنشاء الموظف'
             ], 500);
         }
@@ -171,27 +160,21 @@ class StaffController extends Controller
 
     /**
      * Display the specified staff member.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function show($id)
     {
         try {
-            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->with('roles')->findOrFail($id);
+            $staff = User::whereIn('type', self::STAFF_TYPES)
+                ->with('roles:id,name,display_name')
+                ->findOrFail($id);
 
             return response()->json([
                 'status' => 'success',
-                'data' => $staff
+                'data'   => $staff
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching staff details', [
-                'staff_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'لم يتم العثور على الموظف'
             ], 404);
         }
@@ -199,66 +182,47 @@ class StaffController extends Controller
 
     /**
      * Update the specified staff member.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, $id)
     {
         try {
-            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
+            $staff = User::whereIn('type', self::STAFF_TYPES)->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
-                'first_name' => 'sometimes|required|string|max:255',
-                'last_name' => 'sometimes|required|string|max:255',
-                'email' => 'sometimes|required|email|unique:users,email,' . $id,
-                'phone' => 'sometimes|required|string|max:15|unique:users,phone,' . $id,
-                'password' => 'sometimes|nullable|string|min:8|confirmed',
-                'type' => 'sometimes|required|in:admin,moderator',
+                'first_name'     => 'sometimes|required|string|max:255',
+                'last_name'      => 'sometimes|required|string|max:255',
+                'email'          => 'sometimes|required|email|unique:users,email,' . $id,
+                'phone'          => 'sometimes|required|string|max:15|unique:users,phone,' . $id,
+                'password'       => 'sometimes|nullable|string|min:8|confirmed',
+                'type'           => 'sometimes|required|in:admin,moderator',
                 'spatie_role_id' => 'nullable|exists:roles,id',
-            ], [
-                'first_name.required' => 'الاسم الأول مطلوب',
-                'first_name.string' => 'الاسم الأول يجب أن يكون نصًا',
-                'first_name.max' => 'الاسم الأول يجب ألا يتجاوز 255 حرفًا',
-                'last_name.required' => 'الاسم الأخير مطلوب',
-                'last_name.string' => 'الاسم الأخير يجب أن يكون نصًا',
-                'last_name.max' => 'الاسم الأخير يجب ألا يتجاوز 255 حرفًا',
-                'email.required' => 'البريد الإلكتروني مطلوب',
-                'email.email' => 'يرجى إدخال بريد إلكتروني صالح',
-                'email.unique' => 'هذا البريد الإلكتروني مستخدم بالفعل',
-                'phone.required' => 'رقم الهاتف مطلوب',
-                'phone.string' => 'رقم الهاتف يجب أن يكون نصًا',
-                'phone.max' => 'رقم الهاتف يجب ألا يتجاوز 15 رقمًا',
-                'phone.unique' => 'رقم الهاتف هذا مستخدم بالفعل',
-                'password.string' => 'كلمة المرور يجب أن تكون نصًا',
-                'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
-                'password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
-                'role.required' => 'نوع المستخدم مطلوب',
-                'role.in' => 'نوع المستخدم يجب أن يكون مدير أو مشرف',
-                'spatie_role_id.exists' => 'الدور المختار غير صالح',
-            ]);
+            ], $this->validationMessages());
 
             if ($validator->fails()) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => 'بيانات غير صالحة',
-                    'errors' => $validator->errors()
+                    'errors'  => $validator->errors()
                 ], 422);
             }
 
-            // Security Check: Prevent assigning super_admin role if not super_admin
-            if ($request->has('spatie_role_id') && !empty($request->spatie_role_id)) {
-                $spatieRole = \Spatie\Permission\Models\Role::find($request->spatie_role_id);
-                if ($spatieRole && $spatieRole->name === 'super_admin') {
-                    /** @var \App\Models\User $currentUser */
-                    $currentUser = Auth::user();
-                    if (!$currentUser->hasRole('super_admin')) {
-                        return response()->json([
-                            'status' => 'error',
-                            'message' => 'لا تملك صلاحية تعيين دور مدير النظام الرئيسي'
-                        ], 403);
-                    }
+            // ✅ Security: Check role assignment
+            if ($request->has('spatie_role_id') && !$this->canAssignRole($request->spatie_role_id)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'لا تملك صلاحية تعيين هذا الدور'
+                ], 403);
+            }
+
+            // ✅ Security: Cannot demote yourself
+            /** @var User $currentUser */
+            $currentUser = Auth::user();
+            if ($currentUser->id === $staff->id) {
+                if ($request->has('type') && $request->type !== $staff->type->value) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => 'لا يمكنك تغيير نوع حسابك الشخصي'
+                    ], 403);
                 }
             }
 
@@ -266,56 +230,50 @@ class StaffController extends Controller
                 ->where('type', 'platform')
                 ->first();
 
-            // Update basic information
-            if ($request->has('first_name')) {
-                $staff->first_name = $request->first_name;
-            }
-            if ($request->has('last_name')) {
-                $staff->last_name = $request->last_name;
-            }
-            if ($request->has('email')) {
-                $staff->email = $request->email;
-            }
-            if ($request->has('phone')) {
-                $staff->phone = $request->phone;
-            }
-            if ($request->has('role')) {
+            // Update fields
+            $staff->fill($request->only(['first_name', 'last_name', 'email', 'phone']));
+            
+            if ($request->has('type')) {
                 $staff->type = $request->type;
             }
 
-            $staff->organization_id = $platform_organization->id;
+            if ($platform_organization) {
+                $staff->organization_id = $platform_organization->id;
+            }
 
-            // Update password only if provided
-            if ($request->has('password') && !empty($request->password)) {
+            if ($request->filled('password')) {
                 $staff->password_hash = Hash::make($request->password);
             }
 
-            if ($request->has('spatie_role_id')) {
-                if (!empty($request->spatie_role_id)) {
-                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($platform_organization->id);
+            $staff->save();
+
+            // Sync roles
+            if ($request->has('spatie_role_id') && $platform_organization) {
+                app(\Spatie\Permission\PermissionRegistrar::class)
+                    ->setPermissionsTeamId($platform_organization->id);
+                    
+                if ($request->filled('spatie_role_id')) {
                     $staff->syncRoles([$request->spatie_role_id]);
                 } else {
                     $staff->syncRoles([]);
                 }
             }
 
-            $staff->save();
+            Log::info('Staff updated', ['staff_id' => $staff->id, 'by' => auth()->id()]);
 
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'تم تحديث بيانات الموظف بنجاح',
-                'data' => $staff
+                'data'    => $staff->fresh('roles:id,name,display_name')
             ]);
         } catch (\Exception $e) {
-            Log::error('Error updating staff member', [
+            Log::error('Error updating staff', [
                 'staff_id' => $id,
-                'error' => $e->getMessage(),
-                'data' => $request->except(['password', 'password_confirmation']),
-                'trace' => $e->getTraceAsString()
+                'error'    => $e->getMessage(),
             ]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'حدث خطأ أثناء تحديث بيانات الموظف'
             ], 500);
         }
@@ -323,39 +281,45 @@ class StaffController extends Controller
 
     /**
      * Remove the specified staff member.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy($id)
     {
         try {
-            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
+            $staff = User::whereIn('type', self::STAFF_TYPES)->findOrFail($id);
 
-            // Prevent deletion of currently authenticated admin if they're deleting themselves
+            // ✅ Security: Cannot delete yourself
             $currentUser = Auth::user();
             if ($currentUser && $currentUser->id === $staff->id) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => 'لا يمكنك حذف حسابك الشخصي'
+                ], 403);
+            }
+
+            // ✅ Security: Cannot delete super admin
+            if ($staff->type === UserRole::SUPER_ADMIN) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'لا يمكن حذف مدير النظام الرئيسي'
                 ], 403);
             }
 
             $staff->delete();
 
+            Log::info('Staff deleted', ['staff_id' => $id, 'by' => auth()->id()]);
+
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'تم حذف الموظف بنجاح'
             ]);
         } catch (\Exception $e) {
-            Log::error('Error deleting staff member', [
+            Log::error('Error deleting staff', [
                 'staff_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error'    => $e->getMessage(),
             ]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'حدث خطأ أثناء حذف الموظف'
             ], 500);
         }
@@ -363,36 +327,29 @@ class StaffController extends Controller
 
     /**
      * Update staff member status (active/inactive).
-     *
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
             'is_active' => 'required|boolean',
-        ], [
-            'is_active.required' => 'حالة النشاط مطلوبة',
-            'is_active.boolean' => 'حالة النشاط يجب أن تكون صحيحة أو خاطئة',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'بيانات غير صالحة',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
         try {
-            $staff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->findOrFail($id);
+            $staff = User::whereIn('type', self::STAFF_TYPES)->findOrFail($id);
 
-            // Prevent deactivation of currently authenticated admin if they're deactivating themselves
+            // ✅ Security: Cannot deactivate yourself
             $currentUser = Auth::user();
             if ($currentUser && $currentUser->id === $staff->id && !$request->is_active) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => 'لا يمكنك إلغاء تفعيل حسابك الشخصي'
                 ], 403);
             }
@@ -405,21 +362,25 @@ class StaffController extends Controller
                 ? 'تم تفعيل الموظف بنجاح'
                 : 'تم إلغاء تفعيل الموظف بنجاح';
 
+            Log::info('Staff status updated', [
+                'staff_id'  => $id,
+                'is_active' => $request->is_active,
+                'by'        => auth()->id()
+            ]);
+
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => $message,
-                'data' => $staff
+                'data'    => $staff
             ]);
         } catch (\Exception $e) {
             Log::error('Error updating staff status', [
                 'staff_id' => $id,
-                'is_active' => $request->is_active,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error'    => $e->getMessage(),
             ]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'حدث خطأ أثناء تحديث حالة الموظف'
             ], 500);
         }
@@ -427,47 +388,86 @@ class StaffController extends Controller
 
     /**
      * Get staff dashboard statistics.
-     *
-     * @return \Illuminate\Http\JsonResponse
      */
     public function dashboard()
     {
         try {
-            // Get basic statistics for staff dashboard
-            $totalStaff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])->count();
-            $totalAdmins = User::where('type', UserRole::ADMIN)->count();
+            $totalStaff      = User::whereIn('type', self::STAFF_TYPES)->count();
+            $totalAdmins     = User::where('type', UserRole::ADMIN)->count();
             $totalModerators = User::where('type', UserRole::MODERATOR)->count();
-            $activeStaff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])
-                ->where('is_active', true)->count();
-            $inactiveStaff = $totalStaff - $activeStaff;
+            $activeStaff     = User::whereIn('type', self::STAFF_TYPES)->where('is_active', true)->count();
+            $inactiveStaff   = $totalStaff - $activeStaff;
 
-            // Recent staff
-            $recentStaff = User::whereIn('type', [UserRole::ADMIN, UserRole::MODERATOR])
+            $recentStaff = User::whereIn('type', self::STAFF_TYPES)
+                ->with('roles:id,name,display_name')
                 ->orderBy('created_at', 'desc')
                 ->take(5)
                 ->get(['id', 'first_name', 'last_name', 'email', 'type', 'is_active', 'created_at']);
 
             return response()->json([
                 'status' => 'success',
-                'data' => [
-                    'total_staff' => $totalStaff,
-                    'total_admins' => $totalAdmins,
+                'data'   => [
+                    'total_staff'      => $totalStaff,
+                    'total_admins'     => $totalAdmins,
                     'total_moderators' => $totalModerators,
-                    'active_staff' => $activeStaff,
-                    'inactive_staff' => $inactiveStaff,
-                    'recent_staff' => $recentStaff
+                    'active_staff'     => $activeStaff,
+                    'inactive_staff'   => $inactiveStaff,
+                    'recent_staff'     => $recentStaff
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching staff dashboard', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error fetching staff dashboard', ['error' => $e->getMessage()]);
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'حدث خطأ أثناء تحميل لوحة المعلومات'
             ], 500);
         }
+    }
+
+    /**
+     * Check if current user can assign the given role
+     */
+    private function canAssignRole(?int $roleId): bool
+    {
+        if (empty($roleId)) {
+            return true;
+        }
+
+        $role = Role::find($roleId);
+        if (!$role) {
+            return true;
+        }
+
+        // Super admin roles require super admin user
+        if (in_array($role->name, self::PROTECTED_ROLES)) {
+            /** @var User $currentUser */
+            $currentUser = Auth::user();
+            return $currentUser->type === UserRole::SUPER_ADMIN;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validation messages in Arabic
+     */
+    private function validationMessages(): array
+    {
+        return [
+            'first_name.required'   => 'الاسم الأول مطلوب',
+            'last_name.required'    => 'الاسم الأخير مطلوب',
+            'email.required'        => 'البريد الإلكتروني مطلوب',
+            'email.email'           => 'يرجى إدخال بريد إلكتروني صالح',
+            'email.unique'          => 'هذا البريد الإلكتروني مستخدم بالفعل',
+            'phone.required'        => 'رقم الهاتف مطلوب',
+            'phone.unique'          => 'رقم الهاتف هذا مستخدم بالفعل',
+            'password.required'     => 'كلمة المرور مطلوبة',
+            'password.min'          => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
+            'password.confirmed'    => 'تأكيد كلمة المرور غير متطابق',
+            'type.required'         => 'نوع المستخدم مطلوب',
+            'type.in'               => 'نوع المستخدم يجب أن يكون مدير أو مشرف',
+            'spatie_role_id.exists' => 'الدور الوظيفي المختار غير صالح',
+        ];
     }
 }

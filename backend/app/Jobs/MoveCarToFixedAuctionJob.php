@@ -14,17 +14,11 @@ class MoveCarToFixedAuctionJob implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct()
     {
         //
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         $now = Carbon::now();
@@ -34,15 +28,13 @@ class MoveCarToFixedAuctionJob implements ShouldQueue
                 AuctionType::LIVE_INSTANT->value,
                 AuctionType::SILENT_INSTANT->value,
             ])
-            ->where('status', AuctionStatus::ACTIVE->value)
+            ->whereIn('status', AuctionStatus::activeValues())
             ->where(function ($query) use ($now) {
                 $query
-                    // لو المزاد متمدّد، نعتمد على extended_until
                     ->where(function ($q) use ($now) {
                         $q->whereNotNull('extended_until')
                           ->where('extended_until', '<', $now);
                     })
-                    // لو مفيش تمديد، نعتمد على end_time
                     ->orWhere(function ($q) use ($now) {
                         $q->whereNull('extended_until')
                           ->where('end_time', '<', $now);
@@ -50,7 +42,7 @@ class MoveCarToFixedAuctionJob implements ShouldQueue
             })
             ->update([
                 'control_room_approved' => true,
-                'status'                => AuctionStatus::ACTIVE->value,
+                'status'                => AuctionStatus::ACTIVE->value, // normalize
                 'auction_type'          => AuctionType::FIXED->value,
                 'approved_for_live'     => false,
             ]);

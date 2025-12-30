@@ -4,493 +4,391 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VenueOwner;
-use App\Models\Car;
-use App\Models\ExhibitorWallet;
+use App\Models\User;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class VenueOwnerController extends Controller
 {
     /**
-     * GET /admin/venue-owners
-     * Supports: search, status, is_active, sort_by, sort_dir, per_page, page
+     * Display a listing of venue owners.
+     * GET /api/admin/venue-owners
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
+        $query = VenueOwner::with([
+            'user:id,first_name,last_name,email,phone,is_active,status,created_at',
+        ]);
+
+        // Status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Active filter
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('venue_name', 'like', "%{$search}%")
+                  ->orWhere('commercial_registry', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($uq) use ($search) {
+                      $uq->where('first_name', 'like', "%{$search}%")
+                         ->orWhere('last_name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%")
+                         ->orWhere('phone', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortDir = $request->get('sort_dir', 'desc');
+        $allowedSorts = ['created_at', 'venue_name', 'rating', 'status'];
+        
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
+        }
+
+        $perPage = min(50, max(1, (int) $request->get('per_page', 15)));
+        $venueOwners = $query->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $venueOwners,
+        ]);
+    }
+
+    /**
+     * Display the specified venue owner.
+     * GET /api/admin/venue-owners/{id}
+     */
+    public function show($id): JsonResponse
+    {
+        $venueOwner = VenueOwner::with([
+            'user',
+            'reviews' => fn($q) => $q->where('is_approved', true)->orderBy('created_at', 'desc')->limit(10),
+            'reviews.user:id,first_name,last_name',
+            'commissionOperations' => fn($q) => $q->orderBy('created_at', 'desc')->limit(10),
+            'shipments' => fn($q) => $q->orderBy('created_at', 'desc')->limit(10),
+        ])->findOrFail($id);
+
+        // Load additional stats
+        $stats = [
+            'total_reviews'     => $venueOwner->reviews()->count(),
+            'approved_reviews'  => $venueOwner->reviews()->where('is_approved', true)->count(),
+            'pending_reviews'   => $venueOwner->reviews()->where('is_approved', false)->count(),
+            'total_commission'  => $venueOwner->commissionOperations()->sum('amount'),
+            'total_shipments'   => $venueOwner->shipments()->count(),
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $venueOwner,
+            'stats'  => $stats,
+        ]);
+    }
+
+    /**
+     * Store a newly created venue owner.
+     * POST /api/admin/venue-owners
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            // User fields
+            'first_name' => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
+            'email'      => 'required|email|unique:users,email',
+            'phone'      => 'required|string|max:15|unique:users,phone',
+            'password'   => 'required|string|min:8|confirmed',
+            // Venue owner fields
+            'venue_name'          => 'required|string|max:255',
+            'commercial_registry' => 'nullable|string|max:100',
+            'description'         => 'nullable|string',
+            'address'             => 'nullable|string',
+            'commission_value'    => 'nullable|numeric|min:0',
+            'commission_currency' => 'nullable|string|max:10',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         try {
-            $perPage = max(1, min((int)$request->query('per_page', 15), 100));
-            $search = trim((string) $request->query('search', ''));
-            $status = $request->query('status');
-            $isActiveParam = $request->query('is_active');
+            DB::beginTransaction();
 
-            $query = VenueOwner::with('user')
-                ->select('venue_owners.*')
-                ->addSelect(DB::raw('(SELECT COUNT(*) FROM cars WHERE cars.user_id = venue_owners.user_id) as venue_cars_count'));
+            // Create user
+            $user = User::create([
+                'first_name'        => $request->first_name,
+                'last_name'         => $request->last_name,
+                'email'             => $request->email,
+                'phone'             => $request->phone,
+                'password_hash'     => Hash::make($request->password),
+                'type'              => UserRole::VENUE_OWNER,
+                'is_active'         => true,
+                'status'            => UserStatus::ACTIVE,
+                'email_verified_at' => now(),
+            ]);
 
-            // Search functionality
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('venue_name', 'like', "%{$search}%")
-                      ->orWhere('commercial_registry', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($userQuery) use ($search) {
-                          $userQuery->where('first_name', 'like', "%{$search}%")
-                                    ->orWhere('last_name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                      });
-                });
-            }
+            // Create venue owner
+            $venueOwner = VenueOwner::create([
+                'user_id'             => $user->id,
+                'venue_name'          => $request->venue_name,
+                'commercial_registry' => $request->commercial_registry,
+                'description'         => $request->description,
+                'address'             => $request->address,
+                'commission_value'    => $request->commission_value,
+                'commission_currency' => $request->commission_currency ?? 'SAR',
+                'status'              => 'active',
+                'is_active'           => true,
+            ]);
 
-            // Status filter (نستخدم القيم الموجودة في الداتابيز كما هي)
-            if ($status !== null && $status !== '') {
-                $query->where('status', $status);
-            }
+            DB::commit();
 
-            // Active filter
-            if ($isActiveParam !== null && $isActiveParam !== '') {
-                $normalized = strtolower((string) $isActiveParam);
-                if (in_array($normalized, ['1','true','yes','y'], true)) {
-                    $query->where('is_active', true);
-                } elseif (in_array($normalized, ['0','false','no','n'], true)) {
-                    $query->where('is_active', false);
-                }
-            }
-
-            // Sorting
-            $allowedSort = ['id', 'venue_name', 'status', 'is_active', 'created_at', 'updated_at'];
-            $sortBy = $request->query('sort_by', 'id');
-            $sortDir = strtolower($request->query('sort_dir', 'desc'));
-            $sortDir = in_array($sortDir, ['asc','desc'], true) ? $sortDir : 'desc';
-
-            // Handle user name sorting with subquery
-            if ($sortBy === 'user_name') {
-                $query->orderBy(
-                    DB::raw("(SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE users.id = venue_owners.user_id)"),
-                    $sortDir
-                );
-            } elseif (in_array($sortBy, $allowedSort, true)) {
-                $query->orderBy($sortBy, $sortDir);
-            } else {
-                $query->orderBy('id', 'desc');
-            }
-
-            $paginator = $query->paginate($perPage, ['*'], 'page', $request->query('page', 1));
-
-            $formattedData = $paginator->getCollection();
+            Log::info('Venue owner created by admin', [
+                'venue_owner_id' => $venueOwner->id,
+                'admin_id'       => auth()->id(),
+            ]);
 
             return response()->json([
-                'ok'      => true,
-                'filters' => [
-                    'search'    => $search ?: null,
-                    'status'    => $status ?? null,
-                    'is_active' => $isActiveParam ?? null,
-                    'sort_by'   => $sortBy,
-                    'sort_dir'  => $request->query('sort_dir', 'desc'),
-                    'per_page'  => $perPage,
-                ],
-                'data' => $formattedData,
-                'meta' => [
-                    'current_page' => $paginator->currentPage(),
-                    'per_page'     => $paginator->perPage(),
-                    'total'        => $paginator->total(),
-                    'last_page'    => $paginator->lastPage(),
-                ],
-            ], 200);
+                'status'  => 'success',
+                'message' => 'تم إنشاء مالك المعرض بنجاح',
+                'data'    => $venueOwner->load('user'),
+            ], 201);
 
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@index error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Venue owner creation failed', ['error' => $e->getMessage()]);
+
             return response()->json([
-                'ok' => false,
-                'message' => 'Unexpected server error.',
-                'error' => $e->getMessage(),
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء إنشاء مالك المعرض'
             ], 500);
         }
     }
 
     /**
-     * GET /admin/venue-owners/{id}
+     * Update the specified venue owner.
+     * PUT /api/admin/venue-owners/{id}
      */
-    public function show(int $id)
+    public function update(Request $request, $id): JsonResponse
     {
+        $venueOwner = VenueOwner::with('user')->findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            // User fields
+            'first_name' => 'sometimes|string|max:255',
+            'last_name'  => 'sometimes|string|max:255',
+            'email'      => 'sometimes|email|unique:users,email,' . $venueOwner->user_id,
+            'phone'      => 'sometimes|string|max:15|unique:users,phone,' . $venueOwner->user_id,
+            'password'   => 'sometimes|nullable|string|min:8',
+            // Venue owner fields
+            'venue_name'          => 'sometimes|string|max:255',
+            'commercial_registry' => 'sometimes|nullable|string|max:100',
+            'description'         => 'sometimes|nullable|string',
+            'address'             => 'sometimes|nullable|string',
+            'commission_value'    => 'sometimes|nullable|numeric|min:0',
+            'commission_currency' => 'sometimes|nullable|string|max:10',
+            'status'              => 'sometimes|string|in:active,inactive,pending,suspended',
+            'is_active'           => 'sometimes|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         try {
-            $venueOwner = VenueOwner::with('user')->find($id);
+            DB::beginTransaction();
 
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
-            }
-
-            // Format response data to include user_name and user_email if needed
-            $data = $venueOwner->toArray();
+            // Update user
             if ($venueOwner->user) {
-                $data['user_name'] = trim($venueOwner->user->first_name . ' ' . $venueOwner->user->last_name);
-                $data['user_email'] = $venueOwner->user->email;
-            }
-
-            return response()->json([
-                'ok'   => true,
-                'data' => $data,
-            ], 200);
-
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@show error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json([
-                'ok' => false,
-                'message' => 'Unexpected server error.',
-            ], 500);
-        }
-    }
-
-    /**
-     * GET /admin/venue-owners/{id}/cars
-     * جلب السيارات التابعة لمالك القاعة (حسب user_id)
-     */
-    public function cars(Request $request, int $id)
-    {
-        try {
-            $venueOwner = VenueOwner::find($id);
-
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok'      => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
-            }
-
-            $perPage = max(1, min((int)$request->query('per_page', 10), 100));
-            $sortBy  = $request->query('sort_by', 'id');
-            $sortDir = strtolower($request->query('sort_dir', 'desc'));
-            $sortDir = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
-
-            $allowedSort = ['id', 'created_at', 'updated_at', 'year', 'evaluation_price', 'auction_status'];
-
-            // لو مالك القاعة ما عندوش user_id نرجع ليست فاضية
-            if (!$venueOwner->user_id) {
-                return response()->json([
-                    'ok'      => true,
-                    'filters' => [
-                        'search'          => $request->query('search'),
-                        'market_category' => $request->query('market_category'),
-                        'auction_status'  => $request->query('auction_status'),
-                        'sort_by'         => $sortBy,
-                        'sort_dir'        => $sortDir,
-                        'per_page'        => $perPage,
-                    ],
-                    'data' => [],
-                    'meta' => [
-                        'current_page' => 1,
-                        'per_page'     => $perPage,
-                        'total'        => 0,
-                        'last_page'    => 1,
-                    ],
-                ], 200);
-            }
-
-            $query = Car::where('user_id', $venueOwner->user_id)
-                ->with('activeAuction') // بدون select مخصص
-                ->withCount('activeAuctionBids as total_bids');
-
-            // فلاتر اختيارية
-            if ($request->filled('market_category')) {
-                $query->where('market_category', $request->query('market_category'));
-            }
-
-            if ($request->filled('auction_status')) {
-                $query->where('auction_status', $request->query('auction_status'));
-            }
-
-            if ($request->filled('search')) {
-                $search = trim((string) $request->query('search', ''));
-                $query->where(function ($q) use ($search) {
-                    $q->where('make', 'like', "%{$search}%")
-                      ->orWhere('model', 'like', "%{$search}%")
-                      ->orWhere('vin', 'like', "%{$search}%");
-                });
-            }
-
-            // ترتيب
-            if (in_array($sortBy, $allowedSort, true)) {
-                $query->orderBy($sortBy, $sortDir);
-            } else {
-                $query->orderBy('id', 'desc');
-            }
-
-            $paginator = $query->paginate($perPage, ['*'], 'page', $request->query('page', 1));
-            $items     = $paginator->getCollection();
-
-            return response()->json([
-                'ok'      => true,
-                'filters' => [
-                    'search'          => $request->query('search'),
-                    'market_category' => $request->query('market_category'),
-                    'auction_status'  => $request->query('auction_status'),
-                    'sort_by'         => $sortBy,
-                    'sort_dir'        => $sortDir,
-                    'per_page'        => $perPage,
-                ],
-                'data' => $items,
-                'meta' => [
-                    'current_page' => $paginator->currentPage(),
-                    'per_page'     => $paginator->perPage(),
-                    'total'        => $paginator->total(),
-                    'last_page'    => $paginator->lastPage(),
-                ],
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@cars error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Unexpected server error.',
-                'error'   => config('app.debug') ? $e->getMessage() : null,
-            ], 500);
-        }
-    }
-
-    /**
-     * GET /admin/venue-owners/{id}/wallet
-     * ملخص محفظة العارض (Exhibitor Wallet) الخاصة بمالك القاعة
-     */
-    public function wallet(Request $request, int $id)
-    {
-        try {
-            $venueOwner = VenueOwner::find($id);
-
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
-            }
-
-            if (!$venueOwner->user_id) {
-                return response()->json([
-                    'ok'   => true,
-                    'data' => null,
-                ], 200);
-            }
-
-            $wallet = ExhibitorWallet::firstOrCreate(
-                ['user_id' => $venueOwner->user_id],
-                ['currency' => 'SAR', 'balance' => 0]
-            );
-
-            return response()->json([
-                'ok'   => true,
-                'data' => [
-                    'id'          => $wallet->id,
-                    'user_id'     => $wallet->user_id,
-                    'balance'     => $wallet->balance,
-                    'balance_sar' => $wallet->balance / 100, // نفس منطق Exhibitor\WalletController
-                    'currency'    => $wallet->currency,
-                ],
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@wallet error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Unexpected server error.',
-            ], 500);
-        }
-    }
-
-    /**
-     * GET /admin/venue-owners/{id}/wallet/transactions
-     * حركات محفظة العارض المرتبطة بمالك القاعة
-     */
-    public function walletTransactions(Request $request, int $id)
-    {
-        try {
-            $venueOwner = VenueOwner::find($id);
-
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
-            }
-
-            if (!$venueOwner->user_id) {
-                return response()->json([
-                    'ok'   => true,
-                    'data' => [
-                        'data'         => [],
-                        'current_page' => 1,
-                        'last_page'    => 1,
-                        'per_page'     => (int)$request->query('per_page', 15),
-                        'total'        => 0,
-                    ],
-                ], 200);
-            }
-
-            $wallet = ExhibitorWallet::firstOrCreate(
-                ['user_id' => $venueOwner->user_id],
-                ['currency' => 'SAR', 'balance' => 0]
-            );
-
-            $perPage = max(1, min((int)$request->query('per_page', 15), 100));
-
-            $txQuery = $wallet->transactions()
-                ->orderByDesc('created_at');
-
-            // ممكن تضيف فلتر type/status لو حبيت مستقبلاً هنا
-
-            $paginator = $txQuery->paginate($perPage, ['*'], 'page', $request->query('page', 1));
-
-            return response()->json([
-                'ok'   => true,
-                'data' => $paginator,
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@walletTransactions error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-
-            return response()->json([
-                'ok'      => false,
-                'message' => 'Unexpected server error.',
-            ], 500);
-        }
-    }
-
-    /**
-     * POST /admin/venue-owners/{id}/approve
-     * - يفعّل الحساب عن طريق is_active = true
-     * - يحدّث status إلى active
-     * - لا يغيّر kyc_status احترامًا للـ CHECK CONSTRAINT في جدول users
-     */
-    public function approve(Request $request, int $id)
-    {
-        try {
-            $venueOwner = VenueOwner::with('user')->find($id);
-
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
-            }
-
-            DB::transaction(function () use ($venueOwner) {
-                // تحديث بيانات مالك القاعة
-                $venueOwner->is_active = true;
-                $venueOwner->status    = 'active'; // قيم مسموح بها: ['pending', 'active', 'rejected']
-                $venueOwner->save();
-
-                // تفعيل اليوزر المربوط (من غير المساس بـ kyc_status)
-                if ($venueOwner->user) {
-                    $venueOwner->user->is_active = true;
-                    $venueOwner->user->status    = 'active'; // تأكد إن 'active' من القيم المسموح بها في users.status
-                    // لا نغيّر kyc_status هنا عشان ما نكسرش users_kyc_status_check
-                    $venueOwner->user->save();
+                $venueOwner->user->fill($request->only(['first_name', 'last_name', 'email', 'phone']));
+                
+                if ($request->filled('password')) {
+                    $venueOwner->user->password_hash = Hash::make($request->password);
                 }
-            });
-
-            return response()->json([
-                'ok' => true,
-                'message' => 'Venue owner activated successfully',
-                'data' => $venueOwner->fresh('user'),
-            ], 200);
-
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@approve error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json([
-                'ok' => false,
-                'message' => 'Unexpected server error.',
-            ], 500);
-        }
-    }
-
-    /**
-     * POST /admin/venue-owners/{id}/reject
-     * - يعطّل الحساب عن طريق is_active = false
-     * - يحدّث status إلى rejected
-     * - يحدّث kyc_status للـ user إلى rejected (بما إنه واضح إنه مسموح من الـ CHECK CONSTRAINT)
-     * - يمكن استخدام commission_note كحقل لسبب الرفض لو حابب
-     */
-    public function reject(Request $request, int $id)
-    {
-        try {
-            $venueOwner = VenueOwner::with('user')->find($id);
-
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
+                
+                $venueOwner->user->save();
             }
 
-            DB::transaction(function () use ($venueOwner, $request) {
-                $venueOwner->is_active = false;
-                $venueOwner->status    = 'rejected'; // ['pending', 'active', 'rejected']
-
-                // سبب الرفض (اختياري) نخزنه في commission_note أو اعمل له عمود مخصص لاحقًا
-                if ($request->filled('reject_reason')) {
-                    $venueOwner->commission_note = $request->input('reject_reason');
-                }
-
-                $venueOwner->save();
-
-                if ($venueOwner->user) {
-                    $venueOwner->user->is_active  = false;
-                    $venueOwner->user->status     = 'rejected';
-                    $venueOwner->user->kyc_status = 'rejected'; // واضح إنها قيمة مسموحة من الـ log
-                    $venueOwner->user->save();
-                }
-            });
-
-            return response()->json([
-                'ok' => true,
-                'message' => 'Venue owner deactivated (rejected) successfully',
-                'data' => $venueOwner->fresh('user'),
-            ], 200);
-
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@reject error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json([
-                'ok' => false,
-                'message' => 'Unexpected server error.',
-            ], 500);
-        }
-    }
-
-    /**
-     * POST /admin/venue-owners/{id}/toggle-status
-     * - يغيّر قيمة is_active (ON/OFF) بدون تغيير status
-     */
-    public function toggleStatus(int $id)
-    {
-        try {
-            $venueOwner = VenueOwner::with('user')->find($id);
-
-            if (!$venueOwner) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Venue owner not found',
-                ], 404);
-            }
-
-            $venueOwner->is_active = ! (bool) $venueOwner->is_active;
+            // Update venue owner
+            $venueOwner->fill($request->only([
+                'venue_name', 'commercial_registry', 'description', 'address',
+                'commission_value', 'commission_currency', 'status', 'is_active'
+            ]));
             $venueOwner->save();
 
-            return response()->json([
-                'ok' => true,
-                'message' => 'Venue owner active status updated',
-                'data' => [
-                    'id'        => $venueOwner->id,
-                    'is_active' => (bool) $venueOwner->is_active,
-                    'status'    => $venueOwner->status,
-                ],
-            ], 200);
+            DB::commit();
 
-        } catch (\Throwable $e) {
-            Log::error('VenueOwnerController@toggleStatus error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::info('Venue owner updated by admin', [
+                'venue_owner_id' => $id,
+                'admin_id'       => auth()->id(),
+            ]);
+
             return response()->json([
-                'ok' => false,
-                'message' => 'Unexpected server error.',
+                'status'  => 'success',
+                'message' => 'تم تحديث بيانات مالك المعرض بنجاح',
+                'data'    => $venueOwner->fresh('user'),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Venue owner update failed', ['error' => $e->getMessage(), 'id' => $id]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء تحديث البيانات'
             ], 500);
         }
+    }
+
+    /**
+     * Update venue owner status.
+     * PATCH /api/admin/venue-owners/{id}/status
+     */
+    public function updateStatus(Request $request, $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status'    => 'sometimes|string|in:active,inactive,pending,suspended',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $venueOwner = VenueOwner::with('user')->findOrFail($id);
+
+            if ($request->has('status')) {
+                $venueOwner->status = $request->status;
+            }
+            if ($request->has('is_active')) {
+                $venueOwner->is_active = $request->is_active;
+                
+                // Sync user status
+                if ($venueOwner->user) {
+                    $venueOwner->user->is_active = $request->is_active;
+                    $venueOwner->user->save();
+                }
+            }
+
+            $venueOwner->save();
+
+            Log::info('Venue owner status updated', [
+                'venue_owner_id' => $id,
+                'admin_id'       => auth()->id(),
+                'status'         => $venueOwner->status,
+            ]);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'تم تحديث الحالة بنجاح',
+                'data'    => $venueOwner->fresh('user'),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Venue owner status update failed', ['error' => $e->getMessage(), 'id' => $id]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء تحديث الحالة'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete the specified venue owner.
+     * DELETE /api/admin/venue-owners/{id}
+     */
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $venueOwner = VenueOwner::with(['shipments', 'commissionOperations'])->findOrFail($id);
+
+            // Check for active operations
+            $hasActiveShipments = $venueOwner->shipments()
+                ->whereIn('status', ['pending', 'in_transit'])
+                ->exists();
+
+            if ($hasActiveShipments) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'لا يمكن حذف مالك المعرض، يوجد شحنات نشطة مرتبطة به'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Delete venue owner (soft delete if enabled)
+            $venueOwner->delete();
+
+            // Optionally delete or deactivate user
+            // $venueOwner->user?->delete();
+
+            DB::commit();
+
+            Log::info('Venue owner deleted by admin', [
+                'venue_owner_id' => $id,
+                'admin_id'       => auth()->id(),
+            ]);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'تم حذف مالك المعرض بنجاح',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Venue owner deletion failed', ['error' => $e->getMessage(), 'id' => $id]);
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء الحذف'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get venue owner statistics.
+     * GET /api/admin/venue-owners/stats
+     */
+    public function stats(): JsonResponse
+    {
+        $stats = [
+            'total'         => VenueOwner::count(),
+            'active'        => VenueOwner::where('is_active', true)->count(),
+            'inactive'      => VenueOwner::where('is_active', false)->count(),
+            'by_status'     => VenueOwner::select('status', DB::raw('COUNT(*) as count'))
+                ->groupBy('status')
+                ->pluck('count', 'status'),
+            'avg_rating'    => round(VenueOwner::avg('rating') ?? 0, 2),
+            'total_commission' => DB::table('venue_commission_operations')->sum('amount'),
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $stats,
+        ]);
     }
 }

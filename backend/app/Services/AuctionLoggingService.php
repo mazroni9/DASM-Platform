@@ -7,16 +7,13 @@ use Illuminate\Support\Facades\Log;
 
 class AuctionLoggingService
 {
-    /**
-     * Log auction creation
-     */
     public static function logAuctionCreation($auction, $user, Request $request)
     {
         Log::info('Auction created successfully', [
             'auction_id' => $auction->id,
             'user_id' => $user->id,
             'car_id' => $auction->car_id,
-            'starting_bid' => $auction->starting_bid,
+            'starting_bid' => $auction->starting_bid, // ✅ now safe
             'reserve_price' => $auction->reserve_price,
             'start_time' => $auction->start_time,
             'end_time' => $auction->end_time,
@@ -27,9 +24,6 @@ class AuctionLoggingService
         ]);
     }
 
-    /**
-     * Log bid placement attempt
-     */
     public static function logBidAttempt($user, $auction, $bidAmount, Request $request)
     {
         Log::info('Bid placement attempt', [
@@ -37,7 +31,7 @@ class AuctionLoggingService
             'auction_id' => $auction->id,
             'bid_amount' => $bidAmount,
             'current_bid' => $auction->current_bid,
-            'auction_type' => $auction->auction_type,
+            'auction_type' => $auction->auction_type instanceof \BackedEnum ? $auction->auction_type->value : $auction->auction_type,
             'car_id' => $auction->car_id,
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
@@ -45,9 +39,6 @@ class AuctionLoggingService
         ]);
     }
 
-    /**
-     * Log successful bid placement
-     */
     public static function logBidSuccess($bid, $auction, $user, Request $request)
     {
         Log::info('Bid placed successfully', [
@@ -55,19 +46,15 @@ class AuctionLoggingService
             'user_id' => $user->id,
             'auction_id' => $auction->id,
             'bid_amount' => $bid->bid_amount,
-            'previous_bid' => $auction->current_bid - $bid->increment,
+            'previous_bid' => (float)($auction->current_bid ?? 0) - (float)($bid->increment ?? 0),
             'increment' => $bid->increment,
-            'auction_type' => $auction->auction_type,
+            'auction_type' => $auction->auction_type instanceof \BackedEnum ? $auction->auction_type->value : $auction->auction_type,
             'car_id' => $auction->car_id,
-            'total_bids_count' => $auction->bids_count + 1,
             'ip' => $request->ip(),
             'timestamp' => now()->toISOString()
         ]);
     }
 
-    /**
-     * Log auction status change
-     */
     public static function logAuctionStatusChange($auction, $oldStatus, $newStatus, $user = null)
     {
         Log::info('Auction status changed', [
@@ -80,9 +67,6 @@ class AuctionLoggingService
         ]);
     }
 
-    /**
-     * Log auction cancellation
-     */
     public static function logAuctionCancellation($auction, $user, Request $request)
     {
         Log::info('Auction cancelled', [
@@ -95,9 +79,6 @@ class AuctionLoggingService
         ]);
     }
 
-    /**
-     * Log validation failures
-     */
     public static function logValidationFailure($errors, $user, Request $request, $context = 'auction')
     {
         Log::warning("{$context} validation failed", [
@@ -109,9 +90,6 @@ class AuctionLoggingService
         ]);
     }
 
-    /**
-     * Log rate limiting violations
-     */
     public static function logRateLimitViolation($user, $limitType, $count, $limit, Request $request)
     {
         Log::warning('Rate limit violation', [

@@ -18,11 +18,16 @@ class VenueOwner extends Model
         'is_active',
         'rating',
         'address',
+        // ✅ إضافة الحقول للـ commission
+        'commission_value',
+        'commission_currency',
+        'commission_note',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'rating' => 'decimal:2',
+        'commission_value' => 'decimal:2',
     ];
 
     /**
@@ -33,24 +38,48 @@ class VenueOwner extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Reviews relation
+     */
     public function reviews()
-{
-    return $this->hasMany(VenueOwnerReview::class);
-}
+    {
+        return $this->hasMany(VenueOwnerReview::class);
+    }
 
-/**
- * أعد حساب المتوسط وخزّنه في عمود venue_owners.rating
- * - يأخذ فقط المراجعات المعتمدة is_approved = true
- */
-public function recalcRating(): void
-{
-    $avg = (float) $this->reviews()
-        ->where('is_approved', true)
-        ->avg('rating');
+    /**
+     * Commission operations relation
+     */
+    public function commissionOperations()
+    {
+        return $this->hasMany(VenueCommissionOperation::class);
+    }
 
-    // خزّنه بمنزلتين
-    $this->rating = number_format($avg ?: 0, 2, '.', '');
-    $this->save();
-}
+    /**
+     * Shipments relation
+     */
+    public function shipments()
+    {
+        return $this->hasMany(Shipment::class);
+    }
 
+    /**
+     * Service requests relation
+     */
+    public function serviceRequests()
+    {
+        return $this->hasMany(ServiceRequest::class);
+    }
+
+    /**
+     * أعد حساب المتوسط وخزّنه في عمود venue_owners.rating
+     */
+    public function recalcRating(): void
+    {
+        $avg = (float) $this->reviews()
+            ->where('is_approved', true)
+            ->avg('rating');
+
+        $this->rating = number_format($avg ?: 0, 2, '.', '');
+        $this->save();
+    }
 }

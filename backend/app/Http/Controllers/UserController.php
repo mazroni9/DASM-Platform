@@ -2,308 +2,168 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\UpdateUserProfileRequest;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log; // Import the Log facade
+use App\Notifications\VerifyEmailNotification;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
     /**
-     * Register a new user.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function register(Request $request)
-    {
-        try {
-            // Validate incoming request
-            $data = $request->validate([
-                'first_name' => 'required|string|max:255',
-                'last_name'  => 'required|string|max:255',
-                'email'      => 'required|email|unique:users',
-                'phone'      => 'required|string|max:20|unique:users',
-                'password'   => 'required|string|min:6'
-            ]);
-
-            // Create the user, storing a hashed version of the password
-            $user = User::create([
-                'first_name'    => $data['first_name'],
-                'last_name'     => $data['last_name'],
-                'email'         => $data['email'],
-                'phone'         => $data['phone'],
-                'password_hash' => Hash::make($data['password']),
-                // Defaults for role and kyc_status will be set by the model/migration
-            ]);
-
-            return response()->json(['user' => $user], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Handle validation errors specifically
-            $errors = $e->validator->errors()->getMessages();
-
-            // Create user-friendly messages for common errors
-            $userFriendlyMessages = [];
-            foreach ($errors as $field => $messages) {
-                if ($field === 'email' && strpos(implode(' ', $messages), 'unique') !== false) {
-                    $userFriendlyMessages[] = 'البريد الإلكتروني مستخدم بالفعل';
-                } else if ($field === 'phone' && strpos(implode(' ', $messages), 'unique') !== false) {
-                    $userFriendlyMessages[] = 'رقم الهاتف مستخدم بالفعل';
-                } else {
-                    $userFriendlyMessages[] = $messages[0]; // Add the first error message
-                }
-            }
-
-            // Return the user-friendly error message
-            return response()->json([
-                'message' => count($userFriendlyMessages) > 0 ? implode(', ', $userFriendlyMessages) : 'بيانات التسجيل غير صالحة'
-            ], 422);
-        } catch (\Exception $e) {
-            // Log the detailed error for debugging
-            Log::error('Error during user registration: ' . $e->getMessage(), [
-                'exception' => $e,
-                'request_data' => $request->except(['password', 'password_confirmation']),
-            ]);
-
-            // Return a generic message without exposing internal details
-            return response()->json([
-                'message' => 'فشل التسجيل. يرجى المحاولة مرة أخرى لاحقاً.'
-            ], 500);
-        }
-    }
-
-    /**
-     * Login an existing user.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function login(Request $request)
-    {
-        try {
-            // Validate incoming request
-            $data = $request->validate([
-                'email'    => 'required|email',
-                'password' => 'required|string'
-            ]);
-
-            // Find user by email
-            $user = User::where('email', $data['email'])->first();
-
-            // Check if user exists and password is valid
-            if (!$user || !Hash::check($data['password'], $user->password_hash)) {
-                return response()->json(['message' => 'Invalid credentials'], 401);
-            }
-
-            // Using Sanctum, generate an API token:
-            $token = $user->createToken('api-token')->plainTextToken;
-
-            return response()->json(['user' => $user, 'token' => $token], 200);
-        } catch (\Exception $e) {
-            // Log the detailed error for debugging purposes, but don't expose it to users
-            Log::error('Error during user login: ' . $e->getMessage(), [
-                'exception' => $e,
-                'request_data' => ['email' => $request->email], // Only include email for security
-            ]);
-
-            // Return a generic error message to the user
-            return response()->json([
-                'message' => 'Login failed. Please try again later.',
-            ], 500);
-        }
-    }
-    /**
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function logout(Request $request)
-    {
-        try {
-            // Revoke all tokens...
-            $request->user()->tokens()->delete();
-
-            return response()->json([
-                'message' => 'Successfully logged out'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error during user logout: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            return response()->json([
-                'message' => 'Logout failed. Please try again later.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get the authenticated user's profile.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * GET /user  و GET /user/profile
      */
     public function profile(Request $request)
     {
-        try {
-            $user = $request->user();
-            if (!$user) {
-                return response()->json([
-                    'message' => 'User not found'
-                ], 404);
-            }
-            // Load relations (dealer + venue_owner)
-            $user->load(['dealer', 'venueOwner']);
+        $user = $request->user();
 
-            // Format the response data
-            $responseData = [
-                'id'          => $user->id,
-                'first_name'  => $user->first_name,
-                'last_name'   => $user->last_name,
-                'name'        => $user->first_name . ' ' . $user->last_name,
-                'email'       => $user->email,
-                'phone'       => $user->phone,
-                'type'        => $user->type,
-                'kyc_status'  => $user->kyc_status,
-                'created_at'  => $user->created_at,
-                'updated_at'  => $user->updated_at,
-                'is_active'   => $user->is_active,
-                'status'      => $user->status,
-                
-                'permissions' => $user->getAllPermissions()->pluck('name'),
-            ];
-
-            // 👉 Add dealer fields if user is a dealer
-            if ($user->dealer) {
-                $responseData['address']        = $user->dealer->address ?? null;
-                $responseData['company_name']   = $user->dealer->company_name ?? null;
-                $responseData['trade_license']  = $user->dealer->trade_license ?? null;
-            }
-
-            // 👉 Add venue_owner fields if user is a venue_owner
-            if ($user->venueOwner) {
-                $responseData['venue_name']    = $user->venueOwner->venue_name ?? null;
-                $responseData['venue_address'] = $user->venueOwner->address ?? null;
-                $responseData['description']   = $user->venueOwner->description ?? null;
-                $responseData['rating']        = $user->venueOwner->rating ?? null;
-            }
-
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'data'    => $responseData
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching user profile: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-
-            return response()->json([
-                'message' => 'Failed to fetch profile. Please try again later.',
-                'error'   => $e->getMessage()
-            ], 500);
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
         }
+
+        // تحميل العلاقات
+        $user->load(['dealer', 'venueOwner']);
+
+        $permissions = $this->safePermissions($user);
+
+        $responseData = [
+            'id'          => $user->id,
+            'first_name'  => $user->first_name,
+            'last_name'   => $user->last_name,
+            'name'        => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')),
+            'email'       => $user->email,
+            'phone'       => $user->phone,
+            'type'        => $this->enumValue($user->type),
+            'kyc_status'  => $user->kyc_status,
+            'is_active'   => (bool) $user->is_active,
+            'status'      => $this->enumValue($user->status),
+            'area_id'     => $user->area_id,
+            'organization_id' => $user->organization_id,
+            'created_at'  => $user->created_at,
+            'updated_at'  => $user->updated_at,
+
+            'permissions' => $permissions,
+        ];
+
+        if ($user->dealer) {
+            $responseData['address']       = $user->dealer->address ?? null;
+            $responseData['company_name']  = $user->dealer->company_name ?? null;
+            $responseData['trade_license'] = $user->dealer->trade_license ?? null;
+        }
+
+        if ($user->venueOwner) {
+            $responseData['venue_name']    = $user->venueOwner->venue_name ?? null;
+            $responseData['venue_address'] = $user->venueOwner->address ?? null;
+            $responseData['description']   = $user->venueOwner->description ?? null;
+            $responseData['rating']        = $user->venueOwner->rating ?? null;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => $responseData,
+        ]);
     }
 
-
     /**
-     * Update the authenticated user's profile.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * PUT /user/profile
      */
-    public function updateProfile(Request $request)
+    public function updateProfile(UpdateUserProfileRequest $request)
     {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $data = $request->validated();
+
+        // هل الإيميل اتغير؟
+        $emailChanged = array_key_exists('email', $data)
+            && Str::lower((string) $data['email']) !== Str::lower((string) $user->email);
+
         try {
-            $user = $request->user();
+            DB::transaction(function () use ($user, $data, $emailChanged) {
 
-            if (!$user) {
-                return response()->json([
-                    'message' => 'User not found'
-                ], 404);
-            }
-
-            // Validation rules (مشتركة + حسب الدور)
-            $rules = [
-                'first_name' => 'sometimes|string|max:255',
-                'last_name' => 'sometimes|string|max:255',
-                'email' => 'sometimes|email|unique:users,email,' . $user->id,
-                'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
-                'area_id' => 'sometimes|exists:areas,id'
-            ];
-
-            if ($user->isDealer()) {
-                $rules = array_merge($rules, [
-                    'address' => 'sometimes|string|nullable',
-                    'company_name' => 'sometimes|string|nullable',
-                    'trade_license' => 'sometimes|string|nullable',
-                ]);
-            }
-
-            if ($user->isVenueOwner()) {
-                $rules = array_merge($rules, [
-                    'venue_name' => 'sometimes|string|nullable',
-                    'venue_address' => 'sometimes|string|nullable',
-                    'description' => 'sometimes|string|nullable',
-                ]);
-            }
-
-            $data = $request->validate($rules);
-
-            // تحديث بيانات المستخدم الأساسية
-            $userFields = array_intersect_key($data, array_flip([
-                'first_name',
-                'last_name',
-                'email',
-                'phone',
-                'area_id'
-            ]));
-
-            if (!empty($userFields)) {
-                $user->update($userFields);
-            }
-
-            // تحديث بيانات التاجر إذا كان تاجر
-            if ($user->isDealer()) {
-                $dealerData = array_intersect_key($data, array_flip([
-                    'address',
-                    'company_name',
-                    'trade_license'
+                // تحديث بيانات المستخدم الأساسية فقط
+                $userFields = array_intersect_key($data, array_flip([
+                    'first_name', 'last_name', 'email', 'phone', 'area_id'
                 ]));
 
-                if (!empty($dealerData)) {
-                    $user->dealer()
-                        ? $user->dealer->update($dealerData)
-                        : $user->dealer()->create($dealerData);
+                if ($emailChanged) {
+                    // ✅ أمان: لما الإيميل يتغير لازم يتعمل verify من جديد
+                    $userFields['email_verified_at'] = null;
+                    $userFields['email_verification_token'] = Str::random(60);
                 }
+
+                if (!empty($userFields)) {
+                    $user->update($userFields);
+                }
+
+                // Dealer
+                if (method_exists($user, 'isDealer') && $user->isDealer()) {
+                    $dealerData = array_intersect_key($data, array_flip([
+                        'address', 'company_name', 'trade_license'
+                    ]));
+
+                    if (!empty($dealerData)) {
+                        if ($user->dealer) {
+                            $user->dealer->update($dealerData);
+                        } else {
+                            $user->dealer()->create($dealerData);
+                        }
+                    }
+                }
+
+                // Venue Owner
+                if (method_exists($user, 'isVenueOwner') && $user->isVenueOwner()) {
+                    $venueData = array_intersect_key($data, array_flip([
+                        'venue_name', 'venue_address', 'description'
+                    ]));
+
+                    if (!empty($venueData)) {
+                        if ($user->venueOwner) {
+                            $user->venueOwner->update([
+                                'venue_name' => $venueData['venue_name'] ?? $user->venueOwner->venue_name,
+                                'address'    => $venueData['venue_address'] ?? $user->venueOwner->address,
+                                'description'=> $venueData['description'] ?? $user->venueOwner->description,
+                            ]);
+                        } else {
+                            $user->venueOwner()->create([
+                                'venue_name' => $venueData['venue_name'] ?? null,
+                                'address'    => $venueData['venue_address'] ?? null,
+                                'description'=> $venueData['description'] ?? null,
+                            ]);
+                        }
+                    }
+                }
+            });
+
+            // لو الإيميل اتغير: نبعت verify
+            if ($emailChanged) {
+                $this->sendVerificationEmail($user->refresh());
             }
 
-            // تحديث بيانات صاحب المعرض إذا كان صاحب معرض
-            if ($user->isVenueOwner()) {
-                $venueData = array_intersect_key($data, array_flip([
-                    'venue_name',
-                    'venue_address',
-                    'description'
-                ]));
-
-                if (!empty($venueData)) {
-                    $user->venueOwner()
-                        ? $user->venueOwner->update($venueData)
-                        : $user->venueOwner()->create($venueData);
-                }
-            }
-
-            // إعادة تحميل العلاقات
             $user->refresh()->load(['dealer', 'venueOwner']);
 
-            // بناء الاستجابة
             $responseData = [
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'type' => $user->type,
+                'type' => $this->enumValue($user->type),
                 'kyc_status' => $user->kyc_status,
+                'area_id' => $user->area_id,
+                'organization_id' => $user->organization_id,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ];
@@ -323,40 +183,103 @@ class UserController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم تحديث الملف الشخصي بنجاح',
-                'data' => $responseData
+                'message' => $emailChanged
+                    ? 'تم تحديث الملف الشخصي. تم إرسال رسالة لتأكيد البريد الجديد.'
+                    : 'تم تحديث الملف الشخصي بنجاح',
+                'data' => $responseData,
             ]);
-        } catch (\Exception $e) {
-            \Log::error('Error updating user profile: ' . $e->getMessage(), [
-                'exception' => $e,
-                'user_id' => $request->user()?->id,
-                'request_data' => $request->all(),
+        } catch (\Throwable $e) {
+            Log::error('Error updating user profile', [
+                'message' => $e->getMessage(),
+                'user_id' => $user->id,
             ]);
 
             return response()->json([
+                'success' => false,
                 'message' => 'فشل تحديث الملف الشخصي، حاول مرة أخرى لاحقاً.',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
 
-
     /**
-     * Get the current user's permissions
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * GET /user/permissions
      */
     public function getPermissions()
     {
         $user = auth()->user();
 
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
         return response()->json([
             'status' => 'success',
-            'permissions' => tap($user, function ($u) {
-                if ($u->organization_id) {
-                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($u->organization_id);
-                }
-            })->getAllPermissions()->pluck('name')
+            'permissions' => $this->safePermissions($user),
         ]);
+    }
+
+    // =========================
+    // Helpers
+    // =========================
+
+    private function safePermissions(User $user): array
+    {
+        try {
+            // لو عندك نظام Teams في spatie وبتستخدم organization_id
+            if ($user->organization_id) {
+                try {
+                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($user->organization_id);
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+            }
+
+            if (method_exists($user, 'getAllPermissions')) {
+                return $user->getAllPermissions()->pluck('name')->values()->toArray();
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return [];
+    }
+
+    private function enumValue($value)
+    {
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+        return $value;
+    }
+
+    private function sendVerificationEmail(User $user): void
+    {
+        try {
+            if (!$user->email_verification_token) {
+                $user->email_verification_token = Str::random(60);
+                $user->save();
+            }
+
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $verificationUrl = $frontendUrl . '/verify-email?token=' . $user->email_verification_token;
+
+            // ✅ ما نطبعش التوكن في اللوج
+            Log::info('Preparing verification email (profile update)', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'token_len' => strlen((string) $user->email_verification_token),
+            ]);
+
+            $user->notify(new VerifyEmailNotification($verificationUrl));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send verification email (profile update)', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 }

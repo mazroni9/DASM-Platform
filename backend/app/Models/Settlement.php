@@ -37,22 +37,19 @@ class Settlement extends Model
         'verification_code',
     ];
 
-    public $timestamps = false;
-    protected $created_at = 'created_at';
+    // ✅ created_at فقط
+    public $timestamps = true;
+    const UPDATED_AT = null;
 
-    // A Settlement belongs to an Auction.
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
+
     public function auction()
     {
         return $this->belongsTo(Auction::class);
     }
 
-    // A Settlement belongs to a Dealer (seller).
-    // public function dealer()
-    // {
-    //     return $this->belongsTo(Dealer::class, 'seller_id');
-    // }
-
-    // A Settlement belongs to a User (buyer).
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id');
@@ -63,7 +60,6 @@ class Settlement extends Model
         return $this->belongsTo(User::class, 'seller_id');
     }
 
-    // A Settlement belongs to a Car.
     public function car()
     {
         return $this->belongsTo(Car::class);

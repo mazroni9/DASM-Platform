@@ -11,10 +11,8 @@ enum UserRole: string
     case INVESTOR = 'investor';
     case DEALER = 'dealer';
     case USER = 'user';
+    case EMPLOYEE = 'employee';  // ✅ تمت الإضافة
 
-    /**
-     * Get the display label for the role
-     */
     public function label(): string
     {
         return match ($this) {
@@ -25,12 +23,10 @@ enum UserRole: string
             self::INVESTOR => 'Investor',
             self::DEALER => 'Dealer',
             self::USER => 'User',
+            self::EMPLOYEE => 'Employee',  // ✅ تمت الإضافة
         };
     }
 
-    /**
-     * Get the Arabic label for the role
-     */
     public function labelAr(): string
     {
         return match ($this) {
@@ -41,12 +37,10 @@ enum UserRole: string
             self::INVESTOR => 'مستثمر',
             self::DEALER => 'تاجر',
             self::USER => 'مستخدم',
+            self::EMPLOYEE => 'موظف',  // ✅ تمت الإضافة
         };
     }
 
-    /**
-     * Get the UI color for the role badge
-     */
     public function color(): string
     {
         return match ($this) {
@@ -57,12 +51,10 @@ enum UserRole: string
             self::INVESTOR => 'yellow',
             self::DEALER => 'blue',
             self::USER => 'gray',
+            self::EMPLOYEE => 'orange',  // ✅ تمت الإضافة
         };
     }
 
-    /**
-     * Check if the role has administrative privileges
-     */
     public function isAdmin(): bool
     {
         return match ($this) {
@@ -72,8 +64,16 @@ enum UserRole: string
     }
 
     /**
-     * Check if the role can manage auctions
+     * Check if role is staff level (can access admin panel)
      */
+    public function isStaff(): bool
+    {
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE => true,
+            default => false,
+        };
+    }
+
     public function canManageAuctions(): bool
     {
         return match ($this) {
@@ -82,9 +82,6 @@ enum UserRole: string
         };
     }
 
-    /**
-     * Check if the role can manage users
-     */
     public function canManageUsers(): bool
     {
         return match ($this) {
@@ -93,9 +90,6 @@ enum UserRole: string
         };
     }
 
-    /**
-     * Check if the role can access venue management
-     */
     public function canManageVenues(): bool
     {
         return match ($this) {
@@ -104,9 +98,6 @@ enum UserRole: string
         };
     }
 
-    /**
-     * Check if the role can access investment features
-     */
     public function canAccessInvestments(): bool
     {
         return match ($this) {
@@ -116,16 +107,21 @@ enum UserRole: string
     }
 
     /**
-     * Get all available role values as array
+     * Check if role can access admin dashboard
      */
+    public function canAccessDashboard(): bool
+    {
+        return match ($this) {
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE, self::VENUE_OWNER => true,
+            default => false,
+        };
+    }
+
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
     }
 
-    /**
-     * Get all roles with their translations
-     */
     public static function getTranslations(): array
     {
         $translations = [];
@@ -139,19 +135,49 @@ enum UserRole: string
         return $translations;
     }
 
-    /**
-     * Validate if a string value is a valid role
-     */
     public static function isValid(string $value): bool
     {
         return in_array($value, self::values());
     }
 
-    /**
-     * Get role from string value
-     */
     public static function fromString(string $value): ?self
     {
         return self::tryFrom($value);
+    }
+
+    /**
+     * Get admin-level roles
+     */
+    public static function adminRoles(): array
+    {
+        return [
+            self::SUPER_ADMIN,
+            self::ADMIN,
+        ];
+    }
+
+    /**
+     * Get staff-level roles (can access backend)
+     */
+    public static function staffRoles(): array
+    {
+        return [
+            self::SUPER_ADMIN,
+            self::ADMIN,
+            self::MODERATOR,
+            self::EMPLOYEE,
+        ];
+    }
+
+    /**
+     * Get business roles
+     */
+    public static function businessRoles(): array
+    {
+        return [
+            self::VENUE_OWNER,
+            self::INVESTOR,
+            self::DEALER,
+        ];
     }
 }

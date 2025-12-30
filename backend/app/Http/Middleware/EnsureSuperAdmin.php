@@ -17,19 +17,18 @@ class EnsureSuperAdmin
 
         $type = $user->type ?? null;
 
+        $value = '';
         if ($type instanceof \BackedEnum) {
-            $typeValue = (string) $type->value;
-        } elseif (is_object($type) && property_exists($type, 'value')) {
-            $typeValue = (string) $type->value;
+            $value = (string)$type->value;
         } elseif (is_string($type)) {
-            $typeValue = $type;
-        } else {
-            $typeValue = '';
+            $value = $type;
+        } elseif (is_object($type) && property_exists($type, 'value')) {
+            $value = (string)$type->value;
         }
 
-        $typeValue = strtolower(trim($typeValue));
+        $value = strtolower(trim($value));
 
-        if ($typeValue === 'super_admin') {
+        if ($value === 'super_admin') {
             return $next($request);
         }
 

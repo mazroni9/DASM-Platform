@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
+use App\Enums\UserRole;
 use Illuminate\Http\JsonResponse;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -12,12 +13,20 @@ use Spatie\Permission\Models\Role;
 class RoleController extends Controller
 {
     /**
+     * Protected role names that cannot be deleted or renamed
+     */
+    private const PROTECTED_ROLES = [
+        'platform_super_admin',
+        'super_admin',
+    ];
+
+    /**
      * Display a listing of the resource.
      */
     public function index(): JsonResponse
     {
         $roles = Role::withCount(['permissions', 'users'])
-            ->with('permissions')
+            ->with('permissions:id,name,module')
             ->get();
 
         return response()->json([
@@ -32,25 +41,19 @@ class RoleController extends Controller
     {
         $query = Role::select('id', 'display_name', 'name');
 
-        // If current user is not super admin, hide super_admin role
         /** @var \App\Models\User $user */
-        /** @phpstan-ignore-next-line */
         $user = auth()->user();
-        // Check if user has SUPER_ADMIN role in the role column (enum)
-        // OR if they have the Spatie role 'super_admin' (if that's how it's used).
-        // Given User model overrides hasRole, we check the enum directly or use isAdmin() helper if available.
-        // User model has isAdmin() which checks ADMIN or SUPER_ADMIN.
-        // Let's check specifically for SUPER_ADMIN enum.
 
-        if ($user->type !== \App\Enums\UserRole::SUPER_ADMIN) {
-            $query->where('name', '!=', 'super_admin');
+        // ✅ Security: Non-super admins cannot see super admin role
+        if ($user->type !== UserRole::SUPER_ADMIN) {
+            $query->whereNotIn('name', self::PROTECTED_ROLES);
         }
 
-        $roles = $query->get();
+        $roles = $query->orderBy('display_name')->get();
 
         return response()->json([
             'status' => 'success',
-            'data' => $roles,
+            'data'   => $roles,
         ]);
     }
 
@@ -59,8 +62,11 @@ class RoleController extends Controller
      */
     public function permissionsTree(): JsonResponse
     {
-
-        $permissions = Permission::all()->groupBy('module');
+        $permissions = Permission::select('id', 'name', 'display_name', 'module')
+            ->orderBy('module')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('module');
 
         return response()->json([
             'data' => $permissions,
@@ -72,20 +78,27 @@ class RoleController extends Controller
      */
     public function store(StoreRoleRequest $request): JsonResponse
     {
+        // ✅ Security: Prevent creating protected role names
+        if (in_array(strtolower($request->name), self::PROTECTED_ROLES)) {
+            return response()->json([
+                'message' => 'لا يمكن إنشاء دور بهذا الاسم.',
+            ], 403);
+        }
+
         $role = Role::create([
-            'name' => $request->name,
+            'name'         => $request->name,
             'display_name' => $request->display_name,
-            'description' => $request->description,
-            'guard_name' => 'web',
+            'description'  => $request->description,
+            'guard_name'   => 'web',
         ]);
 
-        if ($request->has('permission_ids')) {
+        if ($request->has('permission_ids') && is_array($request->permission_ids)) {
             $role->syncPermissions($request->permission_ids);
         }
 
         return response()->json([
             'message' => 'Role created successfully.',
-            'data' => $role->load('permissions'),
+            'data'    => $role->load('permissions:id,name'),
         ], 201);
     }
 
@@ -94,7 +107,7 @@ class RoleController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $role = Role::with('permissions')->findOrFail($id);
+        $role = Role::with('permissions:id,name,display_name,module')->findOrFail($id);
 
         return response()->json([
             'data' => $role,
@@ -108,25 +121,35 @@ class RoleController extends Controller
     {
         $role = Role::findOrFail($id);
 
-        // Prevent updating super admin name if needed, but usually just protecting the ID is enough.
-        // Ideally, we shouldn't allow editing the super admin role at all via API if it's critical.
-        if ($role->name === 'platform_super_admin' && $request->name !== 'platform_super_admin') {
-            return response()->json(['message' => 'Cannot rename the super admin role.'], 403);
+        // ✅ Security: Protected roles cannot be renamed
+        if (in_array($role->name, self::PROTECTED_ROLES)) {
+            if ($request->name !== $role->name) {
+                return response()->json([
+                    'message' => 'لا يمكن تغيير اسم هذا الدور.',
+                ], 403);
+            }
+        }
+
+        // ✅ Security: Cannot rename to a protected name
+        if (!in_array($role->name, self::PROTECTED_ROLES) && in_array(strtolower($request->name), self::PROTECTED_ROLES)) {
+            return response()->json([
+                'message' => 'لا يمكن استخدام هذا الاسم.',
+            ], 403);
         }
 
         $role->update([
-            'name' => $request->name,
+            'name'         => $request->name,
             'display_name' => $request->display_name,
-            'description' => $request->description,
+            'description'  => $request->description,
         ]);
 
         if ($request->has('permission_ids')) {
-            $role->syncPermissions($request->permission_ids);
+            $role->syncPermissions($request->permission_ids ?? []);
         }
 
         return response()->json([
             'message' => 'Role updated successfully.',
-            'data' => $role->load('permissions'),
+            'data'    => $role->load('permissions:id,name'),
         ]);
     }
 
@@ -137,10 +160,19 @@ class RoleController extends Controller
     {
         $role = Role::findOrFail($id);
 
-        if ($role->name === 'platform_super_admin') {
+        // ✅ Security: Protected roles cannot be deleted
+        if (in_array($role->name, self::PROTECTED_ROLES)) {
             return response()->json([
-                'message' => 'Cannot delete the platform super admin role.',
+                'message' => 'لا يمكن حذف هذا الدور.',
             ], 403);
+        }
+
+        // ✅ Security: Cannot delete role with active users
+        $usersCount = $role->users()->count();
+        if ($usersCount > 0) {
+            return response()->json([
+                'message' => "لا يمكن حذف الدور، يوجد {$usersCount} مستخدم مرتبط به.",
+            ], 422);
         }
 
         $role->delete();

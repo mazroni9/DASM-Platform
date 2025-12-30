@@ -17,53 +17,121 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Global middleware
-        // ملاحظة: PerformanceHeaders يضيف هيدرز قياس فقط إذا PERF_HEADERS=true في .env
+        
+        // ═══════════════════════════════════════════════════════════════
+        // GLOBAL MIDDLEWARE (Applied to all requests)
+        // ═══════════════════════════════════════════════════════════════
         $middleware->append([
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
-            \App\Http\Middleware\PerformanceHeaders::class, // <-- تم التبديل ليتطابق مع اسم الكلاس/الملف
+            \App\Http\Middleware\PerformanceHeaders::class,
         ]);
 
-        // $middleware->statefulApi();
-        // API middleware
+        // ═══════════════════════════════════════════════════════════════
+        // API MIDDLEWARE
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Prepend CORS handler
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
 
+        // Append optimization middleware
         $middleware->api(append: [
-            // \App\Http\Middleware\ApiCacheMiddleware::class, // Disabled to prevent unwanted API caching
             \App\Http\Middleware\QueryOptimizationMiddleware::class,
             \App\Http\Middleware\ResponseOptimizationMiddleware::class,
         ]);
 
-        // Register your custom middleware alias here
-        $middleware->alias([
-            'dealer'            => \App\Http\Middleware\DealerMiddleware::class,
-            'admin'             => \App\Http\Middleware\AdminMiddleware::class,
-            'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
-
-            // role middleware with parameters ->middleware('role:venue_owner,dealer')
-            'type'              => \App\Http\Middleware\RoleMiddleware::class,
-            'set.organization' => \App\Http\Middleware\SetSpatieTeamContext::class,
-            'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
-
-            // aliases محدثة:
-            'performance'       => \App\Http\Middleware\PerformanceHeaders::class, // <-- بدل PerformanceMiddleware
-            'api.cache'         => \App\Http\Middleware\ApiCacheMiddleware::class,
-            'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
-        ]);
-
+        // ═══════════════════════════════════════════════════════════════
+        // WEB MIDDLEWARE
+        // ═══════════════════════════════════════════════════════════════
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);
+
+        // ═══════════════════════════════════════════════════════════════
+        // MIDDLEWARE ALIASES (Only for custom middleware that EXISTS)
+        // ═══════════════════════════════════════════════════════════════
+        $middleware->alias([
+            // Role-based Access Control (Custom)
+            'admin'             => \App\Http\Middleware\AdminMiddleware::class,
+            'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
+            'dealer'            => \App\Http\Middleware\DealerMiddleware::class,
+            
+            // Role middleware with parameters: ->middleware('role:venue_owner,dealer')
+            'role'              => \App\Http\Middleware\RoleMiddleware::class,
+            'type'              => \App\Http\Middleware\RoleMiddleware::class,
+            
+            // Organization & Team Context
+            'set.organization'  => \App\Http\Middleware\SetSpatieTeamContext::class,
+            
+            // Rate Limiting (Custom)
+            'bid.rate.limit'    => \App\Http\Middleware\BidRateLimitMiddleware::class,
+            
+            // Diagnostics (Custom)
+            'diag.token'        => \App\Http\Middleware\DiagTokenMiddleware::class,
+            
+            // Performance & Caching (Custom)
+            'performance'       => \App\Http\Middleware\PerformanceHeaders::class,
+            'api.cache'         => \App\Http\Middleware\ApiCacheMiddleware::class,
+            'security.headers'  => \App\Http\Middleware\SecurityHeadersMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        
+        // Authorization exceptions (403)
         $exceptions->render(function (AuthorizationException|AccessDeniedHttpException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'status' => 'error',
+                    'success' => false,
                     'message' => 'ليس لديك صلاحية للقيام بهذا الإجراء.',
+                    'error'   => 'forbidden',
                 ], 403);
             }
         });
-    })->create();
+
+        // Model not found (404)
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'العنصر المطلوب غير موجود.',
+                    'error'   => 'not_found',
+                ], 404);
+            }
+        });
+
+        // Validation exceptions (422)
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'بيانات غير صالحة.',
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
+        });
+
+        // Authentication exceptions (401)
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'يجب تسجيل الدخول للوصول لهذا المورد.',
+                    'error'   => 'unauthenticated',
+                ], 401);
+            }
+        });
+
+        // Rate limit exceeded (429)
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success'    => false,
+                    'message'    => 'تم تجاوز الحد المسموح من الطلبات. حاول مرة أخرى لاحقاً.',
+                    'error'      => 'too_many_requests',
+                    'retry_after'=> $e->getHeaders()['Retry-After'] ?? 60,
+                ], 429);
+            }
+        });
+    })
+    ->create();

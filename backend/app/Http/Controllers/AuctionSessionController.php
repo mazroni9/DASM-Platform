@@ -3,62 +3,128 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuctionSession;
+use App\Enums\AuctionStatus;
 use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
 use App\Http\Resources\LiveAuctionSessionResource;
+use Illuminate\Support\Facades\Cache;
 
 class AuctionSessionController extends Controller
 {
     /**
+     * Cache TTL in seconds (5 minutes)
+     */
+    private const CACHE_TTL = 300;
+
+    /**
      * Display a listing of active live auction sessions.
+     * GET /api/sessions/live
+     * 
+     * ✅ Performance: Added caching
+     * ✅ Performance: Optimized eager loading
      */
     public function getActiveLiveSessions(): JsonResponse
     {
-        // Eager-load the 'owner' (User) relationship
-        // We assume the User model has 'name' and 'logo_url' columns
-        // The user model has first_name and last_name, so I will select them.
-        // There is no logo_url, so I will omit it for now. The frontend will have to handle a missing logo.
-        $liveSessions = AuctionSession::where('status', 'active')
-                                      ->where('type', 'live')
-                                      ->with('owner:id,first_name,last_name')
-                                      ->with('owner.venueOwner:id,venue_name,user_id')
-                                      ->latest()
-                                      ->paginate(12);
+        $cacheKey = 'active_live_sessions_page_' . request()->get('page', 1);
+        
+        $liveSessions = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+            return AuctionSession::query()
+                ->where('status', 'active')
+                ->where('type', 'live')
+                ->with([
+                    'owner:id,first_name,last_name',
+                    'owner.venueOwner:id,user_id,venue_name',
+                ])
+                ->withCount('auctions')
+                ->latest()
+                ->paginate(12);
+        });
+
         return response()->json([
-            'status' => 'success',
-            'data' => $liveSessions
+            'success' => true,
+            'data'    => $liveSessions
         ]);
     }
 
+    /**
+     * Display the specified live session with auctions.
+     * GET /api/sessions/live/{id}
+     * 
+     * ✅ Bug Fix: Removed redundant null check after findOrFail
+     * ✅ Performance: Optimized eager loading (single with() call)
+     */
     public function getLiveSession(string $id): JsonResponse
     {
-        $live_session = AuctionSession::with([
-            'auctions' => function ($query) {
-                $query->where('status', '!=', 'ended')
-                      ->where('approved_for_live', true)
-                      ->orderBy('start_time', 'asc');
-            },
-            'auctions.car'
-        ])
-        ->where('type', 'live')
-        ->with('auctions.bids')
-        ->with('auctions.car.dealer')
-        ->findOrFail($id);
+        $cacheKey = "live_session_{$id}";
+        
+        $sessionData = Cache::remember($cacheKey, 60, function () use ($id) {
+            $liveSession = AuctionSession::query()
+                ->where('type', 'live')
+                ->with([
+                    'auctions' => function ($query) {
+                        $query->where('approved_for_live', true)
+                              ->whereNotIn('status', [
+                                  AuctionStatus::ENDED->value,
+                                  AuctionStatus::COMPLETED->value,
+                                  ...AuctionStatus::canceledValues(),
+                              ])
+                              ->orderBy('start_time', 'asc')
+                              ->with([
+                                  'car:id,make,model,year,vin,color,odometer,evaluation_price,auction_status',
+                                  'car.images' => fn($q) => $q->limit(5),
+                                  'car.dealer:id,user_id,company_name',
+                                  'bids' => fn($q) => $q->orderBy('created_at', 'desc')->limit(10),
+                                  'bids.user:id,first_name,last_name',
+                              ]);
+                    },
+                    'owner:id,first_name,last_name',
+                    'owner.venueOwner:id,user_id,venue_name',
+                ])
+                ->findOrFail($id);
 
+            return new LiveAuctionSessionResource($liveSession);
+        });
 
-    if (! $live_session) {
         return response()->json([
-            'status' => 'error',
-            'message' => 'No live session found'
-        ], 404);
+            'success' => true,
+            'data'    => $sessionData
+        ]);
     }
 
-    $session_data = new LiveAuctionSessionResource($live_session);
+    /**
+     * Get active and scheduled sessions (for dropdowns/selection)
+     * GET /api/sessions/active-scheduled
+     * 
+     * ✅ Moved from AdminController (was duplicated)
+     */
+    public function getActiveAndScheduledSessions(): JsonResponse
+    {
+        $sessions = Cache::remember('active_scheduled_sessions', self::CACHE_TTL, function () {
+            return AuctionSession::query()
+                ->whereIn('status', ['scheduled', 'active'])
+                ->orderBy('session_date', 'asc')
+                ->get(['id', 'name', 'session_date', 'status', 'type']);
+        });
 
+        return response()->json([
+            'success' => true,
+            'data'    => $sessions,
+        ]);
+    }
 
-    return response()->json([
-        'status' => 'success',
-        'data' => $session_data
-    ]);
-}
+    /**
+     * Show session summary (public)
+     * GET /api/sessions/{id}
+     */
+    public function show(string $id): JsonResponse
+    {
+        $session = AuctionSession::query()
+            ->select(['id', 'name', 'session_date', 'status', 'type', 'created_at', 'updated_at'])
+            ->withCount('auctions')
+            ->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $session,
+        ]);
+    }
 }

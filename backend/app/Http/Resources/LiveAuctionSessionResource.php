@@ -8,25 +8,25 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class LiveAuctionSessionResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
-        return[
-            'current_live_car' => $this->auctions
-            ->where('approved_for_live', true)
-                ->where('status', AuctionStatus::ACTIVE->value)
-                ->first(),
-            'pending_live_auctions' => $this->auctions
-            ->sortByDesc('approved_for_live',SORT_NUMERIC)
-            ->where('status', AuctionStatus::ACTIVE->value)->toArray(),
+        $active = AuctionStatus::activeValues();
 
-            'completed_live_auctions' => $this->auctions
-            ->where('status', AuctionStatus::ENDED->value)
-            ->toArray()
+        return [
+            'current_live_car' => $this->resource->auctions()
+                ->where('approved_for_live', true)
+                ->whereIn('status', $active)
+                ->orderBy('id')
+                ->first(),
+
+            'pending_live_auctions' => $this->resource->auctions()
+                ->whereIn('status', $active)
+                ->orderByDesc('approved_for_live')
+                ->get(),
+
+            'completed_live_auctions' => $this->resource->auctions()
+                ->where('status', AuctionStatus::ENDED->value)
+                ->get(),
         ];
     }
 }

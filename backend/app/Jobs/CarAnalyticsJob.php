@@ -39,8 +39,8 @@ class CarAnalyticsJob implements ShouldQueue
         }
 
         try {
-            // ✅ images ممكن تكون array أو JSON string
             $images = [];
+
             if (is_array($car->images)) {
                 $images = $car->images;
             } elseif (is_string($car->images) && $car->images !== '') {
@@ -48,7 +48,6 @@ class CarAnalyticsJob implements ShouldQueue
                 if (is_array($decoded)) $images = $decoded;
             }
 
-            // ✅ اجعل كل الروابط قابلة للوصول (خصوصًا PDF raw->image)
             $images = array_values(array_filter(array_map(
                 fn ($u) => $cloudinary->makeAccessibleUrl(is_string($u) ? $u : null),
                 $images
@@ -56,7 +55,6 @@ class CarAnalyticsJob implements ShouldQueue
 
             $registrationUrl = $cloudinary->makeAccessibleUrl($car->registration_card_image);
 
-            // Debug مهم عشان تتأكد اللينك اتصلح قبل الإرسال
             Log::info('CarAnalyticsJob sending to AI', [
                 'car_id' => $car->id,
                 'registration_card_image' => $registrationUrl,
@@ -83,7 +81,6 @@ class CarAnalyticsJob implements ShouldQueue
                 ->retry(2, 500)
                 ->post($aiUrl . '/analyze-car', $payload);
 
-            // لو AI رجع 4xx/5xx
             $res->throw();
 
             $data = $res->json();
@@ -94,6 +91,7 @@ class CarAnalyticsJob implements ShouldQueue
             $realProb = (float) ($data['real_probability'] ?? 0);
             $reason   = (string) ($data['reason'] ?? '');
 
+            // ✅ منطقك كما هو
             $status = $realProb >= 0.50 ? 'under_review' : 'rejected';
 
             $car->review_status  = $status;
@@ -109,7 +107,6 @@ class CarAnalyticsJob implements ShouldQueue
                 'error'  => $e->getMessage(),
             ]);
 
-            // خلي Laravel يعمل retry حسب tries/backoff
             throw $e;
         }
     }

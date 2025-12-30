@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
+
 use App\Http\Controllers\Controller;
 
 use Carbon\Carbon;
@@ -22,10 +23,11 @@ use Illuminate\Database\QueryException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Notifications\VerifyEmailNotification;
+use App\Notifications\ResetPasswordNotification;
 
 class AuthController extends Controller
 {
-    // ====== Token settings (keep same behavior, but centralized) ======
+    // ====== Token settings (keep same behavior) ======
     private int $accessTokenMinutes = 15;
     private int $refreshTokenDays   = 7;
 
@@ -37,7 +39,10 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        Log::info('Registration process started', ['email' => $request->email]);
+        Log::info('Registration process started', [
+            'email_sha1' => sha1(Str::lower(trim((string)$request->input('email')))),
+            'ip' => (string)$request->ip(),
+        ]);
 
         // ✅ لا نسمح أبداً بتمرير id من الواجهة
         if ($request->has('id')) {
@@ -132,13 +137,14 @@ class AuthController extends Controller
             }
         }
 
-        // ✅ رمز تحقق البريد
-        $verificationToken = Str::random(60);
+        // ✅ توكن تفعيل البريد (نرسل Plain للفرونت / نخزن Hash في DB)
+        $verificationTokenPlain = Str::random(60);
+        $verificationTokenHash  = $this->hashToken($verificationTokenPlain);
 
         try {
             $user = new User();
 
-            DB::transaction(function () use ($request, $isBusinessAccount, $verificationToken, &$user) {
+            DB::transaction(function () use ($request, $isBusinessAccount, $verificationTokenHash, &$user) {
                 $passwordColumn = $this->resolvePasswordColumn();
 
                 $userData = [
@@ -148,7 +154,7 @@ class AuthController extends Controller
                     'phone'                    => $request->phone,
                     $passwordColumn            => Hash::make($request->password),
                     'type'                     => $request->account_type ?? 'user',
-                    'email_verification_token' => $verificationToken,
+                    'email_verification_token' => $verificationTokenHash,
                     'is_active'                => false,
                     'area_id'                  => $request->area_id,
                 ];
@@ -160,6 +166,11 @@ class AuthController extends Controller
                 }
                 if (Schema::hasColumn('users', 'approval_status') && empty($userData['approval_status'])) {
                     $userData['approval_status'] = 'pending';
+                }
+
+                // optional: expires column (لو موجود)
+                if (Schema::hasColumn('users', 'email_verification_expires_at')) {
+                    $userData['email_verification_expires_at'] = now()->addHours(24);
                 }
 
                 $user = User::create($userData);
@@ -204,7 +215,8 @@ class AuthController extends Controller
                 }
             });
 
-            $this->sendVerificationEmail($user);
+            // ✅ Send with plain token (DB stores hash)
+            $this->sendVerificationEmail($user, $verificationTokenPlain);
 
             return response()->json([
                 'status'  => 'success',
@@ -228,7 +240,7 @@ class AuthController extends Controller
                 'sqlstate'   => $out['sqlstate'],
                 'reason'     => $out['reason'],
                 'message'    => $out['details'],
-                'email'      => $request->email,
+                'email_sha1' => sha1((string)$request->email),
                 'area_id'    => $request->area_id,
                 'driver'     => DB::getDriverName(),
                 'error_info' => $e->errorInfo ?? [],
@@ -249,7 +261,7 @@ class AuthController extends Controller
         } catch (\RuntimeException $e) {
             Log::error('Runtime error during registration', [
                 'message' => $e->getMessage(),
-                'email'   => $request->email,
+                'email_sha1' => sha1((string)$request->email),
                 'area_id' => $request->area_id,
             ]);
             return response()->json([
@@ -262,7 +274,7 @@ class AuthController extends Controller
             Log::error('Error during user registration process', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'email' => $request->email,
+                'email_sha1' => sha1((string)$request->email),
             ]);
 
             return response()->json([
@@ -277,30 +289,35 @@ class AuthController extends Controller
     /**
      * Send verification email to user
      * ✅ Security: لا نطبع URL كامل فيه token داخل اللوج
+     * ✅ نخزن Hash في DB ونرسل Plain في الرابط
      */
-    private function sendVerificationEmail(User $user): void
+    private function sendVerificationEmail(User $user, ?string $plainToken = null): void
     {
-        if (!$user->email_verification_token) {
-            $user->email_verification_token = Str::random(60);
+        $plainToken = $plainToken ?: Str::random(60);
+        $tokenHash  = $this->hashToken($plainToken);
+
+        // ensure DB has hash
+        $needsSave = false;
+        if ($user->email_verification_token !== $tokenHash) {
+            $user->email_verification_token = $tokenHash;
+            $needsSave = true;
+        }
+        if (Schema::hasColumn('users', 'email_verification_expires_at')) {
+            $user->email_verification_expires_at = now()->addHours(24);
+            $needsSave = true;
+        }
+        if ($needsSave) {
             $user->save();
         }
 
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-        $verificationUrl = $frontendUrl . '/verify-email?token=' . $user->email_verification_token;
-
-        Log::info('Preparing verification email', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'token_len' => strlen((string)$user->email_verification_token),
-        ]);
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+        $verificationUrl = $frontendUrl . '/verify-email?token=' . urlencode($plainToken);
 
         try {
             $user->notify(new VerifyEmailNotification($verificationUrl));
-            Log::info('Verification email sent successfully', ['email' => $user->email]);
         } catch (\Exception $e) {
             Log::error('Failed to send verification email', [
                 'error' => $e->getMessage(),
-                'email' => $user->email,
                 'user_id' => $user->id
             ]);
         }
@@ -332,8 +349,13 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $token = trim((string)$request->token);
-        $user = User::where('email_verification_token', $token)->first();
+        $tokenPlain = trim((string)$request->token);
+        $tokenHash  = $this->hashToken($tokenPlain);
+
+        // ✅ Backward compatible: match hashed OR old-plain token
+        $user = User::where('email_verification_token', $tokenHash)
+            ->orWhere('email_verification_token', $tokenPlain)
+            ->first();
 
         if (!$user) {
             return response()->json([
@@ -342,8 +364,24 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // ✅ marks verified + sets email_verification_token = null
+        // optional: expiry check if column exists
+        if (Schema::hasColumn('users', 'email_verification_expires_at')) {
+            if ($user->email_verification_expires_at && Carbon::parse($user->email_verification_expires_at)->isPast()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Verification token expired'
+                ], 400);
+            }
+        }
+
+        // ✅ marks verified + clears token
         $user->markEmailAsVerified();
+
+        // clear expiry if exists
+        if (Schema::hasColumn('users', 'email_verification_expires_at')) {
+            $user->email_verification_expires_at = null;
+            $user->save();
+        }
 
         return response()->json([
             'status' => 'success',
@@ -353,7 +391,7 @@ class AuthController extends Controller
 
     /**
      * Resend verification email
-     * ✅ FIX (HIGH): rotate token ALWAYS
+     * ✅ rotate token ALWAYS
      * ✅ Security: منع enumeration
      * ✅ Rate limit لمنع email bombing
      */
@@ -392,11 +430,8 @@ class AuthController extends Controller
             ]);
         }
 
-        // ✅ ROTATE ALWAYS
-        $user->email_verification_token = Str::random(60);
-        $user->save();
-
-        $this->sendVerificationEmail($user);
+        $plain = Str::random(60);
+        $this->sendVerificationEmail($user, $plain);
 
         return response()->json([
             'status' => 'success',
@@ -460,7 +495,6 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email not verified',
-                'email' => $user->email
             ], 401);
         }
 
@@ -468,7 +502,6 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'حسابك غير مفعل من قبل الإدارة.',
-                'email' => $user->email,
             ], 403);
         }
 
@@ -506,12 +539,9 @@ class AuthController extends Controller
 
     /**
      * Refresh the user's token
-     * ✅ FIX (HIGH): validate refresh token type + ability
-     * ✅ Added rate limit (MEDIUM)
      */
     public function refresh(Request $request)
     {
-        // ✅ Rate limit: 120/min per IP (خفيف ومش هيكسر الفرونت)
         $rl = 'refresh:' . sha1((string)$request->ip());
         if (RateLimiter::tooManyAttempts($rl, 120)) {
             return response()->json([
@@ -575,7 +605,7 @@ class AuthController extends Controller
                 ->withCookie($this->forgetRefreshCookie());
         }
 
-        // ✅ Rotate
+        // ✅ Rotate refresh token
         $dbToken->delete();
 
         $accessTokenExpiresAt = now()->addMinutes($this->accessTokenMinutes);
@@ -602,7 +632,6 @@ class AuthController extends Controller
 
     /**
      * Logout user
-     * ✅ FIX (CRITICAL): لا نحذف refresh token من DB إلا لو يخص نفس المستخدم + hash صحيح
      */
     public function logout(Request $request)
     {
@@ -646,7 +675,10 @@ class AuthController extends Controller
      */
     public function forgotPassword(Request $request)
     {
-        Log::info('Password reset process started', ['email' => $request->email]);
+        Log::info('Password reset process started', [
+            'email_sha1' => sha1(Str::lower(trim((string)$request->input('email')))),
+            'ip' => (string)$request->ip(),
+        ]);
 
         $validator = Validator::make($request->all(), [
             'email' => 'required|email'
@@ -670,6 +702,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $email)->first();
 
+        // ✅ نفس الرد حتى لو المستخدم مش موجود
         if (!$user) {
             return response()->json([
                 'status' => 'success',
@@ -677,19 +710,20 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = Str::random(60);
+        // ✅ Plain للفرونت / Hash للـ DB
+        $plain = Str::random(60);
+        $hash  = $this->hashToken($plain);
 
         $user->update([
-            'password_reset_token' => $token,
+            'password_reset_token' => $hash,
             'password_reset_expires_at' => now()->addMinutes(60)
         ]);
 
-        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-        $resetUrl = $frontendUrl . '/auth/reset-password?token=' . $token;
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+        $resetUrl = $frontendUrl . '/auth/reset-password?token=' . urlencode($plain);
 
         try {
-            $user->notify(new \App\Notifications\ResetPasswordNotification($resetUrl));
-            Log::info('Password reset email sent', ['email' => $user->email]);
+            $user->notify(new ResetPasswordNotification($resetUrl));
 
             return response()->json([
                 'status' => 'success',
@@ -698,7 +732,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to send password reset email', [
                 'error' => $e->getMessage(),
-                'email' => $user->email
+                'user_id' => $user->id
             ]);
 
             return response()->json([
@@ -710,13 +744,9 @@ class AuthController extends Controller
 
     /**
      * Reset password
-     * ✅ FIX (CRITICAL): تحديث password_hash و/أو password حسب الموجود فعليًا
-     * ✅ Hardening: revoke all tokens after reset
      */
     public function resetPassword(Request $request)
     {
-        Log::info('Password reset verification started');
-
         $validator = Validator::make($request->all(), [
             'token' => 'required|string',
             'password' => 'required|string|min:8',
@@ -727,7 +757,14 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
         }
 
-        $user = User::where('password_reset_token', trim((string)$request->token))
+        $tokenPlain = trim((string)$request->token);
+        $tokenHash  = $this->hashToken($tokenPlain);
+
+        // ✅ Backward compatible: match hashed OR old-plain token
+        $user = User::where(function ($q) use ($tokenHash, $tokenPlain) {
+                $q->where('password_reset_token', $tokenHash)
+                  ->orWhere('password_reset_token', $tokenPlain);
+            })
             ->where('password_reset_expires_at', '>', now())
             ->first();
 
@@ -764,7 +801,7 @@ class AuthController extends Controller
 
         $user->update($update);
 
-        // ✅ revoke tokens (stolen tokens become useless)
+        // ✅ revoke tokens
         try {
             if (method_exists($user, 'tokens')) {
                 $user->tokens()->delete();
@@ -772,8 +809,6 @@ class AuthController extends Controller
         } catch (\Throwable $e) {
             // ignore
         }
-
-        Log::info('Password reset successful', ['user_id' => $user->id, 'email' => $user->email]);
 
         return response()->json([
             'status' => 'success',
@@ -784,6 +819,11 @@ class AuthController extends Controller
     // ============================================================
     // Helpers
     // ============================================================
+
+    private function hashToken(string $plain): string
+    {
+        return hash('sha256', $plain);
+    }
 
     private function resolvePasswordColumn(): string
     {
@@ -840,7 +880,6 @@ class AuthController extends Controller
         $domain = config('session.domain');
         $sameSite = $this->normalizeSameSite((string) config('session.same_site', 'none'));
 
-        // important: create an expired cookie with SAME attrs (domain/path/samesite/secure)
         return cookie(
             'refresh_token',
             '',
