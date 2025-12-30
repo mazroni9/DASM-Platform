@@ -22,8 +22,8 @@ return [
     // ✅ خيارات HTTP آمنة
     // لو احتجت DEV فقط: CLOUDINARY_HTTP_VERIFY=false
     'http' => [
-        'verify' => env('CLOUDINARY_HTTP_VERIFY', true),
-        'timeout' => env('CLOUDINARY_HTTP_TIMEOUT', 30),
+        'verify' => env('CLOUDINARY_HTTP_VERIFY', true) == 'false' ? false : true,
+        'timeout' => env('CLOUDINARY_HTTP_TIMEOUT', 80),
         'connect_timeout' => env('CLOUDINARY_HTTP_CONNECT_TIMEOUT', 10),
     ],
 ];
