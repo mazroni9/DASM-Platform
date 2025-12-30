@@ -635,7 +635,7 @@ export default function CarDetailPage() {
           }
 
           const auctionId = carsData.id;
-          const channel = pusher.subscribe(`auction.${auctionId}`);
+          const channel = pusher.subscribe(`auction.${carId}`);
 
           channel.bind("NewBidEvent", (event: any) => {
             setItem((prevItem: any) => ({
