@@ -26,9 +26,9 @@ class ResponseOptimizationMiddleware
 
         // Add compression headers
         $response->headers->set('Vary', 'Accept-Encoding');
-        
-        // Add ETag for caching
-        if ($request->is('api/*') && $response->getStatusCode() === 200) {
+
+        // Add ETag for caching (only for JSON responses)
+        if ($request->is('api/*') && $response->getStatusCode() === 200 && $response instanceof JsonResponse) {
             $this->addETag($response, $request);
         }
 
@@ -79,9 +79,9 @@ class ResponseOptimizationMiddleware
     {
         $content = $response->getContent();
         $etag = md5($content);
-        
+
         $response->headers->set('ETag', '"' . $etag . '"');
-        
+
         // Check if client has cached version
         $ifNoneMatch = $request->header('If-None-Match');
         if ($ifNoneMatch && $ifNoneMatch === '"' . $etag . '"') {

@@ -597,7 +597,12 @@ export default function CarDataEntryForm() {
       }
       reports.forEach((rep) => fd.append("reports_images[]", rep));
 
-      const response = await api.post(CARS_ENDPOINT, fd);
+      // Must set Content-Type to undefined so axios auto-generates multipart/form-data with boundary
+      const response = await api.post(CARS_ENDPOINT, fd, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       if (response?.data?.status === "success") {
         toast.success(
           "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة"

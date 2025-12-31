@@ -11,22 +11,23 @@ use App\Models\Auction;
 use App\Enums\AuctionType;
 use App\Enums\CarCondition;
 use App\Enums\AuctionStatus;
+use App\Models\CarAttribute;
 use Illuminate\Http\Request;
+use App\Enums\CarTransmission;
 use Illuminate\Validation\Rule;
+use App\Enums\CarsMarketsCategory;
+use Illuminate\Support\Facades\DB;
+use App\Services\CloudinaryService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\CarCollection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Resources\CarCardResource;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Schema;
-use App\Services\CloudinaryService;
-use App\Enums\CarTransmission;
-use App\Enums\CarsMarketsCategory;
-use App\Models\CarAttribute;
-use App\Notifications\NewCarAddedNotification;
 use Carbon\Carbon; // ✅ مضاف لاستخدام الوقت
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewCarAddedNotification;
 
 class CarController extends Controller
 {
@@ -261,69 +262,76 @@ class CarController extends Controller
         }
 
         $user = Auth::user();
-        $car = new Car();
-
-        if ($user->type === 'dealer' && $user->dealer) {
-            $car->dealer_id = $user->dealer->id;
-        }
-        $car->user_id = $user->id;
-
-        // حفظ القيم
-        $car->make = $request->make;
-        $car->province = $request->province;
-        $car->city = $request->city;
-        $car->model = $request->model;
-        $car->year = $request->year;
-        $car->vin = $request->vin;
-        $car->odometer = $request->odometer;
-        $car->condition = CarCondition::from($request->condition);
-        $car->evaluation_price = $request->evaluation_price;
-        $car->color = $request->color ?? null;
-        $car->engine = $request->engine ?? null;
-        $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
-        $car->description = $request->description ?? null;
-        $car->plate = $request->plate ?? null;
-        // هنعدل حالة السيارة لاحقاً بعد إنشاء المزاد
-        $car->auction_status = 'available';
-        $car->min_price = $request->min_price;
-        $car->max_price = $request->max_price;
-        $car->market_category = $request->market_category;
-        $car->main_auction_duration = $request->main_auction_duration; // 10 أو 20 أو 30
-        $car->save();
-
-        // صور السيارة
-        $this->logImageDebugInfo($request);
-        $uploadedImages = $this->handleCarImageUpload($request, $car);
-        if (!empty($uploadedImages)) {
-            $car->images = $uploadedImages;
-            $car->save();
-        }
-
-        // صور التقارير
-        $uploadedReportImages = $this->handleCarReportImageUpload($request, $car);
-        if (!empty($uploadedReportImages)) {
-            $car->reportImages()->createMany($uploadedReportImages);
-            $car->save();
-        }
-
-        // بطاقة التسجيل
-        if ($request->hasFile('registration_card_image')) {
-            $image = $request->file('registration_card_image');
-            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
-            $uploadedRegistrationCardImage = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
-            $car->registration_card_image = $uploadedRegistrationCardImage;
-            $car->save();
-        }
-
-        // خصائص إضافية للكرفانات (إن وجدت)
-        $this->syncCaravanAttributes($request, $car);
-
-        /**
-         * ✅ إنشاء المزاد مباشرة بعد إضافة السيارة
-         * - وقت البداية: الآن
-         * - وقت النهاية: الآن + المدة التي اختارها صاحب السيارة (10 / 20 / 30 يوم)
-         */
+        DB::beginTransaction();
         try {
+            $car = new Car();
+
+            if ($user->type === 'dealer' && $user->dealer) {
+                $car->dealer_id = $user->dealer->id;
+            }
+            $car->user_id = $user->id;
+
+            // حفظ القيم
+            $car->make = $request->make;
+            $car->province = $request->province;
+            $car->city = $request->city;
+            $car->model = $request->model;
+            $car->year = $request->year;
+            $car->vin = $request->vin;
+            $car->odometer = $request->odometer;
+            $car->condition = CarCondition::from($request->condition);
+            $car->evaluation_price = $request->evaluation_price;
+            $car->color = $request->color ?? null;
+            $car->engine = $request->engine ?? null;
+            $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
+            $car->description = $request->description ?? null;
+            $car->plate = $request->plate ?? null;
+            // هنعدل حالة السيارة لاحقاً بعد إنشاء المزاد
+            $car->auction_status = 'available';
+            $car->min_price = $request->min_price;
+            $car->max_price = $request->max_price;
+            $car->market_category = $request->market_category;
+            $car->main_auction_duration = $request->main_auction_duration; // 10 أو 20 أو 30
+            $car->save();
+
+            // صور السيارة
+            $this->logImageDebugInfo($request);
+            $uploadedImages = $this->handleCarImageUpload($request, $car);
+            
+            Log::error('uploadedImages to create car ' . $car->id, [
+               $uploadedImages
+            ]);
+
+            if (!empty($uploadedImages)) {
+                $car->images = $uploadedImages;
+                $car->save();
+            }
+
+            // صور التقارير
+            $uploadedReportImages = $this->handleCarReportImageUpload($request, $car);
+            if (!empty($uploadedReportImages)) {
+                $car->reportImages()->createMany($uploadedReportImages);
+                $car->save();
+            }
+
+            // بطاقة التسجيل
+            if ($request->hasFile('registration_card_image')) {
+                $image = $request->file('registration_card_image');
+                $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+                $uploadedRegistrationCardImage = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
+                $car->registration_card_image = $uploadedRegistrationCardImage;
+                $car->save();
+            }
+
+            // خصائص إضافية للكرفانات (إن وجدت)
+            $this->syncCaravanAttributes($request, $car);
+
+            /**
+             * ✅ إنشاء المزاد مباشرة بعد إضافة السيارة
+             * - وقت البداية: الآن
+             * - وقت النهاية: الآن + المدة التي اختارها صاحب السيارة (10 / 20 / 30 يوم)
+             */
+
             // لو ما اختارش مدة، نخليها افتراضياً 10 أيام
             $durationDays = (int)($car->main_auction_duration ?: 10);
 
@@ -331,7 +339,7 @@ class CarController extends Controller
             $endTime   = (clone $startTime)->addDays($durationDays);
 
             // تحديث حالة السيارة إلى scheduled بدلاً من available
-            $car->auction_status = 'scheduled';
+            $car->auction_status = 'pending';
             $car->save();
 
             Auction::create([
@@ -347,22 +355,25 @@ class CarController extends Controller
                 'control_room_approved' => false,
                 'approved_for_live'     => false,
             ]);
+
+            $car->refresh();
+          
+            $admins = User::whereIn('type', ['admin', 'super_admin'])->get();
+            Notification::send($admins, new NewCarAddedNotification($car->load('user')));
+            
+              DB::commit();
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'تم إضافة السيارة بنجاح.',
+                'data'    => $car,
+            ], 201);
+
         } catch (\Throwable $e) {
-            Log::error('Failed to create auction for car ' . $car->id, [
+            DB::rollBack();
+            Log::error('Failed to create car ' . $car->id, [
                 'error' => $e->getMessage(),
             ]);
         }
-
-        // إشعار الإدمنز
-        $car->refresh();
-        $admins = User::whereIn('type', ['admin','super_admin'])->get();
-        Notification::send($admins, new NewCarAddedNotification($car->load('user')));
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'تم إضافة السيارة بنجاح.',
-            'data'    => $car,
-        ], 201);
     }
 
     /**
@@ -833,11 +844,14 @@ class CarController extends Controller
 
     private function logImageDebugInfo(Request $request)
     {
-        Log::info('Image request information:', [
-            'has_images_field'       => $request->has('images'),
-            'has_images_file'        => $request->hasFile('images'),
-            'files_in_request'       => array_keys($request->allFiles()),
-            'request_content_type'   => $request->header('Content-Type')
+      Log::info('Image request information:', [
+            'has_images_field' => $request->has('images'),
+            'has_images_file' => $request->hasFile('images'),
+            'has_images_array_field' => $request->has('images[]'),
+            'has_images_array_file' => $request->hasFile('images[]'),
+            'request_has_files' => $request->hasFile('images') || $request->hasFile('images[]'),
+            'files_in_request' => array_keys($request->allFiles()),
+            'request_content_type' => $request->header('Content-Type')
         ]);
     }
 

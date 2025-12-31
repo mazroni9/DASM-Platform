@@ -14,10 +14,9 @@ class NewCarAddedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public bool $afterCommit = true;
-
     public function __construct(public Car $car)
     {
+        $this->afterCommit = true;
     }
 
     public function via(object $notifiable): array
