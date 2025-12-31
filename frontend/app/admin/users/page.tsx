@@ -194,7 +194,13 @@ export default function UsersManagementPage() {
   const handleApproveUser = async (userId: number) => {
     setProcessingUserId(userId);
     try {
-      const response = await api.post(`/api/admin/users/${userId}/activate`);
+      const response = await api.post(
+        `/api/admin/users/${userId}/toggle-status`,
+        {
+          status: "active",
+          is_active: true,
+        }
+      );
 
       if (response.data && response.data.status === "success") {
         toast.success("تم تفعيل المستخدم بنجاح");
@@ -209,13 +215,6 @@ export default function UsersManagementPage() {
     } catch (error) {
       console.error("Error approving user:", error);
       toast.error("فشل في تفعيل المستخدم");
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === userId
-            ? { ...user, is_active: true, status: "active" }
-            : user
-        )
-      );
     } finally {
       setProcessingUserId(null);
     }
@@ -224,7 +223,13 @@ export default function UsersManagementPage() {
   const handleRejectUser = async (userId: number) => {
     setProcessingUserId(userId);
     try {
-      const response = await api.post(`/api/admin/users/${userId}/deactivate`);
+      const response = await api.post(
+        `/api/admin/users/${userId}/toggle-status`,
+        {
+          status: "rejected",
+          is_active: false,
+        }
+      );
 
       if (response.data && response.data.status === "success") {
         toast.success("تم رفض المستخدم بنجاح");
@@ -239,13 +244,6 @@ export default function UsersManagementPage() {
     } catch (error) {
       console.error("Error rejecting user:", error);
       toast.error("فشل في رفض المستخدم");
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === userId
-            ? { ...user, is_active: false, status: "rejected" }
-            : user
-        )
-      );
     } finally {
       setProcessingUserId(null);
     }

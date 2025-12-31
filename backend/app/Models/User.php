@@ -177,8 +177,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->forceFill([
             'email_verified_at' => now(),
             'email_verification_token' => null,
-            'is_active' => false,
-            'status' => UserStatus::PENDING,
+            'is_active' => $this->type ==UserRole::USER ? true : false,
+            'status' => $this->type ==UserRole::USER ? UserStatus::ACTIVE : UserStatus::PENDING,
         ])->save();
     }
 
