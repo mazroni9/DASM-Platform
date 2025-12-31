@@ -235,7 +235,7 @@ class AuthController extends Controller
 
         } catch (QueryException $e) {
             $out = $this->interpretDbError($e, $request);
-
+            
             Log::error('Database error during registration', [
                 'sqlstate'   => $out['sqlstate'],
                 'reason'     => $out['reason'],
@@ -378,11 +378,13 @@ class AuthController extends Controller
         $user->markEmailAsVerified();
 
         // clear expiry if exists
+        $user->refresh();
+
         if (Schema::hasColumn('users', 'email_verification_expires_at')) {
             $user->email_verification_expires_at = null;
             $user->save();
         }
-
+      
         return response()->json([
             'status' => 'success',
             'message' => 'Email verified successfully'

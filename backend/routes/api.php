@@ -727,7 +727,7 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::put('/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId')->middleware('can:users.update');
             Route::post('/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId')->middleware('can:users.update');
             Route::post('/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId')->middleware('can:users.update');
-            Route::post('/{userId}/toggle-status', [AdminUserController::class, 'toggleUserStatus'])->whereNumber('userId')->middleware('can:users.update');
+            Route::post('/{userId}/toggle-status', [AdminUserController::class, 'updateStatus'])->whereNumber('userId')->middleware('can:users.update');
         });
 
         Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications'])->middleware('can:users.view');

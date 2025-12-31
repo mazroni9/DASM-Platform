@@ -27,7 +27,7 @@ class UserController extends Controller
 
         // ✅ Eager loading
         $query->with([
-            'dealer:id,user_id,company_name,status',
+            'dealer:id,user_id,company_name,status,is_active',
             'venueOwner:id,user_id,venue_name,status',
             'area:id,name,code',
             'roles:id,name,display_name',
@@ -383,4 +383,86 @@ class UserController extends Controller
             'data'   => $stats,
         ]);
     }
+
+         /**
+     * Approve a dealer verification request
+     *
+     * @param int $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function approveVerification($userId)
+    {
+        $user = User::findOrFail($userId);
+        $dealer = $user->dealer;
+
+        if (!$dealer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User is not a dealer'
+            ], 400);
+        }
+
+        // Update dealer status
+        $dealer->is_active = true;
+        $dealer->status = 'active';
+        $dealer->save();
+
+        // Update user role if needed
+        if ($user->type !== 'dealer') {
+            $user->type = 'dealer';
+            $user->save();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Dealer verification approved successfully',
+            'data' => [
+                'user' => $user,
+                'dealer' => $dealer
+            ]
+        ]);
+    }
+
+
+    /**
+     * Reject a dealer verification request
+     *
+     * @param int $userId
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function rejectVerification($userId, Request $request)
+    {
+        $user = User::findOrFail($userId);
+        $dealer = $user->dealer;
+
+        if (!$dealer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User is not a dealer'
+            ], 400);
+        }
+
+        // Set rejection reason if provided
+        if ($request->has('reason')) {
+            $dealer->rejection_reason = $request->reason;
+        }
+
+        // Update dealer status
+        $dealer->is_active = false;
+        $dealer->status = 'rejected';
+        $dealer->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Dealer verification rejected successfully',
+            'data' => [
+                'user' => $user,
+                'dealer' => $dealer
+            ]
+        ]);
+    }
+
+
+
 }

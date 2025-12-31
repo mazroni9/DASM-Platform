@@ -16,9 +16,9 @@ class Dealer extends Model
         'commercial_registry',
         'is_active',
         'status',
-        'rating',
-        'description',
-        'ai_recommendations_enabled',
+        //'rating',
+        //'description',
+       // 'ai_recommendations_enabled',
     ];
 
     protected $casts = [

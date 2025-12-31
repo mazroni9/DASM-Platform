@@ -99,10 +99,10 @@ export default function EditUserForm({
             // Fetch user details from backend
             const response = await api.get(`/api/admin/users/${user_id}`);
             if (response.data && response.data.status === "success") {
-                let user = response.data.data.user;
+                let user = response.data.data;
                 //check if user role
                 if (user.type == "admin") {
-                    response.data.data.user.type = "user";
+                    response.data.data.type = "user";
                 }
                 if (user.type == "dealer") {
                     //check rating if it is null or assign default value
@@ -111,7 +111,7 @@ export default function EditUserForm({
                     
                     
                 }
-                setUser(response.data.data.user);
+                setUser(response.data.data);
                 setFormData({
                     first_name: user.first_name || "",
                     last_name: user.last_name || "",
@@ -181,7 +181,7 @@ export default function EditUserForm({
 
             if (response.data.status === "success") {
                 toast.success("تم تحديث بيانات المستخدم بنجاح");
-                onUserUpdated(response.data.data.user);
+                onUserUpdated(response.data.data);
                 onClose();
             } else {
                 toast.error(

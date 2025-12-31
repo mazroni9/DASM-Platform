@@ -20,6 +20,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use App\Notifications\VerifyEmailNotification;
+use App\Notifications\BusinessAccountVerifiedNotification;
+use App\Enums\UserRole;
 use Illuminate\Database\QueryException;
 
 class AuthController extends Controller
@@ -230,7 +232,7 @@ class AuthController extends Controller
                                 'user_id'             => $user->id,
                                 'company_name'        => $request->company_name,
                                 'commercial_registry' => $request->commercial_registry,
-                                'description'         => $request->description ?? null,
+                                // 'description'         => $request->description ?? null,
                                 'status'              => 'pending',
                                 'is_active'           => false,
                             ]);
@@ -288,8 +290,8 @@ class AuthController extends Controller
             ], 201);
         } catch (QueryException $e) {
             // 🔎 تفسير الخطأ وإرجاع سبب واضح
+            Log::error($e);
             $out = $this->interpretDbError($e, $request);
-
             Log::error('Database error during registration', [
                 'sqlstate'   => $out['sqlstate'],
                 'reason'     => $out['reason'],
@@ -400,6 +402,14 @@ class AuthController extends Controller
 
         // Token is valid, mark email as verified
         $user->markEmailAsVerified();
+
+        // Refresh the user to get updated status
+        $user->refresh();
+
+        // Notify admins if user is a dealer or venue_owner
+        if (in_array($user->type->value ?? $user->type, ['dealer', 'venue_owner'])) {
+            $this->notifyAdminsAboutBusinessAccountVerification($user);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -925,5 +935,36 @@ class AuthController extends Controller
     private function str_contains_ci(string $haystack, string $needle): bool
     {
         return $needle !== '' && mb_stripos($haystack ?? '', $needle) !== false;
+    }
+
+    /**
+     * Notify admins and super_admins about a business account verification
+     */
+    private function notifyAdminsAboutBusinessAccountVerification(User $user): void
+    {
+        try {
+            // Get all admins and super_admins
+            $admins = User::whereIn('type', [
+                UserRole::ADMIN->value,
+                UserRole::SUPER_ADMIN->value,
+            ])
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($admins as $admin) {
+                $admin->notify(new BusinessAccountVerifiedNotification($user));
+            }
+
+            Log::info('Admins notified about business account verification', [
+                'user_id' => $user->id,
+                'user_type' => $user->type,
+                'admin_count' => $admins->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to notify admins about business account verification', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+            ]);
+        }
     }
 }
