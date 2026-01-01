@@ -100,7 +100,8 @@ class StaffController extends Controller
         }
 
         // ✅ Security: Check super_admin role assignment
-        if (!$this->canAssignRole($request->spatie_role_id)) {
+        $roleId = $request->filled('spatie_role_id') ? (int) $request->spatie_role_id : null;
+        if (!$this->canAssignRole($roleId)) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'لا تملك صلاحية تعيين هذا الدور'
@@ -135,7 +136,7 @@ class StaffController extends Controller
             if ($request->filled('spatie_role_id')) {
                 app(\Spatie\Permission\PermissionRegistrar::class)
                     ->setPermissionsTeamId($platform_organization->id);
-                $staff->syncRoles([$request->spatie_role_id]);
+                $staff->syncRoles([(int) $request->spatie_role_id]);
             }
 
             Log::info('Staff created', ['staff_id' => $staff->id, 'by' => auth()->id()]);
@@ -207,7 +208,8 @@ class StaffController extends Controller
             }
 
             // ✅ Security: Check role assignment
-            if ($request->has('spatie_role_id') && !$this->canAssignRole($request->spatie_role_id)) {
+            $roleId = $request->filled('spatie_role_id') ? (int) $request->spatie_role_id : null;
+            if ($request->has('spatie_role_id') && !$this->canAssignRole($roleId)) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'لا تملك صلاحية تعيين هذا الدور'
@@ -232,7 +234,7 @@ class StaffController extends Controller
 
             // Update fields
             $staff->fill($request->only(['first_name', 'last_name', 'email', 'phone']));
-            
+
             if ($request->has('type')) {
                 $staff->type = $request->type;
             }
@@ -251,9 +253,9 @@ class StaffController extends Controller
             if ($request->has('spatie_role_id') && $platform_organization) {
                 app(\Spatie\Permission\PermissionRegistrar::class)
                     ->setPermissionsTeamId($platform_organization->id);
-                    
+
                 if ($request->filled('spatie_role_id')) {
-                    $staff->syncRoles([$request->spatie_role_id]);
+                    $staff->syncRoles([(int) $request->spatie_role_id]);
                 } else {
                     $staff->syncRoles([]);
                 }

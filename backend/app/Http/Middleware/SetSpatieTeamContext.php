@@ -16,6 +16,10 @@ class SetSpatieTeamContext
             if (!empty($user->organization_id)) {
                 setPermissionsTeamId($user->organization_id);
             }
+
+            if (!empty($user->ownedOrganization)) {
+                setPermissionsTeamId($user->ownedOrganization->id);
+            }
         }
         
         return $next($request);
