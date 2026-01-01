@@ -127,6 +127,15 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Organization::class);
     }
 
+
+    /**
+     * Get the organization that the user has.
+     */
+    public function ownedOrganization()
+    {
+        return $this->hasOne(Organization::class, 'owner_id');
+    }
+
     // A User may have many bids.
     public function bids()
     {

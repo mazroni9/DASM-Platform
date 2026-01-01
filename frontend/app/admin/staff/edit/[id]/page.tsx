@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -70,8 +70,9 @@ interface ModeratorData {
 export default function EditModeratorPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -114,7 +115,7 @@ export default function EditModeratorPage({
 
   const fetchModeratorDetails = async () => {
     try {
-      const response = await api.get(`/api/admin/staff/${params.id}`);
+      const response = await api.get(`/api/admin/staff/${id}`);
 
       if (response.data && response.data.status === "success") {
         const moderatorData = response.data.data;
@@ -238,10 +239,7 @@ export default function EditModeratorPage({
         submitData.password_confirmation = formData.password_confirmation;
       }
 
-      const response = await api.put(
-        `/api/admin/staff/${params.id}`,
-        submitData
-      );
+      const response = await api.put(`/api/admin/staff/${id}`, submitData);
 
       if (response.data && response.data.status === "success") {
         toast.success(response.data.message);
