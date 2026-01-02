@@ -5,27 +5,26 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import LoadingLink from '@/components/LoadingLink';
-import { 
-    Trash2, 
-    Edit, 
-    Plus, 
-    Calendar, 
-    Users, 
-    Eye, 
-    RefreshCw,
-    Search,
-    Filter,
-    Download,
-    Clock,
-    Zap,
-    Volume2,
-    MoreVertical,
-    AlertTriangle,
-    CheckCircle,
-    XCircle,
-    PlayCircle,
-    ChevronDown,
-    Sparkles
+import {
+  Trash2,
+  Edit,
+  Plus,
+  Calendar,
+  Users,
+  Eye,
+  RefreshCw,
+  Search,
+  Filter,
+  Download,
+  Clock,
+  Zap,
+  Volume2,
+  MoreVertical,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  PlayCircle,
+  ChevronDown,
 } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -40,29 +39,54 @@ interface AuctionSession {
   auctions_count: number;
   created_at: string;
   updated_at: string;
+
+  // optional fields موجودة أحياناً في الـ API
+  user_id?: number;
+  description?: string;
+  owner?: { id: number; first_name: string; last_name: string };
 }
 
-const statusColors = {
+type PaginatedResponse<T> = {
+  current_page: number;
+  data: T[];
+  first_page_url?: string;
+  from?: number;
+  last_page?: number;
+  last_page_url?: string;
+  links?: any[];
+  path?: string;
+  per_page?: number;
+  to?: number;
+  total?: number;
+};
+
+type ApiResponse<T> = {
+  success: boolean;
+  data: T;
+  message?: string;
+};
+
+const statusColors: Record<AuctionSession['status'], string> = {
   scheduled: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   active: 'bg-green-500/20 text-green-400 border-green-500/30',
   completed: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
   cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
-const statusLabels = {
+const statusLabels: Record<AuctionSession['status'], string> = {
   scheduled: 'مجدولة',
   active: 'نشطة',
   completed: 'مكتملة',
   cancelled: 'ملغاة',
 };
 
-const typeLabels = {
+const typeLabels: Record<AuctionSession['type'], string> = {
   live: 'مباشر',
   instant: 'فوري',
   silent: 'صامت',
 };
 
-const typeIcons = {
+const typeIcons: Record<AuctionSession['type'], any> = {
   live: Volume2,
   instant: Zap,
   silent: Clock,
@@ -74,24 +98,35 @@ export default function SessionsListPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<AuctionSession | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | AuctionSession['status']>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | AuctionSession['type']>('all');
   const router = useRouter();
 
   useEffect(() => {
     fetchSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/admin/sessions');
-      if (response.data.success) {
-        setSessions(response.data.data);
+
+      const response = await api.get<ApiResponse<PaginatedResponse<AuctionSession>>>(
+        '/api/admin/sessions'
+      );
+
+      if (response.data?.success) {
+        // ✅ هنا الإصلاح الأساسي: الليست موجودة في data.data
+        const items = response.data?.data?.data;
+        setSessions(Array.isArray(items) ? items : []);
+      } else {
+        setSessions([]);
+        toast.error(response.data?.message || 'فشل جلب الجلسات');
       }
     } catch (error) {
       toast.error('حدث خطأ أثناء جلب الجلسات');
       console.error('Error fetching sessions:', error);
+      setSessions([]); // ضمان إنها تفضل Array
     } finally {
       setLoading(false);
     }
@@ -128,20 +163,21 @@ export default function SessionsListPage() {
   };
 
   // Filter sessions based on search and filters
-  const filteredSessions = sessions.filter(session => {
-    const matchesSearch = session.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSessions = sessions.filter((session) => {
+    const name = (session.name ?? '').toLowerCase();
+    const matchesSearch = name.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || session.status === statusFilter;
     const matchesType = typeFilter === 'all' || session.type === typeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
   // Calculate statistics
   const stats = {
     total: sessions.length,
-    scheduled: sessions.filter(s => s.status === 'scheduled').length,
-    active: sessions.filter(s => s.status === 'active').length,
-    completed: sessions.filter(s => s.status === 'completed').length,
+    scheduled: sessions.filter((s) => s.status === 'scheduled').length,
+    active: sessions.filter((s) => s.status === 'active').length,
+    completed: sessions.filter((s) => s.status === 'completed').length,
   };
 
   return (
@@ -149,16 +185,12 @@ export default function SessionsListPage() {
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">
-            إدارة جلسات المزاد
-          </h1>
-          <p className="text-foreground/70 mt-2">
-            إدارة وتنظيم جلسات المزادات المختلفة في النظام
-          </p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">إدارة جلسات المزاد</h1>
+          <p className="text-foreground/70 mt-2">إدارة وتنظيم جلسات المزادات المختلفة في النظام</p>
         </div>
-        
+
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <button 
+          <button
             onClick={fetchSessions}
             className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
           >
@@ -245,7 +277,7 @@ export default function SessionsListPage() {
           <div className="flex flex-wrap gap-3">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
               className="p-2 border border-border rounded-lg bg-background text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="all">كل الحالات</option>
@@ -257,7 +289,7 @@ export default function SessionsListPage() {
 
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(e) => setTypeFilter(e.target.value as any)}
               className="p-2 border border-border rounded-lg bg-background text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="all">كل الأنواع</option>
@@ -288,9 +320,7 @@ export default function SessionsListPage() {
             <h2 className="text-lg font-semibold text-foreground">
               قائمة جلسات المزاد ({filteredSessions.length})
             </h2>
-            <div className="text-sm text-foreground/70">
-              إجمالي {sessions.length} جلسة
-            </div>
+            <div className="text-sm text-foreground/70">إجمالي {sessions.length} جلسة</div>
           </div>
         </div>
 
@@ -307,13 +337,14 @@ export default function SessionsListPage() {
             <Calendar className="w-16 h-16 text-foreground/50 mb-4" />
             <p className="text-foreground/70 text-lg mb-2">
               {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                ? "لا توجد نتائج مطابقة للبحث"
-                : "لا توجد جلسات مزاد حتى الآن"
-              }
+                ? 'لا توجد نتائج مطابقة للبحث'
+                : 'لا توجد جلسات مزاد حتى الآن'}
             </p>
             <p className="text-foreground/50 text-sm mb-6">
-              {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && 
-               "ابدأ بإضافة جلسات مزاد جديدة إلى النظام"}
+              {!searchTerm &&
+                statusFilter === 'all' &&
+                typeFilter === 'all' &&
+                'ابدأ بإضافة جلسات مزاد جديدة إلى النظام'}
             </p>
             {!searchTerm && statusFilter === 'all' && typeFilter === 'all' && (
               <LoadingLink
@@ -330,17 +361,31 @@ export default function SessionsListPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-border/50 border-b border-border">
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الجلسة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">التاريخ</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">النوع</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">عدد المزادات</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الجلسة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    التاريخ
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الحالة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    النوع
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    عدد المزادات
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الإجراءات
+                  </th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-border">
                 {filteredSessions.map((session) => {
-                  const TypeIcon = typeIcons[session.type];
+                  const TypeIcon = typeIcons[session.type] ?? Calendar;
+
                   return (
                     <tr
                       key={session.id}
@@ -353,12 +398,8 @@ export default function SessionsListPage() {
                             <Calendar className="w-4 h-4 text-white" />
                           </div>
                           <div className="mr-4">
-                            <div className="text-sm font-medium text-foreground">
-                              {session.name}
-                            </div>
-                            <div className="text-xs text-foreground/70 mt-1">
-                              ID: {session.id}
-                            </div>
+                            <div className="text-sm font-medium text-foreground">{session.name}</div>
+                            <div className="text-xs text-foreground/70 mt-1">ID: {session.id}</div>
                           </div>
                         </div>
                       </td>
@@ -370,7 +411,9 @@ export default function SessionsListPage() {
 
                       {/* Status */}
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[session.status]}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[session.status]}`}
+                        >
                           {session.status === 'active' && <PlayCircle className="w-3 h-3 ml-1" />}
                           {session.status === 'scheduled' && <Clock className="w-3 h-3 ml-1" />}
                           {session.status === 'completed' && <CheckCircle className="w-3 h-3 ml-1" />}
@@ -398,7 +441,7 @@ export default function SessionsListPage() {
                       {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2 space-x-reverse">
-                          <LoadingLink 
+                          <LoadingLink
                             href={`/admin/sessions/view/${session.id}`}
                             className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300"
                           >
@@ -416,7 +459,11 @@ export default function SessionsListPage() {
                             onClick={() => openDeleteModal(session)}
                             className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={session.auctions_count > 0}
-                            title={session.auctions_count > 0 ? "لا يمكن حذف جلسة تحتوي على مزادات" : "حذف الجلسة"}
+                            title={
+                              session.auctions_count > 0
+                                ? 'لا يمكن حذف جلسة تحتوي على مزادات'
+                                : 'حذف الجلسة'
+                            }
                           >
                             <Trash2 size={16} />
                           </button>
@@ -448,11 +495,12 @@ export default function SessionsListPage() {
                 <p className="text-foreground/70 text-sm">هل أنت متأكد من حذف هذه الجلسة؟</p>
               </div>
             </div>
-            
+
             <div className="bg-background/50 rounded-xl p-4 mb-6">
               <div className="text-foreground font-medium">{sessionToDelete.name}</div>
               <div className="text-foreground/70 text-sm mt-1">
-                التاريخ: {format(new Date(sessionToDelete.session_date), 'dd MMMM yyyy', { locale: ar })}
+                التاريخ:{' '}
+                {format(new Date(sessionToDelete.session_date), 'dd MMMM yyyy', { locale: ar })}
               </div>
               <div className="text-foreground/70 text-sm">
                 النوع: {typeLabels[sessionToDelete.type]}
