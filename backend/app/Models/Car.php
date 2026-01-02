@@ -36,12 +36,15 @@ class Car extends Model
 
     protected $fillable = [
         'dealer_id',
-        'user_id',  // Added user_id to fillable
+        'user_id',
         'make',
         'model',
         'year',
         'vin',
         'odometer',
+
+        // ⚠️ لاحظ: لو condition / transmission في DB فعلاً enum string يبقى تمام
+        // لو في DB مخزنين JSON object زي API اللي بعته، يبقى لازم تغير cast بتاعهم ل array (شوف ملاحظة أسفل)
         'condition',
         'evaluation_price',
         'auction_status',
@@ -51,15 +54,40 @@ class Car extends Model
         'transmission',
         'description',
         'registration_card_image',
+
+        // ✅ عندك عمود image (JSON) وهو الأساسي
+        'image',
+
+        // ✅ لو عندك عمود images قديم/اختياري، هنسيبه برضه
         'images',
-        'main_auction_duration'
+
+        'main_auction_duration',
+        'min_price',
+        'max_price',
     ];
 
+    /**
+     * ✅ IMPORTANT:
+     * - image: JSON => array (هو اللي بيتحول منه images في الـ API)
+     * - images: لو موجود كعمود قديم JSON هنخليه array كمان
+     *
+     * ⚠️ condition/transmission:
+     * - لو انت مخزنهم كـ Enum value (string) في DB: سيب enum cast
+     * - لو مخزنهم كـ JSON object (ar/en/color/icon) زي الريسبونس: خليهم array بدل enum
+     */
     protected $casts = [
+        'image'           => 'array',
         'images'          => 'array',
+
         'market_category' => CarsMarketsCategory::class,
+
+        // ✅ لو DB فيها enum strings:
         'condition'       => CarCondition::class,
         'transmission'    => CarTransmission::class,
+
+        // ✅ لو DB فيها JSON objects بدل enum strings، علّق اللي فوق وافتح اللي تحت:
+        // 'condition'    => 'array',
+        // 'transmission' => 'array',
     ];
 
     protected $hidden = [
@@ -67,11 +95,20 @@ class Car extends Model
         'max_price',
     ];
 
+    /**
+     * ✅ هنطلع images + image_url تلقائي في JSON
+     * - images: array of urls
+     * - image_url: main image url
+     */
+    protected $appends = [
+        'images_list',
+        'image_url',
+    ];
+
     protected static function boot()
     {
         parent::boot();
 
-        // Set default auction_status to 'pending' if not provided
         static::creating(function ($car) {
             if (!$car->auction_status) {
                 $car->auction_status = 'pending';
@@ -79,19 +116,19 @@ class Car extends Model
         });
     }
 
-    // A Car belongs to a Dealer.
+    // ===========================
+    // ✅ Relationships
+    // ===========================
     public function dealer()
     {
         return $this->belongsTo(Dealer::class);
     }
 
-    // A Car can also belong directly to a User (for non-dealer users)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // A Car may have many Auctions.
     public function auctions()
     {
         return $this->hasMany(Auction::class);
@@ -102,10 +139,9 @@ class Car extends Model
         return $this->hasOne(Auction::class)->where('status', AuctionStatus::ACTIVE);
     }
 
-    // Get the owner of the car (either dealer or user)
     public function getOwnerAttribute()
     {
-        return $this->dealer_id ? $this->dealer->user : $this->user;
+        return $this->dealer_id ? $this->dealer?->user : $this->user;
     }
 
     public function reportImages()
@@ -119,12 +155,74 @@ class Car extends Model
             ->where('auctions.status', AuctionStatus::ACTIVE);
     }
 
-    /**
-     * خصائص إضافية للسيارة (car_attributes)
-     * JSON key في الـ API هي: car_attributes
-     */
     public function carAttributes()
     {
         return $this->hasMany(CarAttribute::class);
+    }
+
+    // ===========================
+    // ✅ Image / Images Accessors
+    // ===========================
+
+    /**
+     * ✅ images_list: يرجع Array URLs للصور من العمود image (JSON)
+     * - يدعم: image = ["url1","url2"]
+     * - يدعم: image = "https://..."
+     * - يدعم: image = [{url:"..."}, ...]
+     * - ولو image فاضي، يحاول يستخدم عمود images القديم لو موجود
+     */
+    public function getImagesListAttribute(): array
+    {
+        $val = $this->getAttribute('image');
+
+        // fallback لو image فاضي و images القديم موجود
+        if (empty($val)) {
+            $old = $this->getAttribute('images');
+            $val = $old;
+        }
+
+        if (empty($val)) {
+            return [];
+        }
+
+        // string URL
+        if (is_string($val)) {
+            return [$val];
+        }
+
+        // array
+        if (is_array($val)) {
+            $out = [];
+
+            foreach ($val as $item) {
+                if (is_string($item)) {
+                    $out[] = $item;
+                    continue;
+                }
+
+                if (is_array($item)) {
+                    if (!empty($item['url']) && is_string($item['url'])) {
+                        $out[] = $item['url'];
+                        continue;
+                    }
+                    if (!empty($item['path']) && is_string($item['path'])) {
+                        $out[] = $item['path'];
+                        continue;
+                    }
+                }
+            }
+
+            return $out;
+        }
+
+        return [];
+    }
+
+    /**
+     * ✅ image_url: الصورة الرئيسية = أول صورة من images_list
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->images_list[0] ?? null;
     }
 }

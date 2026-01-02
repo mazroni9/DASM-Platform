@@ -1,659 +1,682 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    Car,
-    Clock,
-    DollarSign,
-    CheckCircle,
-    XCircle,
-    AlertTriangle,
-    Loader2,
-    Filter,
-    Search,
-    Eye,
-    Calendar,
-    User,
-    Settings,
+  Car,
+  Clock,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Loader2,
+  Filter,
+  Search,
+  Calendar,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 
 interface PendingAuction {
+  id: number;
+  car: {
     id: number;
-    car: {
-        id: number;
-        make: string;
-        model: string;
-        year: number;
-        vin: string;
-        plate_number: string;
-        condition: string;
-        transmission: string;
-        category: string;
-        odometer: number;
-        images?: string[];
-        dealer?: {
-            user: {
-                first_name: string;
-                last_name: string;
-            };
-        };
-        user?: {
-            first_name: string;
-            last_name: string;
-        };
+    make: string;
+    model: string;
+    year: number;
+    vin: string;
+    plate_number: string;
+    condition: string;
+    transmission: string;
+    category: string;
+    odometer: number;
+    images?: string[];
+    dealer?: {
+      user: {
+        first_name: string;
+        last_name: string;
+      };
     };
-    starting_bid: number;
-    min_price: number;
-    max_price: number;
-    reserve_price: number;
-    auction_type: string;
-    status: string;
-    created_at: string;
+    user?: {
+      first_name: string;
+      last_name: string;
+    };
+  };
+  starting_bid: number;
+  min_price: number;
+  max_price: number;
+  reserve_price: number;
+  auction_type: string;
+  status: string;
+  created_at: string;
 }
 
 export default function AdminAuctionApproval() {
-    const [pendingAuctions, setPendingAuctions] = useState<PendingAuction[]>(
-        []
-    );
-    const [filteredAuctions, setFilteredAuctions] = useState<PendingAuction[]>(
-        []
-    );
-    const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState("all");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedAuction, setSelectedAuction] =
-        useState<PendingAuction | null>(null);
-    const [showApprovalModal, setShowApprovalModal] = useState(false);
-    const [showRejectionModal, setShowRejectionModal] = useState(false);
-    const [processingId, setProcessingId] = useState<number | null>(null);
+  const [pendingAuctions, setPendingAuctions] = useState<PendingAuction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    // Approval form state
-    const [approvalData, setApprovalData] = useState({
-        opening_price: "",
-        auction_type: "silent_instant",
-        approved_for_live: false,
-        category: "",
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [selectedAuction, setSelectedAuction] = useState<PendingAuction | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+
+  const [approvalData, setApprovalData] = useState({
+    opening_price: "",
+    auction_type: "silent_instant",
+    approved_for_live: false,
+    category: "",
+  });
+
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  // ===== API helpers =====
+  const isOk = (resData: any) => resData?.status === "success" || resData?.success === true;
+
+  const unwrapData = (resData: any) => {
+    if (resData?.data && isOk(resData)) return resData.data;
+    if (resData?.data?.data && isOk(resData?.data)) return resData.data.data;
+    return null;
+  };
+
+  useEffect(() => {
+    fetchPendingAuctions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchPendingAuctions = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/admin/auctions/pending");
+
+      if (isOk(response.data)) {
+        const data = unwrapData(response.data);
+        const list = data?.data ?? data?.items ?? data ?? [];
+        setPendingAuctions(Array.isArray(list) ? list : []);
+      } else {
+        setPendingAuctions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching pending auctions:", error);
+      toast.error("حدث خطأ أثناء جلب المزادات المعلقة");
+      setPendingAuctions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredAuctions = useMemo(() => {
+    let filtered = pendingAuctions;
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((auction) => auction.status === statusFilter);
+    }
+
+    const q = searchTerm.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter((auction) => {
+        const make = (auction.car?.make || "").toLowerCase();
+        const model = (auction.car?.model || "").toLowerCase();
+        const vin = (auction.car?.vin || "").toLowerCase();
+        const plate = (auction.car?.plate_number || "").toLowerCase();
+        return make.includes(q) || model.includes(q) || vin.includes(q) || plate.includes(q);
+      });
+    }
+
+    return filtered;
+  }, [pendingAuctions, statusFilter, searchTerm]);
+
+  const handleApprove = (auction: PendingAuction) => {
+    setSelectedAuction(auction);
+    setApprovalData({
+      opening_price: (auction.starting_bid ?? 0).toString(),
+      auction_type: auction.auction_type || "silent_instant",
+      approved_for_live: false,
+      category: auction.car.category || "",
     });
+    setShowApprovalModal(true);
+  };
 
-    // Rejection form state
-    const [rejectionReason, setRejectionReason] = useState("");
+  const handleReject = (auction: PendingAuction) => {
+    setSelectedAuction(auction);
+    setRejectionReason("");
+    setShowRejectionModal(true);
+  };
 
-    useEffect(() => {
-        fetchPendingAuctions();
-    }, []);
+  const submitApproval = async () => {
+    if (!selectedAuction) return;
 
-    useEffect(() => {
-        filterAuctions();
-    }, [pendingAuctions, statusFilter, searchTerm]);
+    if (!approvalData.category) {
+      toast.error("يرجى اختيار تصنيف السيارة");
+      return;
+    }
 
-    const fetchPendingAuctions = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get("/api/admin/auctions/pending");
-            if (response.data.status === "success") {
-                setPendingAuctions(response.data.data || []);
-            }
-        } catch (error) {
-            console.error("Error fetching pending auctions:", error);
-            toast.error("حدث خطأ أثناء جلب المزادات المعلقة");
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+      setProcessingId(selectedAuction.id);
+      const response = await api.post(
+        `/api/admin/auctions/${selectedAuction.id}/approve`,
+        approvalData
+      );
 
-    const filterAuctions = () => {
-        let filtered = pendingAuctions;
+      if (isOk(response.data)) {
+        toast.success("تم الموافقة على المزاد بنجاح");
+        setShowApprovalModal(false);
+        setSelectedAuction(null);
+        await fetchPendingAuctions();
+      } else {
+        toast.error(response.data?.message || "حدث خطأ أثناء الموافقة على المزاد");
+      }
+    } catch (error: any) {
+      console.error("Error approving auction:", error);
+      toast.error(error.response?.data?.message || "حدث خطأ أثناء الموافقة على المزاد");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
-        if (statusFilter !== "all") {
-            filtered = filtered.filter(
-                (auction) => auction.status === statusFilter
-            );
-        }
+  const submitRejection = async () => {
+    if (!selectedAuction || !rejectionReason.trim()) {
+      toast.error("يرجى إدخال سبب الرفض");
+      return;
+    }
 
-        if (searchTerm) {
-            filtered = filtered.filter(
-                (auction) =>
-                    auction.car.make
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    auction.car.model
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    auction.car.vin
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase())
-            );
-        }
+    try {
+      setProcessingId(selectedAuction.id);
+      const response = await api.post(`/api/admin/auctions/${selectedAuction.id}/reject`, {
+        reason: rejectionReason,
+      });
 
-        setFilteredAuctions(filtered);
-    };
+      if (isOk(response.data)) {
+        toast.success("تم رفض المزاد");
+        setShowRejectionModal(false);
+        setSelectedAuction(null);
+        await fetchPendingAuctions();
+      } else {
+        toast.error(response.data?.message || "حدث خطأ أثناء رفض المزاد");
+      }
+    } catch (error: any) {
+      console.error("Error rejecting auction:", error);
+      toast.error(error.response?.data?.message || "حدث خطأ أثناء رفض المزاد");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
-    const handleApprove = async (auction: PendingAuction) => {
-        setSelectedAuction(auction);
-        setApprovalData({
-            opening_price: auction.starting_bid.toString(),
-            auction_type: "silent_instant",
-            approved_for_live: false,
-            category: auction.car.category || "",
-        });
-        setShowApprovalModal(true);
-    };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("ar-SA", { style: "currency", currency: "SAR" }).format(price ?? 0);
 
-    const handleReject = async (auction: PendingAuction) => {
-        setSelectedAuction(auction);
-        setRejectionReason("");
-        setShowRejectionModal(true);
-    };
+  const formatDate = (dateString: string) =>
+    new Intl.DateTimeFormat("ar-SA", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(dateString));
 
-    const submitApproval = async () => {
-        if (!selectedAuction) return;
+  const getOwnerName = (auction: PendingAuction) => {
+    if (auction.car.dealer?.user) {
+      const user = auction.car.dealer.user;
+      return `${user.first_name} ${user.last_name}`;
+    }
+    if (auction.car.user) {
+      const user = auction.car.user;
+      return `${user.first_name} ${user.last_name}`;
+    }
+    return "غير محدد";
+  };
 
-        // Validate category is selected
-        if (!approvalData.category) {
-            toast.error("يرجى اختيار تصنيف السيارة");
-            return;
-        }
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "pending_approval":
+        return "في انتظار الموافقة";
+      case "approved":
+        return "موافق عليه";
+      case "rejected":
+        return "مرفوض";
+      default:
+        return status || "غير معروف";
+    }
+  };
 
-        try {
-            setProcessingId(selectedAuction.id);
-            const response = await api.post(
-                `/api/admin/auctions/${selectedAuction.id}/approve`,
-                approvalData
-            );
+  // ✅ Dark mode fix: add dark: colors (was missing previously)
+  const statusPillClass = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "bg-green-500/15 text-green-700 border-green-500/25 dark:text-green-300";
+      case "rejected":
+        return "bg-red-500/15 text-red-700 border-red-500/25 dark:text-red-300";
+      default:
+        return "bg-amber-500/15 text-amber-800 border-amber-500/25 dark:text-amber-300";
+    }
+  };
 
-            if (response.data.status === "success") {
-                toast.success("تم الموافقة على المزاد بنجاح");
-                setShowApprovalModal(false);
-                setSelectedAuction(null);
-                fetchPendingAuctions();
-            }
-        } catch (error: any) {
-            console.error("Error approving auction:", error);
-            toast.error(
-                error.response?.data?.message ||
-                    "حدث خطأ أثناء الموافقة على المزاد"
-            );
-        } finally {
-            setProcessingId(null);
-        }
-    };
+  // ============ Shared UI Classes (RTL + Dark) ============
+  // 👇 أهم تعديل: ما فيش ولا bg-white / text-gray-* ثابتين
+  // كله مبني على tokens: bg-card/bg-background/text-foreground/border-border + dark variants لما نستخدم ألوان “ثابتة”
+  const card = "rounded-2xl border border-border bg-card shadow-sm overflow-hidden";
 
-    const submitRejection = async () => {
-        if (!selectedAuction || !rejectionReason.trim()) {
-            toast.error("يرجى إدخال سبب الرفض");
-            return;
-        }
+  const input =
+    "w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground " +
+    "placeholder:text-muted-foreground/80 focus-visible:outline-none focus-visible:ring-2 " +
+    "focus-visible:ring-primary/40 focus-visible:ring-offset-2 ring-offset-background";
 
-        try {
-            setProcessingId(selectedAuction.id);
-            const response = await api.post(
-                `/api/admin/auctions/${selectedAuction.id}/reject`,
-                {
-                    reason: rejectionReason,
-                }
-            );
+  const label = "block text-sm font-medium text-foreground mb-1";
+  const muted = "text-muted-foreground";
 
-            if (response.data.status === "success") {
-                toast.success("تم رفض المزاد");
-                setShowRejectionModal(false);
-                setSelectedAuction(null);
-                fetchPendingAuctions();
-            }
-        } catch (error: any) {
-            console.error("Error rejecting auction:", error);
-            toast.error(
-                error.response?.data?.message || "حدث خطأ أثناء رفض المزاد"
-            );
-        } finally {
-            setProcessingId(null);
-        }
-    };
+  const iconBox =
+    "inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/15";
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat("ar-SA", {
-            style: "currency",
-            currency: "SAR",
-        }).format(price);
-    };
+  const btnBase =
+    "inline-flex items-center justify-center flex-row-reverse gap-2 rounded-xl px-4 py-2.5 " +
+    "transition disabled:opacity-60 disabled:cursor-not-allowed";
 
-    const formatDate = (dateString: string) => {
-        return new Intl.DateTimeFormat("ar-SA", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(dateString));
-    };
+  const btnGhost =
+    `${btnBase} bg-muted/30 hover:bg-muted/40 border border-border text-foreground`;
 
-    const getOwnerName = (auction: PendingAuction) => {
-        if (auction.car.dealer?.user) {
-            const user = auction.car.dealer.user;
-            return `${user.first_name} ${user.last_name}`;
-        } else if (auction.car.user) {
-            const user = auction.car.user;
-            return `${user.first_name} ${user.last_name}`;
-        }
-        return "غير محدد";
-    };
+  const btnSuccess =
+    `${btnBase} bg-green-600 text-white hover:bg-green-700`;
 
+  const btnDanger =
+    `${btnBase} bg-red-600 text-white hover:bg-red-700`;
 
+  const badgeBase =
+    "inline-flex items-center flex-row-reverse gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border";
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                        <AlertTriangle className="h-6 w-6 text-yellow-500 ml-2" />
-                        المزادات المعلقة للموافقة
-                    </h2>
-                    <div className="text-sm text-gray-500">
-                        المجموع: {filteredAuctions.length}
-                    </div>
-                </div>
-
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            البحث
-                        </label>
-                        <div className="relative">
-                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="ابحث بالماركة أو الموديل أو رقم التسجيل..."
-                                className="w-full pr-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            الحالة
-                        </label>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="all">جميع الحالات</option>
-                            <option value="pending_approval">
-                                في انتظار الموافقة
-                            </option>
-                            <option value="approved">موافق عليه</option>
-                            <option value="rejected">مرفوض</option>
-                        </select>
-                    </div>
-
-                    <div className="flex items-end">
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
-                        >
-                            <Filter className="h-4 w-4 ml-2" />
-                            تحديث
-                        </button>
-                    </div>
-                </div>
+  // ========= Modal (Dark + RTL) =========
+  const Modal = ({
+    title,
+    subtitle,
+    children,
+    onClose,
+  }: {
+    title: string;
+    subtitle?: string;
+    children: React.ReactNode;
+    onClose: () => void;
+  }) => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" dir="rtl" lang="ar">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden="true" />
+      <div
+        className="relative w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="p-5 md:p-6 border-b border-border">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+              {subtitle && <p className={`mt-1 text-sm ${muted}`}>{subtitle}</p>}
             </div>
 
-            {/* Auctions List */}
-            {filteredAuctions.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-md p-6 text-center">
-                    <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        لا توجد مزادات معلقة
-                    </h3>
-                    <p className="text-gray-500">
-                        لا توجد مزادات تحتاج إلى موافقة حالياً
-                    </p>
-                </div>
-            ) : (
-                <div className="grid gap-6">
-                    {filteredAuctions.map((auction) => (
-                        <div
-                            key={auction.id}
-                            className="bg-white rounded-lg shadow-md border-r-4 border-r-yellow-400 p-6"
-                        >
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Car Details */}
-                                <div className="lg:col-span-2">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div>
-                                            <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                                                <Car className="h-5 w-5 text-blue-500 ml-2" />
-                                                {auction.car.make}{" "}
-                                                {auction.car.model}{" "}
-                                                {auction.car.year}
-                                            </h3>
-                                            <p className="text-gray-600">
-                                                رقم التسجيل: {auction.car.vin}
-                                            </p>
-                                            {auction.car.plate_number && (
-                                                <p className="text-gray-600">
-                                                    رقم اللوحة:{" "}
-                                                    {auction.car.plate_number}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            <Clock className="h-3 w-3 ml-1" />
-                                            في انتظار الموافقة
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <span className="text-gray-500">
-                                                الحالة:
-                                            </span>{" "}
-                                            <span className="font-medium">
-                                                {auction.car.condition}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">
-                                                ناقل الحركة:
-                                            </span>{" "}
-                                            <span className="font-medium">
-                                                {auction.car.transmission}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">
-                                                العداد:
-                                            </span>{" "}
-                                            <span className="font-medium">
-                                                {auction.car.odometer?.toLocaleString()}{" "}
-                                                كم
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-500">
-                                                التصنيف:
-                                            </span>{" "}
-                                            <span className="font-medium">
-                                                {auction.car.category ||
-                                                    "غير محدد"}
-                                            </span>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <span className="text-gray-500">
-                                                المالك:
-                                            </span>{" "}
-                                            <span className="font-medium">
-                                                {getOwnerName(auction)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Auction Info & Actions */}
-                                <div className="border-r pr-6">
-                                    <div className="space-y-3 mb-6">
-                                        <div className="flex items-center">
-                                            <DollarSign className="h-4 w-4 text-green-500 ml-2" />
-                                            <div>
-                                                <div className="text-sm text-gray-500">
-                                                    سعر البداية المقترح
-                                                </div>
-                                                <div className="font-semibold text-green-600">
-                                                    {formatPrice(
-                                                        auction.starting_bid
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center">
-                                            <Calendar className="h-4 w-4 text-blue-500 ml-2" />
-                                            <div>
-                                                <div className="text-sm text-gray-500">
-                                                    تاريخ الطلب
-                                                </div>
-                                                <div className="text-sm">
-                                                    {formatDate(
-                                                        auction.created_at
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() =>
-                                                handleApprove(auction)
-                                            }
-                                            disabled={
-                                                processingId === auction.id
-                                            }
-                                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                                        >
-                                            <CheckCircle className="h-4 w-4" />
-                                            موافقة
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleReject(auction)
-                                            }
-                                            disabled={
-                                                processingId === auction.id
-                                            }
-                                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                                        >
-                                            <XCircle className="h-4 w-4" />
-                                            رفض
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Approval Modal */}
-            {showApprovalModal && selectedAuction && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full">
-                        <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                موافقة على المزاد
-                            </h3>
-                            <p className="text-gray-600 mb-6">
-                                {selectedAuction.car.make}{" "}
-                                {selectedAuction.car.model}{" "}
-                                {selectedAuction.car.year}
-                            </p>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        سعر الافتتاح
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={approvalData.opening_price}
-                                        onChange={(e) =>
-                                            setApprovalData({
-                                                ...approvalData,
-                                                opening_price: e.target.value,
-                                            })
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="سعر الافتتاح"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        نوع المزاد
-                                    </label>
-                                    <select
-                                        value={approvalData.auction_type}
-                                        onChange={(e) =>
-                                            setApprovalData({
-                                                ...approvalData,
-                                                auction_type: e.target.value,
-                                            })
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    >
-                                        <option value="silent_instant">
-                                            مزاد صامت فوري
-                                        </option>
-                                        <option value="live_instant">
-                                            مزاد فوري مباشر
-                                        </option>
-                                        <option value="live">مزاد مباشر</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        تصنيف السيارة
-                                    </label>
-                                    <select
-                                        value={approvalData.category}
-                                        onChange={(e) =>
-                                            setApprovalData({
-                                                ...approvalData,
-                                                category: e.target.value,
-                                            })
-                                        }
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        required
-                                    >
-                                        <option value="">
-                                            -- اختر تصنيف السيارة --
-                                        </option>
-                                        <option value="luxury">فاخرة</option>
-                                        <option value="truck">شاحنة</option>
-                                        <option value="bus">حافلة</option>
-                                        <option value="caravan">كارافان</option>
-                                        <option value="government">
-                                            حكومية
-                                        </option>
-                                        <option value="company">شركة</option>
-                                        <option value="auction">مزاد</option>
-                                        <option value="classic">
-                                            كلاسيكية
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="approved_for_live"
-                                        checked={approvalData.approved_for_live}
-                                        onChange={(e) =>
-                                            setApprovalData({
-                                                ...approvalData,
-                                                approved_for_live:
-                                                    e.target.checked,
-                                            })
-                                        }
-                                        className="ml-2"
-                                    />
-                                    <label
-                                        htmlFor="approved_for_live"
-                                        className="text-sm text-gray-700"
-                                    >
-                                        موافق للمزاد المباشر
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={submitApproval}
-                                    disabled={
-                                        processingId === selectedAuction.id
-                                    }
-                                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2"
-                                >
-                                    {processingId === selectedAuction.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <CheckCircle className="h-4 w-4" />
-                                    )}
-                                    موافقة
-                                </button>
-                                <button
-                                    onClick={() => setShowApprovalModal(false)}
-                                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg"
-                                >
-                                    إلغاء
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Rejection Modal */}
-            {showRejectionModal && selectedAuction && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full">
-                        <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                رفض المزاد
-                            </h3>
-                            <p className="text-gray-600 mb-6">
-                                {selectedAuction.car.make}{" "}
-                                {selectedAuction.car.model}{" "}
-                                {selectedAuction.car.year}
-                            </p>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    سبب الرفض
-                                </label>
-                                <textarea
-                                    value={rejectionReason}
-                                    onChange={(e) =>
-                                        setRejectionReason(e.target.value)
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    rows={4}
-                                    placeholder="يرجى إدخال سبب رفض المزاد..."
-                                />
-                            </div>
-
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={submitRejection}
-                                    disabled={
-                                        processingId === selectedAuction.id
-                                    }
-                                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2"
-                                >
-                                    {processingId === selectedAuction.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <XCircle className="h-4 w-4" />
-                                    )}
-                                    رفض المزاد
-                                </button>
-                                <button
-                                    onClick={() => setShowRejectionModal(false)}
-                                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg"
-                                >
-                                    إلغاء
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-border bg-muted/30 hover:bg-muted/40 px-3 py-1.5 text-sm text-foreground transition"
+            >
+              إغلاق
+            </button>
+          </div>
         </div>
-    );
+
+        <div className="p-5 md:p-6">{children}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div dir="rtl" lang="ar" className="space-y-6 text-right">
+      {/* Header + Filters */}
+      <div className={card}>
+        <div className="p-5 md:p-6 border-b border-border">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-3 flex-row-reverse">
+              <span className={iconBox}>
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">
+                  المزادات المعلقة للموافقة
+                </h2>
+                <p className={`text-sm ${muted}`}>
+                  المجموع:{" "}
+                  <span className="font-semibold text-foreground">{filteredAuctions.length}</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={fetchPendingAuctions}
+              disabled={loading}
+              className={`${btnGhost} w-full md:w-auto`}
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {loading ? "جاري التحديث..." : "تحديث"}
+            </button>
+          </div>
+        </div>
+
+        <div className="p-5 md:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={label}>البحث</label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="ابحث بالماركة أو الموديل أو VIN أو اللوحة..."
+                  className={`${input} pr-10`}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={label}>الحالة</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={input}
+              >
+                <option value="all">جميع الحالات</option>
+                <option value="pending_approval">في انتظار الموافقة</option>
+                <option value="approved">موافق عليه</option>
+                <option value="rejected">مرفوض</option>
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                }}
+                className={`${btnGhost} w-full`}
+              >
+                <Filter className="h-4 w-4" />
+                إعادة تعيين الفلاتر
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className={`${card} p-8`}>
+          <div className="flex items-center justify-center gap-3 flex-row-reverse text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>جاري تحميل المزادات...</span>
+          </div>
+        </div>
+      ) : filteredAuctions.length === 0 ? (
+        <div className={`${card} p-8 text-center`}>
+          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">لا توجد مزادات مطابقة</h3>
+          <p className={muted}>لا توجد مزادات تحتاج إلى موافقة حالياً</p>
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {filteredAuctions.map((auction) => (
+            <div key={auction.id} className={card}>
+              {/* Accent strip */}
+              <div className="h-1.5 w-full bg-amber-500/70" />
+
+              <div className="p-5 md:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Car Details */}
+                  <div className="lg:col-span-2">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                      <div className="min-w-0">
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground inline-flex items-center flex-row-reverse gap-2">
+                          <Car className="h-5 w-5 text-primary" />
+                          <span className="truncate">
+                            {auction.car.make} {auction.car.model} {auction.car.year}
+                          </span>
+                        </h3>
+
+                        <p className={`mt-1 text-sm ${muted}`}>
+                          <span className="font-medium">VIN:</span>{" "}
+                          <span dir="ltr" className="inline-block text-left">
+                            {auction.car.vin}
+                          </span>
+                        </p>
+
+                        {!!auction.car.plate_number && (
+                          <p className={`mt-1 text-sm ${muted}`}>
+                            <span className="font-medium">رقم اللوحة:</span>{" "}
+                            <span dir="ltr" className="inline-block text-left">
+                              {auction.car.plate_number}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      <span className={`${badgeBase} ${statusPillClass(auction.status)}`}>
+                        <Clock className="h-3.5 w-3.5" />
+                        {statusLabel(auction.status)}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-xl border border-border bg-muted/20 p-3">
+                        <div className={muted}>الحالة</div>
+                        <div className="font-semibold text-foreground mt-1">{auction.car.condition}</div>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-muted/20 p-3">
+                        <div className={muted}>ناقل الحركة</div>
+                        <div className="font-semibold text-foreground mt-1">{auction.car.transmission}</div>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-muted/20 p-3">
+                        <div className={muted}>العداد</div>
+                        <div className="font-semibold text-foreground mt-1">
+                          {Number(auction.car.odometer || 0).toLocaleString("ar-SA")} كم
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-muted/20 p-3">
+                        <div className={muted}>التصنيف</div>
+                        <div className="font-semibold text-foreground mt-1">
+                          {auction.car.category || "غير محدد"}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border bg-muted/20 p-3 sm:col-span-2">
+                        <div className={muted}>المالك</div>
+                        <div className="font-semibold text-foreground mt-1">{getOwnerName(auction)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Auction Info & Actions */}
+                  <div className="lg:border-r lg:border-border lg:pr-6">
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-start gap-3 flex-row-reverse">
+                        <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 text-green-700 border border-green-500/25 dark:text-green-300">
+                          <DollarSign className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <div className={`text-sm ${muted}`}>سعر البداية المقترح</div>
+                          <div className="font-semibold text-green-700 dark:text-green-300 mt-1">
+                            {formatPrice(auction.starting_bid)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 flex-row-reverse">
+                        <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15">
+                          <Calendar className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <div className={`text-sm ${muted}`}>تاريخ الطلب</div>
+                          <div className="text-sm text-foreground mt-1">{formatDate(auction.created_at)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(auction)}
+                        disabled={processingId === auction.id}
+                        className={`${btnSuccess} flex-1`}
+                      >
+                        {processingId === auction.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
+                        موافقة
+                      </button>
+
+                      <button
+                        onClick={() => handleReject(auction)}
+                        disabled={processingId === auction.id}
+                        className={`${btnDanger} flex-1`}
+                      >
+                        {processingId === auction.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <XCircle className="h-4 w-4" />
+                        )}
+                        رفض
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Approval Modal */}
+      {showApprovalModal && selectedAuction && (
+        <Modal
+          title="موافقة على المزاد"
+          subtitle={`${selectedAuction.car.make} ${selectedAuction.car.model} ${selectedAuction.car.year}`}
+          onClose={() => setShowApprovalModal(false)}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className={label}>سعر الافتتاح</label>
+              <input
+                type="number"
+                value={approvalData.opening_price}
+                onChange={(e) => setApprovalData({ ...approvalData, opening_price: e.target.value })}
+                className={input}
+                placeholder="سعر الافتتاح"
+              />
+            </div>
+
+            <div>
+              <label className={label}>نوع المزاد</label>
+              <select
+                value={approvalData.auction_type}
+                onChange={(e) => setApprovalData({ ...approvalData, auction_type: e.target.value })}
+                className={input}
+              >
+                <option value="silent_instant">مزاد صامت فوري</option>
+                <option value="live_instant">مزاد فوري مباشر</option>
+                <option value="live">مزاد مباشر</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={label}>تصنيف السيارة</label>
+              <select
+                value={approvalData.category}
+                onChange={(e) => setApprovalData({ ...approvalData, category: e.target.value })}
+                className={input}
+                required
+              >
+                <option value="">-- اختر تصنيف السيارة --</option>
+                <option value="luxury">فاخرة</option>
+                <option value="truck">شاحنة</option>
+                <option value="bus">حافلة</option>
+                <option value="caravan">كارافان</option>
+                <option value="government">حكومية</option>
+                <option value="company">شركة</option>
+                <option value="auction">مزاد</option>
+                <option value="classic">كلاسيكية</option>
+              </select>
+            </div>
+
+            <label className="inline-flex items-center flex-row-reverse gap-2 rounded-xl border border-border bg-muted/20 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={approvalData.approved_for_live}
+                onChange={(e) => setApprovalData({ ...approvalData, approved_for_live: e.target.checked })}
+                className="h-4 w-4"
+              />
+              <span className="text-sm text-foreground">موافق للمزاد المباشر</span>
+            </label>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={submitApproval}
+                disabled={processingId === selectedAuction.id}
+                className={`${btnSuccess} flex-1`}
+              >
+                {processingId === selectedAuction.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                موافقة
+              </button>
+
+              <button onClick={() => setShowApprovalModal(false)} className={`${btnGhost} flex-1`}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Rejection Modal */}
+      {showRejectionModal && selectedAuction && (
+        <Modal
+          title="رفض المزاد"
+          subtitle={`${selectedAuction.car.make} ${selectedAuction.car.model} ${selectedAuction.car.year}`}
+          onClose={() => setShowRejectionModal(false)}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className={label}>سبب الرفض</label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className={`${input} min-h-[120px] resize-y`}
+                rows={4}
+                placeholder="يرجى إدخال سبب رفض المزاد..."
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={submitRejection}
+                disabled={processingId === selectedAuction.id}
+                className={`${btnDanger} flex-1`}
+              >
+                {processingId === selectedAuction.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                رفض المزاد
+              </button>
+
+              <button onClick={() => setShowRejectionModal(false)} className={`${btnGhost} flex-1`}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
 }
