@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import {
   Car,
@@ -83,6 +83,9 @@ type AuctionCardProps = {
 export default function AuctionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
+  // ✅ تحكم واحد يخلي باقي الأقسام "موجودة برمجياً" لكن مخفية من الصفحة
+  const SHOW_NON_MAIN_MARKETS = false;
+
   const auctionsMain: Auction[] = [
     {
       currentPage: "live_auction",
@@ -141,6 +144,7 @@ export default function AuctionsPage() {
     },
   ];
 
+  // ✅ باقي الأسواق (موجودة برمجياً)
   const auctionsCar: Auction[] = [
     {
       name: "سوق السيارات الفارهة",
@@ -471,9 +475,7 @@ export default function AuctionsPage() {
 
       <div className="flex items-center justify-center gap-3 mb-2">
         {Icon && <Icon className="w-7 h-7 text-primary" />}
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-          {title}
-        </h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{title}</h2>
       </div>
 
       {subtitle && subtitlePosition === "below" && (
@@ -498,8 +500,6 @@ export default function AuctionsPage() {
           <div
             className={`relative overflow-hidden rounded-2xl border ${auction.borderColor} ${auction.bgColor} p-5 transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:border-primary h-full`}
           >
-            {/* ✅ تم حذف بادج "مميز" بالكامل */}
-
             {/* الإحصائيات */}
             <div className="absolute top-3 right-3 flex gap-2">
               {auction.stats.users && (
@@ -524,15 +524,11 @@ export default function AuctionsPage() {
 
             {/* المحتوى الرئيسي */}
             <div className="mt-8 text-center">
-              <div
-                className={`inline-flex rounded-2xl bg-secondary p-3 shadow-lg mb-3 ${auction.color}`}
-              >
+              <div className={`inline-flex rounded-2xl bg-secondary p-3 shadow-lg mb-3 ${auction.color}`}>
                 <Icon size={28} />
               </div>
 
-              <h3
-                className={`text-lg md:text-xl font-bold ${auction.color} mb-2 line-clamp-2`}
-              >
+              <h3 className={`text-lg md:text-xl font-bold ${auction.color} mb-2 line-clamp-2`}>
                 {auction.name}
               </h3>
 
@@ -540,7 +536,6 @@ export default function AuctionsPage() {
                 {auction.description}
               </p>
 
-              {/* زر الدخول */}
               <div className="mt-auto">
                 <span className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-primary/90">
                   ابدأ المزايدة
@@ -549,13 +544,22 @@ export default function AuctionsPage() {
               </div>
             </div>
 
-            {/* تأثير Hover */}
             <div className="absolute inset-0 rounded-2xl bg-foreground/0 transition-all duration-500 group-hover:bg-foreground/5" />
           </div>
         </LoadingLink>
       </motion.div>
     );
   };
+
+  // ✅ فلترة "الأسواق الرئيسية" فقط حسب البحث
+  const filteredMain = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return auctionsMain;
+    return auctionsMain.filter((a) => {
+      const hay = `${a.name} ${a.description}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [searchTerm, auctionsMain]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -580,7 +584,7 @@ export default function AuctionsPage() {
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <input
                 type="text"
-                placeholder="ابحث في الأسواق..."
+                placeholder="ابحث في الأسواق الرئيسية..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pr-10 pl-4 py-3 bg-card border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
@@ -599,70 +603,68 @@ export default function AuctionsPage() {
             subtitle="أسواق تلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي؛ المنافسة تعتمد على العرض والطلب الطبيعي."
             icon={Zap}
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {auctionsMain.map((auction, index) => (
-              <AuctionCard key={auction.slug} auction={auction} index={index} />
-            ))}
-          </div>
 
-          <Divider />
+          {filteredMain.length === 0 ? (
+            <div className="text-center py-14 text-muted-foreground">
+              لا توجد نتائج مطابقة للبحث.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {filteredMain.map((auction, index) => (
+                <AuctionCard key={auction.slug} auction={auction} index={index} />
+              ))}
+            </div>
+          )}
 
-          <SectionTitle title="أسواق السيارات المتخصص" icon={Car} />
+          {/* ✅ باقي الأقسام مخفية من الصفحة لكن موجودة برمجياً */}
+          {SHOW_NON_MAIN_MARKETS && (
+            <>
+              <Divider />
 
-          {/* ✅ المطلوب: 3 فوق و3 تحت (لأن عددها 6) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {auctionsCar.map((auction, index) => (
-              <AuctionCard key={auction.slug} auction={auction} index={index} />
-            ))}
-          </div>
+              <SectionTitle title="أسواق السيارات المتخصص" icon={Car} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {auctionsCar.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
 
-          <Divider />
+              <Divider />
 
-          <SectionTitle
-            title="سوق نوعي"
-            subtitle="منتجات ومعدات متخصصة بجودة عالية"
-            icon={TrendingUp}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {auctionsQuality.map((auction, index) => (
-              <AuctionCard key={auction.slug} auction={auction} index={index} />
-            ))}
-          </div>
+              <SectionTitle title="سوق نوعي" subtitle="منتجات ومعدات متخصصة بجودة عالية" icon={TrendingUp} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsQuality.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
 
-          <Divider />
+              <Divider />
 
-          <SectionTitle
-            title="أسواق تخصصية"
-            subtitle="مزادات فريدة لمنتجات استثنائية"
-            icon={Crown}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {auctionsSpecial.map((auction, index) => (
-              <AuctionCard key={auction.slug} auction={auction} index={index} />
-            ))}
-          </div>
+              <SectionTitle title="أسواق تخصصية" subtitle="مزادات فريدة لمنتجات استثنائية" icon={Crown} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsSpecial.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
 
-          <Divider />
+              <Divider />
 
-          <SectionTitle
-            title="أسواق عامة"
-            subtitle="منتجات متنوعة للاستخدام اليومي"
-            icon={ShoppingBag}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {auctionsGeneral.map((auction, index) => (
-              <AuctionCard key={auction.slug} auction={auction} index={index} />
-            ))}
-          </div>
+              <SectionTitle title="أسواق عامة" subtitle="منتجات متنوعة للاستخدام اليومي" icon={ShoppingBag} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsGeneral.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
 
-          <Divider />
+              <Divider />
 
-          <SectionTitle title="السوق الكبير" subtitle="المنصة الشاملة لكل ما تحتاجه" icon={Store} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {auctionsBig.map((auction, index) => (
-              <AuctionCard key={auction.slug} auction={auction} index={index} />
-            ))}
-          </div>
+              <SectionTitle title="السوق الكبير" subtitle="المنصة الشاملة لكل ما تحتاجه" icon={Store} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsBig.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
+            </>
+          )}
         </>
       </div>
     </main>
