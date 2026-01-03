@@ -1,52 +1,37 @@
-/**
- * 📝 الصفحة: الحراج المباشر (Live Market)
- * 📁 المسار: Frontend/app/auctions/auctions-1main/live-market/page.tsx
- *
- * ✅ الوظيفة:
- * - تعرض البث المباشر للمزاد التفاعلي
- * - تسحب السيارات من قاعدة البيانات: items حيث type = 'live'
- * - تُظهر السيارة الحالية، معلوماتها، وعدد المزايدات والسعر الحالي
- * - تتيح تقديم مزايدة مباشرة من الصفحة
- */
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import {
   ChevronRight,
   Clock,
-  BellOff,
-  Timer,
-  Video,
   Radio,
-  XCircle,
   CircleAlert,
+  AlertTriangle,
 } from "lucide-react";
-import PlateSearch from "./component/PlateSearch";
 import BidTimer from "@/components/BidTimer";
 import BidForm from "@/components/BidForm";
 import LiveBidding from "@/components/LiveBidding";
 import BidNotifications from "@/components/BidNotifications";
 import { formatCurrency } from "@/utils/formatCurrency";
-// استيراد المكونات الجديدة
-import BidderChat from "@/components/social/BidderChat";
-import LiveAuctionPulse from "@/components/social/LiveAuctionPulse";
 import LiveYouTubeEmbed from "@/components/LiveYouTubeEmbed";
 
-import api from '@/lib/axios';
-import toast from 'react-hot-toast';
-import { useAuth } from '@/hooks/useAuth';
+import api from "@/lib/axios";
+import toast from "react-hot-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import Countdown from '@/components/Countdown';
-import Pusher from 'pusher-js';
+import Pusher from "pusher-js";
 
-async function isWithinAllowedTime(page: string): Promise<boolean> {
-  const response = await api.get(`api/check-time?page=${page}`);
-  return response.data.allowed;
-}
+// -------- helpers --------
+const toNumber = (v: any): number => {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return v;
+  const n = Number(String(v).replace(/,/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
 
-// دالة للحصول على نوع المزاد الحالي
+const ensureArray = <T,>(v: any): T[] => (Array.isArray(v) ? v : []);
+
 function getCurrentAuctionType(time: Date = new Date()): {
   label: string;
   isLive: boolean;
@@ -62,222 +47,169 @@ function getCurrentAuctionType(time: Date = new Date()): {
   }
 }
 
+// -------- types (خفيفة) --------
+type CarObj = {
+  id?: number;
+  make?: string;
+  model?: string;
+  year?: number | string;
+  user_id?: number;
+  odometer?: number | string;
+  condition?: string;
+  vin?: string;
+  dealer?: { user_id?: number } | null;
+};
+
+type LiveAuction = {
+  id: number;
+  car_id: number;
+  car?: CarObj; // <- قد لا تأتي من الـ API
+  min_price?: string | number;
+  max_price?: string | number;
+  current_bid?: string | number;
+  starting_bid?: string | number;
+  opening_price?: string | number; // بعض APIs
+  status?: string;
+  viewers?: number;
+  bids?: any[];
+};
+
 interface LiveMarketPageContentProps {
   sessionId?: string;
 }
 
 export default function LiveMarketPageContent({ sessionId }: LiveMarketPageContentProps) {
-  const [isAllowed, setIsAllowed] = useState(true);
+  const [isAllowed] = useState(true); // جلسات لايف عامة
   const [isOwner, setIsOwner] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user, isLoggedIn } = useAuth();
+
+  const { user } = useAuth();
   const router = useLoadingRouter();
-  
-  const [marketCars, setMarketCars] = useState([]);
-  const [currentCar, setCurrentCar] = useState(null);
-  const [marketCarsCompleted, setMarketCarsCompleted] = useState([]);
+
+  const [marketCars, setMarketCars] = useState<LiveAuction[]>([]);
+  const [currentCar, setCurrentCar] = useState<LiveAuction | null>(null);
+  const [marketCarsCompleted, setMarketCarsCompleted] = useState<LiveAuction[]>([]);
+
   const [showBid, setShowBid] = useState(false);
-  const [bid, setBid] = useState("");
   const [status, setStatus] = useState("");
   const [plate, setPlate] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+
+  const [currentTime] = useState(new Date());
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 
-  // تحديث الوقت كل ثانية
-  // useEffect(() => {
-  //   const timer = setInterval(() => {
-  //     setCurrentTime(new Date());
-  //   }, 1000);
+  const fetchAuctions = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  //   return () => clearInterval(timer);
-  // }, []);
-
-  // Removed client-side authentication redirect - now handled by middleware
-  // Public page: authentication only required for bidding actions
-
-  // تحديث الوقت كل ثانية
-  // useEffect(() => {
-  //   const timer = setInterval(() => {
-  //     setCurrentTime(new Date());
-  //   }, 1000);
-
-  //   return () => clearInterval(timer);
-  // }, []);
-
-  // Fetch auction data - Public page, guests can view
-  useEffect(() => {
-    async function fetchAuctions() {
-      // Public page - authentication only required for bidding actions
-      try {
-        setIsAllowed(true); // Live sessions are publicly viewable
-        
-        let response;
-        if (sessionId) {
-          response = await api.get(`/api/sessions/live/${sessionId}`);
-          console.log('response',response);
-          
-          if (response.data.data) {
-
-            const carsData = response.data.data;
-            console.log('cars data',carsData);
-              let current_car = carsData.current_live_car;
-              let liveAuctions = carsData.pending_live_auctions;
-              let completedAuctions = carsData.completed_live_auctions;
-              
-              if (current_car && current_car.car) {
-                let car_user_id = current_car.car.user_id;
-                let current_user_id = user?.id || null;
-                let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
-                
-                if ((current_user_id) && (current_user_id == car_user_id || dealer_user_id == current_user_id)) {
-                  setIsOwner(true);
-                } else {
-                  setIsOwner(false);
-                }
-              }
-              
-              setMarketCars(liveAuctions);
-              setCurrentCar(current_car);
-              setMarketCarsCompleted(completedAuctions);
-            
-          }
-        } else {
-          response = await api.get("/api/approved-live-auctions");
-          if (response.data.data) {
-            const carsData = response.data.data.data || response.data.data;
-            let current_car = carsData.current_live_car;
-            let liveAuctions = carsData.pending_live_auctions;
-            let completedAuctions = carsData.completed_live_auctions;
-            
-              if (current_car && current_car.car) {
-                let car_user_id = current_car.car.user_id;
-                let current_user_id = user?.id || null;
-                let dealer_user_id = current_car.car.dealer ? current_car.car.dealer.user_id : null;
-              
-              if (current_user_id && (current_user_id == car_user_id || dealer_user_id == current_user_id)) {
-                setIsOwner(true);
-              } else {
-                setIsOwner(false);
-              }
-            }
-            
-            setMarketCars(liveAuctions);
-            setCurrentCar(current_car);
-            setMarketCarsCompleted(completedAuctions);
-          }
-        }
-
-      } catch (error) {
-        console.error("Failed to load auction data", error);
-        setMarketCars([]);
-        setCurrentCar(null);
-        setMarketCarsCompleted([]);
-        setError("Could not connect to the server. Please try again later.");
-      } finally {
-        setLoading(false);
+      let response;
+      if (sessionId) {
+        response = await api.get(`/api/sessions/live/${sessionId}`);
+      } else {
+        response = await api.get("/api/approved-live-auctions");
       }
-    }
-    fetchAuctions();
 
-    // Setup Pusher listener for real-time auction updates
+      // الـ API بتاعك بيرجع: { status: "success", data: {...} }
+      const payload = response?.data?.data;
+
+      const current_live_car: LiveAuction | null = payload?.current_live_car ?? null;
+      const pending_live_auctions: LiveAuction[] = ensureArray<LiveAuction>(payload?.pending_live_auctions);
+      const completed_live_auctions: LiveAuction[] = ensureArray<LiveAuction>(payload?.completed_live_auctions);
+
+      // Owner check (هيشتغل فقط لو car موجود)
+      if (current_live_car?.car) {
+        const car_user_id = current_live_car.car.user_id;
+        const current_user_id = user?.id ?? null;
+        const dealer_user_id = current_live_car.car.dealer?.user_id ?? null;
+
+        if (current_user_id && (current_user_id === car_user_id || current_user_id === dealer_user_id)) {
+          setIsOwner(true);
+        } else {
+          setIsOwner(false);
+        }
+      } else {
+        setIsOwner(false);
+      }
+
+      setMarketCars(pending_live_auctions);
+      setCurrentCar(current_live_car);
+      setMarketCarsCompleted(completed_live_auctions);
+    } catch (e) {
+      console.error("Failed to load auction data", e);
+      setMarketCars([]);
+      setCurrentCar(null);
+      setMarketCarsCompleted([]);
+      setError("Could not connect to the server. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionId, user?.id]);
+
+  useEffect(() => {
+    fetchAuctions();
+  }, [fetchAuctions]);
+
+  // Pusher
+  useEffect(() => {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap2',
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "ap2",
     });
 
-    const channelName = sessionId ? `session.${sessionId}` : 'auction.live';
+    const channelName = sessionId ? `session.${sessionId}` : "auction.live";
     const channel = pusher.subscribe(channelName);
 
-    channel.bind('UpdateSessionEvent', (data: any) => {
-      console.log('Session updated:', data);
-      // Refresh auction data when session is updated
-      fetchAuctions();
-    });
-    channel.bind('CarMovedBetweenAuctionsEvent', (data: any) => {
-      console.log('Car moved to auction:', data);
-      // Refresh auction data when cars are moved
-      fetchAuctions();
-      //toast.success(`تم تحديث قائمة السيارات - تم نقل ${data.car_make} ${data.car_model} إلى المزاد`);
-    });
+    const refresh = () => fetchAuctions();
 
-    // Listen for cars approved for live auction
-    channel.bind('CarApprovedForLiveEvent', (data: any) => {
-      console.log('Car approved for live auction:', data);
-      // Refresh auction data when cars are approved for live
-      fetchAuctions();
+    channel.bind("UpdateSessionEvent", refresh);
+    channel.bind("CarMovedBetweenAuctionsEvent", refresh);
+
+    channel.bind("CarApprovedForLiveEvent", (data: any) => {
+      refresh();
       if (data.approved_for_live) {
         toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
-      }else{
-        toast.custom(<div style={{padding: '16px', borderRadius: '8px',backgroundColor: '#ffffcc'}} className="text-black flex items-center gap-2"> <CircleAlert className="w-4 h-4" /> تم إيقاف المزاد المباشر على {data.car_make} {data.car_model}!</div>,{
-          duration: 5000,
-         
-        });
+      } else {
+        toast.custom(
+          <div
+            style={{ padding: "16px", borderRadius: "8px", backgroundColor: "#ffffcc" }}
+            className="text-black flex items-center gap-2"
+          >
+            <CircleAlert className="w-4 h-4" />
+            تم إيقاف المزاد المباشر على {data.car_make} {data.car_model}!
+          </div>,
+          { duration: 5000 }
+        );
       }
     });
 
-    // Listen for auction status changes
-    channel.bind('AuctionStatusChangedEvent', (data: any) => {
-      console.log('Auction status changed:', data);
-      // Refresh auction data when status changes
-      fetchAuctions();
-      const statusLabels = {
-        'live': 'مباشر',
-        'ended': 'منتهي',
-        'completed': 'مكتمل',
-        'cancelled': 'ملغي',
-        'failed': 'فاشل',
-        'scheduled': 'مجدول'
+    channel.bind("AuctionStatusChangedEvent", (data: any) => {
+      refresh();
+      const labels: Record<string, string> = {
+        live: "مباشر",
+        ended: "منتهي",
+        completed: "مكتمل",
+        cancelled: "ملغي",
+        failed: "فاشل",
+        scheduled: "مجدول",
       };
-      const oldStatusLabel = statusLabels[data.old_status] || data.old_status;
-      const newStatusLabel = statusLabels[data.new_status] || data.new_status;
-      toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${oldStatusLabel} إلى ${newStatusLabel}`);
+      toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${labels[data.old_status] ?? data.old_status} إلى ${labels[data.new_status] ?? data.new_status}`);
     });
 
-    // Listen for live market bid events (excludes the bidder)
-    channel.bind('LiveMarketBidEvent', (data: any) => {
-      // Only show notification if the current user is not the bidder
+    channel.bind("LiveMarketBidEvent", (data: any) => {
       if (user && data.bidder_id !== user.id) {
-        toast.success(`مزايدة جديدة: ${data.car_make} ${data.car_model} - ${data.bid_amount.toLocaleString()} ريال`, {
-          duration: 5000,
-          position: 'top-right',
-        });
-        // Refresh auction data to show updated bid
-        fetchAuctions();
+        toast.success(
+          `مزايدة جديدة: ${data.car_make} ${data.car_model} - ${data.bid_amount.toLocaleString()} ريال`,
+          { duration: 5000, position: "top-right" }
+        );
+        refresh();
       }
     });
 
-    // Note: Only listening on auction.live channel to avoid duplicate notifications
-
-    // Cleanup function
     return () => {
       pusher.unsubscribe(channelName);
       pusher.disconnect();
     };
-  }, [sessionId, user]); // Removed isLoggedIn - page is now publicly accessible
-
-  const submitBid = async () => {
-    try {
-      const res = await fetch("/api/submit-bid", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          item_id: currentCar.id,
-          bid_amount: parseFloat(bid),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setStatus("✅ تمت المزايدة بنجاح");
-        setBid("");
-        setShowBid(false);
-      } else {
-        setStatus(`❌ خطأ: ${data.error}`);
-      }
-    } catch (err) {
-      setStatus("❌ فشل الاتصال بالخادم");
-    }
-  };
+  }, [sessionId, fetchAuctions, user]);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -295,21 +227,26 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
       } else {
         setStatus(`❌ خطأ: ${data.error}`);
       }
-    } catch (err) {
+    } catch {
       setStatus("❌ فشل الاتصال بالخادم");
     } finally {
       setLoading(false);
     }
   };
-  console.log(marketCars);
+
+  const currentBid = toNumber(currentCar?.current_bid);
+  const openingBid = toNumber((currentCar as any)?.opening_price ?? currentCar?.starting_bid ?? 0);
+  const shownPrice = currentBid === 0 ? openingBid : currentBid;
+
   return (
     <div className="min-h-screen bg-background p-4 py-6">
       <div className="max-w-7xl mx-auto">
-        {/* زر العودة منفرد في الجهة اليمنى */}
+        {/* Top Bar */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <BidNotifications />
           </div>
+
           {!sessionId && (
             <LoadingLink
               href="/auctions/auctions-1main"
@@ -321,9 +258,8 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
           )}
         </div>
 
-        {/* Page Header */}
+        {/* Header */}
         <div className="grid grid-cols-12 items-center mb-6 gap-4">
-          {/* شريط المزاد في اليسار */}
           <div className="col-span-3 flex justify-start">
             <div className="bg-card border-r-4 border-secondary rounded-lg shadow-sm px-3 py-1.5 flex items-center justify-between">
               <div className="text-sm font-medium text-foreground ml-2">
@@ -338,429 +274,270 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
             </div>
           </div>
 
-          {/* عنوان الصفحة في الوسط */}
           <div className="col-span-6 text-center">
             <h1 className="text-3xl font-bold text-primary">
-              {sessionId ? 'جلسة المزاد المباشر' : 'الحراج المباشر'}
+              {sessionId ? "جلسة المزاد المباشر" : "الحراج المباشر"}
             </h1>
             <div className="text-sm text-primary/80 mt-1">
-              {sessionId ? 'أهلاً بك في جلسة المزاد' : 'وقت السوق من 4 عصراً إلى 7 مساءً كل يوم'}
+              {sessionId ? "أهلاً بك في جلسة المزاد" : "وقت السوق من 4 عصراً إلى 7 مساءً كل يوم"}
             </div>
           </div>
 
-          {/* مساحة فارغة للتوازن */}
-          <div className="col-span-3"></div>
+          <div className="col-span-3" />
         </div>
 
-        {/* إعادة تصميم التخطيط الرئيسي - تغيير إلى صفين بدلاً من ثلاثة أعمدة */}
-        {!isAllowed && (
-          <div>
-            <p> السوق ليس مفتوح الان سوف يفتح كما موضح في الوقت الأعلى</p>
+        {error && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-300 rounded-xl p-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span>{error}</span>
           </div>
         )}
+
         {isAllowed && (
-          <>
-            {/* <Countdown page="live_auction"/>*/}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-              {/* القسم الأيسر - البث المباشر (مصغر) */}
-              <div className="md:col-span-7 flex flex-col space-y-6">
-                {/* مربع البث المباشر - استخدام مكون LiveYouTubeEmbed مع رابط RTMP بدلاً من ملحق يوتيوب */}
-                <div className="relative w-full pb-[56.25%] bg-black rounded-lg overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full">
-                    <LiveYouTubeEmbed
-                      rtmpUrl="rtmp://a.rtmp.youtube.com/live2"
-                      streamKey="w54k-w336-dmyd-j5b7-dhpq"
-                      width="100%"
-                      height="100%"
-                      title="بث مباشر - الحراج المباشر"
-                      autoplay={true}
-                      muted={false}
-                      showControls={true}
-                      posterImage="/showroom.jpg"
-                    />
-                  </div>
-                  {/* شعار المعلق */}
-                  <div className="absolute top-4 right-4 bg-card bg-opacity-80 rounded-full p-1.5 z-20">
-                    <img
-                      src="/grok auctioneer.jpg"
-                      alt="معلق المزاد"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-secondary"
-                    />
-                  </div>
-                </div>
-                <div className="text-center text-xs text-foreground/50 italic">
-                  (بث مباشر من قاعة المزاد - الحراج المباشر)
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+            {/* Left */}
+            <div className="md:col-span-7 flex flex-col space-y-6">
+              {/* Stream */}
+              <div className="relative w-full pb-[56.25%] bg-black rounded-lg overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full">
+                  <LiveYouTubeEmbed
+                    rtmpUrl="rtmp://a.rtmp.youtube.com/live2"
+                    streamKey="w54k-w336-dmyd-j5b7-dhpq"
+                    width="100%"
+                    height="100%"
+                    title="بث مباشر - الحراج المباشر"
+                    autoplay={true}
+                    muted={false}
+                    showControls={true}
+                    posterImage="/showroom.jpg"
+                  />
                 </div>
 
-                {/* جدول السيارات في جلسة الحراج الحالية */}
-                <div className="bg-card rounded-xl shadow-md p-4">
-                  <h2 className="text-lg font-bold mb-3 text-primary">
-                    سيارات جلسة الحراج الحالية
-                  </h2>
+                <div className="absolute top-4 right-4 bg-card bg-opacity-80 rounded-full p-1.5 z-20">
+                  <img
+                    src="/grok auctioneer.jpg"
+                    alt="معلق المزاد"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-secondary"
+                  />
+                </div>
+              </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border border-border divide-y divide-border">
-                      <thead className="bg-background/50">
-                        <tr>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            #
-                          </th>
+              {/* Current session cars table */}
+              <div className="bg-card rounded-xl shadow-md p-4">
+                <h2 className="text-lg font-bold mb-3 text-primary">سيارات جلسة الحراج الحالية</h2>
 
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            الماركة
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            الموديل
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            السنة
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            أقل سعر
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            أعلى سعر
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            آخر سعر
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            مشاهدة
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-card divide-y divide-border">
-                        {marketCars && marketCars.length > 0 ? (
-                          marketCars.map((car: any, index: number) => (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-border divide-y divide-border">
+                    <thead className="bg-background/50">
+                      <tr>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">#</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الماركة</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الموديل</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">السنة</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أقل سعر</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أعلى سعر</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">آخر سعر</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">مشاهدة</th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="bg-card divide-y divide-border">
+                      {marketCars && marketCars.length > 0 ? (
+                        marketCars.map((auction: LiveAuction, index: number) => {
+                          const make = auction?.car?.make ?? "—";
+                          const model = auction?.car?.model ?? "—";
+                          const year = auction?.car?.year ?? "—";
+
+                          return (
                             <tr
-                              key={car.id}
-                              className={`hover:bg-background ${
-                                currentCar?.id === car.id ? "bg-primary/10" : ""
-                              }`}
+                              key={auction.id}
+                              className={`hover:bg-background ${currentCar?.id === auction.id ? "bg-primary/10" : ""}`}
                             >
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {index + 1}
-                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{index + 1}</td>
 
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
                                 <div className="flex items-center">
-                                  {currentCar?.id === car.id ? (
-                                    <Radio
-                                      color="red"
-                                      className="me-2"
-                                      size={16}
-                                    />
-                                  ) : (
-                                   ""
-                                  )}
-
-                                  {car.car.make}
+                                  {currentCar?.id === auction.id ? <Radio color="red" className="me-2" size={16} /> : null}
+                                  {make}
                                 </div>
                               </td>
+
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{model}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{year}</td>
+
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {car.car.model}
+                                {formatCurrency(toNumber(auction.min_price))}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {car.car.year}
+                                {formatCurrency(toNumber(auction.max_price))}
                               </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {formatCurrency(car.min_price)}{" "}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {formatCurrency(car.max_price)}{" "}
-                              </td>
+
                               <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
-                                {formatCurrency(car.current_bid)}
+                                {formatCurrency(toNumber(auction.current_bid))}
                               </td>
+
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
-                                <LoadingLink
-                                  target="_blank"
-                                  href={`/carDetails/${car.car_id}`}
-                                  className="hover:underline"
-                                >
+                                <LoadingLink target="_blank" href={`/carDetails/${auction.car_id}`} className="hover:underline">
                                   عرض
                                 </LoadingLink>
                               </td>
                             </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={8}
-                              className="px-4 py-4 text-center text-sm text-foreground/50"
-                            >
-                              لا توجد سيارات متاحة حاليًا في الحراج المباشر
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* جدول السيارات في جلسة الحراج الحالية */}
-                <div className="bg-card rounded-xl shadow-md p-4">
-                  <h2 className="text-lg font-bold mb-3 text-primary">
-                    {" "}
-                    سيارات جلسة الحراج الحالية المنتهية
-                  </h2>
-
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border border-border divide-y divide-border">
-                      <thead className="bg-background/50">
+                          );
+                        })
+                      ) : (
                         <tr>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            #
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            الماركة
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            الموديل
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            السنة
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            أقل سعر
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            أعلى سعر
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            آخر سعر
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            مشاهدة
-                          </th>
+                          <td colSpan={8} className="px-4 py-4 text-center text-sm text-foreground/50">
+                            {loading ? "جاري التحميل..." : "لا توجد سيارات متاحة حاليًا في الحراج المباشر"}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-card divide-y divide-border">
-                        {marketCarsCompleted &&
-                        marketCarsCompleted.length > 0 ? (
-                          marketCarsCompleted.map((car: any, index: number) => (
-                            <tr key={car.id} className="hover:bg-background">
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {index + 1}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {car.car.make}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {car.car.model}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {car.car.year}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {formatCurrency(car.min_price)}{" "}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {formatCurrency(car.max_price)}{" "}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
-                                {formatCurrency(car.current_bid)}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
-                                <LoadingLink
-                                  target="_blank"
-                                  href="#"
-                                  className="hover:underline"
-                                >
-                                  عرض
-                                </LoadingLink>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={8}
-                              className="px-4 py-4 text-center text-sm text-foreground/50"
-                            >
-                              لا توجد سيارات مكتملة في الحراج المباشر
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-                {/* إضافة مكون المزايدات المباشرة */}
-                {currentCar && <LiveBidding data={currentCar} />}
-
-                {/* إضافة مكون الدردشة بين المزايدين
-    <BidderChat
-      auctionId={parseInt(currentCar?.id) || 1}
-      onNewQuestion={(message) => console.log('سؤال جديد:', message)}
-    />
-    */}
               </div>
 
-              {/* القسم الأيمن - نبض المزاد والسيارة الحالية */}
-              <div className="md:col-span-5 flex flex-col space-y-4">
-                {/* مؤشر نبض المزاد المباشر
-    <div>
-      <LiveAuctionPulse
-        auctionId={parseInt(currentCar?.id) || 1}
-        initialViewers={87}
-        initialBidders={15}
-        initialInterestLevel={75}
-        priceChangeRate={2.8}
-        className="w-full h-[130px]"
-      />
-    </div>
-    */}
-                {/* معلومات السيارة */}
-                <div className="bg-card p-4 rounded-xl shadow-md">
-                  <h2 className="text-lg font-bold mb-3 border-b pb-2 text-center text-primary">
-                    السيارة الحالية في الحراج
-                  </h2>
-                  {currentCar && currentCar.car ? (
-                    <div>
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-y-2 text-sm">
-                          <div>
-                            <span className="font-semibold">الماركة:</span>{" "}
-                            {currentCar.car.make}
-                          </div>
-                          <div>
-                            <span className="font-semibold">الموديل:</span>{" "}
-                            {currentCar.car.model}
-                          </div>
-                          <div>
-                            <span className="font-semibold">السنة:</span>{" "}
-                            {currentCar.car.year}
-                          </div>
-                          <div>
-                            <span className="font-semibold">العداد:</span>{" "}
-                            {currentCar.car.odometer} كم
-                          </div>
-                          <div>
-                            <span className="font-semibold">الحالة:</span>{" "}
-                            {currentCar.car.condition}
-                          </div>
-                          <div>
-                            <span className="font-semibold">رقم الشاصي:</span>{" "}
-                            {currentCar.car.vin}
-                          </div>
-                        </div>
+              {/* Completed table */}
+              <div className="bg-card rounded-xl shadow-md p-4">
+                <h2 className="text-lg font-bold mb-3 text-primary">سيارات جلسة الحراج الحالية المنتهية</h2>
 
-                        {/* قسم تفاصيل المشاهدين والسعر وتقديم العرض - معاد تنسيقه */}
-                        <div className="mt-3 border rounded-lg bg-background p-3">
-                          {/* معلومات المشاهدين والمزايدين */}
-                          <div className="text-center text-foreground/70 mb-2 text-xs">
-                            <span>مشاهدون: {currentCar.viewers || "0"} | </span>
-                            <span>
-                              مزايدون: {currentCar.bids?.length || "0"}{" "}
-                              (تقريباً)
-                            </span>
-                          </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-border divide-y divide-border">
+                    <thead className="bg-background/50">
+                      <tr>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">#</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الماركة</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الموديل</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">السنة</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أقل سعر</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أعلى سعر</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">آخر سعر</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">مشاهدة</th>
+                      </tr>
+                    </thead>
 
-                          {/* آخر سعر */}
-                          <div className="text-center mb-3">
-                            <h3 className="font-semibold text-base text-primary">
-                              آخر سعر
-                            </h3>
-                            <div className="text-2xl font-bold text-secondary my-2 py-2 rounded-lg border-2 border-border bg-card">
-                              {formatCurrency(
-                                currentCar.current_bid == 0
-                                  ? currentCar.opening_price
-                                  : currentCar.current_bid || 0
-                              )}
-                            </div>
-                          </div>
+                    <tbody className="bg-card divide-y divide-border">
+                      {marketCarsCompleted && marketCarsCompleted.length > 0 ? (
+                        marketCarsCompleted.map((auction: LiveAuction, index: number) => (
+                          <tr key={auction.id} className="hover:bg-background">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{index + 1}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{auction?.car?.make ?? "—"}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{auction?.car?.model ?? "—"}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{auction?.car?.year ?? "—"}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{formatCurrency(toNumber(auction.min_price))}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{formatCurrency(toNumber(auction.max_price))}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">{formatCurrency(toNumber(auction.current_bid))}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
+                              <LoadingLink target="_blank" href={`/carDetails/${auction.car_id}`} className="hover:underline">
+                                عرض
+                              </LoadingLink>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-4 text-center text-sm text-foreground/50">
+                            لا توجد سيارات مكتملة في الحراج المباشر
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-                          {/* زر تقديم العرض */}
-                          {!showBid ? (
-                            <button
-                              hidden={isOwner}
-                              onClick={() => setShowBid(!isOwner)}
-                              className="w-full bg-secondary text-white py-2 rounded-lg hover:bg-secondary/90 font-bold text-xl border-2 border-secondary/80 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
-                              style={{ animation: "pulse 2.5s infinite" }}
-                            >
-                              <span className="flex items-center justify-center">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-5 w-5 mr-1.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                  />
-                                </svg>
-                                قدم عرضك
-                              </span>
-                            </button>
-                          ) : (
-                            <div>
-                              <BidForm
-                                auction_id={parseInt(currentCar.id)}
-                                auction_type={'live'}
-                                bid_amount={parseInt(
-                                  (currentCar.current_bid == 0
-                                    ? currentCar.opening_price
-                                    : currentCar.current_bid || 0
-                                  )
-                                    .toString()
-                                    .replace(/,/g, "")
-                                )}
-                                onSuccess={() => {
-                                  setShowBid(false);
-                                  setStatus("✅ تمت المزايدة بنجاح");
-                                }}
-                              />
-                              {status && (
-                                <p className="text-center text-sm mt-2">
-                                  {status}
-                                </p>
-                              )}
-                            </div>
-                          )}
+              {/* Live bidding component */}
+              {currentCar && <LiveBidding data={currentCar} />}
+            </div>
+
+            {/* Right */}
+            <div className="md:col-span-5 flex flex-col space-y-4">
+              <div className="bg-card p-4 rounded-xl shadow-md">
+                <h2 className="text-lg font-bold mb-3 border-b pb-2 text-center text-primary">
+                  السيارة الحالية في الحراج
+                </h2>
+
+                {currentCar && currentCar.car ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-y-2 text-sm">
+                      <div><span className="font-semibold">الماركة:</span> {currentCar.car.make ?? "—"}</div>
+                      <div><span className="font-semibold">الموديل:</span> {currentCar.car.model ?? "—"}</div>
+                      <div><span className="font-semibold">السنة:</span> {currentCar.car.year ?? "—"}</div>
+                      <div><span className="font-semibold">العداد:</span> {currentCar.car.odometer ?? "—"} كم</div>
+                      <div><span className="font-semibold">الحالة:</span> {currentCar.car.condition ?? "—"}</div>
+                      <div><span className="font-semibold">رقم الشاصي:</span> {currentCar.car.vin ?? "—"}</div>
+                    </div>
+
+                    <div className="mt-3 border rounded-lg bg-background p-3">
+                      <div className="text-center text-foreground/70 mb-2 text-xs">
+                        <span>مشاهدون: {currentCar.viewers ?? 0} | </span>
+                        <span>مزايدون: {currentCar.bids?.length ?? 0} (تقريباً)</span>
+                      </div>
+
+                      <div className="text-center mb-3">
+                        <h3 className="font-semibold text-base text-primary">آخر سعر</h3>
+                        <div className="text-2xl font-bold text-secondary my-2 py-2 rounded-lg border-2 border-border bg-card">
+                          {formatCurrency(shownPrice)}
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-foreground/50">
-                        لا توجد سيارة معروضة حاليًا في الحراج المباشر
-                      </p>
-                    </div>
-                  )}
 
-                  {/* إضافة خانة البحث داخل مربع معلومات السيارة */}
-                  <div className="mt-4 pt-3 border-t">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={plate}
-                          onChange={(e) => setPlate(e.target.value)}
-                          placeholder="أدخل رقم اللوحة مثل XYZ987"
-                          className="p-1.5 text-xs border border-border rounded-lg w-full focus:ring-2 focus:ring-primary focus:border-primary bg-background"
-                        />
+                      {!showBid ? (
                         <button
-                          onClick={handleSearch}
-                          disabled={loading}
-                          className="absolute left-0 top-0 h-full bg-primary text-white px-2 rounded-l-lg hover:bg-primary/90 whitespace-nowrap text-xs"
+                          hidden={isOwner}
+                          onClick={() => setShowBid(!isOwner)}
+                          className="w-full bg-secondary text-white py-2 rounded-lg hover:bg-secondary/90 font-bold text-xl border-2 border-secondary/80 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
+                          style={{ animation: "pulse 2.5s infinite" }}
                         >
-                          {loading ? "جارٍ..." : "بحث"}
+                          <span className="flex items-center justify-center">
+                            <span className="mr-1.5">+</span> قدم عرضك
+                          </span>
                         </button>
-                      </div>
-                      <h3 className="text-xs font-semibold text-primary whitespace-nowrap">
-                        ابحث برقم اللوحة
-                      </h3>
+                      ) : (
+                        <div>
+                          <BidForm
+                            auction_id={Number(currentCar.id)}
+                            auction_type={"live"}
+                            bid_amount={shownPrice}
+                            onSuccess={() => {
+                              setShowBid(false);
+                              setStatus("✅ تمت المزايدة بنجاح");
+                            }}
+                          />
+                          {status && <p className="text-center text-sm mt-2">{status}</p>}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-foreground/50">لا توجد سيارة معروضة حاليًا في الحراج المباشر</p>
+                  </div>
+                )}
+
+                {/* Search by plate */}
+                <div className="mt-4 pt-3 border-t">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={plate}
+                        onChange={(e) => setPlate(e.target.value)}
+                        placeholder="أدخل رقم اللوحة مثل XYZ987"
+                        className="p-1.5 text-xs border border-border rounded-lg w-full focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                      />
+                      <button
+                        onClick={handleSearch}
+                        disabled={loading}
+                        className="absolute left-0 top-0 h-full bg-primary text-white px-2 rounded-l-lg hover:bg-primary/90 whitespace-nowrap text-xs"
+                      >
+                        {loading ? "جارٍ..." : "بحث"}
+                      </button>
+                    </div>
+                    <h3 className="text-xs font-semibold text-primary whitespace-nowrap">ابحث برقم اللوحة</h3>
                   </div>
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

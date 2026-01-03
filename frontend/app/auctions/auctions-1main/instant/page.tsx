@@ -32,29 +32,34 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 // =============== أنواع TypeScript ===============
+type Broadcast = { stream_url: string };
+type Bid = { bid_amount: number; increment: number };
+
+type CarInfo = {
+  province?: string;
+  city?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  plate?: string;
+  odometer?: string;
+  condition?: string;
+  color?: string;
+  engine?: string;
+  auction_status?: string;
+};
+
 interface CarAuction {
   id: number;
   car_id: number;
-  opening_price: number;
-  minimum_bid: number;
-  maximum_bid: number;
-  current_bid: number;
-  auction_type: string;
-  broadcasts: { stream_url: string }[];
-  bids: { bid_amount: number; increment: number }[];
-  car: {
-    province: string;
-    city: string;
-    make: string;
-    model: string;
-    year: number;
-    plate: string;
-    odometer: string;
-    condition: string;
-    color: string;
-    engine: string;
-    auction_status: string;
-  };
+  opening_price: number | string;
+  minimum_bid: number | string;
+  maximum_bid: number | string;
+  current_bid: number | string;
+  auction_type?: string;
+  broadcasts: Broadcast[];
+  bids: Bid[];
+  car?: CarInfo | null;
 }
 
 interface FilterOptions {
@@ -71,13 +76,45 @@ function getAuctionStatus(status: string): string {
   return map[status] || "غير محدد";
 }
 
+function toNumber(v: unknown, fallback = 0): number {
+  if (typeof v === "number") return Number.isFinite(v) ? v : fallback;
+  if (typeof v === "string") {
+    const n = parseFloat(v.replace(/,/g, ""));
+    return Number.isFinite(n) ? n : fallback;
+  }
+  return fallback;
+}
+
 async function isWithinAllowedTime(page: string): Promise<boolean> {
   try {
     const response = await api.get(`api/check-time?page=${page}`);
-    return response.data.allowed;
+    return Boolean(response.data.allowed);
   } catch {
     return false;
   }
+}
+
+function normalizeAuction(raw: any): CarAuction {
+  return {
+    id: raw?.id ?? 0,
+    car_id: raw?.car_id ?? raw?.car?.id ?? 0,
+
+    // API قد يرجّع opening_price أو starting_bid أو evaluation_price
+    opening_price: raw?.opening_price ?? raw?.starting_bid ?? 0,
+
+    // API عندك أحياناً min_price/max_price
+    minimum_bid: raw?.minimum_bid ?? raw?.min_price ?? 0,
+    maximum_bid: raw?.maximum_bid ?? raw?.max_price ?? 0,
+
+    current_bid: raw?.current_bid ?? 0,
+    auction_type: raw?.auction_type ?? raw?.type ?? "",
+
+    broadcasts: Array.isArray(raw?.broadcasts) ? raw.broadcasts : [],
+    bids: Array.isArray(raw?.bids) ? raw.bids : [],
+
+    // ممكن تكون car مش موجودة لو الـ API مش بيضمّنها
+    car: raw?.car ?? null,
+  };
 }
 
 // =============== المكون الرئيسي ===============
@@ -157,8 +194,8 @@ export default function InstantAuctionPage() {
         sortable: false,
         filter: false,
         cellRenderer: (params: ICellRendererParams<CarAuction>) => {
-          const broadcasts = params.data?.broadcasts || [];
-          if (!broadcasts.length) {
+          const broadcasts = params.data?.broadcasts ?? [];
+          if (!broadcasts.length || !broadcasts[0]?.stream_url) {
             return <span className="text-foreground/50">—</span>;
           }
           return (
@@ -174,67 +211,64 @@ export default function InstantAuctionPage() {
       },
       {
         headerName: "المنطقة",
-        valueGetter: (params) => params.data?.car.province || "",
+        valueGetter: (params) => params.data?.car?.province || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "المدينة",
-        valueGetter: (params) => params.data?.car.city || "",
+        valueGetter: (params) => params.data?.car?.city || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "الماركة",
-        valueGetter: (params) => params.data?.car.make || "",
+        valueGetter: (params) => params.data?.car?.make || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "الموديل",
-        valueGetter: (params) => params.data?.car.model || "",
+        valueGetter: (params) => params.data?.car?.model || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "السنة",
-        valueGetter: (params) => params.data?.car.year ?? "",
+        valueGetter: (params) => params.data?.car?.year ?? "",
         filter: "agNumberColumnFilter",
         type: "numericColumn",
       },
       {
         headerName: "اللوحة",
-        valueGetter: (params) => params.data?.car.plate || "",
+        valueGetter: (params) => params.data?.car?.plate || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "العداد",
-        valueGetter: (params) => params.data?.car.odometer || "",
+        valueGetter: (params) => params.data?.car?.odometer || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "الحالة",
-        valueGetter: (params) => params.data?.car.condition || "",
+        valueGetter: (params) => params.data?.car?.condition || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "اللون",
-        valueGetter: (params) => params.data?.car.color || "",
+        valueGetter: (params) => params.data?.car?.color || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "الوقود",
-        valueGetter: (params) => params.data?.car.engine || "",
+        valueGetter: (params) => params.data?.car?.engine || "",
         filter: "agTextColumnFilter",
       },
       {
         headerName: "المزايدات",
-        valueGetter: (params) => params.data?.bids.length ?? 0,
+        valueGetter: (params) => params.data?.bids?.length ?? 0,
         type: "numericColumn",
         filter: "agNumberColumnFilter",
       },
       {
         headerName: "سعر الافتتاح",
-        valueGetter: (params) => {
-          const val = params.data?.opening_price;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
+        valueGetter: (params) => toNumber(params.data?.opening_price, 0),
         cellRenderer: (params: ICellRendererParams<CarAuction>) =>
           formatCurrency(params.value ?? 0),
         type: "numericColumn",
@@ -242,10 +276,7 @@ export default function InstantAuctionPage() {
       },
       {
         headerName: "أقل سعر",
-        valueGetter: (params) => {
-          const val = params.data?.minimum_bid;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
+        valueGetter: (params) => toNumber(params.data?.minimum_bid, 0),
         cellRenderer: (params: ICellRendererParams<CarAuction>) =>
           formatCurrency(params.value ?? 0),
         type: "numericColumn",
@@ -253,10 +284,7 @@ export default function InstantAuctionPage() {
       },
       {
         headerName: "أعلى سعر",
-        valueGetter: (params) => {
-          const val = params.data?.maximum_bid;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
+        valueGetter: (params) => toNumber(params.data?.maximum_bid, 0),
         cellRenderer: (params: ICellRendererParams<CarAuction>) =>
           formatCurrency(params.value ?? 0),
         type: "numericColumn",
@@ -264,10 +292,7 @@ export default function InstantAuctionPage() {
       },
       {
         headerName: "آخر سعر",
-        valueGetter: (params) => {
-          const val = params.data?.current_bid;
-          return typeof val === "string" ? parseFloat(val) : val ?? 0;
-        },
+        valueGetter: (params) => toNumber(params.data?.current_bid, 0),
         cellRenderer: (params: ICellRendererParams<CarAuction>) =>
           formatCurrency(params.value ?? 0),
         type: "numericColumn",
@@ -276,9 +301,9 @@ export default function InstantAuctionPage() {
       {
         headerName: "مبلغ الزيادة",
         valueGetter: (params) => {
-          const bids = params.data?.bids || [];
+          const bids = params.data?.bids ?? [];
           if (!bids.length) return 0;
-          return bids[bids.length - 1].increment;
+          return toNumber(bids[bids.length - 1]?.increment, 0);
         },
         type: "numericColumn",
         filter: "agNumberColumnFilter",
@@ -286,30 +311,28 @@ export default function InstantAuctionPage() {
       {
         headerName: "نسبة التغير",
         valueGetter: (params) => {
-          const bids = params.data?.bids || [];
+          const bids = params.data?.bids ?? [];
           if (!bids.length) return "0%";
           const lastBid = bids[bids.length - 1];
-          if (!lastBid.bid_amount) return "0%";
-          const percent = (lastBid.increment / lastBid.bid_amount) * 100;
+          const bidAmount = toNumber(lastBid?.bid_amount, 0);
+          const inc = toNumber(lastBid?.increment, 0);
+          if (!bidAmount) return "0%";
+          const percent = (inc / bidAmount) * 100;
           return `${percent.toFixed(2)}%`;
         },
         filter: "agTextColumnFilter",
       },
       {
         headerName: "الحالة",
-        field: "car.auction_status",
         sortable: true,
         filter: false,
         cellRenderer: (params: ICellRendererParams<CarAuction>) => {
-          const status = getAuctionStatus(
-            params.data?.car.auction_status || ""
-          );
+          const status = getAuctionStatus(params.data?.car?.auction_status || "");
           return <StatusBadge status={status} />;
         },
       },
       {
         headerName: "التفاصيل",
-        field: "car_id",
         sortable: false,
         filter: false,
         cellRenderer: (params: ICellRendererParams<CarAuction>) => {
@@ -336,7 +359,6 @@ export default function InstantAuctionPage() {
       resizable: true,
       flex: 1,
       minWidth: 120,
-      // مفيش منيو للأعمدة في النسخة المجانية، فبنخفي زرار المينيو لو موجود
       suppressHeaderMenuButton: true,
     }),
     []
@@ -346,6 +368,7 @@ export default function InstantAuctionPage() {
   const fetchAuctions = useCallback(async () => {
     loadingGateRef.current = true;
     setLoading(currentPage === 1);
+    setError(null);
 
     try {
       const allowed = await isWithinAllowedTime("instant_auction");
@@ -360,15 +383,17 @@ export default function InstantAuctionPage() {
         { headers: { Accept: "application/json; charset=UTF-8" } }
       );
 
-      const data = response.data.data;
-      if (data) {
-        setCarsBrands(response.data.brands || []);
-        setTotalCount(data.total);
-        setCarsTotal(response.data.total?.total || 0);
-        setCars((prev) =>
-          currentPage > 1 ? [...prev, ...data.data] : data.data
-        );
-      }
+      // Laravel paginator غالباً: response.data.data = { data: [], total, ... }
+      const paginated = response.data?.data;
+      const rows = Array.isArray(paginated?.data) ? paginated.data : [];
+
+      const normalizedRows = rows.map(normalizeAuction);
+
+      setCarsBrands(response.data?.brands || []);
+      setTotalCount(toNumber(paginated?.total, 0));
+      setCarsTotal(toNumber(paginated?.total, 0));
+
+      setCars((prev) => (currentPage > 1 ? [...prev, ...normalizedRows] : normalizedRows));
     } catch (err) {
       console.error("فشل تحميل المزادات", err);
       setError("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقًا.");
@@ -379,7 +404,7 @@ export default function InstantAuctionPage() {
     }
   }, [currentPage, searchTerm, filters, isLoggedIn]);
 
-  // =============== تأثير جلب البيانات ===============
+  // =============== تأثير جلب البيانات + Pusher ===============
   useEffect(() => {
     fetchAuctions();
 
@@ -388,6 +413,7 @@ export default function InstantAuctionPage() {
     });
 
     const channel = pusher.subscribe("auction.instant");
+
     channel.bind("CarMovedBetweenAuctionsEvent", () => {
       setCurrentPage(1);
       setCars([]);
@@ -440,10 +466,13 @@ export default function InstantAuctionPage() {
   }, [currentPage, totalPages, isAllowed]);
 
   // =============== تصفية السيارات ===============
-  const filteredCars = cars.filter((car) => {
-    if (filters.brand && filters.brand !== car.car.make) return false;
-    return true;
-  });
+  const filteredCars = useMemo(() => {
+    return cars.filter((row) => {
+      const make = row.car?.make || "";
+      if (filters.brand && filters.brand !== make) return false;
+      return true;
+    });
+  }, [cars, filters.brand]);
 
   // =============== العرض الرئيسي ===============
   return (
