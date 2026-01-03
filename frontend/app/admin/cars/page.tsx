@@ -1,901 +1,1272 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import React, { useEffect, useMemo, useState, ChangeEvent, FormEvent } from "react";
 import {
-    Car,
-    Search,
-    Filter,
-    CheckSquare,
-    Square,
-    MoreVertical,
-    Eye,
-    Edit3,
-    Trash2,
-    Play,
-    Pause,
-    Archive,
-    RotateCcw,
-    ChevronDown,
-    X,
-    MoveVertical,
-    Users,
-    Calendar,
-    DollarSign,
-    BarChart3,
-    RefreshCw,
-    Sparkles,
-    Settings,
-    TrendingUp,
-    AlertTriangle,
-    CheckCircle,
-    Clock
+  Car,
+  Search,
+  Filter,
+  CheckSquare,
+  Archive,
+  RotateCcw,
+  ChevronDown,
+  X,
+  Eye,
+  Play,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  RefreshCw,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
-import { redirect } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/OldPagination";
 import { MoveToLiveDialog } from "@/components/admin/MoveToLiveDialog";
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import { PriceWithIcon } from "@/components/ui/priceWithIcon";
 import { cn } from "@/lib/utils";
+
 interface CarFormData {
-    price: string;
-    id: string | number;
+  price: string;
+  id: string | number;
 }
 
-let carOjbect = {
-    price: "",
-    id: ""
+let carOjbect: CarFormData = {
+  price: "",
+  id: "",
 };
 
+type LocalizedObj =
+  | {
+      ar?: string;
+      en?: string;
+      color?: string;
+      icon?: string;
+    }
+  | string
+  | null
+  | undefined;
+
 interface CarData {
-    id: number;
-    make: string;
-    model: string;
-    year: number;
-    vin: string;
-    condition: string;
-    transmission: string;
-    category: string;
-    odometer: number;
-    evaluation_price: number | null;
-    plate_number: string | null;
-    auction_status: string;
-    min_price: number;
-    max_price: number;
-    dealer?: {
-        user: {
-            first_name: string;
-            last_name: string;
-        };
-    };
-    user?: {
-        first_name: string;
-        last_name: string;
-    };
-    created_at: string;
-    auctions?: any[];
-    active_auction?: {
-        id: number | string;
-        minimum_bid: number;
-        maximum_bid: number;
-    };
+  id: number;
+  make?: string;
+  model?: string;
+  year?: number;
+  vin?: string;
+
+  condition?: LocalizedObj;
+  transmission?: LocalizedObj;
+
+  category?: string;
+  market_category?: string;
+
+  odometer?: number;
+
+  evaluation_price?: number | string | null;
+  plate_number?: string | null;
+
+  auction_status: string; // pending / available / in_auction / sold ...
+
+  min_price?: number | string;
+  max_price?: number | string;
+
+  dealer?: {
+    user: { first_name: string; last_name: string };
+  };
+
+  user?:
+    | {
+        first_name?: string;
+        last_name?: string;
+        name?: string;
+      }
+    | null;
+
+  created_at: string;
+
+  auctions?: any[];
+  active_auction?: {
+    id: number | string;
+    minimum_bid: number;
+    maximum_bid: number;
+  };
 }
 
 interface FilterOptions {
-    status: string;
-    category: string;
-    condition: string;
-    transmission: string;
-    dealer_id: string;
+  status: string;
+  category: string;
+  condition: string;
+  transmission: string;
+  dealer_id: string;
 }
 
+type StatsState = {
+  total: number;
+  inAuction: number;
+  pending: number;
+  sold: number;
+  available: number;
+};
 
+// Helpers
+const asNumber = (v: any) => {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const n = parseFloat(String(v));
+  return Number.isFinite(n) ? n : 0;
+};
 
+const normalizeLabel = (v: LocalizedObj) => {
+  if (!v) return "";
+  if (typeof v === "string") return v;
+  return v.ar || v.en || "";
+};
+
+const normalizeCategory = (car: CarData) => {
+  return (car.category || car.market_category || "").toString();
+};
+
+const safeDate = (v: string) => {
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "غير متوفر";
+  return d.toLocaleDateString("ar-SA");
+};
+
+/**
+ * ✅ يدعم:
+ * 1) API الجديد:
+ *    { data: { data: [...] }, pagination: {...} }
+ *
+ * 2) API القديم:
+ *    { status:"success", data:{ data:[...] }, pagination:{...} }
+ *    أو { status:"success", data:{ data:{data:[...]} }, pagination:{...} }
+ */
+function extractCarsResponse(raw: any): {
+  list: CarData[];
+  pagination: { current_page?: number; total?: number; last_page?: number; per_page?: number } | null;
+} {
+  if (!raw) return { list: [], pagination: null };
+
+  if (Array.isArray(raw?.data?.data)) {
+    return { list: raw.data.data, pagination: raw.pagination ?? null };
+  }
+
+  if (raw?.status === "success" && Array.isArray(raw?.data?.data)) {
+    return { list: raw.data.data, pagination: raw.pagination ?? null };
+  }
+
+  if (raw?.status === "success" && Array.isArray(raw?.data?.data?.data)) {
+    return { list: raw.data.data.data, pagination: raw.pagination ?? null };
+  }
+
+  if (Array.isArray(raw?.data?.data?.data)) {
+    return { list: raw.data.data.data, pagination: raw.pagination ?? null };
+  }
+
+  return { list: [], pagination: raw?.pagination ?? null };
+}
+
+/**
+ * ✅ Normalize لريبونس الإحصائيات مهما كان شكله:
+ * ممكن ييجي:
+ * - { status:"success", data:{ total:.. } }
+ * - { data:{ total:.. } }
+ * - { success:true, data:{...} }
+ * - { data:{ data:{...} } }
+ *
+ * والمفاتيح ممكن تكون:
+ * total / inAuction / pending / sold / available
+ * أو snake_case: in_auction
+ */
+function extractStats(raw: any): Partial<StatsState> | null {
+  if (!raw) return null;
+
+  const payload =
+    raw?.data?.data ??
+    raw?.data ??
+    (raw?.success === true ? raw?.data : null) ??
+    (raw?.status === "success" ? raw?.data : null);
+
+  if (!payload || typeof payload !== "object") return null;
+
+  const total = payload.total ?? payload.total_cars ?? payload.count ?? payload.all ?? undefined;
+
+  const inAuction =
+    payload.inAuction ??
+    payload.in_auction ??
+    payload.inAuctionCount ??
+    payload.in_auction_count ??
+    undefined;
+
+  const pending =
+    payload.pending ??
+    payload.pending_cars ??
+    payload.pendingCount ??
+    payload.pending_count ??
+    undefined;
+
+  const sold = payload.sold ?? payload.sold_cars ?? payload.soldCount ?? payload.sold_count ?? undefined;
+
+  const available =
+    payload.available ??
+    payload.available_cars ??
+    payload.availableCount ??
+    payload.available_count ??
+    undefined;
+
+  return {
+    total: total !== undefined ? asNumber(total) : undefined,
+    inAuction: inAuction !== undefined ? asNumber(inAuction) : undefined,
+    pending: pending !== undefined ? asNumber(pending) : undefined,
+    sold: sold !== undefined ? asNumber(sold) : undefined,
+    available: available !== undefined ? asNumber(available) : undefined,
+  };
+}
+
+function calcStatsFallback(list: CarData[], totalFromPagination?: number): StatsState {
+  const counts = {
+    pending: 0,
+    in_auction: 0,
+    sold: 0,
+    available: 0,
+  };
+
+  for (const c of list) {
+    const s = (c.auction_status || "").toLowerCase();
+    if (s === "pending") counts.pending++;
+    else if (s === "in_auction") counts.in_auction++;
+    else if (s === "sold") counts.sold++;
+    else if (s === "available") counts.available++;
+  }
+
+  return {
+    total: typeof totalFromPagination === "number" && totalFromPagination > 0 ? totalFromPagination : list.length,
+    pending: counts.pending,
+    inAuction: counts.in_auction,
+    sold: counts.sold,
+    available: counts.available,
+  };
+}
 
 export default function AdminCarsPage() {
-    const router = useLoadingRouter();
-    const [cars, setCars] = useState<CarData[]>([]);
-    const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
-    const [selectAll, setSelectAll] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [showFilters, setShowFilters] = useState(false);
-    const [showBulkActions, setShowBulkActions] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [showActions, setShowActions] = useState(false);
-    const [formData, setFormData] = useState<CarFormData>(carOjbect);
-    const [totalCount, setTotalCount] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
-    const [showMoveToLiveDialog, setShowMoveToLiveDialog] = useState(false);
-    const [moveToLiveCarIds, setMoveToLiveCarIds] = useState<number[]>([]);
-    const [showApproveModal, setShowApproveModal] = useState(false);
-    const [carsToApprove, setCarsToApprove] = useState<number[]>([]);
-    const [openingPrice, setOpeningPrice] = useState("");
-    const [filters, setFilters] = useState<FilterOptions>({
-        status: "",
-        category: "",
-        condition: "",
-        transmission: "",
-        dealer_id: "",
-    });
-    const [enumOptions, setEnumOptions] = useState<any>({});
-    const [loading, setLoading] = useState(false);
-    const [stats, setStats] = useState({
-        total: 0,
-        inAuction: 0,
-        pending: 0,
-        sold: 0,
-        available: 0
-    });
+  const router = useLoadingRouter();
 
-    useEffect(() => {
-        fetchCars();
-        // fetchStats();
-    }, [currentPage]);
+  const [cars, setCars] = useState<CarData[]>([]);
+  const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
 
-    useEffect(() => {
-        fetchCars();
-    }, [currentPage, searchTerm, filters]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
-    const fetchCars = async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams();
-            if (searchTerm) params.append("search", searchTerm);
-            if (filters.status) params.append("status", filters.status);
-            const response = await api.get(`/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`);
-            console.log("response", response.data);
-            
-            if (response.data.status === "success") {
-                setCars(response.data.data.data);
-                setCurrentPage(response.data.pagination.current_page);
-                setTotalCount(response.data.pagination.total);
-            }
-        } catch (error) {
-            console.error("Error fetching cars:", error);
-            toast.error("فشل في تحميل السيارات");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState<CarFormData>(carOjbect);
 
-    const fetchStats = async () => {
-        try {
-            const response = await api.get("/api/admin/cars/stats");
-            if (response.data.status === "success") {
-                setStats(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching stats:", error);
-        }
-    };
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
-    const fetchEnumOptions = async () => {
-        try {
-            const response = await api.get("/api/cars/enum-options");
-            if (response.data.status === "success") {
-                setEnumOptions(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching enum options:", error);
-        }
-    };
+  const [showMoveToLiveDialog, setShowMoveToLiveDialog] = useState(false);
+  const [moveToLiveCarIds, setMoveToLiveCarIds] = useState<number[]>([]);
 
-    const handleSelectCar = (carId: number, checked: boolean) => {
-        const newSelected = new Set(selectedCars);
-        if (checked) {
-            newSelected.add(carId);
-        } else {
-            newSelected.delete(carId);
-        }
-        setSelectedCars(newSelected);
-        setSelectAll(newSelected.size === cars.length);
-    };
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [carsToApprove, setCarsToApprove] = useState<number[]>([]);
+  const [openingPrice, setOpeningPrice] = useState("");
 
-    const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            setSelectedCars(new Set(cars.map((car) => car.id)));
-        } else {
-            setSelectedCars(new Set());
-        }
-        setSelectAll(checked);
-    };
+  const [filters, setFilters] = useState<FilterOptions>({
+    status: "",
+    category: "",
+    condition: "",
+    transmission: "",
+    dealer_id: "",
+  });
 
-    const handleInputChange = (
-        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
+  const [enumOptions, setEnumOptions] = useState<any>({});
+  const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const [stats, setStats] = useState<StatsState>({
+    total: 0,
+    inAuction: 0,
+    pending: 0,
+    sold: 0,
+    available: 0,
+  });
+
+  useEffect(() => {
+    fetchEnumOptions();
+    fetchStats(); // ✅ شغّال
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchCars();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, filters]);
+
+  const fetchCars = async () => {
+    try {
+      setLoading(true);
+
+      const params = new URLSearchParams();
+      if (searchTerm) params.append("search", searchTerm);
+      if (filters.status) params.append("status", filters.status);
+      if (filters.category) params.append("category", filters.category);
+      if (filters.condition) params.append("condition", filters.condition);
+      if (filters.transmission) params.append("transmission", filters.transmission);
+      if (filters.dealer_id) params.append("dealer_id", filters.dealer_id);
+
+      const response = await api.get(
+        `/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`
+      );
+
+      const { list, pagination } = extractCarsResponse(response.data);
+
+      const safeList = Array.isArray(list) ? list : [];
+      setCars(safeList);
+
+      const total = pagination?.total !== undefined ? asNumber(pagination.total) : 0;
+      if (total > 0) setTotalCount(total);
+
+      if (pagination?.current_page !== undefined) setCurrentPage(asNumber(pagination.current_page));
+
+      // ✅ Fallback سريع للإحصائيات لو stats endpoint مش شغال/لسه محمّلتوش
+      setStats((prev) => {
+        const fb = calcStatsFallback(safeList, total > 0 ? total : undefined);
+        // لو prev.total لسه 0 أو الاحصائيات كلها 0، استبدل بـ fallback
+        const prevSum = prev.total + prev.inAuction + prev.pending + prev.sold + prev.available;
+        const fbSum = fb.total + fb.inAuction + fb.pending + fb.sold + fb.available;
+        if (prevSum === 0 && fbSum > 0) return fb;
+        // otherwise على الأقل خلي total يتظبط من pagination
+        if (total > 0 && prev.total !== total) return { ...prev, total };
+        return prev;
+      });
+    } catch (error) {
+      console.error("Error fetching cars:", error);
+      toast.error("فشل في تحميل السيارات");
+      setCars([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      setStatsLoading(true);
+
+      const response = await api.get("/api/admin/cars/stats");
+
+      const normalized = extractStats(response.data);
+      if (normalized) {
+        setStats((prev) => ({
+          total: normalized.total ?? prev.total,
+          inAuction: normalized.inAuction ?? prev.inAuction,
+          pending: normalized.pending ?? prev.pending,
+          sold: normalized.sold ?? prev.sold,
+          available: normalized.available ?? prev.available,
         }));
-    };
+        return;
+      }
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                throw new Error("يجب تسجيل الدخول أولاً");
-            }
+      // لو مفيش Normalize، اعمل fallback
+      setStats(calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined));
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      // fallback بدل ما تفضل 0
+      setStats(calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined));
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
-            Object.keys(formData).forEach((key) => {
-                const value = formData[key as keyof CarFormData];
-                if (value !== null && value !== undefined) {
-                    carOjbect[key] = value;
-                }
-            });
-            
-            const response = await api.put(`/api/admin/auctions/${carOjbect["id"]}/set-open-price`, carOjbect);
-            
-            if (response.data.status === "success") {
-                toast.success("تم وضع السعر الافتراضي");
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                toast.error("حصل خطأ ما");
-            }
-        } catch (error: any) {
-            console.error("خطأ في حفظ البيانات:", error);
+  const fetchEnumOptions = async () => {
+    try {
+      const response = await api.get("/api/cars/enum-options");
+      if (response.data?.status === "success") {
+        setEnumOptions(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching enum options:", error);
+    }
+  };
+
+  const handleSelectCar = (carId: number, checked: boolean) => {
+    const newSelected = new Set(selectedCars);
+    if (checked) newSelected.add(carId);
+    else newSelected.delete(carId);
+
+    setSelectedCars(newSelected);
+    setSelectAll(newSelected.size === cars.length && cars.length > 0);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedCars(new Set(cars.map((car) => car.id)));
+    else setSelectedCars(new Set());
+
+    setSelectAll(checked);
+  };
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      Object.keys(formData).forEach((key) => {
+        const value = formData[key as keyof CarFormData];
+        if (value !== null && value !== undefined) {
+          // @ts-ignore
+          carOjbect[key] = value;
         }
-    };
+      });
 
-    const handleBulkAction = async (action: string, carId?: number) => {
-        const carIds = carId ? [carId] : Array.from(selectedCars);
-        if (carIds.length === 0) {
-            toast.error("يرجى اختيار سيارة واحدة على الأقل");
-            return;
+      const response = await api.put(
+        `/api/admin/auctions/${carOjbect["id"]}/set-open-price`,
+        carOjbect
+      );
+
+      if (response.data?.status === "success") {
+        toast.success("تم وضع السعر الافتراضي");
+        setShowModal(false);
+        fetchCars();
+        fetchStats();
+      } else {
+        toast.error(response.data?.message || "حصل خطأ ما");
+      }
+    } catch (error: any) {
+      console.error("خطأ في حفظ البيانات:", error);
+      toast.error(error.response?.data?.message || "حصل خطأ ما");
+    }
+  };
+
+  const handleBulkAction = async (action: string, carId?: number) => {
+    const carIds = carId ? [carId] : Array.from(selectedCars);
+    if (carIds.length === 0) {
+      toast.error("يرجى اختيار سيارة واحدة على الأقل");
+      return;
+    }
+
+    if (action === "approve-auctions-with-price") {
+      setCarsToApprove(carIds);
+
+      if (carId) {
+        const car = cars.find((c) => c.id === carId);
+        const ev = asNumber(car?.evaluation_price);
+        setOpeningPrice(ev > 0 ? String(ev) : "");
+      } else {
+        setOpeningPrice("");
+      }
+
+      setShowApproveModal(true);
+      return;
+    }
+
+    try {
+      switch (action) {
+        case "approve-auctions": {
+          const res = await api.put("/api/admin/cars/bulk/approve-reject", {
+            ids: carIds,
+            action: true,
+          });
+          toast.success(res.data?.message || "تمت العملية");
+          break;
         }
 
-        if (action === "approve-auctions-with-price") {
-            setCarsToApprove(carIds);
-            if (carId) {
-                const car = cars.find(c => c.id === carId);
-                if (car && car.evaluation_price) {
-                    setOpeningPrice(car.evaluation_price.toString());
-                } else {
-                    setOpeningPrice("");
-                }
-            } else {
-                setOpeningPrice("");
-            }
-            setShowApproveModal(true);
-            return;
+        case "reject-auctions": {
+          const res = await api.put("/api/admin/cars/bulk/approve-reject", {
+            ids: carIds,
+            action: false,
+          });
+          toast.success(res.data?.message || "تمت العملية");
+          break;
         }
 
-        try {
-            switch (action) {
-                case "approve-auctions":
-                    const approveStatus = await api.put("/api/admin/cars/bulk/approve-reject", {
-                        ids: carIds,
-                        action: true,
-                    });
-                    toast.success(approveStatus.data.message);
-                    break;
-                case "reject-auctions":
-                    const rejectStatus = await api.put("/api/admin/cars/bulk/approve-reject", {
-                        ids: carIds,
-                        action: false,
-                    });
-                    toast.success(rejectStatus.data.message);
-                    break;
-                case "move-to-live":
-                    setMoveToLiveCarIds(carIds);
-                    setShowMoveToLiveDialog(true);
-                    return;
-                case "move-to-active":
-                    const moveActiveStatus = await api.put("/api/admin/auctions/bulk/move-to-status", {
-                        ids: carIds,
-                        status: "active",
-                    });
-                    toast.success(moveActiveStatus.data.message);
-                    break;
-                case "move-to-instant":
-                    const moveInstantStatus = await api.put("/api/admin/auctions/bulk/move-to-status", {
-                        ids: carIds,
-                        status: "instant",
-                    });
-                    toast.success(moveInstantStatus.data.message);
-                    break;
-                case "move-to-late":
-                    const moveLateStatus = await api.put("/api/admin/auctions/bulk/move-to-status", {
-                        ids: carIds,
-                        status: "late",
-                    });
-                    toast.success(moveLateStatus.data.message);
-                    break;
-                case "move-to-pending":
-                    const movePendingStatus = await api.put("/api/admin/auctions/bulk/move-to-status", {
-                        ids: carIds,
-                        status: "pending",
-                    });
-                    toast.success(movePendingStatus.data.message);
-                    break;
-                case "archive":
-                    toast.success("سيتم إضافة هذه الوظيفة قريباً");
-                    break;
-            }
+        case "move-to-live":
+          setMoveToLiveCarIds(carIds);
+          setShowMoveToLiveDialog(true);
+          return;
 
-            fetchCars();
-            setSelectedCars(new Set());
-            setSelectAll(false);
-            setShowBulkActions(false);
-            setShowActions(false);
-        } catch (error: any) {
-            console.error("Error performing bulk action:", "");
-            toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+        case "move-to-active": {
+          const res = await api.put("/api/admin/auctions/bulk/move-to-status", {
+            ids: carIds,
+            status: "active",
+          });
+          toast.success(res.data?.message || "تمت العملية");
+          break;
         }
-    };
 
-    const handleApproveWithPrice = async (e: FormEvent) => {
-        e.preventDefault();
-        try {
-            const approveStatus = await api.put("/api/admin/cars/bulk/approve-reject", {
-                ids: carsToApprove,
-                action: true,
-                price: openingPrice,
-            });
-
-            toast.success(approveStatus.data.message);
-            setShowApproveModal(false);
-            setOpeningPrice("");
-            setCarsToApprove([]);
-            fetchCars();
-            setSelectedCars(new Set());
-            setSelectAll(false);
-            setShowBulkActions(false);
-            setShowActions(false);
-        } catch (error: any) {
-            console.error("Error performing bulk action:", error);
-            toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+        case "move-to-instant": {
+          const res = await api.put("/api/admin/auctions/bulk/move-to-status", {
+            ids: carIds,
+            status: "instant",
+          });
+          toast.success(res.data?.message || "تمت العملية");
+          break;
         }
-    };
 
-    const approveCarAuction = async (carId: number, approve: boolean) => {
-        try {
-            await api.put(`/api/admin/cars/${carId}/approve-auction`, {
-                approve: approve,
-            });
-            toast.success(approve ? "تم الموافقة على مزاد السيارة" : "تم رفض مزاد السيارة");
-            fetchCars();
-        } catch (error: any) {
-            console.error("Error approving auction:", error);
-            toast.error(error.response?.data?.message || "فشل في معالجة طلب المزاد");
+        case "move-to-late": {
+          const res = await api.put("/api/admin/auctions/bulk/move-to-status", {
+            ids: carIds,
+            status: "late",
+          });
+          toast.success(res.data?.message || "تمت العملية");
+          break;
         }
-    };
 
-    const handleProcessAuction = (carId: number) => {
-        router.push(`/admin/cars/${carId}/process-auction`);
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "active":
-                return "bg-green-100 text-green-800 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30";
-            case "pending":
-                return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30";
-            case "completed":
-                return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30";
-            case "cancelled":
-                return "bg-red-100 text-red-800 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30";
-            case "in_auction":
-                return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30";
-            case "sold":
-                return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
-            default:
-                return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30";
+        case "move-to-pending": {
+          const res = await api.put("/api/admin/auctions/bulk/move-to-status", {
+            ids: carIds,
+            status: "pending",
+          });
+          toast.success(res.data?.message || "تمت العملية");
+          break;
         }
-    };
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case "active":
-                return "نشط";
-            case "pending":
-                return "في الانتظار";
-            case "completed":
-                return "مكتمل";
-            case "cancelled":
-                return "ملغي";
-            case "in_auction":
-                return "في المزاد";
-            case "sold":
-                return "تم البيع";
-            case "available":
-                return "متاح";
-            default:
-                return status;
-        }
-    };
+        case "archive":
+          toast.success("سيتم إضافة هذه الوظيفة قريباً");
+          break;
+      }
 
-    const getAuctionStatusColor = (status: string) => {
-        switch (status) {
-            case "in_auction":
-                return "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400";
-            case "pending_approval":
-                return "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400";
-            case "rejected":
-                return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400";
-            case "sold":
-                return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400";
-            default:
-                return "bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-400";
-        }
-    };
+      await fetchCars();
+      await fetchStats();
+      setSelectedCars(new Set());
+      setSelectAll(false);
+      setShowBulkActions(false);
+    } catch (error: any) {
+      console.error("Error performing bulk action:", error);
+      toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+    }
+  };
 
-    const getAuctionStatusText = (status: string) => {
-        switch (status) {
-            case "in_auction":
-                return "تمت الموافقة";
-            case "pending_approval":
-                return "في انتظار الموافقة";
-            case "rejected":
-                return "مرفوضة";
-            case "sold":
-                return "تم إغلاق الصفقة";
-            default:
-                return "متاحة";
-        }
-    };
-    
-    
-    const filteredCars = cars.filter((car) => {
-        if (filters.category && car.category !== filters.category) return false;
-        if (filters.condition && car.condition !== filters.condition) return false;
-        if (filters.transmission && car.transmission !== filters.transmission) return false;
-        return true;
+  const handleApproveWithPrice = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.put("/api/admin/cars/bulk/approve-reject", {
+        ids: carsToApprove,
+        action: true,
+        price: openingPrice,
+      });
+
+      toast.success(res.data?.message || "تمت العملية");
+      setShowApproveModal(false);
+      setOpeningPrice("");
+      setCarsToApprove([]);
+
+      await fetchCars();
+      await fetchStats();
+
+      setSelectedCars(new Set());
+      setSelectAll(false);
+      setShowBulkActions(false);
+    } catch (error: any) {
+      console.error("Error performing bulk action:", error);
+      toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+    }
+  };
+
+  const handleProcessAuction = (carId: number) => {
+    router.push(`/admin/cars/${carId}/process-auction`);
+  };
+
+  const getStatusColor = (status: string) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "active":
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-500/30";
+      case "pending":
+        return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30";
+      case "available":
+        return "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-400 dark:border-cyan-500/30";
+      case "in_auction":
+        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30";
+      case "sold":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30";
+      case "completed":
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-500/20 dark:text-gray-400 dark:border-gray-500/30";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "active":
+        return "نشط";
+      case "pending":
+        return "في الانتظار";
+      case "available":
+        return "متاح";
+      case "in_auction":
+        return "في المزاد";
+      case "sold":
+        return "تم البيع";
+      case "completed":
+        return "مكتمل";
+      case "cancelled":
+        return "ملغي";
+      default:
+        return status || "غير معروف";
+    }
+  };
+
+  const getApprovalColor = (status: string) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "pending":
+      case "pending_approval":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400";
+      case "rejected":
+        return "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400";
+      case "in_auction":
+      case "available":
+      case "approved":
+        return "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400";
+      case "sold":
+        return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-500/20 dark:text-gray-400";
+    }
+  };
+
+  const getApprovalText = (status: string) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "pending":
+      case "pending_approval":
+        return "في انتظار الموافقة";
+      case "rejected":
+        return "مرفوضة";
+      case "in_auction":
+      case "available":
+      case "approved":
+        return "تمت الموافقة";
+      case "sold":
+        return "تم إغلاق الصفقة";
+      default:
+        return "متاحة";
+    }
+  };
+
+  const filteredCars = useMemo(() => {
+    return cars.filter((car) => {
+      const category = normalizeCategory(car);
+      const cond = normalizeLabel(car.condition);
+      const trans = normalizeLabel(car.transmission);
+
+      if (filters.category && category !== filters.category) return false;
+      if (filters.condition && cond !== filters.condition) return false;
+      if (filters.transmission && trans !== filters.transmission) return false;
+      return true;
     });
+  }, [cars, filters.category, filters.condition, filters.transmission]);
 
-    return (
-        <div className="min-h-screen bg-background text-foreground p-4 md:p-6 rtl">
-            {/* Header Section */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-primary">
-                        إدارة السيارات
-                    </h1>
-                    <p className="text-foreground/70 mt-2">
-                        إدارة وتنظيم جميع السيارات في النظام
-                    </p>
-                </div>
-                
-                <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-                    <button 
-                        onClick={fetchCars}
-                        className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
-                    >
-                        <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
-                        تحديث
-                    </button>
-                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
-                        <Car className="w-6 h-6 text-primary" />
-                    </div>
-                </div>
-            </div>
+  const refreshAll = async () => {
+    await fetchCars();
+    await fetchStats();
+    toast.success("تم تحديث البيانات");
+  };
 
-            {/* Statistics Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-foreground/70 text-sm">إجمالي السيارات</p>
-                            <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
-                        </div>
-                        <div className="bg-primary/10 p-3 rounded-xl">
-                            <Car className="w-6 h-6 text-primary" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-foreground/70 text-sm">في المزاد</p>
-                            <p className="text-2xl font-bold text-foreground mt-1">{stats.inAuction}</p>
-                        </div>
-                        <div className="bg-green-500/10 p-3 rounded-xl">
-                            <Play className="w-6 h-6 text-green-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-foreground/70 text-sm">في انتظار الموافقة</p>
-                            <p className="text-2xl font-bold text-foreground mt-1">{stats.pending}</p>
-                        </div>
-                        <div className="bg-amber-500/10 p-3 rounded-xl">
-                            <Clock className="w-6 h-6 text-amber-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-foreground/70 text-sm">تم البيع</p>
-                            <p className="text-2xl font-bold text-foreground mt-1">{stats.sold}</p>
-                        </div>
-                        <div className="bg-emerald-500/10 p-3 rounded-xl">
-                            <CheckCircle className="w-6 h-6 text-emerald-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-foreground/70 text-sm">متاحة</p>
-                            <p className="text-2xl font-bold text-foreground mt-1">{stats.available}</p>
-                        </div>
-                        <div className="bg-cyan-500/10 p-3 rounded-xl">
-                            <TrendingUp className="w-6 h-6 text-cyan-400" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
-                {/* Search and Filters Header */}
-                <div className="border-b border-border p-6">
-                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
-                            <div className="relative flex-grow">
-                                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
-                                <input
-                                    type="text"
-                                    placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                />
-                            </div>
-                            
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="bg-background border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
-                            >
-                                <Filter className="w-4 h-4 ml-2" />
-                                فلاتر
-                                <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-                            </button>
-                        </div>
-
-                        {selectedCars.size > 0 && (
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-foreground/70">
-                                    تم اختيار {selectedCars.size} سيارة
-                                </span>
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowBulkActions(!showBulkActions)}
-                                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
-                                    >
-                                        إجراءات جماعية
-                                        <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showBulkActions ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {showBulkActions && (
-                                        <div className="absolute top-full left-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-10">
-                                            <div className="p-2 space-y-1">
-                                                <button onClick={() => handleBulkAction("approve-auctions")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <CheckSquare size={16} />
-                                                    الموافقة على المزادات
-                                                </button>
-                                                <button onClick={() => handleBulkAction("reject-auctions")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <X size={16} />
-                                                    رفض المزادات
-                                                </button>
-                                                <button onClick={() => handleBulkAction("move-to-live")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <Play size={16} />
-                                                    نقل إلى الحراج المباشر
-                                                </button>
-                                                <button onClick={() => handleBulkAction("move-to-instant")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <Clock size={16} />
-                                                    نقل الى المزادات الفورية
-                                                </button>
-                                                <button onClick={() => handleBulkAction("move-to-late")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <AlertTriangle size={16} />
-                                                    نقل إلى المزادات المتأخرة
-                                                </button>
-                                                <button onClick={() => handleBulkAction("move-to-active")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <CheckCircle size={16} />
-                                                    نقل إلى المزادات النشطة
-                                                </button>
-                                                <button onClick={() => handleBulkAction("move-to-pending")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                                                    <RotateCcw size={16} />
-                                                    نقل إلى المزادات المعلقة
-                                                </button>
-                                                <button onClick={() => handleBulkAction("archive")} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 text-red-500 transition-all duration-300">
-                                                    <Archive size={16} />
-                                                    أرشفة
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Filters Panel */}
-                    {showFilters && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-background/50 rounded-xl mt-4">
-                            <select value={filters.status} onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">كل الحالات</option>
-                                <option value="available">متاح</option>
-                                <option value="in_auction">غير متاح</option>
-                                <option value="completed">مكتمل</option>
-                                <option value="cancelled">ملغي</option>
-                            </select>
-
-                            <select value={filters.category} onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">كل الفئات</option>
-                                {enumOptions.categories?.map((category: any) => (
-                                    <option key={category.value} value={category.value}>{category.label}</option>
-                                ))}
-                            </select>
-
-                            <select value={filters.condition} onChange={(e) => setFilters(prev => ({ ...prev, condition: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">كل الحالات</option>
-                                {enumOptions.conditions?.map((condition: any) => (
-                                    <option key={condition.value} value={condition.value}>{condition.label}</option>
-                                ))}
-                            </select>
-
-                            <select value={filters.transmission} onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value }))} className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">كل أنواع الناقل</option>
-                                {enumOptions.transmissions?.map((transmission: any) => (
-                                    <option key={transmission.value} value={transmission.value}>{transmission.label}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                </div>
-
-                {/* Cars Table */}
-                <div className="p-6">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-border/50 border-b border-border">
-                                    <th className="px-6 py-4 text-center">
-                                        <input type="checkbox" checked={selectAll} onChange={(e) => handleSelectAll(e.target.checked)} className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary" />
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">السيارة</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">المالك</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة المزاد</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة الموافقة</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">سعر الأفتتاح</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر مرغوب</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر مرغوب</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر في المزاد</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر في المزاد</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">تاريخ الإضافة</th>
-                                    <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y border-border">
-                                {filteredCars.map((car) => (
-                                    <tr key={car.id} className="hover:bg-border/50 transition-colors duration-200">
-                                        <td className="px-6 py-4 text-center">
-                                            <input type="checkbox" checked={selectedCars.has(car.id)} onChange={(e) => handleSelectCar(car.id, e.target.checked)} className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary" />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center">
-                                                <div className="bg-primary p-2 rounded-xl">
-                                                    <Car className="w-4 h-4 text-white" />
-                                                </div>
-                                                <div className="mr-4">
-                                                    <div className="text-sm font-medium text-foreground cursor-pointer hover:text-primary" onClick={() => redirect(`/carDetails/${car.id}`)}>
-                                                        {car.make} {car.model}
-                                                    </div>
-                                                    <div className="text-xs text-foreground/70 mt-1">{car.year} • {car.plate_number || "بدون لوحة"}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">
-                                            {car.dealer ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)` : car.user ? `${car.user.first_name} ${car.user.last_name}` : "غير محدد"}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={cn(
-                                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                                                getStatusColor(car.auction_status)
-                                            )}>
-                                                {getStatusText(car.auction_status)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={cn(
-                                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                                                getAuctionStatusColor(car.auction_status)
-                                            )}>
-                                                {getAuctionStatusText(car.auction_status)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center text-primary">
-                                                <PriceWithIcon iconSize={18}  className="text-sm font-medium" price={car.evaluation_price || 0} />
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">
-                                        <PriceWithIcon iconSize={18}   price={car.min_price || 0} />
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80"><PriceWithIcon iconSize={18}  price={car.max_price || 0} /></td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80"><PriceWithIcon iconSize={18}  price={car.auctions?.[0]?.minimum_bid || 0} /></td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80"><PriceWithIcon iconSize={18}  price={car.auctions?.[0]?.maximum_bid || 0} /></td>
-                                        <td className="px-6 py-4 text-sm text-foreground/80">
-                                            {new Date(car.created_at).toLocaleDateString("ar-SA")}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-2 space-x-reverse">
-                                                <button onClick={() => redirect(`/admin/cars/${car.id}`)} className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300" title="عرض التفاصيل">
-                                                    <Eye size={16} />
-                                                </button>
-                                                
-                                                {car.auction_status === "pending" && (
-                                                    <button onClick={() => handleProcessAuction(car.id)} className="bg-secondary hover:bg-secondary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300" title="معالجة طلب المزاد">
-                                                        معالجة
-                                                    </button>
-                                                )}
-                                                
-                                                {car.auction_status === "in_auction" && (
-                                                    <button onClick={() => { formData.price = car.evaluation_price?.toString() || ""; formData.id = car.active_auction?.id || ""; setShowModal(true); }} className="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300" title="تحديد السعر للمزاد">
-                                                        حدد السعر
-                                                    </button>
-                                                )}
-                                                
-                                                <ActionsMenu car={car} handleAction={handleBulkAction} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {filteredCars.length === 0 && (
-                            <div className="text-center py-12">
-                                <Car className="mx-auto h-12 w-12 text-foreground/50 mb-4" />
-                                <h3 className="text-lg font-medium text-foreground/70">لا توجد سيارات</h3>
-                                <p className="text-foreground/50 mt-1">لم يتم العثور على سيارات تطابق معايير البحث.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center mt-6">
-                <Pagination className="pagination-bar" currentPage={currentPage} totalCount={totalCount} pageSize={pageSize} onPageChange={page => setCurrentPage(page)} />
-            </div>
-
-            {/* Price Modal */}
-            <Modal show={showModal} onClose={() => setShowModal(false)} title="حدد السعر للمزاد">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <input type="text" id="id" name="id" value={formData.id} className="hidden" readOnly />
-                    </div>
-                    <div>
-                        <label htmlFor="price" className="block text-sm font-medium text-foreground mb-1">سعر بدأ المزاد</label>
-                        <input type="string" id="price" name="price" value={formData.price} onChange={handleInputChange} className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary" placeholder="سعر بدأ المزاد" required />
-                    </div>
-                    <div className="flex gap-3">
-                        <button type="submit" className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300">
-                            حفظ
-                        </button>
-                        <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300">
-                            إغلاق
-                        </button>
-                    </div>
-                </form>
-            </Modal>
-
-            <Modal show={showApproveModal} onClose={() => setShowApproveModal(false)} title="الموافقة على المزاد وتحديد سعر البداية">
-                <form onSubmit={handleApproveWithPrice} className="space-y-6">
-                    <div>
-                        <label htmlFor="openingPrice" className="block text-sm font-medium text-foreground mb-1">سعر بدأ المزاد</label>
-                        <input type="number" id="openingPrice" name="openingPrice" value={openingPrice} onChange={(e) => setOpeningPrice(e.target.value)} className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary" placeholder="سعر بدأ المزاد" required />
-                    </div>
-                    <div className="flex gap-3">
-                        <button type="submit" className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300">
-                            موافق
-                        </button>
-                        <button type="button" onClick={() => setShowApproveModal(false)} className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300">
-                            إغلاق
-                        </button>
-                    </div>
-                </form>
-            </Modal>
-
-            <MoveToLiveDialog open={showMoveToLiveDialog} onClose={() => setShowMoveToLiveDialog(false)} carIds={moveToLiveCarIds} onSuccess={() => { setSelectedCars(new Set()); setSelectAll(false); fetchCars(); setShowMoveToLiveDialog(false); }} />
+  return (
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 rtl" dir="rtl" lang="ar">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">إدارة السيارات</h1>
+          <p className="text-foreground/70 mt-2">إدارة وتنظيم جميع السيارات في النظام</p>
         </div>
-    );
+
+        <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
+          <button
+            onClick={refreshAll}
+            disabled={loading || statsLoading}
+            className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ml-2 ${(loading || statsLoading) ? "animate-spin" : ""}`} />
+            تحديث
+          </button>
+
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+            <Car className="w-6 h-6 text-primary" />
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <StatCard title="إجمالي السيارات" value={stats.total} icon={<Car className="w-6 h-6 text-primary" />} box="bg-primary/10" />
+        <StatCard title="في المزاد" value={stats.inAuction} icon={<Play className="w-6 h-6 text-green-400" />} box="bg-green-500/10" />
+        <StatCard title="في انتظار الموافقة" value={stats.pending} icon={<Clock className="w-6 h-6 text-amber-400" />} box="bg-amber-500/10" />
+        <StatCard title="تم البيع" value={stats.sold} icon={<CheckCircle className="w-6 h-6 text-emerald-400" />} box="bg-emerald-500/10" />
+        <StatCard title="متاحة" value={stats.available} icon={<TrendingUp className="w-6 h-6 text-cyan-400" />} box="bg-cyan-500/10" />
+      </div>
+
+      {/* Main Content */}
+      <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
+        {/* Search and Filters Header */}
+        <div className="border-b border-border p-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
+              <div className="relative flex-grow">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="bg-background border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+              >
+                <Filter className="w-4 h-4 ml-2" />
+                فلاتر
+                <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+
+            {selectedCars.size > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-foreground/70">تم اختيار {selectedCars.size} سيارة</span>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setShowBulkActions(!showBulkActions)}
+                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
+                  >
+                    إجراءات جماعية
+                    <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showBulkActions ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {showBulkActions && (
+                    <div className="absolute top-full left-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-2xl z-10">
+                      <div className="p-2 space-y-1">
+                        <button
+                          onClick={() => handleBulkAction("approve-auctions")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <CheckSquare size={16} />
+                          الموافقة على المزادات
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("reject-auctions")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <X size={16} />
+                          رفض المزادات
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("move-to-live")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <Play size={16} />
+                          نقل إلى الحراج المباشر
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("move-to-instant")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <Clock size={16} />
+                          نقل الى المزادات الفورية
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("move-to-late")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <AlertTriangle size={16} />
+                          نقل إلى المزادات المتأخرة
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("move-to-active")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <CheckCircle size={16} />
+                          نقل إلى المزادات النشطة
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("move-to-pending")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
+                        >
+                          <RotateCcw size={16} />
+                          نقل إلى المزادات المعلقة
+                        </button>
+
+                        <button
+                          onClick={() => handleBulkAction("archive")}
+                          className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 text-red-500 transition-all duration-300"
+                        >
+                          <Archive size={16} />
+                          أرشفة
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-background/50 rounded-xl mt-4">
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">كل الحالات</option>
+                <option value="available">متاح</option>
+                <option value="pending">في الانتظار</option>
+                <option value="in_auction">في المزاد</option>
+                <option value="sold">تم البيع</option>
+                <option value="completed">مكتمل</option>
+                <option value="cancelled">ملغي</option>
+              </select>
+
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
+                className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">كل الفئات</option>
+                {enumOptions.categories?.map((category: any) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filters.condition}
+                onChange={(e) => setFilters((prev) => ({ ...prev, condition: e.target.value }))}
+                className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">كل الحالات</option>
+                {enumOptions.conditions?.map((condition: any) => (
+                  <option key={condition.value} value={condition.value}>
+                    {condition.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filters.transmission}
+                onChange={(e) => setFilters((prev) => ({ ...prev, transmission: e.target.value }))}
+                className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">كل أنواع الناقل</option>
+                {enumOptions.transmissions?.map((transmission: any) => (
+                  <option key={transmission.value} value={transmission.value}>
+                    {transmission.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Cars Table */}
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-border/50 border-b border-border">
+                  <th className="px-6 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                    />
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">السيارة</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">المالك</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة المزاد</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة الموافقة</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">سعر الأفتتاح</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر مرغوب</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر مرغوب</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر في المزاد</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر في المزاد</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">تاريخ الإضافة</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y border-border">
+                {filteredCars.map((car) => {
+                  const owner =
+                    car.dealer?.user
+                      ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)`
+                      : car.user
+                      ? (car.user.name ||
+                          `${car.user.first_name || ""} ${car.user.last_name || ""}`.trim() ||
+                          "غير محدد")
+                      : "غير محدد";
+
+                  return (
+                    <tr key={car.id} className="hover:bg-border/50 transition-colors duration-200">
+                      <td className="px-6 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCars.has(car.id)}
+                          onChange={(e) => handleSelectCar(car.id, e.target.checked)}
+                          className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                        />
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="bg-primary p-2 rounded-xl">
+                            <Car className="w-4 h-4 text-white" />
+                          </div>
+
+                          <div className="mr-4">
+                            <div
+                              className="text-sm font-medium text-foreground cursor-pointer hover:text-primary"
+                              onClick={() => router.push(`/carDetails/${car.id}`)}
+                            >
+                              {(car.make || "—")} {(car.model || "—")}
+                            </div>
+                            <div className="text-xs text-foreground/70 mt-1">
+                              {(car.year ?? "—")} • {car.plate_number || "بدون لوحة"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground/80">{owner}</td>
+
+                      <td className="px-6 py-4">
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                            getStatusColor(car.auction_status)
+                          )}
+                        >
+                          {getStatusText(car.auction_status)}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                            getApprovalColor(car.auction_status)
+                          )}
+                        >
+                          {getApprovalText(car.auction_status)}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center text-primary">
+                          <PriceWithIcon
+                            iconSize={18}
+                            className="text-sm font-medium"
+                            price={asNumber(car.evaluation_price)}
+                          />
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground/80">
+                        <PriceWithIcon iconSize={18} price={asNumber(car.min_price)} />
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground/80">
+                        <PriceWithIcon iconSize={18} price={asNumber(car.max_price)} />
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground/80">
+                        <PriceWithIcon iconSize={18} price={asNumber(car.auctions?.[0]?.minimum_bid)} />
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground/80">
+                        <PriceWithIcon iconSize={18} price={asNumber(car.auctions?.[0]?.maximum_bid)} />
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-foreground/80">{safeDate(car.created_at)}</td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <button
+                            onClick={() => router.push(`/admin/cars/${car.id}`)}
+                            className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300"
+                            title="عرض التفاصيل"
+                          >
+                            <Eye size={16} />
+                          </button>
+
+                          {car.auction_status === "pending" && (
+                            <button
+                              onClick={() => handleProcessAuction(car.id)}
+                              className="bg-secondary hover:bg-secondary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300"
+                              title="معالجة طلب المزاد"
+                            >
+                              معالجة
+                            </button>
+                          )}
+
+                          {car.active_auction?.id ? (
+                            <button
+                              onClick={() => {
+                                setFormData({
+                                  price: String(asNumber(car.evaluation_price) || ""),
+                                  id: car.active_auction?.id || "",
+                                });
+                                setShowModal(true);
+                              }}
+                              className="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300"
+                              title="تحديد السعر للمزاد"
+                            >
+                              حدد السعر
+                            </button>
+                          ) : null}
+
+                          <ActionsMenu car={car} handleAction={handleBulkAction} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {filteredCars.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <Car className="mx-auto h-12 w-12 text-foreground/50 mb-4" />
+                <h3 className="text-lg font-medium text-foreground/70">لا توجد سيارات</h3>
+                <p className="text-foreground/50 mt-1">لم يتم العثور على سيارات تطابق معايير البحث.</p>
+              </div>
+            )}
+
+            {loading && (
+              <div className="text-center py-10 text-muted-foreground">
+                <div className="inline-flex items-center gap-2 flex-row-reverse">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  جاري التحميل...
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-center mt-6">
+        <Pagination
+          className="pagination-bar"
+          currentPage={currentPage}
+          totalCount={totalCount}
+          pageSize={pageSize}
+          onPageChange={(p: number) => setCurrentPage(p)}
+        />
+      </div>
+
+      {/* Price Modal */}
+      <Modal show={showModal} onClose={() => setShowModal(false)} title="حدد السعر للمزاد">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <input type="text" id="id" name="id" value={formData.id} className="hidden" readOnly />
+
+          <div>
+            <label htmlFor="price" className="block text-sm font-medium text-foreground mb-1">
+              سعر بدأ المزاد
+            </label>
+            <input
+              type="text"
+              id="price"
+              name="price"
+              value={formData.price}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
+              placeholder="سعر بدأ المزاد"
+              required
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300"
+            >
+              حفظ
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300"
+            >
+              إغلاق
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Approve with Price Modal */}
+      <Modal
+        show={showApproveModal}
+        onClose={() => setShowApproveModal(false)}
+        title="الموافقة على المزاد وتحديد سعر البداية"
+      >
+        <form onSubmit={handleApproveWithPrice} className="space-y-6">
+          <div>
+            <label htmlFor="openingPrice" className="block text-sm font-medium text-foreground mb-1">
+              سعر بدأ المزاد
+            </label>
+            <input
+              type="number"
+              id="openingPrice"
+              name="openingPrice"
+              value={openingPrice}
+              onChange={(e) => setOpeningPrice(e.target.value)}
+              className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
+              placeholder="سعر بدأ المزاد"
+              required
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300"
+            >
+              موافق
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowApproveModal(false)}
+              className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300"
+            >
+              إغلاق
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <MoveToLiveDialog
+        open={showMoveToLiveDialog}
+        onClose={() => setShowMoveToLiveDialog(false)}
+        carIds={moveToLiveCarIds}
+        onSuccess={() => {
+          setSelectedCars(new Set());
+          setSelectAll(false);
+          fetchCars();
+          fetchStats();
+          setShowMoveToLiveDialog(false);
+        }}
+      />
+    </div>
+  );
 }
 
-  
+function StatCard({
+  title,
+  value,
+  icon,
+  box,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  box: string;
+}) {
+  return (
+    <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-foreground/70 text-sm">{title}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+        </div>
+        <div className={`${box} p-3 rounded-xl`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
 const ITEM_HEIGHT = 55;
-  
-export function ActionsMenu({ car, handleAction }) {
-  const [anchorEl, setAnchorEl] = useState(null);
+
+export function ActionsMenu({
+  car,
+  handleAction,
+}: {
+  car: CarData;
+  handleAction: (action: string, carId?: number) => void;
+}) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event) => {
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+
+  const handleClose = () => setAnchorEl(null);
+
+  const actionItem = (action: string, label: string, Icon: any, danger = false) => (
+    <MenuItem
+      onClick={() => {
+        handleClose();
+        handleAction(action, car.id);
+      }}
+      sx={{ direction: "rtl" }}
+    >
+      <div className={cn("w-full flex items-center justify-between", danger && "text-red-600")}>
+        <span className="text-sm">{label}</span>
+        <Icon size={16} />
+      </div>
+    </MenuItem>
+  );
 
   return (
     <div>
       <button
-          aria-label="more"
-          id="long-button"
-          aria-controls={open ? 'long-menu' : undefined}
-          aria-expanded={open ? 'true' : undefined}
-          aria-haspopup="true"
-          onClick={handleClick}
-          className="text-foreground/70 hover:text-foreground hover:bg-border p-2 rounded-lg transition-all duration-300">
-           <MoreVertical size={16} />
+        aria-label="more"
+        id="long-button"
+        aria-controls={open ? "long-menu" : undefined}
+        aria-expanded={open ? "true" : undefined}
+        aria-haspopup="true"
+        onClick={handleClick}
+        className="text-foreground/70 hover:text-foreground hover:bg-border p-2 rounded-lg transition-all duration-300"
+      >
+        <span className="inline-block">⋮</span>
       </button>
 
-    
       <Menu
         id="long-menu"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
         slotProps={{
-          paper: {
-            style: {
-              maxHeight: ITEM_HEIGHT * 4.5,
-              width: '25ch',
-            },
-          },
-          list: {
-            'aria-labelledby': 'long-button',
-          },
+          paper: { style: { maxHeight: ITEM_HEIGHT * 6.5, width: "25ch" } },
+          list: { "aria-labelledby": "long-button" as any },
         }}
       >
-              <button onClick={() =>{handleClose(); handleAction("approve-auctions-with-price", car.id)}} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <CheckSquare size={16} />
-                  الموافقة على المزادات
-              </button>
-              <button onClick={() => handleAction("reject-auctions", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <X size={16} />
-                  رفض المزادات
-              </button>
-              <button onClick={() => handleAction("move-to-live", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <Play size={16} />
-                  نقل إلى الحراج المباشر
-              </button>
-              <button onClick={() => handleAction("move-to-instant", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <Clock size={16} />
-                  نقل الى المزادات الفورية
-              </button>
-              <button onClick={() => handleAction("move-to-late", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <AlertTriangle size={16} />
-                  نقل إلى المزادات المتأخرة
-              </button>
-              <button onClick={() => handleAction("move-to-active", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <CheckCircle size={16} />
-                  نقل إلى المزادات النشطة
-              </button>
-              <button onClick={() => handleAction("move-to-pending", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300">
-                  <RotateCcw size={16} />
-                  نقل إلى المزادات المعلقة
-              </button>
-              <button onClick={() => handleAction("archive", car.id)} className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 text-red-500 transition-all duration-300">
-                  <Archive size={16} />
-                  أرشفة
-              </button>
-        
+        {actionItem("approve-auctions-with-price", "الموافقة على المزادات", CheckSquare)}
+        {actionItem("reject-auctions", "رفض المزادات", X)}
+        {actionItem("move-to-live", "نقل إلى الحراج المباشر", Play)}
+        {actionItem("move-to-instant", "نقل الى المزادات الفورية", Clock)}
+        {actionItem("move-to-late", "نقل إلى المزادات المتأخرة", AlertTriangle)}
+        {actionItem("move-to-active", "نقل إلى المزادات النشطة", CheckCircle)}
+        {actionItem("move-to-pending", "نقل إلى المزادات المعلقة", RotateCcw)}
+        {actionItem("archive", "أرشفة", Archive, true)}
       </Menu>
     </div>
   );

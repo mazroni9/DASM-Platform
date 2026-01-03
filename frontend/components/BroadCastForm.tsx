@@ -5,15 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
-import {
-  Radio,
-  Satellite,
-  PlayCircle,
-  Video,
-  Trash2,
-  RefreshCw,
-  Link as LinkIcon,
-} from "lucide-react";
+import { Radio, Video, Trash2, RefreshCw, Link as LinkIcon } from "lucide-react";
 
 type CarBrief = {
   make: string;
@@ -39,6 +31,9 @@ type BroadcastRow = {
   };
 };
 
+const cn = (...xs: Array<string | false | undefined | null>) =>
+  xs.filter(Boolean).join(" ");
+
 const BroadcastForm: React.FC = () => {
   // Form states
   const [title, setTitle] = useState<string>("");
@@ -55,8 +50,7 @@ const BroadcastForm: React.FC = () => {
   const [processingBroadcastId, setProcessingBroadcastId] = useState<number | null>(null);
 
   // ===== Helpers =====
-  const friendlyCar = (car?: CarBrief) =>
-    car ? `${car.make} ${car.model} ${car.year}` : "—";
+  const friendlyCar = (car?: CarBrief) => (car ? `${car.make} ${car.model} ${car.year}` : "—");
 
   const selectedAuction = useMemo(
     () => auctionOptions.find((a) => a.id === auctionId),
@@ -70,7 +64,8 @@ const BroadcastForm: React.FC = () => {
       if (!title) setTitle(autoText);
       if (!description) setDescription(autoText);
     }
-  }, [selectedAuction]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAuction]);
 
   // ===== API Calls =====
   const fetchAuctionIds = async () => {
@@ -78,7 +73,6 @@ const BroadcastForm: React.FC = () => {
       setLoadingAuctions(true);
       const res = await api.get("/api/approved-auctions-ids");
       const payload = res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? [];
-      // نعرض المزادات اللي ما عليها بث (broadcasts.length == 0)
       const cleaned: AuctionOption[] = Array.isArray(payload) ? payload : [];
       setAuctionOptions(cleaned.filter((a) => (a.broadcasts?.length ?? 0) === 0));
     } catch (err: any) {
@@ -102,6 +96,13 @@ const BroadcastForm: React.FC = () => {
     } finally {
       setLoadingBroadcasts(false);
     }
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setAuctionId("");
+    setYoutubeUrl("");
+    setDescription("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,10 +138,7 @@ const BroadcastForm: React.FC = () => {
       const res = await api.post("/api/admin/broadcast", formData);
       if (res?.data?.status === "success") {
         toast.success(res?.data?.message || "تم إنشاء البث بنجاح");
-        setTitle("");
-        setAuctionId("");
-        setYoutubeUrl("");
-        setDescription("");
+        resetForm();
         await Promise.all([fetchBroadcasts(), fetchAuctionIds()]);
       } else {
         toast.error(res?.data?.message || "تعذر إنشاء البث");
@@ -178,34 +176,67 @@ const BroadcastForm: React.FC = () => {
   useEffect(() => {
     fetchAuctionIds();
     fetchBroadcasts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ===== UI =====
+  const cardClass =
+    "rounded-2xl border shadow-sm overflow-hidden " +
+    "bg-white/70 border-gray-200 " +
+    "dark:bg-gray-900/40 dark:border-white/10";
+
+  const headerClass =
+    "border-b p-5 flex items-center justify-between " +
+    "bg-white/60 border-gray-200 " +
+    "dark:bg-gray-900/30 dark:border-white/10";
+
+  const inputClass =
+    "w-full rounded-xl border px-4 py-2 outline-none transition text-sm " +
+    "bg-white text-gray-900 border-gray-200 placeholder-gray-400 " +
+    "focus:ring-2 focus:ring-purple-500 focus:border-transparent " +
+    "dark:bg-gray-900/50 dark:text-white dark:border-white/10 dark:placeholder-gray-500";
+
+  const selectClass =
+    "w-full rounded-xl border px-4 py-2 outline-none transition text-sm " +
+    "bg-white text-gray-900 border-gray-200 " +
+    "focus:ring-2 focus:ring-purple-500 focus:border-transparent " +
+    "dark:bg-gray-900/50 dark:text-white dark:border-white/10";
+
+  const mutedText = "text-gray-600 dark:text-gray-400";
+  const headingText = "text-gray-900 dark:text-white";
+
   return (
-    <div className="space-y-8">
+    <div dir="rtl" className="space-y-8">
       {/* Form Card */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
-        <div className="border-b border-gray-700/50 p-5 flex items-center justify-between">
-          <div className="flex items-center space-x-3 space-x-reverse">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-2 rounded-xl">
+      <div className={cardClass}>
+        <div className={headerClass}>
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 rounded-xl">
               <Radio className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">إنشاء بث مباشر</h3>
-              <p className="text-gray-400 text-sm">
+              <h3 className={cn("text-lg font-semibold", headingText)}>إنشاء بث مباشر</h3>
+              <p className={cn("text-sm", mutedText)}>
                 اختر المزاد وأدخل رابط البث والعنوان ثم اضغط إرسال.
               </p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={() => {
               fetchAuctionIds();
               fetchBroadcasts();
             }}
-            className="flex items-center gap-2 text-gray-300 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg"
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg border transition",
+              "bg-white/70 text-gray-700 border-gray-200 hover:bg-white",
+              "dark:bg-gray-900/40 dark:text-gray-200 dark:border-white/10 dark:hover:bg-white/5"
+            )}
             title="تحديث البيانات"
           >
-            <RefreshCw className={`w-4 h-4 ${loadingAuctions || loadingBroadcasts ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={cn("w-4 h-4", (loadingAuctions || loadingBroadcasts) && "animate-spin")}
+            />
             تحديث
           </button>
         </div>
@@ -213,27 +244,31 @@ const BroadcastForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Title */}
           <div className="col-span-1">
-            <label className="block text-sm text-gray-300 mb-2">العنوان<span className="text-red-500">*</span></label>
+            <label className={cn("block text-sm mb-2", "text-gray-700 dark:text-gray-300")}>
+              العنوان <span className="text-red-500">*</span>
+            </label>
             <input
               dir="auto"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="مثال: بث مزاد — تويوتا كامري 2021"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={inputClass}
             />
           </div>
 
           {/* Auction */}
           <div className="col-span-1">
-            <label className="block text-sm text-gray-300 mb-2">المزاد<span className="text-red-500">*</span></label>
+            <label className={cn("block text-sm mb-2", "text-gray-700 dark:text-gray-300")}>
+              المزاد <span className="text-red-500">*</span>
+            </label>
             <select
               value={auctionId}
               onChange={(e) => setAuctionId(e.target.value ? Number(e.target.value) : "")}
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={selectClass}
               disabled={loadingAuctions}
             >
-              <option value="" disabled>
+              <option value="">
                 {loadingAuctions ? "جاري التحميل..." : "اختر المزاد الذي لا يحتوي على بث"}
               </option>
               {auctionOptions.map((a) => (
@@ -242,34 +277,39 @@ const BroadcastForm: React.FC = () => {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-400 mt-2">
+
+            <p className={cn("text-xs mt-2", mutedText)}>
               يظهر هنا فقط المزادات التي لا يوجد لها بث نشط/مسجل.
             </p>
           </div>
 
           {/* Stream URL */}
           <div className="col-span-1">
-            <label className="block text-sm text-gray-300 mb-2">رابط البث (YouTube/RTMP)<span className="text-red-500">*</span></label>
+            <label className={cn("block text-sm mb-2", "text-gray-700 dark:text-gray-300")}>
+              رابط البث (YouTube/RTMP) <span className="text-red-500">*</span>
+            </label>
             <input
               dir="ltr"
               type="url"
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
               placeholder="https://www.youtube.com/watch?v=XXXX أو rtmp://..."
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={inputClass}
             />
           </div>
 
           {/* Description */}
           <div className="col-span-1">
-            <label className="block text-sm text-gray-300 mb-2">الوصف</label>
+            <label className={cn("block text-sm mb-2", "text-gray-700 dark:text-gray-300")}>
+              الوصف
+            </label>
             <input
               dir="auto"
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="وصف مختصر للبث"
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={inputClass}
             />
           </div>
 
@@ -277,16 +317,16 @@ const BroadcastForm: React.FC = () => {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => {
-                setTitle("");
-                setAuctionId("");
-                setYoutubeUrl("");
-                setDescription("");
-              }}
-              className="bg-gray-700 hover:bg-gray-600 text-white rounded-xl"
+              onClick={resetForm}
+              className={cn(
+                "rounded-xl border",
+                "bg-gray-100 hover:bg-gray-200 text-gray-900 border-gray-200",
+                "dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white dark:border-white/10"
+              )}
             >
               إعادة تعيين
             </Button>
+
             <Button
               type="submit"
               disabled={submitting || !title.trim() || !youtubeUrl.trim() || !auctionId}
@@ -299,63 +339,90 @@ const BroadcastForm: React.FC = () => {
       </div>
 
       {/* List Card */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
-        <div className="border-b border-gray-700/50 p-5 flex items-center justify-between">
-          <div className="flex items-center space-x-3 space-x-reverse">
+      <div className={cardClass}>
+        <div className={headerClass}>
+          <div className="flex items-center gap-3">
             <div className="bg-gradient-to-r from-cyan-500 to-blue-600 p-2 rounded-xl">
               <Video className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">قائمة البثوث</h3>
-              <p className="text-gray-400 text-sm">عرض جميع البثوث المسجلة في النظام</p>
+              <h3 className={cn("text-lg font-semibold", headingText)}>قائمة البثوث</h3>
+              <p className={cn("text-sm", mutedText)}>عرض جميع البثوث المسجلة في النظام</p>
             </div>
           </div>
+
           <button
+            type="button"
             onClick={fetchBroadcasts}
-            className="flex items-center gap-2 text-gray-300 hover:text-white bg-gray-800 border border-gray-700 px-3 py-2 rounded-lg"
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg border transition",
+              "bg-white/70 text-gray-700 border-gray-200 hover:bg-white",
+              "dark:bg-gray-900/40 dark:text-gray-200 dark:border-white/10 dark:hover:bg-white/5"
+            )}
             title="تحديث القائمة"
           >
-            <RefreshCw className={`w-4 h-4 ${loadingBroadcasts ? "animate-spin" : ""}`} />
+            <RefreshCw className={cn("w-4 h-4", loadingBroadcasts && "animate-spin")} />
             تحديث
           </button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full">
-            <thead className="bg-gray-900/60">
+            <thead className="bg-gray-50 dark:bg-white/5">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">العنوان</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">المزاد</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">الوصف</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">رابط البث</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">الحالة</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">الإجراءات</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  #
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  العنوان
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  المزاد
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  الوصف
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  رابط البث
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  الحالة
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  الإجراءات
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/50">
+
+            <tbody className="divide-y divide-gray-200 dark:divide-white/10">
               {loadingBroadcasts ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-400">
+                  <td colSpan={7} className={cn("px-6 py-10 text-center", mutedText)}>
                     جارٍ التحميل...
                   </td>
                 </tr>
               ) : broadcasts.length > 0 ? (
                 broadcasts.map((b) => (
-                  <tr key={b.id} className="hover:bg-gray-800/50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-300 whitespace-nowrap">{b.id}</td>
-                    <td className="px-6 py-4 text-sm text-white">{b.title || "—"}</td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                  <tr key={b.id} className="hover:bg-gray-100/60 dark:hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {b.id}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                      {b.title || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                       {b.auction?.id ? `#${b.auction.id} — ${friendlyCar(b.auction.car)}` : "—"}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">{b.description || "—"}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {b.description || "—"}
+                    </td>
                     <td className="px-6 py-4 text-sm">
                       {b.stream_url ? (
                         <a
                           href={b.stream_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300"
+                          className="inline-flex items-center gap-1 text-cyan-700 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-300"
                         >
                           <LinkIcon className="w-4 h-4" />
                           فتح الرابط
@@ -366,12 +433,12 @@ const BroadcastForm: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       {b.is_live ? (
-                        <span className="inline-flex items-center gap-2 text-red-400">
-                          <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                        <span className="inline-flex items-center gap-2 text-rose-600 dark:text-red-400">
+                          <span className="w-2 h-2 rounded-full bg-rose-600 dark:bg-red-400 animate-pulse"></span>
                           مباشر
                         </span>
                       ) : (
-                        <span className="text-gray-400">غير مباشر</span>
+                        <span className={mutedText}>غير مباشر</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -391,7 +458,7 @@ const BroadcastForm: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-400">
+                  <td colSpan={7} className={cn("px-6 py-10 text-center", mutedText)}>
                     لا توجد بثوث مسجّلة حالياً
                   </td>
                 </tr>

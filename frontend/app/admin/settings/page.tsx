@@ -1,594 +1,706 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-    Settings,
-    Globe,
-    Bell,
-    Shield,
-    DollarSign,
-    SaudiRiyal,
-    Database,
-    Save,
-    AlertTriangle,
-    CheckCircle,
-    Loader2,
-    Cpu,
-    Mail,
-    MessageSquare,
-    Zap,
-    Server,
-    Eye,
-    EyeOff,
-    CreditCard,
-    Car,
-    TrafficCone,
-    Calendar
+  Settings,
+  Globe,
+  Bell,
+  Shield,
+  Database,
+  Save,
+  AlertTriangle,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Zap,
+  Server,
+  CreditCard,
+  Car,
+  TrafficCone,
+  Calendar,
+  DollarSign,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 
 interface SystemSettings {
-    siteName: string;
-    siteUrl: string;
-    adminEmail: string;
-    supportEmail: string;
-    platformFee: number;
-    tamFee: number;
-    muroorFee: number;
-    CarEntryFees: number;
-    auctionDuration: number;
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    maintenanceMode: boolean;
-    autoApproveAuctions: boolean;
-    maxBidAmount: number;
-    minBidIncrement: number;
+  siteName: string;
+  siteUrl: string;
+  adminEmail: string;
+  supportEmail: string;
+  platformFee: number;
+  tamFee: number;
+  muroorFee: number;
+  CarEntryFees: number;
+  auctionDuration: number;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  maintenanceMode: boolean;
+  autoApproveAuctions: boolean;
+  maxBidAmount: number;
+  minBidIncrement: number;
+}
+
+type ApiResponse =
+  | { success: true; data: any; message?: string }
+  | { status: "success"; data: any; message?: string }
+  | any;
+
+const cn = (...xs: Array<string | false | undefined | null>) =>
+  xs.filter(Boolean).join(" ");
+
+const toNumber = (v: any, fallback = 0) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+const toBool = (v: any, fallback = false) => {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (typeof v === "string") return ["true", "1", "yes", "on"].includes(v.toLowerCase());
+  return fallback;
+};
+
+function mapSettingsFromApi(raw: any, fallback: SystemSettings): SystemSettings {
+  // يدعم camelCase أو snake_case
+  const d = raw ?? {};
+  return {
+    siteName: d.siteName ?? d.site_name ?? fallback.siteName,
+    siteUrl: d.siteUrl ?? d.site_url ?? fallback.siteUrl,
+    adminEmail: d.adminEmail ?? d.admin_email ?? fallback.adminEmail,
+    supportEmail: d.supportEmail ?? d.support_email ?? fallback.supportEmail,
+
+    platformFee: toNumber(d.platformFee ?? d.platform_fee, fallback.platformFee),
+    tamFee: toNumber(d.tamFee ?? d.tam_fee, fallback.tamFee),
+    muroorFee: toNumber(d.muroorFee ?? d.muroor_fee, fallback.muroorFee),
+    CarEntryFees: toNumber(
+      d.CarEntryFees ?? d.carEntryFees ?? d.car_entry_fees,
+      fallback.CarEntryFees
+    ),
+
+    auctionDuration: toNumber(d.auctionDuration ?? d.auction_duration, fallback.auctionDuration),
+    emailNotifications: toBool(
+      d.emailNotifications ?? d.email_notifications,
+      fallback.emailNotifications
+    ),
+    smsNotifications: toBool(d.smsNotifications ?? d.sms_notifications, fallback.smsNotifications),
+
+    maintenanceMode: toBool(d.maintenanceMode ?? d.maintenance_mode, fallback.maintenanceMode),
+    autoApproveAuctions: toBool(
+      d.autoApproveAuctions ?? d.auto_approve_auctions,
+      fallback.autoApproveAuctions
+    ),
+
+    maxBidAmount: toNumber(d.maxBidAmount ?? d.max_bid_amount, fallback.maxBidAmount),
+    minBidIncrement: toNumber(d.minBidIncrement ?? d.min_bid_increment, fallback.minBidIncrement),
+  };
+}
+
+function getColorClass(color: string) {
+  const colors = {
+    blue:
+      "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300",
+    purple:
+      "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-300",
+    green:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+    amber:
+      "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+    red:
+      "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+  };
+  return (colors as any)[color] || colors.blue;
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label}
+      </label>
+      {children}
+      {hint ? (
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className={cn(
+        "w-full rounded-xl border px-4 py-3 text-sm shadow-sm outline-none transition",
+        "border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500",
+        "dark:border-white/10 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500 dark:focus:ring-blue-500",
+        props.className
+      )}
+    />
+  );
+}
+
+function SwitchRow({
+  icon: Icon,
+  title,
+  description,
+  checked,
+  onChange,
+  activeColor = "blue",
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  activeColor?: "blue" | "green" | "red";
+}) {
+  const activeTrack =
+    activeColor === "green"
+      ? "peer-checked:bg-emerald-500"
+      : activeColor === "red"
+      ? "peer-checked:bg-rose-500"
+      : "peer-checked:bg-blue-500";
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-6 rounded-2xl border p-6 transition",
+        "border-gray-200 bg-white/70 hover:bg-white shadow-sm",
+        "dark:border-white/10 dark:bg-gray-950/20 dark:hover:bg-white/5"
+      )}
+    >
+      <div className="flex items-center gap-4">
+        <div className="rounded-xl bg-gray-100 p-3 text-gray-700 dark:bg-white/5 dark:text-gray-200">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">{title}</h4>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+        </div>
+      </div>
+
+      <label className="relative inline-flex cursor-pointer items-center">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only"
+        />
+        <div
+          className={cn(
+            "h-6 w-12 rounded-full transition",
+            "bg-gray-200 dark:bg-gray-700",
+            activeTrack,
+            "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500"
+          )}
+        />
+        <span
+          className={cn(
+            "pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full transition",
+            "bg-white shadow",
+            "peer-checked:translate-x-6"
+          )}
+        />
+      </label>
+    </div>
+  );
 }
 
 export default function AdminSettingsPage() {
-    const [settings, setSettings] = useState<SystemSettings>({
-        siteName: "منصة أسواق المزادات الرقمية السعودية",
-        siteUrl: "https://mazbrothers.com",
-        adminEmail: "admin@mazbrothers.com",
-        supportEmail: "support@mazbrothers.com",
-        platformFee: 0,
-        tamFee: 0,
-        CarEntryFees: 0,
-        muroorFee: 0,
-        auctionDuration: 24,
-        emailNotifications: true,
-        smsNotifications: false,
-        maintenanceMode: false,
-        autoApproveAuctions: false,
-        maxBidAmount: 1000000,
-        minBidIncrement: 100,
-    });
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState("general");
-    const [settingsLoaded, setSettingsLoaded] = useState(false);
-    const [showAdvanced, setShowAdvanced] = useState(false);
+  const defaults: SystemSettings = {
+    siteName: "منصة أسواق المزادات الرقمية السعودية",
+    siteUrl: "https://mazbrothers.com",
+    adminEmail: "admin@mazbrothers.com",
+    supportEmail: "support@mazbrothers.com",
+    platformFee: 0,
+    tamFee: 0,
+    CarEntryFees: 0,
+    muroorFee: 0,
+    auctionDuration: 24,
+    emailNotifications: true,
+    smsNotifications: false,
+    maintenanceMode: false,
+    autoApproveAuctions: false,
+    maxBidAmount: 1000000,
+    minBidIncrement: 100,
+  };
 
-    useEffect(() => {
-        if (!settingsLoaded) {
-            fetchSettings();
-        }
-    }, [settingsLoaded]);
+  const [settings, setSettings] = useState<SystemSettings>(defaults);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"general" | "notifications" | "security" | "financial" | "system">(
+    "general"
+  );
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-    const fetchSettings = async () => {
+  const tabs = [
+    { id: "general", name: "عام", icon: Settings, color: "blue" },
+    { id: "notifications", name: "الإشعارات", icon: Bell, color: "purple" },
+    { id: "security", name: "الأمان", icon: Shield, color: "green" },
+    { id: "financial", name: "المالية", icon: CreditCard, color: "amber" },
+    { id: "system", name: "النظام", icon: Database, color: "red" },
+  ] as const;
+
+  useEffect(() => {
+    if (!settingsLoaded) void fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoaded]);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+
+      // جرّب كذا endpoint عشان اختلاف baseURL
+      const endpoints = [
+        "/admin/settings",
+        "/api/admin/settings",
+        "https://api.dasm.com.sa/api/admin/settings",
+      ];
+
+      let res: any = null;
+      let lastErr: any = null;
+
+      for (const url of endpoints) {
         try {
-            setLoading(true);
-            const response = await api.get("/api/admin/settings");
-            if (response.data && response.data.status === "success") {
-                setSettings(response.data.data);
-            }
-            setSettingsLoaded(true);
-        } catch (error) {
-            console.error("Error fetching settings:", error);
-            toast.error("تم تحميل الإعدادات الافتراضية");
-            setSettingsLoaded(true);
-        } finally {
-            setLoading(false);
+          res = await api.get<ApiResponse>(url);
+          if (res?.data) break;
+        } catch (e) {
+          lastErr = e;
         }
-    };
+      }
+      if (!res?.data) throw lastErr || new Error("No response data");
 
-    const saveSettings = async () => {
-        try {
-            setSaving(true);
-            const response = await api.put("/api/admin/settings", settings);
-            if (response.data && response.data.status === "success") {
-                toast.success(response.data.message || "تم حفظ الإعدادات بنجاح");
-            } else {
-                toast.error(response.data.message || "فشل حفظ الإعدادات");
-            }
-        } catch (error: any) {
-            console.error("Error saving settings:", error);
-            const errorMessage =
-                error.response?.data?.message || "حدث خطأ أثناء حفظ الإعدادات";
-            toast.error(errorMessage);
-            if (error.response?.data?.errors) {
-                Object.values(error.response.data.errors).forEach((err: any) => {
-                    toast.error(err[0]);
-                });
-            }
-        } finally {
-            setSaving(false);
-        }
-    };
+      const payload: ApiResponse = res.data;
+      const ok = payload?.success === true || payload?.status === "success";
+      const data = payload?.data;
 
-    const handleInputChange = (key: keyof SystemSettings, value: any) => {
-        setSettings((prev) => ({
-            ...prev,
-            [key]: value,
-        }));
-    };
+      if (ok && data) {
+        setSettings(mapSettingsFromApi(data, defaults));
+      } else {
+        // لو الـ API رجع شكل مختلف، على الأقل ما نكسر الصفحة
+        setSettings((prev) => mapSettingsFromApi(data, prev));
+      }
 
-    const tabs = [
-        { id: "general", name: "عام", icon: Settings, color: "blue" },
-        { id: "notifications", name: "الإشعارات", icon: Bell, color: "purple" },
-        { id: "security", name: "الأمان", icon: Shield, color: "green" },
-        { id: "financial", name: "المالية", icon: SaudiRiyal, color: "amber" },
-        { id: "system", name: "النظام", icon: Database, color: "red" },
-    ];
-
-    const getColorClass = (color: string) => {
-        const colors = {
-            blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-            purple: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-            green: "bg-green-500/10 text-green-400 border-green-500/20",
-            amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-            red: "bg-red-500/10 text-red-400 border-red-500/20"
-        };
-        return colors[color as keyof typeof colors] || colors.blue;
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-300 text-lg">جاري تحميل الإعدادات...</p>
-                </div>
-            </div>
-        );
+      setSettingsLoaded(true);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      toast.error("تم تحميل الإعدادات الافتراضية");
+      setSettingsLoaded(true);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  const saveSettings = async () => {
+    try {
+      setSaving(true);
+
+      const endpoints = [
+        "/admin/settings",
+        "/api/admin/settings",
+        "https://api.dasm.com.sa/api/admin/settings",
+      ];
+
+      let res: any = null;
+      let lastErr: any = null;
+
+      for (const url of endpoints) {
+        try {
+          res = await api.put<ApiResponse>(url, settings);
+          if (res?.data) break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (!res?.data) throw lastErr || new Error("No response data");
+
+      const payload: ApiResponse = res.data;
+      const ok = payload?.success === true || payload?.status === "success";
+
+      if (ok) toast.success(payload?.message || "تم حفظ الإعدادات بنجاح");
+      else toast.error(payload?.message || "فشل حفظ الإعدادات");
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      const errorMessage = error?.response?.data?.message || "حدث خطأ أثناء حفظ الإعدادات";
+      toast.error(errorMessage);
+
+      if (error?.response?.data?.errors) {
+        Object.values(error.response.data.errors).forEach((err: any) => {
+          toast.error(Array.isArray(err) ? err[0] : String(err));
+        });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleInputChange = <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-6">
-            {/* Header */}
-            <div className="mb-8">
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">
-                            إعدادات النظام
-                        </h1>
-                        <p className="text-gray-400">
-                            إدارة إعدادات المنصة والتكوينات المختلفة
-                        </p>
-                    </div>
-                    <button
-                        onClick={saveSettings}
-                        disabled={saving}
-                        className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
-                    >
-                        {saving ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <Save className="w-5 h-5" />
-                        )}
-                        {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-                    </button>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex flex-wrap gap-2 mb-8">
-                    {tabs.map((tab) => {
-                        const IconComponent = tab.icon;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-3 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                                    activeTab === tab.id
-                                        ? `${getColorClass(tab.color)} border`
-                                        : "text-gray-400 hover:text-white hover:bg-gray-800/50"
-                                }`}
-                            >
-                                <IconComponent className="w-4 h-4" />
-                                {tab.name}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Settings Content */}
-            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl">
-                {/* General Settings */}
-                {activeTab === "general" && (
-                    <div className="p-8">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-blue-500/10 rounded-xl">
-                                <Globe className="w-6 h-6 text-blue-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-semibold text-white">
-                                    الإعدادات العامة
-                                </h3>
-                                <p className="text-gray-400">
-                                    إعدادات الموقع والمعلومات الأساسية
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        اسم الموقع
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={settings.siteName}
-                                        onChange={(e) =>
-                                            handleInputChange("siteName", e.target.value)
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="أدخل اسم الموقع"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        بريد المدير الإلكتروني
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={settings.adminEmail}
-                                        onChange={(e) =>
-                                            handleInputChange("adminEmail", e.target.value)
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="admin@example.com"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        رابط الموقع
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={settings.siteUrl}
-                                        onChange={(e) =>
-                                            handleInputChange("siteUrl", e.target.value)
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="https://example.com"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        بريد الدعم الفني
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={settings.supportEmail}
-                                        onChange={(e) =>
-                                            handleInputChange("supportEmail", e.target.value)
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        placeholder="support@example.com"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Notifications Settings */}
-                {activeTab === "notifications" && (
-                    <div className="p-8">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-purple-500/10 rounded-xl">
-                                <Bell className="w-6 h-6 text-purple-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-semibold text-white">
-                                    إعدادات الإشعارات
-                                </h3>
-                                <p className="text-gray-400">
-                                    إدارة تفضيلات الإشعارات والتنبيهات
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between p-6 bg-gray-700/30 rounded-2xl border border-gray-600 hover:border-purple-500/30 transition-all duration-200">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-500/10 rounded-xl">
-                                        <Mail className="w-5 h-5 text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-white mb-1">
-                                            إشعارات البريد الإلكتروني
-                                        </h4>
-                                        <p className="text-sm text-gray-400">
-                                            إرسال إشعارات عبر البريد الإلكتروني للمستخدمين
-                                        </p>
-                                    </div>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.emailNotifications}
-                                        onChange={(e) =>
-                                            handleInputChange("emailNotifications", e.target.checked)
-                                        }
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-12 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
-                                </label>
-                            </div>
-
-                            <div className="flex items-center justify-between p-6 bg-gray-700/30 rounded-2xl border border-gray-600 hover:border-purple-500/30 transition-all duration-200">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-green-500/10 rounded-xl">
-                                        <MessageSquare className="w-5 h-5 text-green-400" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-white mb-1">
-                                            إشعارات الرسائل النصية
-                                        </h4>
-                                        <p className="text-sm text-gray-400">
-                                            إرسال إشعارات عبر الرسائل النصية للمستخدمين
-                                        </p>
-                                    </div>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.smsNotifications}
-                                        onChange={(e) =>
-                                            handleInputChange("smsNotifications", e.target.checked)
-                                        }
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-12 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Security Settings */}
-                {activeTab === "security" && (
-                    <div className="p-8">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-green-500/10 rounded-xl">
-                                <Shield className="w-6 h-6 text-green-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-semibold text-white">
-                                    إعدادات الأمان
-                                </h3>
-                                <p className="text-gray-400">
-                                    إعدادات الأمان والتحكم في الوصول
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between p-6 bg-gray-700/30 rounded-2xl border border-gray-600 hover:border-green-500/30 transition-all duration-200">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-500/10 rounded-xl">
-                                        <Zap className="w-5 h-5 text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-white mb-1">
-                                            الموافقة التلقائية على المزادات
-                                        </h4>
-                                        <p className="text-sm text-gray-400">
-                                            السماح بالموافقة التلقائية على المزادات الجديدة
-                                        </p>
-                                    </div>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.autoApproveAuctions}
-                                        onChange={(e) =>
-                                            handleInputChange("autoApproveAuctions", e.target.checked)
-                                        }
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-12 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
-                                </label>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        الحد الأقصى لمبلغ المزايدة (ريال)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={settings.maxBidAmount}
-                                        onChange={(e) =>
-                                            handleInputChange("maxBidAmount", parseInt(e.target.value))
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        الحد الأدنى لزيادة المزايدة (ريال)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={settings.minBidIncrement}
-                                        onChange={(e) =>
-                                            handleInputChange("minBidIncrement", parseInt(e.target.value))
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Financial Settings */}
-                {activeTab === "financial" && (
-                    <div className="p-8">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-amber-500/10 rounded-xl">
-                                <CreditCard className="w-6 h-6 text-amber-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-semibold text-white">
-                                    الإعدادات المالية
-                                </h3>
-                                <p className="text-gray-400">
-                                    إدارة الرسوم والتكاليف المالية
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                                    <Car className="w-4 h-4" />
-                                    رسوم تام
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={settings.tamFee}
-                                    onChange={(e) =>
-                                        handleInputChange("tamFee", parseFloat(e.target.value))
-                                    }
-                                    className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
-                                />
-                                <p className="text-xs text-gray-400 mt-2">
-                                    رسوم تام من كل عملية بيع
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                                    <TrafficCone className="w-4 h-4" />
-                                    رسوم إدارة المرور
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={settings.muroorFee}
-                                    onChange={(e) =>
-                                        handleInputChange("muroorFee", parseFloat(e.target.value))
-                                    }
-                                    className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
-                                />
-                                <p className="text-xs text-gray-400 mt-2">
-                                    رسوم إدارة المرور من كل عملية بيع
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                                    <Car className="w-4 h-4" />
-                                    رسوم إدخال السيارة للمزاد
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    value={settings.CarEntryFees}
-                                    onChange={(e) =>
-                                        handleInputChange("CarEntryFees", parseFloat(e.target.value))
-                                    }
-                                    className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
-                                />
-                                <p className="text-xs text-gray-400 mt-2">
-                                    رسوم إدخال السيارة للمزاد يدفعها البائع
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* System Settings */}
-                {activeTab === "system" && (
-                    <div className="p-8">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-3 bg-red-500/10 rounded-xl">
-                                <Server className="w-6 h-6 text-red-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-semibold text-white">
-                                    إعدادات النظام
-                                </h3>
-                                <p className="text-gray-400">
-                                    إعدادات النظام والصيانة
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between p-6 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-red-500/10 rounded-xl">
-                                        <AlertTriangle className="w-5 h-5 text-red-400" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-semibold text-white mb-1">
-                                            وضع الصيانة
-                                        </h4>
-                                        <p className="text-sm text-gray-400">
-                                            تفعيل وضع الصيانة لمنع الوصول للموقع مؤقتاً
-                                        </p>
-                                    </div>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.maintenanceMode}
-                                        onChange={(e) =>
-                                            handleInputChange("maintenanceMode", e.target.checked)
-                                        }
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-12 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
-                                </label>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                                        <Calendar className="w-4 h-4" />
-                                        مدة المزاد الافتراضية (ساعة)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={settings.auctionDuration}
-                                        onChange={(e) =>
-                                            handleInputChange("auctionDuration", parseInt(e.target.value))
-                                        }
-                                        className="w-full bg-gray-700/50 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                                    />
-                                    <p className="text-xs text-gray-400 mt-2">
-                                        المدة الافتراضية للمزادات بالساعات
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+      <div
+        className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center"
+        dir="rtl"
+      >
+        <div className="text-center">
+          <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-blue-500" />
+          <p className="text-lg text-gray-600 dark:text-gray-300">جاري تحميل الإعدادات...</p>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 dark:from-gray-950 dark:to-gray-900"
+      dir="rtl"
+    >
+      {/* Header */}
+      <div className="mb-8">
+        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">إعدادات النظام</h1>
+            <p className="text-gray-600 dark:text-gray-400">إدارة إعدادات المنصة والتكوينات المختلفة</p>
+          </div>
+
+          <button
+            onClick={saveSettings}
+            disabled={saving}
+            className={cn(
+              "inline-flex items-center gap-3 rounded-xl px-6 py-3 font-medium shadow-sm transition",
+              "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800",
+              "disabled:opacity-60 disabled:cursor-not-allowed"
+            )}
+          >
+            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+            {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "inline-flex items-center gap-3 rounded-xl px-5 py-3 text-sm font-medium transition",
+                  isActive
+                    ? cn("border", getColorClass(tab.color))
+                    : cn(
+                        "border border-transparent",
+                        "text-gray-600 hover:text-gray-900 hover:bg-white/70",
+                        "dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5"
+                      )
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content Card */}
+      <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm dark:border-white/10 dark:bg-gray-900/40">
+        {/* General */}
+        {activeTab === "general" && (
+          <div className="p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="rounded-xl bg-blue-500/10 p-3 text-blue-700 dark:text-blue-300">
+                <Globe className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">الإعدادات العامة</h3>
+                <p className="text-gray-600 dark:text-gray-400">إعدادات الموقع والمعلومات الأساسية</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="space-y-4">
+                <Field label="اسم الموقع">
+                  <TextInput
+                    type="text"
+                    value={settings.siteName}
+                    onChange={(e) => handleInputChange("siteName", e.target.value)}
+                    placeholder="أدخل اسم الموقع"
+                  />
+                </Field>
+
+                <Field label="بريد المدير الإلكتروني">
+                  <TextInput
+                    type="email"
+                    value={settings.adminEmail}
+                    onChange={(e) => handleInputChange("adminEmail", e.target.value)}
+                    placeholder="admin@example.com"
+                  />
+                </Field>
+              </div>
+
+              <div className="space-y-4">
+                <Field label="رابط الموقع">
+                  <TextInput
+                    type="url"
+                    value={settings.siteUrl}
+                    onChange={(e) => handleInputChange("siteUrl", e.target.value)}
+                    placeholder="https://example.com"
+                  />
+                </Field>
+
+                <Field label="بريد الدعم الفني">
+                  <TextInput
+                    type="email"
+                    value={settings.supportEmail}
+                    onChange={(e) => handleInputChange("supportEmail", e.target.value)}
+                    placeholder="support@example.com"
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notifications */}
+        {activeTab === "notifications" && (
+          <div className="p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="rounded-xl bg-purple-500/10 p-3 text-purple-700 dark:text-purple-300">
+                <Bell className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">إعدادات الإشعارات</h3>
+                <p className="text-gray-600 dark:text-gray-400">إدارة تفضيلات الإشعارات والتنبيهات</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <SwitchRow
+                icon={Mail}
+                title="إشعارات البريد الإلكتروني"
+                description="إرسال إشعارات عبر البريد الإلكتروني للمستخدمين"
+                checked={settings.emailNotifications}
+                onChange={(v) => handleInputChange("emailNotifications", v)}
+                activeColor="blue"
+              />
+
+              <SwitchRow
+                icon={MessageSquare}
+                title="إشعارات الرسائل النصية"
+                description="إرسال إشعارات عبر الرسائل النصية للمستخدمين"
+                checked={settings.smsNotifications}
+                onChange={(v) => handleInputChange("smsNotifications", v)}
+                activeColor="green"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Security */}
+        {activeTab === "security" && (
+          <div className="p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300">
+                <Shield className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">إعدادات الأمان</h3>
+                <p className="text-gray-600 dark:text-gray-400">إعدادات الأمان والتحكم في الوصول</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <SwitchRow
+                icon={Zap}
+                title="الموافقة التلقائية على المزادات"
+                description="السماح بالموافقة التلقائية على المزادات الجديدة"
+                checked={settings.autoApproveAuctions}
+                onChange={(v) => handleInputChange("autoApproveAuctions", v)}
+                activeColor="blue"
+              />
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Field label="الحد الأقصى لمبلغ المزايدة (ريال)">
+                  <TextInput
+                    type="number"
+                    value={settings.maxBidAmount}
+                    onChange={(e) => handleInputChange("maxBidAmount", toNumber(e.target.value, 0))}
+                  />
+                </Field>
+
+                <Field label="الحد الأدنى لزيادة المزايدة (ريال)">
+                  <TextInput
+                    type="number"
+                    value={settings.minBidIncrement}
+                    onChange={(e) =>
+                      handleInputChange("minBidIncrement", toNumber(e.target.value, 0))
+                    }
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Financial */}
+        {activeTab === "financial" && (
+          <div className="p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="rounded-xl bg-amber-500/10 p-3 text-amber-800 dark:text-amber-300">
+                <CreditCard className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">الإعدادات المالية</h3>
+                <p className="text-gray-600 dark:text-gray-400">إدارة الرسوم والتكاليف المالية</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <Field label="رسوم المنصة" hint="رسوم المنصة (إن وجدت)">
+                <div className="relative">
+                  <DollarSign className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <TextInput
+                    type="number"
+                    step="0.1"
+                    value={settings.platformFee}
+                    onChange={(e) => handleInputChange("platformFee", toNumber(e.target.value, 0))}
+                    className="pr-10"
+                  />
+                </div>
+              </Field>
+
+              <Field label="رسوم تام" hint="رسوم تام من كل عملية بيع">
+                <div className="relative">
+                  <Car className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <TextInput
+                    type="number"
+                    step="0.1"
+                    value={settings.tamFee}
+                    onChange={(e) => handleInputChange("tamFee", toNumber(e.target.value, 0))}
+                    className="pr-10"
+                  />
+                </div>
+              </Field>
+
+              <Field label="رسوم إدارة المرور" hint="رسوم إدارة المرور من كل عملية بيع">
+                <div className="relative">
+                  <TrafficCone className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <TextInput
+                    type="number"
+                    step="0.1"
+                    value={settings.muroorFee}
+                    onChange={(e) => handleInputChange("muroorFee", toNumber(e.target.value, 0))}
+                    className="pr-10"
+                  />
+                </div>
+              </Field>
+
+              <Field label="رسوم إدخال السيارة للمزاد" hint="رسوم إدخال السيارة للمزاد يدفعها البائع">
+                <div className="relative">
+                  <Car className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <TextInput
+                    type="number"
+                    step="0.1"
+                    value={settings.CarEntryFees}
+                    onChange={(e) =>
+                      handleInputChange("CarEntryFees", toNumber(e.target.value, 0))
+                    }
+                    className="pr-10"
+                  />
+                </div>
+              </Field>
+            </div>
+          </div>
+        )}
+
+        {/* System */}
+        {activeTab === "system" && (
+          <div className="p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="rounded-xl bg-rose-500/10 p-3 text-rose-700 dark:text-rose-300">
+                <Server className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">إعدادات النظام</h3>
+                <p className="text-gray-600 dark:text-gray-400">إعدادات النظام والصيانة</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-500/20 dark:bg-rose-500/10">
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="rounded-xl bg-rose-500/10 p-3 text-rose-700 dark:text-rose-300">
+                      <AlertTriangle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">وضع الصيانة</h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-400">
+                        تفعيل وضع الصيانة لمنع الوصول للموقع مؤقتاً
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="relative inline-flex cursor-pointer items-center">
+                    <input
+                      type="checkbox"
+                      checked={settings.maintenanceMode}
+                      onChange={(e) => handleInputChange("maintenanceMode", e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <div
+                      className={cn(
+                        "h-6 w-12 rounded-full transition",
+                        "bg-gray-200 dark:bg-gray-700",
+                        "peer-checked:bg-rose-500",
+                        "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-rose-500"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "pointer-events-none absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition",
+                        "peer-checked:translate-x-6"
+                      )}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Field
+                  label="مدة المزاد الافتراضية (ساعة)"
+                  hint="المدة الافتراضية للمزادات بالساعات"
+                >
+                  <div className="relative">
+                    <Calendar className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <TextInput
+                      type="number"
+                      value={settings.auctionDuration}
+                      onChange={(e) =>
+                        handleInputChange("auctionDuration", toNumber(e.target.value, 0))
+                      }
+                      className="pr-10"
+                    />
+                  </div>
+                </Field>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

@@ -19,24 +19,25 @@ class CarController extends Controller
     /**
      * Display a listing of cars.
      * GET /api/admin/cars
-     * 
-     * ✅ Performance: Fixed N+1 with eager loading
      */
     public function index(Request $request)
     {
         $query = Car::query();
 
-        // ✅ Eager loading to prevent N+1
+        // ✅ Eager loading
         $query->with([
             'dealer:id,user_id,company_name',
             'dealer.user:id,first_name,last_name,email,phone',
-            'user:id,first_name,last_name',
-            'auctions' => fn($q) => $q->latest()->limit(1),
+            // ✅ users table doesn't have "name"
+            'user:id,first_name,last_name,email',
+            'auctions' => fn ($q) => $q->latest()->limit(1),
+            'activeAuction',
         ]);
 
-        // Filters
-        if ($request->filled('auction_status')) {
-            $query->where('auction_status', $request->auction_status);
+        // Filters (يدعم status أو auction_status)
+        $status = $request->filled('auction_status') ? $request->auction_status : $request->get('status');
+        if (!empty($status)) {
+            $query->where('auction_status', $status);
         }
 
         if ($request->filled('condition')) {
@@ -68,9 +69,10 @@ class CarController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('make', 'like', "%{$search}%")
-                  ->orWhere('model', 'like', "%{$search}%")
-                  ->orWhere('vin', 'like', "%{$search}%")
-                  ->orWhere('color', 'like', "%{$search}%");
+                    ->orWhere('model', 'like', "%{$search}%")
+                    ->orWhere('vin', 'like', "%{$search}%")
+                    ->orWhere('color', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -78,13 +80,15 @@ class CarController extends Controller
         $sortBy = $request->get('sort_by', 'created_at');
         $sortDir = $request->get('sort_dir', 'desc');
         $allowedSorts = ['created_at', 'year', 'evaluation_price', 'odometer', 'make', 'model'];
-        
-        if (in_array($sortBy, $allowedSorts)) {
+
+        if (in_array($sortBy, $allowedSorts, true)) {
             $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
         }
 
-        $perPage = min(50, max(1, (int) $request->get('per_page', 15)));
-        
+        // Pagination (يدعم per_page أو pageSize)
+        $perPage = (int) ($request->get('per_page') ?? $request->get('pageSize') ?? 15);
+        $perPage = min(50, max(1, $perPage));
+
         return new CarCollection($query->paginate($perPage));
     }
 
@@ -95,16 +99,21 @@ class CarController extends Controller
     public function show($id): JsonResponse
     {
         $car = Car::with([
+            'dealer:id,user_id,company_name',
             'dealer.user:id,first_name,last_name,email,phone',
+            // ✅ no "name" column
             'user:id,first_name,last_name,email',
-            'images',
-            'auctions' => fn($q) => $q->orderBy('created_at', 'desc'),
-            'auctions.bids' => fn($q) => $q->orderBy('created_at', 'desc')->limit(5),
+            // ❌ images ليست علاقة
+            'auctions' => fn ($q) => $q->orderBy('created_at', 'desc'),
+            'auctions.bids' => fn ($q) => $q->orderBy('created_at', 'desc')->limit(5),
+            'activeAuction',
+            'carAttributes',
+            'reportImages',
         ])->findOrFail($id);
 
         return response()->json([
             'status' => 'success',
-            'data'   => $car,
+            'data'   => $car, // ✅ images JSON column will appear automatically (as attribute)
         ]);
     }
 
@@ -125,6 +134,10 @@ class CarController extends Controller
             'evaluation_price' => 'sometimes|numeric|min:0',
             'auction_status'   => 'sometimes|string|in:available,pending,in_auction,sold,withdrawn',
             'description'      => 'sometimes|string',
+            // لو هتحدث الصور كـ JSON:
+            'images'           => 'sometimes|array',
+            'images.*'         => 'sometimes|string',
+            'image'            => 'sometimes|string', // لو عندك عمود image منفصل
         ]);
 
         if ($validator->fails()) {
@@ -136,12 +149,13 @@ class CarController extends Controller
 
         try {
             $car = Car::findOrFail($id);
-            
+
             $car->fill($request->only([
                 'make', 'model', 'year', 'vin', 'odometer', 'color',
-                'condition', 'evaluation_price', 'auction_status', 'description'
+                'condition', 'evaluation_price', 'auction_status', 'description',
+                'images', 'image'
             ]));
-            
+
             $car->save();
 
             Log::info('Car updated by admin', [
@@ -152,11 +166,15 @@ class CarController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'تم تحديث بيانات السيارة بنجاح',
-                'data'    => $car->fresh(['dealer.user', 'images']),
+                // ❌ لا يوجد images هنا لأنها ليست علاقة
+                'data'    => $car->fresh(['dealer.user', 'user', 'auctions', 'activeAuction']),
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Car update failed', ['error' => $e->getMessage(), 'car_id' => $id]);
+            Log::error('Car update failed', [
+                'error'  => $e->getMessage(),
+                'car_id' => $id
+            ]);
 
             return response()->json([
                 'status'  => 'error',
@@ -174,7 +192,6 @@ class CarController extends Controller
         try {
             $car = Car::with('auctions')->findOrFail($id);
 
-            // Check if car has active auctions
             $hasActiveAuction = $car->auctions()
                 ->whereIn('status', AuctionStatus::activeValues())
                 ->exists();
@@ -188,12 +205,12 @@ class CarController extends Controller
 
             DB::beginTransaction();
 
-            // Delete related auctions first
             $car->auctions()->delete();
-            
-            // Delete car images (if needed)
-            // $car->images()->delete();
-            
+
+            // ❌ images ليست علاقة - لو عايز تمسح JSON column:
+            // $car->images = [];
+            // $car->save();
+
             $car->delete();
 
             DB::commit();
@@ -210,7 +227,10 @@ class CarController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Car deletion failed', ['error' => $e->getMessage(), 'car_id' => $id]);
+            Log::error('Car deletion failed', [
+                'error'  => $e->getMessage(),
+                'car_id' => $id
+            ]);
 
             return response()->json([
                 'status'  => 'error',
@@ -245,7 +265,6 @@ class CarController extends Controller
         try {
             $car = Car::findOrFail($id);
 
-            // Check if car already has active auction
             $hasActiveAuction = Auction::where('car_id', $id)
                 ->whereIn('status', AuctionStatus::activeValues())
                 ->exists();
@@ -292,7 +311,10 @@ class CarController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Auction creation failed', ['error' => $e->getMessage(), 'car_id' => $id]);
+            Log::error('Auction creation failed', [
+                'error'  => $e->getMessage(),
+                'car_id' => $id
+            ]);
 
             return response()->json([
                 'status'  => 'error',
@@ -308,16 +330,16 @@ class CarController extends Controller
     public function stats(): JsonResponse
     {
         $stats = [
-            'total'       => Car::count(),
-            'available'   => Car::where('auction_status', 'available')->count(),
-            'pending'     => Car::where('auction_status', 'pending')->count(),
-            'in_auction'  => Car::where('auction_status', 'in_auction')->count(),
-            'sold'        => Car::where('auction_status', 'sold')->count(),
-            'withdrawn'   => Car::where('auction_status', 'withdrawn')->count(),
-            'by_condition'=> Car::select('condition', DB::raw('COUNT(*) as count'))
+            'total'        => Car::count(),
+            'available'    => Car::where('auction_status', 'available')->count(),
+            'pending'      => Car::where('auction_status', 'pending')->count(),
+            'in_auction'   => Car::where('auction_status', 'in_auction')->count(),
+            'sold'         => Car::where('auction_status', 'sold')->count(),
+            'withdrawn'    => Car::where('auction_status', 'withdrawn')->count(),
+            'by_condition' => Car::select('condition', DB::raw('COUNT(*) as count'))
                 ->groupBy('condition')
                 ->pluck('count', 'condition'),
-            'avg_price'   => round(Car::avg('evaluation_price') ?? 0, 2),
+            'avg_price'    => round(Car::avg('evaluation_price') ?? 0, 2),
         ];
 
         return response()->json([
