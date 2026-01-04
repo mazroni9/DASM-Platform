@@ -20,7 +20,7 @@ class CarController extends Controller
      * Display a listing of cars.
      * GET /api/admin/cars
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $query = Car::query();
 
@@ -28,7 +28,6 @@ class CarController extends Controller
         $query->with([
             'dealer:id,user_id,company_name',
             'dealer.user:id,first_name,last_name,email,phone',
-            // ✅ users table doesn't have "name"
             'user:id,first_name,last_name,email',
             'auctions' => fn ($q) => $q->latest()->limit(1),
             'activeAuction',
@@ -89,7 +88,14 @@ class CarController extends Controller
         $perPage = (int) ($request->get('per_page') ?? $request->get('pageSize') ?? 15);
         $perPage = min(50, max(1, $perPage));
 
-        return new CarCollection($query->paginate($perPage));
+        $paginator  = $query->paginate($perPage);
+        $collection = new CarCollection($paginator);
+
+        // ✅ توحيد شكل الاستجابة: status + data (+ message عند الحاجة)
+        return response()->json([
+            'status' => 'success',
+            'data'   => $collection->response()->getData(true), // فيها data + meta + links بتوع الـ pagination
+        ]);
     }
 
     /**
@@ -101,9 +107,7 @@ class CarController extends Controller
         $car = Car::with([
             'dealer:id,user_id,company_name',
             'dealer.user:id,first_name,last_name,email,phone',
-            // ✅ no "name" column
             'user:id,first_name,last_name,email',
-            // ❌ images ليست علاقة
             'auctions' => fn ($q) => $q->orderBy('created_at', 'desc'),
             'auctions.bids' => fn ($q) => $q->orderBy('created_at', 'desc')->limit(5),
             'activeAuction',
@@ -113,7 +117,7 @@ class CarController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $car, // ✅ images JSON column will appear automatically (as attribute)
+            'data'   => $car,
         ]);
     }
 
@@ -134,16 +138,16 @@ class CarController extends Controller
             'evaluation_price' => 'sometimes|numeric|min:0',
             'auction_status'   => 'sometimes|string|in:available,pending,in_auction,sold,withdrawn',
             'description'      => 'sometimes|string',
-            // لو هتحدث الصور كـ JSON:
             'images'           => 'sometimes|array',
             'images.*'         => 'sometimes|string',
-            'image'            => 'sometimes|string', // لو عندك عمود image منفصل
+            'image'            => 'sometimes|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
+                'status'  => 'error',
+                'message' => 'Validation error',
+                'data'    => $validator->errors(),
             ], 422);
         }
 
@@ -166,7 +170,6 @@ class CarController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'تم تحديث بيانات السيارة بنجاح',
-                // ❌ لا يوجد images هنا لأنها ليست علاقة
                 'data'    => $car->fresh(['dealer.user', 'user', 'auctions', 'activeAuction']),
             ]);
 
@@ -178,7 +181,8 @@ class CarController extends Controller
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'حدث خطأ أثناء تحديث السيارة'
+                'message' => 'حدث خطأ أثناء تحديث السيارة',
+                'data'    => null,
             ], 500);
         }
     }
@@ -199,18 +203,14 @@ class CarController extends Controller
             if ($hasActiveAuction) {
                 return response()->json([
                     'status'  => 'error',
-                    'message' => 'لا يمكن حذف السيارة، يوجد مزاد نشط مرتبط بها'
+                    'message' => 'لا يمكن حذف السيارة، يوجد مزاد نشط مرتبط بها',
+                    'data'    => null,
                 ], 422);
             }
 
             DB::beginTransaction();
 
             $car->auctions()->delete();
-
-            // ❌ images ليست علاقة - لو عايز تمسح JSON column:
-            // $car->images = [];
-            // $car->save();
-
             $car->delete();
 
             DB::commit();
@@ -223,6 +223,7 @@ class CarController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'تم حذف السيارة بنجاح',
+                'data'    => null,
             ]);
 
         } catch (\Exception $e) {
@@ -234,7 +235,8 @@ class CarController extends Controller
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'حدث خطأ أثناء حذف السيارة'
+                'message' => 'حدث خطأ أثناء حذف السيارة',
+                'data'    => null,
             ], 500);
         }
     }
@@ -257,8 +259,9 @@ class CarController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
+                'status'  => 'error',
+                'message' => 'Validation error',
+                'data'    => $validator->errors(),
             ], 422);
         }
 
@@ -272,7 +275,8 @@ class CarController extends Controller
             if ($hasActiveAuction) {
                 return response()->json([
                     'status'  => 'error',
-                    'message' => 'السيارة لديها مزاد نشط بالفعل'
+                    'message' => 'السيارة لديها مزاد نشط بالفعل',
+                    'data'    => null,
                 ], 422);
             }
 
@@ -318,7 +322,8 @@ class CarController extends Controller
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'حدث خطأ أثناء إنشاء المزاد'
+                'message' => 'حدث خطأ أثناء إنشاء المزاد',
+                'data'    => null,
             ], 500);
         }
     }
