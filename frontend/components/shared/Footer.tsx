@@ -82,7 +82,7 @@ const TwitterBirdIcon = ({ className = "" }: { className?: string }) => (
 );
 
 /** =========================
- *  Social Icon Button
+ *  Social Icon Button (✅ fixed: match brand identity via primary)
  *  ========================= */
 const SocialIconButton = ({
   href,
@@ -104,13 +104,16 @@ const SocialIconButton = ({
       title={label}
       className="
         inline-flex items-center justify-center
-        h-10 w-10
-        rounded-lg
-        bg-[#CBD5D1]
-        text-[#0F3D2E]
-        hover:bg-[#D9E2DE]
+        h-11 w-11
+        rounded-xl
+        border border-primary/20
+        bg-primary/10
+        text-primary
+        hover:bg-primary/15
+        hover:border-primary/30
         transition
         shadow-sm
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
       "
     >
       {children}
@@ -119,11 +122,10 @@ const SocialIconButton = ({
 };
 
 /** =========================
- *  Team Link Row (NEW)
+ *  Team Link Row (UPDATED)
  *  ========================= */
 const TeamLinkRow = () => {
-  const href =
-    "https://maz-and-devloper-profile-n1oo0rrcl-dasme-projects.vercel.app";
+  const href = "https://maz-and-devloper-profile.vercel.app/";
 
   return (
     <a
@@ -223,10 +225,10 @@ const Footer = () => {
 
       <div className="container mx-auto px-3 sm:px-4 py-10 sm:py-12 relative">
         {/* Top grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* Brand */}
-          <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm">
+          <div className="lg:col-span-5 h-full">
+            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full flex flex-col">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xl sm:text-2xl font-extrabold tracking-tight">منصة DASMe</div>
@@ -256,24 +258,26 @@ const Footer = () => {
                 </LoadingLink>
               </div>
 
-              <div className="mt-6 rounded-xl border border-border bg-background/60 p-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold">الدعم والبريد</span>
+              <div className="mt-auto pt-6">
+                <div className="rounded-xl border border-border bg-background/60 p-4">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold">الدعم والبريد</span>
+                  </div>
+                  <a
+                    href="mailto:mazroni@dasm.host"
+                    className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors break-all"
+                  >
+                    mazroni@dasm.host
+                  </a>
                 </div>
-                <a
-                  href="mailto:mazroni@dasm.host"
-                  className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors break-all"
-                >
-                  mazroni@dasm.host
-                </a>
               </div>
             </div>
           </div>
 
           {/* Links */}
-          <div className="lg:col-span-4">
-            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full">
+          <div className="lg:col-span-4 h-full">
+            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full flex flex-col">
               <div className="text-sm font-bold">روابط مهمة</div>
 
               <nav aria-label="روابط مهمة" className="mt-4">
@@ -295,7 +299,7 @@ const Footer = () => {
                 </ul>
               </nav>
 
-              <div className="mt-6 text-xs text-muted-foreground leading-relaxed">
+              <div className="mt-auto pt-6 text-xs text-muted-foreground leading-relaxed">
                 تقدر تراجع{" "}
                 <LoadingLink href="/faq" className="text-primary hover:underline">
                   الأسئلة الشائعة
@@ -306,8 +310,8 @@ const Footer = () => {
           </div>
 
           {/* Policies + Team */}
-          <div className="lg:col-span-3">
-            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full">
+          <div className="lg:col-span-3 h-full">
+            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full flex flex-col">
               <div className="text-sm font-bold">السياسات</div>
 
               <ul className="mt-4 space-y-2">
@@ -336,8 +340,7 @@ const Footer = () => {
                 </div>
               </div>
 
-              {/* ✅ فريق الدواسم + رابط المطور تحت العنوان */}
-              <div className="mt-6">
+              <div className="mt-auto pt-6">
                 <div className="text-sm font-bold mb-3">فريق الدواسم</div>
                 <div className="space-y-2">
                   <TeamLinkRow />

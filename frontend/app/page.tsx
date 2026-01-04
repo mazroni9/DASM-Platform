@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Footer from "@/components/shared/Footer";
-import MarketTypeNav from "@/components/shared/MarketTypeNav";
 import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 
@@ -123,7 +122,7 @@ const RotatingSentences = ({
     const deletingSpeed = 40;
     const pauseAtEnd = 1400;
 
-    let delay = isDeleting ? deletingSpeed : typingSpeed;
+    const delay = isDeleting ? deletingSpeed : typingSpeed;
 
     const timer = setTimeout(() => {
       if (!isDeleting) {
@@ -190,6 +189,113 @@ const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
   );
 };
 
+// =============================================================
+// ✅ سكشن "اختر السوق المتخصص" — نفس روح وشكل MarketTypeNav
+// لكن بس كارتين:
+// - سوق معارض السيارات
+// - سوق السيارات المتخصص
+// =============================================================
+const ChooseMarketSection = () => {
+  const cards = [
+    {
+      id: "car-showrooms",
+      title: "سوق معارض السيارات",
+      subtitle: "مزادات سيارات من المعارض – فرص قوية وأسعار تنافسية",
+      href: "/auctions",
+      icon: <Car className="w-6 h-6" />,
+      badge: "الأكثر طلبًا",
+    },
+    {
+      id: "specialized-cars",
+      title: "سوق السيارات المتخصص",
+      subtitle: "سيارات مميزة ونادرة – مزادات دقيقة لهواة التميز",
+      href: "/auctions",
+      icon: <Award className="w-6 h-6" />,
+      badge: "مميز",
+    },
+  ];
+
+  return (
+    <div>
+      <div className="text-center mb-6 md:mb-8">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-foreground">
+          اختر سوقك المتخصص
+        </h2>
+        <p className="text-foreground/70 mt-2 text-sm md:text-base max-w-2xl mx-auto">
+          اختر السوق المناسب لاحتياجك وابدأ رحلة المزاد فورًا
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-5xl mx-auto items-stretch">
+        {cards.map((c, idx) => (
+          <motion.div
+            key={c.id}
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: idx * 0.08 }}
+            className="h-full"
+          >
+            <LoadingLink href={c.href} className="block h-full">
+              <div
+                className="
+                  group relative h-full
+                  rounded-2xl border border-border
+                  bg-card
+                  shadow-sm hover:shadow-lg
+                  transition-all duration-300
+                  p-5 sm:p-6
+                  overflow-hidden
+                "
+              >
+                <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute -top-20 -right-20 h-52 w-52 rounded-full bg-primary/10 blur-3xl" />
+                  <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-secondary/10 blur-3xl" />
+                </div>
+
+                <div className="relative flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-border/60 shrink-0">
+                      {c.icon}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
+                        {c.title}
+                      </h3>
+                      <p className="text-sm md:text-base text-foreground/70 mt-1 line-clamp-2">
+                        {c.subtitle}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <span className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full bg-emerald-700/90 text-white">
+                      <CheckCircle className="w-4 h-4" />
+                      {c.badge}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="relative mt-5 flex items-center justify-between">
+                  <span className="text-xs md:text-sm text-foreground/60">
+                    جاهز تبدأ؟
+                  </span>
+
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-primary text-white px-4 py-2 text-sm font-bold hover:bg-primary/90 transition">
+                    استكشف السوق
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </div>
+            </LoadingLink>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ========== قسم البث الاحترافي ==========
 type Broadcast = {
   title?: string | null;
@@ -222,7 +328,7 @@ const LiveBroadcastSection = () => {
         const res = await api.get("/api/broadcast");
         const b = res?.data?.data ?? null;
         if (mounted) setData(b);
-      } catch (e) {
+      } catch {
         if (mounted) setData(null);
       } finally {
         if (mounted) setLoading(false);
@@ -247,7 +353,6 @@ const LiveBroadcastSection = () => {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 relative">
-        {/* Header – وسط الصفحة */}
         <div className="flex flex-col items-center gap-4 mb-8 md:mb-10 text-center">
           <div className="flex items-center justify-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
@@ -265,7 +370,6 @@ const LiveBroadcastSection = () => {
           {data?.is_live ? <LiveBadge /> : null}
         </div>
 
-        {/* Player card – قابل للتكبير/التصغير */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -275,7 +379,6 @@ const LiveBroadcastSection = () => {
             expanded ? "max-w-5xl" : "max-w-3xl"
           }`}
         >
-          {/* Top bar */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border">
             <div className="flex items-center gap-2">
               <PlayCircle className="w-5 h-5 text-primary" />
@@ -295,7 +398,6 @@ const LiveBroadcastSection = () => {
             </div>
           </div>
 
-          {/* Video area */}
           <div className="relative aspect-video bg-black">
             {loading ? (
               <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-zinc-800 via-zinc-900 to-black" />
@@ -323,7 +425,6 @@ const LiveBroadcastSection = () => {
             )}
           </div>
 
-          {/* Meta */}
           <div className="px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <p className="text-foreground/80 text-sm md:text-base max-w-3xl">
               {data?.description ||
@@ -379,7 +480,7 @@ const FeaturedCars = () => {
         const response = await api.get("/api/featured-cars");
         const data = response?.data?.data ?? [];
         if (mounted) setCars(Array.isArray(data) ? data : []);
-      } catch (e) {
+      } catch {
         if (mounted) setCars([]);
       }
     };
@@ -437,7 +538,6 @@ const FeaturedCars = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {/* الكارد الأول من الـ API */}
           {primaryCar && (
             <motion.div
               key={primaryCar.id ?? "primary-car"}
@@ -506,7 +606,6 @@ const FeaturedCars = () => {
             </motion.div>
           )}
 
-          {/* الكروت 2–4 الثابتة */}
           {showcaseExtras.map((item, index) => (
             <motion.div
               key={item.id}
@@ -555,99 +654,6 @@ const FeaturedCars = () => {
             عرض جميع المزادات
             <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
           </motion.a>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ========== قسم خطوات المزاد (Timeline) ==========
-const AuctionTimeline = () => {
-  const steps = [
-    {
-      step: 1,
-      title: "التسجيل في المنصة",
-      description: "أنشئ حسابك في داسم بخطوات بسيطة وسريعة",
-      icon: <Users className="w-5 h-5 md:w-6 md:h-6" />,
-    },
-    {
-      step: 2,
-      title: "اختر السيارة المناسبة",
-      description: "تصفح آلاف السيارات واختر ما يناسب احتياجاتك",
-      icon: <Car className="w-5 h-5 md:w-6 md:h-6" />,
-    },
-    {
-      step: 3,
-      title: "شارك في المزاد",
-      description: "ضع مزايدتك وتابع المنافسة حتى نهاية المزاد",
-      icon: <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />,
-    },
-    {
-      step: 4,
-      title: "احصل على سيارتك",
-      description: "استلم سيارتك الجديدة بعد فوزك في المزاد",
-      icon: <Award className="w-5 h-5 md:w-6 md:h-6" />,
-    },
-  ];
-
-  return (
-    <section className="py-16 md:py-20 bg-background">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center mb-12 md:mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
-          >
-            كيف تشارك في المزاد؟
-          </motion.h2>
-          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
-            خطوات بسيطة تفصلك عن امتلاك السيارة التي تحلم بها
-          </p>
-        </div>
-        <div className="max-w-4xl mx-auto">
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.step}
-              initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.2 }}
-              className={`flex ${
-                index % 2 === 0 ? "flex-row" : "flex-row-reverse"
-              } items-center mb-8 md:mb-12`}
-            >
-              <div className="flex-1">
-                <div
-                  className={`bg-card p-4 sm:p-6 rounded-2xl border border-border ${
-                    index % 2 === 0 ? "mr-4 md:mr-8" : "ml-4 md:ml-8"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary flex items-center justify-center text-white">
-                      {step.icon}
-                    </div>
-                    <h3 className="text-lg md:text-xl font-bold text-foreground">
-                      {step.title}
-                    </h3>
-                  </div>
-                  <p className="text-foreground text-sm md:text-base">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-secondary flex items-center justify-center text-white font-bold text-lg md:text-xl z-10 relative">
-                  {step.step}
-                </div>
-                {index < steps.length - 1 && (
-                  <div className="absolute top-12 md:top-16 left-1/2 transform -translate-x-1/2 w-1 h-8 md:h-12 bg-secondary" />
-                )}
-              </div>
-              <div className="flex-1" />
-            </motion.div>
-          ))}
         </div>
       </div>
     </section>
@@ -755,7 +761,6 @@ const BenefitsSection = () => {
   return (
     <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
-        {/* العنوان مثل الصورة */}
         <div className="text-center mb-10 md:mb-14">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -770,7 +775,6 @@ const BenefitsSection = () => {
           </p>
         </div>
 
-        {/* الكروت الأربع – نفس ترتيب وتصميم الصورة */}
         <div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
           dir="ltr"
@@ -795,111 +799,6 @@ const BenefitsSection = () => {
               <p className="text-xs md:text-sm text-foreground/70 leading-relaxed">
                 {benefit.description}
               </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ========== قسم الأسئلة الشائعة ==========
-const FAQSection = () => {
-  const faqs = [
-    {
-      question: "كيف يمكنني المشاركة في المزاد؟",
-      answer:
-        "يمكنك المشاركة بالتسجيل في المنصة، ثم اختيار السيارة المناسبة ووضع مزايدتك خلال فترة المزاد.",
-    },
-    {
-      question: "هل يمكنني استرجاع السيارة بعد الشراء؟",
-      answer:
-        "نعم، يوجد سياسة استرجاع محددة توضح شروط وإجراءات استرجاع السيارة في حال وجود عيوب خفية.",
-    },
-    {
-      question: "ما هي طرق الدفع المتاحة؟",
-      answer:
-        "نوفر طرق دفع متعددة تشمل التحويل البنكي وبطاقات الائتمان والدفع الإلكتروني عبر منصات آمنة.",
-    },
-    {
-      question: "كيف يتم فحص السيارات قبل المزاد؟",
-      answer:
-        "جميع السيارات تخضع لفحص فني دقيق يشمل المحرك، الهيكل، النظام الكهربائي، والتأكد من عدم وجود عيوب هيكلية.",
-    },
-  ];
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const toggleFAQ = (index: number) =>
-    setActiveIndex(activeIndex === index ? null : index);
-
-  return (
-    <section className="py-16 md:py-20 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
-        <div className="text-center mb-12 md:mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-3 md:mb-4"
-          >
-            الأسئلة الشائعة
-          </motion.h2>
-          <p className="text-foreground max-w-2xl mx-auto text-base md:text-lg px-4">
-            إجابات على أكثر الأسئلة شيوعًا حول منصة داسم للمزادات
-          </p>
-        </div>
-        <div className="space-y-3 md:space-y-4">
-          {faqs.map((faq, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-card rounded-xl md:rounded-2xl overflow-hidden border border-border hover:border-border transition-colors duration-300"
-            >
-              <button
-                className="w-full text-right p-4 md:p-6 flex justify-between items-center text-foreground font-medium text-base md:text-lg hover:bg-border transition-colors duration-200"
-                onClick={() => toggleFAQ(index)}
-                aria-expanded={activeIndex === index}
-                aria-controls={`faq-panel-${index}`}
-              >
-                <span className="flex-1 text-right pr-3 md:pr-4">
-                  {faq.question}
-                </span>
-                <motion.div
-                  animate={{ rotate: activeIndex === index ? 180 : 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M6 9L12 15L18 9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </motion.div>
-              </button>
-              <motion.div
-                id={`faq-panel-${index}`}
-                initial={{ height: 0, opacity: 0 }}
-                animate={{
-                  height: activeIndex === index ? "auto" : 0,
-                  opacity: activeIndex === index ? 1 : 0,
-                }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="p-4 md:p-6 pt-0 text-foreground border-t border-border text-sm md:text-base leading-relaxed">
-                  {faq.answer}
-                </div>
-              </motion.div>
             </motion.div>
           ))}
         </div>
@@ -939,22 +838,20 @@ export default function Page() {
         </div>
       </section>
 
-      {/* اختر السوق المتخصص */}
+      {/* اختر السوق المتخصص (كارتين فقط) */}
       <section className="py-8 md:py-12 bg-background border-y border-border">
         <div className="container mx-auto px-4 sm:px-6">
-          <MarketTypeNav />
+          <ChooseMarketSection />
         </div>
       </section>
 
       {/* قسم البث الاحترافي */}
       <LiveBroadcastSection />
 
-      {/* الأقسام الجديدة لصفحة مزادات السيارات */}
+      {/* الأقسام */}
       <FeaturedCars />
-      <AuctionTimeline />
       <StatsSection />
       <BenefitsSection />
-      <FAQSection />
 
       <Footer />
     </>
