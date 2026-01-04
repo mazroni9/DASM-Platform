@@ -10,7 +10,6 @@ import {
   FiActivity,
   FiDollarSign,
   FiStar,
-  FiPackage,
   FiBarChart2,
 } from "react-icons/fi";
 import { BsCarFront } from "react-icons/bs";
@@ -42,21 +41,20 @@ const sar = new Intl.NumberFormat("ar-EG", {
 const fmtDate = (s: string) =>
   new Date(s).toLocaleDateString("ar-EG", { month: "short", day: "numeric" });
 
+// ⚠️ Backend heatmap uses: Mon..Sun (day=0..6)
 const daysAR = [
-  "الأحد",
   "الاثنين",
   "الثلاثاء",
   "الأربعاء",
   "الخميس",
   "الجمعة",
   "السبت",
+  "الأحد",
 ];
 
 // Skeleton block
 function Skel({ className = "" }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded-xl bg-muted/50 ${className}`} />
-  );
+  return <div className={`animate-pulse rounded-xl bg-muted/50 ${className}`} />;
 }
 
 // Small KPI card
@@ -82,14 +80,33 @@ function KpiCard({
         <div className="flex-1">
           <div className="text-muted-foreground text-xs">{label}</div>
           <div className="text-foreground font-extrabold text-xl">{value}</div>
-          {sub && (
-            <div className="text-muted-foreground text-xs mt-0.5">{sub}</div>
-          )}
+          {sub && <div className="text-muted-foreground text-xs mt-0.5">{sub}</div>}
         </div>
       </div>
     </motion.div>
   );
 }
+
+type TimeSeriesPoint = { date: string; value: number };
+
+type TopModelItem = {
+  make: string | null;
+  model: string | null;
+  auctions_count: number;
+  bids_count: number;
+  avg_final_price: number | null;
+};
+
+type HeatCell = { day: number; hour: number; count: number };
+
+type HeatmapPayload = {
+  days: number;
+  labels?: { days?: string[]; hours?: number[] };
+  matrix?: number[][];
+  cells?: HeatCell[];
+  total_bids?: number;
+  max_cell?: number;
+};
 
 // =============== Page ===============
 export default function ExhibitorDashboard() {
@@ -102,19 +119,30 @@ export default function ExhibitorDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const [overview, setOverview] = useState<any | null>(null);
-  const [seriesCars, setSeriesCars] = useState<any[]>([]);
-  const [seriesAuctions, setSeriesAuctions] = useState<any[]>([]);
-  const [seriesBids, setSeriesBids] = useState<any[]>([]);
-  const [topModels, setTopModels] = useState<any[]>([]);
-  const [heatmap, setHeatmap] = useState<any[]>([]); // [{dow,hr,cnt}]
+  const [seriesCars, setSeriesCars] = useState<TimeSeriesPoint[]>([]);
+  const [seriesAuctions, setSeriesAuctions] = useState<TimeSeriesPoint[]>([]);
+  const [seriesBids, setSeriesBids] = useState<TimeSeriesPoint[]>([]);
+  const [topModels, setTopModels] = useState<TopModelItem[]>([]);
+  const [heatCells, setHeatCells] = useState<HeatCell[]>([]);
+  const [heatMax, setHeatMax] = useState<number>(1);
 
   // ensure client (hydrate fix)
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const normalizeSeries = (series: any[]): TimeSeriesPoint[] => {
+    // Backend timeseries returns: [{ date, count }]
+    // We normalize to: [{ date, value }]
+    return (series ?? []).map((x: any) => ({
+      date: String(x?.date ?? ""),
+      value: Number(x?.count ?? x?.value ?? 0),
+    }));
+  };
+
   const fetchAll = async () => {
     setError(null);
+
     const run = async () => {
       const [ov, sCars, sAucs, sBids, tops, heat] = await Promise.all([
         api.get("/api/exhibitor/analytics/overview").then((r) => r.data?.data),
@@ -122,30 +150,37 @@ export default function ExhibitorDashboard() {
           .get("/api/exhibitor/analytics/timeseries", {
             params: { kind: "cars", days: 30 },
           })
-          .then((r) => r.data?.data?.series ?? []),
+          .then((r) => normalizeSeries(r.data?.data?.series ?? [])),
         api
           .get("/api/exhibitor/analytics/timeseries", {
             params: { kind: "auctions", days: 30 },
           })
-          .then((r) => r.data?.data?.series ?? []),
+          .then((r) => normalizeSeries(r.data?.data?.series ?? [])),
         api
           .get("/api/exhibitor/analytics/timeseries", {
             params: { kind: "bids", days: 30 },
           })
-          .then((r) => r.data?.data?.series ?? []),
+          .then((r) => normalizeSeries(r.data?.data?.series ?? [])),
         api
-          .get("/api/exhibitor/analytics/top-models", { params: { limit: 8 } })
-          .then((r) => r.data?.data ?? []),
+          .get("/api/exhibitor/analytics/top-models", {
+            params: { limit: 8, days: 30 },
+          })
+          .then((r) => (r.data?.data?.items ?? []) as TopModelItem[]),
         api
-          .get("/api/exhibitor/analytics/bids-heatmap")
-          .then((r) => r.data?.data ?? []),
+          .get("/api/exhibitor/analytics/bids-heatmap", { params: { days: 30 } })
+          .then((r) => (r.data?.data ?? null) as HeatmapPayload | null),
       ]);
+
       setOverview(ov);
       setSeriesCars(sCars);
       setSeriesAuctions(sAucs);
       setSeriesBids(sBids);
       setTopModels(tops);
-      setHeatmap(heat);
+
+      const cells = (heat?.cells ?? []) as HeatCell[];
+      const maxCell = Number(heat?.max_cell ?? 1) || 1;
+      setHeatCells(cells);
+      setHeatMax(maxCell);
     };
 
     if (!overview) {
@@ -170,21 +205,26 @@ export default function ExhibitorDashboard() {
   };
 
   useEffect(() => {
-    if (isClient) fetchAll(); /* eslint-disable-next-line */
+    if (isClient) fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
-  // Heatmap matrix 7x24
+  // Heatmap map: key "day-hour" => count (day=0..6 Mon..Sun)
   const heatMapMatrix = useMemo(() => {
-    // dow: 0..6 (نفترض 0 الأحد كما أرسلناه من الباك)
     const map = new Map<string, number>();
     let max = 1;
-    for (const r of heatmap) {
-      const key = `${r.dow}-${r.hr}`;
-      map.set(key, r.cnt);
-      if (r.cnt > max) max = r.cnt;
+
+    for (const r of heatCells) {
+      const key = `${r.day}-${r.hour}`;
+      map.set(key, r.count);
+      if (r.count > max) max = r.count;
     }
+
+    // prefer backend max_cell if provided
+    if (heatMax > max) max = heatMax;
+
     return { map, max };
-  }, [heatmap]);
+  }, [heatCells, heatMax]);
 
   // Loading (first paint)
   if (!isClient) {
@@ -200,10 +240,7 @@ export default function ExhibitorDashboard() {
   }
 
   return (
-    <div
-      className="flex min-h-screen bg-background text-foreground relative"
-      dir="rtl"
-    >
+    <div className="flex min-h-screen bg-background text-foreground relative" dir="rtl">
       {/* Sidebar (desktop) */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
@@ -223,12 +260,10 @@ export default function ExhibitorDashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.6 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60" // Updated to standard overlay
+              className="absolute inset-0 bg-black/60"
               onClick={() => setIsSidebarOpen(false)}
             />
             <motion.div className="relative w-72 h-full">
-              {" "}
-              {/* Sidebar component handles bg */}
               <Sidebar />
             </motion.div>
           </motion.div>
@@ -325,11 +360,7 @@ export default function ExhibitorDashboard() {
                 <KpiCard
                   icon={<FiStar size={20} />}
                   label="متوسط التقييم"
-                  value={
-                    overview.kpis.ratings_avg != null
-                      ? String(overview.kpis.ratings_avg)
-                      : "—"
-                  }
+                  value={overview.kpis.ratings_avg != null ? String(overview.kpis.ratings_avg) : "—"}
                   sub={
                     overview.kpis.ratings_count
                       ? `${nf.format(overview.kpis.ratings_count)} مراجعة`
@@ -355,16 +386,8 @@ export default function ExhibitorDashboard() {
                     <AreaChart data={seriesCars}>
                       <defs>
                         <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                          <stop
-                            offset="0%"
-                            stopColor="#22d3ee"
-                            stopOpacity={0.5}
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="#22d3ee"
-                            stopOpacity={0}
-                          />
+                          <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
+                          <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -376,10 +399,7 @@ export default function ExhibitorDashboard() {
                         tickFormatter={fmtDate}
                         stroke="hsl(var(--muted-foreground))"
                       />
-                      <YAxis
-                        allowDecimals={false}
-                        stroke="hsl(var(--muted-foreground))"
-                      />
+                      <YAxis allowDecimals={false} stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
                         contentStyle={{
                           background: "hsl(var(--popover))",
@@ -390,12 +410,7 @@ export default function ExhibitorDashboard() {
                         labelFormatter={(v: any) => `التاريخ: ${fmtDate(v)}`}
                         formatter={(v: any) => [v, "عدد"]}
                       />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#22d3ee"
-                        fill="url(#g1)"
-                      />
+                      <Area type="monotone" dataKey="value" stroke="#22d3ee" fill="url(#g1)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -422,10 +437,7 @@ export default function ExhibitorDashboard() {
                         tickFormatter={fmtDate}
                         stroke="hsl(var(--muted-foreground))"
                       />
-                      <YAxis
-                        allowDecimals={false}
-                        stroke="hsl(var(--muted-foreground))"
-                      />
+                      <YAxis allowDecimals={false} stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
                         contentStyle={{
                           background: "hsl(var(--popover))",
@@ -436,13 +448,7 @@ export default function ExhibitorDashboard() {
                         labelFormatter={(v: any) => `التاريخ: ${fmtDate(v)}`}
                         formatter={(v: any) => [v, "عدد"]}
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#a78bfa"
-                        strokeWidth={2}
-                        dot={false}
-                      />
+                      <Line type="monotone" dataKey="value" stroke="#a78bfa" strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -469,10 +475,7 @@ export default function ExhibitorDashboard() {
                         tickFormatter={fmtDate}
                         stroke="hsl(var(--muted-foreground))"
                       />
-                      <YAxis
-                        allowDecimals={false}
-                        stroke="hsl(var(--muted-foreground))"
-                      />
+                      <YAxis allowDecimals={false} stroke="hsl(var(--muted-foreground))" />
                       <Tooltip
                         contentStyle={{
                           background: "hsl(var(--popover))",
@@ -483,11 +486,7 @@ export default function ExhibitorDashboard() {
                         labelFormatter={(v: any) => `التاريخ: ${fmtDate(v)}`}
                         formatter={(v: any) => [v, "عدد"]}
                       />
-                      <Bar
-                        dataKey="value"
-                        fill="#22c55e"
-                        radius={[6, 6, 0, 0]}
-                      />
+                      <Bar dataKey="value" fill="#22c55e" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -497,32 +496,41 @@ export default function ExhibitorDashboard() {
             {/* Top models */}
             <div className="2xl:col-span-2 rounded-2xl p-4 bg-card border border-border">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold">أكثر الموديلات تكرارًا</h3>
+                <h3 className="font-bold">أفضل الموديلات (حسب المزايدات)</h3>
               </div>
               {loading ? (
                 <Skel className="h-56" />
               ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {topModels.length === 0 && (
-                    <div className="text-muted-foreground">
-                      لا توجد بيانات حتى الآن.
-                    </div>
+                    <div className="text-muted-foreground">لا توجد بيانات حتى الآن.</div>
                   )}
+
                   {topModels.map((m, i) => (
                     <div
                       key={`${m.make}-${m.model}-${i}`}
                       className="rounded-xl border border-border bg-muted/30 p-4"
                     >
-                      <div className="text-muted-foreground text-xs mb-1">
-                        الماركة / الموديل
-                      </div>
+                      <div className="text-muted-foreground text-xs mb-1">الماركة / الموديل</div>
                       <div className="font-extrabold text-foreground">
-                        {m.make} {m.model}
+                        {m.make ?? "—"} {m.model ?? ""}
                       </div>
-                      <div className="mt-1 text-muted-foreground text-sm">
-                        عدد:{" "}
+
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-lg border border-border bg-card/50 p-2">
+                          <div className="text-muted-foreground">مزادات</div>
+                          <div className="font-bold text-foreground">{nf.format(m.auctions_count ?? 0)}</div>
+                        </div>
+                        <div className="rounded-lg border border-border bg-card/50 p-2">
+                          <div className="text-muted-foreground">مزايدات</div>
+                          <div className="font-bold text-foreground">{nf.format(m.bids_count ?? 0)}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 text-muted-foreground text-xs">
+                        متوسط سعر ختامي:{" "}
                         <span className="font-bold text-foreground">
-                          {nf.format(m.cnt)}
+                          {m.avg_final_price != null ? sar.format(m.avg_final_price) : "—"}
                         </span>
                       </div>
                     </div>
@@ -534,9 +542,7 @@ export default function ExhibitorDashboard() {
             {/* Bids heatmap */}
             <div className="rounded-2xl p-4 bg-card border border-border">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold">
-                  كثافة المزايدات (حسب اليوم/الساعة)
-                </h3>
+                <h3 className="font-bold">كثافة المزايدات (حسب اليوم/الساعة)</h3>
               </div>
               {loading ? (
                 <Skel className="h-72" />
@@ -547,41 +553,40 @@ export default function ExhibitorDashboard() {
                       {/* header hours */}
                       <div />
                       {Array.from({ length: 24 }).map((_, hr) => (
-                        <div
-                          key={`h-${hr}`}
-                          className="text-center text-xs text-muted-foreground"
-                        >
+                        <div key={`h-${hr}`} className="text-center text-xs text-muted-foreground">
                           {hr}
                         </div>
                       ))}
+
                       {/* rows */}
-                      {Array.from({ length: 7 }).map((_, dow) => (
-                        <div key={`r-${dow}`} className="contents">
-                          <div className="text-xs text-muted-foreground pr-2">
-                            {daysAR[dow]}
-                          </div>
+                      {Array.from({ length: 7 }).map((_, day) => (
+                        <div key={`r-${day}`} className="contents">
+                          <div className="text-xs text-muted-foreground pr-2">{daysAR[day]}</div>
+
                           {Array.from({ length: 24 }).map((__, hr) => {
-                            const k = `${dow}-${hr}`;
+                            const k = `${day}-${hr}`;
                             const cnt = heatMapMatrix.map.get(k) ?? 0;
-                            const ratio = heatMapMatrix.max
-                              ? cnt / heatMapMatrix.max
-                              : 0;
-                            const bg = `rgba(59,130,246,${0.1 + ratio * 0.9})`; // blue with alpha
-                            // Use semantic styling where possible or keep specific visualization colors
+                            const ratio = heatMapMatrix.max ? cnt / heatMapMatrix.max : 0;
+                            const bg = `rgba(59,130,246,${0.1 + ratio * 0.9})`;
+
                             return (
                               <div
-                                key={`c-${dow}-${hr}`}
-                                title={`اليوم: ${daysAR[dow]}، الساعة: ${hr}:00 — ${cnt} مزايدة`}
+                                key={`c-${day}-${hr}`}
+                                title={`اليوم: ${daysAR[day]}، الساعة: ${hr}:00 — ${cnt} مزايدة`}
                                 className="h-6 rounded-sm transition-transform hover:scale-[1.08] border border-border/50"
                                 style={{
                                   background: cnt ? bg : "transparent",
                                   opacity: cnt ? 1 : 0.1,
-                                }} // Use transparent for empty
+                                }}
                               />
                             );
                           })}
                         </div>
                       ))}
+                    </div>
+
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      * الأيام مرتبة حسب الباك إند: (الاثنين → الأحد)
                     </div>
                   </div>
                 </div>
@@ -602,76 +607,52 @@ export default function ExhibitorDashboard() {
                   <table className="min-w-full bg-card">
                     <thead>
                       <tr className="bg-muted/50 border-b border-border">
-                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                          #
-                        </th>
-                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                          السيارة
-                        </th>
-                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                          السنة
-                        </th>
-                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                          سعر التقييم
-                        </th>
-                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                          حالة المزاد
-                        </th>
-                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                          أضيفت
-                        </th>
+                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">#</th>
+                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">السيارة</th>
+                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">السنة</th>
+                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">سعر التقييم</th>
+                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">حالة المزاد</th>
+                        <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">أضيفت</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(overview?.lists?.recent_cars ?? []).map(
-                        (c: any, idx: number) => (
-                          <tr
-                            key={c.id}
-                            className="border-t border-border hover:bg-muted/30"
-                          >
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {idx + 1}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                                  <BsCarFront />
-                                </div>
-                                <div className="font-semibold text-foreground">
-                                  {c.make} {c.model}
-                                </div>
+                      {(overview?.lists?.recent_cars ?? []).map((c: any, idx: number) => (
+                        <tr
+                          key={c.id}
+                          className="border-t border-border hover:bg-muted/30"
+                        >
+                          <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                                <BsCarFront />
                               </div>
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {c.year ?? "—"}
-                            </td>
-                            <td className="px-4 py-3 text-foreground font-medium">
-                              {c.evaluation_price != null
-                                ? sar.format(c.evaluation_price)
-                                : "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-xs px-2 py-1 rounded-full bg-muted border border-border text-muted-foreground">
-                                {c.auction_status ?? "—"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground text-sm">
-                              {c.created_at
-                                ? new Date(c.created_at).toLocaleDateString(
-                                    "ar-EG"
-                                  )
-                                : "—"}
-                            </td>
-                          </tr>
-                        )
-                      )}
+                              <div className="font-semibold text-foreground">
+                                {c.make} {c.model}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{c.year ?? "—"}</td>
+                          <td className="px-4 py-3 text-foreground font-medium">
+                            {c.evaluation_price != null ? sar.format(c.evaluation_price) : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs px-2 py-1 rounded-full bg-muted border border-border text-muted-foreground">
+                              {c.auction_status ?? "—"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground text-sm">
+                            {c.created_at
+                              ? new Date(c.created_at).toLocaleDateString("ar-EG")
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+
                       {(!overview?.lists?.recent_cars ||
                         overview.lists.recent_cars.length === 0) && (
                         <tr>
-                          <td
-                            colSpan={6}
-                            className="px-4 py-6 text-center text-muted-foreground"
-                          >
+                          <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                             لا توجد سيارات حديثة.
                           </td>
                         </tr>

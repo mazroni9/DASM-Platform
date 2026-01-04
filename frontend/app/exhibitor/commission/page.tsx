@@ -20,32 +20,32 @@ import {
 } from "lucide-react";
 
 /* =========================
-   Types
+   Types (UI)
 ========================= */
 type Currency = string;
 
-interface RecentCommission {
+type RecentCommission = {
   id: number;
   date: string; // ISO
   car: string | null;
   value: number;
-}
+};
 
-interface CommissionSummary {
+type CommissionSummary = {
   commissionValue: number;
   commissionCurrency: Currency;
   commissionNote?: string | null;
   recentCommissions: RecentCommission[];
-}
+};
 
-interface Operation {
+type Operation = {
   id: number;
   date: string; // ISO
   car: string | null;
   value: number;
   currency: Currency;
   description?: string | null;
-}
+};
 
 type Paginator<T> = {
   data: T[];
@@ -54,6 +54,12 @@ type Paginator<T> = {
   last_page: number;
   total: number;
 };
+
+// Backend may return one of these:
+// 1) Wrapped: { success: true, data: {...} }
+// 2) Direct:  { data: [...], current_page, ... } (Laravel paginator)
+// 3) Array:   [...]
+type Wrapped<T> = { success: boolean; data: T; message?: string };
 
 /* =========================
    Helpers
@@ -64,7 +70,116 @@ const fmtMoney = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-const formatDate = (iso: string) => new Date(iso).toLocaleString("ar-SA");
+const formatDate = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleString("ar-SA");
+  } catch {
+    return iso;
+  }
+};
+
+function safeNum(v: any, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function pick<T = any>(obj: any, keys: string[], fallback: any = undefined): T {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return fallback;
+}
+
+/** تطبيع summary من أي شكل بيرجعه الباك */
+function normalizeSummary(raw: any): CommissionSummary {
+  const commissionValue = safeNum(
+    pick(raw, ["commissionValue", "commission_value", "value", "commission"]),
+    0
+  );
+
+  const commissionCurrency = String(
+    pick(raw, ["commissionCurrency", "commission_currency", "currency"], "SAR")
+  ).toUpperCase();
+
+  const commissionNote = pick(raw, ["commissionNote", "commission_note", "note"], null);
+
+  const recentRaw =
+    pick(raw, ["recentCommissions", "recent_commissions", "recent", "latest"], []) ?? [];
+
+  const recentCommissions: RecentCommission[] = Array.isArray(recentRaw)
+    ? recentRaw.map((r: any) => ({
+        id: safeNum(pick(r, ["id", "operation_id"]), 0),
+        date: String(pick(r, ["date", "created_at", "createdAt"], new Date().toISOString())),
+        car:
+          pick(r, ["car", "car_name", "carName", "vehicle"], null) ??
+          (r?.car ? String(r.car) : null),
+        value: safeNum(pick(r, ["value", "amount", "commission_value"]), 0),
+      }))
+    : [];
+
+  return {
+    commissionValue,
+    commissionCurrency,
+    commissionNote: commissionNote ? String(commissionNote) : null,
+    recentCommissions,
+  };
+}
+
+/** تطبيع operation */
+function normalizeOp(raw: any): Operation {
+  return {
+    id: safeNum(pick(raw, ["id", "operation_id"]), 0),
+    date: String(pick(raw, ["date", "created_at", "createdAt"], new Date().toISOString())),
+    car: (() => {
+      const c = pick(raw, ["car", "car_name", "carName", "vehicle"], null);
+      return c == null ? null : String(c);
+    })(),
+    value: safeNum(pick(raw, ["value", "amount", "commission_value"]), 0),
+    currency: String(pick(raw, ["currency", "commission_currency"], "SAR")).toUpperCase(),
+    description: (() => {
+      const d = pick(raw, ["description", "note", "details"], null);
+      return d == null ? null : String(d);
+    })(),
+  };
+}
+
+/** استخراج العمليات من رد الباك (wrapped/direct/array) */
+function extractOpsPaginator(resp: any): Paginator<Operation> {
+  const payload = resp && resp.success !== undefined ? (resp as Wrapped<any>).data : resp;
+
+  // Direct paginator
+  if (payload && Array.isArray(payload.data) && typeof payload.current_page === "number") {
+    return {
+      data: payload.data.map(normalizeOp),
+      current_page: safeNum(payload.current_page, 1),
+      per_page: safeNum(payload.per_page, payload.data.length || 10),
+      last_page: safeNum(payload.last_page, 1),
+      total: safeNum(payload.total, payload.data.length || 0),
+    };
+  }
+
+  // If payload is an array
+  if (Array.isArray(payload)) {
+    const arr = payload.map(normalizeOp);
+    return {
+      data: arr,
+      current_page: 1,
+      per_page: arr.length || 10,
+      last_page: 1,
+      total: arr.length,
+    };
+  }
+
+  // Object fallback (best-effort)
+  const dataArr = Array.isArray(payload?.data) ? payload.data : [];
+  return {
+    data: dataArr.map(normalizeOp),
+    current_page: safeNum(payload?.current_page, 1),
+    per_page: safeNum(payload?.per_page, dataArr.length || 10),
+    last_page: safeNum(payload?.last_page, 1),
+    total: safeNum(payload?.total, dataArr.length || 0),
+  };
+}
 
 /* =========================
    Minimal Gauge
@@ -143,7 +258,7 @@ export default function ExhibitorCommissionPage() {
   const [to, setTo] = useState("");
 
   // Estimator
-  const [estPrice, setEstPrice] = useState<string>(""); // string للتحكم الكامل
+  const [estPrice, setEstPrice] = useState<string>("");
   const [estMode, setEstMode] = useState<"flat" | "progressive">("flat");
   const [estResult, setEstResult] = useState<number | null>(null);
   const [estimating, setEstimating] = useState(false);
@@ -157,19 +272,17 @@ export default function ExhibitorCommissionPage() {
     setLoadingSummary(true);
     try {
       const { data } = await api.get("/api/exhibitor/commission/summary");
-      if (data?.success && data?.data) {
-        const s: CommissionSummary = data.data;
-        setSummary(s);
-        // seed settings form
-        setValInput(String(s.commissionValue ?? 0));
-        setCurInput((s.commissionCurrency || "SAR").toUpperCase());
-        setNoteInput(s.commissionNote || "");
-      } else {
-        throw new Error("Invalid summary payload");
-      }
+
+      const payload = data && data.success !== undefined ? (data as Wrapped<any>).data : data;
+      const s = normalizeSummary(payload);
+
+      setSummary(s);
+      setValInput(String(s.commissionValue ?? 0));
+      setCurInput((s.commissionCurrency || "SAR").toUpperCase());
+      setNoteInput(s.commissionNote || "");
     } catch (e: any) {
       console.error(e);
-      toast.error("تعذّر تحميل الملخّص");
+      toast.error(e?.response?.data?.message || "تعذّر تحميل الملخّص");
       setSummary(null);
     } finally {
       setLoadingSummary(false);
@@ -179,55 +292,22 @@ export default function ExhibitorCommissionPage() {
   const fetchOps = async (page = 1) => {
     setLoadingOps(true);
     try {
-      const params = new URLSearchParams();
-      params.set("per_page", "10");
-      if (q.trim()) params.set("q", q.trim());
-      if (from) params.set("from", from);
-      if (to) params.set("to", to);
-      params.set("page", String(page));
+      const params: Record<string, any> = { per_page: 10, page };
+      if (q.trim()) params.q = q.trim();
+      if (from) params.from = from;
+      if (to) params.to = to;
 
-      const { data } = await api.get(
-        `/api/exhibitor/commission/operations?${params.toString()}`
-      );
+      const { data } = await api.get("/api/exhibitor/commission/operations", {
+        params,
+      });
 
-      // Laravel paginator
-      if (
-        data?.data &&
-        Array.isArray(data.data) &&
-        typeof data.current_page === "number"
-      ) {
-        const p: Paginator<Operation> = data;
-        setPaginator(p);
-        setOps(p.data || []);
-        setServerPage(p.current_page || 1);
-      } else if (Array.isArray(data)) {
-        // array fallback
-        const p: Paginator<Operation> = {
-          data,
-          current_page: 1,
-          per_page: data.length,
-          last_page: 1,
-          total: data.length,
-        };
-        setPaginator(p);
-        setOps(data);
-        setServerPage(1);
-      } else {
-        // object fallback
-        const p: Paginator<Operation> = {
-          data: data?.data || [],
-          current_page: data?.current_page || 1,
-          per_page: data?.per_page || (data?.data?.length ?? 10),
-          last_page: data?.last_page || 1,
-          total: data?.total || (data?.data?.length ?? 0),
-        };
-        setPaginator(p);
-        setOps(p.data || []);
-        setServerPage(p.current_page || 1);
-      }
+      const p = extractOpsPaginator(data);
+      setPaginator(p);
+      setOps(p.data || []);
+      setServerPage(p.current_page || 1);
     } catch (e: any) {
       console.error(e);
-      toast.error("تعذّر تحميل العمليات");
+      toast.error(e?.response?.data?.message || "تعذّر تحميل العمليات");
       setPaginator(null);
       setOps([]);
     } finally {
@@ -239,6 +319,7 @@ export default function ExhibitorCommissionPage() {
     if (!isClient) return;
     fetchSummary();
     fetchOps(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
   /* -------------------------
@@ -256,12 +337,19 @@ export default function ExhibitorCommissionPage() {
         commission_currency: (curInput || "SAR").toUpperCase(),
         commission_note: noteInput || null,
       };
-      await api.put("/api/exhibitor/commission/settings", payload);
+
+      const { data } = await api.put("/api/exhibitor/commission/settings", payload);
+
+      if (data?.success === false) {
+        toast.error(data?.message || "تعذّر حفظ الإعدادات");
+        return;
+      }
+
       toast.success("تم حفظ الإعدادات");
       fetchSummary();
     } catch (e: any) {
       console.error(e);
-      toast.error("تعذّر حفظ الإعدادات");
+      toast.error(e?.response?.data?.message || "تعذّر حفظ الإعدادات");
     }
   };
 
@@ -296,6 +384,7 @@ export default function ExhibitorCommissionPage() {
         (o.description || "").replace(/\n/g, " "),
       ]),
     ];
+
     const csv = rows
       .map((r) =>
         r
@@ -319,23 +408,14 @@ export default function ExhibitorCommissionPage() {
 
   const copyTable = async () => {
     try {
-      const header = [
-        "#",
-        "التاريخ",
-        "السيارة",
-        "قيمة السعي",
-        "العملة",
-        "الوصف",
-      ];
+      const header = ["#", "التاريخ", "السيارة", "قيمة السعي", "العملة", "الوصف"];
       const body = ops.map(
         (o) =>
           `${o.id}\t${formatDate(o.date)}\t${o.car ?? ""}\t${o.value}\t${
             o.currency ?? ""
           }\t${o.description ?? ""}`
       );
-      await navigator.clipboard.writeText(
-        [header.join("\t"), ...body].join("\n")
-      );
+      await navigator.clipboard.writeText([header.join("\t"), ...body].join("\n"));
       toast.success("تم نسخ الجدول");
     } catch {
       toast.error("تعذّر النسخ للحافظة");
@@ -343,7 +423,6 @@ export default function ExhibitorCommissionPage() {
   };
 
   const estimate = async () => {
-    // تنظيف وتحقق
     const cleaned = estPrice.replace(/[^\d]/g, "");
     const priceNum = Number(cleaned);
     if (!priceNum || Number.isNaN(priceNum) || priceNum <= 0) {
@@ -357,11 +436,14 @@ export default function ExhibitorCommissionPage() {
         price: priceNum,
         mode: estMode, // 'flat' | 'progressive'
       });
-      const amt = Number(data?.data?.amount ?? 0);
+
+      const payload = data && data.success !== undefined ? (data as Wrapped<any>).data : data;
+      const amt = safeNum(pick(payload, ["amount", "value", "commission"], 0), 0);
+
       setEstResult(Number.isFinite(amt) ? amt : 0);
     } catch (e: any) {
       console.error(e);
-      toast.error("فشل حساب التقدير");
+      toast.error(e?.response?.data?.message || "فشل حساب التقدير");
       setEstResult(null);
     } finally {
       setEstimating(false);
@@ -390,7 +472,7 @@ export default function ExhibitorCommissionPage() {
   }
 
   /* -------------------------
-     UI (Contained, No Overflow)
+     UI
   ------------------------- */
   return (
     <div
@@ -435,7 +517,6 @@ export default function ExhibitorCommissionPage() {
         <Header />
 
         <main className="flex-1">
-          {/* Container */}
           <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6 py-4 md:py-6">
             {/* Title + Actions */}
             <div className="mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
@@ -445,8 +526,7 @@ export default function ExhibitorCommissionPage() {
                   خانة السعي
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1">
-                  إدارة قيمة السعي الخاصة بمعرضك، استعراض آخر العمليات، وحساب
-                  تقديري وفق الشرائح.
+                  إدارة قيمة السعي الخاصة بمعرضك، استعراض آخر العمليات، وحساب تقديري.
                 </p>
               </div>
 
@@ -465,24 +545,21 @@ export default function ExhibitorCommissionPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
               {/* Card: Current Commission */}
               <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-4 min-w-0 overflow-hidden">
-                <Gauge value={Number(summary?.commissionValue ?? 0)} />
+                <Gauge value={safeNum(summary?.commissionValue, 0)} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-muted-foreground text-sm">
-                    قيمة السعي الحالية
-                  </div>
+                  <div className="text-muted-foreground text-sm">قيمة السعي الحالية</div>
                   {loadingSummary ? (
                     <div className="mt-2 h-8 w-36 bg-muted rounded animate-pulse" />
                   ) : (
                     <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-primary truncate">
-                      {fmtMoney(Number(summary?.commissionValue ?? 0))}{" "}
+                      {fmtMoney(safeNum(summary?.commissionValue, 0))}{" "}
                       <span className="text-sm text-muted-foreground">
                         {summary?.commissionCurrency || "SAR"}
                       </span>
                     </div>
                   )}
                   <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                    <Info className="w-3.5 h-3.5 shrink-0" /> يمكنك تعديل القيمة
-                    من لوحة الإعدادات أدناه.
+                    <Info className="w-3.5 h-3.5 shrink-0" /> يمكنك تعديل القيمة من الإعدادات.
                   </div>
                 </div>
               </div>
@@ -504,7 +581,7 @@ export default function ExhibitorCommissionPage() {
                 )}
               </div>
 
-              {/* Card: Recent operations */}
+              {/* Card: Recent */}
               <div className="rounded-2xl border border-border bg-card p-4 min-w-0 overflow-hidden">
                 <div className="text-muted-foreground text-sm font-semibold mb-2">
                   العمليات الأخيرة
@@ -512,10 +589,7 @@ export default function ExhibitorCommissionPage() {
                 <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
                   {loadingSummary ? (
                     [...Array(4)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-10 bg-muted rounded animate-pulse"
-                      />
+                      <div key={i} className="h-10 bg-muted rounded animate-pulse" />
                     ))
                   ) : recent.length ? (
                     recent.map((r) => (
@@ -537,9 +611,7 @@ export default function ExhibitorCommissionPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-muted-foreground text-sm">
-                      لا توجد عمليات حديثة
-                    </div>
+                    <div className="text-muted-foreground text-sm">لا توجد عمليات حديثة</div>
                   )}
                 </div>
               </div>
@@ -548,13 +620,10 @@ export default function ExhibitorCommissionPage() {
             {/* Settings */}
             <div className="rounded-2xl border border-border bg-card p-4 md:p-5 mb-6 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
-                <div className="text-foreground font-semibold">
-                  إعدادات السعي
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  تطبيق التغييرات فوريًا
-                </div>
+                <div className="text-foreground font-semibold">إعدادات السعي</div>
+                <div className="text-xs text-muted-foreground">تطبيق التغييرات فوريًا</div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">
@@ -571,6 +640,7 @@ export default function ExhibitorCommissionPage() {
                     placeholder="0"
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">
                     العملة
@@ -584,6 +654,7 @@ export default function ExhibitorCommissionPage() {
                     maxLength={3}
                   />
                 </div>
+
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">
                     ملاحظة
@@ -597,6 +668,7 @@ export default function ExhibitorCommissionPage() {
                   />
                 </div>
               </div>
+
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button
                   onClick={saveSettings}
@@ -624,6 +696,7 @@ export default function ExhibitorCommissionPage() {
                         className="w-full pr-9 pl-3 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </div>
+
                     <div className="flex gap-2 flex-wrap">
                       <div>
                         <label className="block text-xs text-muted-foreground mb-1">
@@ -636,6 +709,7 @@ export default function ExhibitorCommissionPage() {
                           className="px-3 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </div>
+
                       <div>
                         <label className="block text-xs text-muted-foreground mb-1">
                           إلى تاريخ
@@ -648,6 +722,7 @@ export default function ExhibitorCommissionPage() {
                         />
                       </div>
                     </div>
+
                     <div className="flex items-end gap-2 flex-wrap">
                       <button
                         onClick={applyFilters}
@@ -671,33 +746,26 @@ export default function ExhibitorCommissionPage() {
                   </div>
                 </div>
 
-                {/* Estimator (شرائح) — تم إصلاح الـ overflow */}
+                {/* Estimator */}
                 <div className="col-span-1">
                   <div className="rounded-xl border border-border bg-muted/50 p-3 overflow-hidden">
                     <div className="text-muted-foreground text-sm font-semibold mb-2 flex items-center gap-2">
                       <Calculator className="w-4 h-4 text-primary" />
-                      حاسبة تقديرية (شرائح)
+                      حاسبة تقديرية
                     </div>
 
-                    {/* اللف التلقائي + عناصر بعرض كامل على الموبايل */}
                     <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch gap-2">
                       <input
                         type="text"
                         inputMode="numeric"
                         placeholder="سعر السيارة"
                         value={estPrice}
-                        onChange={(e) =>
-                          setEstPrice(e.target.value.replace(/[^\d]/g, ""))
-                        }
+                        onChange={(e) => setEstPrice(e.target.value.replace(/[^\d]/g, ""))}
                         className="w-full sm:flex-1 px-3 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                       <select
                         value={estMode}
-                        onChange={(e) =>
-                          setEstMode(
-                            (e.target.value as "flat" | "progressive") || "flat"
-                          )
-                        }
+                        onChange={(e) => setEstMode((e.target.value as any) || "flat")}
                         className="w-full sm:w-40 px-3 py-2.5 rounded-lg bg-background border border-border text-foreground"
                       >
                         <option value="flat">Flat</option>
@@ -705,9 +773,7 @@ export default function ExhibitorCommissionPage() {
                       </select>
                       <button
                         onClick={estimate}
-                        disabled={
-                          estimating || !estPrice || Number(estPrice) <= 0
-                        }
+                        disabled={estimating || !estPrice || Number(estPrice) <= 0}
                         className={`w-full sm:w-auto px-3 py-2.5 rounded-lg text-primary-foreground font-semibold shadow-lg
                           ${
                             estimating || !estPrice || Number(estPrice) <= 0
@@ -722,9 +788,7 @@ export default function ExhibitorCommissionPage() {
                     <div className="mt-2 text-muted-foreground text-sm">
                       النتيجة:{" "}
                       <span className="text-primary font-bold">
-                        {estResult != null
-                          ? `${fmtMoney(estResult)} ${resultCurrency}`
-                          : "—"}
+                        {estResult != null ? `${fmtMoney(estResult)} ${resultCurrency}` : "—"}
                       </span>
                     </div>
                   </div>
@@ -750,7 +814,7 @@ export default function ExhibitorCommissionPage() {
               </div>
             </div>
 
-            {/* Table (contained & scrollable) */}
+            {/* Table */}
             <div className="rounded-2xl border border-border bg-card overflow-hidden">
               <div className="w-full overflow-x-auto">
                 <table className="min-w-[880px] w-full table-auto text-sm">
@@ -790,10 +854,7 @@ export default function ExhibitorCommissionPage() {
                       ))
                     ) : ops.length ? (
                       ops.map((o) => (
-                        <tr
-                          key={o.id}
-                          className="hover:bg-muted/50 transition-colors"
-                        >
+                        <tr key={o.id} className="hover:bg-muted/50 transition-colors">
                           <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                             {o.id}
                           </td>
@@ -802,42 +863,29 @@ export default function ExhibitorCommissionPage() {
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {o.car ? (
-                              <span className="truncate block max-w-[380px]">
-                                {o.car}
-                              </span>
+                              <span className="truncate block max-w-[380px]">{o.car}</span>
                             ) : (
-                              <span className="text-muted-foreground/50">
-                                —
-                              </span>
+                              <span className="text-muted-foreground/50">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="font-bold text-primary">
-                              {fmtMoney(o.value)}
-                            </span>
+                            <span className="font-bold text-primary">{fmtMoney(o.value)}</span>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                             {o.currency || "SAR"}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {o.description ? (
-                              <span className="block truncate max-w-[520px]">
-                                {o.description}
-                              </span>
+                              <span className="block truncate max-w-[520px]">{o.description}</span>
                             ) : (
-                              <span className="text-muted-foreground/50">
-                                —
-                              </span>
+                              <span className="text-muted-foreground/50">—</span>
                             )}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td
-                          className="px-4 py-10 text-center text-muted-foreground"
-                          colSpan={6}
-                        >
+                        <td className="px-4 py-10 text-center text-muted-foreground" colSpan={6}>
                           لا توجد عمليات مطابقة
                         </td>
                       </tr>
@@ -861,14 +909,8 @@ export default function ExhibitorCommissionPage() {
                     السابق
                   </button>
                   <div className="text-muted-foreground">
-                    صفحة{" "}
-                    <span className="text-foreground">
-                      {paginator.current_page}
-                    </span>{" "}
-                    من{" "}
-                    <span className="text-foreground">
-                      {paginator.last_page}
-                    </span>
+                    صفحة <span className="text-foreground">{paginator.current_page}</span> من{" "}
+                    <span className="text-foreground">{paginator.last_page}</span>
                   </div>
                   <button
                     onClick={handleNext}
@@ -888,7 +930,7 @@ export default function ExhibitorCommissionPage() {
         </main>
       </div>
 
-      {/* FAB (Mobile) لفتح القائمة */}
+      {/* FAB (Mobile) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
         className="md:hidden fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-50 hover:bg-primary/90 transition-all duration-200 flex items-center justify-center"

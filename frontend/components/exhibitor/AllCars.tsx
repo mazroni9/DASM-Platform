@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -94,7 +94,6 @@ async function apiFetch(path: string, init?: RequestInit) {
     const advice = isNext404
       ? `الطلب وصل إلى Next.js بدل Laravel.
 - يجب ضبط NEXT_PUBLIC_API_URL ليشير إلى جذر Laravel (بدون /api).
-  مثال: https://dasm-development-branch.onrender.com أو https://dasm.com.sa/public
 - لاحظ أن الكود يضيف /api تلقائيًا.`
       : "تحقق من مسار Laravel (route) أو البارامترات.";
     throw new Error(`تعذر جلب البيانات (404) من: ${url}\n${advice}\n${body}`);
@@ -138,37 +137,28 @@ type CarFromApi = {
   auctions: any[];
 };
 
-type CarsApiResponse = {
-  status: "success";
-  data: {
-    current_page: number;
-    data: CarFromApi[];
-    first_page_url: string;
-    from: number;
-    last_page: number;
-    last_page_url: string;
-    links: {
-      url: string | null;
-      label: string;
-      page: number | null;
-      active: boolean;
-    }[];
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
-  };
+type Paginator<T> = {
+  current_page: number;
+  data: T[];
+  last_page: number;
+  per_page: number;
+  total: number;
+  from?: number;
+  to?: number;
+  next_page_url?: string | null;
+  prev_page_url?: string | null;
+  path?: string;
+  links?: any[];
 };
 
 type ShowCarApiResponse = {
-  status: "success";
-  data: {
-    car: CarFromApi;
+  status?: string;
+  data?: {
+    car?: CarFromApi;
     active_auction?: any;
     total_bids?: number;
   };
+  car?: CarFromApi;
 };
 
 type UiCar = {
@@ -187,22 +177,29 @@ type UiCar = {
 };
 
 /** ===== Helpers & Mappers ===== */
+const toNumberSafe = (v?: string | number | null) => {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const cleaned = String(v).replace(/\s/g, "").replace(/,/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+};
+
 const mapStatusToArabic = (s?: string): UiCar["status"] => {
-  switch ((s || "").toLowerCase()) {
-    case "available":
-    case "active":
-      return "معلن";
-    case "scheduled":
-    case "reserved":
-      return "محجوز";
-    case "sold":
-      return "مباع";
-    case "cancelled":
-    case "canceled":
-      return "ملغي";
-    default:
-      return "غير معروف";
+  const raw = (s || "").trim();
+  const v = raw.toLowerCase();
+
+  // لو الباك بيرجع عربي أصلاً
+  if (["معلن", "محجوز", "مباع", "ملغي"].includes(raw as any)) {
+    return raw as UiCar["status"];
   }
+
+  if (["available", "active", "published"].includes(v)) return "معلن";
+  if (["scheduled", "reserved", "pending"].includes(v)) return "محجوز";
+  if (["sold", "completed"].includes(v)) return "مباع";
+  if (["cancelled", "canceled", "cancel"].includes(v)) return "ملغي";
+
+  return "غير معروف";
 };
 
 const mapTransmissionLabel = (t?: string) => {
@@ -228,13 +225,61 @@ const conditionOptions = [
   { value: "poor", label: "ضعيفة" },
 ];
 
-const toNumberSafe = (v?: string | number | null) => {
-  if (v === null || v === undefined) return 0;
-  if (typeof v === "number") return isFinite(v) ? v : 0;
-  const cleaned = v.replace(/\s/g, "").replace(/,/g, "");
-  const n = Number(cleaned);
-  return isFinite(n) ? n : 0;
+const uiStatusToBackend = (ui: string) => {
+  // عدّل هنا لو قيم الباك مختلفة
+  if (ui === "معلن") return "available";
+  if (ui === "محجوز") return "scheduled";
+  if (ui === "مباع") return "sold";
+  return "";
 };
+
+function isPaginator(obj: any): obj is Paginator<any> {
+  return (
+    !!obj &&
+    typeof obj === "object" &&
+    typeof obj.current_page === "number" &&
+    Array.isArray(obj.data) &&
+    typeof obj.last_page === "number" &&
+    typeof obj.total === "number"
+  );
+}
+
+function pickCarsPaginator(json: any): Paginator<CarFromApi> | null {
+  // unwrapped paginator
+  if (isPaginator(json)) return json;
+
+  // wrapped {status, data: paginator}
+  if (isPaginator(json?.data)) return json.data;
+
+  // fallback: {success:true, data:paginator}
+  if (json?.success && isPaginator(json?.data)) return json.data;
+
+  return null;
+}
+
+function pickShowCar(json: any): CarFromApi | null {
+  // {status, data:{car}}
+  if (json?.data?.car && typeof json.data.car === "object") return json.data.car;
+
+  // {car: {...}}
+  if (json?.car && typeof json.car === "object") return json.car;
+
+  // {data:{...car}}
+  if (json?.data?.id) return json.data as CarFromApi;
+
+  // {...car}
+  if (json?.id) return json as CarFromApi;
+
+  return null;
+}
+
+function resolveMediaUrl(src: string) {
+  const s = (src || "").trim();
+  if (!s) return s;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return `${API_ROOT}${s}`;
+  return `${API_ROOT}/${s}`;
+}
 
 /** ===== Small UI primitives ===== */
 const Panel = ({
@@ -244,9 +289,7 @@ const Panel = ({
   children: React.ReactNode;
   className?: string;
 }) => (
-  <div
-    className={`bg-card rounded-2xl shadow-lg border border-border ${className}`}
-  >
+  <div className={`bg-card rounded-2xl shadow-lg border border-border ${className}`}>
     {children}
   </div>
 );
@@ -308,6 +351,15 @@ function Backdrop({
   );
 }
 
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-secondary/30 p-3 rounded-lg border border-border">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="font-medium text-foreground text-sm">{value || "—"}</p>
+    </div>
+  );
+}
+
 function ViewCarModal({
   open,
   onClose,
@@ -324,6 +376,7 @@ function ViewCarModal({
           <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3">
             تفاصيل السيارة
           </h2>
+
           {!car ? (
             <div className="text-muted-foreground text-sm">جاري التحميل...</div>
           ) : (
@@ -334,31 +387,30 @@ function ViewCarModal({
                 <Info label="سنة الصنع" value={String(car.year)} />
                 <Info label="VIN" value={car.vin} />
                 <Info label="الممشى (كم)" value={String(car.odometer ?? "")} />
-                <Info
-                  label="الحالة"
-                  value={mapStatusToArabic(car.auction_status)}
-                />
+                <Info label="الحالة" value={mapStatusToArabic(car.auction_status)} />
                 <Info
                   label="القير"
-                  value={mapTransmissionLabel(car.transmission ?? "")}
+                  value={mapTransmissionLabel(car.transmission ?? "") || "—"}
                 />
-                <Info label="المحرك" value={car.engine ?? ""} />
+                <Info label="المحرك" value={car.engine ?? "—"} />
                 <Info
                   label="السعر التقييمي"
-                  value={`${car.evaluation_price ?? "0"} ر.س`}
+                  value={`${toNumberSafe(car.evaluation_price).toLocaleString()} ر.س`}
                 />
-                <Info label="اللون" value={car.color ?? ""} />
-                <Info label="اللوحة" value={car.plate ?? ""} />
-                <Info label="المنطقة" value={car.province ?? ""} />
-                <Info label="المدينة" value={car.city ?? ""} />
-                <Info label="فئة السوق" value={car.market_category ?? ""} />
+                <Info label="اللون" value={car.color ?? "—"} />
+                <Info label="اللوحة" value={car.plate ?? "—"} />
+                <Info label="المنطقة" value={car.province ?? "—"} />
+                <Info label="المدينة" value={car.city ?? "—"} />
+                <Info label="فئة السوق" value={car.market_category ?? "—"} />
               </div>
+
               <div>
                 <p className="text-xs text-muted-foreground mb-1">الوصف</p>
                 <p className="bg-secondary rounded-lg p-3 whitespace-pre-wrap text-foreground text-sm border border-border">
                   {car.description || "—"}
                 </p>
               </div>
+
               <div>
                 <p className="text-xs text-muted-foreground mb-2">الصور</p>
                 {Array.isArray(car.images) && car.images.length > 0 ? (
@@ -366,16 +418,14 @@ function ViewCarModal({
                     {car.images.map((src, i) => (
                       <img
                         key={`img-${i}-${src}`}
-                        src={src}
+                        src={resolveMediaUrl(src)}
                         alt={`image-${i}`}
                         className="w-full h-24 object-cover rounded-lg border border-border"
                       />
                     ))}
                   </div>
                 ) : (
-                  <div className="text-muted-foreground text-sm">
-                    لا توجد صور
-                  </div>
+                  <div className="text-muted-foreground text-sm">لا توجد صور</div>
                 )}
               </div>
             </div>
@@ -383,15 +433,6 @@ function ViewCarModal({
         </Backdrop>
       )}
     </AnimatePresence>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-secondary/30 p-3 rounded-lg border border-border">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="font-medium text-foreground text-sm">{value || "—"}</p>
-    </div>
   );
 }
 
@@ -413,6 +454,38 @@ type EditFormState = {
   condition: string;
   market_category: string;
 };
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs text-muted-foreground mb-1">{label}</label>
+      {children}
+      <style jsx>{`
+        .input {
+          width: 100%;
+          padding: 0.55rem 0.8rem;
+          border: 1px solid hsl(var(--border));
+          border-radius: 0.75rem;
+          outline: none;
+          background: hsl(var(--background));
+          color: hsl(var(--foreground));
+          font-size: 0.9rem;
+        }
+        .input::placeholder {
+          color: hsl(var(--muted-foreground));
+        }
+        .input:focus {
+          border-color: hsl(var(--primary));
+          box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+        }
+        select.input option {
+          color: hsl(var(--foreground));
+          background: hsl(var(--background));
+        }
+      `}</style>
+    </div>
+  );
+}
 
 function EditCarModal({
   open,
@@ -436,7 +509,7 @@ function EditCarModal({
         model: car.model || "",
         year: String(car.year || ""),
         odometer: String(car.odometer ?? ""),
-        evaluation_price: car.evaluation_price ?? "",
+        evaluation_price: String(car.evaluation_price ?? ""),
         color: car.color ?? "",
         engine: car.engine ?? "",
         transmission: (car.transmission || "").toLowerCase(),
@@ -444,8 +517,8 @@ function EditCarModal({
         province: car.province ?? "",
         city: car.city ?? "",
         plate: car.plate ?? "",
-        min_price: car.min_price ?? "",
-        max_price: car.max_price ?? "",
+        min_price: String(car.min_price ?? ""),
+        max_price: String(car.max_price ?? ""),
         condition: (car.condition || "").toLowerCase(),
         market_category: car.market_category ?? "",
       });
@@ -461,6 +534,7 @@ function EditCarModal({
     if (!car || !form) return;
     setSaving(true);
     setError(null);
+
     try {
       const payload: any = {};
       (
@@ -499,7 +573,11 @@ function EditCarModal({
       });
 
       const j = await res.json().catch(() => ({}));
-      onSaved((j.data || j) as CarFromApi);
+      const updated = pickShowCar(j) ?? pickShowCar(j?.data) ?? null;
+
+      if (!updated) throw new Error("تعذر قراءة استجابة التعديل من السيرفر.");
+
+      onSaved(updated);
       onClose();
     } catch (e: any) {
       setError(e?.message || "حدث خطأ غير متوقع.");
@@ -515,6 +593,7 @@ function EditCarModal({
           <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3">
             تعديل السيارة
           </h2>
+
           {!form ? (
             <div className="text-muted-foreground text-sm">جارى التحميل...</div>
           ) : (
@@ -524,6 +603,7 @@ function EditCarModal({
                   {error}
                 </div>
               )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="الماركة">
                   <input
@@ -583,9 +663,7 @@ function EditCarModal({
                   <select
                     className="input"
                     value={form.transmission}
-                    onChange={(e) =>
-                      updateField("transmission", e.target.value)
-                    }
+                    onChange={(e) => updateField("transmission", e.target.value)}
                   >
                     <option value="">اختر</option>
                     {transmissionOptions.map((o) => (
@@ -646,6 +724,7 @@ function EditCarModal({
                     onChange={(e) => updateField("max_price", e.target.value)}
                   />
                 </Field>
+
                 <div className="md:col-span-2">
                   <label className="block text-xs text-muted-foreground mb-1">
                     الوصف
@@ -657,6 +736,7 @@ function EditCarModal({
                   />
                 </div>
               </div>
+
               <div className="mt-5 flex justify-end gap-3">
                 <SubtleBtn onClick={onClose}>إلغاء</SubtleBtn>
                 <PrimaryBtn onClick={submit} disabled={saving}>
@@ -668,46 +748,6 @@ function EditCarModal({
         </Backdrop>
       )}
     </AnimatePresence>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-xs text-muted-foreground mb-1">
-        {label}
-      </label>
-      {children}
-      <style jsx>{`
-        .input {
-          width: 100%;
-          padding: 0.55rem 0.8rem;
-          border: 1px solid hsl(var(--border));
-          border-radius: 0.75rem;
-          outline: none;
-          background: hsl(var(--background));
-          color: hsl(var(--foreground));
-          font-size: 0.9rem;
-        }
-        .input::placeholder {
-          color: hsl(var(--muted-foreground));
-        }
-        .input:focus {
-          border-color: hsl(var(--primary));
-          box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
-        }
-        select.input option {
-          color: hsl(var(--foreground));
-          background: hsl(var(--background));
-        }
-      `}</style>
-    </div>
   );
 }
 
@@ -765,13 +805,7 @@ type Filters = {
   yearTo: string;
 };
 
-function FilterChip({
-  label,
-  onClear,
-}: {
-  label: string;
-  onClear: () => void;
-}) {
+function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
   return (
     <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs border border-primary/20">
       {label}
@@ -852,13 +886,10 @@ function FilterPanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
-          <p className="block text-xs text-muted-foreground mb-2">
-            حالة الإعلان
-          </p>
+          <p className="block text-xs text-muted-foreground mb-2">حالة الإعلان</p>
           <div className="flex flex-wrap gap-2">
             {(["", ...statuses] as string[]).map((s) => {
-              const selected =
-                filters.status === s || (s === "" && !filters.status);
+              const selected = filters.status === s || (s === "" && !filters.status);
               return (
                 <button
                   key={`status-${s || "all"}`}
@@ -895,9 +926,7 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground mb-2">
-            السعر من
-          </label>
+          <label className="block text-xs text-muted-foreground mb-2">السعر من</label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
               <FiDollarSign />
@@ -912,10 +941,9 @@ function FilterPanel({
             />
           </div>
         </div>
+
         <div>
-          <label className="block text-xs text-muted-foreground mb-2">
-            السعر إلى
-          </label>
+          <label className="block text-xs text-muted-foreground mb-2">السعر إلى</label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
               <FiDollarSign />
@@ -948,6 +976,7 @@ function FilterPanel({
             />
           </div>
         </div>
+
         <div>
           <label className="block text-xs text-muted-foreground mb-2">
             سنة الصنع إلى
@@ -990,9 +1019,7 @@ function FilterPanel({
             >
               <Panel className="p-5 h-full overflow-y-auto rounded-l-2xl">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-foreground">
-                    الفلاتر
-                  </h3>
+                  <h3 className="text-base font-bold text-foreground">الفلاتر</h3>
                   <button
                     onClick={onClose}
                     className="text-muted-foreground hover:text-foreground"
@@ -1022,16 +1049,10 @@ function FilterPanel({
       {/* Desktop Floating Card */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-          >
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
             <Panel className="p-5 mb-6 hidden md:block">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-bold text-foreground">
-                  الفلاتر المتقدمة
-                </h3>
+                <h3 className="text-base font-bold text-foreground">الفلاتر المتقدمة</h3>
                 <div className="flex items-center gap-2">
                   {activeChips.slice(0, 4).map((c, i) => (
                     <FilterChip
@@ -1075,9 +1096,7 @@ export default function ExhibitorCars() {
   const [total, setTotal] = useState(0);
   const [perPage, setPerPage] = useState(10);
 
-  const [sortKey, setSortKey] = useState<
-    "latest" | "oldest" | "price_desc" | "price_asc"
-  >("latest");
+  const [sortKey, setSortKey] = useState<"latest" | "oldest" | "price_desc" | "price_asc">("latest");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -1094,20 +1113,29 @@ export default function ExhibitorCars() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [selectedCarData, setSelectedCarData] = useState<CarFromApi | null>(
-    null
-  );
+  const [selectedCarData, setSelectedCarData] = useState<CarFromApi | null>(null);
+
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const fetchCars = async (page = 1) => {
+  // لتجنب duplicate fetch عند setState + fetch يدوي
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // لتجاهل نتائج الطلبات القديمة (race condition)
+  const reqSeqRef = useRef(0);
+
+  const fetchCars = async (page: number) => {
+    const seq = ++reqSeqRef.current;
+
     try {
       setLoading(true);
       setErrorMsg(null);
 
       const params = new URLSearchParams();
       params.set("page", String(page));
+      params.set("per_page", String(perPage)); // لو الباك بيتجاهله مفيش مشكلة
 
+      // sort
       if (sortKey === "latest") {
         params.set("sort_by", "created_at");
         params.set("sort_dir", "desc");
@@ -1122,79 +1150,62 @@ export default function ExhibitorCars() {
         params.set("sort_dir", "asc");
       }
 
+      // server-side filters (لو الباك يدعمها هتشتغل، لو لا غالباً هيتجاهلها)
       if (filters.status) {
-        const backendStatus =
-          filters.status === "معلن"
-            ? "available"
-            : filters.status === "محجوز"
-            ? "scheduled"
-            : filters.status === "مباع"
-            ? "sold"
-            : "";
+        const backendStatus = uiStatusToBackend(filters.status);
         if (backendStatus) params.set("auction_status", backendStatus);
       }
       if (filters.brand) params.set("make", filters.brand);
 
-      const res = await apiFetch(`cars?${params.toString()}`);
-      const json: CarsApiResponse = await res.json();
+      if (filters.minPrice) params.set("min_price", filters.minPrice);
+      if (filters.maxPrice) params.set("max_price", filters.maxPrice);
+      if (filters.yearFrom) params.set("year_from", filters.yearFrom);
+      if (filters.yearTo) params.set("year_to", filters.yearTo);
 
-      const mapped: UiCar[] = (json.data.data || [])
-        .map((c) => [
-          c.id,
-          `${c.make ?? ""} ${c.model ?? ""}`.trim(),
-          c.make ?? "",
-          c.model ?? "",
-          c.year ?? 0,
-          toNumberSafe(c.evaluation_price),
-          c.odometer ?? 0,
-          mapTransmissionLabel(c.transmission ?? ""),
-          mapStatusToArabic(c.auction_status),
-          c.created_at?.slice(0, 10) ?? "",
-          0,
-          0,
-        ])
-        .map(
-          ([
-            id,
-            title,
-            brand,
-            model,
-            year,
-            price,
-            mileage,
-            transmission,
-            status,
-            addedDate,
-            views,
-            inquiries,
-          ]) => ({
-            id: id as number,
-            title: title as string,
-            brand: brand as string,
-            model: model as string,
-            year: year as number,
-            price: price as number,
-            mileage: mileage as number,
-            transmission: transmission as string,
-            status: status as UiCar["status"],
-            addedDate: addedDate as string,
-            views: views as number,
-            inquiries: inquiries as number,
-          })
-        );
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch) params.set("search", trimmedSearch);
+
+      const res = await apiFetch(`cars?${params.toString()}`);
+      const json = await res.json().catch(() => ({}));
+
+      const paginator = pickCarsPaginator(json);
+      if (!paginator) {
+        throw new Error("شكل استجابة /cars غير متوقع (Paginator غير موجود).");
+      }
+
+      const mapped: UiCar[] = (paginator.data || []).map((c) => ({
+        id: c.id,
+        title: `${c.make ?? ""} ${c.model ?? ""}`.trim(),
+        brand: c.make ?? "",
+        model: c.model ?? "",
+        year: c.year ?? 0,
+        price: toNumberSafe(c.evaluation_price),
+        mileage: c.odometer ?? 0,
+        transmission: mapTransmissionLabel(c.transmission ?? ""),
+        status: mapStatusToArabic(c.auction_status),
+        addedDate: c.created_at?.slice(0, 10) ?? "",
+        views: 0,
+        inquiries: 0,
+      }));
+
+      // تجاهل لو فيه طلب أحدث خلّص بعده
+      if (seq !== reqSeqRef.current) return;
 
       setCars(mapped);
-      setCurrentPage(json.data.current_page);
-      setLastPage(json.data.last_page);
-      setTotal(json.data.total);
-      setPerPage(json.data.per_page);
+      setCurrentPage(paginator.current_page || 1);
+      setLastPage(paginator.last_page || 1);
+      setTotal(paginator.total || 0);
+      setPerPage(paginator.per_page || perPage);
     } catch (err: any) {
+      if (seq !== reqSeqRef.current) return;
+
       setErrorMsg(err?.message || "حدث خطأ غير متوقع أثناء جلب البيانات.");
       setCars([]);
       setCurrentPage(1);
       setLastPage(1);
       setTotal(0);
     } finally {
+      if (seq !== reqSeqRef.current) return;
       setLoading(false);
     }
   };
@@ -1202,10 +1213,12 @@ export default function ExhibitorCars() {
   useEffect(() => {
     fetchCars(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortKey, currentPage]);
+  }, [sortKey, currentPage, reloadKey]);
 
   const filteredCars = useMemo(() => {
+    // فلترة محلية إضافية (عشان لو الباك مش داعم كل params)
     let results = [...cars];
+
     const term = searchTerm.trim().toLowerCase();
     if (term) {
       results = results.filter(
@@ -1216,14 +1229,11 @@ export default function ExhibitorCars() {
           String(c.year).includes(term)
       );
     }
-    if (filters.yearFrom)
-      results = results.filter((c) => c.year >= Number(filters.yearFrom));
-    if (filters.yearTo)
-      results = results.filter((c) => c.year <= Number(filters.yearTo));
-    if (filters.minPrice)
-      results = results.filter((c) => c.price >= Number(filters.minPrice));
-    if (filters.maxPrice)
-      results = results.filter((c) => c.price <= Number(filters.maxPrice));
+    if (filters.yearFrom) results = results.filter((c) => c.year >= Number(filters.yearFrom));
+    if (filters.yearTo) results = results.filter((c) => c.year <= Number(filters.yearTo));
+    if (filters.minPrice) results = results.filter((c) => c.price >= Number(filters.minPrice));
+    if (filters.maxPrice) results = results.filter((c) => c.price <= Number(filters.maxPrice));
+
     return results;
   }, [cars, filters, searchTerm]);
 
@@ -1258,10 +1268,13 @@ export default function ExhibitorCars() {
     setViewOpen(true);
     setSelectedCarData(null);
     setActionError(null);
+
     try {
       const res = await apiFetch(`cars/${id}`);
-      const j: ShowCarApiResponse = await res.json();
-      setSelectedCarData(j.data.car);
+      const j: ShowCarApiResponse = await res.json().catch(() => ({} as any));
+      const car = pickShowCar(j);
+      if (!car) throw new Error("تعذر قراءة تفاصيل السيارة من الاستجابة.");
+      setSelectedCarData(car);
     } catch (e: any) {
       setActionError(e?.message || "تعذر تحميل تفاصيل السيارة.");
     }
@@ -1272,10 +1285,13 @@ export default function ExhibitorCars() {
     setEditOpen(true);
     setSelectedCarData(null);
     setActionError(null);
+
     try {
       const res = await apiFetch(`cars/${id}`);
-      const j: ShowCarApiResponse = await res.json();
-      setSelectedCarData(j.data.car);
+      const j: ShowCarApiResponse = await res.json().catch(() => ({} as any));
+      const car = pickShowCar(j);
+      if (!car) throw new Error("تعذر قراءة بيانات التعديل من الاستجابة.");
+      setSelectedCarData(car);
     } catch (e: any) {
       setActionError(e?.message || "تعذر تحميل بيانات التعديل.");
     }
@@ -1312,10 +1328,14 @@ export default function ExhibitorCars() {
     if (!selectedId) return;
     setActionLoading(true);
     setActionError(null);
+
     try {
       await apiFetch(`cars/${selectedId}`, { method: "DELETE" });
-      setCars((prev) => prev.filter((c) => c.id !== selectedId));
       setDeleteOpen(false);
+
+      // أعد التحميل لضمان التزامن مع الباك + pagination
+      // (خصوصًا لو الصفحة فضيت بعد الحذف)
+      setReloadKey((k) => k + 1);
     } catch (e: any) {
       setActionError(e?.message || "حدث خطأ أثناء الحذف.");
     } finally {
@@ -1326,11 +1346,7 @@ export default function ExhibitorCars() {
   return (
     <div dir="rtl" className="bg-background py-7 px-4 sm:px-6 lg:px-8">
       {/* Modals */}
-      <ViewCarModal
-        open={viewOpen}
-        onClose={() => setViewOpen(false)}
-        car={selectedCarData}
-      />
+      <ViewCarModal open={viewOpen} onClose={() => setViewOpen(false)} car={selectedCarData} />
       <EditCarModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -1358,9 +1374,7 @@ export default function ExhibitorCars() {
               >
                 سيارات المعرض
               </motion.h1>
-              <p className="text-muted-foreground text-sm">
-                إدارة السيارات المضافة إلى معرضك
-              </p>
+              <p className="text-muted-foreground text-sm">إدارة السيارات المضافة إلى معرضك</p>
             </div>
             <PrimaryBtn
               onClick={goToAddCar}
@@ -1373,10 +1387,7 @@ export default function ExhibitorCars() {
           </div>
 
           <div className="flex flex-col md:flex-row gap-3">
-            <motion.div
-              className="relative flex-grow"
-              whileHover={{ scale: 1.003 }}
-            >
+            <motion.div className="relative flex-grow" whileHover={{ scale: 1.003 }}>
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <FiSearch className="text-muted-foreground" />
               </div>
@@ -1389,7 +1400,7 @@ export default function ExhibitorCars() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     setCurrentPage(1);
-                    fetchCars(1);
+                    setReloadKey((k) => k + 1);
                   }
                 }}
               />
@@ -1397,8 +1408,7 @@ export default function ExhibitorCars() {
 
             <SubtleBtn
               onClick={() => {
-                setCurrentPage(1);
-                fetchCars(1);
+                setReloadKey((k) => k + 1);
               }}
             >
               تحديث
@@ -1436,22 +1446,19 @@ export default function ExhibitorCars() {
           onApply={() => {
             setShowFilters(false);
             setCurrentPage(1);
-            fetchCars(1);
+            setReloadKey((k) => k + 1);
           }}
           onReset={() => {
             resetFilters();
+            setShowFilters(false);
             setCurrentPage(1);
-            fetchCars(1);
+            setReloadKey((k) => k + 1);
           }}
         />
 
-        {/* Quick stats (مصغّرة ومتّسقة) */}
+        {/* Quick stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-7">
-          <StatCard
-            title="إجمالي الصفحة الحالية"
-            color="indigo"
-            value={filteredCars.length}
-          />
+          <StatCard title="إجمالي الصفحة الحالية" color="indigo" value={filteredCars.length} />
           <StatCard
             title="معلن"
             color="green"
@@ -1472,15 +1479,11 @@ export default function ExhibitorCars() {
         {/* Toolbar */}
         <div className="mb-5 flex justify-between items-center">
           <div className="text-muted-foreground text-sm">
-            <span className="font-medium text-foreground tabular-nums">
-              {total}
-            </span>{" "}
-            إجمالي السيارات
+            <span className="font-medium text-foreground tabular-nums">{total}</span> إجمالي السيارات
           </div>
+
           <div className="flex items-center">
-            <span className="text-muted-foreground mr-2 text-sm">
-              ترتيب حسب:
-            </span>
+            <span className="text-muted-foreground mr-2 text-sm">ترتيب حسب:</span>
             <select
               className="px-3 py-2 rounded-xl bg-background text-foreground border border-border focus:border-primary focus:ring-4 focus:ring-primary/20 text-sm"
               value={sortKey}
@@ -1506,17 +1509,13 @@ export default function ExhibitorCars() {
             <div className="text-muted-foreground mb-3">
               <FiSearch size={40} className="mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-1">
-              لا توجد سيارات متطابقة
-            </h3>
-            <p className="text-muted-foreground text-sm mb-5">
-              عدّل الفلاتر أو أعد البحث.
-            </p>
+            <h3 className="text-lg font-medium text-foreground mb-1">لا توجد سيارات متطابقة</h3>
+            <p className="text-muted-foreground text-sm mb-5">عدّل الفلاتر أو أعد البحث.</p>
             <PrimaryBtn
               onClick={() => {
                 resetFilters();
                 setCurrentPage(1);
-                fetchCars(1);
+                setReloadKey((k) => k + 1);
               }}
             >
               عرض جميع السيارات
@@ -1526,149 +1525,132 @@ export default function ExhibitorCars() {
 
         {/* Table */}
         {!loading && filteredCars.length > 0 && (
-          <>
-            <Panel className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <Th>السيارة</Th>
-                      <Th>السعر</Th>
-                      <Th>الحالة</Th>
-                      <Th>المشاهدات</Th>
-                      <Th>الاستفسارات</Th>
-                      <Th>الإجراءات</Th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filteredCars.map((car, index) => (
-                      <motion.tr
-                        key={`car-${car.id}`}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.02 }}
-                        className="hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                              <FaCar className="text-primary" size={16} />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-semibold text-foreground">
-                                {car.title}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {car.year} •{" "}
-                                {Number.isFinite(car.mileage)
-                                  ? car.mileage.toLocaleString()
-                                  : 0}{" "}
-                                كم
-                              </div>
+          <Panel className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <Th>السيارة</Th>
+                    <Th>السعر</Th>
+                    <Th>الحالة</Th>
+                    <Th>المشاهدات</Th>
+                    <Th>الاستفسارات</Th>
+                    <Th>الإجراءات</Th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredCars.map((car, index) => (
+                    <motion.tr
+                      key={`car-${car.id}`}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
+                            <FaCar className="text-primary" size={16} />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-semibold text-foreground">{car.title}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {car.year} •{" "}
+                              {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم
                             </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="text-sm font-bold text-primary tabular-nums">
-                            {Number.isFinite(car.price)
-                              ? car.price.toLocaleString()
-                              : 0}{" "}
-                            ر.س
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <span
-                            className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${
-                              car.status === "معلن"
-                                ? "bg-green-500/15 text-green-600 border border-green-600/30 dark:text-green-300"
-                                : car.status === "محجوز"
-                                ? "bg-amber-500/15 text-amber-600 border border-amber-600/30 dark:text-amber-200"
-                                : car.status === "مباع"
-                                ? "bg-rose-500/15 text-rose-600 border border-rose-600/30 dark:text-rose-300"
-                                : "bg-gray-500/15 text-gray-600 border border-gray-600/30 dark:text-gray-300"
-                            }`}
-                          >
-                            {car.status}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm text-muted-foreground tabular-nums">
-                          <div className="flex items-center gap-1">
-                            <FiEye className="text-muted-foreground" />
-                            {(car.views ?? 0).toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm text-muted-foreground tabular-nums">
-                          {(car.inquiries ?? 0).toLocaleString()}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => openView(car.id)}
-                              className="text-muted-foreground hover:text-primary transition-colors"
-                              title="عرض"
-                            >
-                              <FiEye size={18} />
-                            </button>
-                            <button
-                              onClick={() => openEdit(car.id)}
-                              className="text-muted-foreground hover:text-primary transition-colors"
-                              title="تعديل"
-                            >
-                              <FiEdit size={18} />
-                            </button>
-                            <button
-                              onClick={() => openDelete(car.id)}
-                              className="text-muted-foreground hover:text-destructive transition-colors"
-                              title="حذف"
-                            >
-                              <FiTrash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </td>
 
-              {/* Pagination */}
-              {lastPage > 1 && (
-                <div className="py-4 px-5 border-t border-border flex items-center justify-between bg-muted/20">
-                  <button
-                    onClick={() => {
-                      if (currentPage > 1) {
-                        setCurrentPage((p) => p - 1);
-                        fetchCars(currentPage - 1);
-                      }
-                    }}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
-                  >
-                    <FiChevronRight />
-                  </button>
-                  <span className="text-sm text-muted-foreground">
-                    صفحة{" "}
-                    <span className="font-bold text-foreground">
-                      {currentPage}
-                    </span>{" "}
-                    من {lastPage}
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (currentPage < lastPage) {
-                        setCurrentPage((p) => p + 1);
-                        fetchCars(currentPage + 1);
-                      }
-                    }}
-                    disabled={currentPage === lastPage}
-                    className="p-2 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
-                  >
-                    <FiChevronLeft />
-                  </button>
-                </div>
-              )}
-            </Panel>
-          </>
+                      <td className="px-5 py-3.5">
+                        <div className="text-sm font-bold text-primary tabular-nums">
+                          {Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`px-2 py-1 inline-flex text-[11px] leading-5 font-semibold rounded-full ${
+                            car.status === "معلن"
+                              ? "bg-green-500/15 text-green-600 border border-green-600/30 dark:text-green-300"
+                              : car.status === "محجوز"
+                              ? "bg-amber-500/15 text-amber-600 border border-amber-600/30 dark:text-amber-200"
+                              : car.status === "مباع"
+                              ? "bg-rose-500/15 text-rose-600 border border-rose-600/30 dark:text-rose-300"
+                              : "bg-gray-500/15 text-gray-600 border border-gray-600/30 dark:text-gray-300"
+                          }`}
+                        >
+                          {car.status}
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-3.5 text-sm text-muted-foreground tabular-nums">
+                        <div className="flex items-center gap-1">
+                          <FiEye className="text-muted-foreground" />
+                          {(car.views ?? 0).toLocaleString()}
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3.5 text-sm text-muted-foreground tabular-nums">
+                        {(car.inquiries ?? 0).toLocaleString()}
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => openView(car.id)}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="عرض"
+                          >
+                            <FiEye size={18} />
+                          </button>
+                          <button
+                            onClick={() => openEdit(car.id)}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                            title="تعديل"
+                          >
+                            <FiEdit size={18} />
+                          </button>
+                          <button
+                            onClick={() => openDelete(car.id)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            title="حذف"
+                          >
+                            <FiTrash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {lastPage > 1 && (
+              <div className="py-4 px-5 border-t border-border flex items-center justify-between bg-muted/20">
+                <button
+                  onClick={() => currentPage > 1 && setCurrentPage((p) => p - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  <FiChevronRight />
+                </button>
+
+                <span className="text-sm text-muted-foreground">
+                  صفحة <span className="font-bold text-foreground">{currentPage}</span> من {lastPage}
+                </span>
+
+                <button
+                  onClick={() => currentPage < lastPage && setCurrentPage((p) => p + 1)}
+                  disabled={currentPage === lastPage}
+                  className="p-2 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  <FiChevronLeft />
+                </button>
+              </div>
+            )}
+          </Panel>
         )}
       </div>
     </div>
@@ -1693,20 +1675,14 @@ function StatCard({
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-card border border-border p-5 shadow-sm">
-      <div
-        className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${colorClasses[color]}`}
-      />
+      <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${colorClasses[color]}`} />
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground mb-1">{title}</p>
           <div className="text-2xl font-bold text-foreground">{value}</div>
         </div>
-        <div
-          className={`p-2.5 rounded-xl bg-gradient-to-br ${colorClasses[color]} opacity-10`}
-        >
-          <div
-            className={`w-5 h-5 rounded-full bg-gradient-to-br ${colorClasses[color]}`}
-          />
+        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${colorClasses[color]} opacity-10`}>
+          <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${colorClasses[color]}`} />
         </div>
       </div>
     </div>

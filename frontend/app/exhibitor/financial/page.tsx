@@ -19,18 +19,18 @@ import {
 } from "lucide-react";
 
 /* =========================
-   Types
+   Types (UI)
 ========================= */
 type RawTxType = string;
 
 interface Tx {
   id: number;
   wallet_id: number;
-  type: RawTxType; // 'credit' | 'debit' | 'auction' | 'adjustment' | ...
-  amount: number; // غالباً بالهللة إن كان النظام يعتمد هللات
+  type: RawTxType; // 'credit' | 'debit' | 'deposit' | 'withdraw' | 'auction' | 'adjustment' | ...
+  amount: number; // قد تكون SAR أو هللة حسب النظام
   related_auction?: number | null;
   description?: string | null;
-  created_at: string;
+  created_at: string; // ISO
 }
 
 type Paginator<T> = {
@@ -42,11 +42,120 @@ type Paginator<T> = {
 };
 
 interface WalletResp {
-  success: boolean;
+  success?: boolean;
   data?: {
-    balance: number;
-    balance_sar?: number; // وجودها يعني أن النظام يحسب بالهللة
-    currency: string;
+    balance: number; // قد تكون هللة
+    balance_sar?: number; // وجودها غالباً يعني أن balance بالهللة
+    currency: string; // "SAR"
+  };
+}
+
+/* =========================
+   Backend helpers (robust)
+========================= */
+type Wrapped<T> = { success: boolean; data: T; message?: string };
+
+function safeNum(v: any, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function pick(obj: any, keys: string[], fallback: any = undefined) {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return fallback;
+}
+
+function unwrap<T = any>(resp: any): T {
+  // supports: {success:true,data:...} OR direct payload
+  if (resp && typeof resp === "object" && "success" in resp && "data" in resp) {
+    return (resp as Wrapped<T>).data;
+  }
+  return resp as T;
+}
+
+function normalizeTx(raw: any): Tx {
+  return {
+    id: safeNum(pick(raw, ["id"]), 0),
+    wallet_id: safeNum(pick(raw, ["wallet_id", "walletId"]), 0),
+    type: String(pick(raw, ["type"], "")),
+    amount: safeNum(pick(raw, ["amount", "amount_sar", "amountSar"]), 0),
+    related_auction: (() => {
+      const v = pick(raw, ["related_auction", "relatedAuction", "auction_id", "auctionId"], null);
+      return v == null ? null : safeNum(v, 0);
+    })(),
+    description: pick(raw, ["description", "desc"], null),
+    created_at: String(pick(raw, ["created_at", "createdAt", "date"], new Date().toISOString())),
+  };
+}
+
+/**
+ * يدعم أشكال متعددة:
+ * 1) Wrapped: {success:true,data:[...]} أو {success:true,data:{data:[],current_page...}}
+ * 2) Direct paginator: {data:[],current_page,...}
+ * 3) Laravel resources: {data:[], meta:{...}, links:{...}}
+ * 4) Array: [...]
+ */
+function extractTxPaginator(resp: any): Paginator<Tx> {
+  const payload = unwrap<any>(resp);
+
+  // Direct array
+  if (Array.isArray(payload)) {
+    const arr = payload.map(normalizeTx);
+    return {
+      data: arr,
+      current_page: 1,
+      per_page: arr.length || 15,
+      last_page: 1,
+      total: arr.length,
+    };
+  }
+
+  // Wrapped may have: payload = { data: [...], current_page... } OR resources
+  // Direct paginator shape
+  if (payload && Array.isArray(payload.data) && typeof payload.current_page === "number") {
+    return {
+      data: payload.data.map(normalizeTx),
+      current_page: safeNum(payload.current_page, 1),
+      per_page: safeNum(payload.per_page, payload.data.length || 15),
+      last_page: safeNum(payload.last_page, 1),
+      total: safeNum(payload.total, payload.data.length || 0),
+    };
+  }
+
+  // Laravel resources style
+  if (payload && Array.isArray(payload.data) && payload.meta) {
+    return {
+      data: payload.data.map(normalizeTx),
+      current_page: safeNum(payload.meta.current_page, 1),
+      per_page: safeNum(payload.meta.per_page, payload.data.length || 15),
+      last_page: safeNum(payload.meta.last_page, 1),
+      total: safeNum(payload.meta.total, payload.data.length || 0),
+    };
+  }
+
+  // Some backends: payload itself is wrapped inside another "data"
+  // e.g. { data: { data: [...], current_page: ... } }
+  if (payload && payload.data && Array.isArray(payload.data.data)) {
+    const inner = payload.data;
+    return {
+      data: inner.data.map(normalizeTx),
+      current_page: safeNum(inner.current_page, 1),
+      per_page: safeNum(inner.per_page, inner.data.length || 15),
+      last_page: safeNum(inner.last_page, 1),
+      total: safeNum(inner.total, inner.data.length || 0),
+    };
+  }
+
+  // Fallback object
+  const arr = Array.isArray(payload?.data) ? payload.data : [];
+  return {
+    data: arr.map(normalizeTx),
+    current_page: safeNum(payload?.current_page, 1),
+    per_page: safeNum(payload?.per_page, arr.length || 15),
+    last_page: safeNum(payload?.last_page, 1),
+    total: safeNum(payload?.total, arr.length || 0),
   };
 }
 
@@ -66,7 +175,8 @@ export default function FinancialPage() {
   const [txs, setTxs] = useState<Tx[]>([]);
 
   // Units
-  const [amountsInHalala, setAmountsInHalala] = useState<boolean>(false); // لو true نعرض بالقسمة على 100
+  // true => backend amounts in halala => we divide by 100 for SAR
+  const [amountsInHalala, setAmountsInHalala] = useState<boolean>(false);
   const [currency, setCurrency] = useState<string>("SAR");
 
   // Filters
@@ -80,16 +190,28 @@ export default function FinancialPage() {
   // Client-only
   useEffect(() => setIsClient(true), []);
 
-  // Try to detect units quietly via wallet endpoint
+  // Close drawer by ESC
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setIsSidebarOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isSidebarOpen]);
+
+  // Detect currency + units from wallet endpoint (non-blocking)
   const detectUnits = async () => {
     try {
       const { data } = await api.get<WalletResp>("/api/exhibitor/wallet");
-      if (data?.success && data?.data) {
-        setCurrency(data.data.currency || "SAR");
-        setAmountsInHalala(typeof data.data.balance_sar === "number");
+      const payload = unwrap<any>(data);
+      // payload هنا ممكن يكون {balance,...} أو {data:{...}} حسب اللف
+      const w = payload?.balance !== undefined ? payload : payload?.data;
+      if (w) {
+        setCurrency(String(w.currency || "SAR").toUpperCase());
+        // وجود balance_sar غالباً يعني أن balance بالهللة (والـ balance_sar بالريال)
+        setAmountsInHalala(typeof w.balance_sar === "number");
       }
     } catch {
-      // تجاهل الخطأ: لسنا في صفحة الرصيد، الهدف فقط كشف الوحدة
+      // تجاهل: الهدف فقط كشف الوحدة
     }
   };
 
@@ -97,39 +219,43 @@ export default function FinancialPage() {
   const fetchTx = async (page: number = 1) => {
     setLoading(true);
     try {
+      const PER_PAGE = 15;
+
+      const params: Record<string, any> = {
+        page,
+        per_page: PER_PAGE,
+      };
+
+      // لو الباك يدعم الفلترة، هنرسلها. لو لا، هيتجاهلها.
+      if (searchTerm.trim()) params.q = searchTerm.trim();
+      if (typeFilter !== "all") params.type = typeFilter;
+      if (dateFrom) params.from = dateFrom;
+      if (dateTo) params.to = dateTo;
+
       let resp: any;
       try {
-        resp = await api.get(`/api/exhibitor/wallet/transactions?page=${page}`);
+        resp = await api.get("/api/exhibitor/wallet/transactions", { params });
       } catch {
-        resp = await api.get(`/api/exhibitor/wallet/transcations?page=${page}`);
+        resp = await api.get("/api/exhibitor/wallet/transcations", { params });
       }
 
       const json = resp?.data;
-      if (!json?.success || !json?.data) {
-        throw new Error(json?.message || json?.code || "EW-TX-500");
+
+      // بعض الباكات ترجع success=false مع message
+      if (json && typeof json === "object" && "success" in json && json.success === false) {
+        throw new Error(json.message || "تعذر قراءة سجل المعاملات");
       }
 
-      if (Array.isArray(json.data)) {
-        setPaginator({
-          data: json.data,
-          current_page: 1,
-          per_page: json.data.length || 15,
-          last_page: 1,
-          total: json.data.length,
-        });
-        setTxs(json.data);
-        setServerPage(1);
-      } else {
-        const p: Paginator<Tx> = json.data;
-        setPaginator(p);
-        setTxs(p.data || []);
-        setServerPage(p.current_page || 1);
-      }
+      const p = extractTxPaginator(json);
+      setPaginator(p);
+      setTxs(p.data || []);
+      setServerPage(p.current_page || page || 1);
     } catch (err: any) {
       console.error(err);
-      toast.error("تعذر قراءة سجل المعاملات");
+      toast.error(err?.message || "تعذر قراءة سجل المعاملات");
       setPaginator(null);
       setTxs([]);
+      setServerPage(1);
     } finally {
       setLoading(false);
     }
@@ -139,58 +265,46 @@ export default function FinancialPage() {
     if (!isClient) return;
     detectUnits();
     fetchTx(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
   /* -------------------------
      Helpers & Computations
   ------------------------- */
   const fmtNum = (n: number) =>
-    new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(
-      Math.round(n)
-    );
+    new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(Math.round(n));
 
   const asSar = (raw: number) => (amountsInHalala ? raw / 100 : raw);
 
   const badge = (raw: RawTxType) => {
     const t = (raw || "").toLowerCase();
-    const base =
-      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border";
+    const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border";
     if (t === "credit" || t === "deposit")
       return (
-        <span
-          className={`${base} border-emerald-500/30 text-emerald-300 bg-emerald-500/10`}
-        >
+        <span className={`${base} border-emerald-500/30 text-emerald-300 bg-emerald-500/10`}>
           إيداع
         </span>
       );
     if (t === "debit" || t === "withdraw")
       return (
-        <span
-          className={`${base} border-rose-500/30 text-rose-300 bg-rose-500/10`}
-        >
+        <span className={`${base} border-rose-500/30 text-rose-300 bg-rose-500/10`}>
           سحب
         </span>
       );
     if (t === "auction")
       return (
-        <span
-          className={`${base} border-violet-500/30 text-violet-300 bg-violet-500/10`}
-        >
+        <span className={`${base} border-violet-500/30 text-violet-300 bg-violet-500/10`}>
           مزاد
         </span>
       );
     if (t === "adjustment")
       return (
-        <span
-          className={`${base} border-amber-500/30 text-amber-300 bg-amber-500/10`}
-        >
+        <span className={`${base} border-amber-500/30 text-amber-300 bg-amber-500/10`}>
           تسوية
         </span>
       );
     return (
-      <span
-        className={`${base} border-slate-500/30 text-slate-300 bg-slate-500/10`}
-      >
+      <span className={`${base} border-slate-500/30 text-slate-300 bg-slate-500/10`}>
         {raw || "غير معروف"}
       </span>
     );
@@ -209,6 +323,7 @@ export default function FinancialPage() {
     return true;
   };
 
+  // (فلترة على مستوى الصفحة الحالية) — لو الباك مش بيفلتر، ده هيشتغل
   const filtered = useMemo(() => {
     let list = [...txs];
 
@@ -239,8 +354,7 @@ export default function FinancialPage() {
 
     // الأحدث أولاً
     list.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
     return list;
   }, [txs, typeFilter, searchTerm, dateFrom, dateTo]);
@@ -280,16 +394,21 @@ export default function FinancialPage() {
     await fetchTx(paginator.current_page + 1);
   };
 
+  const applyServerFilters = async () => {
+    await fetchTx(1);
+  };
+
+  const resetFilters = async () => {
+    setSearchTerm("");
+    setTypeFilter("all");
+    setDateFrom("");
+    setDateTo("");
+    await fetchTx(1);
+  };
+
   const exportCSV = () => {
     const rows = [
-      [
-        "#",
-        "النوع",
-        "المبلغ (" + currency + ")",
-        "المزاد المرتبط",
-        "الوصف",
-        "التاريخ",
-      ],
+      ["#", "النوع", `المبلغ (${currency})`, "المزاد المرتبط", "الوصف", "التاريخ"],
       ...filtered.map((t) => [
         String(t.id),
         (t.type || "").toUpperCase(),
@@ -322,25 +441,14 @@ export default function FinancialPage() {
 
   const copyTable = async () => {
     try {
-      const header = [
-        "#",
-        "النوع",
-        `المبلغ (${currency})`,
-        "المزاد",
-        "الوصف",
-        "التاريخ",
-      ];
+      const header = ["#", "النوع", `المبلغ (${currency})`, "المزاد", "الوصف", "التاريخ"];
       const body = filtered.map(
         (t) =>
           `${t.id}\t${(t.type || "").toUpperCase()}\t${asSar(t.amount)}\t${
             t.related_auction ?? ""
-          }\t${t.description ?? ""}\t${new Date(t.created_at).toLocaleString(
-            "ar-SA"
-          )}`
+          }\t${t.description ?? ""}\t${new Date(t.created_at).toLocaleString("ar-SA")}`
       );
-      await navigator.clipboard.writeText(
-        [header.join("\t"), ...body].join("\n")
-      );
+      await navigator.clipboard.writeText([header.join("\t"), ...body].join("\n"));
       toast.success("تم نسخ الجدول");
     } catch {
       toast.error("تعذر النسخ للحافظة");
@@ -352,10 +460,7 @@ export default function FinancialPage() {
   ------------------------- */
   if (!isClient) {
     return (
-      <div
-        dir="rtl"
-        className="flex min-h-screen bg-background overflow-x-hidden"
-      >
+      <div dir="rtl" className="flex min-h-screen bg-background overflow-x-hidden">
         <div className="hidden md:block w-72 bg-card border-l border-border animate-pulse" />
         <div className="flex-1 flex flex-col">
           <div className="h-16 bg-card border-b border-border animate-pulse" />
@@ -369,10 +474,7 @@ export default function FinancialPage() {
       UI
   ------------------------- */
   return (
-    <div
-      dir="rtl"
-      className="flex min-h-screen bg-background text-foreground relative overflow-x-hidden"
-    >
+    <div dir="rtl" className="flex min-h-screen bg-background text-foreground relative overflow-x-hidden">
       {/* Sidebar Desktop */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
@@ -432,7 +534,6 @@ export default function FinancialPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* زر الانتقال للمحفظة */}
                 <Link
                   href="/exhibitor/wallet"
                   className="px-3 py-2 rounded-lg text-primary-foreground font-semibold bg-primary hover:bg-primary/90 shadow-lg"
@@ -451,7 +552,7 @@ export default function FinancialPage() {
               </div>
             </div>
 
-            {/* Toolbar: Filters + units + export */}
+            {/* Toolbar */}
             <div className="rounded-2xl border border-border bg-card p-4 md:p-5 mb-4">
               <div className="flex flex-col xl:flex-row gap-4 xl:items-end">
                 {/* Search */}
@@ -487,9 +588,7 @@ export default function FinancialPage() {
                 {/* Date range */}
                 <div className="flex gap-2">
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
-                      من تاريخ
-                    </label>
+                    <label className="block text-xs text-muted-foreground mb-1">من تاريخ</label>
                     <input
                       type="date"
                       value={dateFrom}
@@ -498,9 +597,7 @@ export default function FinancialPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
-                      إلى تاريخ
-                    </label>
+                    <label className="block text-xs text-muted-foreground mb-1">إلى تاريخ</label>
                     <input
                       type="date"
                       value={dateTo}
@@ -510,22 +607,40 @@ export default function FinancialPage() {
                   </div>
                 </div>
 
-                {/* Units toggle */}
+                {/* Units toggle (override if detection wrong) */}
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-background border border-border">
                   <span className="text-xs text-muted-foreground">
-                    عرض المبالغ بالريال
+                    {amountsInHalala ? "البيانات بالهللة (÷100)" : "البيانات بالريال"}
                   </span>
                   <label className="relative inline-flex cursor-pointer items-center">
                     <input
                       type="checkbox"
                       className="peer sr-only"
-                      checked={!amountsInHalala}
+                      checked={amountsInHalala}
                       onChange={() => setAmountsInHalala((v) => !v)}
                     />
                     <div className="h-5 w-9 rounded-full bg-muted peer-checked:bg-primary transition-colors">
                       <div className="absolute top-1/2 -translate-y-1/2 left-1 peer-checked:left-5 h-3 w-3 rounded-full bg-background transition-all" />
                     </div>
                   </label>
+                </div>
+
+                {/* Server filter actions */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={applyServerFilters}
+                    className="px-3 py-2.5 rounded-lg border border-border text-foreground hover:bg-muted inline-flex items-center gap-2"
+                    title="تطبيق الفلاتر (لو الباك يدعمها)"
+                  >
+                    <Filter className="w-4 h-4" />
+                    تطبيق
+                  </button>
+                  <button
+                    onClick={resetFilters}
+                    className="px-3 py-2.5 rounded-lg border border-border text-foreground hover:bg-muted"
+                  >
+                    تصفير
+                  </button>
                 </div>
 
                 {/* Export */}
@@ -551,38 +666,28 @@ export default function FinancialPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="rounded-2xl border border-border bg-card p-4">
-                <div className="text-muted-foreground text-sm">
-                  إجمالي الإيداعات
-                </div>
+                <div className="text-muted-foreground text-sm">إجمالي الإيداعات</div>
                 <div className="mt-1 text-2xl font-extrabold text-emerald-500">
                   {fmtNum(totals.credits)}{" "}
-                  <span className="text-sm text-emerald-500/80">
-                    {currency}
-                  </span>
+                  <span className="text-sm text-emerald-500/80">{currency}</span>
                 </div>
               </div>
               <div className="rounded-2xl border border-border bg-card p-4">
-                <div className="text-muted-foreground text-sm">
-                  إجمالي السحوبات
-                </div>
+                <div className="text-muted-foreground text-sm">إجمالي السحوبات</div>
                 <div className="mt-1 text-2xl font-extrabold text-rose-500">
                   {fmtNum(totals.debits)}{" "}
                   <span className="text-sm text-rose-500/80">{currency}</span>
                 </div>
               </div>
               <div className="rounded-2xl border border-border bg-card p-4">
-                <div className="text-muted-foreground text-sm">
-                  صافي الحركة (المعروض)
-                </div>
+                <div className="text-muted-foreground text-sm">صافي الحركة (المعروض)</div>
                 <div
                   className={`mt-1 text-2xl font-extrabold ${
                     totals.net >= 0 ? "text-primary" : "text-amber-500"
                   }`}
                 >
                   {fmtNum(totals.net)}{" "}
-                  <span className="text-sm text-muted-foreground/80">
-                    {currency}
-                  </span>
+                  <span className="text-sm text-muted-foreground/80">{currency}</span>
                 </div>
               </div>
             </div>
@@ -596,13 +701,9 @@ export default function FinancialPage() {
                       <th className="px-4 py-3 text-right w-[72px]">#</th>
                       <th className="px-4 py-3 text-right w-[110px]">النوع</th>
                       <th className="px-4 py-3 text-right w-[150px]">المبلغ</th>
-                      <th className="px-4 py-3 text-right w-[140px]">
-                        المزاد المرتبط
-                      </th>
+                      <th className="px-4 py-3 text-right w-[140px]">المزاد المرتبط</th>
                       <th className="px-4 py-3 text-right">الوصف</th>
-                      <th className="px-4 py-3 text-right w-[200px]">
-                        التاريخ
-                      </th>
+                      <th className="px-4 py-3 text-right w-[200px]">التاريخ</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -632,51 +733,34 @@ export default function FinancialPage() {
                     ) : filtered.length ? (
                       filtered.map((t) => {
                         const tType = (t.type || "").toLowerCase();
-                        const isDebit =
-                          tType === "debit" || tType === "withdraw";
+                        const isDebit = tType === "debit" || tType === "withdraw";
                         const amountSar = asSar(t.amount);
                         return (
-                          <tr
-                            key={t.id}
-                            className="hover:bg-muted/50 transition-colors"
-                          >
+                          <tr key={t.id} className="hover:bg-muted/50 transition-colors">
                             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                               {t.id}
                             </td>
                             <td className="px-4 py-3">{badge(t.type)}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
-                              <span
-                                className={`font-bold ${
-                                  isDebit ? "text-rose-500" : "text-emerald-500"
-                                }`}
-                              >
+                              <span className={`font-bold ${isDebit ? "text-rose-500" : "text-emerald-500"}`}>
                                 {fmtNum(amountSar)}{" "}
-                                <span className="text-xs text-muted-foreground">
-                                  {currency}
-                                </span>
+                                <span className="text-xs text-muted-foreground">{currency}</span>
                               </span>
                             </td>
                             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                               {t.related_auction ? (
                                 <span className="inline-flex items-center gap-1 text-primary">
-                                  <LinkIcon className="w-3 h-3" />#
-                                  {t.related_auction}
+                                  <LinkIcon className="w-3 h-3" />#{t.related_auction}
                                 </span>
                               ) : (
-                                <span className="text-muted-foreground/50">
-                                  —
-                                </span>
+                                <span className="text-muted-foreground/50">—</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
                               {t.description ? (
-                                <span className="block truncate max-w-[520px]">
-                                  {t.description}
-                                </span>
+                                <span className="block truncate max-w-[520px]">{t.description}</span>
                               ) : (
-                                <span className="text-muted-foreground/50">
-                                  —
-                                </span>
+                                <span className="text-muted-foreground/50">—</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
@@ -687,10 +771,7 @@ export default function FinancialPage() {
                       })
                     ) : (
                       <tr>
-                        <td
-                          className="px-4 py-10 text-center text-muted-foreground"
-                          colSpan={6}
-                        >
+                        <td className="px-4 py-10 text-center text-muted-foreground" colSpan={6}>
                           لا توجد معاملات مطابقة
                         </td>
                       </tr>
@@ -714,14 +795,8 @@ export default function FinancialPage() {
                     السابق
                   </button>
                   <div className="text-muted-foreground">
-                    صفحة{" "}
-                    <span className="text-foreground">
-                      {paginator.current_page}
-                    </span>{" "}
-                    من{" "}
-                    <span className="text-foreground">
-                      {paginator.last_page}
-                    </span>
+                    صفحة <span className="text-foreground">{paginator.current_page}</span> من{" "}
+                    <span className="text-foreground">{paginator.last_page}</span>
                   </div>
                   <button
                     onClick={handleNext}
@@ -741,7 +816,7 @@ export default function FinancialPage() {
         </main>
       </div>
 
-      {/* FAB (Mobile) لفتح القائمة */}
+      {/* FAB (Mobile) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
         className="md:hidden fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-50 hover:bg-primary/90 transition-all duration-200 flex items-center justify-center"

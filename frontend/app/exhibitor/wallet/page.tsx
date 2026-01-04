@@ -21,47 +21,64 @@ type TxType = "deposit" | "withdraw" | "auction" | "adjustment" | string;
 interface WalletResp {
   success: boolean;
   data: {
-    balance: number;
-    balance_sar?: number;
+    balance: number; // غالبًا بالهللات (cents)
+    balance_sar?: number; // لو موجود => balance/100
     currency: string; // "SAR"
   };
 }
 
 interface Transaction {
   id: number;
-  wallet_id: number;
-  type: TxType;
-  amount: number;
-  related_auction?: number | null;
+  wallet_id?: number;
+  type?: TxType;
+  amount: number; // غالبًا بالهللات (cents) زي الرصيد
+  related_auction?: number | null; // قد تكون موجودة أو لا حسب جدولك
+  related_auction_id?: number | null; // احتياط
   description?: string | null;
   created_at: string;
 }
 
-export default function ExhibitorDashboard() {
+interface LaravelPaginator<T> {
+  current_page: number;
+  data: T[];
+  last_page: number;
+  per_page: number;
+  total: number;
+  from?: number | null;
+  to?: number | null;
+}
+
+type WalletTxResp = {
+  success: boolean;
+  data: LaravelPaginator<Transaction>;
+};
+
+export default function ExhibitorWalletPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   // بيانات المحفظة
   const [loading, setLoading] = useState(true);
-  const [balance, setBalance] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(0); // SAR للعرض
   const [currency, setCurrency] = useState<string>("SAR");
+  const [amountsAreCents, setAmountsAreCents] = useState<boolean>(true); // لو الباك بيرجع balance_sar يبقى المبالغ بالهللات
 
-  // المعاملات
+  // المعاملات (Server pagination)
   const [txLoading, setTxLoading] = useState(true);
   const [txs, setTxs] = useState<Transaction[]>([]);
+  const [txPage, setTxPage] = useState(1);
+  const [txLastPage, setTxLastPage] = useState(1);
+  const [txTotal, setTxTotal] = useState(0);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | TxType>("all");
-
-  // تقسيم الصفحات
-  const PAGE_SIZE = 10;
-  const [page, setPage] = useState(1);
 
   // مودالات الإيداع/السحب
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
+
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [depositSubmitting, setDepositSubmitting] = useState(false);
-  const [gateway, setGateway] = useState<"myfatoorah">("myfatoorah");
 
   const [withdrawAmount, setWithdrawAmount] = useState<string>("");
   const [withdrawNote, setWithdrawNote] = useState<string>("");
@@ -75,20 +92,28 @@ export default function ExhibitorDashboard() {
   // ✅ إغلاق الدروار بزر ESC على الجوال
   useEffect(() => {
     if (!isSidebarOpen) return;
-    const onKey = (e: KeyboardEvent) =>
-      e.key === "Escape" && setIsSidebarOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setIsSidebarOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isSidebarOpen]);
+
+  const toSar = (amount: number) => (amountsAreCents ? amount / 100 : amount);
+
+  // فورمات عملة
+  const fmt = (n: number) => new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 2 }).format(n);
 
   // جلب رصيد المحفظة
   const fetchWallet = async () => {
     try {
       setLoading(true);
       const { data } = await api.get<WalletResp>("/api/exhibitor/wallet");
+
       if (data?.success && data?.data) {
-        const b = Number(data.data.balance_sar ?? data.data.balance ?? 0);
-        setBalance(b);
+        const hasSar = data.data.balance_sar != null;
+        setAmountsAreCents(hasSar); // لو balance_sar موجود => الباك بيخزن هللات
+
+        const bSar = Number(hasSar ? data.data.balance_sar : data.data.balance) || 0;
+        setBalance(bSar);
         setCurrency(data.data.currency || "SAR");
       }
     } catch (err: any) {
@@ -99,22 +124,51 @@ export default function ExhibitorDashboard() {
     }
   };
 
-  // جلب المعاملات
-  const fetchTransactions = async () => {
+  // جلب المعاملات (Laravel paginator)
+  const fetchTransactions = async (page = txPage) => {
     try {
       setTxLoading(true);
-      // ملاحظة: الراوت باسم transcations حسب تعريف الـ API الحالي
-      const { data } = await api.get<{ success: boolean; data: Transaction[] }>(
-        "/api/exhibitor/wallet/transcations"
-      );
-      if (data?.success && Array.isArray(data.data)) {
-        setTxs(data.data);
+
+      // ✅ الراوت الصحيح: /wallet/transactions (مع دعم page افتراضيًا)
+      const { data } = await api.get<WalletTxResp>("/api/exhibitor/wallet/transactions", {
+        params: { page },
+      });
+
+      const paginator = data?.data;
+      if (data?.success && paginator && Array.isArray(paginator.data)) {
+        setTxs(paginator.data);
+        setTxPage(paginator.current_page || page);
+        setTxLastPage(paginator.last_page || 1);
+        setTxTotal(paginator.total || 0);
       } else {
         setTxs([]);
+        setTxLastPage(1);
+        setTxTotal(0);
       }
     } catch (err: any) {
       console.error(err);
-      toast.error("تعذر تحميل سجل المعاملات");
+
+      // fallback لو السيرفر لسه بيستخدم typo endpoint (مع إن عندك دعم legacy)
+      try {
+        const { data } = await api.get<WalletTxResp>("/api/exhibitor/wallet/transcations", {
+          params: { page },
+        });
+
+        const paginator = data?.data;
+        if (data?.success && paginator && Array.isArray(paginator.data)) {
+          setTxs(paginator.data);
+          setTxPage(paginator.current_page || page);
+          setTxLastPage(paginator.last_page || 1);
+          setTxTotal(paginator.total || 0);
+        } else {
+          setTxs([]);
+          setTxLastPage(1);
+          setTxTotal(0);
+        }
+      } catch (e2: any) {
+        console.error(e2);
+        toast.error(e2?.response?.data?.message || "تعذر تحميل سجل المعاملات");
+      }
     } finally {
       setTxLoading(false);
     }
@@ -123,121 +177,142 @@ export default function ExhibitorDashboard() {
   useEffect(() => {
     if (!isClient) return;
     fetchWallet();
-    fetchTransactions();
+    fetchTransactions(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
-  // فورمات عملة
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(n);
+  useEffect(() => {
+    if (!isClient) return;
+    fetchTransactions(txPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txPage]);
 
-  // فلترة + بحث
+  const normalizeType = (t: Transaction): TxType => {
+    const raw = String(t.type ?? "").toLowerCase();
+    const amt = Number(t.amount ?? 0);
+
+    if (raw.includes("deposit") || raw.includes("credit")) return "deposit";
+    if (raw.includes("withdraw") || raw.includes("debit") || raw.includes("payout")) return "withdraw";
+    if (raw.includes("auction") || raw.includes("bid")) return "auction";
+    if (raw.includes("adjust")) return "adjustment";
+
+    // fallback by sign if you ever store negatives
+    if (amt < 0) return "withdraw";
+    if (amt > 0) return "deposit";
+
+    return (t.type ?? "unknown") as TxType;
+  };
+
+  // فلترة + بحث (داخل الصفحة الحالية من السيرفر)
   const filteredTxs = useMemo(() => {
     let list = [...txs];
+
     if (typeFilter !== "all") {
-      list = list.filter(
-        (t) => (t.type || "").toLowerCase() === typeFilter.toLowerCase()
-      );
+      list = list.filter((t) => normalizeType(t).toLowerCase() === String(typeFilter).toLowerCase());
     }
+
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
-      list = list.filter(
-        (t) =>
+      list = list.filter((t) => {
+        const related = (t.related_auction ?? t.related_auction_id) as any;
+        return (
           String(t.id).includes(q) ||
           (t.description || "").toLowerCase().includes(q) ||
-          (t.related_auction ? String(t.related_auction).includes(q) : false) ||
-          (t.type || "").toLowerCase().includes(q)
-      );
+          (related ? String(related).includes(q) : false) ||
+          normalizeType(t).toLowerCase().includes(q)
+        );
+      });
     }
-    // الأحدث أولاً
-    list.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+
+    // الأحدث أولاً (احتياط)
+    list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
     return list;
   }, [txs, typeFilter, searchTerm]);
 
-  // صفحات
-  const pageCount = Math.max(1, Math.ceil(filteredTxs.length / PAGE_SIZE));
-  const visible = filteredTxs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   useEffect(() => {
-    // لو غيرت الفلتر/البحث ارجع لأول صفحة
-    setPage(1);
+    // عند تغيير الفلتر/البحث: ارجع لأول صفحة (سيرفر)
+    setTxPage(1);
   }, [typeFilter, searchTerm]);
 
   // شارة النوع
-  const txTypeBadge = (type: TxType) => {
-    const base =
-      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border";
-    switch ((type || "").toLowerCase()) {
+  const txTypeBadge = (tx: Transaction) => {
+    const type = normalizeType(tx);
+    const base = "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border";
+
+    switch (String(type).toLowerCase()) {
       case "deposit":
         return (
-          <span
-            className={`${base} border-emerald-500/30 text-emerald-300 bg-emerald-500/10`}
-          >
+          <span className={`${base} border-emerald-500/30 text-emerald-300 bg-emerald-500/10`}>
             <ArrowDownRight className="w-3 h-3" />
             إيداع
           </span>
         );
       case "withdraw":
         return (
-          <span
-            className={`${base} border-rose-500/30 text-rose-300 bg-rose-500/10`}
-          >
+          <span className={`${base} border-rose-500/30 text-rose-300 bg-rose-500/10`}>
             <ArrowUpRight className="w-3 h-3" />
             سحب
           </span>
         );
       case "auction":
         return (
-          <span
-            className={`${base} border-violet-500/30 text-violet-300 bg-violet-500/10`}
-          >
+          <span className={`${base} border-violet-500/30 text-violet-300 bg-violet-500/10`}>
             مزاد
+          </span>
+        );
+      case "adjustment":
+        return (
+          <span className={`${base} border-slate-500/30 text-slate-300 bg-slate-500/10`}>
+            تعديل
           </span>
         );
       default:
         return (
-          <span
-            className={`${base} border-slate-500/30 text-slate-300 bg-slate-500/10`}
-          >
+          <span className={`${base} border-slate-500/30 text-slate-300 bg-slate-500/10`}>
             {type || "غير معروف"}
           </span>
         );
     }
   };
 
-  // إيداع
+  // إيداع (Backend expects: amount_sar, return_url)
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = Number(depositAmount);
+
     if (!amountNum || amountNum < 10) {
       toast.error("أدخل مبلغ إيداع صحيح (10 على الأقل)");
       return;
     }
+
     setDepositSubmitting(true);
     try {
-      const { data } = await api.post(
-        "/api/exhibitor/wallet/deposit/initiate",
-        {
-          amount: amountNum,
-          gateway,
-        }
-      );
+      const payload = {
+        amount_sar: amountNum,
+        return_url: typeof window !== "undefined" ? window.location.href : undefined,
+      };
+
+      const { data } = await api.post("/api/exhibitor/wallet/deposit/initiate", payload);
+
       const url =
-        data?.data?.payment_url ||
         data?.data?.redirect_url ||
+        (data as any)?.redirect_url ||
         (data as any)?.payment_url ||
-        (data as any)?.redirect_url;
+        data?.data?.payment_url;
+
       if (url && typeof window !== "undefined") {
         toast.success("جاري تحويلك لبوابة الدفع");
         window.open(url, "_blank");
       } else {
         toast.success("تم إنشاء عملية الإيداع. راجع تفاصيل الدفع.");
       }
+
       setShowDeposit(false);
       setDepositAmount("");
-      await fetchTransactions();
+
+      // المعاملات/الرصيد قد لا يتغيران فورًا إلا بعد webhook
+      await fetchTransactions(1);
       await fetchWallet();
     } catch (err: any) {
       console.error(err);
@@ -247,36 +322,45 @@ export default function ExhibitorDashboard() {
     }
   };
 
-  // سحب
+  // سحب (Backend expects: amount_sar, method?, details? (array))
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = Number(withdrawAmount);
+
     if (!amountNum || amountNum < 10) {
       toast.error("أدخل مبلغ سحب صحيح (10 على الأقل)");
       return;
     }
+
     if (amountNum > balance) {
       toast.error("المبلغ المطلوب أكبر من الرصيد المتاح");
       return;
     }
+
     setWithdrawSubmitting(true);
     try {
-      const payload: Record<string, any> = { amount: amountNum };
-      if (withdrawNote.trim()) payload.note = withdrawNote.trim();
+      const payload: Record<string, any> = {
+        amount_sar: amountNum,
+        method: "bank_transfer",
+      };
 
-      const { data } = await api.post(
-        "/api/exhibitor/wallet/withdraw",
-        payload
-      );
+      if (withdrawNote.trim()) {
+        payload.details = { note: withdrawNote.trim() }; // ✅ details لازم تكون array/object
+      }
+
+      const { data } = await api.post("/api/exhibitor/wallet/withdraw", payload);
+
       if (data?.success) {
         toast.success("تم إرسال طلب السحب بنجاح");
       } else {
         toast("تم إرسال الطلب، بانتظار المعالجة", { icon: "ℹ️" });
       }
+
       setShowWithdraw(false);
       setWithdrawAmount("");
       setWithdrawNote("");
-      await fetchTransactions();
+
+      await fetchTransactions(1);
       await fetchWallet();
     } catch (err: any) {
       console.error(err);
@@ -289,10 +373,7 @@ export default function ExhibitorDashboard() {
   // ⏳ Skeleton أثناء تهيئة الكلاينت
   if (!isClient) {
     return (
-      <div
-        dir="rtl"
-        className="flex min-h-screen bg-background overflow-x-hidden"
-      >
+      <div dir="rtl" className="flex min-h-screen bg-background overflow-x-hidden">
         <div className="hidden md:block w-72 bg-card border-l border-border animate-pulse" />
         <div className="flex-1 flex flex-col">
           <div className="h-16 bg-card border-b border-border animate-pulse" />
@@ -303,10 +384,7 @@ export default function ExhibitorDashboard() {
   }
 
   return (
-    <div
-      dir="rtl"
-      className="flex min-h-screen bg-background relative overflow-x-hidden text-foreground"
-    >
+    <div dir="rtl" className="flex min-h-screen bg-background relative overflow-x-hidden text-foreground">
       {/* الشريط الجانبي (ديسكتوب) */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
@@ -343,6 +421,7 @@ export default function ExhibitorDashboard() {
       {/* المحتوى الرئيسي */}
       <div className="flex-1 flex flex-col w-0 relative z-10">
         <Header />
+
         <main className="p-4 md:p-6 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
             {/* عنوان الصفحة */}
@@ -361,12 +440,8 @@ export default function ExhibitorDashboard() {
               {/* الرصيد */}
               <div className="col-span-1 rounded-2xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-sm">
-                    الرصيد المتاح
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    {currency}
-                  </span>
+                  <span className="text-muted-foreground text-sm">الرصيد المتاح</span>
+                  <span className="text-muted-foreground text-xs">{currency}</span>
                 </div>
                 <div className="mt-2 mb-1">
                   {loading ? (
@@ -374,15 +449,11 @@ export default function ExhibitorDashboard() {
                   ) : (
                     <div className="text-3xl font-extrabold text-primary">
                       {fmt(balance)}{" "}
-                      <span className="text-sm text-muted-foreground">
-                        {currency}
-                      </span>
+                      <span className="text-sm text-muted-foreground">{currency}</span>
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  آخر تحديث عند فتح الصفحة
-                </p>
+                <p className="text-xs text-muted-foreground">آخر تحديث عند فتح الصفحة</p>
               </div>
 
               {/* إيداع */}
@@ -445,6 +516,11 @@ export default function ExhibitorDashboard() {
                   </select>
                 </div>
               </div>
+
+              {/* ملاحظة صغيرة عشان تكون صريح: البحث داخل صفحة السيرفر الحالية */}
+              <div className="mt-2 text-[11px] text-muted-foreground">
+                * البحث/الفلترة يتم داخل الصفحة الحالية من السجل.
+              </div>
             </div>
 
             {/* جدول المعاملات */}
@@ -456,15 +532,12 @@ export default function ExhibitorDashboard() {
                       <th className="px-4 py-3 text-right w-[72px]">#</th>
                       <th className="px-4 py-3 text-right w-[110px]">النوع</th>
                       <th className="px-4 py-3 text-right w-[150px]">المبلغ</th>
-                      <th className="px-4 py-3 text-right w-[140px]">
-                        المزاد المرتبط
-                      </th>
+                      <th className="px-4 py-3 text-right w-[140px]">المزاد المرتبط</th>
                       <th className="px-4 py-3 text-right">الوصف</th>
-                      <th className="px-4 py-3 text-right w-[190px]">
-                        التاريخ
-                      </th>
+                      <th className="px-4 py-3 text-right w-[190px]">التاريخ</th>
                     </tr>
                   </thead>
+
                   <tbody className="divide-y divide-border">
                     {txLoading ? (
                       [...Array(6)].map((_, i) => (
@@ -489,60 +562,59 @@ export default function ExhibitorDashboard() {
                           </td>
                         </tr>
                       ))
-                    ) : visible.length ? (
-                      visible.map((t) => (
-                        <tr
-                          key={t.id}
-                          className="hover:bg-muted/50 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                            {t.id}
-                          </td>
-                          <td className="px-4 py-3">{txTypeBadge(t.type)}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span
-                              className={`font-bold ${
-                                (t.type || "").toLowerCase() === "withdraw"
-                                  ? "text-rose-500"
-                                  : "text-emerald-500"
-                              }`}
-                            >
-                              {fmt(t.amount)}{" "}
-                              <span className="text-xs text-muted-foreground">
-                                {currency}
+                    ) : filteredTxs.length ? (
+                      filteredTxs.map((t) => {
+                        const type = normalizeType(t);
+                        const related = t.related_auction ?? t.related_auction_id ?? null;
+
+                        const rawAmount = Number(t.amount ?? 0);
+                        const amountSar = toSar(rawAmount);
+                        const isWithdraw =
+                          String(type).toLowerCase() === "withdraw" || amountSar < 0;
+
+                        return (
+                          <tr key={t.id} className="hover:bg-muted/50 transition-colors">
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {t.id}
+                            </td>
+                            <td className="px-4 py-3">{txTypeBadge(t)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span
+                                className={`font-bold ${isWithdraw ? "text-rose-500" : "text-emerald-500"}`}
+                              >
+                                {fmt(Math.abs(amountSar))}{" "}
+                                <span className="text-xs text-muted-foreground">
+                                  {currency}
+                                </span>
                               </span>
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                            {t.related_auction ? (
-                              <span className="inline-flex items-center gap-1 text-primary">
-                                <LinkIcon className="w-3 h-3" />#
-                                {t.related_auction}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {t.description ? (
-                              <span className="block truncate max-w-[520px]">
-                                {t.description}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                            {new Date(t.created_at).toLocaleString("ar-SA")}
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {related ? (
+                                <span className="inline-flex items-center gap-1 text-primary">
+                                  <LinkIcon className="w-3 h-3" />#{related}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {t.description ? (
+                                <span className="block truncate max-w-[520px]">
+                                  {t.description}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                              {new Date(t.created_at).toLocaleString("ar-SA")}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td
-                          className="px-4 py-10 text-center text-muted-foreground"
-                          colSpan={6}
-                        >
+                        <td className="px-4 py-10 text-center text-muted-foreground" colSpan={6}>
                           لا توجد معاملات مطابقة
                         </td>
                       </tr>
@@ -551,29 +623,33 @@ export default function ExhibitorDashboard() {
                 </table>
               </div>
 
-              {/* ترقيم الصفحات */}
-              {!txLoading && pageCount > 1 && (
+              {/* ترقيم الصفحات (سيرفر) */}
+              {!txLoading && txLastPage > 1 && (
                 <div className="flex items-center justify-between p-3 border-t border-border">
                   <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
+                    onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                    disabled={txPage === 1}
                     className={`px-3 py-2 rounded-lg text-sm border ${
-                      page === 1
+                      txPage === 1
                         ? "border-border text-muted-foreground cursor-not-allowed"
                         : "border-border text-foreground hover:bg-muted"
                     }`}
                   >
                     السابق
                   </button>
+
                   <div className="text-muted-foreground text-sm">
-                    صفحة <span className="text-foreground">{page}</span> من{" "}
-                    <span className="text-foreground">{pageCount}</span>
+                    صفحة <span className="text-foreground">{txPage}</span> من{" "}
+                    <span className="text-foreground">{txLastPage}</span>{" "}
+                    <span className="text-muted-foreground">— إجمالي: </span>
+                    <span className="text-foreground">{txTotal}</span>
                   </div>
+
                   <button
-                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                    disabled={page === pageCount}
+                    onClick={() => setTxPage((p) => Math.min(txLastPage, p + 1))}
+                    disabled={txPage === txLastPage}
                     className={`px-3 py-2 rounded-lg text-sm border ${
-                      page === pageCount
+                      txPage === txLastPage
                         ? "border-border text-muted-foreground cursor-not-allowed"
                         : "border-border text-foreground hover:bg-muted"
                     }`}
@@ -614,9 +690,8 @@ export default function ExhibitorDashboard() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md rounded-2xl border border-border bg-card p-5"
             >
-              <h3 className="text-lg font-bold text-foreground mb-4">
-                إضافة رصيد
-              </h3>
+              <h3 className="text-lg font-bold text-foreground mb-4">إضافة رصيد</h3>
+
               <form onSubmit={handleDeposit} className="space-y-4">
                 <div>
                   <label className="block text-sm text-muted-foreground mb-1">
@@ -625,24 +700,10 @@ export default function ExhibitorDashboard() {
                   <input
                     inputMode="numeric"
                     value={depositAmount}
-                    onChange={(e) =>
-                      setDepositAmount(e.target.value.replace(/[^\d]/g, ""))
-                    }
+                    onChange={(e) => setDepositAmount(e.target.value.replace(/[^\d]/g, ""))}
                     placeholder="مثال: 250"
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm text-muted-foreground mb-1">
-                    بوابة الدفع
-                  </label>
-                  <select
-                    value={gateway}
-                    onChange={(e) => setGateway(e.target.value as any)}
-                    className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    <option value="myfatoorah">MyFatoorah</option>
-                  </select>
                 </div>
 
                 <div className="flex gap-2 pt-1">
@@ -654,21 +715,20 @@ export default function ExhibitorDashboard() {
                   >
                     إلغاء
                   </button>
+
                   <button
                     type="submit"
                     disabled={depositSubmitting || !depositAmount}
                     className="flex-1 px-4 py-2.5 rounded-lg text-primary-foreground font-semibold bg-primary hover:bg-primary/90 shadow-sm flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {depositSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : null}
+                    {depositSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                     بدء الإيداع
                   </button>
                 </div>
               </form>
+
               <p className="text-[11px] text-muted-foreground mt-3">
-                سيتم فتح بوابة الدفع في نافذة جديدة. بعد اكتمال العملية ستظهر في
-                سجل المعاملات.
+                سيتم فتح بوابة الدفع في نافذة جديدة. بعد اكتمال العملية ستظهر في سجل المعاملات (بعد تأكيد الدفع).
               </p>
             </motion.div>
           </motion.div>
@@ -692,9 +752,8 @@ export default function ExhibitorDashboard() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md rounded-2xl border border-border bg-card p-5"
             >
-              <h3 className="text-lg font-bold text-foreground mb-4">
-                طلب سحب
-              </h3>
+              <h3 className="text-lg font-bold text-foreground mb-4">طلب سحب</h3>
+
               <form onSubmit={handleWithdraw} className="space-y-4">
                 <div>
                   <label className="block text-sm text-muted-foreground mb-1">
@@ -703,13 +762,12 @@ export default function ExhibitorDashboard() {
                   <input
                     inputMode="numeric"
                     value={withdrawAmount}
-                    onChange={(e) =>
-                      setWithdrawAmount(e.target.value.replace(/[^\d]/g, ""))
-                    }
+                    onChange={(e) => setWithdrawAmount(e.target.value.replace(/[^\d]/g, ""))}
                     placeholder={`حتى ${fmt(balance)} ${currency}`}
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm text-muted-foreground mb-1">
                     ملاحظة (اختياري)
@@ -722,6 +780,7 @@ export default function ExhibitorDashboard() {
                     placeholder="مثال: تحويل لحسابي البنكي"
                   />
                 </div>
+
                 <div className="flex gap-2 pt-1">
                   <button
                     type="button"
@@ -731,20 +790,20 @@ export default function ExhibitorDashboard() {
                   >
                     إلغاء
                   </button>
+
                   <button
                     type="submit"
                     disabled={withdrawSubmitting || !withdrawAmount}
                     className="flex-1 px-4 py-2.5 rounded-lg text-primary-foreground font-semibold bg-primary hover:bg-primary/90 shadow-sm flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {withdrawSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : null}
+                    {withdrawSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                     إرسال الطلب
                   </button>
                 </div>
               </form>
+
               <p className="text-[11px] text-muted-foreground mt-3">
-                سيتم إشعارك عند معالجة الطلب وتحويل المبلغ حسب سياسة المعالجة.
+                ملاحظة: طلب السحب يتم إنشاؤه كـ Pending ويتم خصم الرصيد فعليًا بعد موافقة الإدارة (حسب منطق الباك إند الحالي).
               </p>
             </motion.div>
           </motion.div>

@@ -21,16 +21,16 @@ import {
 } from "lucide-react";
 
 /* =========================
-   Types
+   Types (UI)
 ========================= */
-type Status = "pending" | "approved" | "rejected" | "completed";
+type Status = "pending" | "approved" | "rejected" | "completed" | string;
 
 interface ExtraService {
   id: number;
   name: string;
   description?: string | null;
   details?: string | null;
-  icon?: string | null; // مثال: shield | spray | battery | third | car | ...
+  icon?: string | null; // shield | spray | battery | third | car | ...
   base_price?: number | null;
   currency?: string | null;
   is_active: boolean;
@@ -57,15 +57,44 @@ type Paginator<T> = {
   total: number;
 };
 
+// Backend may return one of these:
+// 1) Wrapped: { success: true, data: ... }
+// 2) Direct paginator: { data: [...], current_page, ... }
+// 3) Laravel API Resources style: { data: [...], meta: {...}, links: {...} }
+// 4) Array: [...]
+type Wrapped<T> = { success: boolean; data: T; message?: string };
+
 /* =========================
    Helpers
 ========================= */
+function safeNum(v: any, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function pick<T = any>(obj: any, keys: string[], fallback: any = undefined): T {
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+  }
+  return fallback;
+}
+
+function unwrap<T = any>(resp: any): T {
+  return resp && resp.success !== undefined ? (resp as Wrapped<T>).data : resp;
+}
+
 const fmtMoney = (n: number | null | undefined) =>
   n == null
     ? "—"
     : new Intl.NumberFormat("ar-SA", { maximumFractionDigits: 0 }).format(n);
 
-const fmtDate = (iso: string) => new Date(iso).toLocaleString("ar-SA");
+const fmtDate = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleString("ar-SA");
+  } catch {
+    return iso;
+  }
+};
 
 const pickIcon = (key?: string | null) => {
   const k = (key || "").toLowerCase();
@@ -80,6 +109,117 @@ const pickIcon = (key?: string | null) => {
     return <Car className={`${base} text-rose-500`} />;
   return <Sparkles className={`${base} text-muted-foreground`} />;
 };
+
+function normalizeService(raw: any): ExtraService {
+  return {
+    id: safeNum(pick(raw, ["id"]), 0),
+    name: String(pick(raw, ["name", "title"], "")),
+    description: pick(raw, ["description"], null),
+    details: pick(raw, ["details", "long_description"], null),
+    icon: pick(raw, ["icon", "icon_key"], null),
+    base_price: (() => {
+      const v = pick(raw, ["base_price", "basePrice", "price"], null);
+      return v == null ? null : safeNum(v, 0);
+    })(),
+    currency: (() => {
+      const c = pick(raw, ["currency"], null);
+      return c == null ? null : String(c).toUpperCase();
+    })(),
+    is_active: Boolean(pick(raw, ["is_active", "isActive", "active"], false)),
+    createdAt: pick(raw, ["createdAt", "created_at"], undefined),
+    updatedAt: pick(raw, ["updatedAt", "updated_at"], undefined),
+  };
+}
+
+function normalizeRequest(raw: any): ExtraServiceRequest {
+  const svcRaw =
+    pick(raw, ["extra_service", "extraService", "service"], undefined) ?? undefined;
+
+  return {
+    id: safeNum(pick(raw, ["id"]), 0),
+    extra_service_id: safeNum(pick(raw, ["extra_service_id", "extraServiceId", "service_id"]), 0),
+    status: String(pick(raw, ["status"], "pending")),
+    notes: pick(raw, ["notes", "note"], null),
+    price: (() => {
+      const v = pick(raw, ["price", "amount"], null);
+      return v == null ? null : safeNum(v, 0);
+    })(),
+    currency: (() => {
+      const c = pick(raw, ["currency"], null);
+      return c == null ? null : String(c).toUpperCase();
+    })(),
+    created_at: String(pick(raw, ["created_at", "createdAt", "date"], new Date().toISOString())),
+    extra_service: svcRaw ? normalizeService(svcRaw) : undefined,
+  };
+}
+
+/** استخراج paginator لطلبات الخدمات */
+function extractReqPaginator(resp: any): Paginator<ExtraServiceRequest> {
+  const payload = unwrap<any>(resp);
+
+  // Direct paginator
+  if (payload && Array.isArray(payload.data) && typeof payload.current_page === "number") {
+    return {
+      data: payload.data.map(normalizeRequest),
+      current_page: safeNum(payload.current_page, 1),
+      per_page: safeNum(payload.per_page, payload.data.length || 10),
+      last_page: safeNum(payload.last_page, 1),
+      total: safeNum(payload.total, payload.data.length || 0),
+    };
+  }
+
+  // Laravel resources style { data: [...], meta: {...} }
+  if (payload && Array.isArray(payload.data) && payload.meta) {
+    return {
+      data: payload.data.map(normalizeRequest),
+      current_page: safeNum(payload.meta.current_page, 1),
+      per_page: safeNum(payload.meta.per_page, payload.data.length || 10),
+      last_page: safeNum(payload.meta.last_page, 1),
+      total: safeNum(payload.meta.total, payload.data.length || 0),
+    };
+  }
+
+  // If payload is an array
+  if (Array.isArray(payload)) {
+    const arr = payload.map(normalizeRequest);
+    return {
+      data: arr,
+      current_page: 1,
+      per_page: arr.length || 10,
+      last_page: 1,
+      total: arr.length,
+    };
+  }
+
+  // Fallback object
+  const arr = Array.isArray(payload?.data) ? payload.data : [];
+  return {
+    data: arr.map(normalizeRequest),
+    current_page: safeNum(payload?.current_page, 1),
+    per_page: safeNum(payload?.per_page, arr.length || 10),
+    last_page: safeNum(payload?.last_page, 1),
+    total: safeNum(payload?.total, arr.length || 0),
+  };
+}
+
+/** استخراج قائمة الخدمات (قد تكون array / paginator / resources / wrapped) */
+function extractServicesList(resp: any): ExtraService[] {
+  const payload = unwrap<any>(resp);
+
+  // resources style or paginator
+  if (payload && Array.isArray(payload.data)) {
+    return payload.data.map(normalizeService);
+  }
+
+  // direct array
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeService);
+  }
+
+  // object fallback
+  const arr = Array.isArray(payload?.data) ? payload.data : [];
+  return arr.map(normalizeService);
+}
 
 /* =========================
    Modal
@@ -127,9 +267,7 @@ function ServiceModal({
         <div className="flex items-start gap-3 pr-1">
           <div className="shrink-0">{pickIcon(service.icon)}</div>
           <div className="flex-1">
-            <div className="text-foreground font-bold text-lg">
-              {service.name}
-            </div>
+            <div className="text-foreground font-bold text-lg">{service.name}</div>
             {service.description && (
               <div className="text-muted-foreground text-sm mt-1">
                 {service.description}
@@ -197,7 +335,7 @@ function ServiceModal({
             }`}
           >
             <CheckCircle2 className="w-4 h-4" />
-            طلب الخدمة
+            {requesting ? "جارٍ الإرسال..." : "طلب الخدمة"}
           </button>
         </div>
       </motion.div>
@@ -220,8 +358,7 @@ export default function ExhibitorExtraServicesPage() {
   // Requests
   const [reqLoading, setReqLoading] = useState(true);
   const [reqPage, setReqPage] = useState(1);
-  const [reqPaginator, setReqPaginator] =
-    useState<Paginator<ExtraServiceRequest> | null>(null);
+  const [reqPaginator, setReqPaginator] = useState<Paginator<ExtraServiceRequest> | null>(null);
   const [requests, setRequests] = useState<ExtraServiceRequest[]>([]);
 
   // Modal
@@ -231,28 +368,28 @@ export default function ExhibitorExtraServicesPage() {
 
   useEffect(() => setIsClient(true), []);
 
+  const serviceById = useMemo(() => {
+    const m = new Map<number, ExtraService>();
+    services.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [services]);
+
   /* -------------------------
      Fetchers
   ------------------------- */
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (q.trim()) params.set("q", q.trim());
-      params.set("per_page", "12");
+      const params: Record<string, any> = { per_page: 12 };
+      if (q.trim()) params.q = q.trim();
 
-      const { data } = await api.get(
-        `/api/exhibitor/extra-services?${params.toString()}`
-      );
-      const list: ExtraService[] = Array.isArray(data?.data)
-        ? data.data
-        : Array.isArray(data)
-        ? data
-        : data?.data ?? [];
+      const { data } = await api.get("/api/exhibitor/extra-services", { params });
+      const list = extractServicesList(data);
+
       setServices(list);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("تعذّر تحميل الخدمات");
+      toast.error(e?.response?.data?.message || "تعذّر تحميل الخدمات");
       setServices([]);
     } finally {
       setLoading(false);
@@ -262,45 +399,20 @@ export default function ExhibitorExtraServicesPage() {
   const fetchRequests = async (page = 1) => {
     setReqLoading(true);
     try {
-      const { data } = await api.get(
-        `/api/exhibitor/extra-services/requests?page=${page}`
-      );
-      if (
-        data?.data &&
-        Array.isArray(data.data) &&
-        typeof data.current_page === "number"
-      ) {
-        const p: Paginator<ExtraServiceRequest> = data;
-        setReqPaginator(p);
-        setRequests(p.data || []);
-        setReqPage(p.current_page || 1);
-      } else if (Array.isArray(data)) {
-        setReqPaginator({
-          data,
-          current_page: 1,
-          per_page: data.length,
-          last_page: 1,
-          total: data.length,
-        });
-        setRequests(data);
-        setReqPage(1);
-      } else {
-        const p: Paginator<ExtraServiceRequest> = {
-          data: data?.data || [],
-          current_page: data?.current_page || 1,
-          per_page: data?.per_page || (data?.data?.length ?? 10),
-          last_page: data?.last_page || 1,
-          total: data?.total || (data?.data?.length ?? 0),
-        };
-        setReqPaginator(p);
-        setRequests(p.data || []);
-        setReqPage(p.current_page || 1);
-      }
-    } catch (e) {
+      const { data } = await api.get("/api/exhibitor/extra-services/requests", {
+        params: { page, per_page: 10 },
+      });
+
+      const p = extractReqPaginator(data);
+      setReqPaginator(p);
+      setRequests(p.data || []);
+      setReqPage(p.current_page || page || 1);
+    } catch (e: any) {
       console.error(e);
-      toast.error("تعذّر تحميل طلباتك");
+      toast.error(e?.response?.data?.message || "تعذّر تحميل طلباتك");
       setRequests([]);
       setReqPaginator(null);
+      setReqPage(1);
     } finally {
       setReqLoading(false);
     }
@@ -310,6 +422,7 @@ export default function ExhibitorExtraServicesPage() {
     if (!isClient) return;
     fetchServices();
     fetchRequests(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
   /* -------------------------
@@ -318,7 +431,8 @@ export default function ExhibitorExtraServicesPage() {
   const openService = async (svc: ExtraService) => {
     try {
       const { data } = await api.get(`/api/exhibitor/extra-services/${svc.id}`);
-      const s: ExtraService = data?.data ?? svc;
+      const payload = unwrap<any>(data);
+      const s = payload ? normalizeService(payload) : svc;
       setActiveService(s);
       setModalOpen(true);
     } catch {
@@ -331,14 +445,20 @@ export default function ExhibitorExtraServicesPage() {
     if (!activeService) return;
     setRequesting(true);
     try {
-      await api.post("/api/exhibitor/extra-services/requests", {
+      const { data } = await api.post("/api/exhibitor/extra-services/requests", {
         extra_service_id: activeService.id,
-        notes: notes || null,
+        notes: notes?.trim() ? notes.trim() : null,
       });
+
+      if (data?.success === false) {
+        toast.error(data?.message || "فشل إرسال الطلب");
+        return;
+      }
+
       toast.success("تم إرسال طلب الخدمة بنجاح");
       setModalOpen(false);
       setActiveService(null);
-      fetchRequests(reqPage);
+      await fetchRequests(reqPage);
     } catch (e: any) {
       console.error(e);
       toast.error(e?.response?.data?.message || "فشل إرسال الطلب");
@@ -357,7 +477,7 @@ export default function ExhibitorExtraServicesPage() {
   };
 
   /* -------------------------
-     Derivations
+     Derivations (client-side filter as safety net)
   ------------------------- */
   const filtered = useMemo(() => {
     if (!q.trim()) return services;
@@ -374,10 +494,7 @@ export default function ExhibitorExtraServicesPage() {
   ------------------------- */
   if (!isClient) {
     return (
-      <div
-        dir="rtl"
-        className="flex min-h-screen bg-background overflow-x-hidden"
-      >
+      <div dir="rtl" className="flex min-h-screen bg-background overflow-x-hidden">
         <div className="hidden md:block w-72 bg-card border-l border-border animate-pulse" />
         <div className="flex-1 flex flex-col">
           <div className="h-16 bg-card border-b border-border animate-pulse" />
@@ -448,8 +565,7 @@ export default function ExhibitorExtraServicesPage() {
                   خدمات إضافية للمعرض
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1">
-                  اطلب خدمات مساندة (تأمين، حماية طلاء، شحن بطارية، وغيرها)
-                  مباشرة عبر اللوحة.
+                  اطلب خدمات مساندة (تأمين، حماية طلاء، شحن بطارية، وغيرها) مباشرة عبر اللوحة.
                 </p>
               </div>
 
@@ -488,7 +604,9 @@ export default function ExhibitorExtraServicesPage() {
                   <button
                     onClick={() => {
                       setQ("");
-                      fetchServices();
+                      // بعد ما نمسح q، fetchServices هيجيب كل حاجة
+                      // لكن عشان state لسه ما اتحدثتش، نناديه بعد setQ بميكرو-تيك
+                      setTimeout(() => fetchServices(), 0);
                     }}
                     className="px-3 py-2.5 rounded-lg border border-border text-foreground hover:bg-muted"
                   >
@@ -527,20 +645,17 @@ export default function ExhibitorExtraServicesPage() {
                         <div className="flex items-start gap-3">
                           <div className="shrink-0">{pickIcon(svc.icon)}</div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold truncate">
-                              {svc.name}
-                            </div>
+                            <div className="font-semibold truncate">{svc.name}</div>
                             {svc.description ? (
                               <div className="mt-1 text-sm text-muted-foreground line-clamp-2">
                                 {svc.description}
                               </div>
                             ) : (
-                              <div className="mt-1 text-sm text-muted-foreground/50">
-                                —
-                              </div>
+                              <div className="mt-1 text-sm text-muted-foreground/50">—</div>
                             )}
                           </div>
                         </div>
+
                         <div className="mt-3 flex items-center justify-between">
                           <div className="text-sm text-muted-foreground">
                             السعر الأساسي:{" "}
@@ -566,9 +681,7 @@ export default function ExhibitorExtraServicesPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-muted-foreground text-sm">
-                    لا توجد خدمات مطابقة
-                  </div>
+                  <div className="text-muted-foreground text-sm">لا توجد خدمات مطابقة</div>
                 )}
               </div>
 
@@ -585,17 +698,12 @@ export default function ExhibitorExtraServicesPage() {
                         <tr>
                           <th className="px-3 py-2 text-right w-[80px]">#</th>
                           <th className="px-3 py-2 text-right">الخدمة</th>
-                          <th className="px-3 py-2 text-right w-[140px]">
-                            الحالة
-                          </th>
-                          <th className="px-3 py-2 text-right w-[140px]">
-                            السعر
-                          </th>
-                          <th className="px-3 py-2 text-right w-[160px]">
-                            التاريخ
-                          </th>
+                          <th className="px-3 py-2 text-right w-[140px]">الحالة</th>
+                          <th className="px-3 py-2 text-right w-[140px]">السعر</th>
+                          <th className="px-3 py-2 text-right w-[160px]">التاريخ</th>
                         </tr>
                       </thead>
+
                       <tbody className="divide-y divide-border">
                         {reqLoading ? (
                           Array.from({ length: 6 }).map((_, i) => (
@@ -627,19 +735,28 @@ export default function ExhibitorExtraServicesPage() {
                                 : r.status === "completed"
                                 ? "border-violet-500/30 text-violet-500 bg-violet-500/10"
                                 : "border-rose-500/30 text-rose-500 bg-rose-500/10";
+
+                            const svcName =
+                              r.extra_service?.name ||
+                              serviceById.get(r.extra_service_id)?.name ||
+                              "—";
+
+                            const cur =
+                              r.currency ||
+                              r.extra_service?.currency ||
+                              serviceById.get(r.extra_service_id)?.currency ||
+                              "SAR";
+
                             return (
-                              <tr
-                                key={r.id}
-                                className="hover:bg-muted/50 transition-colors"
-                              >
+                              <tr key={r.id} className="hover:bg-muted/50 transition-colors">
                                 <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                                   {r.id}
                                 </td>
+
                                 <td className="px-3 py-2 text-muted-foreground">
-                                  <span className="truncate block max-w-[220px]">
-                                    {r.extra_service?.name || "—"}
-                                  </span>
+                                  <span className="truncate block max-w-[220px]">{svcName}</span>
                                 </td>
+
                                 <td className="px-3 py-2">
                                   <span
                                     className={`text-[11px] px-2 py-1 rounded-full border ${badge} capitalize`}
@@ -647,14 +764,12 @@ export default function ExhibitorExtraServicesPage() {
                                     {r.status}
                                   </span>
                                 </td>
+
                                 <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                                   {fmtMoney(r.price ?? null)}{" "}
-                                  <span className="text-xs text-muted-foreground">
-                                    {r.currency ||
-                                      r.extra_service?.currency ||
-                                      "SAR"}
-                                  </span>
+                                  <span className="text-xs text-muted-foreground">{cur}</span>
                                 </td>
+
                                 <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                                   {fmtDate(r.created_at)}
                                 </td>
@@ -663,10 +778,7 @@ export default function ExhibitorExtraServicesPage() {
                           })
                         ) : (
                           <tr>
-                            <td
-                              className="px-3 py-8 text-center text-muted-foreground"
-                              colSpan={5}
-                            >
+                            <td className="px-3 py-8 text-center text-muted-foreground" colSpan={5}>
                               لا توجد طلبات
                             </td>
                           </tr>
@@ -676,49 +788,40 @@ export default function ExhibitorExtraServicesPage() {
                   </div>
 
                   {/* Pagination */}
-                  {!reqLoading &&
-                    reqPaginator &&
-                    reqPaginator.last_page > 1 && (
-                      <div className="flex items-center justify-between p-3 border-t border-border text-sm text-muted-foreground">
-                        <button
-                          onClick={() =>
-                            reqPage > 1 && fetchRequests(reqPage - 1)
-                          }
-                          disabled={reqPage <= 1}
-                          className={`px-3 py-2 rounded-lg border ${
-                            reqPage <= 1
-                              ? "border-border text-muted-foreground/50 cursor-not-allowed"
-                              : "border-border hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          السابق
-                        </button>
-                        <div className="text-muted-foreground">
-                          صفحة{" "}
-                          <span className="text-foreground">
-                            {reqPaginator.current_page}
-                          </span>{" "}
-                          من{" "}
-                          <span className="text-foreground">
-                            {reqPaginator.last_page}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() =>
-                            reqPage < (reqPaginator.last_page || 1) &&
-                            fetchRequests(reqPage + 1)
-                          }
-                          disabled={reqPage >= (reqPaginator.last_page || 1)}
-                          className={`px-3 py-2 rounded-lg border ${
-                            reqPage >= (reqPaginator.last_page || 1)
-                              ? "border-border text-muted-foreground/50 cursor-not-allowed"
-                              : "border-border hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          التالي
-                        </button>
+                  {!reqLoading && reqPaginator && reqPaginator.last_page > 1 && (
+                    <div className="flex items-center justify-between p-3 border-t border-border text-sm text-muted-foreground">
+                      <button
+                        onClick={() => reqPage > 1 && fetchRequests(reqPage - 1)}
+                        disabled={reqPage <= 1}
+                        className={`px-3 py-2 rounded-lg border ${
+                          reqPage <= 1
+                            ? "border-border text-muted-foreground/50 cursor-not-allowed"
+                            : "border-border hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        السابق
+                      </button>
+
+                      <div className="text-muted-foreground">
+                        صفحة <span className="text-foreground">{reqPaginator.current_page}</span> من{" "}
+                        <span className="text-foreground">{reqPaginator.last_page}</span>
                       </div>
-                    )}
+
+                      <button
+                        onClick={() =>
+                          reqPage < (reqPaginator.last_page || 1) && fetchRequests(reqPage + 1)
+                        }
+                        disabled={reqPage >= (reqPaginator.last_page || 1)}
+                        className={`px-3 py-2 rounded-lg border ${
+                          reqPage >= (reqPaginator.last_page || 1)
+                            ? "border-border text-muted-foreground/50 cursor-not-allowed"
+                            : "border-border hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        التالي
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -726,7 +829,7 @@ export default function ExhibitorExtraServicesPage() {
         </main>
       </div>
 
-      {/* FAB (Mobile) لفتح القائمة */}
+      {/* FAB (Mobile) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
         className="md:hidden fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-50 hover:bg-primary/90 transition-all duration-200 flex items-center justify-center"

@@ -19,38 +19,39 @@ import {
   Eye,
   RefreshCw,
   Car as CarIcon,
+  Volume2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
 interface Car {
-  id: number;
-  make: string;
-  model: string;
-  year: number;
+  id?: number;
+  make?: string;
+  model?: string;
+  year?: number;
 }
 
 interface Auction {
   id: number;
-  car: Car;
-  status: "scheduled" | "live" | "ended" | "completed" | "cancelled" | "failed";
-  opening_price?: number;
-  approved_for_live?: boolean;
+  car?: Car | null;
+  status: "scheduled" | "live" | "ended" | "completed" | "cancelled" | "failed" | string;
+  opening_price?: number | null;
+  approved_for_live?: boolean | null;
 }
 
 interface AuctionSession {
   id: number;
   name: string;
-  session_date: string;
-  status: "scheduled" | "active" | "completed" | "cancelled";
-  type: "live" | "instant" | "silent";
-  auctions: Auction[];
+  session_date?: string | null;
+  end_date?: string | null;
+  status: "scheduled" | "active" | "completed" | "cancelled" | string;
+  type: "live" | "instant" | "silent" | string;
+  auctions?: Auction[];
+  auctions_count?: number;
+  description?: string | null;
 }
 
-const statusConfig: Record<
-  Auction["status"],
-  { label: string; color: string }
-> = {
+const statusConfig: Record<string, { label: string; color: string }> = {
   scheduled: {
     label: "مجدولة",
     color: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
@@ -80,7 +81,10 @@ const statusConfig: Record<
   },
 };
 
-const sessionStatusConfig = {
+const sessionStatusConfig: Record<
+  string,
+  { label: string; icon: any; color: string }
+> = {
   scheduled: {
     label: "مجدولة",
     icon: Clock,
@@ -104,41 +108,114 @@ const sessionStatusConfig = {
   },
 };
 
+const typeLabels: Record<string, string> = {
+  live: "مباشر",
+  instant: "فوري",
+  silent: "صامت",
+};
+
+function safeDateLabel(iso?: string | null, withDay = false) {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "-";
+    return format(d, withDay ? "eeee, dd MMMM yyyy" : "dd MMMM yyyy", {
+      locale: ar,
+    });
+  } catch {
+    return "-";
+  }
+}
+
+function normalizeSession(payload: any): AuctionSession | null {
+  // يدعم:
+  // 1) {success:true, data:{...}}
+  // 2) {success:true, data:{data:{...}}}
+  // 3) {data:{...}} أو { ... }
+  const row = payload?.data?.data ?? payload?.data ?? payload ?? null;
+  if (!row || typeof row !== "object") return null;
+
+  const auctionsRaw = row?.auctions ?? row?.data?.auctions ?? [];
+  const auctions: Auction[] = Array.isArray(auctionsRaw)
+    ? auctionsRaw
+        .map((a: any) => ({
+          id: Number(a?.id ?? 0),
+          status: String(a?.status ?? "scheduled"),
+          opening_price:
+            a?.opening_price != null ? Number(a.opening_price) : null,
+          approved_for_live:
+            a?.approved_for_live != null ? Boolean(a.approved_for_live) : null,
+          car: a?.car
+            ? {
+                id: a.car?.id != null ? Number(a.car.id) : undefined,
+                make: a.car?.make ?? undefined,
+                model: a.car?.model ?? undefined,
+                year: a.car?.year != null ? Number(a.car.year) : undefined,
+              }
+            : null,
+        }))
+        .filter((a: Auction) => a.id > 0)
+    : [];
+
+  const session: AuctionSession = {
+    id: Number(row?.id ?? 0),
+    name: String(row?.name ?? ""),
+    session_date: row?.session_date ?? row?.start_date ?? null,
+    end_date: row?.end_date ?? row?.ends_at ?? null,
+    status: String(row?.status ?? "scheduled"),
+    type: String(row?.type ?? "live"),
+    auctions,
+    auctions_count:
+      row?.auctions_count != null ? Number(row.auctions_count) : undefined,
+    description: row?.description ?? null,
+  };
+
+  if (!session.id || !session.name) return null;
+  return session;
+}
+
 export default function ExhibitorSessionViewPage() {
   const params = useParams();
   const id = params?.id as string;
 
   const [session, setSession] = useState<AuctionSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [sessionActionLoading, setSessionActionLoading] = useState(false);
 
-  const fetchSession = async () => {
+  const fetchSession = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
+
       const res = await api.get(`/api/exhibitor/sessions/${id}`);
-      const row = res?.data?.data ?? res?.data;
-      setSession(row);
+      const normalized = normalizeSession(res?.data);
+
+      setSession(normalized);
+      if (!normalized) {
+        toast.error("تعذر قراءة بيانات الجلسة من السيرفر.");
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "فشل في جلب تفاصيل الجلسة");
       setSession(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+      else setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (id) fetchSession();
+    if (id) fetchSession(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const updateStatus = async (status: "active" | "completed" | "cancelled") => {
     if (!session) return;
     setSessionActionLoading(true);
     try {
-      await api.post(`/api/exhibitor/sessions/${session.id}/status`, {
-        status,
-      });
+      await api.post(`/api/exhibitor/sessions/${session.id}/status`, { status });
       toast.success("تم تحديث حالة الجلسة");
-      await fetchSession();
+      await fetchSession(true);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "فشل تحديث الحالة");
     } finally {
@@ -146,18 +223,21 @@ export default function ExhibitorSessionViewPage() {
     }
   };
 
+  const auctionsCount = useMemo(() => {
+    if (!session) return 0;
+    const fromArray = Array.isArray(session.auctions) ? session.auctions.length : 0;
+    return fromArray || session.auctions_count || 0;
+  }, [session]);
+
   const stats = useMemo(() => {
     if (!session) return { total: 0, live: 0, scheduled: 0, finished: 0 };
-    const total = session.auctions.length;
-    const live = session.auctions.filter((a) => a.status === "live").length;
-    const scheduled = session.auctions.filter(
-      (a) => a.status === "scheduled"
-    ).length;
-    const finished = session.auctions.filter(
-      (a) => a.status === "completed" || a.status === "ended"
-    ).length;
+    const arr = Array.isArray(session.auctions) ? session.auctions : [];
+    const total = auctionsCount;
+    const live = arr.filter((a) => a.status === "live").length;
+    const scheduled = arr.filter((a) => a.status === "scheduled").length;
+    const finished = arr.filter((a) => a.status === "completed" || a.status === "ended").length;
     return { total, live, scheduled, finished };
-  }, [session]);
+  }, [session, auctionsCount]);
 
   if (loading) {
     return (
@@ -172,15 +252,21 @@ export default function ExhibitorSessionViewPage() {
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
         <div className="text-center">
           <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground font-medium">
-            الجلسة غير موجودة.
-          </p>
+          <p className="text-muted-foreground font-medium">الجلسة غير موجودة.</p>
         </div>
       </div>
     );
   }
 
-  const SessionIcon = sessionStatusConfig[session.status].icon;
+  const sessionCfg =
+    sessionStatusConfig[session.status] ?? {
+      label: session.status,
+      icon: Clock,
+      color: "bg-muted text-muted-foreground border-border",
+    };
+
+  const SessionIcon = sessionCfg.icon;
+  const typeLabel = typeLabels[session.type] ?? session.type;
 
   return (
     <div dir="rtl" className="min-h-screen bg-background text-foreground">
@@ -199,39 +285,48 @@ export default function ExhibitorSessionViewPage() {
                   <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                     {session.name}
                   </h1>
+
                   <div className="flex flex-wrap items-center gap-3 mt-2">
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                        sessionStatusConfig[session.status].color
-                      }`}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${sessionCfg.color}`}
                     >
                       <SessionIcon className="w-4 h-4 ml-1" />
-                      {sessionStatusConfig[session.status].label}
+                      {sessionCfg.label}
                     </span>
+
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border bg-secondary text-foreground border-border">
+                      <Volume2 className="w-4 h-4 ml-1" />
+                      {typeLabel}
+                    </span>
+
                     <div className="flex items-center text-muted-foreground text-sm">
                       <Clock className="w-4 h-4 ml-1" />
-                      {session.session_date
-                        ? format(
-                            new Date(session.session_date),
-                            "eeee, dd MMMM yyyy",
-                            { locale: ar }
-                          )
-                        : "-"}
+                      {safeDateLabel(session.session_date, true)}
                     </div>
+
                     <div className="flex items-center text-primary text-sm">
                       <Users className="w-4 h-4 ml-1" />
-                      {session.auctions.length} مزاد
+                      {auctionsCount} مزاد
                     </div>
                   </div>
+
+                  {session.description && (
+                    <p className="mt-3 text-sm text-muted-foreground leading-6">
+                      {session.description}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={fetchSession}
-                  className="bg-secondary border border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
+                  onClick={() => fetchSession(true)}
+                  disabled={refreshing}
+                  className="bg-secondary border border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center disabled:opacity-60"
                 >
-                  <RefreshCw className="w-4 h-4 ml-2" />
+                  <RefreshCw
+                    className={`w-4 h-4 ml-2 ${refreshing ? "animate-spin" : ""}`}
+                  />
                   تحديث
                 </button>
 
@@ -265,21 +360,20 @@ export default function ExhibitorSessionViewPage() {
                   </button>
                 )}
 
-                {session.status !== "completed" &&
-                  session.status !== "cancelled" && (
-                    <button
-                      onClick={() => updateStatus("cancelled")}
-                      disabled={sessionActionLoading}
-                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
-                    >
-                      {sessionActionLoading ? (
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      ) : (
-                        <XCircle className="w-4 h-4 ml-2" />
-                      )}
-                      إلغاء الجلسة
-                    </button>
-                  )}
+                {session.status !== "completed" && session.status !== "cancelled" && (
+                  <button
+                    onClick={() => updateStatus("cancelled")}
+                    disabled={sessionActionLoading}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-xl transition-all duration-300 flex items-center disabled:opacity-50"
+                  >
+                    {sessionActionLoading ? (
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    ) : (
+                      <XCircle className="w-4 h-4 ml-2" />
+                    )}
+                    إلغاء الجلسة
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -289,9 +383,7 @@ export default function ExhibitorSessionViewPage() {
             <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm">
-                    إجمالي المزادات
-                  </p>
+                  <p className="text-muted-foreground text-sm">إجمالي المزادات</p>
                   <p className="text-2xl font-bold text-foreground mt-1">
                     {stats.total}
                   </p>
@@ -349,11 +441,11 @@ export default function ExhibitorSessionViewPage() {
           <div className="bg-card rounded-2xl border border-border shadow-md overflow-hidden">
             <div className="p-6 border-b border-border">
               <h2 className="text-lg font-semibold text-foreground">
-                مزادات الجلسة ({session.auctions.length})
+                مزادات الجلسة ({Array.isArray(session.auctions) ? session.auctions.length : 0})
               </h2>
             </div>
 
-            {session.auctions.length === 0 ? (
+            {!Array.isArray(session.auctions) || session.auctions.length === 0 ? (
               <div className="py-16 text-center text-muted-foreground">
                 لا توجد مزادات مضافة إلى هذه الجلسة بعد.
               </div>
@@ -373,42 +465,61 @@ export default function ExhibitorSessionViewPage() {
                       </th>
                     </tr>
                   </thead>
+
                   <tbody className="divide-y divide-border">
-                    {session.auctions.map((a) => (
-                      <tr
-                        key={a.id}
-                        className="hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="bg-primary/10 p-2 rounded-xl">
-                              <CarIcon className="w-4 h-4 text-primary" />
-                            </div>
-                            <div className="mr-4">
-                              <div className="text-sm font-medium text-foreground">
-                                {a.car.make} {a.car.model}
+                    {session.auctions.map((a) => {
+                      const carTitle =
+                        a?.car?.make || a?.car?.model
+                          ? `${a?.car?.make ?? ""} ${a?.car?.model ?? ""}`.trim()
+                          : "—";
+
+                      const carYear = a?.car?.year ? String(a.car.year) : "—";
+                      const price =
+                        a.opening_price != null
+                          ? Number(a.opening_price).toLocaleString("ar-EG")
+                          : "—";
+
+                      const cfg =
+                        statusConfig[a.status] ?? {
+                          label: a.status,
+                          color: "bg-muted text-muted-foreground border-border",
+                        };
+
+                      return (
+                        <tr
+                          key={a.id}
+                          className="hover:bg-muted/50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="bg-primary/10 p-2 rounded-xl">
+                                <CarIcon className="w-4 h-4 text-primary" />
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {a.car.year} • Auction ID: {a.id}
+                              <div className="mr-4">
+                                <div className="text-sm font-medium text-foreground">
+                                  {carTitle}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {carYear} • Auction ID: {a.id}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-primary font-semibold">
-                          {(a.opening_price ?? 0).toLocaleString()} ر.س
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
-                              statusConfig[a.status]?.color ??
-                              "bg-muted text-muted-foreground border-border"
-                            }`}
-                          >
-                            {statusConfig[a.status]?.label ?? a.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+
+                          <td className="px-6 py-4 text-primary font-semibold">
+                            {price} ر.س
+                          </td>
+
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${cfg.color}`}
+                            >
+                              {cfg.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
