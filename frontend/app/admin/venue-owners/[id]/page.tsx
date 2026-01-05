@@ -1456,7 +1456,7 @@ export default function VenueOwnerShowPage({
               );
             })}
           </div>
-          <div className="p-4 md:p-6">{renderTabContent()}</div>
+          <div className="p-2">{renderTabContent()}</div>
         </section>
       </div>
     </div>

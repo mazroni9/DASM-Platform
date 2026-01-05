@@ -330,7 +330,7 @@ export default function VenueOwnersAdminPage() {
   const rejectedCount = useMemo(() => owners.filter((o) => o.status === "rejected").length, [owners]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-2">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>

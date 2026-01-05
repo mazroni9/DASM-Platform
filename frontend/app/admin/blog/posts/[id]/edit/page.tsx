@@ -252,7 +252,7 @@ export default function AdminEditBlogPostPage() {
       : "بدون تصنيف";
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 rtl">
+    <div className="min-h-screen bg-background text-foreground p-2 rtl">
       {/* Top bar */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
         <div className="min-w-0">

@@ -243,9 +243,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       dir="rtl"
     >
       {/* حاوية واسعة ومريحة: لا تضغط المحتوى أفقيًا */}
-      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="w-full max-w-screen-2xl mx-auto px-1 pb-8">
         {/* Grid: سايدبار ثابت 20rem + محتوى مرن */}
-        <div className="grid lg:grid-cols-[20rem,1fr] gap-6 pt-4 lg:pt-6 items-start">
+        <div className="grid lg:grid-cols-[20rem,1fr] pt-4 lg:pt-6 items-start">
           {/* Sidebar (Desktop only) */}
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4">

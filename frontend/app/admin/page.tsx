@@ -319,7 +319,7 @@ export default function AdminDashboard() {
     "inline-flex items-center flex-row-reverse gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border";
 
   return (
-    <div dir="rtl" lang="ar" className="min-h-screen bg-background text-foreground p-4 md:p-6 text-right">
+    <div dir="rtl" lang="ar" className="min-h-screen bg-background text-foreground p-2 text-right">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div className="w-full">
@@ -399,7 +399,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Dashboard */}
-          <TabsContent value="dashboard" className="m-0 p-4 md:p-6 space-y-8">
+          <TabsContent value="dashboard" className="m-0 p-2 space-y-8">
             {loading && (
               <div className="w-full">
                 <GlobalLoader />
@@ -662,7 +662,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Cars */}
-          <TabsContent value="cars" className="m-0 p-4 md:p-6">
+          <TabsContent value="cars" className="m-0 p-2">
             <Suspense fallback={<GlobalLoader />}>
               <AdminCarsPage />
             </Suspense>
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
 
           {/* ✅ Broadcast (FIXED) */}
           <TabsContent value="broadcast" className="m-0 p-0">
-            <div className="p-4 md:p-6">
+            <div className="p-2">
               {/* نفس روح الصفحة السابقة + متوافق مع الثيم */}
               <div className="rounded-2xl border border-border overflow-hidden bg-background dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-950 dark:text-white">
                 {/* Header */}
@@ -826,7 +826,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Auctions */}
-          <TabsContent value="auctions" className="m-0 p-4 md:p-6">
+          <TabsContent value="auctions" className="m-0 p-2">
             <Suspense fallback={<GlobalLoader />}>
               <AdminAuctionApproval />
             </Suspense>
