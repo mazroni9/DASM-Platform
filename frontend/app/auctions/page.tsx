@@ -83,7 +83,7 @@ type AuctionCardProps = {
 export default function AuctionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ✅ تحكم واحد يخلي باقي الأقسام "موجودة برمجياً" لكن مخفية من الصفحة
+  // ✅ نخلي باقي الأقسام مخفية (زي ما هو)
   const SHOW_NON_MAIN_MARKETS = false;
 
   const auctionsMain: Auction[] = [
@@ -144,7 +144,7 @@ export default function AuctionsPage() {
     },
   ];
 
-  // ✅ باقي الأسواق (موجودة برمجياً)
+  // ✅ أسواق السيارات (هنعرض السكشن ده فقط + نخلي الباقي مخفي)
   const auctionsCar: Auction[] = [
     {
       name: "سوق السيارات الفارهة",
@@ -524,7 +524,9 @@ export default function AuctionsPage() {
 
             {/* المحتوى الرئيسي */}
             <div className="mt-8 text-center">
-              <div className={`inline-flex rounded-2xl bg-secondary p-3 shadow-lg mb-3 ${auction.color}`}>
+              <div
+                className={`inline-flex rounded-2xl bg-secondary p-3 shadow-lg mb-3 ${auction.color}`}
+              >
                 <Icon size={28} />
               </div>
 
@@ -616,21 +618,25 @@ export default function AuctionsPage() {
             </div>
           )}
 
-          {/* ✅ باقي الأقسام مخفية من الصفحة لكن موجودة برمجياً */}
+          {/* ✅ المطلوب: إظهار سكشن سوق السيارات المخصص فقط */}
+          <Divider />
+          <SectionTitle title="سوق السيارات المخصص" icon={Car} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {auctionsCar.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
+          </div>
+
+          {/* ✅ باقي الأقسام تظل مخفية كما هي */}
           {SHOW_NON_MAIN_MARKETS && (
             <>
               <Divider />
 
-              <SectionTitle title="أسواق السيارات المتخصص" icon={Car} />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {auctionsCar.map((auction, index) => (
-                  <AuctionCard key={auction.slug} auction={auction} index={index} />
-                ))}
-              </div>
-
-              <Divider />
-
-              <SectionTitle title="سوق نوعي" subtitle="منتجات ومعدات متخصصة بجودة عالية" icon={TrendingUp} />
+              <SectionTitle
+                title="سوق نوعي"
+                subtitle="منتجات ومعدات متخصصة بجودة عالية"
+                icon={TrendingUp}
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {auctionsQuality.map((auction, index) => (
                   <AuctionCard key={auction.slug} auction={auction} index={index} />
@@ -639,7 +645,11 @@ export default function AuctionsPage() {
 
               <Divider />
 
-              <SectionTitle title="أسواق تخصصية" subtitle="مزادات فريدة لمنتجات استثنائية" icon={Crown} />
+              <SectionTitle
+                title="أسواق تخصصية"
+                subtitle="مزادات فريدة لمنتجات استثنائية"
+                icon={Crown}
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {auctionsSpecial.map((auction, index) => (
                   <AuctionCard key={auction.slug} auction={auction} index={index} />
@@ -648,7 +658,11 @@ export default function AuctionsPage() {
 
               <Divider />
 
-              <SectionTitle title="أسواق عامة" subtitle="منتجات متنوعة للاستخدام اليومي" icon={ShoppingBag} />
+              <SectionTitle
+                title="أسواق عامة"
+                subtitle="منتجات متنوعة للاستخدام اليومي"
+                icon={ShoppingBag}
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {auctionsGeneral.map((auction, index) => (
                   <AuctionCard key={auction.slug} auction={auction} index={index} />
@@ -657,7 +671,11 @@ export default function AuctionsPage() {
 
               <Divider />
 
-              <SectionTitle title="السوق الكبير" subtitle="المنصة الشاملة لكل ما تحتاجه" icon={Store} />
+              <SectionTitle
+                title="السوق الكبير"
+                subtitle="المنصة الشاملة لكل ما تحتاجه"
+                icon={Store}
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {auctionsBig.map((auction, index) => (
                   <AuctionCard key={auction.slug} auction={auction} index={index} />
