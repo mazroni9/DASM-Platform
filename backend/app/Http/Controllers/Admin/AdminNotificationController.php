@@ -29,6 +29,8 @@ class AdminNotificationController extends Controller
                 'type' => $notification->type,
                 'title' => $notification->data['title'] ?? 'إشعار جديد',
                 'body' => $notification->data['body'] ?? '',
+                'icon' => $notification->data['icon'] ?? null,
+                'color' => $notification->data['color'] ?? null,
                 'data' => $notification->data['data'] ?? [],
                 'action' => $notification->data['action'] ?? null,
                 'read_at' => $notification->read_at,

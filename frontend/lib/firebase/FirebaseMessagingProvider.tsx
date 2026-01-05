@@ -5,6 +5,9 @@ import { getMessagingInstance } from "@/lib/firebase";
 import axios from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
 
+/**
+ * @deprecated This component is not used. Use @/components/FirebaseMessagingProvider instead.
+ */
 const FirebaseMessagingProvider = ({
   children,
 }: {

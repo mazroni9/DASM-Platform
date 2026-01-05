@@ -84,7 +84,7 @@ use App\Http\Controllers\Payment\ClickPayController;
 */
 
 Route::prefix('_diag')->group(function () {
-    
+
     // Health check - lightweight (public)
     Route::get('/health', function () {
         return response()->json([
@@ -175,7 +175,7 @@ Route::prefix('_diag')->group(function () {
 
     // Protected diagnostics - require DIAG_TOKEN
     Route::middleware('diag.token')->group(function () {
-        
+
         Route::get('/redis', function () {
             $err = null;
             $pong = null;
@@ -436,7 +436,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/purchase-confirmation/{auction_id}', [AuctionController::class, 'purchaseConfirmation'])->whereNumber('auction_id');
         Route::post('/test-bid', [AuctionController::class, 'testBid']); // TODO: Remove in production
     });
-    
+
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
     Route::get('/auction', [AuctionController::class, 'addToAuction']);
     Route::post('/auction', [AuctionController::class, 'addToAuction']);
@@ -451,11 +451,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/bids', [BidController::class, 'store'])->middleware('bid.rate.limit');
         Route::get('/leaderboard', [BidController::class, 'leaderboard']);
     });
-    
+
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
     Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus'])->whereNumber('bid');
     Route::get('/bids-history', [BidController::class, 'UserBidHistory']);
-    
+
     // Unified bid endpoints
     Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
     Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids'])->whereNumber('id');
@@ -489,7 +489,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─────────────────────────────────────────────────────────────────
     // 4.10 Notifications
     // ─────────────────────────────────────────────────────────────────
-    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    });
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
 
     // ─────────────────────────────────────────────────────────────────
@@ -703,7 +708,7 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         // 8.1 Dashboard & Settings
         // ─────────────────────────────────────────────────────────────
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
-        
+
         Route::prefix('settings')->group(function () {
             Route::get('/', [SettingsController::class, 'index']);
             Route::put('/', [SettingsController::class, 'update']);

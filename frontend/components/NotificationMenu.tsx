@@ -131,12 +131,21 @@ export default function NotificationMenu() {
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {notifications.map((notification: Notification) => {
                   const notificationUrl = getNotificationUrl(notification);
+                  const isUnread = !notification.read_at;
+
+                  // Handle notification click - mark as read if unread
+                  const handleNotificationClick = () => {
+                    if (isUnread) {
+                      handleMarkAsRead(notification.id);
+                    }
+                    setIsOpen(false);
+                  };
 
                   return (
                     <LoadingLink
                       key={notification.id}
                       href={notificationUrl}
-                      onClick={() => setIsOpen(false)}
+                      onClick={handleNotificationClick}
                     >
                       <NotificationItem
                         notification={notification}
