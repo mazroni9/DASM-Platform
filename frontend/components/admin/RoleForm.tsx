@@ -146,7 +146,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-2">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">
           {mode === "create" ? "إنشاء دور جديد" : "تعديل الدور"}

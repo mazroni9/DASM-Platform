@@ -145,7 +145,7 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
   const submitLabel = mode === "create" ? "إنشاء القروب" : "تحديث القروب";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{pageTitle}</h1>
         <div className="flex flex-wrap gap-2">

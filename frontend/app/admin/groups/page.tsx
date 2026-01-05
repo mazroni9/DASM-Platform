@@ -37,7 +37,7 @@ const userGroups = [
 
 export default function UserGroupsPage() {
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-2">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">إدارة القروبات</h1>
                 <LoadingLink href="/admin/groups/create">
