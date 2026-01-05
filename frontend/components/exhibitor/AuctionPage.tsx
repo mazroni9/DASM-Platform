@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiSearch,
@@ -15,14 +15,29 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 import { FaGavel, FaCar } from "react-icons/fa";
-import api from "@/lib/axios";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 
-/** ========= الإعدادات ========= **/
-const API_ROOT = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-).replace(/\/+$/, "");
+/** ========= API setup (fixed abort handling) ========= **/
+const IS_PROD = process.env.NODE_ENV === "production";
+const RAW_ROOT = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/+$/, "");
+
+const getSameOrigin = () =>
+  typeof window !== "undefined" ? window.location.origin : "";
+
+function resolveApiRoot() {
+  if (RAW_ROOT) return { root: RAW_ROOT, source: "env" as const };
+  if (!IS_PROD) return { root: getSameOrigin(), source: "dev-fallback" as const };
+  throw new Error(
+    [
+      "Production misconfigured: NEXT_PUBLIC_API_URL is missing.",
+      "Set it to your Laravel host ROOT (WITHOUT /api).",
+      "Example: https://example.onrender.com OR https://domain.com/public",
+    ].join(" ")
+  );
+}
+
+const { root: API_ROOT, source: API_SOURCE } = resolveApiRoot();
 const API_BASE = `${API_ROOT}/api`;
 const TOKEN_KEY = "token";
 
@@ -30,7 +45,6 @@ function getToken(): string | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(TOKEN_KEY);
   if (!raw) return null;
-  // إزالة علامات اقتباس محتملة من التخزين
   return raw.replace(/^"(.+)"$/, "$1");
 }
 
@@ -41,27 +55,149 @@ function authHeaders() {
   return h;
 }
 
-// جلب JSON مع رسائل أخطاء واضحة
-async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: { ...(init?.headers || {}), ...authHeaders() },
-  });
-  const text = await res.text();
-  let data: any;
+class ApiError extends Error {
+  status?: number;
+  url?: string;
+  body?: string;
+  constructor(message: string, opts?: { status?: number; url?: string; body?: string }) {
+    super(message);
+    this.name = "ApiError";
+    this.status = opts?.status;
+    this.url = opts?.url;
+    this.body = opts?.body;
+  }
+}
+
+const buildApiUrl = (path: string) => {
+  const clean = path.replace(/^\//, "");
+  return `${API_BASE}/${clean}`;
+};
+
+function isAbortError(err: any) {
+  return (
+    err?.name === "AbortError" ||
+    err instanceof DOMException ||
+    (typeof err?.message === "string" &&
+      err.message.toLowerCase().includes("aborted"))
+  );
+}
+
+async function apiFetchRaw(path: string, init?: RequestInit) {
+  const url = buildApiUrl(path);
+
+  let res: Response;
   try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    const snippet = text?.slice(0, 200) || "";
-    throw new Error(`HTTP ${res.status} @ ${url}\nالرد ليس JSON:\n${snippet}`);
+    res = await fetch(url, {
+      cache: "no-store",
+      ...init,
+      headers: {
+        ...authHeaders(),
+        ...(init?.headers || {}),
+      },
+    });
+  } catch (err: any) {
+    // ✅ مهم: لو abort، ما نغلفش الخطأ، نخليه يطلع زي ما هو عشان نستثنيه فوق
+    if (isAbortError(err)) throw err;
+
+    const hint =
+      API_SOURCE === "dev-fallback"
+        ? "تستخدم نفس الدومين محليًا (dev-fallback)."
+        : "تحقق من NEXT_PUBLIC_API_URL أو CORS على Laravel.";
+    throw new ApiError(`تعذر الاتصال بالخادم: ${url}\n${hint}\n${err?.message || err}`, {
+      url,
+    });
   }
+
   if (!res.ok) {
-    if (res.status === 401)
-      throw new Error("غير مصرح: يرجى تسجيل الدخول مرة أخرى (401).");
-    const msg = data?.message || data?.error || `HTTP ${res.status}`;
-    throw new Error(msg);
+    const body = await res.text().catch(() => "");
+
+    if (res.status === 401) {
+      throw new ApiError("غير مصرح: يرجى تسجيل الدخول مرة أخرى (401).", {
+        status: 401,
+        url,
+        body,
+      });
+    }
+
+    if (res.status === 404) {
+      const isNext404 = /The page could not be found/i.test(body);
+      const advice = isNext404
+        ? `الطلب وصل إلى Next.js بدل Laravel.
+- يجب ضبط NEXT_PUBLIC_API_URL ليشير إلى جذر Laravel (بدون /api).
+- لاحظ أن الكود يضيف /api تلقائيًا.`
+        : "تحقق من مسار Laravel (route) أو البارامترات.";
+      throw new ApiError(`تعذر جلب البيانات (404) من: ${url}\n${advice}\n${body}`, {
+        status: 404,
+        url,
+        body,
+      });
+    }
+
+    throw new ApiError(`فشل الطلب (${res.status}) من: ${url}\n${body}`, {
+      status: res.status,
+      url,
+      body,
+    });
   }
-  return data as T;
+
+  return res;
+}
+
+async function apiJson<T = any>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiFetchRaw(path, init);
+  const text = await res.text().catch(() => "");
+  if (!text) return {} as T;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const snippet = text.slice(0, 250);
+    throw new ApiError(`الرد ليس JSON من: ${res.url}\n${snippet}`, {
+      status: res.status,
+      url: res.url,
+      body: text,
+    });
+  }
+}
+
+async function postWithFallback<T = any>(paths: string[], payload: any): Promise<T> {
+  let lastErr: any = null;
+  for (const p of paths) {
+    try {
+      return await apiJson<T>(p, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch (e: any) {
+      // ✅ لو abort، سيبه يطلع
+      if (isAbortError(e)) throw e;
+      lastErr = e;
+      if (e?.status === 404) continue;
+      throw e;
+    }
+  }
+  throw lastErr || new Error("تعذر إنشاء المزاد: لا يوجد مسار صالح.");
+}
+
+/** ========= Helpers ========= **/
+const PLACEHOLDER_IMG =
+  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop";
+
+const toNumberSafe = (v: any) => {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const s = String(v).replace(/\s/g, "").replace(/,/g, "");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+};
+
+function resolveMediaUrl(src: string) {
+  const s = (src || "").trim();
+  if (!s) return s;
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith("/")) return `${API_ROOT}${s}`;
+  return `${API_ROOT}/${s}`;
 }
 
 function arStatusLabel(s: string) {
@@ -73,34 +209,39 @@ function arStatusLabel(s: string) {
     case "ended":
       return "منتهي";
     case "canceled":
+    case "cancelled":
       return "ملغي";
     case "failed":
       return "فاشل";
     case "completed":
       return "مكتمل";
+    case "active":
+      return "جاري";
     default:
       return s;
   }
 }
 
-// ألوان الشارة (مخفّضة اللمعان)
 function statusChipColor(s: string) {
-  return s === "live"
+  return s === "live" || s === "active"
     ? "bg-emerald-600 text-white"
     : s === "scheduled"
     ? "bg-amber-500 text-white"
-    : s === "ended"
+    : s === "ended" || s === "completed"
     ? "bg-destructive text-destructive-foreground"
     : "bg-muted text-muted-foreground";
 }
 
+/** ========= Types ========= **/
 type AuctionStatusApi =
   | "scheduled"
   | "live"
   | "ended"
   | "canceled"
+  | "cancelled"
   | "failed"
-  | "completed";
+  | "completed"
+  | "active";
 
 interface CarApi {
   id: number;
@@ -108,16 +249,16 @@ interface CarApi {
   model: string;
   year: number;
   images?: string[] | null;
-  evaluation_price?: number | null;
-  min_price?: number | null;
-  max_price?: number | null;
+  evaluation_price?: string | number | null;
+  min_price?: string | number | null;
+  max_price?: string | number | null;
   user_id?: number | null;
   owner_id?: number | null;
 }
 
 interface BidApi {
   id: number;
-  bid_amount: number;
+  bid_amount: string | number;
   created_at: string;
   user_id: number;
 }
@@ -125,15 +266,15 @@ interface BidApi {
 interface AuctionApi {
   id: number;
   car_id: number;
-  car: CarApi;
-  starting_bid: number;
-  current_bid: number;
-  min_price?: number | null;
-  max_price?: number | null;
+  car?: CarApi | null;
+  starting_bid: string | number;
+  current_bid: string | number;
+  min_price?: string | number | null;
+  max_price?: string | number | null;
   start_time: string;
   end_time: string;
   extended_until?: string | null;
-  status: AuctionStatusApi;
+  status: AuctionStatusApi | string;
   bids?: BidApi[];
   broadcasts?: any[];
 }
@@ -153,35 +294,89 @@ interface UiAuction {
   startPrice: number;
   currentBid: number;
   endTimeIso: string;
-  statusApi: AuctionStatusApi;
+  statusApi: AuctionStatusApi | string;
   statusAr: string;
   bidsCount: number;
   watchers: number;
   owner?: string;
 }
 
-/** شكل الجلسة طبقًا لمسار الباك الجديد **/
 interface AuctionSession {
   id: number;
   name: string;
   session_date: string;
-  status: "scheduled" | "active" | "completed" | "cancelled";
+  status: "scheduled" | "active" | "completed" | "cancelled" | "canceled";
   type: "live" | "instant" | "silent";
   auctions_count?: number;
   created_at?: string;
   updated_at?: string;
 }
 
-const PLACEHOLDER_IMG =
-  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop";
+/** ========= Response pickers ========= **/
+function isPaginator(obj: any): obj is Paged<any> {
+  return (
+    !!obj &&
+    typeof obj === "object" &&
+    typeof obj.current_page === "number" &&
+    Array.isArray(obj.data) &&
+    typeof obj.per_page === "number" &&
+    typeof obj.total === "number" &&
+    typeof obj.last_page === "number"
+  );
+}
 
-/** ========= عدّاد تنازلي صغير/واضح ========= **/
+function pickPaged<T = any>(js: any): Paged<T> | null {
+  if (isPaginator(js)) return js as Paged<T>;
+  if (isPaginator(js?.data)) return js.data as Paged<T>;
+  if (isPaginator(js?.data?.data)) return js.data.data as Paged<T>;
+  if (isPaginator(js?.result)) return js.result as Paged<T>;
+  return null;
+}
+
+function pickArray<T = any>(js: any): T[] | null {
+  if (Array.isArray(js)) return js;
+  if (Array.isArray(js?.data)) return js.data;
+  if (Array.isArray(js?.data?.data)) return js.data.data;
+  if (Array.isArray(js?.data?.sessions)) return js.data.sessions;
+  if (Array.isArray(js?.sessions)) return js.sessions;
+  return null;
+}
+
+function pickCarArray(js: any): CarApi[] | null {
+  const pg = pickPaged<CarApi>(js);
+  if (pg) return pg.data;
+  const arr =
+    (Array.isArray(js?.cars) && js.cars) ||
+    (Array.isArray(js?.data?.cars) && js.data.cars) ||
+    pickArray<CarApi>(js);
+  return Array.isArray(arr) ? arr : null;
+}
+
+function pickMyId(js: any): number | null {
+  const id =
+    js?.data?.id ??
+    js?.id ??
+    js?.user?.id ??
+    js?.data?.user?.id ??
+    js?.data?.data?.id ??
+    null;
+  if (typeof id === "number") return id;
+  if (typeof id === "string" && /^\d+$/.test(id)) return Number(id);
+  return null;
+}
+
+/** ========= Countdown ========= **/
 function Countdown({ endIso }: { endIso: string }) {
   const [t, setT] = useState("");
+
   useEffect(() => {
     const update = () => {
-      const now = new Date().getTime();
       const end = new Date(endIso).getTime();
+      if (!Number.isFinite(end)) {
+        setT("—");
+        return;
+      }
+      const now = Date.now();
       const diff = end - now;
       if (diff <= 0) {
         setT("انتهى");
@@ -192,68 +387,47 @@ function Countdown({ endIso }: { endIso: string }) {
       const s = Math.floor((diff / 1000) % 60);
       setT(`${h}س ${m}د ${s}ث`);
     };
+
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [endIso]);
+
   return <span className="font-mono text-xs md:text-sm">{t}</span>;
 }
 
-/** ========= Utilities ========= **/
-function extractArray<T = any>(js: any, key: string): T[] | null {
-  if (Array.isArray(js?.[key])) return js[key];
-  if (Array.isArray(js?.data?.[key])) return js.data[key];
-  if (Array.isArray(js?.data?.data)) return js.data.data;
-  if (Array.isArray(js?.data)) return js.data;
-  if (Array.isArray(js)) return js;
-  return null;
-}
-
-// محاولة إحضار user_id من عدة مسارات شائعة
+/** ========= Fetch helpers ========= **/
 async function readMyUserId(): Promise<number | null> {
-  const candidates = [
-    `${API_BASE}/me`,
-    `${API_BASE}/auth/me`,
-    `${API_BASE}/user`,
-    `${API_BASE}/profile`,
-  ];
-  for (const url of candidates) {
+  const candidates = ["me", "auth/me", "user", "profile"];
+  for (const c of candidates) {
     try {
-      const js: any = await fetchJSON(url);
-      const id = js?.data?.id ?? js?.id ?? js?.user?.id ?? null;
-      if (typeof id === "number") return id;
-      if (typeof id === "string" && /^\d+$/.test(id)) return Number(id);
+      const js: any = await apiJson(c);
+      const id = pickMyId(js);
+      if (id != null) return id;
     } catch {
-      /* skip */
+      /* ignore */
     }
   }
   return null;
 }
 
-/** ========= جلب سيارات المستخدم فقط ========= **/
 async function fetchMyCarsOnly(): Promise<CarApi[]> {
   const myId = await readMyUserId().catch(() => null);
 
-  const urls: string[] = [];
+  const paths: string[] = [];
   if (myId != null) {
-    urls.push(
-      `${API_BASE}/cars?user_id=${myId}&sort_by=created_at&sort_dir=desc`
-    );
-    urls.push(
-      `${API_BASE}/cars?owner_id=${myId}&sort_by=created_at&sort_dir=desc`
-    );
+    paths.push(`cars?user_id=${myId}&sort_by=created_at&sort_dir=desc`);
+    paths.push(`cars?owner_id=${myId}&sort_by=created_at&sort_dir=desc`);
   }
-  urls.push(`${API_BASE}/my-cars?sort_by=created_at&sort_dir=desc`);
-  urls.push(`${API_BASE}/cars?mine=1&sort_by=created_at&sort_dir=desc`);
-  urls.push(`${API_BASE}/cars?user_id=me&sort_by=created_at&sort_dir=desc`);
+  paths.push("my-cars?sort_by=created_at&sort_dir=desc");
+  paths.push("cars?mine=1&sort_by=created_at&sort_dir=desc");
+  paths.push("cars?user_id=me&sort_by=created_at&sort_dir=desc");
+  paths.push("cars?sort_by=created_at&sort_dir=desc");
 
-  for (const url of urls) {
+  for (const p of paths) {
     try {
-      const js: any = await fetchJSON(url);
-      const arr =
-        extractArray<CarApi>(js, "cars") ??
-        extractArray<CarApi>(js, "data") ??
-        null;
+      const js: any = await apiJson(p);
+      const arr = pickCarArray(js);
       if (arr && arr.length) {
         if (myId != null) {
           return arr.filter(
@@ -272,20 +446,22 @@ async function fetchMyCarsOnly(): Promise<CarApi[]> {
   return [];
 }
 
-/** ========= جلب الجلسات العامة ========= **/
 async function fetchPublicSessions(): Promise<AuctionSession[]> {
-  try {
-    const js: any = await fetchJSON(
-      `${API_BASE}/sessions/active-scheduled?with_counts=1`
-    );
-    const arr =
-      extractArray<AuctionSession>(js, "data") ??
-      extractArray<AuctionSession>(js, "sessions") ??
-      js;
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
+  const candidates = [
+    "sessions/active-scheduled?with_counts=1",
+    "sessions/active-scheduled",
+    "sessions?status=active,scheduled",
+  ];
+  for (const p of candidates) {
+    try {
+      const js: any = await apiJson(p);
+      const arr = pickArray<AuctionSession>(js);
+      if (arr) return arr;
+    } catch {
+      /* try next */
+    }
   }
+  return [];
 }
 
 function sessionLabel(s: AuctionSession) {
@@ -295,7 +471,7 @@ function sessionLabel(s: AuctionSession) {
   return `${s.name}${dateTxt}`;
 }
 
-/** ========= مودال إنشاء مزاد فوري (تصميم مضغوط) ========= **/
+/** ========= Modal: Start Live Auction ========= **/
 function StartLiveModal({
   open,
   onClose,
@@ -320,80 +496,91 @@ function StartLiveModal({
     max_price: "",
     session_id: "",
   });
+
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const firstInputRef = useRef<HTMLSelectElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setErrors({});
-      setSessionsError(null);
-      setForm({
-        car_id: "",
-        car_price: "",
-        starting_bid: "",
-        min_price: "",
-        max_price: "",
-        session_id: "",
-      });
-      setTimeout(() => firstInputRef.current?.focus(), 100);
+    if (!open) return;
 
-      const run = async () => {
-        try {
-          const token = getToken();
-          if (!token)
-            throw new Error("غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.");
-          setLoadingCars(true);
-          setLoadingSessions(true);
+    setErrors({});
+    setSessionsError(null);
+    setForm({
+      car_id: "",
+      car_price: "",
+      starting_bid: "",
+      min_price: "",
+      max_price: "",
+      session_id: "",
+    });
 
-          const [mine, sess] = await Promise.all([
-            fetchMyCarsOnly(),
-            fetchPublicSessions(),
-          ]);
+    const t = setTimeout(() => firstInputRef.current?.focus(), 100);
 
-          setCars(Array.isArray(mine) ? mine : []);
-          setSessions(Array.isArray(sess) ? sess : []);
+    const run = async () => {
+      try {
+        const token = getToken();
+        if (!token) throw new Error("غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.");
 
-          if (Array.isArray(mine) && mine.length === 0) {
-            setErrors((prev) => ({
-              ...prev,
-              carsEmpty: "لا توجد سيارات مرتبطة بحسابك.",
-            }));
-          }
-          if (!sess || sess.length === 0) {
-            setSessionsError("لا توجد جلسات متاحة (active / scheduled).");
-          }
-        } catch (e: any) {
-          setCars([]);
-          setSessions([]);
-          setSessionsError(e?.message || "تعذر جلب الجلسات.");
-          setErrors((prev) => ({
-            ...prev,
-            global: e?.message || "حدث خطأ غير متوقع",
-          }));
-        } finally {
-          setLoadingCars(false);
-          setLoadingSessions(false);
+        setLoadingCars(true);
+        setLoadingSessions(true);
+
+        const [mine, sess] = await Promise.all([fetchMyCarsOnly(), fetchPublicSessions()]);
+
+        setCars(Array.isArray(mine) ? mine : []);
+        setSessions(Array.isArray(sess) ? sess : []);
+
+        if (!mine || mine.length === 0) {
+          setErrors((prev) => ({ ...prev, carsEmpty: "لا توجد سيارات مرتبطة بحسابك." }));
         }
-      };
-      run();
-    }
+        if (!sess || sess.length === 0) {
+          setSessionsError("لا توجد جلسات متاحة (active / scheduled).");
+        }
+      } catch (e: any) {
+        setCars([]);
+        setSessions([]);
+        setSessionsError(e?.message || "تعذر جلب الجلسات.");
+        setErrors((prev) => ({ ...prev, global: e?.message || "حدث خطأ غير متوقع" }));
+      } finally {
+        setLoadingCars(false);
+        setLoadingSessions(false);
+      }
+    };
+
+    run();
+    return () => clearTimeout(t);
   }, [open]);
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.car_id) e.car_id = "السيارة مطلوبة";
     if (!form.session_id) e.session_id = "الجلسة مطلوبة";
-    if (!form.starting_bid || Number(form.starting_bid) < 1000)
-      e.starting_bid = "سعر البدء غير صحيح";
-    if (!form.min_price || !form.max_price)
-      e.minmax = "أدخل حد أدنى وأقصى موصى به";
-    if (
-      form.min_price &&
-      form.max_price &&
-      Number(form.min_price) > Number(form.max_price)
-    )
+    if (!form.starting_bid || Number(form.starting_bid) < 1000) e.starting_bid = "سعر البدء غير صحيح";
+    if (!form.min_price || !form.max_price) e.minmax = "أدخل حد أدنى وأقصى موصى به";
+    if (form.min_price && form.max_price && Number(form.min_price) > Number(form.max_price))
       e.minmax = "الحد الأدنى يجب أن يكون ≤ الحد الأعلى";
     return e;
+  };
+
+  const closeOnBackdrop = (e: React.MouseEvent) => {
+    if (e.target === backdropRef.current) onClose();
+  };
+
+  const onSelectCar = (val: string) => {
+    const idNum = Number(val);
+    const selected = cars.find((c) => c.id === idNum);
+
+    const evalPrice = selected?.evaluation_price != null ? String(toNumberSafe(selected.evaluation_price)) : "";
+    const minP = selected?.min_price != null ? String(toNumberSafe(selected.min_price)) : "";
+    const maxP = selected?.max_price != null ? String(toNumberSafe(selected.max_price)) : "";
+
+    setForm((f) => ({
+      ...f,
+      car_id: val,
+      car_price: evalPrice,
+      min_price: minP || f.min_price,
+      max_price: maxP || f.max_price,
+    }));
   };
 
   const submit = async (ev: React.FormEvent) => {
@@ -406,7 +593,7 @@ function StartLiveModal({
       const token = getToken();
       if (!token) throw new Error("غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.");
 
-      const payload: any = {
+      const payload = {
         car_id: Number(form.car_id),
         starting_bid: Number(form.starting_bid),
         min_price: Number(form.min_price),
@@ -414,58 +601,42 @@ function StartLiveModal({
         session_id: Number(form.session_id),
       };
 
-      const res = await api.post("/api/auction", payload);
-      const js = res.data as {
-        status?: string;
-        message?: string;
-        data: AuctionApi;
-      };
+      const js: any = await postWithFallback(
+        ["auction", "auctions", "auction/create", "auctions/create"],
+        payload
+      );
 
-      const a: AuctionApi = js.data;
-      const car = cars.find((c) => c.id === a.car_id);
+      const a: AuctionApi = js?.data?.auction || js?.data || js?.auction || js || ({} as any);
+
+      const car = a?.car || cars.find((c) => c.id === a.car_id) || null;
+      const carLabel = car ? `${car.make} ${car.model} ${car.year}` : `#${a.car_id}`;
+
+      const imageRaw = car?.images?.[0] || "";
+      const image = imageRaw ? resolveMediaUrl(imageRaw) : PLACEHOLDER_IMG;
+
+      const endIso =
+        a?.extended_until && a.extended_until !== "null" ? a.extended_until : a?.end_time;
+
       const ui: UiAuction = {
         id: a.id,
-        carLabel: car ? `${car.make} ${car.model} ${car.year}` : `#${a.car_id}`,
-        image: (car?.images && car.images[0]) || PLACEHOLDER_IMG,
-        startPrice: a.starting_bid,
-        currentBid: a.current_bid,
-        endTimeIso: a.extended_until || a.end_time,
-        statusApi: a.status,
-        statusAr: arStatusLabel(a.status),
-        bidsCount: a.bids?.length || 0,
+        carLabel,
+        image,
+        startPrice: toNumberSafe(a.starting_bid),
+        currentBid: toNumberSafe(a.current_bid),
+        endTimeIso: endIso || new Date().toISOString(),
+        statusApi: (a.status as any) || "scheduled",
+        statusAr: arStatusLabel(String(a.status || "")),
+        bidsCount: Array.isArray(a.bids) ? a.bids.length : 0,
         watchers: Array.isArray(a.broadcasts) ? a.broadcasts.length : 0,
       };
+
       onCreated(ui);
       onClose();
     } catch (err: any) {
-      setErrors({
-        global:
-          err?.response?.data?.message || err.message || "حدث خطأ غير متوقع",
-      });
+      // ✅ لو abort حصل لأي سبب، تجاهله
+      if (isAbortError(err)) return;
+      setErrors({ global: err?.message || "حدث خطأ غير متوقع" });
     }
-  };
-
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const closeOnBackdrop = (e: React.MouseEvent) => {
-    if (e.target === backdropRef.current) onClose();
-  };
-
-  // عند اختيار السيارة: نملأ car_price / min/max تلقائيًا
-  const onSelectCar = (val: string) => {
-    const idNum = Number(val);
-    const selected = cars.find((c) => c.id === idNum);
-    setForm((f) => ({
-      ...f,
-      car_id: val,
-      car_price:
-        selected?.evaluation_price != null
-          ? String(selected.evaluation_price)
-          : "",
-      min_price:
-        selected?.min_price != null ? String(selected.min_price) : f.min_price,
-      max_price:
-        selected?.max_price != null ? String(selected.max_price) : f.max_price,
-    }));
   };
 
   return (
@@ -496,6 +667,7 @@ function StartLiveModal({
             >
               <FiX size={20} />
             </button>
+
             <h2 className="text-xl md:text-2xl font-bold mb-4 text-center">
               بدء حراج مباشر الآن
             </h2>
@@ -507,14 +679,11 @@ function StartLiveModal({
             )}
 
             <form onSubmit={submit} className="space-y-4">
-              {/* السيارة */}
               <div>
-                <label className="block mb-1 text-muted-foreground text-sm">
-                  السيارة
-                </label>
+                <label className="block mb-1 text-muted-foreground text-sm">السيارة</label>
                 <select
                   ref={firstInputRef}
-                  className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground placeholder-muted-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
+                  className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
                     errors.car_id ? "border-destructive" : "border-border"
                   }`}
                   value={form.car_id}
@@ -528,37 +697,23 @@ function StartLiveModal({
                       : "لا توجد سيارات مرتبطة بحسابك"}
                   </option>
                   {cars.map((c) => (
-                    <option
-                      key={c.id}
-                      value={c.id}
-                    >{`${c.make} ${c.model} ${c.year}`}</option>
+                    <option key={c.id} value={c.id}>{`${c.make} ${c.model} ${c.year}`}</option>
                   ))}
                 </select>
-                {errors.car_id && (
-                  <div className="text-destructive text-xs mt-1">
-                    {errors.car_id}
-                  </div>
-                )}
+                {errors.car_id && <div className="text-destructive text-xs mt-1">{errors.car_id}</div>}
                 {errors.carsEmpty && !loadingCars && (
-                  <div className="text-muted-foreground text-xs mt-1">
-                    {errors.carsEmpty}
-                  </div>
+                  <div className="text-muted-foreground text-xs mt-1">{errors.carsEmpty}</div>
                 )}
               </div>
 
-              {/* الجلسة */}
               <div>
-                <label className="block mb-1 text-muted-foreground text-sm">
-                  الجلسة
-                </label>
+                <label className="block mb-1 text-muted-foreground text-sm">الجلسة</label>
                 <select
-                  className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground placeholder-muted-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
+                  className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
                     errors.session_id ? "border-destructive" : "border-border"
                   }`}
                   value={form.session_id}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, session_id: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, session_id: e.target.value }))}
                 >
                   <option value="">
                     {loadingSessions
@@ -576,22 +731,15 @@ function StartLiveModal({
                   ))}
                 </select>
                 {sessionsError && !loadingSessions && (
-                  <div className="text-destructive text-xs mt-1">
-                    {sessionsError}
-                  </div>
+                  <div className="text-destructive text-xs mt-1">{sessionsError}</div>
                 )}
                 {errors.session_id && (
-                  <div className="text-destructive text-xs mt-1">
-                    {errors.session_id}
-                  </div>
+                  <div className="text-destructive text-xs mt-1">{errors.session_id}</div>
                 )}
               </div>
 
-              {/* سعر السيارة (عرض فقط) */}
               <div>
-                <label className="block mb-1 text-muted-foreground text-sm">
-                  سعر السيارة (تقييم)
-                </label>
+                <label className="block mb-1 text-muted-foreground text-sm">سعر السيارة (تقييم)</label>
                 <input
                   type="number"
                   className="w-full px-3 py-2.5 rounded-lg outline-none bg-muted/50 text-foreground border border-border"
@@ -603,67 +751,48 @@ function StartLiveModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-muted-foreground text-sm">
-                    سعر البدء (ر.س)
-                  </label>
+                  <label className="block mb-1 text-muted-foreground text-sm">سعر البدء (ر.س)</label>
                   <input
                     type="number"
-                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground placeholder-muted-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
-                      errors.starting_bid
-                        ? "border-destructive"
-                        : "border-border"
+                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
+                      errors.starting_bid ? "border-destructive" : "border-border"
                     }`}
                     value={form.starting_bid}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, starting_bid: e.target.value }))
-                    }
+                    onChange={(e) => setForm((f) => ({ ...f, starting_bid: e.target.value }))}
                     min={1000}
                   />
                   {errors.starting_bid && (
-                    <div className="text-destructive text-xs mt-1">
-                      {errors.starting_bid}
-                    </div>
+                    <div className="text-destructive text-xs mt-1">{errors.starting_bid}</div>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block mb-1 text-muted-foreground text-sm">
-                    حد أدنى موصى به
-                  </label>
+                  <label className="block mb-1 text-muted-foreground text-sm">حد أدنى موصى به</label>
                   <input
                     type="number"
-                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground placeholder-muted-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
+                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
                       errors.minmax ? "border-destructive" : "border-border"
                     }`}
                     value={form.min_price}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, min_price: e.target.value }))
-                    }
+                    onChange={(e) => setForm((f) => ({ ...f, min_price: e.target.value }))}
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-muted-foreground text-sm">
-                    حد أقصى موصى به
-                  </label>
+                  <label className="block mb-1 text-muted-foreground text-sm">حد أقصى موصى به</label>
                   <input
                     type="number"
-                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground placeholder-muted-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
+                    className={`w-full px-3 py-2.5 rounded-lg outline-none bg-background text-foreground border focus:border-primary focus:ring-4 focus:ring-primary/20 ${
                       errors.minmax ? "border-destructive" : "border-border"
                     }`}
                     value={form.max_price}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, max_price: e.target.value }))
-                    }
+                    onChange={(e) => setForm((f) => ({ ...f, max_price: e.target.value }))}
                   />
                 </div>
               </div>
-              {errors.minmax && (
-                <div className="text-destructive text-xs mt-1">
-                  {errors.minmax}
-                </div>
-              )}
+
+              {errors.minmax && <div className="text-destructive text-xs mt-1">{errors.minmax}</div>}
 
               <button
                 type="submit"
@@ -679,48 +808,41 @@ function StartLiveModal({
   );
 }
 
-/** ========= الصفحة الرئيسية (تصميم مضغوط ومتسق) ========= **/
+/** ========= Main Page ========= **/
 export default function DealerAuctionsPage() {
   const [list, setList] = useState<UiAuction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [bgLoading, setBgLoading] = useState(false); // تحميل صامت أثناء الـ polling
+  const [bgLoading, setBgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "" | "live" | "scheduled" | "ended"
-  >("");
+  const [statusFilter, setStatusFilter] = useState<"" | "live" | "scheduled" | "ended">("");
   const [showFilters, setShowFilters] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Pagination (من الباك-إند)
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [total, setTotal] = useState(0);
   const [lastPage, setLastPage] = useState(1);
 
-  // تحديث تلقائي للمزادات النشطة
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inflightRef = useRef<AbortController | null>(null);
 
-  const fetchAuctions = async (opts?: {
-    page?: number;
-    status?: string;
-    silent?: boolean;
-  }) => {
+  const fetchAuctions = async (opts?: { page?: number; status?: string; silent?: boolean }) => {
     const p = opts?.page ?? page;
     const s = opts?.status ?? statusFilter;
     const silent = opts?.silent ?? false;
 
     if (!silent) setLoading(true);
     else setBgLoading(true);
+
     setError(null);
 
     try {
       const token = getToken();
       if (!token) throw new Error("غير مصرح: لا يوجد توكن. سجّل الدخول أولاً.");
 
-      // أوقف أي طلب سابق لتفادي سباقات الردود
+      // abort previous request
       if (inflightRef.current) inflightRef.current.abort();
       const ac = new AbortController();
       inflightRef.current = ac;
@@ -732,46 +854,68 @@ export default function DealerAuctionsPage() {
       if (s) qs.set("status", String(s));
       qs.set("page", String(p));
 
-      const js = await fetchJSON<{ status: string; data: Paged<AuctionApi> }>(
-        `${API_BASE}/my-auctions?${qs.toString()}`,
-        { signal: ac.signal }
-      );
+      const candidates = [
+        `my-auctions?${qs.toString()}`,
+        `auctions/mine?${qs.toString()}`,
+        `dealer/auctions?${qs.toString()}`,
+      ];
 
-      const pg: Paged<AuctionApi> = js.data;
-      const rows = Array.isArray(pg?.data) ? pg.data : [];
+      let js: any = null;
+      let lastErr: any = null;
+
+      for (const path of candidates) {
+        try {
+          js = await apiJson(path, { signal: ac.signal });
+          break;
+        } catch (e: any) {
+          // ✅ ignore abort here too
+          if (isAbortError(e)) throw e;
+          lastErr = e;
+          if (e?.status === 404) continue;
+          throw e;
+        }
+      }
+      if (!js) throw lastErr || new Error("تعذر جلب المزادات.");
+
+      const pg = pickPaged<AuctionApi>(js);
+      if (!pg) throw new Error("شكل استجابة المزادات غير متوقع (Paginator غير موجود).");
+
+      const rows = Array.isArray(pg.data) ? pg.data : [];
       const transformed: UiAuction[] = rows.map((a) => {
-        const carLabel = a.car
-          ? `${a.car.make} ${a.car.model} ${a.car.year}`
-          : `#${a.car_id}`;
-        const image = (a.car?.images && a.car.images[0]) || PLACEHOLDER_IMG;
+        const car = a.car || null;
+        const carLabel = car ? `${car.make} ${car.model} ${car.year}` : `#${a.car_id}`;
+
+        const imageRaw = car?.images?.[0] || "";
+        const image = imageRaw ? resolveMediaUrl(imageRaw) : PLACEHOLDER_IMG;
+
         const endIso =
-          a.extended_until && a.extended_until !== "null"
-            ? a.extended_until!
-            : a.end_time;
+          a.extended_until && a.extended_until !== "null" ? a.extended_until : a.end_time;
+
         return {
           id: a.id,
           carLabel,
           image,
-          startPrice: a.starting_bid,
-          currentBid: a.current_bid,
-          endTimeIso: endIso,
-          statusApi: a.status,
-          statusAr: arStatusLabel(a.status),
-          bidsCount: a.bids?.length || 0,
+          startPrice: toNumberSafe(a.starting_bid),
+          currentBid: toNumberSafe(a.current_bid),
+          endTimeIso: endIso || new Date().toISOString(),
+          statusApi: (a.status as any) || "scheduled",
+          statusAr: arStatusLabel(String(a.status || "")),
+          bidsCount: Array.isArray(a.bids) ? a.bids.length : 0,
           watchers: Array.isArray(a.broadcasts) ? a.broadcasts.length : 0,
         };
       });
 
       setList(transformed);
-      setPage((prev) => (prev !== pg.current_page ? pg.current_page : prev));
-      setPerPage((prev) => (prev !== pg.per_page ? pg.per_page : prev));
-      setTotal((prev) => (prev !== pg.total ? pg.total : prev));
-      setLastPage((prev) => (prev !== pg.last_page ? pg.last_page : prev));
+      setPage(pg.current_page || 1);
+      setPerPage(pg.per_page || perPage);
+      setTotal(pg.total || 0);
+      setLastPage(pg.last_page || 1);
     } catch (e: any) {
-      if (e?.name !== "AbortError") {
-        setError(e.message || "حدث خطأ");
-        setList([]);
-      }
+      // ✅ أهم سطر: لو AbortError لا تعرض أي رسالة
+      if (isAbortError(e)) return;
+
+      setError(e?.message || "حدث خطأ");
+      setList([]);
     } finally {
       if (!silent) setLoading(false);
       else setBgLoading(false);
@@ -779,27 +923,25 @@ export default function DealerAuctionsPage() {
     }
   };
 
-  // أول تحميل
   useEffect(() => {
-    fetchAuctions({ page: 1, silent: false }); /* eslint-disable-next-line */
+    fetchAuctions({ page: 1, silent: false });
+    return () => {
+      if (inflightRef.current) inflightRef.current.abort();
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // إعادة الجلب عند تغيير الفلاتر/الصفحة
   useEffect(() => {
-    fetchAuctions({
-      page,
-      status: statusFilter,
-      silent: false,
-    }); /* eslint-disable-next-line */
+    fetchAuctions({ page, status: statusFilter, silent: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, page]);
 
-  // هل لدينا مزادات لايف؟
   const hasLive = useMemo(
-    () => list.some((a) => a.statusApi === "live"),
+    () => list.some((a) => a.statusApi === "live" || a.statusApi === "active"),
     [list]
   );
 
-  // Polling للمزادات النشطة فقط (بدون فليكر)
   useEffect(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
@@ -808,11 +950,7 @@ export default function DealerAuctionsPage() {
     if (!hasLive) return;
 
     pollRef.current = setInterval(() => {
-      if (
-        typeof document !== "undefined" &&
-        document.visibilityState !== "visible"
-      )
-        return;
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       fetchAuctions({ page, status: statusFilter, silent: true });
     }, 5000);
 
@@ -822,33 +960,29 @@ export default function DealerAuctionsPage() {
         pollRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasLive, page, statusFilter]);
 
-  // بحث محلي باسم السيارة/الحالة
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    const base = list;
-    if (!q) return base;
-    return base.filter(
-      (a) =>
-        a.carLabel.toLowerCase().includes(q) || a.statusAr.includes(searchTerm)
+    if (!q) return list;
+    return list.filter(
+      (a) => a.carLabel.toLowerCase().includes(q) || a.statusAr.includes(searchTerm)
     );
   }, [list, searchTerm]);
 
-  const liveCount = filtered.filter((a) => a.statusApi === "live").length;
-  const endedCount = filtered.filter((a) => a.statusApi === "ended").length;
+  const liveCount = filtered.filter((a) => a.statusApi === "live" || a.statusApi === "active").length;
+  const endedCount = filtered.filter((a) => a.statusApi === "ended" || a.statusApi === "completed").length;
 
   const onCreated = (created: UiAuction) => {
     setList((prev) => [created, ...prev]);
     setPage(1);
   };
 
-  // مساعد لعرض صورة مع fallback
   const imgOnError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     (e.target as HTMLImageElement).src = PLACEHOLDER_IMG;
   };
 
-  // توليد أزرار صفحات مختصرة حول الصفحة الحالية
   const pageWindow = (current: number, last: number, span = 2) => {
     const from = Math.max(1, current - span);
     const to = Math.min(last, current + span);
@@ -860,11 +994,8 @@ export default function DealerAuctionsPage() {
       dir="rtl"
       className="min-h-screen bg-background text-foreground py-6 md:py-8 px-4 sm:px-6 lg:px-8"
     >
-      <StartLiveModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        onCreated={onCreated}
-      />
+      <StartLiveModal open={showModal} onClose={() => setShowModal(false)} onCreated={onCreated} />
+
       <div className="max-w-7xl mx-auto">
         {/* العنوان */}
         <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -882,22 +1013,20 @@ export default function DealerAuctionsPage() {
               إدارة مزاداتك الحيّة والفورية من مكان واحد.
             </p>
           </div>
+
           <div className="flex gap-2 md:gap-3">
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="flex items-center justify-center px-4 md:px-5 py-2.5 rounded-xl bg-background border border-border text-foreground hover:bg-muted transition-colors text-sm md:text-base"
-              onClick={() =>
-                fetchAuctions({ page, status: statusFilter, silent: false })
-              }
+              onClick={() => fetchAuctions({ page, status: statusFilter, silent: false })}
               aria-label="تحديث"
               title="تحديث"
             >
-              <FiRefreshCw
-                className={`ml-2 ${bgLoading ? "animate-spin" : ""}`}
-              />
+              <FiRefreshCw className={`ml-2 ${bgLoading ? "animate-spin" : ""}`} />
               {bgLoading ? "جارٍ التحديث..." : "تحديث"}
             </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
@@ -913,10 +1042,7 @@ export default function DealerAuctionsPage() {
 
         {/* شريط البحث والفلاتر */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-5 md:mb-6">
-          <motion.div
-            className="relative flex-grow"
-            whileHover={{ scale: 1.01 }}
-          >
+          <motion.div className="relative flex-grow" whileHover={{ scale: 1.01 }}>
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               <FiSearch className="text-muted-foreground" />
             </div>
@@ -929,6 +1055,7 @@ export default function DealerAuctionsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </motion.div>
+
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
@@ -952,9 +1079,7 @@ export default function DealerAuctionsPage() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-muted-foreground mb-1.5 text-sm">
-                    حالة المزاد
-                  </label>
+                  <label className="block text-muted-foreground mb-1.5 text-sm">حالة المزاد</label>
                   <select
                     value={statusFilter}
                     onChange={(e) => {
@@ -970,12 +1095,12 @@ export default function DealerAuctionsPage() {
                   </select>
                 </div>
               </div>
+
               <div className="mt-4 md:mt-5 flex justify-end gap-3">
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    setStatusFilter("");
                     setShowFilters(false);
                     setPage(1);
                   }}
@@ -988,37 +1113,27 @@ export default function DealerAuctionsPage() {
           )}
         </AnimatePresence>
 
-        {/* إحصائيات سريعة (أحجام أصغر) */}
+        {/* إحصائيات */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-5 md:mb-6">
-          <StatCard
-            title="إجمالي (الصفحة الحالية)"
-            value={filtered.length}
-            accent="indigo"
-          />
+          <StatCard title="إجمالي (الصفحة الحالية)" value={filtered.length} accent="indigo" />
           <StatCard title="جارية" value={liveCount} accent="emerald" />
           <StatCard title="منتهية" value={endedCount} accent="rose" />
         </div>
 
-        {/* رسائل الحالة */}
         {error && (
           <div className="mb-5 p-3.5 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg whitespace-pre-wrap text-sm">
             {error}
           </div>
         )}
 
-        {/* التحميل */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-card border border-border rounded-xl shadow-xl p-8 animate-pulse h-60"
-              />
+              <div key={i} className="bg-card border border-border rounded-xl shadow-xl p-8 animate-pulse h-60" />
             ))}
           </div>
         )}
 
-        {/* لا توجد نتائج */}
         {!loading && filtered.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -1028,18 +1143,15 @@ export default function DealerAuctionsPage() {
             <div className="text-muted-foreground mb-3">
               <FaGavel size={40} className="mx-auto" />
             </div>
-            <h3 className="text-lg md:text-xl font-medium text-foreground mb-1.5">
-              لا توجد مزادات
-            </h3>
-            <p className="text-muted-foreground text-sm md:text-base mb-5">
-              أضف مزادًا جديدًا أو غيّر الفلاتر.
-            </p>
+            <h3 className="text-lg md:text-xl font-medium text-foreground mb-1.5">لا توجد مزادات</h3>
+            <p className="text-muted-foreground text-sm md:text-base mb-5">أضف مزادًا جديدًا أو غيّر الفلاتر.</p>
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => {
                 setStatusFilter("");
                 setSearchTerm("");
+                setPage(1);
                 fetchAuctions({ page: 1, status: "", silent: false });
               }}
               className="px-5 py-2.5 rounded-lg text-primary-foreground bg-primary hover:bg-primary/90 text-sm md:text-base"
@@ -1049,7 +1161,6 @@ export default function DealerAuctionsPage() {
           </motion.div>
         )}
 
-        {/* شبكة المزادات */}
         {!loading && filtered.length > 0 && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -1059,14 +1170,13 @@ export default function DealerAuctionsPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.04 }}
-                  className={`relative group rounded-2xl overflow-hidden shadow-2xl border
-                    ${
-                      auction.statusApi === "ended"
-                        ? "border-destructive/40"
-                        : auction.statusApi === "live"
-                        ? "border-emerald-500/40"
-                        : "border-amber-500/40"
-                    } bg-card`}
+                  className={`relative group rounded-2xl overflow-hidden shadow-2xl border ${
+                    auction.statusApi === "ended" || auction.statusApi === "completed"
+                      ? "border-destructive/40"
+                      : auction.statusApi === "live" || auction.statusApi === "active"
+                      ? "border-emerald-500/40"
+                      : "border-amber-500/40"
+                  } bg-card`}
                 >
                   <div className="relative h-44 md:h-48 w-full overflow-hidden">
                     <img
@@ -1078,12 +1188,13 @@ export default function DealerAuctionsPage() {
                     />
                     <span
                       className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-semibold shadow ${statusChipColor(
-                        auction.statusApi
+                        String(auction.statusApi)
                       )}`}
                     >
                       {auction.statusAr}
                     </span>
                   </div>
+
                   <div className="p-5 md:p-6">
                     <div className="flex items-center gap-2 mb-1.5">
                       <FaCar className="text-primary shrink-0" />
@@ -1091,29 +1202,31 @@ export default function DealerAuctionsPage() {
                         {auction.carLabel}
                       </span>
                     </div>
+
                     <div className="flex items-center gap-2 text-muted-foreground mb-2">
                       <FiUser className="shrink-0" />
                       <span className="text-xs md:text-sm">معرضك</span>
                     </div>
+
                     <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-2 text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <FiClock className="text-primary" />
-                        {auction.statusApi === "live" ? (
+                        {auction.statusApi === "live" || auction.statusApi === "active" ? (
                           <Countdown endIso={auction.endTimeIso} />
                         ) : (
                           <span className="font-mono text-xs md:text-sm">
-                            {auction.statusApi === "scheduled"
-                              ? "قريبًا"
-                              : "انتهى"}
+                            {auction.statusApi === "scheduled" ? "قريبًا" : "انتهى"}
                           </span>
                         )}
                       </div>
+
                       <div className="flex items-center gap-1">
                         <FaGavel className="text-amber-500" />
                         <span className="font-mono text-xs md:text-sm">
                           {auction.bidsCount} مزايدة
                         </span>
                       </div>
+
                       <div className="flex items-center gap-1">
                         <FiEye className="text-sky-500" />
                         <span className="font-mono text-xs md:text-sm">
@@ -1121,19 +1234,17 @@ export default function DealerAuctionsPage() {
                         </span>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-6 mt-2">
                       <div>
-                        <span className="text-[11px] md:text-xs text-muted-foreground">
-                          سعر البدء
-                        </span>
+                        <span className="text-[11px] md:text-xs text-muted-foreground">سعر البدء</span>
                         <div className="font-semibold md:font-bold text-primary text-sm md:text-base">
                           {auction.startPrice.toLocaleString()} ر.س
                         </div>
                       </div>
+
                       <div>
-                        <span className="text-[11px] md:text-xs text-muted-foreground">
-                          أعلى مزايدة
-                        </span>
+                        <span className="text-[11px] md:text-xs text-muted-foreground">أعلى مزايدة</span>
                         <div className="font-semibold md:font-bold text-emerald-500 text-sm md:text-base">
                           {auction.currentBid.toLocaleString()} ر.س
                         </div>
@@ -1144,18 +1255,14 @@ export default function DealerAuctionsPage() {
               ))}
             </div>
 
-            {/* ترقيم الصفحات */}
             {lastPage > 1 && (
               <div className="mt-7 md:mt-8 flex justify-between items-center">
                 <div className="text-xs md:text-sm text-muted-foreground">
-                  صفحة{" "}
-                  <span className="font-medium text-foreground">{page}</span> من{" "}
-                  <span className="font-medium text-foreground">
-                    {lastPage}
-                  </span>{" "}
-                  — إجمالي{" "}
+                  صفحة <span className="font-medium text-foreground">{page}</span> من{" "}
+                  <span className="font-medium text-foreground">{lastPage}</span> — إجمالي{" "}
                   <span className="font-medium text-foreground">{total}</span>
                 </div>
+
                 <nav className="flex items-center gap-1">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -1166,7 +1273,6 @@ export default function DealerAuctionsPage() {
                     <FiChevronLeft />
                   </button>
 
-                  {/* نافذة صفحات قصيرة */}
                   {pageWindow(page, lastPage, 2).map((n) => (
                     <button
                       key={n}
@@ -1199,7 +1305,7 @@ export default function DealerAuctionsPage() {
   );
 }
 
-/** ========= مكونات صغيرة ========= **/
+/** ========= Small component ========= **/
 function StatCard({
   title,
   value,
@@ -1215,14 +1321,13 @@ function StatCard({
       : accent === "emerald"
       ? "from-emerald-500/20 to-emerald-500/10"
       : "from-destructive/20 to-destructive/10";
+
   return (
     <div className="relative overflow-hidden rounded-2xl bg-card border border-border p-4 md:p-5">
       <div
         className={`pointer-events-none absolute -top-10 -left-10 w-28 h-28 rounded-full bg-gradient-to-br opacity-50 ${ring}`}
       />
-      <h3 className="text-muted-foreground text-xs md:text-sm mb-1.5">
-        {title}
-      </h3>
+      <h3 className="text-muted-foreground text-xs md:text-sm mb-1.5">{title}</h3>
       <p className="text-2xl md:text-3xl font-bold text-foreground">{value}</p>
     </div>
   );

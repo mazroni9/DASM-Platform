@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 /* =========================
-   Types
+   Types (UI)
 ========================= */
 type ShipmentItem = { name: string; qty: number };
 
@@ -33,32 +33,39 @@ type Shipment = {
   address: string;
   trackingNumber: string | null;
   shippingStatus: number; // 0..3
-  paymentStatus: string;
+  paymentStatus: string; // "محجوز" | "مدفوع" | ...
   createdAt: string;
   items: ShipmentItem[];
 };
 
 type Paginated<T> = {
   data: T[];
-  links: {
-    first: string | null;
-    last: string | null;
+  links?: {
+    first?: string | null;
+    last?: string | null;
     next?: string | null;
     prev?: string | null;
   };
-  meta: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    links: Array<{
+  meta?: {
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
+    links?: Array<{
       url?: string | null;
       label: string;
       active: boolean;
       page?: number;
     }>;
-    path: string;
+    path?: string;
   };
+};
+
+// Backend may return wrapped: { success, data: paginator }
+type WrappedPaginated<T> = {
+  success: boolean;
+  data: Paginated<T>;
+  message?: string;
 };
 
 /* =========================
@@ -71,6 +78,10 @@ const steps = [
   { label: "تم التسليم", icon: CheckCircle2 },
 ];
 
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 function formatDate(d?: string) {
   if (!d) return "";
   try {
@@ -82,6 +93,162 @@ function formatDate(d?: string) {
   } catch {
     return d;
   }
+}
+
+function normalizePaymentStatus(raw: any): string {
+  if (raw == null) return "—";
+
+  if (typeof raw === "boolean") return raw ? "مدفوع" : "محجوز";
+
+  const s = String(raw).trim();
+  const low = s.toLowerCase();
+
+  if (
+    low.includes("hold") ||
+    low.includes("reserved") ||
+    low.includes("pending")
+  )
+    return "محجوز";
+
+  if (low.includes("paid") || low.includes("success") || low.includes("done"))
+    return "مدفوع";
+
+  // لو الباك بيرجع عربي أصلًا
+  return s;
+}
+
+function normalizeShippingStatus(raw: any): number {
+  if (raw == null) return 0;
+
+  if (typeof raw === "number") return clamp(raw, 0, 3);
+
+  const s = String(raw).toLowerCase();
+
+  // common string statuses
+  if (
+    s.includes("received") ||
+    s.includes("created") ||
+    s.includes("pending") ||
+    s.includes("new")
+  )
+    return 0;
+
+  if (s.includes("shipping") || s.includes("processing") || s.includes("packed"))
+    return 1;
+
+  if (s.includes("transit") || s.includes("on_the_way") || s.includes("in_route"))
+    return 2;
+
+  if (s.includes("delivered") || s.includes("completed") || s.includes("done"))
+    return 3;
+
+  // لو الباك بيرجع أرقام كنص
+  const asNum = Number(s);
+  if (!Number.isNaN(asNum)) return clamp(asNum, 0, 3);
+
+  return 0;
+}
+
+function normalizeItems(raw: any): ShipmentItem[] {
+  const arr =
+    raw?.items ??
+    raw?.shipment_items ??
+    raw?.shipmentItems ??
+    raw?.order_items ??
+    raw?.orderItems ??
+    raw?.products ??
+    raw?.lines ??
+    [];
+
+  if (!Array.isArray(arr)) return [];
+
+  return arr
+    .map((it: any) => {
+      const name =
+        it?.name ??
+        it?.title ??
+        it?.product_name ??
+        it?.productName ??
+        it?.product?.name ??
+        it?.item?.name ??
+        "عنصر";
+
+      const qty =
+        Number(it?.qty ?? it?.quantity ?? it?.count ?? it?.amount ?? 1) || 1;
+
+      return { name: String(name), qty };
+    })
+    .filter((x) => x.name);
+}
+
+function normalizeShipment(raw: any): Shipment {
+  const id = Number(raw?.id ?? raw?.shipment_id ?? raw?.shipmentId ?? 0);
+
+  const recipient =
+    raw?.recipient ??
+    raw?.recipient_name ??
+    raw?.recipientName ??
+    raw?.receiver_name ??
+    raw?.receiverName ??
+    raw?.to_name ??
+    raw?.customer_name ??
+    raw?.customerName ??
+    raw?.user?.name ??
+    "—";
+
+  const address =
+    raw?.address ??
+    raw?.shipping_address ??
+    raw?.shippingAddress ??
+    raw?.delivery_address ??
+    raw?.deliveryAddress ??
+    raw?.address_line ??
+    raw?.addressLine ??
+    "—";
+
+  const trackingNumber =
+    raw?.tracking_number ??
+    raw?.trackingNumber ??
+    raw?.tracking_code ??
+    raw?.trackingCode ??
+    raw?.awb ??
+    raw?.waybill ??
+    raw?.reference ??
+    null;
+
+  const shippingStatus = normalizeShippingStatus(
+    raw?.shipping_status ??
+      raw?.shippingStatus ??
+      raw?.status ??
+      raw?.shipment_status ??
+      raw?.shipmentStatus
+  );
+
+  const paymentStatus = normalizePaymentStatus(
+    raw?.payment_status ?? raw?.paymentStatus ?? raw?.is_paid ?? raw?.paid
+  );
+
+  const createdAt =
+    raw?.created_at ??
+    raw?.createdAt ??
+    raw?.created ??
+    raw?.date ??
+    raw?.ordered_at ??
+    raw?.orderedAt ??
+    new Date().toISOString();
+
+  const items = normalizeItems(raw);
+
+  return {
+    id,
+    recipient: String(recipient),
+    address: String(address),
+    trackingNumber: trackingNumber ? String(trackingNumber) : null,
+    shippingStatus,
+    paymentStatus,
+    createdAt: String(createdAt),
+    items,
+  };
 }
 
 function ShippingProgress({ value }: { value: number }) {
@@ -101,7 +268,7 @@ function ShippingProgress({ value }: { value: number }) {
                     : "bg-muted border-border text-muted-foreground"
                 }`}
               >
-                <Icon className="w-4.5 h-4.5" />
+                <Icon className="w-4 h-4" />
               </div>
               <span
                 className={`mt-2 text-[11px] font-bold ${
@@ -124,6 +291,12 @@ function ShippingProgress({ value }: { value: number }) {
   );
 }
 
+function buildTrackingUrl(trackingNumber: string) {
+  // ✅ لو عندكم مزود/لينك محدد غيره هنا
+  // مثال: https://track.example.com/{tracking}
+  return `https://track.example.com/${encodeURIComponent(trackingNumber)}`;
+}
+
 function DetailsModal({
   order,
   onClose,
@@ -132,8 +305,9 @@ function DetailsModal({
   onClose: () => void;
 }) {
   if (!order) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-background border border-border rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-2xl relative">
         <button
           onClick={onClose}
@@ -157,28 +331,34 @@ function DetailsModal({
               <span className="font-bold text-foreground">المستلم:</span>
               <span className="truncate">{order.recipient}</span>
             </div>
+
             <div className="flex items-center gap-2 min-w-0">
               <MapPin className="text-primary w-4 h-4" />
               <span className="font-bold text-foreground">العنوان:</span>
               <span className="truncate">{order.address}</span>
             </div>
+
             <div className="flex items-center gap-2 min-w-0">
               <Barcode className="text-primary w-4 h-4" />
               <span className="font-bold text-foreground">رقم التتبع:</span>
               <span className="truncate">{order.trackingNumber || "—"}</span>
             </div>
+
             <div className="flex items-center gap-2 min-w-0">
               <Clock className="text-muted-foreground w-4 h-4" />
               <span className="font-bold text-foreground">تاريخ الطلب:</span>
               <span>{formatDate(order.createdAt)}</span>
             </div>
+
             <div className="flex items-center gap-2 min-w-0">
               <span className="font-bold text-foreground">الدفع:</span>
               <span
                 className={`font-bold ${
                   order.paymentStatus === "محجوز"
                     ? "text-amber-500"
-                    : "text-emerald-500"
+                    : order.paymentStatus === "مدفوع"
+                    ? "text-emerald-500"
+                    : "text-muted-foreground"
                 }`}
               >
                 {order.paymentStatus}
@@ -189,17 +369,21 @@ function DetailsModal({
           <div className="min-w-0">
             <ShippingProgress value={order.shippingStatus} />
             <div className="mt-6">
-              <span className="font-bold text-foreground">
-                العناصر المشحونة:
-              </span>
-              <ul className="list-disc pr-6 mt-2 text-muted-foreground text-sm">
-                {order.items?.map((it, i) => (
-                  <li key={i} className="min-w-0">
-                    <span className="truncate">{it.name}</span>{" "}
-                    <span className="text-muted-foreground/70">x{it.qty}</span>
-                  </li>
-                ))}
-              </ul>
+              <span className="font-bold text-foreground">العناصر المشحونة:</span>
+              {order.items?.length ? (
+                <ul className="list-disc pr-6 mt-2 text-muted-foreground text-sm">
+                  {order.items.map((it, i) => (
+                    <li key={i} className="min-w-0">
+                      <span className="truncate">{it.name}</span>{" "}
+                      <span className="text-muted-foreground/70">x{it.qty}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  لا توجد تفاصيل عناصر متاحة.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -208,10 +392,7 @@ function DetailsModal({
           <button
             onClick={() =>
               order.trackingNumber &&
-              window.open(
-                `https://track.example.com/${order.trackingNumber}`,
-                "_blank"
-              )
+              window.open(buildTrackingUrl(order.trackingNumber), "_blank")
             }
             disabled={!order.trackingNumber}
             className={`px-4 py-2 rounded-lg text-sm font-semibold transition
@@ -259,36 +440,66 @@ export default function ExhibitorShippingPage() {
   const canPrev = useMemo(() => page > 1, [page]);
   const canNext = useMemo(() => page < lastPage, [page, lastPage]);
 
+  function extractPaginator(resp: any): Paginated<any> | null {
+    // Case 1: wrapped {success, data: paginator}
+    if (resp && typeof resp === "object" && "success" in resp && resp.data) {
+      const w = resp as WrappedPaginated<any>;
+      if (w.success && w.data && Array.isArray(w.data.data)) return w.data;
+    }
+
+    // Case 2: plain paginator {data, meta, links}
+    if (resp && typeof resp === "object" && Array.isArray(resp.data)) return resp;
+
+    return null;
+  }
+
   async function load(p = 1) {
     setLoading(true);
     setError(null);
-    try {
-      const { data } = await api.get<Paginated<Shipment>>(
-        "/api/exhibitor/shipments",
-        {
-          params: {
-            page: p,
-            per_page: perPage,
-            q: q || undefined,
-            status: status === "" ? undefined : status,
-            from: from || undefined,
-            to: to || undefined,
-          },
-        }
-      );
 
-      setOrders(data.data || []);
-      setPage(data.meta?.current_page || 1);
-      setLastPage(data.meta?.last_page || 1);
-      setPerPage(data.meta?.per_page || 10);
-      setTotal(data.meta?.total || 0);
+    try {
+      const { data } = await api.get("/api/exhibitor/shipments", {
+        params: {
+          page: p,
+          per_page: perPage,
+          q: q || undefined,
+          status: status === "" ? undefined : status,
+          from: from || undefined,
+          to: to || undefined,
+        },
+      });
+
+      const paginator = extractPaginator(data);
+
+      if (!paginator) {
+        setOrders([]);
+        setPage(1);
+        setLastPage(1);
+        setTotal(0);
+        setError("صيغة بيانات الشحنات غير متوقعة من السيرفر");
+        return;
+      }
+
+      const normalized = (paginator.data || []).map(normalizeShipment);
+
+      setOrders(normalized);
+      setPage(paginator.meta?.current_page || p);
+      setLastPage(paginator.meta?.last_page || 1);
+      setPerPage(paginator.meta?.per_page || perPage);
+      setTotal(paginator.meta?.total || normalized.length);
     } catch (e: any) {
       console.error(e);
       setOrders([]);
       setPage(1);
       setLastPage(1);
       setTotal(0);
-      setError(e?.message || "تعذر تحميل الشحنات");
+
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "تعذر تحميل الشحنات";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -300,6 +511,13 @@ export default function ExhibitorShippingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
+  // لما يتغير perPage حمّل أول صفحة
+  useEffect(() => {
+    if (!isClient) return;
+    load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perPage]);
+
   const applyFilters = () => load(1);
   const resetFilters = () => {
     setQ("");
@@ -310,8 +528,25 @@ export default function ExhibitorShippingPage() {
     load(1);
   };
 
+  const openDetails = async (o: Shipment) => {
+    // لو تفاصيل العناصر مش موجودة في الليست، حاول تجيب التفاصيل من endpoint مفصل (لو موجود)
+    setSelected(o);
+
+    if (o.items && o.items.length) return;
+
+    try {
+      const { data } = await api.get(`/api/exhibitor/shipments/${o.id}`);
+      const raw = (data?.data ?? data) as any;
+      const full = normalizeShipment(raw);
+      setSelected(full);
+    } catch {
+      // تجاهل لو الـ endpoint غير متوفر
+    }
+  };
+
   const exportCSV = () => {
     if (!orders.length) return toast.error("لا توجد بيانات للتصدير");
+
     const rows = [
       ["#", "المستلم", "العنوان", "رقم التتبع", "الحالة", "الدفع", "التاريخ"],
       ...orders.map((o) => [
@@ -324,6 +559,7 @@ export default function ExhibitorShippingPage() {
         new Date(o.createdAt).toLocaleString("ar-SA"),
       ]),
     ];
+
     const csv = rows
       .map((r) =>
         r
@@ -348,26 +584,13 @@ export default function ExhibitorShippingPage() {
   const copyTable = async () => {
     try {
       if (!orders.length) return toast.error("لا توجد بيانات للنسخ");
-      const header = [
-        "#",
-        "المستلم",
-        "العنوان",
-        "التتبع",
-        "الحالة",
-        "الدفع",
-        "التاريخ",
-      ];
-      const body = orders.map(
-        (o) =>
-          `${o.id}\t${o.recipient}\t${o.address}\t${o.trackingNumber ?? ""}\t${
-            steps[o.shippingStatus]?.label ?? ""
-          }\t${o.paymentStatus}\t${new Date(o.createdAt).toLocaleString(
-            "ar-SA"
-          )}`
-      );
-      await navigator.clipboard.writeText(
-        [header.join("\t"), ...body].join("\n")
-      );
+      const header = ["#", "المستلم", "العنوان", "التتبع", "الحالة", "الدفع", "التاريخ"];
+      const body = orders.map((o) => {
+        const statusLabel = steps[o.shippingStatus]?.label ?? "";
+        return `${o.id}\t${o.recipient}\t${o.address}\t${o.trackingNumber ?? ""}\t${statusLabel}\t${o.paymentStatus}\t${new Date(o.createdAt).toLocaleString("ar-SA")}`;
+      });
+
+      await navigator.clipboard.writeText([header.join("\t"), ...body].join("\n"));
       toast.success("تم نسخ الجدول");
     } catch {
       toast.error("تعذر النسخ للحافظة");
@@ -377,10 +600,7 @@ export default function ExhibitorShippingPage() {
   /* ============== Skeleton (no layout shift) ============== */
   if (!isClient) {
     return (
-      <div
-        dir="rtl"
-        className="flex min-h-screen bg-background text-foreground"
-      >
+      <div dir="rtl" className="flex min-h-screen bg-background text-foreground">
         <div className="hidden md:block w-72 bg-card border-l border-border" />
         <div className="flex-1 flex flex-col">
           <div className="h-16 bg-card border-b border-border" />
@@ -479,9 +699,7 @@ export default function ExhibitorShippingPage() {
                   <select
                     value={status}
                     onChange={(e) =>
-                      setStatus(
-                        e.target.value === "" ? "" : Number(e.target.value)
-                      )
+                      setStatus(e.target.value === "" ? "" : Number(e.target.value))
                     }
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
@@ -505,6 +723,7 @@ export default function ExhibitorShippingPage() {
                     className="w-full px-3 py-2.5 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
+
                 <div className="lg:col-span-2">
                   <label className="block text-xs text-muted-foreground mb-1">
                     إلى تاريخ
@@ -543,12 +762,14 @@ export default function ExhibitorShippingPage() {
                   >
                     تطبيق
                   </button>
+
                   <button
                     onClick={resetFilters}
                     className="bg-background border border-border text-foreground text-sm font-semibold px-4 py-2.5 rounded-lg hover:bg-muted"
                   >
                     تصفية
                   </button>
+
                   <div className="flex gap-2 ml-auto">
                     <button
                       onClick={exportCSV}
@@ -593,7 +814,7 @@ export default function ExhibitorShippingPage() {
                   {orders.map((o) => (
                     <button
                       key={o.id}
-                      onClick={() => setSelected(o)}
+                      onClick={() => openDetails(o)}
                       className="text-right group rounded-xl border border-border bg-card hover:border-primary/50 transition p-5 relative min-w-0 overflow-hidden"
                       aria-label={`تفاصيل شحنة ${o.trackingNumber || o.id}`}
                     >
@@ -614,17 +835,13 @@ export default function ExhibitorShippingPage() {
                       <div className="flex items-center gap-2 mb-2 text-foreground min-w-0">
                         <User className="w-4 h-4 text-primary flex-shrink-0" />
                         <span className="font-bold">المستلم:</span>
-                        <span className="text-muted-foreground truncate">
-                          {o.recipient}
-                        </span>
+                        <span className="text-muted-foreground truncate">{o.recipient}</span>
                       </div>
 
                       <div className="flex items-center gap-2 mb-2 text-foreground min-w-0">
                         <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                         <span className="font-bold">العنوان:</span>
-                        <span className="text-muted-foreground truncate">
-                          {o.address}
-                        </span>
+                        <span className="text-muted-foreground truncate">{o.address}</span>
                       </div>
 
                       <div className="flex items-center gap-2 mb-2 text-foreground min-w-0">
@@ -641,7 +858,9 @@ export default function ExhibitorShippingPage() {
                           className={`font-bold ${
                             o.paymentStatus === "محجوز"
                               ? "text-amber-500"
-                              : "text-emerald-500"
+                              : o.paymentStatus === "مدفوع"
+                              ? "text-emerald-500"
+                              : "text-muted-foreground"
                           }`}
                         >
                           {o.paymentStatus}
@@ -653,9 +872,7 @@ export default function ExhibitorShippingPage() {
                         <span className="font-bold">الحالة:</span>
                         <span
                           className={`${
-                            o.shippingStatus === 3
-                              ? "text-emerald-500"
-                              : "text-blue-500"
+                            o.shippingStatus === 3 ? "text-emerald-500" : "text-blue-500"
                           } font-bold truncate`}
                         >
                           {steps[o.shippingStatus]?.label ?? "—"}
@@ -677,9 +894,7 @@ export default function ExhibitorShippingPage() {
                 <div className="flex items-center justify-between mt-6 text-muted-foreground">
                   <div className="text-sm">
                     إجمالي:{" "}
-                    <span className="font-semibold text-foreground">
-                      {total}
-                    </span>{" "}
+                    <span className="font-semibold text-foreground">{total}</span>{" "}
                     عنصر
                   </div>
                   <div className="flex items-center gap-2">
@@ -694,10 +909,12 @@ export default function ExhibitorShippingPage() {
                     >
                       السابق
                     </button>
+
                     <span className="text-sm text-muted-foreground">
                       صفحة <span className="text-foreground">{page}</span> من{" "}
                       <span className="text-foreground">{lastPage}</span>
                     </span>
+
                     <button
                       onClick={() => canNext && load(page + 1)}
                       disabled={!canNext}
@@ -728,9 +945,7 @@ export default function ExhibitorShippingPage() {
       </button>
 
       {/* Modal */}
-      {selected && (
-        <DetailsModal order={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <DetailsModal order={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }

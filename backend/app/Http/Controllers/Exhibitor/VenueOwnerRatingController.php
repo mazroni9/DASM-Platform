@@ -20,6 +20,7 @@ class VenueOwnerRatingController extends Controller
         $venue = VenueOwner::where('user_id', $userId)->firstOrFail();
 
         $perPage = (int) $request->get('per_page', 10);
+
         $reviews = $venue->reviews()
             ->with(['user:id,name'])
             ->where('is_approved', true)
@@ -28,11 +29,13 @@ class VenueOwnerRatingController extends Controller
 
         $summary = $this->buildSummary($venue);
 
+        // ✅ شكل ثابت مناسب للفرونت
         $mapped = $reviews->getCollection()->map(function (VenueOwnerReview $r) {
             return [
-                'name'    => $r->user?->name ?? 'مستخدم',
-                'comment' => $r->comment,
-                'rating'  => (float) $r->rating,
+                'id'         => (int) $r->id,
+                'user_name'  => $r->user?->name ?? 'مستخدم',
+                'comment'    => $r->comment,
+                'rating'     => (float) $r->rating,
                 'created_at' => $r->created_at?->toIso8601String(),
             ];
         });
@@ -61,7 +64,9 @@ class VenueOwnerRatingController extends Controller
         }
 
         $exists = VenueOwnerReview::where('venue_owner_id', $venue->id)
-            ->where('user_id', $user->id)->exists();
+            ->where('user_id', $user->id)
+            ->exists();
+
         if ($exists) {
             return response()->json(['message' => 'لقد قيّمت هذا المعرض مسبقاً.'], 422);
         }
@@ -89,7 +94,7 @@ class VenueOwnerRatingController extends Controller
         Gate::authorize('update', $review);
 
         $allowedFields = ['rating', 'comment'];
-        
+
         if (Gate::allows('verify', $review)) {
             $allowedFields[] = 'verified';
         }
@@ -118,6 +123,7 @@ class VenueOwnerRatingController extends Controller
     public function summary(Request $request)
     {
         $venue = VenueOwner::where('user_id', $request->user()->id)->firstOrFail();
+
         return response()->json([
             'success' => true,
             'data' => $this->buildSummary($venue),
@@ -132,7 +138,7 @@ class VenueOwnerRatingController extends Controller
             ->selectRaw('
                 COUNT(*) as total_count,
                 AVG(rating) as customer_avg,
-                AVG(CASE WHEN verified = 1 THEN rating ELSE NULL END) as platform_avg,
+                AVG(CASE WHEN verified IS TRUE THEN rating ELSE NULL END) as platform_avg,
                 SUM(CASE WHEN rating >= 0.5 AND rating < 1.5 THEN 1 ELSE 0 END) as star_1,
                 SUM(CASE WHEN rating >= 1.5 AND rating < 2.5 THEN 1 ELSE 0 END) as star_2,
                 SUM(CASE WHEN rating >= 2.5 AND rating < 3.5 THEN 1 ELSE 0 END) as star_3,
@@ -142,7 +148,10 @@ class VenueOwnerRatingController extends Controller
             ->first();
 
         $customer = (float) number_format((float) ($stats->customer_avg ?? 0), 2, '.', '');
-        $platform = (float) number_format((float) ($stats->platform_avg ?? $customer), 2, '.', '');
+
+        // لو مفيش verified reviews خالص، platform_avg هتبقى null -> نخليها customer
+        $platform = (float) number_format((float) (($stats->platform_avg ?? null) ?? $customer), 2, '.', '');
+
         $overall = (float) number_format(($platform + $customer) / 2, 2, '.', '');
 
         $counts = [

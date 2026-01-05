@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Sidebar } from "../../../components/exhibitor/sidebar";
-import { FiMenu, FiRefreshCw, FiSearch, FiStar, FiUser } from "react-icons/fi";
+import { FiMenu, FiRefreshCw, FiSearch, FiStar, FiClock } from "react-icons/fi";
 import { FaStar, FaRegStar, FaMedal, FaCheckCircle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -34,6 +34,7 @@ async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { ...(init?.headers || {}), ...authHeaders() },
   });
+
   const text = await res.text();
   let data: any;
   try {
@@ -42,26 +43,28 @@ async function fetchJSON<T = any>(url: string, init?: RequestInit): Promise<T> {
     const snippet = text?.slice(0, 200) || "";
     throw new Error(`HTTP ${res.status} @ ${url}\nالرد ليس JSON:\n${snippet}`);
   }
+
   if (!res.ok) {
-    if (res.status === 401)
+    if (res.status === 401) {
       throw new Error("غير مصرح: يرجى تسجيل الدخول مرة أخرى (401).");
+    }
     const msg = data?.message || data?.error || `HTTP ${res.status}`;
     throw new Error(msg);
   }
+
   return data as T;
 }
 
-/** ================== أنواع بيانات مرنة ================== **/
+/** ================== أنواع بيانات ================== **/
 type ReviewApi = {
   id?: number | string | null;
-  rating: number;
+  rating?: number | string | null;
   comment?: string | null;
   created_at?: string | null;
-  is_approved?: boolean;
-  verified?: boolean;
+  verified?: boolean | null;
   user?: { id?: number; name?: string };
-  user_name?: string;
-  reviewer_name?: string;
+  user_name?: string | null;
+  reviewer_name?: string | null;
 };
 
 type Paged<T> = {
@@ -72,16 +75,15 @@ type Paged<T> = {
   total: number;
 };
 
-type SummaryApi = {
-  overall?: number;
-  count?: number;
-  total_reviews?: number;
-  stars?: Record<string | number, number>; // {5: n,4:n...}
-  platform_rating?: number;
-  customer_rating?: number;
+type SummaryState = {
+  overall: number;
+  platform: number;
+  customer: number;
+  totalReviews: number;
+  counts: Record<string, number>; // keys "1".."5"
 };
 
-/** ================== عناصر UI صغيرة ================== **/
+/** ================== UI helpers ================== **/
 function Stars({
   value,
   size = 5,
@@ -91,7 +93,8 @@ function Stars({
   size?: number;
   className?: string;
 }) {
-  const rounded = Math.round(value ?? 0);
+  const v = Number(value || 0);
+  const rounded = Math.round(v);
   return (
     <div className={`flex items-center gap-1 ${className}`}>
       {Array.from({ length: size }).map((_, i) =>
@@ -115,19 +118,30 @@ function Avatar({ name }: { name?: string }) {
 }
 
 function numberFmt(n: number | undefined | null, digits = 1) {
-  if (n == null || isNaN(n as any)) return "0";
+  const x = Number(n ?? 0);
+  if (Number.isNaN(x)) return "0";
   try {
-    return Number(n).toLocaleString("ar-EG", {
+    return x.toLocaleString("ar-EG", {
       maximumFractionDigits: digits,
       minimumFractionDigits: digits,
     });
   } catch {
-    return String(n);
+    return String(x);
   }
 }
 
-/** ================== هيدر بسيط داخل الصفحة (بدون أنتل/مكتبات) ================== **/
-// ... (TopBar replacement)
+function safeFormatDate(iso?: string | null) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return format(d, "d MMM yyyy, h:mm a", { locale: ar });
+  } catch {
+    return "";
+  }
+}
+
+/** ================== هيدر بسيط داخل الصفحة ================== **/
 function TopBar() {
   return (
     <div className="sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -141,33 +155,127 @@ function TopBar() {
   );
 }
 
+/** ================== Normalizers (أهم جزء للربط الصح) ================== **/
+function normalizeCounts(raw: any): Record<string, number> {
+  const out: Record<string, number> = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+
+  const src =
+    raw?.counts ||
+    raw?.distribution ||
+    raw?.stars ||
+    raw?.data?.counts ||
+    raw?.data?.distribution ||
+    raw?.data?.stars ||
+    {};
+
+  Object.entries(src || {}).forEach(([k, v]) => {
+    const key = String(k);
+    if (out[key] != null) out[key] = Number(v || 0);
+  });
+
+  return out;
+}
+
+function sumCounts(counts: Record<string, number>) {
+  return Object.values(counts).reduce((a, b) => a + Number(b || 0), 0);
+}
+
+function normalizeSummaryFromSummaryEndpoint(js: any): SummaryState {
+  const payload = js?.data ?? js ?? {};
+
+  const counts = normalizeCounts(payload);
+
+  const overall = Number(payload?.overall ?? 0);
+  const platform = Number(payload?.platform ?? payload?.platform_rating ?? 0);
+  const customer = Number(payload?.customer ?? payload?.customer_rating ?? 0);
+
+  const totalReviews =
+    Number(payload?.totalReviews ?? payload?.total_reviews ?? payload?.count ?? 0) ||
+    sumCounts(counts);
+
+  return {
+    overall: Number.isFinite(overall) ? overall : 0,
+    platform: Number.isFinite(platform) ? platform : 0,
+    customer: Number.isFinite(customer) ? customer : 0,
+    totalReviews: Number.isFinite(totalReviews) ? totalReviews : sumCounts(counts),
+    counts,
+  };
+}
+
+function normalizeListResponse(js: any): { reviews: Paged<ReviewApi>; summary?: SummaryState } {
+  // الشكل الحقيقي عندك: { success:true, data:{ ... , reviews: paginator } }
+  const data = js?.data ?? js ?? {};
+  const pag = data?.reviews ?? data?.data ?? js?.data ?? js ?? null;
+
+  const reviews: Paged<ReviewApi> =
+    pag?.data && Array.isArray(pag.data)
+      ? {
+          data: pag.data,
+          current_page: Number(pag.current_page ?? 1),
+          per_page: Number(pag.per_page ?? 10),
+          last_page: Number(pag.last_page ?? 1),
+          total: Number(pag.total ?? pag.data.length ?? 0),
+        }
+      : {
+          data: Array.isArray(pag) ? pag : [],
+          current_page: 1,
+          per_page: 10,
+          last_page: 1,
+          total: Array.isArray(pag) ? pag.length : 0,
+        };
+
+  // لو الاندبوينت بيرجع كمان ملخص في نفس الرد (وده عندك فعلاً)
+  const counts = normalizeCounts(data);
+  const overall = Number(data?.overall ?? 0);
+  const platform = Number(data?.platform ?? data?.platform_rating ?? 0);
+  const customer = Number(data?.customer ?? data?.customer_rating ?? 0);
+
+  const computedSummary: SummaryState = {
+    overall: Number.isFinite(overall) ? overall : 0,
+    platform: Number.isFinite(platform) ? platform : 0,
+    customer: Number.isFinite(customer) ? customer : 0,
+    totalReviews: Number.isFinite(reviews.total) ? reviews.total : sumCounts(counts),
+    counts,
+  };
+
+  // لو مفيش أي بيانات ملخص رجّع undefined
+  const hasAny =
+    computedSummary.overall ||
+    computedSummary.platform ||
+    computedSummary.customer ||
+    sumCounts(computedSummary.counts) > 0;
+
+  return { reviews, summary: hasAny ? computedSummary : undefined };
+}
+
 /** ================== الصفحة ================== **/
 export default function ExhibitorRatingsPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // بيانات الملخص
-  const [summary, setSummary] = useState<SummaryApi | null>(null);
-  const totalReviews = summary?.total_reviews ?? summary?.count ?? 0;
-  const overall = summary?.overall ?? 0;
+  // Summary
+  const [summary, setSummary] = useState<SummaryState | null>(null);
 
-  // قائمة المراجعات
+  // List
   const [list, setList] = useState<ReviewApi[]>([]);
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // حالة
+  // state
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingList, setLoadingList] = useState(true);
   const [bgLoading, setBgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // بحث محلي
+  // local search
   const [q, setQ] = useState("");
 
   useEffect(() => setIsClient(true), []);
+
+  const overall = summary?.overall ?? 0;
+  const totalReviews = summary?.totalReviews ?? total ?? 0;
 
   // جلب الملخص
   const loadSummary = async () => {
@@ -175,8 +283,8 @@ export default function ExhibitorRatingsPage() {
     setError(null);
     try {
       const js = await fetchJSON<any>(`${API_BASE}/exhibitor/ratings/summary`);
-      const data: SummaryApi = js?.data ?? js ?? {};
-      setSummary(data);
+      const s = normalizeSummaryFromSummaryEndpoint(js);
+      setSummary(s);
     } catch (e: any) {
       setError(e?.message || "تعذر جلب الملخص");
       setSummary(null);
@@ -189,41 +297,29 @@ export default function ExhibitorRatingsPage() {
   const loadReviews = async (p = 1, silent = false) => {
     if (!silent) setLoadingList(true);
     else setBgLoading(true);
+
     setError(null);
     try {
       const url = new URL(`${API_BASE}/exhibitor/ratings`);
       url.searchParams.set("page", String(p));
       url.searchParams.set("per_page", String(perPage));
+
       const js = await fetchJSON<any>(url.toString());
 
-      // دعم عدة أشكال ردود (Resource/Paginator)
-      const payload: Paged<ReviewApi> = js?.data?.data
-        ? {
-            data: js.data.data,
-            current_page: js.data.current_page,
-            per_page: js.data.per_page,
-            last_page: js.data.last_page,
-            total: js.data.total,
-          }
-        : js?.data?.current_page
-        ? js.data
-        : js?.current_page
-        ? js
-        : {
-            data: js?.data ?? js ?? [],
-            current_page: p,
-            per_page: perPage,
-            last_page: 1,
-            total: (js?.data ?? js ?? [])?.length ?? 0,
-          };
+      const { reviews, summary: s2 } = normalizeListResponse(js);
 
-      setList(Array.isArray(payload.data) ? payload.data : []);
-      setPage(payload.current_page || p);
-      setLastPage(payload.last_page || 1);
-      setTotal(payload.total || 0);
+      setList(Array.isArray(reviews.data) ? reviews.data : []);
+      setPage(reviews.current_page || p);
+      setLastPage(reviews.last_page || 1);
+      setTotal(reviews.total || 0);
+
+      // ✅ مزامنة الملخص من نفس الرد لو موجود
+      if (s2) setSummary((prev) => ({ ...(prev ?? s2), ...s2 }));
     } catch (e: any) {
       setError(e?.message || "تعذر جلب المراجعات");
       setList([]);
+      setTotal(0);
+      setLastPage(1);
     } finally {
       if (!silent) setLoadingList(false);
       else setBgLoading(false);
@@ -249,29 +345,24 @@ export default function ExhibitorRatingsPage() {
     });
   }, [list, q]);
 
-  // توزيع النجوم مهيأ
+  // توزيع النجوم (من counts)
   const starDist = useMemo(() => {
-    const src = summary?.stars || {};
-    const map = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<number, number>;
-    Object.entries(src).forEach(([k, v]) => {
-      const key = Number(k);
-      if (map[key as 1 | 2 | 3 | 4 | 5] != null) map[key] = Number(v || 0);
-    });
-    return map;
+    const counts = summary?.counts ?? { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 };
+    return {
+      5: Number(counts["5"] || 0),
+      4: Number(counts["4"] || 0),
+      3: Number(counts["3"] || 0),
+      2: Number(counts["2"] || 0),
+      1: Number(counts["1"] || 0),
+    } as Record<number, number>;
   }, [summary]);
 
-  // نسبة العرض لكل شريط
   const starBarPct = (n: number) => {
     const base = totalReviews || 1;
     return Math.round(((n || 0) / base) * 100);
   };
 
-  // ترقيم الصفحات
-  const pageNumbers = (
-    currentPage: number,
-    lastPage: number,
-    maxPages: number
-  ) => {
+  const pageNumbers = (currentPage: number, last: number, maxPages: number) => {
     const delta = Math.floor(maxPages / 2);
     let start = currentPage - delta;
     let end = currentPage + delta;
@@ -280,25 +371,22 @@ export default function ExhibitorRatingsPage() {
       end += 1 - start;
       start = 1;
     }
-
-    if (end > lastPage) {
-      start -= end - lastPage;
-      end = lastPage;
+    if (end > last) {
+      start -= end - last;
+      end = last;
     }
-
     start = Math.max(1, start);
 
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
-  // منع العرض حتى يبدأ الكلاينت (DOM)
   if (!isClient) {
     return (
       <div className="flex min-h-screen bg-background">
-        <div className="hidden md:block w-72 bg-card border-r border-border animate-pulse"></div>
+        <div className="hidden md:block w-72 bg-card border-r border-border animate-pulse" />
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-card border-b border-border animate-pulse"></div>
-          <main className="p-6 flex-1 bg-background"></main>
+          <div className="h-16 bg-card border-b border-border animate-pulse" />
+          <main className="p-6 flex-1 bg-background" />
         </div>
       </div>
     );
@@ -306,12 +394,12 @@ export default function ExhibitorRatingsPage() {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground relative">
-      {/* الشريط الجانبي - ديسكتوب */}
+      {/* Sidebar desktop */}
       <div className="hidden md:block flex-shrink-0">
         <Sidebar />
       </div>
 
-      {/* الشريط الجانبي - موبايل (Drawer) */}
+      {/* Drawer mobile */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div
@@ -321,28 +409,28 @@ export default function ExhibitorRatingsPage() {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-40 md:hidden flex"
           >
-            <motion.div
+            <motion.button
+              type="button"
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.6 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/60"
               onClick={() => setIsSidebarOpen(false)}
+              aria-label="إغلاق القائمة"
             />
             <motion.div className="relative w-72 h-full">
-              {" "}
-              {/* Sidebar handles its own BG */}
               <Sidebar />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* المحتوى الرئيسي */}
+      {/* Main */}
       <div className="flex-1 flex flex-col w-0">
         <TopBar />
 
         <main className="p-4 md:p-6 lg:p-8 flex-1 overflow-auto">
-          {/* شريط علوي: عنوان + بحث + تحديث */}
+          {/* Header */}
           <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <motion.h1
@@ -387,7 +475,6 @@ export default function ExhibitorRatingsPage() {
                 </span>
               </motion.button>
 
-              {/* زر القائمة للجوال */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
                 className="md:hidden bg-primary text-primary-foreground px-4 rounded-xl shadow-lg hover:bg-primary/90 transition-all"
@@ -398,9 +485,15 @@ export default function ExhibitorRatingsPage() {
             </div>
           </div>
 
-          {/* Cards: الملخص + التوزيع */}
+          {/* Error */}
+          {error && (
+            <div className="mb-6 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Summary cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* بطاقة المتوسط */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -415,9 +508,7 @@ export default function ExhibitorRatingsPage() {
                     <div className="text-4xl font-extrabold text-amber-500">
                       {loadingSummary ? "—" : numberFmt(overall, 1)}
                     </div>
-                    {!loadingSummary && (
-                      <Stars value={overall} className="text-xl" />
-                    )}
+                    {!loadingSummary && <Stars value={overall} className="text-xl" />}
                   </div>
                 </div>
                 <FaMedal className="text-amber-500 text-3xl" />
@@ -429,9 +520,22 @@ export default function ExhibitorRatingsPage() {
                   <>مبني على {totalReviews} مراجعة</>
                 )}
               </div>
+
+              {/* (اختياري) عرض تقييم المنصة/العملاء */}
+              {!loadingSummary && summary && (
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="text-muted-foreground text-xs">تقييم العملاء</div>
+                    <div className="font-semibold">{numberFmt(summary.customer, 1)}</div>
+                  </div>
+                  <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="text-muted-foreground text-xs">تقييم المنصة</div>
+                    <div className="font-semibold">{numberFmt(summary.platform, 1)}</div>
+                  </div>
+                </div>
+              )}
             </motion.div>
 
-            {/* بطاقة التوزيع */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -440,6 +544,7 @@ export default function ExhibitorRatingsPage() {
               <div className="text-sm text-muted-foreground mb-3">
                 توزيع النجوم
               </div>
+
               {loadingSummary ? (
                 <div className="space-y-3">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -455,10 +560,7 @@ export default function ExhibitorRatingsPage() {
                     const count = starDist[star] || 0;
                     const pct = starBarPct(count);
                     return (
-                      <div
-                        key={`sd-${star}`}
-                        className="flex items-center gap-3"
-                      >
+                      <div key={`sd-${star}`} className="flex items-center gap-3">
                         <div className="w-10 shrink-0 text-sm text-muted-foreground flex items-center gap-1">
                           <FiStar className="text-amber-500" />
                           <span>{star}</span>
@@ -480,26 +582,18 @@ export default function ExhibitorRatingsPage() {
             </motion.div>
           </div>
 
-          {/* قائمة المراجعات */}
+          {/* Reviews list */}
           <section className="rounded-2xl p-6 bg-card border border-border shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">آراء العملاء</h2>
               <div className="text-sm text-muted-foreground">
                 صفحة{" "}
                 <span className="text-foreground font-semibold">{page}</span> من{" "}
-                <span className="text-foreground font-semibold">
-                  {lastPage}
-                </span>{" "}
+                <span className="text-foreground font-semibold">{lastPage}</span>{" "}
                 — إجمالي{" "}
                 <span className="text-foreground font-semibold">{total}</span>
               </div>
             </div>
-
-            {error && (
-              <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                {error}
-              </div>
-            )}
 
             {loadingList ? (
               <div className="grid md:grid-cols-2 gap-4">
@@ -523,12 +617,11 @@ export default function ExhibitorRatingsPage() {
                       r.user_name ||
                       r.reviewer_name ||
                       "مستخدم";
-                    const created = r.created_at
-                      ? format(new Date(r.created_at), "d MMM yyyy, h:mm a", {
-                          locale: ar,
-                        })
-                      : "";
+
+                    const created = safeFormatDate(r.created_at);
+                    const rating = Number(r.rating ?? 0) || 0;
                     const verified = r.verified === true;
+
                     const key = `rev-${String(r.id ?? "x")}-${String(
                       r.created_at ?? ""
                     )}-${idx}`;
@@ -553,20 +646,26 @@ export default function ExhibitorRatingsPage() {
                                 </span>
                               )}
                             </div>
+
                             <div className="flex items-center gap-2 mt-1">
-                              <Stars value={r.rating || 0} />
+                              <Stars value={rating} />
                               <span className="text-xs text-muted-foreground">
-                                {numberFmt(r.rating, 1)}
+                                {numberFmt(rating, 1)}
                               </span>
                             </div>
+
                             {r.comment && (
                               <p className="mt-2 text-sm text-foreground leading-6">
                                 {r.comment}
                               </p>
                             )}
-                            <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
-                              <FiUser /> <span>{created}</span>
-                            </div>
+
+                            {!!created && (
+                              <div className="mt-3 text-xs text-muted-foreground flex items-center gap-2">
+                                <FiClock />
+                                <span>{created}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -574,7 +673,7 @@ export default function ExhibitorRatingsPage() {
                   })}
                 </div>
 
-                {/* ترقيم صفحات */}
+                {/* Pagination */}
                 {lastPage > 1 && (
                   <div className="mt-6 flex items-center justify-center gap-2">
                     <button

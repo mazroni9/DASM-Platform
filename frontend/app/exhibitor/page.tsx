@@ -4,7 +4,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "lucide-react";
 import {
-  FiMenu,
   FiRefreshCw,
   FiPlusCircle,
   FiBarChart2,
@@ -21,11 +20,9 @@ import { DynamicComponents } from "@/lib/dynamic-imports";
 import GlobalLoader from "@/components/GlobalLoader";
 import api from "@/lib/axios";
 
-// recharts
+// recharts (فقط اللي نحتاجه)
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
   AreaChart,
   Area,
   XAxis,
@@ -34,7 +31,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Dynamic imports we keep
+// Dynamic imports
 const Header = DynamicComponents.ExhibitorHeader;
 const Sidebar = DynamicComponents.ExhibitorSidebar;
 
@@ -44,15 +41,25 @@ const money = (v: number, c = "SAR") =>
   new Intl.NumberFormat("ar-EG", {
     style: "currency",
     currency: c,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(v);
+
 const dshort = (s: string) =>
   new Date(s).toLocaleDateString("ar-EG", { month: "short", day: "numeric" });
 
+const dtShort = (s: string) =>
+  new Date(s).toLocaleString("ar-EG", { month: "short", day: "numeric" });
+
+function todayISODate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
 function Skel({ className = "" }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded-2xl bg-muted/40 ${className}`} />
-  );
+  return <div className={`animate-pulse rounded-2xl bg-muted/40 ${className}`} />;
 }
 
 function Kpi({
@@ -77,9 +84,7 @@ function Kpi({
         <div className="flex-1">
           <div className="text-muted-foreground text-xs">{title}</div>
           <div className="text-foreground font-extrabold text-xl">{value}</div>
-          {sub && (
-            <div className="text-muted-foreground text-xs mt-0.5">{sub}</div>
-          )}
+          {sub && <div className="text-muted-foreground text-xs mt-0.5">{sub}</div>}
         </div>
       </div>
     </motion.div>
@@ -89,10 +94,7 @@ function Kpi({
 // ===== Safe fetch utils (لا تسقط الصفحة لو API فشل) =====
 type FetchState<T> = { data: T | null; error: string | null };
 
-async function safeGet<T = any>(
-  url: string,
-  params?: any
-): Promise<FetchState<T>> {
+async function safeGet<T = any>(url: string, params?: any): Promise<FetchState<T>> {
   try {
     const res = await api.get(url, { params });
     return { data: (res as any).data, error: null };
@@ -108,21 +110,129 @@ async function safeGet<T = any>(
 
 function pickArray(payload: any): any[] {
   if (!payload) return [];
-  // Laravel paginator
+  // Laravel paginator: { data: [...] }
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload?.items)) return payload.items;
   if (Array.isArray(payload)) return payload;
-  // بعض الكنترولرز بيرجعوا {data: {...}} وفيها data تانية
-  if (payload?.data && Array.isArray(payload.data.data))
-    return payload.data.data;
+  // wrappers: { success: true, data: { data: [...] } }
+  if (payload?.data && Array.isArray(payload.data?.data)) return payload.data.data;
   return [];
 }
 
-function pickValue<T = any>(payload: any, fallback: T | null = null): T | null {
+function pickDataObject<T = any>(payload: any, fallback: T | null = null): T | null {
   if (!payload) return fallback;
-  if (payload?.data && typeof payload.data === "object")
+  // common: { success: true, data: {...} }
+  if (payload?.data && typeof payload.data === "object" && !Array.isArray(payload.data)) {
     return payload.data as T;
-  return (payload as T) ?? fallback;
+  }
+  // raw object
+  if (typeof payload === "object" && !Array.isArray(payload)) return payload as T;
+  return fallback;
+}
+
+// ===== Normalizers (حسب الكنترولرز اللي عندك) =====
+type AnalyticsOverviewPayload = {
+  success?: boolean;
+  data?: {
+    kpis?: {
+      total_cars?: number;
+      active_auctions?: number;
+      finished_auctions?: number;
+      avg_final_price?: number;
+      bids_count?: number;
+      commission_sum?: number;
+      ratings_avg?: number | null;
+      ratings_count?: number;
+      shipments_count?: number;
+    };
+    lists?: { recent_cars?: any[] };
+  };
+};
+
+function normalizeAnalyticsOverview(p: any) {
+  const obj = pickDataObject<AnalyticsOverviewPayload["data"]>(p, null);
+  const kpis = obj?.kpis ?? {};
+  const recentCars = obj?.lists?.recent_cars ?? [];
+  return { kpis, recentCars };
+}
+
+type RatingsSummaryPayload = {
+  success?: boolean;
+  data?: {
+    platform?: number;
+    customer?: number;
+    overall?: number;
+    counts?: Record<string, number>;
+  };
+};
+
+function normalizeRatingsSummary(p: any) {
+  const obj = pickDataObject<RatingsSummaryPayload["data"]>(p, null);
+  const counts = obj?.counts ?? {};
+  const total = Object.values(counts).reduce((a, b) => a + Number(b || 0), 0);
+  return {
+    platform: obj?.platform ?? null,
+    customer: obj?.customer ?? null,
+    overall: obj?.overall ?? null,
+    counts,
+    totalCount: total,
+  };
+}
+
+type CommissionSummaryPayload = {
+  success?: boolean;
+  data?: {
+    commissionValue?: number;
+    commissionCurrency?: string;
+    commissionNote?: string | null;
+    recentCommissions?: Array<{ id: number; date?: string; car?: string; value?: number }>;
+  };
+};
+
+function normalizeCommissionSummary(p: any) {
+  const obj = pickDataObject<CommissionSummaryPayload["data"]>(p, null);
+  return {
+    commissionValue: obj?.commissionValue ?? null,
+    commissionCurrency: obj?.commissionCurrency ?? "SAR",
+    commissionNote: obj?.commissionNote ?? null,
+    recentCommissions: obj?.recentCommissions ?? [],
+  };
+}
+
+function normalizeWallet(p: any) {
+  const obj = pickDataObject<any>(p, null);
+  if (!obj) return null;
+
+  // WalletController: balance + balance_sar + currency
+  const currency = obj?.currency ?? "SAR";
+
+  // لو balance_sar موجود يبقى الرصيد الأساسي غالبًا "هللات"
+  const balanceSar =
+    obj?.balance_sar != null
+      ? Number(obj.balance_sar)
+      : obj?.balance != null
+      ? Number(obj.balance)
+      : 0;
+
+  const rawBalance = obj?.balance != null ? Number(obj.balance) : null;
+  const usesCents = obj?.balance_sar != null && rawBalance != null;
+
+  return { ...obj, currency, balance_sar: balanceSar, _usesCents: usesCents };
+}
+
+function shipmentStatusKey(sh: any): string {
+  // ShipmentController يستخدم shipping_status كـ int (0..3)
+  const v = sh?.shipping_status ?? sh?.status;
+  if (typeof v === "number") {
+    return ["pending", "in_transit", "out_for_delivery", "delivered"][v] ?? String(v);
+  }
+  if (typeof v === "string" && v.trim() !== "") return v;
+  return "unknown";
+}
+
+function toSarAmount(v: any, usesCents: boolean): number {
+  const n = Number(v ?? 0) || 0;
+  return usesCents ? n / 100 : n;
 }
 
 // ===== Page =====
@@ -135,25 +245,25 @@ export default function ExhibitorDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // تجميع أخطاء الأقسام بدل ما نظهر raw 500
-  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>(
-    {}
-  );
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
 
   // data
   const [profile, setProfile] = useState<any>(null);
+
   const [wallet, setWallet] = useState<any>(null);
-  const [carsPage, setCarsPage] = useState<any>(null);
+  const [txs, setTxs] = useState<any[]>([]);
+
+  const [overviewKpis, setOverviewKpis] = useState<any>(null);
+  const [recentCars, setRecentCars] = useState<any[]>([]);
+
   const [sessions, setSessions] = useState<any[]>([]);
   const [ratingsSummary, setRatingsSummary] = useState<any>(null);
   const [commissionSummary, setCommissionSummary] = useState<any>(null);
+
   const [shipments, setShipments] = useState<any[]>([]);
   const [serviceReqs, setServiceReqs] = useState<any[]>([]);
-  const [txs, setTxs] = useState<any[]>([]);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  useEffect(() => setIsClient(true), []);
   useEffect(() => {
     try {
       /* @ts-ignore */ router?.prefetch?.("/exhibitor");
@@ -168,25 +278,19 @@ export default function ExhibitorDashboard() {
     };
 
     const run = async () => {
-      // نستخدم allSettled عشان ما يسقطش كله
       const results = await Promise.allSettled([
         safeGet("/api/user/profile"),
+        safeGet<AnalyticsOverviewPayload>("/api/exhibitor/analytics/overview"),
         safeGet("/api/exhibitor/wallet"),
-        safeGet("/api/cars", { per_page: 8 }),
-        safeGet("/api/exhibitor/sessions", { per_page: 5 }),
-        safeGet("/api/exhibitor/ratings/summary"),
-        safeGet("/api/exhibitor/commission/summary"),
+        safeGet("/api/exhibitor/sessions", { date_from: todayISODate() }),
+        safeGet<RatingsSummaryPayload>("/api/exhibitor/ratings/summary"),
+        safeGet<CommissionSummaryPayload>("/api/exhibitor/commission/summary"),
         safeGet("/api/exhibitor/shipments", { per_page: 50 }),
         safeGet("/api/exhibitor/extra-services/requests", { per_page: 20 }),
-        // transactions: جرّب الجديد ولو فشل جرّب legacy
         (async () => {
-          const a = await safeGet("/api/exhibitor/wallet/transactions", {
-            limit: 10,
-          });
+          const a = await safeGet("/api/exhibitor/wallet/transactions");
           if (!a.error) return a;
-          const b = await safeGet("/api/exhibitor/wallet/transcations", {
-            limit: 10,
-          });
+          const b = await safeGet("/api/exhibitor/wallet/transcations");
           return b.error ? { data: null, error: a.error } : b;
         })(),
       ]);
@@ -198,26 +302,32 @@ export default function ExhibitorDashboard() {
             ? results[0].value
             : { data: null, error: "تعذر تحميل الملف الشخصي" };
         _setErr("profile", (r as any).error);
-        setProfile(pickValue((r as any).data, null));
+        setProfile(pickDataObject((r as any).data, null));
       }
-      // wallet
+
+      // analytics overview
       {
         const r =
           results[1].status === "fulfilled"
             ? results[1].value
-            : { data: null, error: "تعذر تحميل المحفظة" };
-        _setErr("wallet", (r as any).error);
-        setWallet(pickValue((r as any).data, null));
+            : { data: null, error: "تعذر تحميل لوحة المؤشرات" };
+        _setErr("analytics_overview", (r as any).error);
+
+        const { kpis, recentCars } = normalizeAnalyticsOverview((r as any).data);
+        setOverviewKpis(kpis);
+        setRecentCars(Array.isArray(recentCars) ? recentCars : []);
       }
-      // cars
+
+      // wallet
       {
         const r =
           results[2].status === "fulfilled"
             ? results[2].value
-            : { data: null, error: "تعذر تحميل السيارات" };
-        _setErr("cars", (r as any).error);
-        setCarsPage((r as any).data);
+            : { data: null, error: "تعذر تحميل المحفظة" };
+        _setErr("wallet", (r as any).error);
+        setWallet(normalizeWallet((r as any).data));
       }
+
       // sessions
       {
         const r =
@@ -227,6 +337,7 @@ export default function ExhibitorDashboard() {
         _setErr("sessions", (r as any).error);
         setSessions(pickArray((r as any).data));
       }
+
       // ratings summary
       {
         const r =
@@ -234,8 +345,9 @@ export default function ExhibitorDashboard() {
             ? results[4].value
             : { data: null, error: "تعذر تحميل التقييم" };
         _setErr("ratings", (r as any).error);
-        setRatingsSummary(pickValue((r as any).data, null));
+        setRatingsSummary(normalizeRatingsSummary((r as any).data));
       }
+
       // commission summary
       {
         const r =
@@ -243,8 +355,9 @@ export default function ExhibitorDashboard() {
             ? results[5].value
             : { data: null, error: "تعذر تحميل العمولات" };
         _setErr("commission", (r as any).error);
-        setCommissionSummary(pickValue((r as any).data, null));
+        setCommissionSummary(normalizeCommissionSummary((r as any).data));
       }
+
       // shipments
       {
         const r =
@@ -254,6 +367,7 @@ export default function ExhibitorDashboard() {
         _setErr("shipments", (r as any).error);
         setShipments(pickArray((r as any).data));
       }
+
       // extra service requests
       {
         const r =
@@ -263,6 +377,7 @@ export default function ExhibitorDashboard() {
         _setErr("extra_services", (r as any).error);
         setServiceReqs(pickArray((r as any).data));
       }
+
       // transactions
       {
         const r =
@@ -294,25 +409,26 @@ export default function ExhibitorDashboard() {
   };
 
   useEffect(() => {
-    if (isClient) fetchAll(); /* eslint-disable-next-line */
+    if (isClient) fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClient]);
 
-  // derived
-  const cars = useMemo(() => {
-    const d = carsPage?.data ?? carsPage?.items ?? carsPage ?? [];
-    return Array.isArray(d) ? d : [];
-  }, [carsPage]);
-
-  const totalCars = useMemo(() => {
-    return carsPage?.total ?? carsPage?.meta?.total ?? cars?.length ?? 0;
-  }, [carsPage, cars]);
-
+  // ===== Derived =====
   const currency = wallet?.currency ?? "SAR";
+  const usesCents = Boolean(wallet?._usesCents);
+
+  const cars = useMemo(() => (Array.isArray(recentCars) ? recentCars : []), [recentCars]);
+  const totalCars = useMemo(
+    () => Number(overviewKpis?.total_cars ?? cars.length ?? 0),
+    [overviewKpis, cars]
+  );
+
+  const walletBalanceSar = useMemo(() => Number(wallet?.balance_sar ?? 0), [wallet]);
 
   const carsByStatus = useMemo(() => {
     const m = new Map<string, number>();
     for (const c of cars) {
-      const s = c?.auction_status ?? "غير محدد";
+      const s = String(c?.auction_status ?? "غير محدد");
       m.set(s, (m.get(s) ?? 0) + 1);
     }
     return Array.from(m.entries())
@@ -320,22 +436,32 @@ export default function ExhibitorDashboard() {
       .sort((a, b) => b.value - a.value);
   }, [cars]);
 
+  // ✅ بديل "مضمون" للعرض بدل BarChart (يشتغل Light/Dark بدون مشاكل)
+  const statusBars = useMemo(() => {
+    const max = Math.max(...carsByStatus.map((x) => x.value), 1);
+    return carsByStatus.map((x) => ({
+      ...x,
+      pct: Math.round((x.value / max) * 100),
+    }));
+  }, [carsByStatus]);
+
   const txSeries = useMemo(() => {
-    const a = (txs ?? [])
+    return (txs ?? [])
       .slice(0, 10)
-      .map((t: any) => ({
-        date: t?.created_at ?? t?.date ?? "",
-        amount: Math.abs(Number(t?.amount ?? t?.value ?? 0)) || 0,
-      }))
+      .map((t: any) => {
+        const date = t?.created_at ?? t?.date ?? "";
+        const rawAmount = t?.amount ?? t?.value ?? 0;
+        const amount = Math.abs(toSarAmount(rawAmount, usesCents));
+        return { date, amount };
+      })
       .reverse();
-    return a;
-  }, [txs]);
+  }, [txs, usesCents]);
 
   const shipCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const s of shipments ?? []) {
-      const st = s?.status ?? "unknown";
-      m[st] = (m[st] ?? 0) + 1;
+      const key = shipmentStatusKey(s);
+      m[key] = (m[key] ?? 0) + 1;
     }
     return m;
   }, [shipments]);
@@ -343,28 +469,42 @@ export default function ExhibitorDashboard() {
   const reqCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const r of serviceReqs ?? []) {
-      const st = r?.status ?? "pending";
+      const st = String(r?.status ?? "pending");
       m[st] = (m[st] ?? 0) + 1;
     }
     return m;
   }, [serviceReqs]);
 
+  const ratingOverall = ratingsSummary?.overall ?? null;
+  const ratingCount = ratingsSummary?.totalCount ?? null;
+
+  const commissionSum = overviewKpis?.commission_sum ?? null;
+
+  const shipmentsInProgress = useMemo(() => {
+    const fromList =
+      (shipCounts["pending"] ?? 0) +
+      (shipCounts["in_transit"] ?? 0) +
+      (shipCounts["out_for_delivery"] ?? 0);
+    if ((shipments ?? []).length > 0) return fromList;
+    return Number(overviewKpis?.shipments_count ?? 0);
+  }, [shipCounts, shipments, overviewKpis]);
+
+  const shipmentsDelivered = useMemo(() => {
+    const fromList = shipCounts["delivered"] ?? 0;
+    if ((shipments ?? []).length > 0) return fromList;
+    return 0;
+  }, [shipCounts, shipments]);
+
   if (!isClient) {
     return (
-      <div
-        dir="rtl"
-        className="min-h-dvh flex items-center justify-center bg-background"
-      >
+      <div dir="rtl" className="min-h-dvh flex items-center justify-center bg-background">
         <p className="text-foreground animate-pulse">جاري التحميل...</p>
       </div>
     );
   }
 
   return (
-    <div
-      dir="rtl"
-      className="min-h-dvh bg-background text-foreground flex relative"
-    >
+    <div dir="rtl" className="min-h-dvh bg-background text-foreground flex relative">
       {/* Sidebar (Desktop) */}
       <aside className="hidden md:flex w-72 shrink-0 sticky top-0 min-h-dvh bg-card/50 border-l border-border">
         <Suspense fallback={<GlobalLoader />}>
@@ -415,11 +555,8 @@ export default function ExhibitorDashboard() {
         </header>
 
         <main className="flex-1 min-h-0 overflow-y-auto">
-          {/* خلفية رقيقة */}
-          <div className="relative">{/* Gradient removed */}</div>
-
           <div className="relative px-3 md:px-6 py-4 space-y-6">
-            {/* تحذيرات الأقسام (لو API وقع) */}
+            {/* تحذيرات الأقسام */}
             {Object.keys(sectionErrors).length > 0 && (
               <div className="rounded-xl border border-amber-600/40 bg-amber-900/20 text-amber-200 px-4 py-3">
                 <div className="flex items-start gap-2">
@@ -429,10 +566,7 @@ export default function ExhibitorDashboard() {
                     <ul className="list-disc pr-4 text-sm">
                       {Object.entries(sectionErrors).map(([k, v]) => (
                         <li key={k}>
-                          <span className="text-muted-foreground">
-                            قسم {k}:
-                          </span>{" "}
-                          {v}
+                          <span className="text-muted-foreground">قسم {k}:</span> {v}
                         </li>
                       ))}
                     </ul>
@@ -441,16 +575,14 @@ export default function ExhibitorDashboard() {
               </div>
             )}
 
-            {/* Header row: welcome + actions */}
+            {/* Header row */}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                  أهلًا {profile?.first_name ? `، ${profile.first_name}` : ""}{" "}
-                  👋
+                  أهلًا {profile?.first_name ? `، ${profile.first_name}` : ""} 👋
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1">
-                  هذه لمحة سريعة عن أداء المعرض — يمكنك التوسّع من صفحة
-                  التحليلات أو الأقسام الجانبية.
+                  هذه لمحة سريعة عن أداء المعرض — يمكنك التوسّع من صفحة التحليلات أو الأقسام الجانبية.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -491,49 +623,25 @@ export default function ExhibitorDashboard() {
                   <Kpi
                     icon={<FiDollarSign size={18} />}
                     title="رصيد المحفظة"
-                    value={money(
-                      Number(wallet?.balance ?? 0),
-                      wallet?.currency ?? "SAR"
-                    )}
-                    sub={
-                      wallet?.hold_amount
-                        ? `محجوز: ${money(
-                            Number(wallet.hold_amount),
-                            wallet?.currency ?? "SAR"
-                          )}`
-                        : undefined
-                    }
+                    value={money(walletBalanceSar, currency)}
                   />
                   <Kpi
                     icon={<BsCarFront size={18} />}
                     title="إجمالي السيارات"
                     value={nf.format(totalCars)}
-                    sub={
-                      cars?.length
-                        ? `المعروضة الآن: ${nf.format(cars.length)}`
-                        : undefined
-                    }
+                    sub={cars?.length ? `أحدث السيارات: ${nf.format(cars.length)}` : undefined}
                   />
                   <Kpi
                     icon={<FiTruck size={18} />}
                     title="الشحنات قيد التنفيذ"
-                    value={nf.format(
-                      (shipCounts["pending"] ?? 0) +
-                        (shipCounts["in_transit"] ?? 0)
-                    )}
-                    sub={`مكتملة: ${nf.format(shipCounts["delivered"] ?? 0)}`}
+                    value={nf.format(shipmentsInProgress)}
+                    sub={`مكتملة: ${nf.format(shipmentsDelivered)}`}
                   />
                   <Kpi
                     icon={<FiStar size={18} />}
                     title="متوسط التقييم"
-                    value={
-                      ratingsSummary?.avg ? String(ratingsSummary.avg) : "—"
-                    }
-                    sub={
-                      ratingsSummary?.count
-                        ? `${nf.format(ratingsSummary.count)} مراجعة`
-                        : undefined
-                    }
+                    value={ratingOverall != null ? String(ratingOverall) : "—"}
+                    sub={ratingCount != null ? `${nf.format(ratingCount)} مراجعة` : undefined}
                   />
                 </>
               )}
@@ -541,58 +649,49 @@ export default function ExhibitorDashboard() {
 
             {/* Charts */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Cars status snapshot */}
+              {/* ✅ Status snapshot (بديل مضمون بدل الرسم اللي كان بايظ) */}
               <div className="rounded-2xl p-4 bg-card border border-border">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold">
-                    حالة المزادات (لقطة من آخر السيارات)
-                  </h3>
+                  <h3 className="font-bold">حالة المزادات</h3>
                   <a
-                    href="/exhibitor/add-car"
+                    href="/exhibitor/all-cars"
                     className="text-xs text-primary hover:text-primary/80 inline-flex items-center gap-1"
                   >
                     إدارة السيارات <FiExternalLink />
                   </a>
                 </div>
+
                 {loading ? (
                   <Skel className="h-64" />
                 ) : (
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={carsByStatus}>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
-                        />
-                        <XAxis
-                          dataKey="status"
-                          stroke="hsl(var(--muted-foreground))"
-                        />
-                        <YAxis
-                          allowDecimals={false}
-                          stroke="hsl(var(--muted-foreground))"
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            background: "hsl(var(--popover))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: 12,
-                            color: "hsl(var(--popover-foreground))",
-                          }}
-                          formatter={(v: any) => [v, "عدد"]}
-                        />
-                        <Bar
-                          dataKey="value"
-                          fill="hsl(var(--primary))"
-                          radius={[6, 6, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="h-64 overflow-y-auto pr-1">
+                    {statusBars.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-muted-foreground">
+                        لا توجد بيانات لعرضها.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {statusBars.map((s) => (
+                          <div key={s.status} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-semibold text-foreground">{s.status}</span>
+                              <span className="text-muted-foreground">{nf.format(s.value)}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-2 rounded-full bg-primary"
+                                style={{ width: `${s.pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Wallet recent amounts */}
+              {/* Wallet recent amounts (تم تصليح ألوانه لـ Light/Dark) */}
               <div className="rounded-2xl p-4 bg-card border border-border">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold">حركة المحفظة (آخر عمليات)</h3>
@@ -603,6 +702,7 @@ export default function ExhibitorDashboard() {
                     المحفظة <FiExternalLink />
                   </a>
                 </div>
+
                 {loading ? (
                   <Skel className="h-64" />
                 ) : (
@@ -611,43 +711,40 @@ export default function ExhibitorDashboard() {
                       <AreaChart data={txSeries}>
                         <defs>
                           <linearGradient id="gwl" x1="0" y1="0" x2="0" y2="1">
-                            <stop
-                              offset="0%"
-                              stopColor="#22d3ee"
-                              stopOpacity={0.5}
-                            />
-                            <stop
-                              offset="100%"
-                              stopColor="#22d3ee"
-                              stopOpacity={0}
-                            />
+                            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.45} />
+                            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+
                         <XAxis
                           dataKey="date"
                           tickFormatter={(v: any) => (v ? dshort(v) : "")}
-                          stroke="#94a3b8"
+                          stroke="hsl(var(--muted-foreground))"
+                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                         />
-                        <YAxis stroke="#94a3b8" />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                        />
+
                         <Tooltip
                           contentStyle={{
-                            background: "#0f172a",
-                            border: "1px solid #1f2937",
+                            background: "hsl(var(--popover))",
+                            border: "1px solid hsl(var(--border))",
                             borderRadius: 12,
+                            color: "hsl(var(--popover-foreground))",
                           }}
-                          labelFormatter={(v: any) =>
-                            v ? `التاريخ: ${dshort(v)}` : ""
-                          }
-                          formatter={(v: any) => [
-                            money(Number(v), wallet?.currency ?? "SAR"),
-                            "القيمة",
-                          ]}
+                          labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                          labelFormatter={(v: any) => (v ? `التاريخ: ${dshort(v)}` : "")}
+                          formatter={(v: any) => [money(Number(v), currency), "القيمة"]}
                         />
+
                         <Area
                           type="monotone"
                           dataKey="amount"
-                          stroke="#22d3ee"
+                          stroke="hsl(var(--primary))"
                           fill="url(#gwl)"
                         />
                       </AreaChart>
@@ -657,7 +754,7 @@ export default function ExhibitorDashboard() {
               </div>
             </section>
 
-            {/* Two tables: recent cars + service requests */}
+            {/* Two tables */}
             <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               {/* Recent cars */}
               <div className="rounded-2xl overflow-hidden border border-border bg-card">
@@ -670,6 +767,7 @@ export default function ExhibitorDashboard() {
                     عرض الكل <FiExternalLink />
                   </a>
                 </div>
+
                 {loading ? (
                   <Skel className="h-40" />
                 ) : (
@@ -677,21 +775,11 @@ export default function ExhibitorDashboard() {
                     <table className="min-w-full">
                       <thead>
                         <tr className="bg-muted">
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            #
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            السيارة
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            السنة
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            التقييم
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            حالة المزاد
-                          </th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">#</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">السيارة</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">السنة</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">التقييم</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">حالة المزاد</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -700,9 +788,7 @@ export default function ExhibitorDashboard() {
                             key={c?.id ?? i}
                             className="border-t border-border hover:bg-muted/40"
                           >
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {i + 1}
-                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <div className="p-1.5 rounded-lg bg-secondary text-muted-foreground">
@@ -713,16 +799,9 @@ export default function ExhibitorDashboard() {
                                 </div>
                               </div>
                             </td>
+                            <td className="px-4 py-3 text-muted-foreground">{c?.year ?? "—"}</td>
                             <td className="px-4 py-3 text-muted-foreground">
-                              {c?.year ?? "—"}
-                            </td>
-                            <td className="px-4 py-3 text-muted-foreground">
-                              {c?.evaluation_price != null
-                                ? money(
-                                    Number(c.evaluation_price),
-                                    wallet?.currency ?? "SAR"
-                                  )
-                                : "—"}
+                              {c?.evaluation_price != null ? money(Number(c.evaluation_price), currency) : "—"}
                             </td>
                             <td className="px-4 py-3">
                               <span className="text-xs px-2 py-1 rounded-full bg-secondary border border-border text-foreground">
@@ -733,10 +812,7 @@ export default function ExhibitorDashboard() {
                         ))}
                         {(cars ?? []).length === 0 && (
                           <tr>
-                            <td
-                              colSpan={5}
-                              className="px-4 py-6 text-center text-muted-foreground"
-                            >
+                            <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                               لا توجد سيارات.
                             </td>
                           </tr>
@@ -758,6 +834,7 @@ export default function ExhibitorDashboard() {
                     الخدمات <FiExternalLink />
                   </a>
                 </div>
+
                 {loading ? (
                   <Skel className="h-40" />
                 ) : (
@@ -765,61 +842,39 @@ export default function ExhibitorDashboard() {
                     <table className="min-w-full">
                       <thead>
                         <tr className="bg-muted">
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            الخدمة
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            الكمية
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            الإجمالي
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            الحالة
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            التاريخ
-                          </th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">الخدمة</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">الكمية</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">الإجمالي</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">الحالة</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">التاريخ</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(serviceReqs ?? [])
-                          .slice(0, 8)
-                          .map((r: any, i: number) => (
-                            <tr
-                              key={r?.id ?? i}
-                              className="border-t border-border hover:bg-muted/40"
-                            >
-                              <td className="px-4 py-3 text-foreground">
-                                {r?.service?.name ?? "—"}
-                              </td>
-                              <td className="px-4 py-3 text-muted-foreground">
-                                {r?.quantity ?? 1}
-                              </td>
-                              <td className="px-4 py-3 text-muted-foreground">
-                                {r?.total_price != null
-                                  ? money(
-                                      Number(r.total_price),
-                                      r?.currency ?? wallet?.currency ?? "SAR"
-                                    )
-                                  : "—"}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="text-xs px-2 py-1 rounded-full bg-secondary border border-border text-foreground">
-                                  {r?.status ?? "—"}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-muted-foreground text-sm">
-                                {r?.created_at ? dshort(r.created_at) : "—"}
-                              </td>
-                            </tr>
-                          ))}
+                        {(serviceReqs ?? []).slice(0, 8).map((r: any, i: number) => (
+                          <tr
+                            key={r?.id ?? i}
+                            className="border-t border-border hover:bg-muted/40"
+                          >
+                            <td className="px-4 py-3 text-foreground">{r?.service?.name ?? "—"}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{r?.quantity ?? 1}</td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {r?.total_price != null
+                                ? money(Number(r.total_price), r?.currency ?? currency)
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-xs px-2 py-1 rounded-full bg-secondary border border-border text-foreground">
+                                {r?.status ?? "—"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground text-sm">
+                              {r?.created_at ? dshort(r.created_at) : "—"}
+                            </td>
+                          </tr>
+                        ))}
                         {(serviceReqs ?? []).length === 0 && (
                           <tr>
-                            <td
-                              colSpan={5}
-                              className="px-4 py-6 text-center text-muted-foreground"
-                            >
+                            <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                               لا توجد طلبات بعد.
                             </td>
                           </tr>
@@ -832,27 +887,23 @@ export default function ExhibitorDashboard() {
                 {!loading && (
                   <div className="p-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-3">
                     <span>
-                      قيد المراجعة:{" "}
-                      <strong>{nf.format(reqCounts["pending"] ?? 0)}</strong>
+                      pending: <strong>{nf.format(reqCounts["pending"] ?? 0)}</strong>
                     </span>
                     <span>
-                      مقبول:{" "}
-                      <strong>{nf.format(reqCounts["approved"] ?? 0)}</strong>
+                      approved: <strong>{nf.format(reqCounts["approved"] ?? 0)}</strong>
                     </span>
                     <span>
-                      مرفوض:{" "}
-                      <strong>{nf.format(reqCounts["rejected"] ?? 0)}</strong>
+                      rejected: <strong>{nf.format(reqCounts["rejected"] ?? 0)}</strong>
                     </span>
                     <span>
-                      مكتمل:{" "}
-                      <strong>{nf.format(reqCounts["completed"] ?? 0)}</strong>
+                      completed: <strong>{nf.format(reqCounts["completed"] ?? 0)}</strong>
                     </span>
                   </div>
                 )}
               </div>
             </section>
 
-            {/* Sessions + transactions compact */}
+            {/* Sessions + financial quick view */}
             <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {/* Upcoming sessions */}
               <div className="xl:col-span-2 rounded-2xl overflow-hidden border border-border bg-card">
@@ -865,6 +916,7 @@ export default function ExhibitorDashboard() {
                     الجلسات <FiExternalLink />
                   </a>
                 </div>
+
                 {loading ? (
                   <Skel className="h-36" />
                 ) : (
@@ -872,57 +924,36 @@ export default function ExhibitorDashboard() {
                     <table className="min-w-full">
                       <thead>
                         <tr className="bg-muted">
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            العنوان
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            الحالة
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            التاريخ
-                          </th>
-                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">
-                            زمن الإنشاء
-                          </th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">الاسم</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">النوع</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">الحالة</th>
+                          <th className="px-4 py-3 text-right text-muted-foreground text-xs font-bold">تاريخ الجلسة</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(sessions ?? [])
-                          .slice(0, 6)
-                          .map((s: any, i: number) => (
-                            <tr
-                              key={s?.id ?? i}
-                              className="border-t border-border hover:bg-muted/40"
-                            >
-                              <td className="px-4 py-3 text-foreground">
-                                {s?.title ??
-                                  s?.name ??
-                                  `جلسة رقم ${s?.id ?? ""}`}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="text-xs px-2 py-1 rounded-full bg-secondary border border-border text-foreground">
-                                  {s?.status ?? "—"}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-muted-foreground">
-                                {s?.scheduled_at
-                                  ? new Date(s.scheduled_at).toLocaleString(
-                                      "ar-EG"
-                                    )
-                                  : "—"}
-                              </td>
-                              <td className="px-4 py-3 text-muted-foreground text-sm">
-                                {s?.created_at ? dshort(s.created_at) : "—"}
-                              </td>
-                            </tr>
-                          ))}
+                        {(sessions ?? []).slice(0, 6).map((s: any, i: number) => (
+                          <tr
+                            key={s?.id ?? i}
+                            className="border-t border-border hover:bg-muted/40"
+                          >
+                            <td className="px-4 py-3 text-foreground">
+                              {s?.name ?? `جلسة رقم ${s?.id ?? ""}`}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">{s?.type ?? "—"}</td>
+                            <td className="px-4 py-3">
+                              <span className="text-xs px-2 py-1 rounded-full bg-secondary border border-border text-foreground">
+                                {s?.status ?? "—"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground">
+                              {s?.session_date ? dtShort(s.session_date) : "—"}
+                            </td>
+                          </tr>
+                        ))}
                         {(sessions ?? []).length === 0 && (
                           <tr>
-                            <td
-                              colSpan={4}
-                              className="px-4 py-6 text-center text-muted-foreground"
-                            >
-                              لا توجد جلسات حالية.
+                            <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                              لا توجد جلسات قادمة.
                             </td>
                           </tr>
                         )}
@@ -941,36 +972,24 @@ export default function ExhibitorDashboard() {
                 ) : (
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">
-                        رصيد المحفظة
-                      </span>
+                      <span className="text-muted-foreground">رصيد المحفظة</span>
+                      <span className="font-bold">{money(walletBalanceSar, currency)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">إجمالي العمولات</span>
                       <span className="font-bold">
-                        {money(
-                          Number(wallet?.balance ?? 0),
-                          wallet?.currency ?? "SAR"
-                        )}
+                        {commissionSum != null ? money(Number(commissionSum), currency) : "—"}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">
-                        عمولات مُحتسبة
-                      </span>
+                      <span className="text-muted-foreground">إعداد العمولة</span>
                       <span className="font-bold">
-                        {commissionSummary?.total != null
+                        {commissionSummary?.commissionValue != null
                           ? money(
-                              Number(commissionSummary.total),
-                              wallet?.currency ?? "SAR"
-                            )
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">هذا الشهر</span>
-                      <span className="font-bold">
-                        {commissionSummary?.month_total != null
-                          ? money(
-                              Number(commissionSummary.month_total),
-                              wallet?.currency ?? "SAR"
+                              Number(commissionSummary.commissionValue),
+                              commissionSummary?.commissionCurrency ?? "SAR"
                             )
                           : "—"}
                       </span>
