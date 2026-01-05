@@ -71,7 +71,7 @@ export default function YoutubeChannelManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6 rtl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-2 rtl">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>

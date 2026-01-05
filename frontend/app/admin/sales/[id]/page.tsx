@@ -240,7 +240,7 @@ export default function SaleDetailsPage() {
   const overallStatus = getOverallStatus();
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-2">
       {/* Back Button */}
       <div className="mb-6">
         <LoadingLink href="/admin/sales">

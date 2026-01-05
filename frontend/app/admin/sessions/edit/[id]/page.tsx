@@ -156,7 +156,7 @@ export default function EditSessionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-4 md:p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-2">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <RefreshCw className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
@@ -168,7 +168,7 @@ export default function EditSessionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground p-2">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div className="flex items-center space-x-4 space-x-reverse">

@@ -678,7 +678,7 @@ export default function AdminCarsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 rtl" dir="rtl" lang="ar">
+    <div className="min-h-screen bg-background text-foreground p-2 rtl" dir="rtl" lang="ar">
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
