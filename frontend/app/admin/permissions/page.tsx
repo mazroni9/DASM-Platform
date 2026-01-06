@@ -108,7 +108,7 @@ export default function PermissionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-2">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">شجرة الصلاحيات</h1>
       </div>
