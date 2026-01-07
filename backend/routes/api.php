@@ -42,9 +42,14 @@ use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
 use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\YouTubeChannelController;
 use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\OrganizationController;
+use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
+
+// ========= Admin Panel (New) =========
+use App\Http\Controllers\AdminPanel\UserController as AdminPanelUserController;
 
 // ========= Auction Sessions =========
 use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController;
@@ -742,6 +747,17 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::post('/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification'])->whereNumber('userId')->middleware('can:users.update');
         });
 
+        Route::prefix('youtube-channels')->group(function () {
+            Route::get('/', [YouTubeChannelController::class, 'index']);
+            Route::post('/', [YouTubeChannelController::class, 'store']);
+            Route::get('/{id}', [YouTubeChannelController::class, 'show'])->whereNumber('id');
+            Route::put('/{id}', [YouTubeChannelController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [YouTubeChannelController::class, 'destroy'])->whereNumber('id');
+
+            // اختياري
+            Route::post('/{id}/sync', [YouTubeChannelController::class, 'sync'])->whereNumber('id');
+        });
+
         // ─────────────────────────────────────────────────────────────
         // 8.4 Roles & Permissions
         // ─────────────────────────────────────────────────────────────
@@ -780,6 +796,22 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
 
         Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
         Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
+
+
+
+
+        // ─────────────────────────────────────────────────────────────
+// 8.xx Employees Management
+// ─────────────────────────────────────────────────────────────
+Route::prefix('employees')->group(function () {
+    Route::get('/', [AdminEmployeeController::class, 'index'])->middleware('can:staff.view');
+    Route::post('/', [AdminEmployeeController::class, 'store'])->middleware('can:staff.create');
+    Route::get('/{id}', [AdminEmployeeController::class, 'show'])->whereNumber('id')->middleware('can:staff.view_details');
+    Route::put('/{id}', [AdminEmployeeController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
+    Route::patch('/{id}/status', [AdminEmployeeController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
+    Route::delete('/{id}', [AdminEmployeeController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
+});
+
 
         // ─────────────────────────────────────────────────────────────
         // 8.7 Bid Events
@@ -927,5 +959,25 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::post('/', [VenueController::class, 'store']);
             Route::put('/{id}', [VenueController::class, 'update'])->whereNumber('id');
             Route::delete('/{id}', [VenueController::class, 'destroy'])->whereNumber('id');
+        });
+    });
+
+/*
+|==========================================================================
+| SECTION 9: ADMIN PANEL ROUTES (NEW - AdminPanel\UserController)
+|==========================================================================
+| ✅ Endpoints:
+|   GET  /api/admin-panel/users?q=&per_page=
+|   GET  /api/admin-panel/users/{userId}
+|   PUT  /api/admin-panel/users/{userId}
+*/
+
+Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class])
+    ->prefix('admin-panel')
+    ->group(function () {
+        Route::prefix('users')->group(function () {
+            Route::get('/', [AdminPanelUserController::class, 'index']);
+            Route::get('/{userId}', [AdminPanelUserController::class, 'show'])->whereNumber('userId');
+            Route::put('/{userId}', [AdminPanelUserController::class, 'update'])->whereNumber('userId');
         });
     });
