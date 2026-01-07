@@ -21,9 +21,8 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable, CausesActivity, LogsActivity, HasRoles;
 
-    protected $guard_name = 'sanctum'; 
+    protected $guard_name = 'sanctum';
     protected function getDefaultGuardName(): string { return $this->guard_name; }
-
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -61,7 +60,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'organization_id'
     ];
 
-
     public function getAuthPassword()
     {
         return $this->password_hash; // Return the value of your custom password column
@@ -73,43 +71,64 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password_reset_expires_at' => 'datetime',
         'status' => UserStatus::class,
-        'type' => UserRole::class,
+        'type' => UserRole::class, // ✅ type is Enum now
     ];
+
+    /**
+     * ✅ Helper: get role value as string no matter if enum/string/null
+     */
+    private function typeValue(): string
+    {
+        $t = $this->type;
+
+        // When casted, $t is UserRole enum
+        if ($t instanceof UserRole) return $t->value;
+
+        // fallback if DB returns string or something else
+        if (is_string($t)) return $t;
+
+        return (string) $t;
+    }
+
+    /**
+     * ✅ Helper: generate user_code safely (no crashes with enum)
+     */
+    private function generateUserCode(): string
+    {
+        $role = $this->type; // enum غالبًا
+        $areaCode = $this->area?->code ?? '';
+        $id = $this->id;
+
+        if ($role === UserRole::USER) {
+            return 'Usr_' . $areaCode . '_0' . $id;
+        } elseif ($role === UserRole::DEALER) {
+            return 'Dlr_' . $areaCode . '_0' . $id;
+        } elseif ($role === UserRole::VENUE_OWNER) {
+            return 'Csr_' . $areaCode . '_0' . $id;
+        } elseif ($role === UserRole::INVESTOR) {
+            return 'Inv_' . $areaCode . '_0' . $id;
+        }
+
+        // ✅ fallback لأي Role تاني (employee/admin/...):
+        $roleValue = $this->typeValue(); // string safe
+        // مثال: "employee" => "Emp"
+        $prefix = Str::limit(ucfirst($roleValue), 3, '');
+        return $prefix . $areaCode . '_0' . $id;
+    }
 
     protected static function boot()
     {
         parent::boot();
 
         static::created(function ($user) {
-            if ($user->type == UserRole::USER) {
-                $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->type == UserRole::DEALER) {
-                $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->type == UserRole::VENUE_OWNER) {
-                $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->type == UserRole::INVESTOR) {
-                $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
-            } else {
-                $user_code = Str::limit((ucfirst($user->type)), 3, '') . $user->area?->code . '_0' . $user->id;
-            }
-            $user->user_code = $user_code;
+            // ✅ type is enum بسبب casts، فبنستخدم generator آمن
+            $user->user_code = $user->generateUserCode();
             $user->saveQuietly();
         });
 
         static::updating(function ($user) {
-            if ($user->type == UserRole::USER) {
-                $user_code = 'Usr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->type == UserRole::DEALER) {
-                $user_code = 'Dlr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->type == UserRole::VENUE_OWNER) {
-                $user_code = 'Csr_' . $user->area?->code . '_0' . $user->id;
-            } elseif ($user->type == UserRole::INVESTOR) {
-                $user_code = 'Inv_' . $user->area?->code . '_0' . $user->id;
-            } else {
-                $role = $user->type->value;
-                $user_code = Str::limit((ucfirst($role)), 3, '_') . $user->area?->code . '_0' . $user->id;
-            }
-            $user->user_code = $user_code;
+            // ✅ نفس الفكرة في update
+            $user->user_code = $user->generateUserCode();
         });
     }
 
@@ -126,7 +145,6 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsTo(Organization::class);
     }
-
 
     /**
      * Get the organization that the user has.
@@ -169,6 +187,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Car::class);
     }
+
     public function routeNotificationForFcm()
     {
         return $this->deviceTokens()->pluck('token')->toArray();
@@ -186,8 +205,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->forceFill([
             'email_verified_at' => now(),
             'email_verification_token' => null,
-            'is_active' => $this->type ==UserRole::USER ? true : false,
-            'status' => $this->type ==UserRole::USER ? UserStatus::ACTIVE : UserStatus::PENDING,
+            'is_active' => $this->type === UserRole::USER ? true : false,
+            'status' => $this->type === UserRole::USER ? UserStatus::ACTIVE : UserStatus::PENDING,
         ])->save();
     }
 
@@ -249,6 +268,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getNameAttribute(): string
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
     }
 }
