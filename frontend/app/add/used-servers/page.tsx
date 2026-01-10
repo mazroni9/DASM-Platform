@@ -30,7 +30,6 @@ export default function AddUsedServerForm() {
   };
 
   const handleBarcodeScan = () => {
-    console.log('Barcode scan initiated...');
     alert('ميزة مسح الباركود غير مفعلة بعد.');
   };
 
@@ -40,7 +39,6 @@ export default function AddUsedServerForm() {
        alert('الرجاء إدخال الرقم التسلسلي.');
        return;
     }
-    console.log('Used Server Form Data:', formData);
     alert('تم إرسال البيانات (للتجربة فقط).');
   };
 

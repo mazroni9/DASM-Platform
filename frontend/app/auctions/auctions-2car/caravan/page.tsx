@@ -94,7 +94,6 @@ export default function CaravanAuctionsPage() {
                 />
               )}
               onChange={(e, page) => {
-                console.log(e, page);
                 setPage(page);
               }}
             />

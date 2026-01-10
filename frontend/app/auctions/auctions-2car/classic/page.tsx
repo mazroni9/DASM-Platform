@@ -231,7 +231,6 @@ export default function ClassicCarsAuctionPage() {
                 />
               )}
               onChange={(e, page) => {
-                console.log(e, page);
                 setPage(page);
               }}
             />

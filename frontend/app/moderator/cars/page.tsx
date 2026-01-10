@@ -100,7 +100,6 @@ export default function ModeratorCarsPage() {
 
             // Use moderator endpoint - we'll need to create this or use the general cars endpoint
             const response = await api.get(`/api/moderator/cars?${params}`);
-            console.log("Fetched cars:", response.data);
             if (response.data.status === "success") {
                 // The backend returns cars directly in data, not nested
                 setCars(response.data.data || []);

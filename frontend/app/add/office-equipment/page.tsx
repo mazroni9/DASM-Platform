@@ -29,7 +29,6 @@ export default function AddOfficeEquipmentForm() {
 
   const handleBarcodeScan = () => {
     // Placeholder for barcode scanning logic
-    console.log('Barcode scan initiated...');
     // In a real app, this would use navigator.mediaDevices or a library
     // and update the serialNumber field.
     alert('ميزة مسح الباركود غير مفعلة بعد.');
@@ -41,7 +40,6 @@ export default function AddOfficeEquipmentForm() {
        alert('الرجاء إدخال الرقم التسلسلي.');
        return;
     }
-    console.log('Office Equipment Form Data:', formData);
     // TODO: Add actual form submission logic (API call)
     alert('تم إرسال البيانات (للتجربة فقط).');
     // Optionally reset form here

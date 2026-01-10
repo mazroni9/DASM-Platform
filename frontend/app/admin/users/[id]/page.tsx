@@ -78,8 +78,6 @@ export default function UserDetailPage({}: { params: { id: string } }) {
 
   const fetchUserDetails = async () => {
     try {
-      console.log("id", params.id);
-
       const response = await api.get(`/api/admin/users/${params.id}`);
       if (response.data && response.data.status === "success") {
         let user = response.data.data;

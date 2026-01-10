@@ -1,5 +1,8 @@
 // Request-level caching and batching utilities
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from "react";
+
+// Use the same base URL as axios.ts
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 interface CacheEntry<T> {
   data: T;
@@ -28,8 +31,8 @@ class RequestCache {
   }
 
   private generateKey(url: string, options?: RequestInit): string {
-    const method = options?.method || 'GET';
-    const body = options?.body ? JSON.stringify(options.body) : '';
+    const method = options?.method || "GET";
+    const body = options?.body ? JSON.stringify(options.body) : "";
     return `${method}:${url}:${body}`;
   }
 
@@ -41,7 +44,7 @@ class RequestCache {
     if (this.cache.size >= this.maxSize) {
       const entries = Array.from(this.cache.entries());
       entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
+
       // Remove oldest 25% of entries
       const toRemove = Math.floor(this.maxSize * 0.25);
       for (let i = 0; i < toRemove; i++) {
@@ -58,7 +61,7 @@ class RequestCache {
 
     const key = this.generateKey(url, options);
     const entry = this.cache.get(key);
-    
+
     // Return cached data if not expired
     if (entry && !this.isExpired(entry)) {
       return entry.data;
@@ -80,40 +83,81 @@ class RequestCache {
     return this.fetchAndCache(url, options, ttl);
   }
 
+  /**
+   * Get authentication headers with Bearer token
+   */
+  private getAuthHeaders(): HeadersInit {
+    if (typeof window === "undefined") {
+      return {};
+    }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return {};
+    }
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  /**
+   * Merge headers with auth headers
+   */
+  private mergeHeaders(options?: RequestInit): HeadersInit {
+    const authHeaders = this.getAuthHeaders();
+    const existingHeaders = options?.headers || {};
+
+    return {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...authHeaders,
+      ...(existingHeaders as Record<string, string>),
+    };
+  }
+
   private async fetchDirect<T>(url: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(url, options);
+    const response = await fetch(url, {
+      ...options,
+      headers: this.mergeHeaders(options),
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     return response.json();
   }
 
-  private async fetchAndCache<T>(url: string, options?: RequestInit, ttl?: number): Promise<T> {
+  private async fetchAndCache<T>(
+    url: string,
+    options?: RequestInit,
+    ttl?: number
+  ): Promise<T> {
     const key = this.generateKey(url, options);
-    
-    const promise = fetch(url, options)
-      .then(response => {
+
+    const promise = fetch(url, {
+      ...options,
+      headers: this.mergeHeaders(options),
+    })
+      .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
         // Cache the response only if caching is enabled
         if (this.enabled) {
           this.cache.set(key, {
             data,
             timestamp: Date.now(),
-            expiresAt: Date.now() + (ttl || this.defaultTTL)
+            expiresAt: Date.now() + (ttl || this.defaultTTL),
           });
-          
+
           this.evictOldEntries();
         }
         this.pendingRequests.delete(key);
-        
+
         return data;
       })
-      .catch(error => {
+      .catch((error) => {
         this.pendingRequests.delete(key);
         throw error;
       });
@@ -146,8 +190,12 @@ class RequestCache {
   }
 
   // Batch multiple requests
-  async batch<T>(requests: Array<{ url: string; options?: RequestInit; ttl?: number }>): Promise<T[]> {
-    const promises = requests.map(req => this.get<T>(req.url, req.options, req.ttl));
+  async batch<T>(
+    requests: Array<{ url: string; options?: RequestInit; ttl?: number }>
+  ): Promise<T[]> {
+    const promises = requests.map((req) =>
+      this.get<T>(req.url, req.options, req.ttl)
+    );
     return Promise.all(promises);
   }
 }
@@ -157,7 +205,7 @@ export const requestCache = new RequestCache({
   ttl: 5 * 60 * 1000, // 5 minutes
   maxSize: 100,
   staleWhileRevalidate: true,
-  enabled: false // Disable caching to prevent unwanted API caching
+  enabled: false, // Disable caching to prevent unwanted API caching
 });
 
 // React hook for cached requests
@@ -177,16 +225,16 @@ export function useCachedRequest<T>(
     }
 
     abortControllerRef.current = new AbortController();
-    
+
     const requestOptions = {
       ...options,
-      signal: abortControllerRef.current.signal
+      signal: abortControllerRef.current.signal,
     };
 
     try {
       return await requestCache.get<T>(url, requestOptions, ttl);
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.name === "AbortError") {
         return null; // Request was cancelled
       }
       throw error;
@@ -210,7 +258,10 @@ export async function cachedApiRequest<T>(
   options?: RequestInit,
   ttl?: number
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `/api${endpoint}`;
+  // Use full URL with base URL from environment
+  const url = endpoint.startsWith("http")
+    ? endpoint
+    : `${API_BASE_URL}${endpoint}`;
   return requestCache.get<T>(url, options, ttl);
 }
 
@@ -218,12 +269,14 @@ export async function cachedApiRequest<T>(
 export async function batchApiRequests<T>(
   requests: Array<{ endpoint: string; options?: RequestInit; ttl?: number }>
 ): Promise<T[]> {
-  const formattedRequests = requests.map(req => ({
-    url: req.endpoint.startsWith('http') ? req.endpoint : `/api${req.endpoint}`,
+  const formattedRequests = requests.map((req) => ({
+    url: req.endpoint.startsWith("http")
+      ? req.endpoint
+      : `${API_BASE_URL}${req.endpoint}`,
     options: req.options,
-    ttl: req.ttl
+    ttl: req.ttl,
   }));
-  
+
   return requestCache.batch<T>(formattedRequests);
 }
 
@@ -235,8 +288,8 @@ export function clearRequestCache(): void {
 // Preload critical data
 export function preloadCriticalData(): void {
   // Preload user profile if authenticated
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
-    cachedApiRequest('/api/user/profile', undefined, 10 * 60 * 1000); // 10 minutes
+    cachedApiRequest("/api/user/profile", undefined, 10 * 60 * 1000); // 10 minutes
   }
 }

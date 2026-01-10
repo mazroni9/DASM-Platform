@@ -65,7 +65,6 @@ export default function BazarPage() {
         // إيقاف الاحتفال بعد 5 ثوان
         setTimeout(() => {
           clearInterval(interval);
-          console.log("تم إيقاف الاحتفال بعد 5 ثوان");
         }, 5000);
         
         return () => clearInterval(interval);

@@ -98,7 +98,6 @@ export default function LuxuryCarsPage() {
                 />
               )}
               onChange={(e,page)=>{
-                console.log(e,page);
                 setPage(page)
                 
               }}

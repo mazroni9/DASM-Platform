@@ -33,7 +33,6 @@ export default function AuctionFinished() {
   const [error, setError] = useState<any>(null);
 
   function getAuctionStatus(auction: any): string {
-    console.log(auction);
     switch (auction) {
       case "in_auction":
         return "جاري المزايدة";
@@ -51,7 +50,6 @@ export default function AuctionFinished() {
       try {
         setLoading(true);
         const response = await api.get("/api/auctions-finished");
-        console.log("API Response:", response.data);
 
         // The API returns paginated data, so we need to access the nested data property
         const paginatedData = response.data.data;
@@ -75,15 +73,6 @@ export default function AuctionFinished() {
 
     fetchAuctionsFinished();
   }, []);
-
-  console.log(
-    "auctionsFinished:",
-    auctionsFinished,
-    "Type:",
-    typeof auctionsFinished,
-    "Is Array:",
-    Array.isArray(auctionsFinished)
-  );
 
   if (error) {
     return (

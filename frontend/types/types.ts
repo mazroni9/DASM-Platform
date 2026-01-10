@@ -144,6 +144,7 @@ export interface Car {
   condition: string;
   evaluation_price: number;
   auction_status: string;
+  status?: string;
   color?: string;
   engine?: string;
   transmission?: string;

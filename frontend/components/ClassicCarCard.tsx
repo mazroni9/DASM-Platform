@@ -8,13 +8,13 @@
  * - يدعم حالة الـ skeleton loading
  */
 
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import { Calendar, Heart } from 'lucide-react';
-import Skeleton from '@mui/material/Skeleton';
-import Box from '@mui/material/Box';
+import React from "react";
+import Image from "next/image";
+import { Calendar, Heart } from "lucide-react";
+import Skeleton from "@mui/material/Skeleton";
+import Box from "@mui/material/Box";
 import LoadingLink from "@/components/LoadingLink";
 interface ClassicCarCardProps {
   car?: {
@@ -24,13 +24,15 @@ interface ClassicCarCardProps {
     evaluation_price: string;
     image: string;
     created_at: string;
-    status: 'live' | 'past';
+    status: "live" | "past";
   };
   loading?: boolean;
 }
 
-export default function ClassicCarCard({ car, loading = false }: ClassicCarCardProps) {
-  console.log(car);
+export default function ClassicCarCard({
+  car,
+  loading = false,
+}: ClassicCarCardProps) {
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden group">
       {/* صورة السيارة مع زر المفضلة أو skeleton */}
@@ -40,12 +42,12 @@ export default function ClassicCarCard({ car, loading = false }: ClassicCarCardP
         ) : (
           <>
             <Image
-              src={car?.image || '/placeholder-classic-car.jpg'}
-              alt={car?.title || 'Classic car image'}
+              src={car?.image || "/placeholder-classic-car.jpg"}
+              alt={car?.title || "Classic car image"}
               fill
               className="object-cover transition-transform group-hover:scale-105"
             />
-            <button 
+            <button
               className="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white text-amber-500"
               title="إضافة للمفضلة"
               aria-label="إضافة للمفضلة"
@@ -54,7 +56,7 @@ export default function ClassicCarCard({ car, loading = false }: ClassicCarCardP
             </button>
           </>
         )}
-        
+
         {/* skeleton لزر المفضلة */}
         {loading && (
           <div className="absolute top-4 right-4">
@@ -83,20 +85,32 @@ export default function ClassicCarCard({ car, loading = false }: ClassicCarCardP
           <div>
             {loading ? (
               <>
-                <Skeleton variant="text" width={100} height={16} className="mb-1" />
+                <Skeleton
+                  variant="text"
+                  width={100}
+                  height={16}
+                  className="mb-1"
+                />
                 <Skeleton variant="text" width={150} height={20} />
               </>
             ) : (
               <>
                 <p className="text-gray-500 text-sm mb-1">السعر التقديري</p>
-                <p className="font-semibold text-amber-600">{car?.evaluation_price} ريال</p>
+                <p className="font-semibold text-amber-600">
+                  {car?.evaluation_price} ريال
+                </p>
               </>
             )}
           </div>
-          
+
           {loading ? (
             <Box className="flex items-center">
-              <Skeleton variant="circular" width={16} height={16} className="ml-1" />
+              <Skeleton
+                variant="circular"
+                width={16}
+                height={16}
+                className="ml-1"
+              />
               <Skeleton variant="text" width={80} height={16} />
             </Box>
           ) : (
@@ -110,9 +124,17 @@ export default function ClassicCarCard({ car, loading = false }: ClassicCarCardP
         {/* الزر أو skeleton */}
         <div className="mt-6">
           {loading ? (
-            <Skeleton variant="rectangular" width="100%" height={40} className="rounded-md" />
-          ) : car?.status === 'live' ? (
-            <LoadingLink href={`/carDetails/${car?.id}`} className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
+            <Skeleton
+              variant="rectangular"
+              width="100%"
+              height={40}
+              className="rounded-md"
+            />
+          ) : car?.status === "live" ? (
+            <LoadingLink
+              href={`/carDetails/${car?.id}`}
+              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition"
+            >
               <button className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
                 عرض التفاصيل
               </button>

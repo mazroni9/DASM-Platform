@@ -137,7 +137,6 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
   };
 
   const onSubmit = (data: GroupFormValues) => {
-    console.log("Group payload:", data);
     router.push("/admin/groups");
   };
 

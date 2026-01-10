@@ -200,7 +200,7 @@ export default function RegisterForm() {
       } else {
         setError(response.data.message || "حدث خطأ أثناء التسجيل");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       let errorMessage = "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
 
       if (axios.isAxiosError(err)) {

@@ -132,7 +132,7 @@ export default function UserMenu() {
   // عناصر القائمة تُبنى ديناميكياً حسب الدور
   type MenuItem = {
     label: string;
-    icon: JSX.Element;
+    icon: React.ReactNode;
     onClick: () => void;
     path?: string;
     kind?: "danger" | "normal";

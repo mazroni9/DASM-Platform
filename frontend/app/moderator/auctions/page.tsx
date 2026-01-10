@@ -88,7 +88,6 @@ export default function ModeratorAuctionsPage() {
         try {
             setLoading(true);
             const response = await api.get("/api/moderator/auctions");
-            console.log("auctions: ", response.data.data);
             if (response.data.status === "success") {
                 setAuctions(response.data.data.data);
             }
