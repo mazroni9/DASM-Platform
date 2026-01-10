@@ -1,13 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { 
-  Package, 
-  DollarSign, 
-  Truck, 
-  CheckCircle, 
-  MessageSquare, 
-  Loader2, 
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import {
+  CheckCircle,
+  Loader2,
   Route,
   Car as CarIcon,
   Edit,
@@ -15,48 +11,98 @@ import {
   Plus,
   Filter,
   Search,
-  Calendar,
   Gauge,
   Settings,
-  Sparkles
 } from 'lucide-react';
+
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
 import { Pagination } from 'react-laravel-paginex';
-import axios from "axios";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 import LoadingLink from "@/components/LoadingLink";
 import { Car } from "@/types/types";
 
+type LaravelPaginator<T> = {
+  current_page: number;
+  data: T[];
+  from?: number | null;
+  last_page: number;
+  per_page: number;
+  to?: number | null;
+  total: number;
+  links?: any[];
+};
+
 export default function MyCarsPage() {
   const [loading, setLoading] = useState(true);
-  const [paginationData, setPagination] = useState([]);
+  const [paginationData, setPagination] = useState<LaravelPaginator<Car> | null>(null);
   const [cars, setCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const { user, isLoggedIn } = useAuth();
-  const [processingCarId, setProcessingCarId] = useState<number | null>(null);
+
+  const { isLoggedIn } = useAuth();
   const router = useLoadingRouter();
-  
+
   const options = {
     containerClass: "pagination-container",
     prevButtonClass: "prev-button-class",
     nextButtonText: "التالي",
     prevButtonText: "السابق"
-  }
+  };
 
-  const getData = async (paginationData) => {
-   const response =  await api.get('/api/cars?page=' + paginationData.page);
-   if (response.data.status === 'success') {
-    
-    setPagination(response.data.data)
-    setCars(response.data.data.data)
-   }
-  }
+  // ✅ status موحّد للواجهة: يجمع بين status و auction_status
+  const getUiStatus = useCallback((car: any) => {
+    const raw = (car?.status ?? car?.auction_status ?? '').toString().toLowerCase();
+
+    // تطبيع شائع حسب منطق الباك (auction_status)
+    // active => في المزاد
+    if (raw === 'active') return 'auction';
+
+    // scheduled ممكن تعتبرها pending (بانتظار/مجدولة)
+    if (raw === 'scheduled') return 'pending';
+
+    // available لو موجودة عندك اعتبرها pending/processing حسب نظامكم
+    if (raw === 'available') return 'pending';
+
+    return raw || 'unknown';
+  }, []);
+
+  const loadCars = useCallback(async (page = 1) => {
+    try {
+      const response = await api.get(`/api/cars?page=${page}`);
+
+      if (response?.data?.status !== 'success') {
+        throw new Error('Bad response');
+      }
+
+      const paginator: LaravelPaginator<Car> | Car[] = response.data.data;
+
+      // ✅ في باكك الحالي: data = paginator
+      if (paginator && typeof paginator === 'object' && 'data' in paginator) {
+        setPagination(paginator as LaravelPaginator<Car>);
+        setCars((paginator as LaravelPaginator<Car>).data ?? []);
+      } else {
+        // fallback احتياطي لو رجعت array مباشرة
+        setPagination(null);
+        setCars(Array.isArray(paginator) ? paginator : []);
+      }
+    } catch (error: any) {
+      // لو 401 عادة معناه session/token راح
+      if (error?.response?.status === 401) {
+        router.push("/auth/login?returnUrl=/dashboard/mycars");
+        return;
+      }
+
+      console.error("Error fetching cars:", error);
+      toast.error("حدث خطأ أثناء تحميل بيانات السيارات");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
 
   // Verify user is authenticated
   useEffect(() => {
@@ -65,63 +111,62 @@ export default function MyCarsPage() {
     }
   }, [isLoggedIn, router]);
 
-  // Fetch user cars data
+  // Fetch user cars data (page 1)
   useEffect(() => {
-    async function fetchCars() {
-      if (!isLoggedIn) return;
-      try {
-        const response = await api.get("/api/cars");
-        if (response.data.data || response.data.data) {
-          const carsData = response.data.data.data || response.data.data;
-          setPagination(response.data.data)
-          setCars(carsData);
-        }
-      } catch (error) {
-        console.error("Error fetching cars:", error);
-        toast.error("حدث خطأ أثناء تحميل بيانات السيارات");
-      } finally {
-        setLoading(false);
-      }
-    }
+    if (!isLoggedIn) return;
+    setLoading(true);
+    loadCars(1);
+  }, [isLoggedIn, loadCars]);
 
-    fetchCars();
-  }, [isLoggedIn]);
-
-  // دالة حالة السيارة
-  const getStatusLabel = (car) => {
-    const statusMap = {
-      'pending': { text: 'بانتظار الموافقة', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
-      'processing': { text: 'تحت المعالجة', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
-      'approved': { text: 'تم الاعتماد', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
-      'rejected': { text: 'مرفوضة', color: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-500/30' },
-      'auction': { text: 'في المزاد', color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
-      'sold': { text: 'مباعة', color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
-      'withdrawn': { text: 'مسحوبة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
-      'archived': { text: 'مؤرشفة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' }
-    };
-    
-    return statusMap[car.status] || { text: car.status || 'غير معروف', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' };
+  const getData = async (p: any) => {
+    const page = typeof p === 'number' ? p : (p?.page ?? 1);
+    setLoading(true);
+    await loadCars(page);
   };
 
-  // فلترة السيارات
+  // دالة حالة السيارة (UI)
+  const getStatusLabel = (car: any) => {
+    const status = getUiStatus(car);
+
+    const statusMap: Record<string, { text: string; color: string; bg: string; border: string }> = {
+      pending: { text: 'بانتظار الموافقة', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
+      processing: { text: 'تحت المعالجة', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
+      approved: { text: 'تم الاعتماد', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
+      rejected: { text: 'مرفوضة', color: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-500/30' },
+      auction: { text: 'في المزاد', color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
+      sold: { text: 'مباعة', color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
+      withdrawn: { text: 'مسحوبة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
+      archived: { text: 'مؤرشفة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
+      unknown: { text: 'غير معروف', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
+    };
+
+    return statusMap[status] || statusMap.unknown;
+  };
+
+  // فلترة السيارات (على بيانات الصفحة الحالية فقط)
   const filteredCars = useMemo(() => {
-    return cars.filter(car => {
-      const matchesSearch = car.make?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           car.model?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || car.status === statusFilter;
+    const term = searchTerm.trim().toLowerCase();
+    return cars.filter((car: any) => {
+      const matchesSearch =
+        (car.make?.toLowerCase().includes(term) ?? false) ||
+        (car.model?.toLowerCase().includes(term) ?? false);
+
+      const uiStatus = getUiStatus(car);
+      const matchesStatus = statusFilter === 'all' || uiStatus === statusFilter;
+
       return matchesSearch && matchesStatus;
     });
-  }, [cars, searchTerm, statusFilter]);
+  }, [cars, searchTerm, statusFilter, getUiStatus]);
 
-  // إحصائيات سريعة
+  // إحصائيات سريعة (على بيانات الصفحة الحالية)
   const stats = useMemo(() => {
     return {
-      total: cars.length,
-      inAuction: cars.filter(car => car.status === 'auction').length,
-      pending: cars.filter(car => car.status === 'pending').length,
-      approved: cars.filter(car => car.status === 'approved').length,
+      total: paginationData?.total ?? cars.length,
+      inAuction: cars.filter((car: any) => getUiStatus(car) === 'auction').length,
+      pending: cars.filter((car: any) => getUiStatus(car) === 'pending').length,
+      approved: cars.filter((car: any) => getUiStatus(car) === 'approved').length,
     };
-  }, [cars]);
+  }, [cars, paginationData, getUiStatus]);
 
   if (loading) {
     return (
@@ -140,7 +185,7 @@ export default function MyCarsPage() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
@@ -170,6 +215,7 @@ export default function MyCarsPage() {
                 </div>
                 <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
               </div>
+
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-purple-500/20 rounded">
@@ -179,6 +225,7 @@ export default function MyCarsPage() {
                 </div>
                 <p className="text-lg font-bold text-purple-400 mt-1">{stats.inAuction}</p>
               </div>
+
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-amber-500/20 rounded">
@@ -188,6 +235,7 @@ export default function MyCarsPage() {
                 </div>
                 <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
               </div>
+
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-emerald-500/20 rounded">
@@ -213,7 +261,7 @@ export default function MyCarsPage() {
       </motion.div>
 
       {/* Filters and Search Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -256,7 +304,7 @@ export default function MyCarsPage() {
       </motion.div>
 
       {/* Cars Grid */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -268,7 +316,7 @@ export default function MyCarsPage() {
               <CarIcon className="w-12 h-12 text-foreground/50 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground/70 mb-2">لا توجد سيارات</h3>
               <p className="text-foreground/50 text-sm mb-4">
-                {searchTerm || statusFilter !== 'all' 
+                {searchTerm || statusFilter !== 'all'
                   ? 'لم نتمكن من العثور على سيارات تطابق معايير البحث'
                   : 'لم تقم بإضافة أي سيارات بعد'
                 }
@@ -295,10 +343,13 @@ export default function MyCarsPage() {
             </div>
           </div>
         ) : (
-          filteredCars.map((car, index) => {
+          filteredCars.map((car: any, index: number) => {
             const statusInfo = getStatusLabel(car);
-            const isApproved = car.auctions && car.auctions[0] && car.auctions[0].control_room_approved;
-            
+            const isApproved = Boolean(car?.auctions?.[0]?.control_room_approved);
+
+            const uiStatus = getUiStatus(car);
+            const canEdit = uiStatus === 'pending' || uiStatus === 'processing';
+
             return (
               <motion.div
                 key={car.id}
@@ -313,25 +364,27 @@ export default function MyCarsPage() {
                   <div className="relative h-48 bg-background overflow-hidden">
                     <img
                       src={
-                        (car.images && car.images.length > 0)
+                        (Array.isArray(car.images) && car.images.length > 0)
                           ? car.images[0]
                           : "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg"
                       }
-                      alt={`${car.make} ${car.year}`}
+                      alt={`${car.make ?? ''} ${car.year ?? ''}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
                       }}
                     />
-                    
+
                     {/* Status Badge */}
-                    <div className={cn(
-                      "absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
-                      statusInfo.bg,
-                      statusInfo.border,
-                      statusInfo.color
-                    )}>
+                    <div
+                      className={cn(
+                        "absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
+                        statusInfo.bg,
+                        statusInfo.border,
+                        statusInfo.color
+                      )}
+                    >
                       {statusInfo.text}
                     </div>
 
@@ -351,7 +404,7 @@ export default function MyCarsPage() {
                         {car.make} {car.model} - {car.year}
                       </h3>
                       <div className="text-2xl font-bold text-secondary">
-                        {car.evaluation_price?.toLocaleString('ar-EG')}
+                        {car.evaluation_price?.toLocaleString?.('ar-EG') ?? car.evaluation_price}
                       </div>
                     </div>
 
@@ -378,11 +431,9 @@ export default function MyCarsPage() {
                       </p>
                     )}
 
-                   
-
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-4 border-t border-border">
-                      {(car.status === 'pending' || car.status === 'processing') && (
+                      {canEdit && (
                         <LoadingLink
                           href={`/dashboard/mycars/${car.id}?edit=1`}
                           onClick={(e) => e.stopPropagation()}
@@ -392,7 +443,7 @@ export default function MyCarsPage() {
                           <span className="text-xs font-medium">تعديل</span>
                         </LoadingLink>
                       )}
-                      
+
                       <LoadingLink
                         target="_blank"
                         href={`/carDetails/${car.id}`}
@@ -412,18 +463,18 @@ export default function MyCarsPage() {
       </motion.div>
 
       {/* Pagination */}
-      {filteredCars.length > 0 && paginationData && (
-        <motion.div 
+      {paginationData && (paginationData.last_page ?? 1) > 1 && (
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="flex justify-center"
         >
           <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
-            <Pagination 
-              data={paginationData} 
-              options={options} 
-              changePage={getData} 
+            <Pagination
+              data={paginationData as any}
+              options={options}
+              changePage={getData}
             />
           </div>
         </motion.div>

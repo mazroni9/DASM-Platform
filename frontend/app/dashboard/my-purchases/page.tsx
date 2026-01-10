@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
@@ -17,24 +17,39 @@ import {
   Package,
   Clock,
   Eye,
-  ArrowLeft,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import api from "@/lib/axios";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { Pagination } from "react-laravel-paginex";
 
-// Helper to get status text and color
+type Settlement = {
+  auction_id: number;
+  seller_id: number;
+  buyer_id: number;
+  car_id: number;
+  buyer_net_amount: number | string | null;
+  status: string;
+
+  car?: any;
+  auction?: any;
+  buyer?: any;
+  seller?: any;
+};
+
 const getStatusConfig = (status: string) => {
-  const statusMap: {
-    [key: string]: {
+  const statusMap: Record<
+    string,
+    {
       text: string;
       color: string;
       bg: string;
       border: string;
       icon: React.ElementType;
-    };
-  } = {
+    }
+  > = {
     pending: {
       text: "بانتظار الدفع",
       color: "text-amber-400",
@@ -42,6 +57,15 @@ const getStatusConfig = (status: string) => {
       border: "border-amber-500/30",
       icon: CreditCard,
     },
+    confirmed: {
+      text: "تم التأكيد",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/20",
+      border: "border-emerald-500/30",
+      icon: CheckCircle,
+    },
+
+    // احتياط لو أضفت حالات لاحقاً
     paid_pending_delivery: {
       text: "تم الدفع - بانتظار التسليم",
       color: "text-blue-400",
@@ -81,7 +105,7 @@ const getStatusConfig = (status: string) => {
 
   return (
     statusMap[status] || {
-      text: status,
+      text: status || "غير معروف",
       color: "text-gray-400",
       bg: "bg-gray-500/20",
       border: "border-gray-500/30",
@@ -90,15 +114,60 @@ const getStatusConfig = (status: string) => {
   );
 };
 
+function safeUserName(u: any) {
+  if (!u) return "غير معروف";
+  const full = `${u.first_name || ""} ${u.last_name || ""}`.trim();
+  return full || u.name || u.email || "غير معروف";
+}
+
+function normalizeImages(images: any): string[] {
+  if (!images) return [];
+  if (Array.isArray(images)) {
+    // array of strings OR array of objects
+    if (images.length && typeof images[0] === "string") return images;
+    if (images.length && typeof images[0] === "object") {
+      return images
+        .map((x: any) => x?.url || x?.path || x?.image || x?.src)
+        .filter(Boolean);
+    }
+    return [];
+  }
+
+  if (typeof images === "string") {
+    // maybe JSON string
+    try {
+      const parsed = JSON.parse(images);
+      return normalizeImages(parsed);
+    } catch {
+      // maybe single URL
+      if (images.startsWith("http") || images.startsWith("/")) return [images];
+      return [];
+    }
+  }
+
+  return [];
+}
+
 export default function MyPurchasesPage() {
-  const [purchases, setPurchases] = useState([]);
+  const { isLoggedIn, user } = useAuth();
+  const router = useLoadingRouter();
+
+  const [purchases, setPurchases] = useState<Settlement[]>([]);
+  const [paginationData, setPaginationData] = useState<any>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isLoggedIn } = useAuth();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const router = useLoadingRouter();
+
+  const paginationOptions = {
+    containerClass: "pagination-container",
+    prevButtonClass: "prev-button-class",
+    nextButtonText: "التالي",
+    prevButtonText: "السابق",
+  };
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -106,92 +175,125 @@ export default function MyPurchasesPage() {
     }
   }, [isLoggedIn, router]);
 
-  useEffect(() => {
-    async function fetchPurchases() {
-      if (!isLoggedIn) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const response = await api.get("/api/settlements");
-        if (response.data.status === "success") {
-          setPurchases(response.data.data.data);
-        } else {
-          setError("Failed to fetch purchases.");
-        }
-      } catch (err) {
-        setError("An error occurred while fetching purchases.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+  const fetchPurchases = async (pageNum = 1) => {
+    if (!isLoggedIn) {
+      setLoading(false);
+      return;
     }
 
-    fetchPurchases();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await api.get(`/api/settlements?page=${pageNum}`);
+
+      if (response.data?.status === "success") {
+        const paginated = response.data.data; // Laravel paginator
+        const rows: Settlement[] = Array.isArray(paginated?.data) ? paginated.data : [];
+
+        setPaginationData(paginated);
+
+        // ✅ صفحة "مشترياتي" = أنا buyer فقط
+        const myId = user?.id;
+        const onlyMyPurchases = myId ? rows.filter((s) => s.buyer_id === myId) : rows;
+
+        setPurchases(onlyMyPurchases);
+      } else {
+        setError("Failed to fetch purchases.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while fetching purchases.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPurchases(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
-  // Filter purchases
+  const getCategories = () => {
+    const cats = purchases
+      .map((p) => p?.car?.market_category || "سيارات")
+      .filter(Boolean);
+    return [...new Set(cats)];
+  };
+
   const filteredPurchases = useMemo(() => {
-    return purchases.filter((purchase: any) => {
-      const itemName = `${purchase.car.make} ${purchase.car.model}`;
-      const category = purchase.car.market_category || "سيارات";
+    return purchases.filter((purchase) => {
+      const make = (purchase.car?.make || "").toString();
+      const model = (purchase.car?.model || "").toString();
+      const itemName = `${make} ${model}`.trim() || `سيارة #${purchase.car_id}`;
+
+      const category = (purchase.car?.market_category || "سيارات").toString();
+
       const matchesSearch =
         itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         category.toLowerCase().includes(searchTerm.toLowerCase());
+
       const matchesStatus =
-        statusFilter === "all" || purchase.status === statusFilter;
-      const matchesCategory =
-        categoryFilter === "all" || category === categoryFilter;
+        statusFilter === "all" || (purchase.status || "").toLowerCase() === statusFilter;
+
+      const matchesCategory = categoryFilter === "all" || category === categoryFilter;
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
   }, [purchases, searchTerm, statusFilter, categoryFilter]);
 
-  // Calculate stats
   const stats = useMemo(() => {
-    const totalAmount = purchases.reduce(
-      (sum, purchase: any) => sum + (Number(purchase.buyer_net_amount) || 0),
-      0
-    );
+    const totalAmount = purchases.reduce((sum, p) => {
+      const v = Number(p.buyer_net_amount ?? 0);
+      return sum + (Number.isFinite(v) ? v : 0);
+    }, 0);
+
+    const completedCount = purchases.filter((p) =>
+      ["confirmed", "completed"].includes((p.status || "").toLowerCase())
+    ).length;
+
+    const pendingCount = purchases.filter((p) => (p.status || "").toLowerCase() === "pending")
+      .length;
+
     return {
       total: purchases.length,
-      completed: purchases.filter((p: any) => p.status === "completed").length,
-      pending: purchases.filter((p: any) => p.status === "pending").length,
-      totalAmount: totalAmount,
+      completed: completedCount,
+      pending: pendingCount,
+      totalAmount,
     };
   }, [purchases]);
 
-  const handlePayNow = (purchaseId: string) => {
-    // Simulate payment process
-    setPurchases(
-      purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "paid_pending_delivery" } : p
-      )
-    );
+  const getDealDateText = (purchase: Settlement) => {
+    const endTime = purchase.auction?.end_time;
+    const createdAt = purchase.auction?.created_at;
+
+    const raw = endTime || createdAt || null;
+    if (!raw) return "غير متاح";
+
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return "غير متاح";
+
+    return d.toLocaleDateString("ar-SA");
   };
 
-  const handleConfirmReceipt = (purchaseId: string) => {
-    // Simulate receipt confirmation
-    setPurchases(
-      purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "completed" } : p
-      )
-    );
+  const handleOpenDispute = (_auctionId: number) => {
+    // مفيش Endpoint للنزاعات هنا، فهنسيبها Placeholder
+    alert("سيتم فتح صفحة النزاع قريباً (محاكاة).");
   };
 
-  const handleOpenDispute = (purchaseId: string) => {
-    // Simulate opening dispute
-    alert("سيتم فتح صفحة النزاع (محاكاة).");
-  };
-
-  const getCategories = () => {
-    return [
-      ...new Set(purchases.map((p: any) => p.car.market_category || "سيارات")),
-    ];
+  const changePage = (p: any) => {
+    fetchPurchases(p.page);
   };
 
   if (loading) {
-    return <div className="text-center py-10">جاري تحميل مشترياتك...</div>;
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-3 text-primary" />
+          <p className="text-foreground/70">جاري تحميل مشترياتك...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -200,7 +302,7 @@ export default function MyPurchasesPage() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Header Section */}
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -231,45 +333,38 @@ export default function MyPurchasesPage() {
                   </div>
                   <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-foreground mt-1">
-                  {stats.total}
-                </p>
+                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
               </div>
+
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-emerald-500/20 rounded">
                     <CheckCircle className="w-3 h-3 text-emerald-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">مكتملة</span>
+                  <span className="text-xs text-foreground/70">مكتملة/مؤكدة</span>
                 </div>
-                <p className="text-lg font-bold text-emerald-400 mt-1">
-                  {stats.completed}
-                </p>
+                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.completed}</p>
               </div>
+
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Clock className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">
-                    بانتظار الدفع
-                  </span>
+                  <span className="text-xs text-foreground/70">بانتظار الدفع</span>
                 </div>
-                <p className="text-lg font-bold text-amber-400 mt-1">
-                  {stats.pending}
-                </p>
+                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
               </div>
+
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-cyan-500/20 rounded">
                     <DollarSign className="w-3 h-3 text-cyan-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">
-                    إجمالي المشتريات
-                  </span>
+                  <span className="text-xs text-foreground/70">إجمالي المشتريات</span>
                 </div>
                 <p className="text-lg font-bold text-cyan-600 dark:text-cyan-400 mt-1">
-                  {(stats.totalAmount || 0).toLocaleString("ar-SA")} ريال
+                  {Number(stats.totalAmount || 0).toLocaleString("ar-SA")} ريال
                 </p>
               </div>
             </div>
@@ -287,7 +382,7 @@ export default function MyPurchasesPage() {
         </div>
       </motion.div>
 
-      {/* Filters and Search Section */}
+      {/* Filters */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -296,9 +391,9 @@ export default function MyPurchasesPage() {
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
-            {/* Search Input */}
+            {/* Search */}
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground/70" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
               <input
                 type="text"
                 placeholder="ابحث في المشتريات..."
@@ -308,7 +403,7 @@ export default function MyPurchasesPage() {
               />
             </div>
 
-            {/* Status Filter */}
+            {/* Status */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -316,16 +411,12 @@ export default function MyPurchasesPage() {
             >
               <option value="all">جميع الحالات</option>
               <option value="pending">بانتظار الدفع</option>
-              <option value="paid_pending_delivery">تم الدفع</option>
-              <option value="shipped">جاري الشحن</option>
-              <option value="delivered_pending_confirmation">
-                بانتظار التأكيد
-              </option>
+              <option value="confirmed">تم التأكيد</option>
+              {/* احتياطي للمستقبل */}
               <option value="completed">مكتملة</option>
-              <option value="disputed">نزاع</option>
             </select>
 
-            {/* Category Filter */}
+            {/* Category */}
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -361,22 +452,17 @@ export default function MyPurchasesPage() {
             <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
               <ShoppingBag className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground/70 mb-2">
-                {searchTerm ||
-                statusFilter !== "all" ||
-                categoryFilter !== "all"
+                {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
                   ? "لا توجد نتائج"
                   : "لا توجد مشتريات"}
               </h3>
               <p className="text-foreground/50 text-sm mb-4">
-                {searchTerm ||
-                statusFilter !== "all" ||
-                categoryFilter !== "all"
+                {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
                   ? "لم نتمكن من العثور على مشتريات تطابق معايير البحث"
                   : "لم تقم بشراء أي عناصر من المزادات بعد"}
               </p>
-              {searchTerm ||
-              statusFilter !== "all" ||
-              categoryFilter !== "all" ? (
+
+              {searchTerm || statusFilter !== "all" || categoryFilter !== "all" ? (
                 <button
                   onClick={() => {
                     setSearchTerm("");
@@ -399,79 +485,84 @@ export default function MyPurchasesPage() {
             </div>
           </div>
         ) : (
-          filteredPurchases.map((purchase: any, index) => {
+          filteredPurchases.map((purchase, index) => {
             const statusConfig = getStatusConfig(purchase.status);
             const StatusIcon = statusConfig.icon;
 
+            const make = purchase.car?.make || "";
+            const model = purchase.car?.model || "";
+            const category = purchase.car?.market_category || "سيارات";
+
+            const images = normalizeImages(purchase.car?.images);
+            const cover =
+              images?.[0] ||
+              "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
+
+            const price = Number(purchase.buyer_net_amount ?? 0);
+            const priceText = Number.isFinite(price)
+              ? `${price.toLocaleString("ar-SA")} ريال`
+              : `${purchase.buyer_net_amount ?? 0} ريال`;
+
+            const sellerName = safeUserName(purchase.seller);
+
+            const carId = purchase.car?.id ?? purchase.car_id;
+
             return (
               <motion.div
-                key={purchase.id}
+                key={purchase.auction_id ?? `${purchase.car_id}-${index}`}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.08 }}
                 className="bg-card backdrop-blur-xl border border-border rounded-2xl p-6 hover:border-border/70 hover:shadow-xl transition-all duration-300 group"
               >
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                  {/* Product Image */}
+                  {/* Image */}
                   <div className="flex-shrink-0">
                     <div className="w-24 h-24 lg:w-32 lg:h-32 bg-background rounded-xl overflow-hidden">
                       <img
-                        src={purchase.car.images?.[0] || "/placeholder-car.jpg"}
-                        alt={`${purchase.car.make} ${purchase.car.model}`}
+                        src={cover}
+                        alt={`${make} ${model}`}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src =
-                            "https://via.placeholder.com/200x200?text=No+Image";
+                            "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
                         }}
                       />
                     </div>
                   </div>
 
-                  {/* Product Info */}
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
                       <div className="flex-1">
                         <h3 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors mb-2">
-                          {purchase.car.make} {purchase.car.model}
+                          {make} {model || `#${purchase.car_id}`}
                         </h3>
 
                         <div className="flex flex-wrap gap-3 text-sm text-foreground/70 mb-3">
                           <div className="flex items-center gap-1">
                             <Package className="w-3 h-3" />
-                            <span>
-                              {purchase.car.market_category || "سيارات"}
-                            </span>
+                            <span>{category}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            <span>
-                              انتهى في{" "}
-                              {new Date(purchase.created_at).toLocaleDateString(
-                                "ar-SA"
-                              )}
-                            </span>
+                            <span>تاريخ الصفقة: {getDealDateText(purchase)}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
-                            <span>
-                              {purchase.auction?.bids_count || 0} مزايدة
-                            </span>
+                            <span>رقم المزاد #{purchase.auction_id}</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 text-sm text-foreground/70">
                           <span>البائع:</span>
-                          <span className="text-blue-300">
-                            {purchase.seller.name}
-                          </span>
+                          <span className="text-blue-300">{sellerName}</span>
                         </div>
                       </div>
 
                       <div className="flex flex-col items-start lg:items-end gap-2">
-                        <div className="text-2xl font-bold text-secondary">
-                          {purchase.buyer_net_amount} ريال
-                        </div>
+                        <div className="text-2xl font-bold text-secondary">{priceText}</div>
 
                         <div
                           className={cn(
@@ -487,7 +578,7 @@ export default function MyPurchasesPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
                       {purchase.status === "pending" && (
                         <LoadingLink
@@ -499,27 +590,17 @@ export default function MyPurchasesPage() {
                         </LoadingLink>
                       )}
 
-                      {purchase.status === "delivered_pending_confirmation" && (
-                        <button
-                          onClick={() => handleConfirmReceipt(purchase.id)}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg border border-blue-700 hover:bg-blue-700 transition-all duration-300 group/confirm"
-                        >
-                          <CheckCircle className="w-4 h-4 transition-transform group-hover/confirm:scale-110" />
-                          <span className="font-medium">تأكيد الاستلام</span>
-                        </button>
-                      )}
-
                       <LoadingLink
-                        href={`/carDetails/${purchase.car.id}`}
+                        href={`/carDetails/${carId}`}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card text-foreground rounded-lg border border-border hover:bg-muted transition-all duration-300 group/view"
                       >
                         <Eye className="w-4 h-4 transition-transform group-hover/view:scale-110" />
-                        <span className="font-medium">عرض تفاصيل العنصر</span>
+                        <span className="font-medium">عرض تفاصيل السيارة</span>
                       </LoadingLink>
 
-                      {purchase.status !== "completed" && (
+                      {purchase.status !== "confirmed" && (
                         <button
-                          onClick={() => handleOpenDispute(purchase.id)}
+                          onClick={() => handleOpenDispute(purchase.auction_id)}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg border border-red-700 hover:bg-red-700 transition-all duration-300 group/dispute"
                         >
                           <AlertCircle className="w-4 h-4 transition-transform group-hover/dispute:scale-110" />
@@ -534,6 +615,15 @@ export default function MyPurchasesPage() {
           })
         )}
       </motion.div>
+
+      {/* Pagination */}
+      {paginationData && paginationData?.last_page > 1 && (
+        <div className="flex justify-center pt-2">
+          <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
+            <Pagination data={paginationData} options={paginationOptions} changePage={changePage} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
