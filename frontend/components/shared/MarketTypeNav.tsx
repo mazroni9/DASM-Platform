@@ -2,7 +2,7 @@
 
 import React from "react";
 import LoadingLink from "@/components/LoadingLink";
-import { Car, Star, Gem, Home, Store } from "lucide-react";
+import { Car, Star, Gem, Home, Store, Award } from "lucide-react";
 import { motion } from "framer-motion";
 
 // ========== عناصر الأسواق ==========
@@ -13,18 +13,21 @@ const marketItems = [
     icon: Car,
     href: "/auctions/auctions-1main",
     group: "right",
+    isHidden: false,
   },
   {
     name: "سوق السيارات المتخصص",
-    icon: Car,
+    icon: Award, // ✅ أيقونة مختلفة بدل Car
     href: "/auctions/auctions-2car",
     group: "right",
+    isHidden: false,
   },
   {
     name: "سوق الاجهزة النوعية",
     icon: Star,
     href: "/auctions/auctions-3quality",
     group: "right",
+    isHidden: true, // ✅ مخفي (مش ممسوح)
   },
 
   // المجموعة اليسرى - العامة
@@ -33,18 +36,21 @@ const marketItems = [
     icon: Gem,
     href: "/auctions/auctions-4special",
     group: "left",
+    isHidden: true, // ✅ مخفي
   },
   {
     name: "الأسواق العامة",
     icon: Home,
     href: "/auctions/auctions-5general",
     group: "left",
+    isHidden: true, // ✅ مخفي
   },
   {
     name: "السوق الكبير",
     icon: Store,
     href: "/auctions/auctions-6big",
     group: "left",
+    isHidden: true, // ✅ مخفي
   },
 ];
 
@@ -53,13 +59,10 @@ const MarketCard = ({ item, index }: any) => {
   const Icon = item.icon;
   const isRight = item.group === "right";
 
-  const bgColor =
-    item.group === "right" ? "bg-primary" : "bg-secondary";
+  const bgColor = item.group === "right" ? "bg-primary" : "bg-secondary";
 
   const shadowColor =
-    item.group === "right"
-      ? "shadow-primary/20"
-      : "shadow-secondary/20";
+    item.group === "right" ? "shadow-primary/20" : "shadow-secondary/20";
 
   return (
     <motion.div
@@ -91,6 +94,7 @@ const MarketCard = ({ item, index }: any) => {
               />
             </div>
           </div>
+
           <h3 className="text-foreground font-semibold text-lg md:text-xl leading-snug">
             {item.name}
           </h3>
@@ -104,6 +108,8 @@ const MarketCard = ({ item, index }: any) => {
 
 // ========== شريط تنقل الأسواق ==========
 export default function MarketTypeNav() {
+  const visibleItems = marketItems.filter((item) => !item.isHidden);
+
   return (
     <div className="w-full py-8 md:py-10">
       <div className="max-w-6xl mx-auto">
@@ -122,9 +128,9 @@ export default function MarketTypeNav() {
           </p>
         </motion.div>
 
-        {/* العناصر */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-          {marketItems.map((item, index) => (
+        {/* العناصر (مُتوسّطة) */}
+        <div className="flex flex-wrap justify-center gap-6 md:gap-10">
+          {visibleItems.map((item, index) => (
             <MarketCard key={item.href} item={item} index={index} />
           ))}
         </div>

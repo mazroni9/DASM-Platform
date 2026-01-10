@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 /** =========================
- *  Payment Logos (Unified + Bigger)
+ *  Payment Logos (More Compact + Professional)
  *  ========================= */
 
 const LogoCard = ({
@@ -37,8 +37,8 @@ const LogoCard = ({
         bg-white dark:bg-white
         shadow-sm transition
         hover:shadow-md
-        px-4
-        h-[72px]
+        px-3
+        h-[52px]
       "
     >
       {children}
@@ -48,14 +48,14 @@ const LogoCard = ({
 
 const PaymentLogo = ({ src, alt }: { src: string; alt: string }) => {
   return (
-    <div className="relative w-[140px] h-[46px] sm:w-[150px] sm:h-[50px]">
+    <div className="relative w-[72px] h-[22px] sm:w-[80px] sm:h-[24px] overflow-hidden">
       <Image
         src={src}
         alt={alt}
         title={alt}
         fill
         className="object-contain"
-        sizes="(max-width: 640px) 140px, 150px"
+        sizes="(max-width: 640px) 72px, 80px"
         priority={false}
       />
     </div>
@@ -82,7 +82,7 @@ const TwitterBirdIcon = ({ className = "" }: { className?: string }) => (
 );
 
 /** =========================
- *  Social Icon Button (✅ fixed: match brand identity via primary)
+ *  Social Icon Button
  *  ========================= */
 const SocialIconButton = ({
   href,
@@ -122,7 +122,7 @@ const SocialIconButton = ({
 };
 
 /** =========================
- *  Team Link Row (UPDATED)
+ *  Team Link Row
  *  ========================= */
 const TeamLinkRow = () => {
   const href = "https://maz-and-devloper-profile.vercel.app/";
@@ -164,44 +164,22 @@ type Payment = {
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  const mainLinks = [
-    { href: "/about", label: "من نحن", icon: <Sparkles className="h-4 w-4" /> },
-    { href: "/how-it-works", label: "كيف نعمل", icon: <Gavel className="h-4 w-4" /> },
-    { href: "/faq", label: "الأسئلة الشائعة", icon: <HelpCircle className="h-4 w-4" /> },
+  const socialLinks = [
+    { href: "mailto:mazroni@dasm.host", label: "البريد", icon: <Mail className="h-5 w-5" /> },
+    { href: "https://snapchat.com/t/4IDzLfrK", label: "Snapchat", icon: <Ghost className="h-5 w-5" /> },
+    {
+      href: "https://www.instagram.com/dasm_net?igsh=eW44aW5mcWFkcjkw&utm_source=qr",
+      label: "Instagram",
+      icon: <Instagram className="h-5 w-5" />,
+    },
+    { href: "https://www.tiktok.com/@dasm0202", label: "TikTok", icon: <Music2 className="h-5 w-5" /> },
+    { href: "https://x.com/DASM0909", label: "Twitter", icon: <TwitterBirdIcon className="h-5 w-5" /> },
   ];
 
   const policyLinks = [
     { href: "/privacy", label: "سياسة الخصوصية", icon: <ShieldCheck className="h-4 w-4" /> },
     { href: "/terms", label: "الشروط والأحكام", icon: <Scale className="h-4 w-4" /> },
     { href: "/fees-and-subscriptions", label: "سياسة الرسوم والاشتراكات", icon: <Gavel className="h-4 w-4" /> },
-  ];
-
-  const socialLinks = [
-    {
-      href: "mailto:mazroni@dasm.host",
-      label: "البريد",
-      icon: <Mail className="h-5 w-5" />,
-    },
-    {
-      href: "https://snapchat.com/t/4IDzLfrK",
-      label: "Snapchat",
-      icon: <Ghost className="h-5 w-5" />,
-    },
-    {
-      href: "https://www.instagram.com/dasm_net?igsh=eW44aW5mcWFkcjkw&utm_source=qr",
-      label: "Instagram",
-      icon: <Instagram className="h-5 w-5" />,
-    },
-    {
-      href: "https://www.tiktok.com/@dasm0202",
-      label: "TikTok",
-      icon: <Music2 className="h-5 w-5" />,
-    },
-    {
-      href: "https://x.com/DASM0909",
-      label: "Twitter",
-      icon: <TwitterBirdIcon className="h-5 w-5" />,
-    },
   ];
 
   const payments: Payment[] = [
@@ -227,7 +205,7 @@ const Footer = () => {
         {/* Top grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           {/* Brand */}
-          <div className="lg:col-span-5 h-full">
+          <div className="lg:col-span-8 h-full">
             <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full flex flex-col">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -248,13 +226,30 @@ const Footer = () => {
                 هدفنا تجربة واضحة، سريعة، وموثوقة للجميع.
               </p>
 
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              {/* ✅ نقل من نحن + الأسئلة الشائعة بجانب كيف نعمل */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <LoadingLink
                   href="/how-it-works"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold hover:bg-border/60 transition"
                 >
                   كيف نعمل
                   <Gavel className="h-4 w-4 text-primary" />
+                </LoadingLink>
+
+                <LoadingLink
+                  href="/about"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold hover:bg-border/60 transition"
+                >
+                  من نحن
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </LoadingLink>
+
+                <LoadingLink
+                  href="/faq"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold hover:bg-border/60 transition"
+                >
+                  الأسئلة الشائعة
+                  <HelpCircle className="h-4 w-4 text-primary" />
                 </LoadingLink>
               </div>
 
@@ -275,42 +270,8 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Links */}
-          <div className="lg:col-span-4 h-full">
-            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full flex flex-col">
-              <div className="text-sm font-bold">روابط مهمة</div>
-
-              <nav aria-label="روابط مهمة" className="mt-4">
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {mainLinks.map((l) => (
-                    <li key={l.href}>
-                      <LoadingLink
-                        href={l.href}
-                        className="group flex items-center justify-between rounded-xl border border-transparent bg-background/40 px-4 py-3 hover:bg-background hover:border-border transition"
-                      >
-                        <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                          <span className="text-primary">{l.icon}</span>
-                          {l.label}
-                        </span>
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </LoadingLink>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-
-              <div className="mt-auto pt-6 text-xs text-muted-foreground leading-relaxed">
-                تقدر تراجع{" "}
-                <LoadingLink href="/faq" className="text-primary hover:underline">
-                  الأسئلة الشائعة
-                </LoadingLink>{" "}
-                قبل التواصل لتصل لأقرب إجابة بسرعة.
-              </div>
-            </div>
-          </div>
-
           {/* Policies + Team */}
-          <div className="lg:col-span-3 h-full">
+          <div className="lg:col-span-4 h-full">
             <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-5 sm:p-6 shadow-sm h-full flex flex-col">
               <div className="text-sm font-bold">السياسات</div>
 

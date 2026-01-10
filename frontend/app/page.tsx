@@ -15,7 +15,6 @@ import {
   TrendingUp,
   Users,
   Award,
-  CheckCircle,
   ArrowRight,
   Radio,
   PlayCircle,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Footer from "@/components/shared/Footer";
+import MarketTypeNav from "@/components/shared/MarketTypeNav";
 import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 
@@ -186,113 +186,6 @@ const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
     <span suppressHydrationWarning>
       {timeLeft ? `ينتهي خلال ${timeLeft}` : "—"}
     </span>
-  );
-};
-
-// =============================================================
-// ✅ سكشن "اختر السوق المتخصص" — نفس روح وشكل MarketTypeNav
-// لكن بس كارتين:
-// - سوق معارض السيارات
-// - سوق السيارات المتخصص
-// =============================================================
-const ChooseMarketSection = () => {
-  const cards = [
-    {
-      id: "car-showrooms",
-      title: "سوق معارض السيارات",
-      subtitle: "مزادات سيارات من المعارض – فرص قوية وأسعار تنافسية",
-      href: "/auctions",
-      icon: <Car className="w-6 h-6" />,
-      badge: "الأكثر طلبًا",
-    },
-    {
-      id: "specialized-cars",
-      title: "سوق السيارات المتخصص",
-      subtitle: "سيارات مميزة ونادرة – مزادات دقيقة لهواة التميز",
-      href: "/auctions",
-      icon: <Award className="w-6 h-6" />,
-      badge: "مميز",
-    },
-  ];
-
-  return (
-    <div>
-      <div className="text-center mb-6 md:mb-8">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-foreground">
-          اختر سوقك المتخصص
-        </h2>
-        <p className="text-foreground/70 mt-2 text-sm md:text-base max-w-2xl mx-auto">
-          اختر السوق المناسب لاحتياجك وابدأ رحلة المزاد فورًا
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-5xl mx-auto items-stretch">
-        {cards.map((c, idx) => (
-          <motion.div
-            key={c.id}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: idx * 0.08 }}
-            className="h-full"
-          >
-            <LoadingLink href={c.href} className="block h-full">
-              <div
-                className="
-                  group relative h-full
-                  rounded-2xl border border-border
-                  bg-card
-                  shadow-sm hover:shadow-lg
-                  transition-all duration-300
-                  p-5 sm:p-6
-                  overflow-hidden
-                "
-              >
-                <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute -top-20 -right-20 h-52 w-52 rounded-full bg-primary/10 blur-3xl" />
-                  <div className="absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-secondary/10 blur-3xl" />
-                </div>
-
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-border/60 shrink-0">
-                      {c.icon}
-                    </div>
-
-                    <div className="min-w-0">
-                      <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
-                        {c.title}
-                      </h3>
-                      <p className="text-sm md:text-base text-foreground/70 mt-1 line-clamp-2">
-                        {c.subtitle}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0">
-                    <span className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full bg-emerald-700/90 text-white">
-                      <CheckCircle className="w-4 h-4" />
-                      {c.badge}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="relative mt-5 flex items-center justify-between">
-                  <span className="text-xs md:text-sm text-foreground/60">
-                    جاهز تبدأ؟
-                  </span>
-
-                  <span className="inline-flex items-center gap-2 rounded-xl bg-primary text-white px-4 py-2 text-sm font-bold hover:bg-primary/90 transition">
-                    استكشف السوق
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                </div>
-              </div>
-            </LoadingLink>
-          </motion.div>
-        ))}
-      </div>
-    </div>
   );
 };
 
@@ -569,10 +462,7 @@ const FeaturedCars = () => {
                         alt={title || "Car"}
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                       />
-                      <div
-                        className="absolute top-3 right-3 bg-secondary text-white px-2 py-1 rounded-full text-xs sm:text-sm font-bold"
-                        suppressHydrationWarning
-                      >
+                      <div className="absolute top-3 right-3 bg-secondary text-white px-2 py-1 rounded-full text-xs sm:text-sm font-bold">
                         <AuctionCountdown endTime={endTime} />
                       </div>
                     </div>
@@ -581,16 +471,10 @@ const FeaturedCars = () => {
                         {title || "سيارة مميزة"}
                       </h3>
                       <div className="flex justify-between items-center mb-3 sm:mb-4">
-                        <span
-                          className="text-secondary font-bold text-base sm:text-lg"
-                          suppressHydrationWarning
-                        >
+                        <span className="text-secondary font-bold text-base sm:text-lg">
                           {currentBid} ر.س
                         </span>
-                        <span
-                          className="text-foreground text-xs sm:text-sm"
-                          suppressHydrationWarning
-                        >
+                        <span className="text-foreground text-xs sm:text-sm">
                           {totalBids} مزايدة
                         </span>
                       </div>
@@ -704,6 +588,7 @@ const StatsSection = () => {
             إحصائيات حقيقية تثبت جودة خدماتنا وثقة عملائنا
           </p>
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {stats.map((stat, index) => (
             <motion.div
@@ -722,9 +607,7 @@ const StatsSection = () => {
               <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">
                 {stat.value}
               </h3>
-              <p className="text-foreground text-sm md:text-base">
-                {stat.label}
-              </p>
+              <p className="text-foreground text-sm md:text-base">{stat.label}</p>
             </motion.div>
           ))}
         </div>
@@ -733,7 +616,7 @@ const StatsSection = () => {
   );
 };
 
-// ========== قسم المزايا (لماذا تختار داسم-اي؟) ==========
+// ========== قسم المزايا ==========
 const BenefitsSection = () => {
   const benefits = [
     {
@@ -816,7 +699,7 @@ export default function Page() {
 
   return (
     <>
-      {/* Hero Section – فاخر وغامر لكن بدون فراغ زائد */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-secondary dark:bg-background">
         <div className="container mx-auto px-4 sm:px-6 py-16 md:py-20 lg:py-24 relative z-10 text-center">
           <motion.div
@@ -838,10 +721,10 @@ export default function Page() {
         </div>
       </section>
 
-      {/* اختر السوق المتخصص (كارتين فقط) */}
+      {/* ✅ اختر السوق المتخصص — نفس السكشن الصحيح بالظبط */}
       <section className="py-8 md:py-12 bg-background border-y border-border">
         <div className="container mx-auto px-4 sm:px-6">
-          <ChooseMarketSection />
+          <MarketTypeNav />
         </div>
       </section>
 
