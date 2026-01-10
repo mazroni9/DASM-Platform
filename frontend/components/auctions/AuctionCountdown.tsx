@@ -1,15 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface AuctionCountdownProps {
   endTime: string;
 }
 
+interface TimeLeft {
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+}
+
 const AuctionCountdown: React.FC<AuctionCountdownProps> = ({ endTime }) => {
-  const calculateTimeLeft = () => {
+  const calculateTimeLeft = (): TimeLeft => {
     const difference = +new Date(endTime) - +new Date();
-    let timeLeft = {};
+    let timeLeft: TimeLeft = {};
 
     if (difference > 0) {
       timeLeft = {
@@ -22,7 +28,7 @@ const AuctionCountdown: React.FC<AuctionCountdownProps> = ({ endTime }) => {
     return timeLeft;
   };
 
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft());
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -50,7 +56,9 @@ const AuctionCountdown: React.FC<AuctionCountdownProps> = ({ endTime }) => {
     <div>
       {timerComponents.length ? (
         <div className="text-lg font-bold text-destructive">
-            {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+          {String(timeLeft.hours).padStart(2, "0")}:
+          {String(timeLeft.minutes).padStart(2, "0")}:
+          {String(timeLeft.seconds).padStart(2, "0")}
         </div>
       ) : (
         <span className="text-destructive font-semibold">Auction Ended</span>

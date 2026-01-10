@@ -116,8 +116,6 @@ export default function MyPurchasesPage() {
         const response = await api.get("/api/settlements");
         if (response.data.status === "success") {
           setPurchases(response.data.data.data);
-          console.log("purchases", response.data.data.data);
-          console.log("purchases", purchases);
         } else {
           setError("Failed to fetch purchases.");
         }

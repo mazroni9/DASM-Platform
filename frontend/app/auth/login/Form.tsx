@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import LoadingLink from "@/components/LoadingLink";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getErrorMessage } from "@/utils/errorUtils";
 const loginSchema = z.object({
   email: z.string().email({ message: "يرجى إدخال بريد إلكتروني صالح" }),
   password: z
@@ -98,7 +99,7 @@ export default function LoginForm() {
         }
       }
     } catch (error: any) {
-      setError(error.message || "حدث خطأ أثناء تسجيل الدخول");
+      setError(getErrorMessage(error, "حدث خطأ أثناء تسجيل الدخول"));
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +123,7 @@ export default function LoginForm() {
         setError(result.error || "فشل التحقق من الكود");
       }
     } catch (error: any) {
-      setError(error.message || "حدث خطأ أثناء التحقق من الكود");
+      setError(getErrorMessage(error, "حدث خطأ أثناء التحقق من الكود"));
     } finally {
       setIsLoading(false);
     }

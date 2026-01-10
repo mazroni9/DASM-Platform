@@ -826,6 +826,7 @@ Route::prefix('employees')->group(function () {
         // ─────────────────────────────────────────────────────────────
         Route::prefix('cars')->group(function () {
             Route::get('/', [AdminCarController::class, 'index'])->middleware('can:cars.view');
+            Route::get('/stats', [AdminCarController::class, 'stats']);
             Route::get('/{id}', [AdminCarController::class, 'show'])->whereNumber('id')->middleware('can:cars.view_details');
             Route::put('/{id}', [AdminCarController::class, 'update'])->whereNumber('id')->middleware('can:cars.update');
             Route::put('/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id')->middleware('can:cars.update');

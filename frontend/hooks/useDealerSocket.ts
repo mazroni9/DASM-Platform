@@ -48,12 +48,10 @@ export function useDealerSocket({
     // Connection state handling
     pusher.connection.bind("connected", () => {
       setConnectionStatus(true, 0);
-      console.log("[DealerSocket] Connected");
     });
 
     pusher.connection.bind("disconnected", () => {
       setConnectionStatus(false, 0);
-      console.log("[DealerSocket] Disconnected");
     });
 
     pusher.connection.bind("error", (err: any) => {
@@ -73,7 +71,6 @@ export function useDealerSocket({
     // Private Wallet channel
     const walletChannel = pusher.subscribe(`private-dealer.${userId}.wallet`);
     walletChannel.bind("balance-updated", (data: any) => {
-      console.log("[DealerSocket] Wallet updated:", data);
       setWallet({
         availableBalance: data.available_balance,
         fundedBalance: data.funded_balance,
@@ -86,14 +83,12 @@ export function useDealerSocket({
     systemChannel.bind("pong", (data: any) => {
       const latency = Date.now() - pingStartRef.current;
       setConnectionStatus(true, latency);
-      console.log("[DealerSocket] Latency:", latency, "ms");
     });
 
     // AI Recommendations channel (only if enabled)
     if (aiEnabled) {
       const aiChannel = pusher.subscribe(`private-dealer.${userId}.ai`);
       aiChannel.bind("opportunity-detected", (data: any) => {
-        console.log("[DealerSocket] AI Opportunity:", data);
         const recommendation: AiRecommendation = {
           vehicleId: data.vehicle_id,
           name: data.name,
@@ -125,7 +120,6 @@ export function useDealerSocket({
 
       const channel = pusher.subscribe(`auction.${auctionId}`);
       channel.bind("price-updated", (data: any) => {
-        console.log("[DealerSocket] Price updated:", data);
         updateAuctionPrice(data.auction_id, data.price, data.end_time);
       });
 

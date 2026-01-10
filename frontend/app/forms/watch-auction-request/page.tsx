@@ -1,92 +1,114 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
-import { ArrowLeft, Upload, Info, HelpCircle, X } from 'lucide-react';
+import { ArrowLeft, Upload, Info, HelpCircle, X } from "lucide-react";
 
 export default function WatchAuctionRequestPage() {
   const [formData, setFormData] = useState({
-    watchName: '',
-    brand: '',
-    referenceNumber: '',
-    condition: '',
-    year: '',
+    watchName: "",
+    brand: "",
+    referenceNumber: "",
+    condition: "",
+    year: "",
     hasBox: false,
     hasWarranty: false,
     hasPapers: false,
-    description: '',
-    minPrice: '',
-    maxPrice: '',
+    description: "",
+    minPrice: "",
+    maxPrice: "",
     acceptDirectOffers: true,
-    deliveryMethod: 'platform',
+    deliveryMethod: "platform",
     images: [] as File[],
   });
 
   // الماركات المعتمدة
   const approvedBrands = [
-    { name: 'Rolex', models: ['Daytona', 'Submariner', 'GMT-Master', 'Datejust', 'Day-Date', 'Explorer'] },
-    { name: 'Patek Philippe', models: ['Nautilus', 'Aquanaut', 'Calatrava', 'Grand Complications'] },
-    { name: 'Audemars Piguet', models: ['Royal Oak', 'Royal Oak Offshore'] },
-    { name: 'Richard Mille', models: ['RM 11', 'RM 27', 'RM 35'] },
-    { name: 'Omega', models: ['Speedmaster', 'Seamaster', 'Constellation', 'De Ville'] },
-    { name: 'Cartier', models: ['Santos', 'Tank', 'Ballon Bleu', 'Panthère'] },
-    { name: 'Hublot', models: ['Big Bang', 'Classic Fusion'] },
-    { name: 'Jaeger-LeCoultre', models: ['Reverso', 'Master', 'Polaris'] },
-    { name: 'Grand Seiko', models: ['Heritage', 'Sport', 'Elegance'] },
+    {
+      name: "Rolex",
+      models: [
+        "Daytona",
+        "Submariner",
+        "GMT-Master",
+        "Datejust",
+        "Day-Date",
+        "Explorer",
+      ],
+    },
+    {
+      name: "Patek Philippe",
+      models: ["Nautilus", "Aquanaut", "Calatrava", "Grand Complications"],
+    },
+    { name: "Audemars Piguet", models: ["Royal Oak", "Royal Oak Offshore"] },
+    { name: "Richard Mille", models: ["RM 11", "RM 27", "RM 35"] },
+    {
+      name: "Omega",
+      models: ["Speedmaster", "Seamaster", "Constellation", "De Ville"],
+    },
+    { name: "Cartier", models: ["Santos", "Tank", "Ballon Bleu", "Panthère"] },
+    { name: "Hublot", models: ["Big Bang", "Classic Fusion"] },
+    { name: "Jaeger-LeCoultre", models: ["Reverso", "Master", "Polaris"] },
+    { name: "Grand Seiko", models: ["Heritage", "Sport", "Elegance"] },
   ];
 
   // حالات الساعة
   const conditions = [
-    { value: 'new', label: 'جديدة (لم تستخدم)' },
-    { value: 'excellent', label: 'ممتازة (شبه جديدة، بدون خدوش أو علامات استخدام)' },
-    { value: 'very_good', label: 'جيدة جدًا (علامات استخدام بسيطة غير ملحوظة)' },
-    { value: 'good', label: 'جيدة (علامات استخدام واضحة لكن بدون أضرار)' },
-    { value: 'fair', label: 'متوسطة (خدوش واضحة ويمكن إصلاحها)' },
+    { value: "new", label: "جديدة (لم تستخدم)" },
+    {
+      value: "excellent",
+      label: "ممتازة (شبه جديدة، بدون خدوش أو علامات استخدام)",
+    },
+    {
+      value: "very_good",
+      label: "جيدة جدًا (علامات استخدام بسيطة غير ملحوظة)",
+    },
+    { value: "good", label: "جيدة (علامات استخدام واضحة لكن بدون أضرار)" },
+    { value: "fair", label: "متوسطة (خدوش واضحة ويمكن إصلاحها)" },
   ];
 
   // طرق التوصيل
   const deliveryMethods = [
-    { value: 'platform', label: 'من خلال المنصة (رسوم 200 ريال)' },
-    { value: 'courier', label: 'شركة توصيل خارجية (DHL / Aramex)' },
-    { value: 'personal', label: 'استلام شخصي' },
+    { value: "platform", label: "من خلال المنصة (رسوم 200 ريال)" },
+    { value: "courier", label: "شركة توصيل خارجية (DHL / Aramex)" },
+    { value: "personal", label: "استلام شخصي" },
   ];
 
   // وظيفة معالجة التغييرات في الحقول
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   // وظيفة معالجة اختيار الصور
   const handleImageChange = (e) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files);
-      if (formData.images.length + newImages.length <= 10) { // الحد الأقصى 10 صور
-        setFormData(prev => ({
+      const newImages = Array.from(e.target.files) as File[];
+      if (formData.images.length + newImages.length <= 10) {
+        // الحد الأقصى 10 صور
+        setFormData((prev) => ({
           ...prev,
-          images: [...prev.images, ...newImages]
+          images: [...prev.images, ...newImages],
         }));
       } else {
-        alert('لا يمكن رفع أكثر من 10 صور');
+        alert("لا يمكن رفع أكثر من 10 صور");
       }
     }
   };
 
   // وظيفة حذف صورة
   const removeImage = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
   // وظيفة إرسال النموذج
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('تم إرسال النموذج:', formData);
     // سيتم هنا إرسال البيانات إلى الخادم لاحقًا
     alert(`تم استلام طلبك بنجاح! سنقوم بمراجعته والتواصل معك قريبًا.
 الحد الأدنى: ${formData.minPrice} ريال
@@ -98,8 +120,8 @@ export default function WatchAuctionRequestPage() {
       {/* رأس الصفحة */}
       <div className="bg-gradient-to-r from-blue-700 to-indigo-600 py-6">
         <div className="container mx-auto px-4">
-          <LoadingLink 
-            href="/auctions/auctions-4special/watches" 
+          <LoadingLink
+            href="/auctions/auctions-4special/watches"
             className="flex items-center text-white hover:text-white/90 transition mb-4"
           >
             <ArrowLeft size={20} className="ml-2" />
@@ -115,13 +137,18 @@ export default function WatchAuctionRequestPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
           <h2 className="text-2xl font-bold mb-6">معلومات الساعة</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* القسم الأول: معلومات الساعة الأساسية */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="brand" className="block text-gray-700 font-medium mb-2">الماركة <span className="text-red-500">*</span></label>
-                <select 
+                <label
+                  htmlFor="brand"
+                  className="block text-gray-700 font-medium mb-2"
+                >
+                  الماركة <span className="text-red-500">*</span>
+                </label>
+                <select
                   id="brand"
                   name="brand"
                   value={formData.brand}
@@ -131,15 +158,22 @@ export default function WatchAuctionRequestPage() {
                   aria-label="اختر ماركة الساعة"
                 >
                   <option value="">-- اختر الماركة --</option>
-                  {approvedBrands.map(brand => (
-                    <option key={brand.name} value={brand.name}>{brand.name}</option>
+                  {approvedBrands.map((brand) => (
+                    <option key={brand.name} value={brand.name}>
+                      {brand.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="watchName" className="block text-gray-700 font-medium mb-2">اسم/موديل الساعة <span className="text-red-500">*</span></label>
-                <input 
+                <label
+                  htmlFor="watchName"
+                  className="block text-gray-700 font-medium mb-2"
+                >
+                  اسم/موديل الساعة <span className="text-red-500">*</span>
+                </label>
+                <input
                   type="text"
                   id="watchName"
                   name="watchName"
@@ -152,8 +186,13 @@ export default function WatchAuctionRequestPage() {
               </div>
 
               <div>
-                <label htmlFor="referenceNumber" className="block text-gray-700 font-medium mb-2">الرقم المرجعي <span className="text-red-500">*</span></label>
-                <input 
+                <label
+                  htmlFor="referenceNumber"
+                  className="block text-gray-700 font-medium mb-2"
+                >
+                  الرقم المرجعي <span className="text-red-500">*</span>
+                </label>
+                <input
                   type="text"
                   id="referenceNumber"
                   name="referenceNumber"
@@ -166,8 +205,13 @@ export default function WatchAuctionRequestPage() {
               </div>
 
               <div>
-                <label htmlFor="year" className="block text-gray-700 font-medium mb-2">سنة الإنتاج</label>
-                <input 
+                <label
+                  htmlFor="year"
+                  className="block text-gray-700 font-medium mb-2"
+                >
+                  سنة الإنتاج
+                </label>
+                <input
                   type="text"
                   id="year"
                   name="year"
@@ -181,8 +225,13 @@ export default function WatchAuctionRequestPage() {
 
             {/* القسم الثاني: حالة الساعة والمرفقات */}
             <div>
-              <label htmlFor="condition" className="block text-gray-700 font-medium mb-2">حالة الساعة <span className="text-red-500">*</span></label>
-              <select 
+              <label
+                htmlFor="condition"
+                className="block text-gray-700 font-medium mb-2"
+              >
+                حالة الساعة <span className="text-red-500">*</span>
+              </label>
+              <select
                 id="condition"
                 name="condition"
                 value={formData.condition}
@@ -192,15 +241,17 @@ export default function WatchAuctionRequestPage() {
                 aria-label="اختر حالة الساعة"
               >
                 <option value="">-- اختر الحالة --</option>
-                {conditions.map(condition => (
-                  <option key={condition.value} value={condition.value}>{condition.label}</option>
+                {conditions.map((condition) => (
+                  <option key={condition.value} value={condition.value}>
+                    {condition.label}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center">
-                <input 
+                <input
                   type="checkbox"
                   id="hasBox"
                   name="hasBox"
@@ -208,10 +259,12 @@ export default function WatchAuctionRequestPage() {
                   onChange={handleChange}
                   className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <label htmlFor="hasBox" className="mr-2 text-gray-700">مع العلبة الأصلية</label>
+                <label htmlFor="hasBox" className="mr-2 text-gray-700">
+                  مع العلبة الأصلية
+                </label>
               </div>
               <div className="flex items-center">
-                <input 
+                <input
                   type="checkbox"
                   id="hasWarranty"
                   name="hasWarranty"
@@ -219,10 +272,12 @@ export default function WatchAuctionRequestPage() {
                   onChange={handleChange}
                   className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <label htmlFor="hasWarranty" className="mr-2 text-gray-700">مع بطاقة الضمان</label>
+                <label htmlFor="hasWarranty" className="mr-2 text-gray-700">
+                  مع بطاقة الضمان
+                </label>
               </div>
               <div className="flex items-center">
-                <input 
+                <input
                   type="checkbox"
                   id="hasPapers"
                   name="hasPapers"
@@ -230,14 +285,21 @@ export default function WatchAuctionRequestPage() {
                   onChange={handleChange}
                   className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <label htmlFor="hasPapers" className="mr-2 text-gray-700">مع الأوراق الرسمية</label>
+                <label htmlFor="hasPapers" className="mr-2 text-gray-700">
+                  مع الأوراق الرسمية
+                </label>
               </div>
             </div>
 
             {/* القسم الثالث: الوصف والسعر */}
             <div>
-              <label htmlFor="description" className="block text-gray-700 font-medium mb-2">وصف الساعة <span className="text-red-500">*</span></label>
-              <textarea 
+              <label
+                htmlFor="description"
+                className="block text-gray-700 font-medium mb-2"
+              >
+                وصف الساعة <span className="text-red-500">*</span>
+              </label>
+              <textarea
                 id="description"
                 name="description"
                 value={formData.description}
@@ -251,8 +313,14 @@ export default function WatchAuctionRequestPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="minPrice" className="block text-gray-700 font-medium mb-2">الحد الأدنى المقبول (بالريال) <span className="text-red-500">*</span></label>
-                <input 
+                <label
+                  htmlFor="minPrice"
+                  className="block text-gray-700 font-medium mb-2"
+                >
+                  الحد الأدنى المقبول (بالريال){" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
                   type="number"
                   id="minPrice"
                   name="minPrice"
@@ -263,12 +331,20 @@ export default function WatchAuctionRequestPage() {
                   placeholder="أدخل الحد الأدنى المقبول"
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-sm text-gray-500 mt-1">سيكون مخفياً عن المشترين</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  سيكون مخفياً عن المشترين
+                </p>
               </div>
 
               <div>
-                <label htmlFor="maxPrice" className="block text-gray-700 font-medium mb-2">الحد الأعلى المرغوب فيه (بالريال) <span className="text-red-500">*</span></label>
-                <input 
+                <label
+                  htmlFor="maxPrice"
+                  className="block text-gray-700 font-medium mb-2"
+                >
+                  الحد الأعلى المرغوب فيه (بالريال){" "}
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
                   type="number"
                   id="maxPrice"
                   name="maxPrice"
@@ -279,16 +355,23 @@ export default function WatchAuctionRequestPage() {
                   placeholder="أدخل الحد الأعلى المرغوب فيه"
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <p className="text-sm text-gray-500 mt-1">سيكون مخفياً عن المشترين</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  سيكون مخفياً عن المشترين
+                </p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 italic">سيتم تحديد سعر الافتتاح من قبل غرفة التحكم (الكنترول روم) بناءً على تقييم الساعة.</p>
+            <p className="text-sm text-gray-600 italic">
+              سيتم تحديد سعر الافتتاح من قبل غرفة التحكم (الكنترول روم) بناءً
+              على تقييم الساعة.
+            </p>
 
             {/* القسم الرابع: الصور */}
             <div>
-              <label className="block text-gray-700 font-medium mb-2">صور الساعة <span className="text-red-500">*</span></label>
+              <label className="block text-gray-700 font-medium mb-2">
+                صور الساعة <span className="text-red-500">*</span>
+              </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input 
+                <input
                   type="file"
                   id="watch-images"
                   onChange={handleImageChange}
@@ -296,23 +379,37 @@ export default function WatchAuctionRequestPage() {
                   accept="image/*"
                   className="hidden"
                 />
-                <label htmlFor="watch-images" className="cursor-pointer flex flex-col items-center">
+                <label
+                  htmlFor="watch-images"
+                  className="cursor-pointer flex flex-col items-center"
+                >
                   <Upload size={40} className="text-gray-400 mb-2" />
-                  <p className="text-gray-600 mb-1">اسحب الصور هنا أو انقر للاختيار</p>
-                  <p className="text-sm text-gray-500">يمكنك رفع حتى 10 صور عالية الجودة للساعة</p>
+                  <p className="text-gray-600 mb-1">
+                    اسحب الصور هنا أو انقر للاختيار
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    يمكنك رفع حتى 10 صور عالية الجودة للساعة
+                  </p>
                 </label>
               </div>
-              
+
               {formData.images.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="text-gray-700 font-medium mb-2">الصور المرفوعة ({formData.images.length}/10)</h4>
+                  <h4 className="text-gray-700 font-medium mb-2">
+                    الصور المرفوعة ({formData.images.length}/10)
+                  </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                     {formData.images.map((image, index) => (
-                      <div key={index} className="relative h-24 bg-gray-100 rounded-md overflow-hidden">
+                      <div
+                        key={index}
+                        className="relative h-24 bg-gray-100 rounded-md overflow-hidden"
+                      >
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-gray-400 text-sm">صورة {index + 1}</span>
+                          <span className="text-gray-400 text-sm">
+                            صورة {index + 1}
+                          </span>
                         </div>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => removeImage(index)}
                           className="absolute top-1 left-1 bg-red-500 text-white rounded-full p-1 shadow-sm hover:bg-red-600"
@@ -329,14 +426,13 @@ export default function WatchAuctionRequestPage() {
 
             {/* قسم طريقة التوصيل */}
             <div>
-              <label className="block text-gray-700 font-medium mb-2">طريقة التسليم <span className="text-red-500">*</span></label>
+              <label className="block text-gray-700 font-medium mb-2">
+                طريقة التسليم <span className="text-red-500">*</span>
+              </label>
               <div className="space-y-3">
-                {deliveryMethods.map(method => (
-                  <div 
-                    key={method.value}
-                    className="flex items-center"
-                  >
-                    <input 
+                {deliveryMethods.map((method) => (
+                  <div key={method.value} className="flex items-center">
+                    <input
                       type="radio"
                       id={`delivery-${method.value}`}
                       name="deliveryMethod"
@@ -345,7 +441,12 @@ export default function WatchAuctionRequestPage() {
                       onChange={handleChange}
                       className="w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     />
-                    <label htmlFor={`delivery-${method.value}`} className="mr-2 font-medium">{method.label}</label>
+                    <label
+                      htmlFor={`delivery-${method.value}`}
+                      className="mr-2 font-medium"
+                    >
+                      {method.label}
+                    </label>
                   </div>
                 ))}
               </div>
@@ -375,26 +476,33 @@ export default function WatchAuctionRequestPage() {
 
             {/* الموافقة على الشروط */}
             <div className="flex items-start">
-              <input 
+              <input
                 type="checkbox"
                 id="terms"
                 required
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 mt-1"
               />
               <label htmlFor="terms" className="mr-2 text-gray-700">
-                أوافق على <LoadingLink href="/terms" className="text-blue-600 hover:underline">شروط وأحكام</LoadingLink> المنصة وأتعهد بصحة المعلومات المدخلة.
+                أوافق على{" "}
+                <LoadingLink
+                  href="/terms"
+                  className="text-blue-600 hover:underline"
+                >
+                  شروط وأحكام
+                </LoadingLink>{" "}
+                المنصة وأتعهد بصحة المعلومات المدخلة.
               </label>
             </div>
 
             {/* زر الإرسال */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button 
+              <button
                 type="submit"
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 إرسال الطلب
               </button>
-              <LoadingLink 
+              <LoadingLink
                 href="/auctions/auctions-4special/watches"
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition text-center"
               >
@@ -408,9 +516,14 @@ export default function WatchAuctionRequestPage() {
       {/* ملاحظة مساعدة */}
       <div className="container mx-auto px-4 mt-8">
         <div className="max-w-4xl mx-auto bg-blue-50 rounded-xl p-4 flex items-start">
-          <HelpCircle size={24} className="text-blue-600 ml-3 flex-shrink-0 mt-1" />
+          <HelpCircle
+            size={24}
+            className="text-blue-600 ml-3 flex-shrink-0 mt-1"
+          />
           <div>
-            <h3 className="font-bold text-blue-800 mb-1">نصائح للحصول على أفضل سعر</h3>
+            <h3 className="font-bold text-blue-800 mb-1">
+              نصائح للحصول على أفضل سعر
+            </h3>
             <ul className="text-blue-700 space-y-1 text-sm">
               <li>• قم بتصوير الساعة من جميع الزوايا بضوء جيد ومناسب</li>
               <li>• أضف صورًا واضحة للإبزيم والمينا والرقم المرجعي</li>
@@ -423,4 +536,4 @@ export default function WatchAuctionRequestPage() {
       </div>
     </div>
   );
-} 
+}

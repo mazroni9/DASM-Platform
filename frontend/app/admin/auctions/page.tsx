@@ -22,6 +22,7 @@ import {
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import Pagination from "@/components/OldPagination";
+import { getAxiosErrorMessage } from "@/utils/errorUtils";
 
 interface Auction {
   id: number;
@@ -155,7 +156,8 @@ export default function AdminAuctionsPage() {
   };
 
   const handleSelectAll = () => {
-    const currentList = activeTab === "all" ? filteredAuctions : pendingAuctions;
+    const currentList =
+      activeTab === "all" ? filteredAuctions : pendingAuctions;
     if (selectedAuctions.length === currentList.length) {
       setSelectedAuctions([]);
     } else {
@@ -238,9 +240,7 @@ export default function AdminAuctionsPage() {
       }
     } catch (error: any) {
       console.error("Error performing bulk action:", error);
-      toast.error(
-        error?.response?.data?.message || "حدث خطأ أثناء تنفيذ العملية"
-      );
+      toast.error(getAxiosErrorMessage(error, "حدث خطأ أثناء تنفيذ العملية"));
     }
   };
 
@@ -295,7 +295,7 @@ export default function AdminAuctionsPage() {
       }
     } catch (error: any) {
       console.error("Error approving auction:", error);
-      toast.error(error.response?.data?.message || "فشل في قبول المزاد");
+      toast.error(getAxiosErrorMessage(error, "فشل في قبول المزاد"));
     } finally {
       setProcessingId(null);
     }
@@ -324,7 +324,7 @@ export default function AdminAuctionsPage() {
       }
     } catch (error: any) {
       console.error("Error rejecting auction:", error);
-      toast.error(error.response?.data?.message || "فشل في رفض المزاد");
+      toast.error(getAxiosErrorMessage(error, "فشل في رفض المزاد"));
     } finally {
       setProcessingId(null);
     }
@@ -420,7 +420,9 @@ export default function AdminAuctionsPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-primary">
             إدارة المزادات
           </h1>
-          <p className="text-foreground/70 mt-2">إدارة وتنظيم جميع المزادات في النظام</p>
+          <p className="text-foreground/70 mt-2">
+            إدارة وتنظيم جميع المزادات في النظام
+          </p>
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
@@ -428,7 +430,9 @@ export default function AdminAuctionsPage() {
             onClick={fetchAuctions}
             className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
           >
-            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`}
+            />
             تحديث
           </button>
           <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
@@ -443,7 +447,9 @@ export default function AdminAuctionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-foreground/70 text-sm">إجمالي المزادات</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.total}
+              </p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Car className="w-6 h-6 text-blue-400" />
@@ -455,7 +461,9 @@ export default function AdminAuctionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-foreground/70 text-sm">مزادات نشطة</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.live}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.live}
+              </p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
               <Play className="w-6 h-6 text-green-400" />
@@ -467,7 +475,9 @@ export default function AdminAuctionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-foreground/70 text-sm">مزادات مجدولة</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.scheduled}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.scheduled}
+              </p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
               <Clock className="w-6 h-6 text-amber-400" />
@@ -479,7 +489,9 @@ export default function AdminAuctionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-foreground/70 text-sm">مزادات مكتملة</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.completed}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.completed}
+              </p>
             </div>
             <div className="bg-emerald-500/10 p-3 rounded-xl">
               <CheckCircle className="w-6 h-6 text-emerald-400" />
@@ -491,7 +503,9 @@ export default function AdminAuctionsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-foreground/70 text-sm">في انتظار الموافقة</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.pending}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.pending}
+              </p>
             </div>
             <div className="bg-purple-500/10 p-3 rounded-xl">
               <AlertTriangle className="w-6 h-6 text-purple-400" />
@@ -598,7 +612,8 @@ export default function AdminAuctionsPage() {
                           <input
                             type="checkbox"
                             checked={
-                              selectedAuctions.length === filteredAuctions.length &&
+                              selectedAuctions.length ===
+                                filteredAuctions.length &&
                               filteredAuctions.length > 0
                             }
                             onChange={handleSelectAll}
@@ -630,7 +645,9 @@ export default function AdminAuctionsPage() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {filteredAuctions.map((auction) => {
-                        const TypeIcon = getAuctionTypeIcon(auction.auction_type);
+                        const TypeIcon = getAuctionTypeIcon(
+                          auction.auction_type
+                        );
                         return (
                           <tr
                             key={auction.id}
@@ -654,7 +671,9 @@ export default function AdminAuctionsPage() {
                                     className="text-sm font-medium text-foreground cursor-pointer hover:text-primary"
                                     onClick={() =>
                                       window.open(
-                                        `/carDetails/${auction.car?.id || auction.id}`,
+                                        `/carDetails/${
+                                          auction.car?.id || auction.id
+                                        }`,
                                         "_blank"
                                       )
                                     }
@@ -671,7 +690,8 @@ export default function AdminAuctionsPage() {
                               <div className="flex items-center text-primary">
                                 <DollarSign className="w-4 h-4 ml-1" />
                                 <span className="text-sm font-medium">
-                                  {auction.current_bid?.toLocaleString() || 0} ريال
+                                  {auction.current_bid?.toLocaleString() || 0}{" "}
+                                  ريال
                                 </span>
                               </div>
                             </td>
@@ -707,7 +727,10 @@ export default function AdminAuctionsPage() {
                               <div className="flex items-center space-x-2 space-x-reverse">
                                 <button
                                   onClick={() =>
-                                    window.open(`/auctions/${auction.id}`, "_blank")
+                                    window.open(
+                                      `/auctions/${auction.id}`,
+                                      "_blank"
+                                    )
                                   }
                                   className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300"
                                   title="عرض التفاصيل"
@@ -716,48 +739,55 @@ export default function AdminAuctionsPage() {
                                 </button>
 
                                 {/* Actions for live and approved */}
-                                {auction.status === "live" && auction.approved_for_live && (
-                                  <>
-                                    <button
-                                      onClick={async function complete() {
-                                        const status = await api.put(
-                                          `/api/admin/auctions/${auction.id}/status`,
-                                          { status: "completed" }
-                                        );
-                                        if (status.data.status === "success") {
-                                          toast.success("تم إتمام الصفقة");
-                                          router.refresh();
-                                        } else {
-                                          toast.error("حدث خطأ ما");
-                                          router.refresh();
-                                        }
-                                      }}
-                                      className="text-green-400 hover:text-green-300 hover:bg-green-500/10 p-2 rounded-lg transition-all duration-300"
-                                      title="إتمام الصفقة"
-                                    >
-                                      <CircleDollarSign size={16} />
-                                    </button>
-                                    <button
-                                      onClick={async function cancel() {
-                                        const status = await api.put(
-                                          `/api/admin/auctions/${auction.id}/status`,
-                                          { status: "ended" }
-                                        );
-                                        if (status.data.status === "success") {
-                                          toast.success("تم الغاء المزاد بنجاح");
-                                          router.refresh();
-                                        } else {
-                                          toast.error("حدث خطأ ما");
-                                          router.refresh();
-                                        }
-                                      }}
-                                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-300"
-                                      title="إلغاء المزاد"
-                                    >
-                                      <XCircle size={16} />
-                                    </button>
-                                  </>
-                                )}
+                                {auction.status === "live" &&
+                                  auction.approved_for_live && (
+                                    <>
+                                      <button
+                                        onClick={async function complete() {
+                                          const status = await api.put(
+                                            `/api/admin/auctions/${auction.id}/status`,
+                                            { status: "completed" }
+                                          );
+                                          if (
+                                            status.data.status === "success"
+                                          ) {
+                                            toast.success("تم إتمام الصفقة");
+                                            router.refresh();
+                                          } else {
+                                            toast.error("حدث خطأ ما");
+                                            router.refresh();
+                                          }
+                                        }}
+                                        className="text-green-400 hover:text-green-300 hover:bg-green-500/10 p-2 rounded-lg transition-all duration-300"
+                                        title="إتمام الصفقة"
+                                      >
+                                        <CircleDollarSign size={16} />
+                                      </button>
+                                      <button
+                                        onClick={async function cancel() {
+                                          const status = await api.put(
+                                            `/api/admin/auctions/${auction.id}/status`,
+                                            { status: "ended" }
+                                          );
+                                          if (
+                                            status.data.status === "success"
+                                          ) {
+                                            toast.success(
+                                              "تم الغاء المزاد بنجاح"
+                                            );
+                                            router.refresh();
+                                          } else {
+                                            toast.error("حدث خطأ ما");
+                                            router.refresh();
+                                          }
+                                        }}
+                                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded-lg transition-all duration-300"
+                                        title="إلغاء المزاد"
+                                      >
+                                        <XCircle size={16} />
+                                      </button>
+                                    </>
+                                  )}
 
                                 {/* Start live (واحد فقط في نفس الوقت) */}
                                 {auction.auction_type === "live" &&
@@ -948,8 +978,12 @@ export default function AdminAuctionsPage() {
                 <CheckCircle className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">موافقة على المزاد</h2>
-                <p className="text-foreground/70 text-sm">تأكيد موافقة على المزاد المحدد</p>
+                <h2 className="text-lg font-semibold text-foreground">
+                  موافقة على المزاد
+                </h2>
+                <p className="text-foreground/70 text-sm">
+                  تأكيد موافقة على المزاد المحدد
+                </p>
               </div>
             </div>
 
@@ -962,7 +996,10 @@ export default function AdminAuctionsPage() {
                 type="number"
                 value={approvalData.opening_price}
                 onChange={(e) =>
-                  setApprovalData((p) => ({ ...p, opening_price: e.target.value }))
+                  setApprovalData((p) => ({
+                    ...p,
+                    opening_price: e.target.value,
+                  }))
                 }
                 className="w-full bg-background/50 border border-border rounded-xl py-2 px-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
@@ -996,13 +1033,19 @@ export default function AdminAuctionsPage() {
                 <XCircle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">رفض المزاد</h2>
-                <p className="text-foreground/70 text-sm">تأكيد رفض المزاد المحدد</p>
+                <h2 className="text-lg font-semibold text-foreground">
+                  رفض المزاد
+                </h2>
+                <p className="text-foreground/70 text-sm">
+                  تأكيد رفض المزاد المحدد
+                </p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <label className="block text-sm text-foreground/80">سبب الرفض</label>
+              <label className="block text-sm text-foreground/80">
+                سبب الرفض
+              </label>
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}

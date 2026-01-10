@@ -23,7 +23,7 @@ type Role = {
 };
 
 interface RoleCardProps {
-  type: Role;
+  role: Role;
   onDelete?: () => void;
 }
 

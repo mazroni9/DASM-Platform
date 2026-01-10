@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "@/utils/errorUtils";
 
 export function LoginForm() {
   const router = useLoadingRouter();
@@ -43,7 +44,6 @@ export function LoginForm() {
 
     try {
       const result = await login(email, password);
-      console.log(result);
       if (result.success) {
         toast.success("تم تسجيل الدخول بنجاح");
 
@@ -66,7 +66,7 @@ export function LoginForm() {
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      toast.error(error.message || "حدث خطأ أثناء تسجيل الدخول");
+      toast.error(getErrorMessage(error, "حدث خطأ أثناء تسجيل الدخول"));
     } finally {
       setIsLoading(false);
     }

@@ -120,7 +120,6 @@ export default function ModeratorBroadcastManagement() {
         setIsLoading(true);
         try {
             const response = await api.get("/api/moderator/dashboard");
-            console.log("Broadcast info response:", response.data);
 
             if (response.data.status === "success") {
                 setBroadcastInfo(response.data.data);

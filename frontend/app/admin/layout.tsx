@@ -281,7 +281,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     const active = isActive(item.href);
                     if (item.type && item.type === "header") {
                       return (
-                        <h3 className="text-sm text-primary font-bold pb-1 pt-3 flex items-center">
+                        <h3
+                          key={item.name}
+                          className="text-sm text-primary font-bold pb-1 pt-3 flex items-center"
+                        >
                           {" "}
                           <Icon
                             style={{ width: "1em", height: "1em" }}

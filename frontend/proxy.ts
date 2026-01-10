@@ -60,9 +60,6 @@ export async function proxy(request: NextRequest) {
 
   // Check for the HttpOnly refresh token cookie
   const refreshTokenCookie = request.cookies.get("refresh_token")?.value;
-  console.log("not_RefreshToken_Cookie", refreshTokenCookie);
-  console.log("cookie", request.headers.get("cookie"));
-  console.warn("warn_not_RefreshToken_Cookie");
   if (!refreshTokenCookie) {
     if (!isGuestPath(pathname)) {
       const loginUrl = new URL("/auth/login", request.url);
@@ -75,7 +72,6 @@ export async function proxy(request: NextRequest) {
   try {
     // Call the middleware-specific endpoint to get user role using the refresh token
     const apiUrl = buildMiddlewareApiUrl(request);
-    console.log("refreshTokenCookie", refreshTokenCookie);
     const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
@@ -84,8 +80,6 @@ export async function proxy(request: NextRequest) {
       },
       credentials: "include", // Important for cross-domain cookies
     });
-
-    console.log(response);
 
     if (response.ok) {
       const userData = await response.json();

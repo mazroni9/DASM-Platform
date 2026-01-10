@@ -1,7 +1,6 @@
 import {Link} from '@inertiajs/react';
 
 export const PaginationTest= (cars:any)=>{
-  console.log(cars.cars.links)
     return(
         <div>
      {cars.cars.links.map((link,index) =>(

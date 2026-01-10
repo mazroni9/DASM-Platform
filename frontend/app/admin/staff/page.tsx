@@ -95,7 +95,6 @@ export default function StaffPage() {
       const response = await api.get("/api/admin/staff");
 
       if (response.data && response.data.status === "success") {
-        console.log("Fetched staff:", response.data);
         if (response.data.data && response.data.data.data) {
           setStaff(response.data.data.data);
           setFilteredStaff(response.data.data.data);

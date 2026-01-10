@@ -29,7 +29,6 @@ export default function AddMedicalDeviceForm() {
   };
 
   const handleBarcodeScan = () => {
-    console.log('Barcode scan initiated...');
     alert('ميزة مسح الباركود غير مفعلة بعد.');
   };
 
@@ -39,7 +38,6 @@ export default function AddMedicalDeviceForm() {
        alert('الرجاء إدخال الرقم التسلسلي.');
        return;
     }
-    console.log('Medical Device Form Data:', formData);
     alert('تم إرسال البيانات (للتجربة فقط).');
   };
 

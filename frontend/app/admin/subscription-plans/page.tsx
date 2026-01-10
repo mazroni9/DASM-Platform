@@ -5,29 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { subscriptionPlanService } from "@/services/subscription-plan-service";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { 
-    Eye, 
-    Loader2, 
-    Pencil, 
-    RefreshCw, 
-    Search, 
-    Trash2, 
-    ToggleLeft, 
-    ToggleRight,
-    Plus,
-    Filter,
-    Download,
-    Crown,
-    Users,
-    Calendar,
-    DollarSign,
-    Zap,
-    ChevronDown,
-    MoreVertical,
-    AlertTriangle,
-    CheckCircle,
-    XCircle,
-    Sparkles
+import {
+  Eye,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Search,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Plus,
+  Filter,
+  Download,
+  Crown,
+  Users,
+  Calendar,
+  DollarSign,
+  Zap,
+  ChevronDown,
+  MoreVertical,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Sparkles,
 } from "lucide-react";
 
 export default function Page() {
@@ -41,20 +41,20 @@ export default function Page() {
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
 
   const userTypes = {
-    bidder: 'مزايد',
-    dealer: 'تاجر',
-    auctioneer: 'مزاد',
-    moderator: 'منسق',
-    admin: 'مدير',
+    bidder: "مزايد",
+    dealer: "تاجر",
+    auctioneer: "مزاد",
+    moderator: "منسق",
+    admin: "مدير",
   };
 
   const load = async () => {
     try {
       setLoading(true);
-      const params = {};
+      const params: { userType?: string; isActive?: string } = {};
       if (userTypeFilter !== "all") params.userType = userTypeFilter;
       if (activeFilter !== "all") params.isActive = activeFilter;
-      
+
       const data = await subscriptionPlanService.list(params);
       setRows(Array.isArray(data) ? data : []);
     } finally {
@@ -97,7 +97,7 @@ export default function Page() {
   // Calculate statistics
   const stats = useMemo(() => {
     const total = rows.length;
-    const active = rows.filter(t => t.isActive).length;
+    const active = rows.filter((t) => t.isActive).length;
     const totalRevenue = rows.reduce((sum, t) => sum + (t.price || 0), 0);
     const averagePrice = total > 0 ? totalRevenue / total : 0;
 
@@ -116,18 +116,16 @@ export default function Page() {
             إدارة وتنظيم خطط الاشتراك والعضويات في النظام
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <Button 
-            onClick={load} 
-            variant="outline" 
-            size="sm"
-          >
-            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
+          <Button onClick={load} variant="outline" size="sm">
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`}
+            />
             تحديث البيانات
           </Button>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => r.push("/admin/subscription-plans/create")}
             size="sm"
@@ -144,7 +142,9 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-sm">إجمالي الخطط</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.total}
+              </p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Crown className="w-6 h-6 text-blue-400" />
@@ -156,7 +156,9 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-sm">الخطط النشطة</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.active}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.active}
+              </p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
               <Zap className="w-6 h-6 text-green-400" />
@@ -169,7 +171,10 @@ export default function Page() {
             <div>
               <p className="text-muted-foreground text-sm">إجمالي الإيرادات</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {formatCurrency(stats.totalRevenue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                {formatCurrency(stats.totalRevenue, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
               </p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
@@ -183,7 +188,10 @@ export default function Page() {
             <div>
               <p className="text-muted-foreground text-sm">متوسط السعر</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {formatCurrency(stats.averagePrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(stats.averagePrice, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </div>
             <div className="bg-purple-500/10 p-3 rounded-xl">
@@ -217,7 +225,9 @@ export default function Page() {
             >
               <option value="all">كل أنواع المستخدمين</option>
               {Object.entries(userTypes).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
+                <option key={key} value={key}>
+                  {label}
+                </option>
               ))}
             </select>
 
@@ -231,19 +241,13 @@ export default function Page() {
               <option value="inactive">معطلة</option>
             </select>
 
-            <Button 
-              variant="outline" 
-              size="sm"
-            >
+            <Button variant="outline" size="sm">
               <Filter className="w-4 h-4 ml-2" />
               المزيد من الفلاتر
               <ChevronDown className="w-4 h-4 mr-2" />
             </Button>
 
-            <Button 
-              variant="outline" 
-              size="sm"
-            >
+            <Button variant="outline" size="sm">
               <Download className="w-4 h-4 ml-2" />
               تصدير التقرير
             </Button>
@@ -270,7 +274,9 @@ export default function Page() {
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">جاري تحميل خطط الاشتراك...</p>
+              <p className="text-muted-foreground">
+                جاري تحميل خطط الاشتراك...
+              </p>
             </div>
           </div>
         ) : (
@@ -278,13 +284,27 @@ export default function Page() {
             <table className="w-full">
               <thead>
                 <tr className="bg-muted border-b border-border">
-                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الخطة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">نوع المستخدم</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السعر</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">المدة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">السعر الشهري</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الحالة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">الإجراءات</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    الخطة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    نوع المستخدم
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    السعر
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    المدة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    السعر الشهري
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    الحالة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                    الإجراءات
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -321,12 +341,15 @@ export default function Page() {
 
                       {/* Price */}
                       <td className="px-6 py-4 text-sm font-semibold text-cyan-400">
-                        {formatCurrency(plan.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatCurrency(plan.price, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
 
                       {/* Duration */}
                       <td className="px-6 py-4">
-                          <div className="flex items-center text-sm text-foreground">
+                        <div className="flex items-center text-sm text-foreground">
                           <Calendar className="w-3 h-3 ml-1 text-muted-foreground" />
                           {plan.durationText}
                         </div>
@@ -334,16 +357,21 @@ export default function Page() {
 
                       {/* Monthly Price */}
                       <td className="px-6 py-4 text-sm font-semibold text-green-400">
-                        {formatCurrency(plan.monthlyPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatCurrency(plan.monthlyPrice, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
 
                       {/* Status */}
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                          plan.isActive 
-                            ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                            : 'bg-red-500/20 text-red-400 border-red-500/30'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                            plan.isActive
+                              ? "bg-green-500/20 text-green-400 border-green-500/30"
+                              : "bg-red-500/20 text-red-400 border-red-500/30"
+                          }`}
+                        >
                           {plan.isActive ? (
                             <>
                               <CheckCircle className="w-3 h-3 ml-1" />
@@ -364,21 +392,33 @@ export default function Page() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => r.push(`/admin/subscription-plans/view/${plan.id}`)}
+                            onClick={() =>
+                              r.push(
+                                `/admin/subscription-plans/view/${plan.id}`
+                              )
+                            }
                           >
-                            <Eye size={16}/>
+                            <Eye size={16} />
                           </Button>
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => r.push(`/admin/subscription-plans/edit/${plan.id}`)}
+                            onClick={() =>
+                              r.push(
+                                `/admin/subscription-plans/edit/${plan.id}`
+                              )
+                            }
                           >
-                            <Pencil size={16}/>
+                            <Pencil size={16} />
                           </Button>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className={plan.isActive ? "text-amber-400 hover:text-amber-300 hover:bg-amber-500/10" : "text-green-400 hover:text-green-300 hover:bg-green-500/10"} 
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={
+                              plan.isActive
+                                ? "text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                                : "text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                            }
                             onClick={() => onToggleStatus(plan)}
                             disabled={toggleLoading === plan.id}
                           >
@@ -396,13 +436,10 @@ export default function Page() {
                             className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                             onClick={() => onDelete(plan)}
                           >
-                            <Trash2 size={16}/>
+                            <Trash2 size={16} />
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreVertical size={16}/>
+                          <Button size="icon" variant="ghost">
+                            <MoreVertical size={16} />
                           </Button>
                         </div>
                       </td>
@@ -414,24 +451,31 @@ export default function Page() {
                       <div className="flex flex-col items-center justify-center">
                         <Crown className="w-16 h-16 text-muted-foreground mb-4" />
                         <p className="text-muted-foreground text-lg mb-2">
-                          {searchTerm || userTypeFilter !== "all" || activeFilter !== "all"
+                          {searchTerm ||
+                          userTypeFilter !== "all" ||
+                          activeFilter !== "all"
                             ? "لا توجد نتائج مطابقة للبحث"
-                            : "لا توجد خطط اشتراك مسجلة"
-                          }
+                            : "لا توجد خطط اشتراك مسجلة"}
                         </p>
                         <p className="text-muted-foreground text-sm mb-6">
-                          {!searchTerm && userTypeFilter === "all" && activeFilter === "all" && 
-                           "ابدأ بإضافة خطط اشتراك جديدة إلى النظام"}
+                          {!searchTerm &&
+                            userTypeFilter === "all" &&
+                            activeFilter === "all" &&
+                            "ابدأ بإضافة خطط اشتراك جديدة إلى النظام"}
                         </p>
-                        {!searchTerm && userTypeFilter === "all" && activeFilter === "all" && (
-                          <Button 
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                            onClick={() => r.push("/admin/subscription-plans/create")}
-                          >
-                            <Plus className="w-4 h-4 ml-2" />
-                            إضافة خطة جديدة
-                          </Button>
-                        )}
+                        {!searchTerm &&
+                          userTypeFilter === "all" &&
+                          activeFilter === "all" && (
+                            <Button
+                              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                              onClick={() =>
+                                r.push("/admin/subscription-plans/create")
+                              }
+                            >
+                              <Plus className="w-4 h-4 ml-2" />
+                              إضافة خطة جديدة
+                            </Button>
+                          )}
                       </div>
                     </td>
                   </tr>
@@ -451,15 +495,23 @@ export default function Page() {
                 <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">تأكيد الحذف</h2>
-                <p className="text-muted-foreground text-sm">هل أنت متأكد من حذف خطة الاشتراك هذه؟</p>
+                <h2 className="text-lg font-semibold text-foreground">
+                  تأكيد الحذف
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  هل أنت متأكد من حذف خطة الاشتراك هذه؟
+                </p>
               </div>
             </div>
-            
+
             <div className="bg-muted rounded-xl p-4 mb-6">
               <div className="text-foreground font-medium">{confirm.name}</div>
               <div className="text-muted-foreground text-sm mt-1">
-                السعر: {formatCurrency(confirm.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                السعر:{" "}
+                {formatCurrency(confirm.price, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
               <div className="text-muted-foreground text-sm">
                 النوع: {confirm.userTypeText}
@@ -467,14 +519,11 @@ export default function Page() {
             </div>
 
             <div className="flex justify-end space-x-3 space-x-reverse">
-              <Button 
-                variant="outline" 
-                onClick={() => setConfirm(null)}
-              >
+              <Button variant="outline" onClick={() => setConfirm(null)}>
                 إلغاء
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={doDelete}
                 className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >

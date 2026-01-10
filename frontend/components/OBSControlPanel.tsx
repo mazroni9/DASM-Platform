@@ -39,7 +39,6 @@ export default function OBSControlPanel() {
             const response = await api.get("/api/broadcast");
             if (response.data.status === "success") {
                 // Broadcast info will be set by the hook after connection
-                console.log("تم جلب معلومات البث:", response.data.data);
             }
         } catch (error) {
             console.error("خطأ في جلب معلومات البث:", error);

@@ -1,75 +1,88 @@
 // app/auth/reset-password/Form.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { AlertCircle, CheckCircle2, Lock } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useSearchParams } from 'next/navigation';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { AlertCircle, CheckCircle2, Lock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useSearchParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import LoadingLink from "@/components/LoadingLink";
-import axios from 'axios';
+import axios from "axios";
 
 interface ResetPasswordResponse {
   status: string;
   message: string;
 }
 
-const resetPasswordSchema = z.object({
-  password: z.string().min(8, { message: 'كلمة المرور يجب أن تكون على الأقل 8 أحرف' }),
-  password_confirmation: z.string(),
-}).refine((data) => data.password === data.password_confirmation, {
-  message: 'كلمات المرور غير متطابقة',
-  path: ['password_confirmation'],
-});
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, { message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف" }),
+    password_confirmation: z.string(),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    message: "كلمات المرور غير متطابقة",
+    path: ["password_confirmation"],
+  });
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPasswordForm() {
   const router = useLoadingRouter();
-  
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordFormValues>({
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  const onSubmit = async ( ResetPasswordFormValues) => {
+  const onSubmit = async (data: ResetPasswordFormValues) => {
     if (!token) {
-      setError('رابط إعادة تعيين كلمة المرور غير صالح');
+      setError("رابط إعادة تعيين كلمة المرور غير صالح");
       return;
     }
 
     setIsLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     try {
-      const response = await axios.post<ResetPasswordResponse>(`${process.env.NEXT_PUBLIC_API_URL}/api/reset-password`, {
-        token,
-        password: data.password,
-        password_confirmation: data.password_confirmation,
-      });
+      const response = await axios.post<ResetPasswordResponse>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/reset-password`,
+        {
+          token,
+          password: data.password,
+          password_confirmation: data.password_confirmation,
+        }
+      );
 
-      if (response.data.status === 'success') {
+      if (response.data.status === "success") {
         setSuccess(response.data.message);
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push("/auth/login");
         }, 3000);
       } else {
-        setError(response.data.message || 'فشل في إعادة تعيين كلمة المرور');
+        setError(response.data.message || "فشل في إعادة تعيين كلمة المرور");
       }
     } catch (error: any) {
-      setError(error.response?.data?.message || 'حدث خطأ أثناء إعادة تعيين كلمة المرور');
+      setError(
+        error.response?.data?.message || "حدث خطأ أثناء إعادة تعيين كلمة المرور"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -83,11 +96,13 @@ export default function ResetPasswordForm() {
           className="bg-red-900/30 border-red-800 text-red-200"
         >
           <AlertCircle className="h-4 w-4 text-red-300" />
-          <AlertDescription>رابط إعادة تعيين كلمة المرور غير صالح</AlertDescription>
+          <AlertDescription>
+            رابط إعادة تعيين كلمة المرور غير صالح
+          </AlertDescription>
         </Alert>
         <div>
-          <LoadingLink 
-            href="/auth/forgot-password" 
+          <LoadingLink
+            href="/auth/forgot-password"
             className="text-blue-400 hover:text-blue-300 font-medium"
           >
             طلب رابط جديد
@@ -129,7 +144,7 @@ export default function ResetPasswordForm() {
               id="password"
               type="password"
               dir="ltr"
-              {...register('password')}
+              {...register("password")}
               disabled={isLoading}
               className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
@@ -140,7 +155,10 @@ export default function ResetPasswordForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password_confirmation" className="text-gray-200 font-medium">
+          <Label
+            htmlFor="password_confirmation"
+            className="text-gray-200 font-medium"
+          >
             تأكيد كلمة المرور
           </Label>
           <div className="relative">
@@ -151,13 +169,15 @@ export default function ResetPasswordForm() {
               id="password_confirmation"
               type="password"
               dir="ltr"
-              {...register('password_confirmation')}
+              {...register("password_confirmation")}
               disabled={isLoading}
               className="pl-3 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
             />
           </div>
           {errors.password_confirmation && (
-            <p className="text-sm text-red-400">{errors.password_confirmation.message}</p>
+            <p className="text-sm text-red-400">
+              {errors.password_confirmation.message}
+            </p>
           )}
         </div>
 
@@ -177,8 +197,8 @@ export default function ResetPasswordForm() {
         </Button>
 
         <div className="text-center text-sm text-gray-400">
-          <LoadingLink 
-            href="/auth/login" 
+          <LoadingLink
+            href="/auth/login"
             className="text-blue-400 hover:text-blue-300 font-medium"
           >
             العودة إلى تسجيل الدخول

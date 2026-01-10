@@ -91,7 +91,6 @@ export default function RareItemAuctionRequestPage() {
   // وظيفة إرسال النموذج
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('تم إرسال النموذج:', formData);
     // سيتم هنا إرسال البيانات إلى الخادم لاحقًا
     alert('تم استلام طلبك بنجاح! سيتم مراجعته والتواصل معك قريبًا.');
   };

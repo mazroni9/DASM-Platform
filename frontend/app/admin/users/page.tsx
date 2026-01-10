@@ -126,7 +126,6 @@ export default function UsersManagementPage() {
       const response = await api.get(`/api/admin/users?page=${currentPage}`);
 
       if (response.data && response.data.status === "success") {
-        console.log("Fetched users:", response.data);
         if (response.data.data && response.data.data.data) {
           setUsers(response.data.data.data);
           setFilteredUsers(response.data.data.data);

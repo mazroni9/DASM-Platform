@@ -184,7 +184,6 @@ export default function YachtRegistrationPage() {
 
     try {
       // في التطبيق الحقيقي، نرسل البيانات إلى API باستخدام fetch
-      console.log('Submitting yacht data:', yachtData);
       
       // محاكاة الاستجابة من الخادم
       await new Promise(resolve => setTimeout(resolve, 2000));
