@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Pusher from "pusher-js";
+import { usePusher } from "@/contexts/PusherContext";
 
 // -------- helpers --------
 const toNumber = (v: any): number => {
@@ -78,7 +79,9 @@ interface LiveMarketPageContentProps {
   sessionId?: string;
 }
 
-export default function LiveMarketPageContent({ sessionId }: LiveMarketPageContentProps) {
+export default function LiveMarketPageContent({
+  sessionId,
+}: LiveMarketPageContentProps) {
   const [isAllowed] = useState(true); // جلسات لايف عامة
   const [isOwner, setIsOwner] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +91,9 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
 
   const [marketCars, setMarketCars] = useState<LiveAuction[]>([]);
   const [currentCar, setCurrentCar] = useState<LiveAuction | null>(null);
-  const [marketCarsCompleted, setMarketCarsCompleted] = useState<LiveAuction[]>([]);
+  const [marketCarsCompleted, setMarketCarsCompleted] = useState<LiveAuction[]>(
+    []
+  );
 
   const [showBid, setShowBid] = useState(false);
   const [status, setStatus] = useState("");
@@ -113,9 +118,14 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
       // الـ API بتاعك بيرجع: { status: "success", data: {...} }
       const payload = response?.data?.data;
 
-      const current_live_car: LiveAuction | null = payload?.current_live_car ?? null;
-      const pending_live_auctions: LiveAuction[] = ensureArray<LiveAuction>(payload?.pending_live_auctions);
-      const completed_live_auctions: LiveAuction[] = ensureArray<LiveAuction>(payload?.completed_live_auctions);
+      const current_live_car: LiveAuction | null =
+        payload?.current_live_car ?? null;
+      const pending_live_auctions: LiveAuction[] = ensureArray<LiveAuction>(
+        payload?.pending_live_auctions
+      );
+      const completed_live_auctions: LiveAuction[] = ensureArray<LiveAuction>(
+        payload?.completed_live_auctions
+      );
 
       // Owner check (هيشتغل فقط لو car موجود)
       if (current_live_car?.car) {
@@ -123,7 +133,11 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
         const current_user_id = user?.id ?? null;
         const dealer_user_id = current_live_car.car.dealer?.user_id ?? null;
 
-        if (current_user_id && (current_user_id === car_user_id || current_user_id === dealer_user_id)) {
+        if (
+          current_user_id &&
+          (current_user_id === car_user_id ||
+            current_user_id === dealer_user_id)
+        ) {
           setIsOwner(true);
         } else {
           setIsOwner(false);
@@ -150,14 +164,15 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
     fetchAuctions();
   }, [fetchAuctions]);
 
-  // Pusher
+  // Pusher using shared context
+  const { subscribe, unsubscribe, isConnected } = usePusher();
+
   useEffect(() => {
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "ap2",
-    });
+    if (!isConnected) return;
 
     const channelName = sessionId ? `session.${sessionId}` : "auction.live";
-    const channel = pusher.subscribe(channelName);
+    const channel = subscribe(channelName);
+    if (!channel) return;
 
     const refresh = () => fetchAuctions();
 
@@ -167,11 +182,17 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
     channel.bind("CarApprovedForLiveEvent", (data: any) => {
       refresh();
       if (data.approved_for_live) {
-        toast.success(`تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`);
+        toast.success(
+          `تمت الموافقة على ${data.car_make} ${data.car_model} للمزاد المباشر!`
+        );
       } else {
         toast.custom(
           <div
-            style={{ padding: "16px", borderRadius: "8px", backgroundColor: "#ffffcc" }}
+            style={{
+              padding: "16px",
+              borderRadius: "8px",
+              backgroundColor: "#ffffcc",
+            }}
             className="text-black flex items-center gap-2"
           >
             <CircleAlert className="w-4 h-4" />
@@ -192,13 +213,19 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
         failed: "فاشل",
         scheduled: "مجدول",
       };
-      toast(`تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${labels[data.old_status] ?? data.old_status} إلى ${labels[data.new_status] ?? data.new_status}`);
+      toast(
+        `تم تغيير حالة مزاد ${data.car_make} ${data.car_model} من ${
+          labels[data.old_status] ?? data.old_status
+        } إلى ${labels[data.new_status] ?? data.new_status}`
+      );
     });
 
     channel.bind("LiveMarketBidEvent", (data: any) => {
       if (user && data.bidder_id !== user.id) {
         toast.success(
-          `مزايدة جديدة: ${data.car_make} ${data.car_model} - ${data.bid_amount.toLocaleString()} ريال`,
+          `مزايدة جديدة: ${data.car_make} ${
+            data.car_model
+          } - ${data.bid_amount.toLocaleString()} ريال`,
           { duration: 5000, position: "top-right" }
         );
         refresh();
@@ -206,10 +233,9 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
     });
 
     return () => {
-      pusher.unsubscribe(channelName);
-      pusher.disconnect();
+      unsubscribe(channelName);
     };
-  }, [sessionId, fetchAuctions, user]);
+  }, [isConnected, sessionId, fetchAuctions, user, subscribe, unsubscribe]);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -235,7 +261,9 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
   };
 
   const currentBid = toNumber(currentCar?.current_bid);
-  const openingBid = toNumber((currentCar as any)?.opening_price ?? currentCar?.starting_bid ?? 0);
+  const openingBid = toNumber(
+    (currentCar as any)?.opening_price ?? currentCar?.starting_bid ?? 0
+  );
   const shownPrice = currentBid === 0 ? openingBid : currentBid;
 
   return (
@@ -279,7 +307,9 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
               {sessionId ? "جلسة المزاد المباشر" : "الحراج المباشر"}
             </h1>
             <div className="text-sm text-primary/80 mt-1">
-              {sessionId ? "أهلاً بك في جلسة المزاد" : "وقت السوق من 4 عصراً إلى 7 مساءً كل يوم"}
+              {sessionId
+                ? "أهلاً بك في جلسة المزاد"
+                : "وقت السوق من 4 عصراً إلى 7 مساءً كل يوم"}
             </div>
           </div>
 
@@ -324,70 +354,117 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
 
               {/* Current session cars table */}
               <div className="bg-card rounded-xl shadow-md p-4">
-                <h2 className="text-lg font-bold mb-3 text-primary">سيارات جلسة الحراج الحالية</h2>
+                <h2 className="text-lg font-bold mb-3 text-primary">
+                  سيارات جلسة الحراج الحالية
+                </h2>
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full border border-border divide-y divide-border">
                     <thead className="bg-background/50">
                       <tr>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">#</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الماركة</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الموديل</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">السنة</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أقل سعر</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أعلى سعر</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">آخر سعر</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">مشاهدة</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          #
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          الماركة
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          الموديل
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          السنة
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          أقل سعر
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          أعلى سعر
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          آخر سعر
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          مشاهدة
+                        </th>
                       </tr>
                     </thead>
 
                     <tbody className="bg-card divide-y divide-border">
                       {marketCars && marketCars.length > 0 ? (
-                        marketCars.map((auction: LiveAuction, index: number) => {
-                          const make = auction?.car?.make ?? "—";
-                          const model = auction?.car?.model ?? "—";
-                          const year = auction?.car?.year ?? "—";
+                        marketCars.map(
+                          (auction: LiveAuction, index: number) => {
+                            const make = auction?.car?.make ?? "—";
+                            const model = auction?.car?.model ?? "—";
+                            const year = auction?.car?.year ?? "—";
 
-                          return (
-                            <tr
-                              key={auction.id}
-                              className={`hover:bg-background ${currentCar?.id === auction.id ? "bg-primary/10" : ""}`}
-                            >
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{index + 1}</td>
+                            return (
+                              <tr
+                                key={auction.id}
+                                className={`hover:bg-background ${
+                                  currentCar?.id === auction.id
+                                    ? "bg-primary/10"
+                                    : ""
+                                }`}
+                              >
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                  {index + 1}
+                                </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                <div className="flex items-center">
-                                  {currentCar?.id === auction.id ? <Radio color="red" className="me-2" size={16} /> : null}
-                                  {make}
-                                </div>
-                              </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                  <div className="flex items-center">
+                                    {currentCar?.id === auction.id ? (
+                                      <Radio
+                                        color="red"
+                                        className="me-2"
+                                        size={16}
+                                      />
+                                    ) : null}
+                                    {make}
+                                  </div>
+                                </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{model}</td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{year}</td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                  {model}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                  {year}
+                                </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {formatCurrency(toNumber(auction.min_price))}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
-                                {formatCurrency(toNumber(auction.max_price))}
-                              </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                  {formatCurrency(toNumber(auction.min_price))}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                  {formatCurrency(toNumber(auction.max_price))}
+                                </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
-                                {formatCurrency(toNumber(auction.current_bid))}
-                              </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
+                                  {formatCurrency(
+                                    toNumber(auction.current_bid)
+                                  )}
+                                </td>
 
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
-                                <LoadingLink target="_blank" href={`/carDetails/${auction.car_id}`} className="hover:underline">
-                                  عرض
-                                </LoadingLink>
-                              </td>
-                            </tr>
-                          );
-                        })
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
+                                  <LoadingLink
+                                    target="_blank"
+                                    href={`/carDetails/${auction.car_id}`}
+                                    className="hover:underline"
+                                  >
+                                    عرض
+                                  </LoadingLink>
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )
                       ) : (
                         <tr>
-                          <td colSpan={8} className="px-4 py-4 text-center text-sm text-foreground/50">
-                            {loading ? "جاري التحميل..." : "لا توجد سيارات متاحة حاليًا في الحراج المباشر"}
+                          <td
+                            colSpan={8}
+                            className="px-4 py-4 text-center text-sm text-foreground/50"
+                          >
+                            {loading
+                              ? "جاري التحميل..."
+                              : "لا توجد سيارات متاحة حاليًا في الحراج المباشر"}
                           </td>
                         </tr>
                       )}
@@ -398,44 +475,88 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
 
               {/* Completed table */}
               <div className="bg-card rounded-xl shadow-md p-4">
-                <h2 className="text-lg font-bold mb-3 text-primary">سيارات جلسة الحراج الحالية المنتهية</h2>
+                <h2 className="text-lg font-bold mb-3 text-primary">
+                  سيارات جلسة الحراج الحالية المنتهية
+                </h2>
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full border border-border divide-y divide-border">
                     <thead className="bg-background/50">
                       <tr>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">#</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الماركة</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">الموديل</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">السنة</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أقل سعر</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">أعلى سعر</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">آخر سعر</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">مشاهدة</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          #
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          الماركة
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          الموديل
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          السنة
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          أقل سعر
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          أعلى سعر
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          آخر سعر
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                          مشاهدة
+                        </th>
                       </tr>
                     </thead>
 
                     <tbody className="bg-card divide-y divide-border">
                       {marketCarsCompleted && marketCarsCompleted.length > 0 ? (
-                        marketCarsCompleted.map((auction: LiveAuction, index: number) => (
-                          <tr key={auction.id} className="hover:bg-background">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{index + 1}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{auction?.car?.make ?? "—"}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{auction?.car?.model ?? "—"}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{auction?.car?.year ?? "—"}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{formatCurrency(toNumber(auction.min_price))}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">{formatCurrency(toNumber(auction.max_price))}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">{formatCurrency(toNumber(auction.current_bid))}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
-                              <LoadingLink target="_blank" href={`/carDetails/${auction.car_id}`} className="hover:underline">
-                                عرض
-                              </LoadingLink>
-                            </td>
-                          </tr>
-                        ))
+                        marketCarsCompleted.map(
+                          (auction: LiveAuction, index: number) => (
+                            <tr
+                              key={auction.id}
+                              className="hover:bg-background"
+                            >
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                {index + 1}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                {auction?.car?.make ?? "—"}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                {auction?.car?.model ?? "—"}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                {auction?.car?.year ?? "—"}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                {formatCurrency(toNumber(auction.min_price))}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-foreground">
+                                {formatCurrency(toNumber(auction.max_price))}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
+                                {formatCurrency(toNumber(auction.current_bid))}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
+                                <LoadingLink
+                                  target="_blank"
+                                  href={`/carDetails/${auction.car_id}`}
+                                  className="hover:underline"
+                                >
+                                  عرض
+                                </LoadingLink>
+                              </td>
+                            </tr>
+                          )
+                        )
                       ) : (
                         <tr>
-                          <td colSpan={8} className="px-4 py-4 text-center text-sm text-foreground/50">
+                          <td
+                            colSpan={8}
+                            className="px-4 py-4 text-center text-sm text-foreground/50"
+                          >
                             لا توجد سيارات مكتملة في الحراج المباشر
                           </td>
                         </tr>
@@ -459,22 +580,44 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                 {currentCar && currentCar.car ? (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-y-2 text-sm">
-                      <div><span className="font-semibold">الماركة:</span> {currentCar.car.make ?? "—"}</div>
-                      <div><span className="font-semibold">الموديل:</span> {currentCar.car.model ?? "—"}</div>
-                      <div><span className="font-semibold">السنة:</span> {currentCar.car.year ?? "—"}</div>
-                      <div><span className="font-semibold">العداد:</span> {currentCar.car.odometer ?? "—"} كم</div>
-                      <div><span className="font-semibold">الحالة:</span> {currentCar.car.condition ?? "—"}</div>
-                      <div><span className="font-semibold">رقم الشاصي:</span> {currentCar.car.vin ?? "—"}</div>
+                      <div>
+                        <span className="font-semibold">الماركة:</span>{" "}
+                        {currentCar.car.make ?? "—"}
+                      </div>
+                      <div>
+                        <span className="font-semibold">الموديل:</span>{" "}
+                        {currentCar.car.model ?? "—"}
+                      </div>
+                      <div>
+                        <span className="font-semibold">السنة:</span>{" "}
+                        {currentCar.car.year ?? "—"}
+                      </div>
+                      <div>
+                        <span className="font-semibold">العداد:</span>{" "}
+                        {currentCar.car.odometer ?? "—"} كم
+                      </div>
+                      <div>
+                        <span className="font-semibold">الحالة:</span>{" "}
+                        {currentCar.car.condition ?? "—"}
+                      </div>
+                      <div>
+                        <span className="font-semibold">رقم الشاصي:</span>{" "}
+                        {currentCar.car.vin ?? "—"}
+                      </div>
                     </div>
 
                     <div className="mt-3 border rounded-lg bg-background p-3">
                       <div className="text-center text-foreground/70 mb-2 text-xs">
                         <span>مشاهدون: {currentCar.viewers ?? 0} | </span>
-                        <span>مزايدون: {currentCar.bids?.length ?? 0} (تقريباً)</span>
+                        <span>
+                          مزايدون: {currentCar.bids?.length ?? 0} (تقريباً)
+                        </span>
                       </div>
 
                       <div className="text-center mb-3">
-                        <h3 className="font-semibold text-base text-primary">آخر سعر</h3>
+                        <h3 className="font-semibold text-base text-primary">
+                          آخر سعر
+                        </h3>
                         <div className="text-2xl font-bold text-secondary my-2 py-2 rounded-lg border-2 border-border bg-card">
                           {formatCurrency(shownPrice)}
                         </div>
@@ -502,14 +645,18 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                               setStatus("✅ تمت المزايدة بنجاح");
                             }}
                           />
-                          {status && <p className="text-center text-sm mt-2">{status}</p>}
+                          {status && (
+                            <p className="text-center text-sm mt-2">{status}</p>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
                   <div className="h-full flex items-center justify-center">
-                    <p className="text-foreground/50">لا توجد سيارة معروضة حاليًا في الحراج المباشر</p>
+                    <p className="text-foreground/50">
+                      لا توجد سيارة معروضة حاليًا في الحراج المباشر
+                    </p>
                   </div>
                 )}
 
@@ -532,7 +679,9 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                         {loading ? "جارٍ..." : "بحث"}
                       </button>
                     </div>
-                    <h3 className="text-xs font-semibold text-primary whitespace-nowrap">ابحث برقم اللوحة</h3>
+                    <h3 className="text-xs font-semibold text-primary whitespace-nowrap">
+                      ابحث برقم اللوحة
+                    </h3>
                   </div>
                 </div>
               </div>
