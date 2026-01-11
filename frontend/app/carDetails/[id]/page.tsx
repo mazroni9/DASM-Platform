@@ -46,7 +46,7 @@ import api from "@/lib/axios";
 import { useParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import toast from "react-hot-toast";
-import Pusher from "pusher-js";
+import { usePusher } from "@/contexts/PusherContext";
 import BidForm from "@/components/BidForm";
 import { motion } from "framer-motion";
 import AddToWatchlistButton from "@/components/dealer/AddToWatchlistButton";
@@ -607,13 +607,18 @@ export default function CarDetailPage() {
   const params = useParams<{ id: string }>();
   const carId = params["id"];
   const [isOwner, setIsOwner] = useState(false);
+  const { subscribe, unsubscribe, isConnected, connectionError } = usePusher();
+
+  // Show connection error toast
+  useEffect(() => {
+    if (connectionError) {
+      toast.error(connectionError, { id: "pusher-error" });
+    }
+  }, [connectionError]);
 
   // جلب بيانات السيارة
   useEffect(() => {
     setLoading(true);
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER!,
-    });
 
     async function fetchAuctions() {
       try {
@@ -633,17 +638,6 @@ export default function CarDetailPage() {
           ) {
             setIsOwner(true);
           }
-
-          const auctionId = carsData.id;
-          const channel = pusher.subscribe(`auction.${carId}`);
-
-          channel.bind("NewBidEvent", (event: any) => {
-            setItem((prevItem: any) => ({
-              ...prevItem,
-              active_auction: event.data.active_auction,
-              total_bids: event.data.total_bids,
-            }));
-          });
         }
       } catch (error) {
         console.error("فشل تحميل بيانات المزاد", error);
@@ -654,11 +648,27 @@ export default function CarDetailPage() {
       }
     }
     fetchAuctions();
+  }, [carId, user?.id]);
+
+  // Subscribe to auction channel using shared Pusher context
+  useEffect(() => {
+    if (!isConnected || !carId) return;
+
+    const channel = subscribe(`auction.${carId}`);
+    if (!channel) return;
+
+    channel.bind("NewBidEvent", (event: any) => {
+      setItem((prevItem: any) => ({
+        ...prevItem,
+        active_auction: event.data.active_auction,
+        total_bids: event.data.total_bids,
+      }));
+    });
 
     return () => {
-      pusher.disconnect();
+      unsubscribe(`auction.${carId}`);
     };
-  }, [authLoading, isLoggedIn, carId, user]);
+  }, [isConnected, carId, subscribe, unsubscribe]);
 
   const images =
     item?.car?.images?.length > 0 ? item.car.images : ["/placeholder-car.jpg"];

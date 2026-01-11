@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useEffect, useState, Fragment, useRef, useCallback, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  Fragment,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import LoadingLink from "@/components/LoadingLink";
 import BidTimer from "@/components/BidTimer";
 import { formatCurrency } from "@/utils/formatCurrency";
 import api from "@/lib/axios";
 import Pusher from "pusher-js";
+import { usePusher } from "@/contexts/PusherContext";
 import toast from "react-hot-toast";
 import {
   Car as CarIcon,
@@ -79,7 +87,10 @@ async function isWithinAllowedTime(page: string): Promise<boolean> {
   }
 }
 
-function getCurrentAuctionType(time: Date = new Date()): { label: string; isLive: boolean } {
+function getCurrentAuctionType(time: Date = new Date()): {
+  label: string;
+  isLive: boolean;
+} {
   const h = time.getHours();
   if (h >= 16 && h < 19) return { label: "الحراج المباشر", isLive: true };
   if (h >= 19 && h < 22) return { label: "السوق الفوري المباشر", isLive: true };
@@ -116,7 +127,9 @@ export default function SilentAuctionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
+  const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>(
+    {}
+  );
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -166,7 +179,9 @@ export default function SilentAuctionPage() {
       setTotalCount(total);
       setCarsTotal(total);
 
-      setCars((prev) => (currentPage > 1 ? [...prev, ...normalized] : normalized));
+      setCars((prev) =>
+        currentPage > 1 ? [...prev, ...normalized] : normalized
+      );
     } catch (err) {
       console.error("فشل تحميل بيانات المزاد", err);
       setError("تعذر الاتصال بالخادم. يرجى المحاولة لاحقًا.");
@@ -177,15 +192,19 @@ export default function SilentAuctionPage() {
     }
   }, [currentPage, searchTerm, filters.brand]);
 
-  // تأثير جلب البيانات وPusher
+  // تأثير جلب البيانات
+  const { subscribe, unsubscribe, isConnected } = usePusher();
+
   useEffect(() => {
     fetchAuctions();
+  }, [fetchAuctions]);
 
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "ap2",
-    });
+  // Pusher الاشتراك في قناة
+  useEffect(() => {
+    if (!isConnected) return;
 
-    const channel = pusher.subscribe("auction.silent");
+    const channel = subscribe("auction.silent");
+    if (!channel) return;
 
     // مهم: ما تعملش fetch على نفس الصفحة وتكرر الداتا.. رجّع للصفحة الأولى وافرّغ
     channel.bind("CarMovedBetweenAuctionsEvent", () => {
@@ -215,10 +234,9 @@ export default function SilentAuctionPage() {
     });
 
     return () => {
-      pusher.unsubscribe("auction.silent");
-      pusher.disconnect();
+      unsubscribe("auction.silent");
     };
-  }, [fetchAuctions]);
+  }, [isConnected, subscribe, unsubscribe]);
 
   // Infinity Scroll
   useEffect(() => {
@@ -266,7 +284,9 @@ export default function SilentAuctionPage() {
     bidAmount: number;
   }) => {
     const isPositive = increment > 0;
-    const percentage = bidAmount ? ((increment / bidAmount) * 100).toFixed(2) : "0.00";
+    const percentage = bidAmount
+      ? ((increment / bidAmount) * 100).toFixed(2)
+      : "0.00";
 
     return (
       <span
@@ -276,7 +296,11 @@ export default function SilentAuctionPage() {
             : "bg-rose-900/30 text-rose-700 border-rose-700/50"
         }`}
       >
-        {isPositive ? <Plus className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+        {isPositive ? (
+          <Plus className="w-3 h-3" />
+        ) : (
+          <Minus className="w-3 h-3" />
+        )}
         {formatCurrency(increment)} ({percentage}%)
       </span>
     );
@@ -298,7 +322,9 @@ export default function SilentAuctionPage() {
           </div>
 
           <div className="bg-card/60 backdrop-blur-sm rounded-xl px-4 py-2.5 flex items-center justify-between border border-primary/30">
-            <div className="text-sm font-medium text-primary">{auctionType} - جارٍ الآن</div>
+            <div className="text-sm font-medium text-primary">
+              {auctionType} - جارٍ الآن
+            </div>
             <div className="flex items-center gap-2">
               <Clock className="text-primary/80 w-4 h-4" />
               <div className="font-mono font-semibold text-primary">
@@ -310,10 +336,13 @@ export default function SilentAuctionPage() {
 
         {/* وصف */}
         <div className="mb-4 text-center">
-          <div className="text-sm text-primary/80">وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي</div>
+          <div className="text-sm text-primary/80">
+            وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي
+          </div>
           <p className="mt-1 text-foreground/70 text-sm max-w-3xl mx-auto">
-            مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر، وصاحب العرض يستطيع أن يغير سعره
-            بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري.
+            مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر،
+            وصاحب العرض يستطيع أن يغير سعره بالسالب أو الموجب بحد لا يتجاوز 10%
+            من سعر إغلاق الفوري.
           </p>
         </div>
 
@@ -329,7 +358,8 @@ export default function SilentAuctionPage() {
           <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-2xl p-5 mb-4 flex items-center gap-3 backdrop-blur-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>
-              السوق غير مفتوح حاليًا. يفتح يوميًا من 10 مساءً إلى 4 عصراً اليوم التالي.
+              السوق غير مفتوح حاليًا. يفتح يوميًا من 10 مساءً إلى 4 عصراً اليوم
+              التالي.
             </span>
           </div>
         )}
@@ -362,9 +392,13 @@ export default function SilentAuctionPage() {
 
             <div className="flex items-center gap-4 flex-wrap">
               <div className="text-sm text-foreground/80 bg-background/60 px-4.5 py-2.5 rounded-xl border border-border">
-                <span className="font-semibold text-foreground">{filteredCars.length}</span>{" "}
+                <span className="font-semibold text-foreground">
+                  {filteredCars.length}
+                </span>{" "}
                 من{" "}
-                <span className="font-semibold text-foreground">{carsTotal}</span>{" "}
+                <span className="font-semibold text-foreground">
+                  {carsTotal}
+                </span>{" "}
                 سيارة
               </div>
 
@@ -375,7 +409,9 @@ export default function SilentAuctionPage() {
                 <Filter className="w-4.5 h-4.5" />
                 فلاتر
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-300 ${showFilters ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 transition-transform duration-300 ${
+                    showFilters ? "rotate-180" : ""
+                  }`}
                 />
               </button>
             </div>
@@ -391,7 +427,10 @@ export default function SilentAuctionPage() {
                   <select
                     value={filters.brand}
                     onChange={(e) => {
-                      setFilters((prev) => ({ ...prev, brand: e.target.value }));
+                      setFilters((prev) => ({
+                        ...prev,
+                        brand: e.target.value,
+                      }));
                       setCurrentPage(1);
                       setCars([]);
                       setExpandedRows({});
@@ -402,7 +441,11 @@ export default function SilentAuctionPage() {
                       جميع الماركات
                     </option>
                     {carsBrands.map((brand, idx) => (
-                      <option key={idx} value={brand} className="bg-card text-foreground">
+                      <option
+                        key={idx}
+                        value={brand}
+                        className="bg-card text-foreground"
+                      >
                         {brand}
                       </option>
                     ))}
@@ -418,28 +461,42 @@ export default function SilentAuctionPage() {
           <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border overflow-hidden shadow-2xl">
             <div className="p-4 border-b border-border">
               <div className="flex justify-between items-center gap-3 flex-wrap">
-                <h2 className="text-lg md:text-xl font-bold text-primary">السيارات المتاحة</h2>
+                <h2 className="text-lg md:text-xl font-bold text-primary">
+                  السيارات المتاحة
+                </h2>
                 <div className="text-xs md:text-sm text-foreground/70">
-                  🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى السوق المتأخر
+                  🕙 عند الساعة 10 مساءً يتم التحول من السوق الفوري المباشر إلى
+                  السوق المتأخر
                 </div>
               </div>
             </div>
 
             <div className="overflow-x-auto">
-              <div className="max-h-[calc(100vh-240px)] overflow-auto" ref={scrollContainerRef}>
+              <div
+                className="max-h-[calc(100vh-240px)] overflow-auto"
+                ref={scrollContainerRef}
+              >
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-background/70 backdrop-blur-sm sticky top-0 z-10 border-b border-border">
-                      {["", "المدينة", "الماركة", "الموديل", "السنة", "سعر الافتتاح", "آخر سعر", "التغير", "التفاصيل"].map(
-                        (header, i) => (
-                          <th
-                            key={i}
-                            className="px-4 py-4 text-right text-xs font-semibold text-foreground/70 uppercase tracking-wider whitespace-nowrap"
-                          >
-                            {header}
-                          </th>
-                        )
-                      )}
+                      {[
+                        "",
+                        "المدينة",
+                        "الماركة",
+                        "الموديل",
+                        "السنة",
+                        "سعر الافتتاح",
+                        "آخر سعر",
+                        "التغير",
+                        "التفاصيل",
+                      ].map((header, i) => (
+                        <th
+                          key={i}
+                          className="px-4 py-4 text-right text-xs font-semibold text-foreground/70 uppercase tracking-wider whitespace-nowrap"
+                        >
+                          {header}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
 
@@ -447,7 +504,9 @@ export default function SilentAuctionPage() {
                     {filteredCars.map((row) => {
                       const car = row.car;
                       const bids = row.bids ?? [];
-                      const lastBid = bids.length ? bids[bids.length - 1] : null;
+                      const lastBid = bids.length
+                        ? bids[bids.length - 1]
+                        : null;
 
                       const minBid = toNumber(row.minimum_bid, 0);
                       const maxBid = toNumber(row.maximum_bid, 0);
@@ -466,7 +525,11 @@ export default function SilentAuctionPage() {
                               <button
                                 onClick={() => toggleRowExpansion(row.id)}
                                 className="inline-flex items-center justify-center text-foreground/50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg p-1.5 hover:bg-border transition-colors"
-                                aria-label={expandedRows[row.id] ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+                                aria-label={
+                                  expandedRows[row.id]
+                                    ? "إخفاء التفاصيل"
+                                    : "عرض التفاصيل"
+                                }
                               >
                                 {expandedRows[row.id] ? (
                                   <ChevronUp className="w-5 h-5" />
@@ -522,7 +585,10 @@ export default function SilentAuctionPage() {
 
                           {expandedRows[row.id] && (
                             <tr className="bg-background/30">
-                              <td colSpan={9} className="px-6 py-5 border-t border-border">
+                              <td
+                                colSpan={9}
+                                className="px-6 py-5 border-t border-border"
+                              >
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                   <div className="bg-border/50 rounded-xl p-4 border border-border">
                                     <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
@@ -531,22 +597,38 @@ export default function SilentAuctionPage() {
                                     </h4>
                                     <ul className="space-y-2 text-sm">
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">العداد:</span>
+                                        <span className="text-foreground/70">
+                                          العداد:
+                                        </span>
                                         <span className="text-foreground/90">
-                                          {car?.odometer ? `${car.odometer} كم` : "—"}
+                                          {car?.odometer
+                                            ? `${car.odometer} كم`
+                                            : "—"}
                                         </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">الحالة:</span>
-                                        <span className="text-foreground/90">{car?.condition || "—"}</span>
+                                        <span className="text-foreground/70">
+                                          الحالة:
+                                        </span>
+                                        <span className="text-foreground/90">
+                                          {car?.condition || "—"}
+                                        </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">اللون:</span>
-                                        <span className="text-foreground/90">{car?.color || "—"}</span>
+                                        <span className="text-foreground/70">
+                                          اللون:
+                                        </span>
+                                        <span className="text-foreground/90">
+                                          {car?.color || "—"}
+                                        </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">الوقود:</span>
-                                        <span className="text-foreground/90">{car?.engine || "—"}</span>
+                                        <span className="text-foreground/70">
+                                          الوقود:
+                                        </span>
+                                        <span className="text-foreground/90">
+                                          {car?.engine || "—"}
+                                        </span>
                                       </li>
                                     </ul>
                                   </div>
@@ -558,43 +640,65 @@ export default function SilentAuctionPage() {
                                     </h4>
                                     <ul className="space-y-2 text-sm">
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">المزايدات:</span>
-                                        <span className="text-foreground/90">{bids.length}</span>
+                                        <span className="text-foreground/70">
+                                          المزايدات:
+                                        </span>
+                                        <span className="text-foreground/90">
+                                          {bids.length}
+                                        </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">الحالة:</span>
-                                        <span className="text-foreground/90">{row.status || "—"}</span>
+                                        <span className="text-foreground/70">
+                                          الحالة:
+                                        </span>
+                                        <span className="text-foreground/90">
+                                          {row.status || "—"}
+                                        </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">نتيجة المزايدة:</span>
-                                        <span className="text-foreground/90">{car?.auction_status || "—"}</span>
+                                        <span className="text-foreground/70">
+                                          نتيجة المزايدة:
+                                        </span>
+                                        <span className="text-foreground/90">
+                                          {car?.auction_status || "—"}
+                                        </span>
                                       </li>
                                     </ul>
                                   </div>
 
                                   <div className="bg-border/50 rounded-xl p-4 border border-border">
-                                    <h4 className="font-semibold text-primary mb-3">معلومات الأسعار</h4>
+                                    <h4 className="font-semibold text-primary mb-3">
+                                      معلومات الأسعار
+                                    </h4>
                                     <ul className="space-y-2 text-sm">
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">سعر الافتتاح:</span>
+                                        <span className="text-foreground/70">
+                                          سعر الافتتاح:
+                                        </span>
                                         <span className="text-amber-700 dark:text-amber-400">
                                           {formatCurrency(minBid)}
                                         </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">أقل سعر:</span>
+                                        <span className="text-foreground/70">
+                                          أقل سعر:
+                                        </span>
                                         <span className="text-amber-700 dark:text-amber-400">
                                           {formatCurrency(minBid)}
                                         </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">أعلى سعر:</span>
+                                        <span className="text-foreground/70">
+                                          أعلى سعر:
+                                        </span>
                                         <span className="text-rose-700 dark:text-rose-400">
                                           {formatCurrency(maxBid)}
                                         </span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">آخر سعر:</span>
+                                        <span className="text-foreground/70">
+                                          آخر سعر:
+                                        </span>
                                         <span className="text-emerald-700 dark:text-emerald-400">
                                           {formatCurrency(curBid)}
                                         </span>
@@ -602,10 +706,18 @@ export default function SilentAuctionPage() {
 
                                       {lastBid && (
                                         <li className="flex justify-between items-center gap-2">
-                                          <span className="text-foreground/70">التغيّر:</span>
+                                          <span className="text-foreground/70">
+                                            التغيّر:
+                                          </span>
                                           <PriceChangeBadge
-                                            increment={toNumber(lastBid.increment, 0)}
-                                            bidAmount={toNumber(lastBid.bid_amount, 0)}
+                                            increment={toNumber(
+                                              lastBid.increment,
+                                              0
+                                            )}
+                                            bidAmount={toNumber(
+                                              lastBid.bid_amount,
+                                              0
+                                            )}
                                           />
                                         </li>
                                       )}
@@ -628,9 +740,13 @@ export default function SilentAuctionPage() {
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )}
-                  {!loading && currentPage >= totalPages && filteredCars.length > 0 && (
-                    <p className="text-sm text-foreground/50">تم عرض جميع السيارات</p>
-                  )}
+                  {!loading &&
+                    currentPage >= totalPages &&
+                    filteredCars.length > 0 && (
+                      <p className="text-sm text-foreground/50">
+                        تم عرض جميع السيارات
+                      </p>
+                    )}
                 </div>
               </div>
             </div>

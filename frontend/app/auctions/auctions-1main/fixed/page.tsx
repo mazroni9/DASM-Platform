@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import api from "@/lib/axios";
 import FixedAuctionCard from "@/components/auctions/FixedAuctionCard";
-import Pusher from "pusher-js";
+import { usePusher } from "@/contexts/PusherContext";
 
 type CarInfo = {
   id: number;
@@ -47,8 +53,8 @@ function extractAuctionsArray(responseData: any): FixedAuction[] {
   const rows = Array.isArray(container?.data)
     ? container.data
     : Array.isArray(container)
-      ? container
-      : [];
+    ? container
+    : [];
 
   return rows.map(normalizeFixedAuction).filter((a) => a.id && a.car_id);
 }
@@ -59,6 +65,7 @@ const FixedAuctionPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const isMountedRef = useRef(true);
+  const { subscribe, unsubscribe, isConnected } = usePusher();
 
   const fetchFixedAuctions = useCallback(async () => {
     try {
@@ -84,27 +91,22 @@ const FixedAuctionPage = () => {
     }
   }, []);
 
+  // Fetch data on mount
   useEffect(() => {
     isMountedRef.current = true;
     fetchFixedAuctions();
 
-    const key = process.env.NEXT_PUBLIC_PUSHER_APP_KEY;
-    const cluster =
-      process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
-      process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER ||
-      "ap2";
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchFixedAuctions]);
 
-    // لو env ناقص، من غير ما نكسر الصفحة
-    if (!key) {
-      console.warn("Pusher key is missing (NEXT_PUBLIC_PUSHER_APP_KEY).");
-      return () => {
-        isMountedRef.current = false;
-      };
-    }
+  // Subscribe to Pusher channel using shared context
+  useEffect(() => {
+    if (!isConnected) return;
 
-    const pusher = new Pusher(key, { cluster });
-
-    const channel = pusher.subscribe("auction.fixed");
+    const channel = subscribe("auction.fixed");
+    if (!channel) return;
 
     channel.bind("NewBidEvent", (event: any) => {
       // مرونة في شكل الـ payload
@@ -137,11 +139,9 @@ const FixedAuctionPage = () => {
     });
 
     return () => {
-      isMountedRef.current = false;
-      pusher.unsubscribe("auction.fixed");
-      pusher.disconnect();
+      unsubscribe("auction.fixed");
     };
-  }, [fetchFixedAuctions]);
+  }, [isConnected, subscribe, unsubscribe, fetchFixedAuctions]);
 
   const content = useMemo(() => {
     if (loading) {
@@ -178,8 +178,8 @@ const FixedAuctionPage = () => {
       <p className="text-foreground/70 text-center my-4">
         هذا هو المكان الذي تحصل فيه السيارات الرائعة على فرصة ثانية. السيارات
         المعروضة هنا لم يتم بيعها في المزادات الأخرى، وتُعرض الآن في مزاد تقليدي
-        بسيط ومحدد بوقت. عندما ينتهي العداد، يفوز صاحب أعلى سعر بالمزاد تلقائياً.
-        إنها فرصتك لاقتناص سيارة أحلامك بسعر رائع.
+        بسيط ومحدد بوقت. عندما ينتهي العداد، يفوز صاحب أعلى سعر بالمزاد
+        تلقائياً. إنها فرصتك لاقتناص سيارة أحلامك بسعر رائع.
       </p>
 
       {content}

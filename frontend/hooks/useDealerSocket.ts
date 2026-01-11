@@ -130,19 +130,28 @@ export function useDealerSocket({
     [updateAuctionPrice]
   );
 
-  // Latency ping
+  // Latency ping - Real measurement using API
   const startLatencyPing = useCallback(() => {
     if (pingIntervalRef.current) return;
 
-    pingIntervalRef.current = setInterval(() => {
-      pingStartRef.current = Date.now();
-      // For client-side ping, we just measure connection state changes
-      // or use a custom endpoint if needed
+    pingIntervalRef.current = setInterval(async () => {
       const pusher = pusherRef.current;
       if (pusher?.connection.state === "connected") {
-        // Simulate ping measurement via connection state
-        const latency = Math.floor(Math.random() * 30) + 20; // Simulated 20-50ms
-        setConnectionStatus(true, latency);
+        const start = performance.now();
+        try {
+          // Simple ping to measure round-trip time
+          await fetch("/api/health", {
+            method: "HEAD",
+            cache: "no-store",
+          });
+          const latency = Math.round(performance.now() - start);
+          setConnectionStatus(true, latency);
+        } catch {
+          // If ping fails, still mark as connected but with unknown latency
+          setConnectionStatus(true, -1);
+        }
+      } else {
+        setConnectionStatus(false, 0);
       }
     }, 5000);
   }, [setConnectionStatus]);

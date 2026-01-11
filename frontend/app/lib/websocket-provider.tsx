@@ -5,10 +5,17 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useCallback,
   ReactNode,
 } from "react";
+import Pusher from "pusher-js";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || "";
+const PUSHER_CLUSTER =
+  process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
+  process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER ||
+  "ap2";
 
 export interface Car {
   id: number;
@@ -45,9 +52,11 @@ interface WebSocketContextType {
   auctionStatus: "active" | "paused" | "ended";
   stats: Stats;
   connected: boolean;
+  connectionError: string | null;
   handleNextCar: () => void;
   handleEndAuction: () => void;
   handleTogglePause: () => void;
+  refreshData: () => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
@@ -71,100 +80,207 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     totalBids: 0,
   });
   const [connected, setConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isActive = true;
-    let timeoutId: NodeJS.Timeout;
-
-    const pollLiveStatus = async () => {
-      if (!isActive) return;
-
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/broadcast/live-status`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-
-          if (data.status === "success" && data.data) {
-            const { broadcast, car, auction, stats: liveStats } = data.data;
-
-            // Update current car from broadcast data
-            if (car) {
-              setCurrentCar({
-                id: car.id,
-                make: car.make,
-                model: car.model,
-                year: car.year,
-                current_price: auction?.current_bid || car.starting_price || 0,
-                images: car.images || [],
-              });
-            }
-
-            // Update auction status
-            if (broadcast?.is_live) {
-              setAuctionStatus("active");
-            } else {
-              setAuctionStatus("ended");
-            }
-
-            // Update stats if available
-            if (liveStats) {
-              setStats({
-                viewerCount: liveStats.viewerCount || 0,
-                bidderCount: liveStats.bidderCount || 0,
-                totalBids: liveStats.totalBids || 0,
-              });
-            }
-
-            setConnected(true);
-          }
-        } else {
-          console.warn("Failed to fetch live status:", response.status);
-          setConnected(false);
+  // Fetch initial data
+  const fetchLiveStatus = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/broadcast/live-status`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      } catch (error) {
-        console.error("Error polling live status:", error);
-        setConnected(false);
-      }
+      );
 
-      // Schedule next poll only if component is still active
-      if (isActive) {
-        timeoutId = setTimeout(pollLiveStatus, 2000); // Poll every 2 seconds
-      }
-    };
+      if (response.ok) {
+        const data = await response.json();
 
-    // Start initial poll
-    pollLiveStatus();
+        if (data.status === "success" && data.data) {
+          const { broadcast, car, auction, stats: liveStats } = data.data;
 
-    // Cleanup function
-    return () => {
-      isActive = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+          // Update current car from broadcast data
+          if (car) {
+            setCurrentCar({
+              id: car.id,
+              make: car.make,
+              model: car.model,
+              year: car.year,
+              current_price: auction?.current_bid || car.starting_price || 0,
+              images: car.images || [],
+            });
+          }
+
+          // Update auction status
+          if (broadcast?.is_live) {
+            setAuctionStatus("active");
+          } else {
+            setAuctionStatus("ended");
+          }
+
+          // Update stats if available
+          if (liveStats) {
+            setStats({
+              viewerCount: liveStats.viewerCount || 0,
+              bidderCount: liveStats.bidderCount || 0,
+              totalBids: liveStats.totalBids || 0,
+            });
+          }
+        }
+      } else {
+        console.warn("Failed to fetch live status:", response.status);
       }
-      setConnected(false);
-    };
+    } catch (error) {
+      console.error("Error fetching live status:", error);
+    }
   }, []);
 
-  const handleNextCar = () => {
-    // Implementation for moving to next car
-  };
+  // WebSocket connection via Pusher
+  useEffect(() => {
+    if (!PUSHER_KEY) {
+      console.warn("[WebSocketProvider] Missing PUSHER_APP_KEY");
+      setConnectionError("مفتاح الاتصال غير موجود");
+      return;
+    }
 
-  const handleEndAuction = () => {
+    // Fetch initial data
+    fetchLiveStatus();
+
+    // Initialize Pusher
+    const pusher = new Pusher(PUSHER_KEY, {
+      cluster: PUSHER_CLUSTER,
+    });
+
+    // Connection state handlers
+    pusher.connection.bind("connected", () => {
+      console.log("[WebSocketProvider] Connected to Pusher");
+      setConnected(true);
+      setConnectionError(null);
+    });
+
+    pusher.connection.bind("disconnected", () => {
+      console.warn("[WebSocketProvider] Disconnected from Pusher");
+      setConnected(false);
+    });
+
+    pusher.connection.bind("error", (err: Error) => {
+      console.error("[WebSocketProvider] Connection error:", err);
+      setConnected(false);
+      setConnectionError("حدث خطأ في الاتصال");
+    });
+
+    // Subscribe to live auction channel
+    const channel = pusher.subscribe("auction.live");
+
+    // Listen for live market bid events
+    channel.bind(
+      "LiveMarketBidEvent",
+      (data: {
+        bidder_id: number;
+        auction_id: number;
+        bid_amount: number;
+        car_make: string;
+        car_model: string;
+        car_year: number;
+        current_bid: number;
+        message: string;
+        timestamp: string;
+      }) => {
+        console.log("[WebSocketProvider] Received LiveMarketBidEvent:", data);
+
+        // Update current car price
+        setCurrentCar((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            current_price: data.current_bid,
+          };
+        });
+
+        // Add new bid to bids list
+        setBids((prev) => [
+          {
+            id: Date.now(),
+            amount: data.bid_amount,
+            bidder_name: `مزايد #${data.bidder_id.toString().slice(-4)}`,
+            created_at: data.timestamp,
+            is_online: true,
+          },
+          ...prev.slice(0, 9), // Keep last 10 bids
+        ]);
+
+        // Update stats
+        setStats((prev) => ({
+          ...prev,
+          totalBids: prev.totalBids + 1,
+        }));
+      }
+    );
+
+    // Listen for auction status changes
+    channel.bind(
+      "AuctionStatusChangedEvent",
+      (data: {
+        auction_id: number;
+        car_id: number;
+        old_status: string;
+        new_status: string;
+        current_bid: number;
+      }) => {
+        console.log(
+          "[WebSocketProvider] Received AuctionStatusChangedEvent:",
+          data
+        );
+
+        // Update auction status
+        if (data.new_status === "live" || data.new_status === "active") {
+          setAuctionStatus("active");
+        } else if (
+          data.new_status === "ended" ||
+          data.new_status === "completed"
+        ) {
+          setAuctionStatus("ended");
+        }
+
+        // Refresh data to get updated car info
+        fetchLiveStatus();
+      }
+    );
+
+    // Listen for car approval events
+    channel.bind("CarApprovedForLiveEvent", () => {
+      console.log(
+        "[WebSocketProvider] Car approved for live - refreshing data"
+      );
+      fetchLiveStatus();
+    });
+
+    // Cleanup
+    return () => {
+      pusher.unsubscribe("auction.live");
+      pusher.disconnect();
+      setConnected(false);
+    };
+  }, [fetchLiveStatus]);
+
+  const handleNextCar = useCallback(() => {
+    // Refresh to get next car
+    fetchLiveStatus();
+  }, [fetchLiveStatus]);
+
+  const handleEndAuction = useCallback(() => {
     setAuctionStatus("ended");
-  };
+  }, []);
 
-  const handleTogglePause = () => {
+  const handleTogglePause = useCallback(() => {
     setAuctionStatus((prev) => (prev === "active" ? "paused" : "active"));
-  };
+  }, []);
+
+  const refreshData = useCallback(() => {
+    fetchLiveStatus();
+  }, [fetchLiveStatus]);
 
   const value: WebSocketContextType = {
     currentCar,
@@ -173,9 +289,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     auctionStatus,
     stats,
     connected,
+    connectionError,
     handleNextCar,
     handleEndAuction,
     handleTogglePause,
+    refreshData,
   };
 
   return (

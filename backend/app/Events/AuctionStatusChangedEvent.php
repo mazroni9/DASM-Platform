@@ -4,11 +4,11 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AuctionStatusChangedEvent implements ShouldBroadcast
+class AuctionStatusChangedEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -38,10 +38,6 @@ class AuctionStatusChangedEvent implements ShouldBroadcast
     {
         return [
             new Channel('auction.status.changed'),
-            new Channel('auction.updates'),
-            new Channel('auction.live'),
-            new Channel('auction.instant'),
-            new Channel('auction.silent'),
             new Channel('auction.' . $this->auction->id)
         ];
     }

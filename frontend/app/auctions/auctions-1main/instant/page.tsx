@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { formatCurrency } from "@/utils/formatCurrency";
-import Pusher from "pusher-js";
+import { usePusher } from "@/contexts/PusherContext";
 
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
@@ -327,7 +327,9 @@ export default function InstantAuctionPage() {
         sortable: true,
         filter: false,
         cellRenderer: (params: ICellRendererParams<CarAuction>) => {
-          const status = getAuctionStatus(params.data?.car?.auction_status || "");
+          const status = getAuctionStatus(
+            params.data?.car?.auction_status || ""
+          );
           return <StatusBadge status={status} />;
         },
       },
@@ -393,7 +395,9 @@ export default function InstantAuctionPage() {
       setTotalCount(toNumber(paginated?.total, 0));
       setCarsTotal(toNumber(paginated?.total, 0));
 
-      setCars((prev) => (currentPage > 1 ? [...prev, ...normalizedRows] : normalizedRows));
+      setCars((prev) =>
+        currentPage > 1 ? [...prev, ...normalizedRows] : normalizedRows
+      );
     } catch (err) {
       console.error("فشل تحميل المزادات", err);
       setError("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقًا.");
@@ -404,15 +408,19 @@ export default function InstantAuctionPage() {
     }
   }, [currentPage, searchTerm, filters, isLoggedIn]);
 
-  // =============== تأثير جلب البيانات + Pusher ===============
+  // =============== تأثير جلب البيانات ===============
+  const { subscribe, unsubscribe, isConnected } = usePusher();
+
   useEffect(() => {
     fetchAuctions();
+  }, [fetchAuctions]);
 
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "ap2",
-    });
+  // =============== Pusher الاشتراك في قناة ===============
+  useEffect(() => {
+    if (!isConnected) return;
 
-    const channel = pusher.subscribe("auction.instant");
+    const channel = subscribe("auction.instant");
+    if (!channel) return;
 
     channel.bind("CarMovedBetweenAuctionsEvent", () => {
       setCurrentPage(1);
@@ -436,10 +444,9 @@ export default function InstantAuctionPage() {
     });
 
     return () => {
-      pusher.unsubscribe("auction.instant");
-      pusher.disconnect();
+      unsubscribe("auction.instant");
     };
-  }, [fetchAuctions]);
+  }, [isConnected, subscribe, unsubscribe]);
 
   // =============== Infinity Scroll ===============
   useEffect(() => {
