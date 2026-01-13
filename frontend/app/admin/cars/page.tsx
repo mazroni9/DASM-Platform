@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, ChangeEvent, FormEvent } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  ChangeEvent,
+  FormEvent,
+} from "react";
 import {
   Car,
   Search,
@@ -75,15 +81,19 @@ interface CarData {
 
   dealer?: {
     user: { first_name: string; last_name: string };
-  };
+  } | null;
 
-  user?:
-    | {
-        first_name?: string;
-        last_name?: string;
-        name?: string;
-      }
-    | null;
+  // Owner info (unified - replaces dealer.user)
+  owner?: {
+    first_name?: string;
+    last_name?: string;
+  } | null;
+
+  user?: {
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+  } | null;
 
   created_at: string;
 
@@ -100,7 +110,6 @@ interface FilterOptions {
   category: string;
   condition: string;
   transmission: string;
-  dealer_id: string;
 }
 
 type StatsState = {
@@ -146,7 +155,12 @@ const safeDate = (v: string) => {
  */
 function extractCarsResponse(raw: any): {
   list: CarData[];
-  pagination: { current_page?: number; total?: number; last_page?: number; per_page?: number } | null;
+  pagination: {
+    current_page?: number;
+    total?: number;
+    last_page?: number;
+    per_page?: number;
+  } | null;
 } {
   if (!raw) return { list: [], pagination: null };
 
@@ -192,7 +206,12 @@ function extractStats(raw: any): Partial<StatsState> | null {
 
   if (!payload || typeof payload !== "object") return null;
 
-  const total = payload.total ?? payload.total_cars ?? payload.count ?? payload.all ?? undefined;
+  const total =
+    payload.total ??
+    payload.total_cars ??
+    payload.count ??
+    payload.all ??
+    undefined;
 
   const inAuction =
     payload.inAuction ??
@@ -208,7 +227,12 @@ function extractStats(raw: any): Partial<StatsState> | null {
     payload.pending_count ??
     undefined;
 
-  const sold = payload.sold ?? payload.sold_cars ?? payload.soldCount ?? payload.sold_count ?? undefined;
+  const sold =
+    payload.sold ??
+    payload.sold_cars ??
+    payload.soldCount ??
+    payload.sold_count ??
+    undefined;
 
   const available =
     payload.available ??
@@ -226,7 +250,10 @@ function extractStats(raw: any): Partial<StatsState> | null {
   };
 }
 
-function calcStatsFallback(list: CarData[], totalFromPagination?: number): StatsState {
+function calcStatsFallback(
+  list: CarData[],
+  totalFromPagination?: number
+): StatsState {
   const counts = {
     pending: 0,
     in_auction: 0,
@@ -243,7 +270,10 @@ function calcStatsFallback(list: CarData[], totalFromPagination?: number): Stats
   }
 
   return {
-    total: typeof totalFromPagination === "number" && totalFromPagination > 0 ? totalFromPagination : list.length,
+    total:
+      typeof totalFromPagination === "number" && totalFromPagination > 0
+        ? totalFromPagination
+        : list.length,
     pending: counts.pending,
     inAuction: counts.in_auction,
     sold: counts.sold,
@@ -281,7 +311,6 @@ export default function AdminCarsPage() {
     category: "",
     condition: "",
     transmission: "",
-    dealer_id: "",
   });
 
   const [enumOptions, setEnumOptions] = useState<any>({});
@@ -316,8 +345,8 @@ export default function AdminCarsPage() {
       if (filters.status) params.append("status", filters.status);
       if (filters.category) params.append("category", filters.category);
       if (filters.condition) params.append("condition", filters.condition);
-      if (filters.transmission) params.append("transmission", filters.transmission);
-      if (filters.dealer_id) params.append("dealer_id", filters.dealer_id);
+      if (filters.transmission)
+        params.append("transmission", filters.transmission);
 
       const response = await api.get(
         `/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`
@@ -328,17 +357,25 @@ export default function AdminCarsPage() {
       const safeList = Array.isArray(list) ? list : [];
       setCars(safeList);
 
-      const total = pagination?.total !== undefined ? asNumber(pagination.total) : 0;
+      const total =
+        pagination?.total !== undefined ? asNumber(pagination.total) : 0;
       if (total > 0) setTotalCount(total);
 
-      if (pagination?.current_page !== undefined) setCurrentPage(asNumber(pagination.current_page));
+      if (pagination?.current_page !== undefined)
+        setCurrentPage(asNumber(pagination.current_page));
 
       // ✅ Fallback سريع للإحصائيات لو stats endpoint مش شغال/لسه محمّلتوش
       setStats((prev) => {
         const fb = calcStatsFallback(safeList, total > 0 ? total : undefined);
         // لو prev.total لسه 0 أو الاحصائيات كلها 0، استبدل بـ fallback
-        const prevSum = prev.total + prev.inAuction + prev.pending + prev.sold + prev.available;
-        const fbSum = fb.total + fb.inAuction + fb.pending + fb.sold + fb.available;
+        const prevSum =
+          prev.total +
+          prev.inAuction +
+          prev.pending +
+          prev.sold +
+          prev.available;
+        const fbSum =
+          fb.total + fb.inAuction + fb.pending + fb.sold + fb.available;
         if (prevSum === 0 && fbSum > 0) return fb;
         // otherwise على الأقل خلي total يتظبط من pagination
         if (total > 0 && prev.total !== total) return { ...prev, total };
@@ -373,11 +410,15 @@ export default function AdminCarsPage() {
       }
 
       // لو مفيش Normalize، اعمل fallback
-      setStats(calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined));
+      setStats(
+        calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined)
+      );
     } catch (error) {
       console.error("Error fetching stats:", error);
       // fallback بدل ما تفضل 0
-      setStats(calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined));
+      setStats(
+        calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined)
+      );
     } finally {
       setStatsLoading(false);
     }
@@ -678,12 +719,20 @@ export default function AdminCarsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-2 rtl" dir="rtl" lang="ar">
+    <div
+      className="min-h-screen bg-background text-foreground p-2 rtl"
+      dir="rtl"
+      lang="ar"
+    >
       {/* Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">إدارة السيارات</h1>
-          <p className="text-foreground/70 mt-2">إدارة وتنظيم جميع السيارات في النظام</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
+            إدارة السيارات
+          </h1>
+          <p className="text-foreground/70 mt-2">
+            إدارة وتنظيم جميع السيارات في النظام
+          </p>
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
@@ -692,7 +741,11 @@ export default function AdminCarsPage() {
             disabled={loading || statsLoading}
             className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-4 h-4 ml-2 ${(loading || statsLoading) ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${
+                loading || statsLoading ? "animate-spin" : ""
+              }`}
+            />
             تحديث
           </button>
 
@@ -704,11 +757,36 @@ export default function AdminCarsPage() {
 
       {/* Statistics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <StatCard title="إجمالي السيارات" value={stats.total} icon={<Car className="w-6 h-6 text-primary" />} box="bg-primary/10" />
-        <StatCard title="في المزاد" value={stats.inAuction} icon={<Play className="w-6 h-6 text-green-400" />} box="bg-green-500/10" />
-        <StatCard title="في انتظار الموافقة" value={stats.pending} icon={<Clock className="w-6 h-6 text-amber-400" />} box="bg-amber-500/10" />
-        <StatCard title="تم البيع" value={stats.sold} icon={<CheckCircle className="w-6 h-6 text-emerald-400" />} box="bg-emerald-500/10" />
-        <StatCard title="متاحة" value={stats.available} icon={<TrendingUp className="w-6 h-6 text-cyan-400" />} box="bg-cyan-500/10" />
+        <StatCard
+          title="إجمالي السيارات"
+          value={stats.total}
+          icon={<Car className="w-6 h-6 text-primary" />}
+          box="bg-primary/10"
+        />
+        <StatCard
+          title="في المزاد"
+          value={stats.inAuction}
+          icon={<Play className="w-6 h-6 text-green-400" />}
+          box="bg-green-500/10"
+        />
+        <StatCard
+          title="في انتظار الموافقة"
+          value={stats.pending}
+          icon={<Clock className="w-6 h-6 text-amber-400" />}
+          box="bg-amber-500/10"
+        />
+        <StatCard
+          title="تم البيع"
+          value={stats.sold}
+          icon={<CheckCircle className="w-6 h-6 text-emerald-400" />}
+          box="bg-emerald-500/10"
+        />
+        <StatCard
+          title="متاحة"
+          value={stats.available}
+          icon={<TrendingUp className="w-6 h-6 text-cyan-400" />}
+          box="bg-cyan-500/10"
+        />
       </div>
 
       {/* Main Content */}
@@ -734,13 +812,19 @@ export default function AdminCarsPage() {
               >
                 <Filter className="w-4 h-4 ml-2" />
                 فلاتر
-                <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-4 h-4 mr-2 transition-transform ${
+                    showFilters ? "rotate-180" : ""
+                  }`}
+                />
               </button>
             </div>
 
             {selectedCars.size > 0 && (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-foreground/70">تم اختيار {selectedCars.size} سيارة</span>
+                <span className="text-sm text-foreground/70">
+                  تم اختيار {selectedCars.size} سيارة
+                </span>
 
                 <div className="relative">
                   <button
@@ -748,7 +832,11 @@ export default function AdminCarsPage() {
                     className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
                   >
                     إجراءات جماعية
-                    <ChevronDown className={`w-4 h-4 mr-2 transition-transform ${showBulkActions ? "rotate-180" : ""}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 mr-2 transition-transform ${
+                        showBulkActions ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
 
                   {showBulkActions && (
@@ -830,7 +918,9 @@ export default function AdminCarsPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-background/50 rounded-xl mt-4">
               <select
                 value={filters.status}
-                onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, status: e.target.value }))
+                }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="">كل الحالات</option>
@@ -844,7 +934,9 @@ export default function AdminCarsPage() {
 
               <select
                 value={filters.category}
-                onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, category: e.target.value }))
+                }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="">كل الفئات</option>
@@ -857,7 +949,9 @@ export default function AdminCarsPage() {
 
               <select
                 value={filters.condition}
-                onChange={(e) => setFilters((prev) => ({ ...prev, condition: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, condition: e.target.value }))
+                }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="">كل الحالات</option>
@@ -870,7 +964,12 @@ export default function AdminCarsPage() {
 
               <select
                 value={filters.transmission}
-                onChange={(e) => setFilters((prev) => ({ ...prev, transmission: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    transmission: e.target.value,
+                  }))
+                }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="">كل أنواع الناقل</option>
@@ -898,38 +997,66 @@ export default function AdminCarsPage() {
                       className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
                     />
                   </th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">السيارة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">المالك</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة المزاد</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">حالة الموافقة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">سعر الأفتتاح</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر مرغوب</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر مرغوب</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أقل سعر في المزاد</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">أعلى سعر في المزاد</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">تاريخ الإضافة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الإجراءات</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    السيارة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    المالك
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    حالة المزاد
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    حالة الموافقة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    سعر الأفتتاح
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    أقل سعر مرغوب
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    أعلى سعر مرغوب
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    أقل سعر في المزاد
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    أعلى سعر في المزاد
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    تاريخ الإضافة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الإجراءات
+                  </th>
                 </tr>
               </thead>
 
               <tbody className="divide-y border-border">
                 {filteredCars.map((car) => {
-                  const owner =
-                    car.dealer?.user
-                      ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)`
-                      : car.user
-                      ? (car.user.name ||
-                          `${car.user.first_name || ""} ${car.user.last_name || ""}`.trim() ||
-                          "غير محدد")
-                      : "غير محدد";
+                  const owner = car.dealer?.user
+                    ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)`
+                    : car.user
+                    ? car.user.name ||
+                      `${car.user.first_name || ""} ${
+                        car.user.last_name || ""
+                      }`.trim() ||
+                      "غير محدد"
+                    : "غير محدد";
 
                   return (
-                    <tr key={car.id} className="hover:bg-border/50 transition-colors duration-200">
+                    <tr
+                      key={car.id}
+                      className="hover:bg-border/50 transition-colors duration-200"
+                    >
                       <td className="px-6 py-4 text-center">
                         <input
                           type="checkbox"
                           checked={selectedCars.has(car.id)}
-                          onChange={(e) => handleSelectCar(car.id, e.target.checked)}
+                          onChange={(e) =>
+                            handleSelectCar(car.id, e.target.checked)
+                          }
                           className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
                         />
                       </td>
@@ -943,18 +1070,23 @@ export default function AdminCarsPage() {
                           <div className="mr-4">
                             <div
                               className="text-sm font-medium text-foreground cursor-pointer hover:text-primary"
-                              onClick={() => router.push(`/carDetails/${car.id}`)}
+                              onClick={() =>
+                                router.push(`/carDetails/${car.id}`)
+                              }
                             >
-                              {(car.make || "—")} {(car.model || "—")}
+                              {car.make || "—"} {car.model || "—"}
                             </div>
                             <div className="text-xs text-foreground/70 mt-1">
-                              {(car.year ?? "—")} • {car.plate_number || "بدون لوحة"}
+                              {car.year ?? "—"} •{" "}
+                              {car.plate_number || "بدون لوحة"}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-sm text-foreground/80">{owner}</td>
+                      <td className="px-6 py-4 text-sm text-foreground/80">
+                        {owner}
+                      </td>
 
                       <td className="px-6 py-4">
                         <span
@@ -989,22 +1121,36 @@ export default function AdminCarsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-sm text-foreground/80">
-                        <PriceWithIcon iconSize={18} price={asNumber(car.min_price)} />
+                        <PriceWithIcon
+                          iconSize={18}
+                          price={asNumber(car.min_price)}
+                        />
                       </td>
 
                       <td className="px-6 py-4 text-sm text-foreground/80">
-                        <PriceWithIcon iconSize={18} price={asNumber(car.max_price)} />
+                        <PriceWithIcon
+                          iconSize={18}
+                          price={asNumber(car.max_price)}
+                        />
                       </td>
 
                       <td className="px-6 py-4 text-sm text-foreground/80">
-                        <PriceWithIcon iconSize={18} price={asNumber(car.auctions?.[0]?.minimum_bid)} />
+                        <PriceWithIcon
+                          iconSize={18}
+                          price={asNumber(car.auctions?.[0]?.minimum_bid)}
+                        />
                       </td>
 
                       <td className="px-6 py-4 text-sm text-foreground/80">
-                        <PriceWithIcon iconSize={18} price={asNumber(car.auctions?.[0]?.maximum_bid)} />
+                        <PriceWithIcon
+                          iconSize={18}
+                          price={asNumber(car.auctions?.[0]?.maximum_bid)}
+                        />
                       </td>
 
-                      <td className="px-6 py-4 text-sm text-foreground/80">{safeDate(car.created_at)}</td>
+                      <td className="px-6 py-4 text-sm text-foreground/80">
+                        {safeDate(car.created_at)}
+                      </td>
 
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2 space-x-reverse">
@@ -1030,7 +1176,9 @@ export default function AdminCarsPage() {
                             <button
                               onClick={() => {
                                 setFormData({
-                                  price: String(asNumber(car.evaluation_price) || ""),
+                                  price: String(
+                                    asNumber(car.evaluation_price) || ""
+                                  ),
                                   id: car.active_auction?.id || "",
                                 });
                                 setShowModal(true);
@@ -1042,7 +1190,10 @@ export default function AdminCarsPage() {
                             </button>
                           ) : null}
 
-                          <ActionsMenu car={car} handleAction={handleBulkAction} />
+                          <ActionsMenu
+                            car={car}
+                            handleAction={handleBulkAction}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -1054,8 +1205,12 @@ export default function AdminCarsPage() {
             {filteredCars.length === 0 && !loading && (
               <div className="text-center py-12">
                 <Car className="mx-auto h-12 w-12 text-foreground/50 mb-4" />
-                <h3 className="text-lg font-medium text-foreground/70">لا توجد سيارات</h3>
-                <p className="text-foreground/50 mt-1">لم يتم العثور على سيارات تطابق معايير البحث.</p>
+                <h3 className="text-lg font-medium text-foreground/70">
+                  لا توجد سيارات
+                </h3>
+                <p className="text-foreground/50 mt-1">
+                  لم يتم العثور على سيارات تطابق معايير البحث.
+                </p>
               </div>
             )}
 
@@ -1083,12 +1238,26 @@ export default function AdminCarsPage() {
       </div>
 
       {/* Price Modal */}
-      <Modal show={showModal} onClose={() => setShowModal(false)} title="حدد السعر للمزاد">
+      <Modal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        title="حدد السعر للمزاد"
+      >
         <form onSubmit={handleSubmit} className="space-y-6">
-          <input type="text" id="id" name="id" value={formData.id} className="hidden" readOnly />
+          <input
+            type="text"
+            id="id"
+            name="id"
+            value={formData.id}
+            className="hidden"
+            readOnly
+          />
 
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-foreground mb-1">
+            <label
+              htmlFor="price"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
               سعر بدأ المزاد
             </label>
             <input
@@ -1129,7 +1298,10 @@ export default function AdminCarsPage() {
       >
         <form onSubmit={handleApproveWithPrice} className="space-y-6">
           <div>
-            <label htmlFor="openingPrice" className="block text-sm font-medium text-foreground mb-1">
+            <label
+              htmlFor="openingPrice"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
               سعر بدأ المزاد
             </label>
             <input
@@ -1220,7 +1392,12 @@ export function ActionsMenu({
 
   const handleClose = () => setAnchorEl(null);
 
-  const actionItem = (action: string, label: string, Icon: any, danger = false) => (
+  const actionItem = (
+    action: string,
+    label: string,
+    Icon: any,
+    danger = false
+  ) => (
     <MenuItem
       onClick={() => {
         handleClose();
@@ -1228,7 +1405,12 @@ export function ActionsMenu({
       }}
       sx={{ direction: "rtl" }}
     >
-      <div className={cn("w-full flex items-center justify-between", danger && "text-red-600")}>
+      <div
+        className={cn(
+          "w-full flex items-center justify-between",
+          danger && "text-red-600"
+        )}
+      >
         <span className="text-sm">{label}</span>
         <Icon size={16} />
       </div>
@@ -1259,7 +1441,11 @@ export function ActionsMenu({
           list: { "aria-labelledby": "long-button" as any },
         }}
       >
-        {actionItem("approve-auctions-with-price", "الموافقة على المزادات", CheckSquare)}
+        {actionItem(
+          "approve-auctions-with-price",
+          "الموافقة على المزادات",
+          CheckSquare
+        )}
         {actionItem("reject-auctions", "رفض المزادات", X)}
         {actionItem("move-to-live", "نقل إلى الحراج المباشر", Play)}
         {actionItem("move-to-instant", "نقل الى المزادات الفورية", Clock)}

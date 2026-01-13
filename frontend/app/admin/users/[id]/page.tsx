@@ -53,16 +53,6 @@ interface UserDetail {
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
-  dealer?: {
-    id: number;
-    is_active: boolean;
-    status: string;
-    company_name: string;
-    commercial_registry: string;
-    description: string;
-    address: string;
-    rating: number;
-  } | null;
 }
 
 export default function UserDetailPage({}: { params: { id: string } }) {
@@ -83,10 +73,6 @@ export default function UserDetailPage({}: { params: { id: string } }) {
         let user = response.data.data;
         if (user.type == "admin") {
           response.data.data.type = "user";
-        }
-        if (user.type == "dealer") {
-          let rating = response.data.data.dealer?.rating || 4.5;
-          response.data.data.dealer = { rating: rating };
         }
         setUser(response.data.data);
       }
@@ -143,8 +129,6 @@ export default function UserDetailPage({}: { params: { id: string } }) {
   };
 
   const handleApproveDealerVerification = async () => {
-    if (!user?.dealer) return;
-
     setProcessingAction("verify");
     try {
       const response = await api.post(
@@ -154,16 +138,11 @@ export default function UserDetailPage({}: { params: { id: string } }) {
       if (response.data && response.data.status === "success") {
         toast.success("تمت الموافقة على طلب التحقق بنجاح");
         setUser((prev) => {
-          if (!prev || !prev.dealer) return prev;
+          if (!prev) return prev;
           return {
             ...prev,
             is_active: true,
             status: "active",
-            dealer: {
-              ...prev.dealer,
-              is_active: true,
-              status: "active",
-            },
           };
         });
       }
@@ -171,16 +150,11 @@ export default function UserDetailPage({}: { params: { id: string } }) {
       console.error("Error approving dealer verification:", error);
       toast.error("فشل في الموافقة على طلب التحقق");
       setUser((prev) => {
-        if (!prev || !prev.dealer) return prev;
+        if (!prev) return prev;
         return {
           ...prev,
           is_active: true,
           status: "active",
-          dealer: {
-            ...prev.dealer,
-            is_active: true,
-            status: "active",
-          },
         };
       });
     } finally {
@@ -376,33 +350,7 @@ export default function UserDetailPage({}: { params: { id: string } }) {
                   </span>
                 )}
 
-                {/* Dealer Verification Badge */}
-                {user.type === "dealer" && user.dealer && (
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                      user.dealer.status === "active"
-                        ? "bg-green-500/20 text-green-400 border-green-500/30"
-                        : user.dealer.status === "pending"
-                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                        : "bg-red-500/20 text-red-400 border-red-500/30"
-                    }`}
-                  >
-                    {user.dealer.status === "active" ? (
-                      <BadgeCheck className="w-4 h-4 ml-1" />
-                    ) : user.dealer.status === "pending" ? (
-                      <Clock className="w-4 h-4 ml-1" />
-                    ) : (
-                      <XCircle className="w-4 h-4 ml-1" />
-                    )}
-                    <span className="mr-2">
-                      {user.dealer.status === "active"
-                        ? "تاجر مُصدّق"
-                        : user.dealer.status === "pending"
-                        ? "تحقق التاجر معلق"
-                        : "رُفض التحقق"}
-                    </span>
-                  </span>
-                )}
+                {/* Dealer badge removed - dealers no longer have separate status */}
               </div>
             </div>
           </div>
@@ -477,22 +425,20 @@ export default function UserDetailPage({}: { params: { id: string } }) {
               </Button>
             )}
 
-            {user.type === "dealer" &&
-              user.dealer &&
-              user.dealer.status === "pending" && (
-                <Button
-                  onClick={handleApproveDealerVerification}
-                  disabled={!!processingAction}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {processingAction === "verify" ? (
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  ) : (
-                    <Shield className="w-4 h-4 ml-2" />
-                  )}
-                  تصديق التاجر
-                </Button>
-              )}
+            {user.type === "dealer" && user.status === "pending" && (
+              <Button
+                onClick={handleApproveDealerVerification}
+                disabled={!!processingAction}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {processingAction === "verify" ? (
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                ) : (
+                  <Shield className="w-4 h-4 ml-2" />
+                )}
+                تصديق التاجر
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -572,95 +518,7 @@ export default function UserDetailPage({}: { params: { id: string } }) {
             )}
           </div>
 
-          {/* Dealer Information */}
-          {user.type === "dealer" && user.dealer && (
-            <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-foreground flex items-center">
-                  <Building className="w-5 h-5 ml-2 text-blue-400" />
-                  معلومات التاجر
-                </h3>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <div className="flex items-center bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">
-                    <Star className="w-4 h-4 ml-1 fill-current" />
-                    {user.dealer.rating || 0}/5
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="bg-muted p-4 rounded-xl">
-                    <div className="text-sm font-medium text-muted-foreground mb-2">
-                      اسم الشركة
-                    </div>
-                    <div className="flex items-center text-foreground">
-                      <Building className="w-4 h-4 ml-2 text-blue-400" />
-                      {user.dealer.company_name}
-                    </div>
-                  </div>
-
-                  <div className="bg-muted p-4 rounded-xl">
-                    <div className="text-sm font-medium text-muted-foreground mb-2">
-                      رقم السجل التجاري
-                    </div>
-                    <div className="flex items-center text-foreground">
-                      <FileText className="w-4 h-4 ml-2 text-blue-400" />
-                      {user.dealer.commercial_registry}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {user.dealer.address && (
-                    <div className="bg-muted p-4 rounded-xl">
-                      <div className="text-sm font-medium text-muted-foreground mb-2">
-                        العنوان
-                      </div>
-                      <div className="flex items-center text-foreground">
-                        <MapPin className="w-4 h-4 ml-2 text-blue-400" />
-                        {user.dealer.address}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="bg-muted p-4 rounded-xl">
-                    <div className="text-sm font-medium text-muted-foreground mb-2">
-                      حالة التحقق
-                    </div>
-                    <div className="flex items-center">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          user.dealer.status === "active"
-                            ? "bg-green-500/20 text-green-400"
-                            : user.dealer.status === "pending"
-                            ? "bg-amber-500/20 text-amber-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {user.dealer.status === "active"
-                          ? "مُصدّق"
-                          : user.dealer.status === "pending"
-                          ? "قيد المراجعة"
-                          : "مرفوض"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {user.dealer.description && (
-                <div className="mt-4 bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">
-                    وصف الشركة
-                  </div>
-                  <p className="text-foreground leading-relaxed">
-                    {user.dealer.description}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Dealer Information section removed - dealers no longer have separate data */}
         </div>
 
         {/* Stats & Actions Sidebar */}

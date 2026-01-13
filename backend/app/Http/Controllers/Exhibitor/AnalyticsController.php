@@ -24,12 +24,9 @@ class AnalyticsController extends Controller
     {
         $userId = $request->user()->id;
 
-        // IDs سياراتي
+        // IDs سياراتي (dealer_id removed - dealers table dropped)
         $myCarIds = DB::table('cars')
-            ->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)
-                    ->orWhere('dealer_id', $userId);
-            })
+            ->where('user_id', $userId)
             ->pluck('id');
 
         $totalCars = $myCarIds->count();
@@ -54,16 +51,24 @@ class AnalyticsController extends Controller
                 ->count();
 
             $priceCol = $this->pickFirstExistingColumn('auctions', [
-                'final_price', 'sold_price', 'closing_price', 'winning_price',
-                'highest_bid', 'current_price', 'end_price', 'price',
-                'min_price', 'open_price', 'starting_price',
+                'final_price',
+                'sold_price',
+                'closing_price',
+                'winning_price',
+                'highest_bid',
+                'current_price',
+                'end_price',
+                'price',
+                'min_price',
+                'open_price',
+                'starting_price',
             ]);
 
             if ($priceCol) {
                 $avgFinalPrice = (float) (DB::table('auctions')
-                        ->whereIn('car_id', $myCarIds)
-                        ->whereIn('status', $finishedStatuses)
-                        ->avg($priceCol) ?? 0.0);
+                    ->whereIn('car_id', $myCarIds)
+                    ->whereIn('status', $finishedStatuses)
+                    ->avg($priceCol) ?? 0.0);
             }
 
             $myAuctionIds = DB::table('auctions')
@@ -86,8 +91,8 @@ class AnalyticsController extends Controller
 
             if ($venueOwnerId) {
                 $commissionSum = (float) (DB::table('venue_commission_operations')
-                        ->where('venue_owner_id', $venueOwnerId)
-                        ->sum('amount') ?? 0.0);
+                    ->where('venue_owner_id', $venueOwnerId)
+                    ->sum('amount') ?? 0.0);
             }
         } catch (\Exception $e) {
             // الجدول غير موجود
@@ -173,10 +178,7 @@ class AnalyticsController extends Controller
         $from = Carbon::now()->subDays($days)->startOfDay();
 
         $myCarIds = DB::table('cars')
-            ->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)
-                    ->orWhere('dealer_id', $userId);
-            })
+            ->where('user_id', $userId)
             ->pluck('id');
 
         $rows = collect();
@@ -258,10 +260,7 @@ class AnalyticsController extends Controller
 
         // IDs سياراتي
         $myCarIds = DB::table('cars')
-            ->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)
-                    ->orWhere('dealer_id', $userId);
-            })
+            ->where('user_id', $userId)
             ->pluck('id');
 
         if ($myCarIds->isEmpty()) {
@@ -279,9 +278,17 @@ class AnalyticsController extends Controller
         $finishedStatuses = ['finished', 'closed', 'sold', 'ended', 'completed'];
 
         $priceCol = $this->pickFirstExistingColumn('auctions', [
-            'final_price', 'sold_price', 'closing_price', 'winning_price',
-            'highest_bid', 'current_price', 'end_price', 'price',
-            'min_price', 'open_price', 'starting_price',
+            'final_price',
+            'sold_price',
+            'closing_price',
+            'winning_price',
+            'highest_bid',
+            'current_price',
+            'end_price',
+            'price',
+            'min_price',
+            'open_price',
+            'starting_price',
         ]);
 
         try {
@@ -377,10 +384,7 @@ class AnalyticsController extends Controller
         $from = Carbon::now()->subDays($days)->startOfDay();
 
         $myCarIds = DB::table('cars')
-            ->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)
-                    ->orWhere('dealer_id', $userId);
-            })
+            ->where('user_id', $userId)
             ->pluck('id');
 
         if ($myCarIds->isEmpty()) {
@@ -389,7 +393,7 @@ class AnalyticsController extends Controller
                 'data' => [
                     'days' => $days,
                     'labels' => [
-                        'days'  => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                        'days'  => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         'hours' => range(0, 23),
                     ],
                     'matrix' => array_fill(0, 7, array_fill(0, 24, 0)),
@@ -410,7 +414,7 @@ class AnalyticsController extends Controller
                 'data' => [
                     'days' => $days,
                     'labels' => [
-                        'days'  => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                        'days'  => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         'hours' => range(0, 23),
                     ],
                     'matrix' => array_fill(0, 7, array_fill(0, 24, 0)),
@@ -493,7 +497,7 @@ class AnalyticsController extends Controller
                 'data' => [
                     'days' => $days,
                     'labels' => [
-                        'days'  => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                        'days'  => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         'hours' => range(0, 23),
                     ],
                     'matrix' => $matrix,
@@ -509,7 +513,7 @@ class AnalyticsController extends Controller
                 'data' => [
                     'days' => $days,
                     'labels' => [
-                        'days'  => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+                        'days'  => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                         'hours' => range(0, 23),
                     ],
                     'matrix' => array_fill(0, 7, array_fill(0, 24, 0)),
@@ -533,7 +537,7 @@ class AnalyticsController extends Controller
                 self::$columnCache[$cacheKey] = Cache::remember(
                     "db_columns_{$table}",
                     3600,
-                    fn () => Schema::getColumnListing($table)
+                    fn() => Schema::getColumnListing($table)
                 );
             } catch (\Exception $e) {
                 self::$columnCache[$cacheKey] = [];

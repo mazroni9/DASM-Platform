@@ -24,12 +24,10 @@ class CarController extends Controller
     {
         $query = Car::query();
 
-        // ✅ Eager loading
+        // ✅ Eager loading (dealer removed - dealers table dropped)
         $query->with([
-            'dealer:id,user_id,company_name',
-            'dealer.user:id,first_name,last_name,email,phone',
             'user:id,first_name,last_name,email',
-            'auctions' => fn ($q) => $q->latest()->limit(1),
+            'auctions' => fn($q) => $q->latest()->limit(1),
             'activeAuction',
         ]);
 
@@ -59,9 +57,7 @@ class CarController extends Controller
             $query->where('year', '<=', (int) $request->year_to);
         }
 
-        if ($request->filled('dealer_id')) {
-            $query->where('dealer_id', $request->dealer_id);
-        }
+        // dealer_id filter removed - dealers table dropped
 
         // Search
         if ($request->filled('search')) {
@@ -105,11 +101,9 @@ class CarController extends Controller
     public function show($id): JsonResponse
     {
         $car = Car::with([
-            'dealer:id,user_id,company_name',
-            'dealer.user:id,first_name,last_name,email,phone',
             'user:id,first_name,last_name,email',
-            'auctions' => fn ($q) => $q->orderBy('created_at', 'desc'),
-            'auctions.bids' => fn ($q) => $q->orderBy('created_at', 'desc')->limit(5),
+            'auctions' => fn($q) => $q->orderBy('created_at', 'desc'),
+            'auctions.bids' => fn($q) => $q->orderBy('created_at', 'desc')->limit(5),
             'activeAuction',
             'carAttributes',
             'reportImages',
@@ -155,9 +149,18 @@ class CarController extends Controller
             $car = Car::findOrFail($id);
 
             $car->fill($request->only([
-                'make', 'model', 'year', 'vin', 'odometer', 'color',
-                'condition', 'evaluation_price', 'auction_status', 'description',
-                'images', 'image'
+                'make',
+                'model',
+                'year',
+                'vin',
+                'odometer',
+                'color',
+                'condition',
+                'evaluation_price',
+                'auction_status',
+                'description',
+                'images',
+                'image'
             ]));
 
             $car->save();
@@ -170,9 +173,8 @@ class CarController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'تم تحديث بيانات السيارة بنجاح',
-                'data'    => $car->fresh(['dealer.user', 'user', 'auctions', 'activeAuction']),
+                'data'    => $car->fresh(['user', 'auctions', 'activeAuction']),
             ]);
-
         } catch (\Exception $e) {
             Log::error('Car update failed', [
                 'error'  => $e->getMessage(),
@@ -225,7 +227,6 @@ class CarController extends Controller
                 'message' => 'تم حذف السيارة بنجاح',
                 'data'    => null,
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Car deletion failed', [
@@ -312,7 +313,6 @@ class CarController extends Controller
                 'message' => 'تم إنشاء المزاد بنجاح',
                 'data'    => $auction->load('car'),
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Auction creation failed', [

@@ -50,9 +50,7 @@ interface UserProfile {
   type: string;
   area_id?: string | number | null;
   address?: string;
-  company_name?: string;
-  trade_license?: string;
-  description?: string;
+  // dealer fields removed - dealers table dropped
   created_at: string;
   updated_at: string;
   email_verified_at: string | null;
@@ -70,9 +68,7 @@ interface ProfileFormData {
   phone: string;
   area_id: string; // always string in UI
   address: string;
-  company_name: string;
-  trade_license: string;
-  description: string;
+  // dealer fields removed - dealers table dropped
   currentPassword: string;
   password: string;
   confirmPassword: string;
@@ -183,10 +179,7 @@ const extractErrorsMessage = (err: any) => {
   const msg = data?.message;
   const errors = data?.errors;
   if (errors && typeof errors === "object") {
-    const flat = Object.values(errors)
-      .flat()
-      .filter(Boolean)
-      .join("، ");
+    const flat = Object.values(errors).flat().filter(Boolean).join("، ");
     return flat || msg || "بيانات غير صالحة";
   }
   return msg || "حدث خطأ غير متوقع";
@@ -201,9 +194,6 @@ export default function ProfilePage() {
     phone: "",
     area_id: "",
     address: "",
-    company_name: "",
-    trade_license: "",
-    description: "",
     currentPassword: "",
     password: "",
     confirmPassword: "",
@@ -221,7 +211,10 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [tabStatus, setTabStatus] = useState<
-    Record<TabId, { status: "" | "success" | "error" | "info"; message: string }>
+    Record<
+      TabId,
+      { status: "" | "success" | "error" | "info"; message: string }
+    >
   >({
     personal: { status: "", message: "" },
     security: { status: "", message: "" },
@@ -256,11 +249,9 @@ export default function ProfilePage() {
           last_name: profileData.last_name || "",
           email: profileData.email || "",
           phone: profileData.phone || "",
-          area_id: profileData.area_id != null ? String(profileData.area_id) : "",
+          area_id:
+            profileData.area_id != null ? String(profileData.area_id) : "",
           address: profileData.address || "",
-          company_name: profileData.company_name || "",
-          trade_license: profileData.trade_license || "",
-          description: profileData.description || "",
           currentPassword: "",
           password: "",
           confirmPassword: "",
@@ -331,11 +322,7 @@ export default function ProfilePage() {
         payload.area_id = areaIdNum;
       }
 
-      if (profile.type === UserRole.DEALER) {
-        payload.company_name = formData.company_name;
-        payload.trade_license = formData.trade_license;
-        payload.description = formData.description;
-      }
+      // dealer fields removed - dealers table dropped
 
       const res = await api.put("/api/user/profile", payload);
 
@@ -348,7 +335,11 @@ export default function ProfilePage() {
           setFormData((p) => ({ ...p, area_id: String(updated.area_id) }));
         }
 
-        setTabMessage("personal", "success", "تم تحديث المعلومات الشخصية بنجاح");
+        setTabMessage(
+          "personal",
+          "success",
+          "تم تحديث المعلومات الشخصية بنجاح"
+        );
         toast.success("تم تحديث المعلومات الشخصية بنجاح");
       } else {
         throw new Error(res?.data?.message || "Failed to update profile");
@@ -869,8 +860,12 @@ export default function ProfilePage() {
                             <SelectItem value="2">منطقة مكة المكرمة</SelectItem>
                             <SelectItem value="3">المنطقة الشرقية</SelectItem>
                             <SelectItem value="4">منطقة تبوك</SelectItem>
-                            <SelectItem value="5">منطقة المدينة المنورة</SelectItem>
-                            <SelectItem value="6">منطقة الحدود الشمالية</SelectItem>
+                            <SelectItem value="5">
+                              منطقة المدينة المنورة
+                            </SelectItem>
+                            <SelectItem value="6">
+                              منطقة الحدود الشمالية
+                            </SelectItem>
                             <SelectItem value="7">منطقة القصيم</SelectItem>
                             <SelectItem value="8">منطقة المجمعة</SelectItem>
                             <SelectItem value="9">منطقة حائل</SelectItem>
@@ -897,57 +892,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Dealer fields */}
-                  {profile.type === UserRole.DEALER && (
-                    <div className="mt-8 pt-6 border-t border-border">
-                      <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                        <Building className="w-5 h-5 text-purple-400" />
-                        معلومات التاجر
-                      </h3>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                        <div className="min-w-0">
-                          <label className="text-sm text-foreground/80 mb-2 block">
-                            اسم الشركة
-                          </label>
-                          <div className="relative">
-                            <input
-                              name="company_name"
-                              value={formData.company_name}
-                              onChange={handleInputChange}
-                              className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-purple-500/50 transition-colors"
-                            />
-                            <Building className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
-                          </div>
-                        </div>
-
-                        <div className="min-w-0">
-                          <label className="text-sm text-foreground/80 mb-2 block">
-                            رقم السجل التجاري
-                          </label>
-                          <input
-                            name="trade_license"
-                            value={formData.trade_license}
-                            onChange={handleInputChange}
-                            className="w-full bg-background/50 border border-border rounded-lg px-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-purple-500/50 transition-colors"
-                          />
-                        </div>
-
-                        <div className="md:col-span-2 min-w-0">
-                          <label className="text-sm text-foreground/80 mb-2 block">
-                            وصف الشركة
-                          </label>
-                          <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="w-full bg-background/50 border border-border rounded-lg px-3 py-3 text-foreground placeholder-foreground/70 focus:outline-none focus:border-purple-500/50 transition-colors resize-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {/* Dealer fields removed - dealers table dropped */}
 
                   <div className="flex justify-end pt-4">
                     <button
@@ -1107,7 +1052,10 @@ export default function ProfilePage() {
                         id="twoFactorAuth"
                         checked={formData.twoFactorAuth}
                         onChange={(e) =>
-                          handleCheckboxChange("twoFactorAuth", e.target.checked)
+                          handleCheckboxChange(
+                            "twoFactorAuth",
+                            e.target.checked
+                          )
                         }
                         className="mt-1 shrink-0"
                       />
@@ -1119,7 +1067,8 @@ export default function ProfilePage() {
                           المصادقة الثنائية
                         </label>
                         <p className="text-sm text-foreground/70 mt-1 break-words">
-                          تأمين حسابك بشكل أفضل باستخدام رمز إضافي عند تسجيل الدخول
+                          تأمين حسابك بشكل أفضل باستخدام رمز إضافي عند تسجيل
+                          الدخول
                         </p>
                       </div>
                     </div>
@@ -1205,7 +1154,8 @@ export default function ProfilePage() {
                           إشعارات البريد الإلكتروني
                         </label>
                         <p className="text-sm text-foreground/70 mt-1 break-words">
-                          استلام إشعارات عبر البريد الإلكتروني عند حدوث نشاط في حسابك
+                          استلام إشعارات عبر البريد الإلكتروني عند حدوث نشاط في
+                          حسابك
                         </p>
                       </div>
                     </div>
@@ -1228,7 +1178,8 @@ export default function ProfilePage() {
                           إشعارات الرسائل النصية
                         </label>
                         <p className="text-sm text-foreground/70 mt-1 break-words">
-                          استلام إشعارات عبر الرسائل النصية عند حدوث نشاط في حسابك
+                          استلام إشعارات عبر الرسائل النصية عند حدوث نشاط في
+                          حسابك
                         </p>
                       </div>
                     </div>

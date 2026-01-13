@@ -3,685 +3,601 @@
 import { useState, useEffect } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import {
-    Car,
-    Search,
-    Filter,
-    CheckSquare,
-    Square,
-    MoreVertical,
-    Eye,
-    Edit3,
-    Trash2,
-    Play,
-    Pause,
-    Archive,
-    RotateCcw,
-    Loader2,
-    ChevronDown,
-    ArrowLeft,
-    X,
+  Car,
+  Search,
+  Filter,
+  CheckSquare,
+  Square,
+  MoreVertical,
+  Eye,
+  Edit3,
+  Trash2,
+  Play,
+  Pause,
+  Archive,
+  RotateCcw,
+  Loader2,
+  ChevronDown,
+  ArrowLeft,
+  X,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "@/lib/axios";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
-
 interface CarData {
-    id: number;
-    make: string;
-    model: string;
-    year: number;
-    vin: string;
-    condition: string;
-    transmission: string;
-    category: string;
-    odometer: number;
-    evaluation_price: number | null;
-    plate_number: string | null;
-    auction_status: string;
-    dealer?: {
-        user: {
-            first_name: string;
-            last_name: string;
-        };
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  vin: string;
+  condition: string;
+  transmission: string;
+  category: string;
+  odometer: number;
+  evaluation_price: number | null;
+  plate_number: string | null;
+  auction_status: string;
+  dealer?: {
+    user: {
+      first_name: string;
+      last_name: string;
     };
-    user?: {
-        first_name: string;
-        last_name: string;
-    };
-    created_at: string;
+  } | null;
+  user?: {
+    first_name: string;
+    last_name: string;
+  } | null;
+  created_at: string;
 }
 
 interface FilterOptions {
-    status: string;
-    category: string;
-    condition: string;
-    transmission: string;
-    dealer_id: string;
+  status: string;
+  category: string;
+  condition: string;
+  transmission: string;
 }
 
 export default function ModeratorCarsPage() {
-    const router = useLoadingRouter();
-    
-    const [cars, setCars] = useState<CarData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
-    const [selectAll, setSelectAll] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [showFilters, setShowFilters] = useState(false);
-    const [showBulkActions, setShowBulkActions] = useState(false);
-    const [filters, setFilters] = useState<FilterOptions>({
-        status: "",
-        category: "",
-        condition: "",
-        transmission: "",
-        dealer_id: "",
-    });
-    const [enumOptions, setEnumOptions] = useState<any>({});
+  const router = useLoadingRouter();
 
-    useEffect(() => {
-        fetchCars();
-        fetchEnumOptions();
-    }, []);
+  const [cars, setCars] = useState<CarData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCars, setSelectedCars] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    status: "",
+    category: "",
+    condition: "",
+    transmission: "",
+  });
+  const [enumOptions, setEnumOptions] = useState<any>({});
 
-    useEffect(() => {
-        fetchCars();
-    }, [filters, searchTerm]);
+  useEffect(() => {
+    fetchCars();
+    fetchEnumOptions();
+  }, []);
 
-    const fetchCars = async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams();
+  useEffect(() => {
+    fetchCars();
+  }, [filters, searchTerm]);
 
-            if (searchTerm) params.append("search", searchTerm);
-            if (filters.status) params.append("status", filters.status);
-            if (filters.dealer_id)
-                params.append("dealer_id", filters.dealer_id);
+  const fetchCars = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
 
-            // Use moderator endpoint - we'll need to create this or use the general cars endpoint
-            const response = await api.get(`/api/moderator/cars?${params}`);
-            if (response.data.status === "success") {
-                // The backend returns cars directly in data, not nested
-                setCars(response.data.data || []);
-            }
-        } catch (error) {
-            console.error("Error fetching cars:", error);
-            toast.error("فشل في تحميل السيارات");
-        } finally {
-            setLoading(false);
-        }
-    };
+      if (searchTerm) params.append("search", searchTerm);
+      if (filters.status) params.append("status", filters.status);
 
-    const fetchEnumOptions = async () => {
-        try {
-            const response = await api.get("/api/cars/enum-options");
-            if (response.data.status === "success") {
-                setEnumOptions(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching enum options:", error);
-        }
-    };
+      // Use moderator endpoint - we'll need to create this or use the general cars endpoint
+      const response = await api.get(`/api/moderator/cars?${params}`);
+      if (response.data.status === "success") {
+        // The backend returns cars directly in data, not nested
+        setCars(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching cars:", error);
+      toast.error("فشل في تحميل السيارات");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSelectCar = (carId: number, checked: boolean) => {
-        const newSelected = new Set(selectedCars);
-        if (checked) {
-            newSelected.add(carId);
-        } else {
-            newSelected.delete(carId);
-        }
-        setSelectedCars(newSelected);
-        setSelectAll(newSelected.size === cars.length);
-    };
+  const fetchEnumOptions = async () => {
+    try {
+      const response = await api.get("/api/cars/enum-options");
+      if (response.data.status === "success") {
+        setEnumOptions(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching enum options:", error);
+    }
+  };
 
-    const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            setSelectedCars(new Set(cars.map((car) => car.id)));
-        } else {
-            setSelectedCars(new Set());
-        }
-        setSelectAll(checked);
-    };
+  const handleSelectCar = (carId: number, checked: boolean) => {
+    const newSelected = new Set(selectedCars);
+    if (checked) {
+      newSelected.add(carId);
+    } else {
+      newSelected.delete(carId);
+    }
+    setSelectedCars(newSelected);
+    setSelectAll(newSelected.size === cars.length);
+  };
 
-    const handleBulkAction = async (action: string) => {
-        if (selectedCars.size === 0) {
-            toast.error("يرجى اختيار سيارة واحدة على الأقل");
-            return;
-        }
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCars(new Set(cars.map((car) => car.id)));
+    } else {
+      setSelectedCars(new Set());
+    }
+    setSelectAll(checked);
+  };
 
-        const carIds = Array.from(selectedCars);
+  const handleBulkAction = async (action: string) => {
+    if (selectedCars.size === 0) {
+      toast.error("يرجى اختيار سيارة واحدة على الأقل");
+      return;
+    }
 
-        try {
-            switch (action) {
-                case "approve-auctions":
-                    await api.put("/api/moderator/cars/bulk-approve-auctions", {
-                        car_ids: carIds,
-                        approve: true,
-                    });
-                    toast.success("تم الموافقة على مزادات السيارات");
-                    break;
-                case "reject-auctions":
-                    await api.put("/api/moderator/cars/bulk-approve-auctions", {
-                        car_ids: carIds,
-                        approve: false,
-                    });
-                    toast.success("تم رفض مزادات السيارات");
-                    break;
-                case "move-to-active":
-                    // Add bulk status update endpoint if needed
-                    toast.success("سيتم إضافة هذه الوظيفة قريباً");
-                    break;
-                case "move-to-pending":
-                    toast.success("سيتم إضافة هذه الوظيفة قريباً");
-                    break;
-                case "archive":
-                    toast.success("سيتم إضافة هذه الوظيفة قريباً");
-                    break;
-            }
+    const carIds = Array.from(selectedCars);
 
-            fetchCars();
-            setSelectedCars(new Set());
-            setSelectAll(false);
-            setShowBulkActions(false);
-        } catch (error: any) {
-            console.error("Error performing bulk action:", error);
-            toast.error(
-                error.response?.data?.message || "فشل في تنفيذ العملية"
-            );
-        }
-    };
+    try {
+      switch (action) {
+        case "approve-auctions":
+          await api.put("/api/moderator/cars/bulk-approve-auctions", {
+            car_ids: carIds,
+            approve: true,
+          });
+          toast.success("تم الموافقة على مزادات السيارات");
+          break;
+        case "reject-auctions":
+          await api.put("/api/moderator/cars/bulk-approve-auctions", {
+            car_ids: carIds,
+            approve: false,
+          });
+          toast.success("تم رفض مزادات السيارات");
+          break;
+        case "move-to-active":
+          // Add bulk status update endpoint if needed
+          toast.success("سيتم إضافة هذه الوظيفة قريباً");
+          break;
+        case "move-to-pending":
+          toast.success("سيتم إضافة هذه الوظيفة قريباً");
+          break;
+        case "archive":
+          toast.success("سيتم إضافة هذه الوظيفة قريباً");
+          break;
+      }
 
-    const approveCarAuction = async (carId: number, approve: boolean) => {
-        try {
-            await api.put(`/api/moderator/cars/${carId}/approve-auction`, {
-                approve: approve,
-            });
-            toast.success(
-                approve ? "تم الموافقة على مزاد السيارة" : "تم رفض مزاد السيارة"
-            );
-            fetchCars();
-        } catch (error: any) {
-            console.error("Error approving auction:", error);
-            toast.error(
-                error.response?.data?.message || "فشل في معالجة طلب المزاد"
-            );
-        }
-    };
+      fetchCars();
+      setSelectedCars(new Set());
+      setSelectAll(false);
+      setShowBulkActions(false);
+    } catch (error: any) {
+      console.error("Error performing bulk action:", error);
+      toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+    }
+  };
 
-    const handleProcessAuction = (carId: number) => {
-        router.push(`/moderator/cars/${carId}/process-auction`);
-    };
+  const approveCarAuction = async (carId: number, approve: boolean) => {
+    try {
+      await api.put(`/api/moderator/cars/${carId}/approve-auction`, {
+        approve: approve,
+      });
+      toast.success(
+        approve ? "تم الموافقة على مزاد السيارة" : "تم رفض مزاد السيارة"
+      );
+      fetchCars();
+    } catch (error: any) {
+      console.error("Error approving auction:", error);
+      toast.error(error.response?.data?.message || "فشل في معالجة طلب المزاد");
+    }
+  };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "active":
-                return "bg-green-100 text-green-800";
-            case "pending":
-                return "bg-yellow-100 text-yellow-800";
-            case "completed":
-                return "bg-gray-100 text-gray-800";
-            case "cancelled":
-                return "bg-red-100 text-red-800";
-            default:
-                return "bg-gray-100 text-gray-800";
-        }
-    };
+  const handleProcessAuction = (carId: number) => {
+    router.push(`/moderator/cars/${carId}/process-auction`);
+  };
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case "active":
-                return "نشط";
-            case "pending":
-                return "في الانتظار";
-            case "completed":
-                return "مكتمل";
-            case "cancelled":
-                return "ملغي";
-            default:
-                return status;
-        }
-    };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "completed":
+        return "bg-gray-100 text-gray-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
-    const filteredCars = cars.filter((car) => {
-        if (filters.category && car.category !== filters.category) return false;
-        if (filters.condition && car.condition !== filters.condition)
-            return false;
-        if (filters.transmission && car.transmission !== filters.transmission)
-            return false;
-        return true;
-    });
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active":
+        return "نشط";
+      case "pending":
+        return "في الانتظار";
+      case "completed":
+        return "مكتمل";
+      case "cancelled":
+        return "ملغي";
+      default:
+        return status;
+    }
+  };
 
-    return (
-        <div className="space-y-6">
-            {/* Navigation Header */}
-            <div className="mb-4">
-                <LoadingLink
-                    href="/moderator/dashboard"
-                    className="inline-flex items-center space-x-2 rtl:space-x-reverse text-blue-600 hover:text-blue-800 mb-4"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>العودة إلى لوحة التحكم</span>
-                </LoadingLink>
-                <h1 className="text-3xl font-bold text-gray-900">
-                    إدارة السيارات
-                </h1>
-                <p className="text-gray-600 mt-2">
-                    مراقبة وإدارة السيارات المتاحة للمزاد المباشر
-                </p>
+  const filteredCars = cars.filter((car) => {
+    if (filters.category && car.category !== filters.category) return false;
+    if (filters.condition && car.condition !== filters.condition) return false;
+    if (filters.transmission && car.transmission !== filters.transmission)
+      return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Navigation Header */}
+      <div className="mb-4">
+        <LoadingLink
+          href="/moderator/dashboard"
+          className="inline-flex items-center space-x-2 rtl:space-x-reverse text-blue-600 hover:text-blue-800 mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>العودة إلى لوحة التحكم</span>
+        </LoadingLink>
+        <h1 className="text-3xl font-bold text-gray-900">إدارة السيارات</h1>
+        <p className="text-gray-600 mt-2">
+          مراقبة وإدارة السيارات المتاحة للمزاد المباشر
+        </p>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-500">{filteredCars.length} سيارة</div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={20}
+              />
+              <input
+                type="text"
+                placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-
-            <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                    {filteredCars.length} سيارة
-                </div>
-            </div>
-
-            {/* Search and Filters */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                    <div className="flex-1">
-                        <div className="relative">
-                            <Search
-                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                size={20}
-                            />
-                            <input
-                                type="text"
-                                placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                        <Filter size={20} />
-                        فلاتر
-                        <ChevronDown
-                            className={`transition-transform ${
-                                showFilters ? "rotate-180" : ""
-                            }`}
-                            size={16}
-                        />
-                    </button>
-                </div>
-
-                {showFilters && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-md">
-                        <select
-                            value={filters.status}
-                            onChange={(e) =>
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    status: e.target.value,
-                                }))
-                            }
-                            className="p-2 border border-gray-300 rounded-md"
-                        >
-                            <option value="">كل الحالات</option>
-                            <option value="active">نشط</option>
-                            <option value="pending">في الانتظار</option>
-                            <option value="completed">مكتمل</option>
-                            <option value="cancelled">ملغي</option>
-                        </select>
-
-                        <select
-                            value={filters.category}
-                            onChange={(e) =>
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    category: e.target.value,
-                                }))
-                            }
-                            className="p-2 border border-gray-300 rounded-md"
-                        >
-                            <option value="">كل الفئات</option>
-                            {enumOptions.categories?.map((category: any) => (
-                                <option
-                                    key={category.value}
-                                    value={category.value}
-                                >
-                                    {category.label}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={filters.condition}
-                            onChange={(e) =>
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    condition: e.target.value,
-                                }))
-                            }
-                            className="p-2 border border-gray-300 rounded-md"
-                        >
-                            <option value="">كل الحالات</option>
-                            {enumOptions.conditions?.map((condition: any) => (
-                                <option
-                                    key={condition.value}
-                                    value={condition.value}
-                                >
-                                    {condition.label}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={filters.transmission}
-                            onChange={(e) =>
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    transmission: e.target.value,
-                                }))
-                            }
-                            className="p-2 border border-gray-300 rounded-md"
-                        >
-                            <option value="">كل أنواع الناقل</option>
-                            {enumOptions.transmissions?.map(
-                                (transmission: any) => (
-                                    <option
-                                        key={transmission.value}
-                                        value={transmission.value}
-                                    >
-                                        {transmission.label}
-                                    </option>
-                                )
-                            )}
-                        </select>
-                    </div>
-                )}
-            </div>
-
-            {/* Bulk Actions */}
-            {selectedCars.size > 0 && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between">
-                        <span className="text-blue-800">
-                            تم اختيار {selectedCars.size} سيارة
-                        </span>
-                        <div className="relative">
-                            <button
-                                onClick={() =>
-                                    setShowBulkActions(!showBulkActions)
-                                }
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                إجراءات جماعية
-                                <ChevronDown
-                                    className={`transition-transform ${
-                                        showBulkActions ? "rotate-180" : ""
-                                    }`}
-                                    size={16}
-                                />
-                            </button>
-
-                            {showBulkActions && (
-                                <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                    <div className="p-2">
-                                        <button
-                                            onClick={() =>
-                                                handleBulkAction(
-                                                    "approve-auctions"
-                                                )
-                                            }
-                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                                        >
-                                            <CheckSquare size={16} />
-                                            الموافقة على المزادات
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleBulkAction(
-                                                    "reject-auctions"
-                                                )
-                                            }
-                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                                        >
-                                            <X size={16} />
-                                            رفض المزادات
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleBulkAction(
-                                                    "move-to-active"
-                                                )
-                                            }
-                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                                        >
-                                            <CheckSquare size={16} />
-                                            نقل إلى المزادات النشطة
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleBulkAction(
-                                                    "move-to-pending"
-                                                )
-                                            }
-                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
-                                        >
-                                            <RotateCcw size={16} />
-                                            نقل إلى المزادات المعلقة
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                handleBulkAction("archive")
-                                            }
-                                            className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2 text-red-600"
-                                        >
-                                            <Archive size={16} />
-                                            أرشفة
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Cars Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                        <span className="mr-2">جاري تحميل السيارات...</span>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectAll}
-                                            onChange={(e) =>
-                                                handleSelectAll(
-                                                    e.target.checked
-                                                )
-                                            }
-                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                        />
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        السيارة
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        المالك
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        حالة المزاد
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        حالة الموافقة
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        السعر المتوقع
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        تاريخ الإضافة
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                                        الإجراءات
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {filteredCars.map((car) => (
-                                    <tr
-                                        key={car.id}
-                                        className="hover:bg-gray-50"
-                                    >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedCars.has(
-                                                    car.id
-                                                )}
-                                                onChange={(e) =>
-                                                    handleSelectCar(
-                                                        car.id,
-                                                        e.target.checked
-                                                    )
-                                                }
-                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                            />
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div
-                                                className="flex items-center cursor-pointer hover:text-blue-600"
-                                                onClick={() =>
-                                                    router.push(
-                                                        `/carDetails/${car.id}`
-                                                    )
-                                                }
-                                            >
-                                                <Car className="w-8 h-8 text-gray-400 ml-3" />
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {car.make} {car.model}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {car.year} •{" "}
-                                                        {car.plate_number ||
-                                                            "بدون لوحة"}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {car.dealer
-                                                ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)`
-                                                : car.user
-                                                ? `${car.user.first_name} ${car.user.last_name}`
-                                                : "غير محدد"}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                                                    car.auction_status
-                                                )}`}
-                                            >
-                                                {getStatusText(
-                                                    car.auction_status
-                                                )}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                    car.auction_status ===
-                                                    "in_auction"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : car.auction_status ===
-                                                          "pending_approval"
-                                                        ? "bg-yellow-100 text-yellow-800"
-                                                        : car.auction_status ===
-                                                          "rejected"
-                                                        ? "bg-red-100 text-red-800"
-                                                        : "bg-gray-100 text-gray-800"
-                                                }`}
-                                            >
-                                                {car.auction_status ===
-                                                "in_auction"
-                                                    ? "تمت الموافقة"
-                                                    : car.auction_status ===
-                                                      "pending_approval"
-                                                    ? "في انتظار الموافقة"
-                                                    : car.auction_status ===
-                                                      "rejected"
-                                                    ? "مرفوضة"
-                                                    : "متاحة"}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {car.evaluation_price
-                                                ? `${car.evaluation_price.toLocaleString()} ريال`
-                                                : "غير محدد"}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(
-                                                car.created_at
-                                            ).toLocaleDateString("ar-SA")}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/carDetails/${car.id}`
-                                                        )
-                                                    }
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                    title="عرض التفاصيل"
-                                                >
-                                                    <Eye size={16} />
-                                                </button>
-                                                {car.auction_status ===
-                                                    "pending" && (
-                                                    <button
-                                                        onClick={() =>
-                                                            handleProcessAuction(
-                                                                car.id
-                                                            )
-                                                        }
-                                                        className="px-3 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700"
-                                                        title="معالجة طلب المزاد"
-                                                    >
-                                                        معالجة
-                                                    </button>
-                                                )}
-                                                <button
-                                                    className="text-gray-600 hover:text-gray-900"
-                                                    title="المزيد من الخيارات"
-                                                >
-                                                    <MoreVertical size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {filteredCars.length === 0 && !loading && (
-                            <div className="text-center py-12">
-                                <Car className="mx-auto h-12 w-12 text-gray-400" />
-                                <h3 className="mt-2 text-sm font-medium text-gray-900">
-                                    لا توجد سيارات
-                                </h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    لم يتم العثور على سيارات تطابق معايير البحث.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            <Filter size={20} />
+            فلاتر
+            <ChevronDown
+              className={`transition-transform ${
+                showFilters ? "rotate-180" : ""
+              }`}
+              size={16}
+            />
+          </button>
         </div>
-    );
+
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-md">
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  status: e.target.value,
+                }))
+              }
+              className="p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">كل الحالات</option>
+              <option value="active">نشط</option>
+              <option value="pending">في الانتظار</option>
+              <option value="completed">مكتمل</option>
+              <option value="cancelled">ملغي</option>
+            </select>
+
+            <select
+              value={filters.category}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  category: e.target.value,
+                }))
+              }
+              className="p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">كل الفئات</option>
+              {enumOptions.categories?.map((category: any) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.condition}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  condition: e.target.value,
+                }))
+              }
+              className="p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">كل الحالات</option>
+              {enumOptions.conditions?.map((condition: any) => (
+                <option key={condition.value} value={condition.value}>
+                  {condition.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.transmission}
+              onChange={(e) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  transmission: e.target.value,
+                }))
+              }
+              className="p-2 border border-gray-300 rounded-md"
+            >
+              <option value="">كل أنواع الناقل</option>
+              {enumOptions.transmissions?.map((transmission: any) => (
+                <option key={transmission.value} value={transmission.value}>
+                  {transmission.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Bulk Actions */}
+      {selectedCars.size > 0 && (
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <span className="text-blue-800">
+              تم اختيار {selectedCars.size} سيارة
+            </span>
+            <div className="relative">
+              <button
+                onClick={() => setShowBulkActions(!showBulkActions)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                إجراءات جماعية
+                <ChevronDown
+                  className={`transition-transform ${
+                    showBulkActions ? "rotate-180" : ""
+                  }`}
+                  size={16}
+                />
+              </button>
+
+              {showBulkActions && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                  <div className="p-2">
+                    <button
+                      onClick={() => handleBulkAction("approve-auctions")}
+                      className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    >
+                      <CheckSquare size={16} />
+                      الموافقة على المزادات
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction("reject-auctions")}
+                      className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    >
+                      <X size={16} />
+                      رفض المزادات
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction("move-to-active")}
+                      className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    >
+                      <CheckSquare size={16} />
+                      نقل إلى المزادات النشطة
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction("move-to-pending")}
+                      className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2"
+                    >
+                      <RotateCcw size={16} />
+                      نقل إلى المزادات المعلقة
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction("archive")}
+                      className="w-full text-right px-4 py-2 hover:bg-gray-100 rounded flex items-center gap-2 text-red-600"
+                    >
+                      <Archive size={16} />
+                      أرشفة
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cars Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <span className="mr-2">جاري تحميل السيارات...</span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    السيارة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    المالك
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    حالة المزاد
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    حالة الموافقة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    السعر المتوقع
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    تاريخ الإضافة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    الإجراءات
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredCars.map((car) => (
+                  <tr key={car.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedCars.has(car.id)}
+                        onChange={(e) =>
+                          handleSelectCar(car.id, e.target.checked)
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div
+                        className="flex items-center cursor-pointer hover:text-blue-600"
+                        onClick={() => router.push(`/carDetails/${car.id}`)}
+                      >
+                        <Car className="w-8 h-8 text-gray-400 ml-3" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {car.make} {car.model}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {car.year} • {car.plate_number || "بدون لوحة"}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {car.user
+                        ? `${car.user.first_name} ${car.user.last_name}`
+                        : "غير محدد"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          car.auction_status
+                        )}`}
+                      >
+                        {getStatusText(car.auction_status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          car.auction_status === "in_auction"
+                            ? "bg-green-100 text-green-800"
+                            : car.auction_status === "pending_approval"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : car.auction_status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {car.auction_status === "in_auction"
+                          ? "تمت الموافقة"
+                          : car.auction_status === "pending_approval"
+                          ? "في انتظار الموافقة"
+                          : car.auction_status === "rejected"
+                          ? "مرفوضة"
+                          : "متاحة"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {car.evaluation_price
+                        ? `${car.evaluation_price.toLocaleString()} ريال`
+                        : "غير محدد"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(car.created_at).toLocaleDateString("ar-SA")}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => router.push(`/carDetails/${car.id}`)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="عرض التفاصيل"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        {car.auction_status === "pending" && (
+                          <button
+                            onClick={() => handleProcessAuction(car.id)}
+                            className="px-3 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700"
+                            title="معالجة طلب المزاد"
+                          >
+                            معالجة
+                          </button>
+                        )}
+                        <button
+                          className="text-gray-600 hover:text-gray-900"
+                          title="المزيد من الخيارات"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filteredCars.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <Car className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  لا توجد سيارات
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  لم يتم العثور على سيارات تطابق معايير البحث.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

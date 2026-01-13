@@ -128,7 +128,7 @@ class BidController extends Controller
         }
 
         // Check if car owner is trying to bid on their own auction
-        if ($auction->car->dealer_id === Auth::user()->dealer->id ?? null) {
+        if ($auction->car->user_id === Auth::id()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'You cannot bid on your own auction'
@@ -439,7 +439,7 @@ class BidController extends Controller
                 'extended_until'
             )
                 ->withCount('bids')
-                ->with('car:id,dealer_id,user_id,min_price,max_price')
+                ->with('car:id,user_id,min_price,max_price')
                 ->find($data['auction_id']);
 
             // Validate auction exists
@@ -467,12 +467,7 @@ class BidController extends Controller
             }
 
             // Check if user is trying to bid on their own auction
-            $isOwner = false;
-            if ($auction->car->dealer_id && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
-                $isOwner = true;
-            } elseif ($auction->car->user_id === $user->id) {
-                $isOwner = true;
-            }
+            $isOwner = $auction->car->user_id === $user->id;
 
             if ($isOwner) {
                 return response()->json([

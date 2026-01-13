@@ -84,12 +84,6 @@ interface UserData {
   created_at: string;
   user_code: string;
   status: "pending" | "active" | "rejected";
-  dealer?: {
-    id: number;
-    is_active: boolean;
-    status: "pending" | "active" | "rejected";
-    company_name: string;
-  } | null;
 }
 
 export default function UsersManagementPage() {
@@ -160,9 +154,7 @@ export default function UsersManagementPage() {
         (user) =>
           user.first_name.toLowerCase().includes(searchLower) ||
           user.last_name.toLowerCase().includes(searchLower) ||
-          user.email.toLowerCase().includes(searchLower) ||
-          (user.dealer?.company_name &&
-            user.dealer.company_name.toLowerCase().includes(searchLower))
+          user.email.toLowerCase().includes(searchLower)
       );
     }
 
@@ -179,10 +171,7 @@ export default function UsersManagementPage() {
         result = result.filter((user) => user.status === "rejected");
       } else if (statusFilter === "dealer_pending") {
         result = result.filter(
-          (user) =>
-            user.type === "dealer" &&
-            user.dealer &&
-            user.dealer.status === "pending"
+          (user) => user.type === "dealer" && user.status === "pending"
         );
       }
     }
@@ -291,16 +280,11 @@ export default function UsersManagementPage() {
         toast.success("تمت الموافقة على طلب التحقق بنجاح");
         setUsers((prevUsers) =>
           prevUsers.map((user) =>
-            user.id === userId && user.dealer
+            user.id === userId
               ? {
                   ...user,
                   is_active: true,
                   status: "active",
-                  dealer: {
-                    ...user.dealer,
-                    is_active: true,
-                    status: "active",
-                  },
                 }
               : user
           )
@@ -311,16 +295,11 @@ export default function UsersManagementPage() {
       toast.error("فشل في الموافقة على طلب التحقق");
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
-          user.id === userId && user.dealer
+          user.id === userId
             ? {
                 ...user,
                 is_active: true,
                 status: "active",
-                dealer: {
-                  ...user.dealer,
-                  is_active: true,
-                  status: "active",
-                },
               }
             : user
         )
@@ -580,12 +559,6 @@ export default function UsersManagementPage() {
                           <div className="text-sm font-medium text-foreground">
                             {user.first_name} {user.last_name}
                           </div>
-                          {user.dealer && (
-                            <div className="text-xs text-muted-foreground flex items-center mt-1">
-                              <Building className="w-3 h-3 ml-1" />
-                              {user.dealer.company_name}
-                            </div>
-                          )}
                           <div className="text-xs text-muted-foreground flex items-center mt-1">
                             {user.user_code}
                           </div>
@@ -661,9 +634,9 @@ export default function UsersManagementPage() {
                             : "مرفوض"}
                         </span>
 
-                        {user.type === "dealer" && user.dealer && (
+                        {user.type === "dealer" && (
                           <div>
-                            {user.dealer.is_active ? (
+                            {user.is_active ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                                 <BadgeCheck className="w-3 h-3 ml-1" />
                                 تاجر مُصدّق
@@ -735,8 +708,7 @@ export default function UsersManagementPage() {
                           )}
 
                           {user.type === "dealer" &&
-                            user.dealer &&
-                            user.dealer.status === "pending" && (
+                            user.status === "pending" && (
                               <Button
                                 onClick={() =>
                                   handleApproveDealerVerification(user.id)

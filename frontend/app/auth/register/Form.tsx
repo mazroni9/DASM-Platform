@@ -15,7 +15,7 @@ import {
   Building,
   ClipboardList,
   MapPin,
-  Map
+  Map,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -83,13 +83,12 @@ const registerSchema = z
     commercial_registry: z.string().optional(),
     description: z.string().optional(),
     address: z.string().optional(),
-    area_id: z.string().optional(),   // ⬅️ يُرسل فقط عند وجود ID حقيقي من DB
-    area_label: z.string().optional() // ⬅️ اسم معروض فقط
+    area_id: z.string().optional(), // ⬅️ يُرسل فقط عند وجود ID حقيقي من DB
+    area_label: z.string().optional(), // ⬅️ اسم معروض فقط
   })
   .refine(
     (data) => {
       if (
-        data.account_type === "dealer" ||
         data.account_type === "venue_owner" ||
         data.account_type === "investor"
       ) {
@@ -105,11 +104,12 @@ const registerSchema = z
   .refine(
     (data) => {
       if (
-        data.account_type === "dealer" ||
         data.account_type === "venue_owner" ||
         data.account_type === "investor"
       ) {
-        return !!data.commercial_registry && data.commercial_registry.length >= 5;
+        return (
+          !!data.commercial_registry && data.commercial_registry.length >= 5
+        );
       }
       return true;
     },
@@ -193,7 +193,9 @@ export default function RegisterForm() {
       });
 
       if (response.data.status === "success") {
-        setSuccess("تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني");
+        setSuccess(
+          "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
+        );
         setTimeout(() => {
           router.push("/verify-email");
         }, 1500);
@@ -226,7 +228,9 @@ export default function RegisterForm() {
               break;
             }
           }
-          if (errorMessage === "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى") {
+          if (
+            errorMessage === "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى"
+          ) {
             const firstField = Object.keys(errs)[0];
             if (firstField && errs[firstField].length > 0) {
               errorMessage = errs[firstField][0];
@@ -403,13 +407,13 @@ export default function RegisterForm() {
             <Select onValueChange={handleAreaChange} value={areaValue}>
               <SelectTrigger
                 id="area_id"
-                type="button"               // 🔒 يمنع submit أو سلوك زر
+                type="button" // 🔒 يمنع submit أو سلوك زر
                 className="pl-3 pr-10 h-10"
               >
                 <SelectValue placeholder="اختر المنطقة أو الدولة" />
               </SelectTrigger>
               <SelectContent
-                position="popper"          // 🔧 يثبّت القائمة كـ popper
+                position="popper" // 🔧 يثبّت القائمة كـ popper
                 side="bottom"
                 align="end"
                 sideOffset={6}
@@ -420,13 +424,23 @@ export default function RegisterForm() {
                 <SelectGroup>
                   <SelectLabel>مناطق المملكة (ثابتة)</SelectLabel>
                   <SelectItem value="region:riyadh">منطقة الرياض</SelectItem>
-                  <SelectItem value="region:makkah">منطقة مكة المكرمة</SelectItem>
-                  <SelectItem value="region:sharqiyah">المنطقة الشرقية</SelectItem>
+                  <SelectItem value="region:makkah">
+                    منطقة مكة المكرمة
+                  </SelectItem>
+                  <SelectItem value="region:sharqiyah">
+                    المنطقة الشرقية
+                  </SelectItem>
                   <SelectItem value="region:tabuk">منطقة تبوك</SelectItem>
-                  <SelectItem value="region:madinah">منطقة المدينة المنورة</SelectItem>
-                  <SelectItem value="region:northern-borders">منطقة الحدود الشمالية</SelectItem>
+                  <SelectItem value="region:madinah">
+                    منطقة المدينة المنورة
+                  </SelectItem>
+                  <SelectItem value="region:northern-borders">
+                    منطقة الحدود الشمالية
+                  </SelectItem>
                   <SelectItem value="region:qassim">منطقة القصيم</SelectItem>
-                  <SelectItem value="region:almujammah">منطقة المجمعة</SelectItem>
+                  <SelectItem value="region:almujammah">
+                    منطقة المجمعة
+                  </SelectItem>
                   <SelectItem value="region:hail">منطقة حائل</SelectItem>
                   <SelectItem value="region:asir">منطقة عسير</SelectItem>
                 </SelectGroup>
@@ -476,7 +490,10 @@ export default function RegisterForm() {
 
         {/* تأكيد كلمة المرور */}
         <div className="space-y-2">
-          <Label htmlFor="password_confirmation" className="text-foreground font-medium">
+          <Label
+            htmlFor="password_confirmation"
+            className="text-foreground font-medium"
+          >
             تأكيد كلمة المرور
           </Label>
           <div className="relative">
@@ -510,7 +527,11 @@ export default function RegisterForm() {
             </div>
             <Select
               onValueChange={(value) => {
-                const typedValue = value as "user" | "dealer" | "venue_owner" | "investor";
+                const typedValue = value as
+                  | "user"
+                  | "dealer"
+                  | "venue_owner"
+                  | "investor";
                 setAccountType(typedValue);
                 setValue("account_type", typedValue);
               }}
@@ -541,70 +562,15 @@ export default function RegisterForm() {
           </div>
         </div>
 
-        {/* الحقول الديناميكية */}
-        {accountType === "dealer" && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-foreground font-medium">
-                اسم الشركة
-              </Label>
-              <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <Building className="h-5 w-5 text-foreground/50" />
-                </div>
-                <Input
-                  id="company_name"
-                  {...register("company_name")}
-                  disabled={isLoading}
-                  className="pl-3 pr-10"
-                />
-              </div>
-              {errors.company_name && (
-                <p className="text-sm text-red-500">{errors.company_name.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="commercial_registry" className="text-foreground font-medium">
-                السجل التجاري
-              </Label>
-              <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <ClipboardList className="h-5 w-5 text-foreground/50" />
-                </div>
-                <Input
-                  id="commercial_registry"
-                  {...register("commercial_registry")}
-                  disabled={isLoading}
-                  className="pl-3 pr-10"
-                />
-              </div>
-              {errors.commercial_registry && (
-                <p className="text-sm text-red-500">
-                  {errors.commercial_registry.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-foreground font-medium">
-                وصف النشاط التجاري (اختياري)
-              </Label>
-              <Textarea
-                id="description"
-                {...register("description")}
-                disabled={isLoading}
-                rows={3}
-                placeholder="اكتب وصفاً مختصراً عن نشاطك التجاري..."
-              />
-            </div>
-          </>
-        )}
+        {/* الحقول الديناميكية - venue_owner و investor فقط */}
 
         {accountType === "venue_owner" && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-foreground font-medium">
+              <Label
+                htmlFor="company_name"
+                className="text-foreground font-medium"
+              >
                 اسم المعرض
               </Label>
               <div className="relative">
@@ -619,7 +585,9 @@ export default function RegisterForm() {
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.company_name.message}
+                </p>
               )}
             </div>
 
@@ -645,7 +613,10 @@ export default function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="commercial_registry" className="text-foreground font-medium">
+              <Label
+                htmlFor="commercial_registry"
+                className="text-foreground font-medium"
+              >
                 السجل التجاري
               </Label>
               <div className="relative">
@@ -671,7 +642,10 @@ export default function RegisterForm() {
         {accountType === "investor" && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-foreground font-medium">
+              <Label
+                htmlFor="company_name"
+                className="text-foreground font-medium"
+              >
                 اسم الشركة الاستثمارية
               </Label>
               <div className="relative">
@@ -686,12 +660,17 @@ export default function RegisterForm() {
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.company_name.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="commercial_registry" className="text-foreground font-medium">
+              <Label
+                htmlFor="commercial_registry"
+                className="text-foreground font-medium"
+              >
                 السجل التجاري
               </Label>
               <div className="relative">

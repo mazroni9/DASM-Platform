@@ -117,15 +117,6 @@ export interface User {
   email: string;
   phone: string;
   type: UserRole;
-  dealer_id?: number;
-  dealer?: {
-    id: number;
-    company_name: string;
-    commercial_registry: string;
-    description?: string;
-    verified: boolean;
-    is_active?: boolean;
-  };
   email_verified_at?: string;
   created_at: string;
   updated_at: string;
@@ -150,7 +141,6 @@ export interface Car {
   transmission?: string;
   description?: string;
   images?: string[];
-  dealer_id?: number;
   user_id?: number;
   created_at: string;
   updated_at: string;

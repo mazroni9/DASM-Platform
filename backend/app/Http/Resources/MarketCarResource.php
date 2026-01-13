@@ -9,8 +9,8 @@ class MarketCarResource extends JsonResource
 {
     public function toArray($request)
     {
-        // إخفاء الهوية الحقيقية للمعرض (dealer) وإظهار label مبهم للمقارنة فقط
-        $dealerLabel = $this->dealer_id ? ('D-' . substr(sha1($this->dealer_id . '|' . $this->id), 0, 8)) : null;
+        // Generate anonymous label for comparison (dealer_id removed - using user_id)
+        $ownerLabel = $this->user_id ? ('U-' . substr(sha1($this->user_id . '|' . $this->id), 0, 8)) : null;
 
         return [
             'id'               => $this->id,
@@ -25,7 +25,7 @@ class MarketCarResource extends JsonResource
             'evaluation_price' => $this->evaluation_price, // السعر المرجعي للمقارنة
             'auction_status'   => $this->auction_status,
             'created_at'       => $this->created_at,
-            'dealer_label'     => $dealerLabel,
+            'owner_label'      => $ownerLabel,
             'description'      => $this->description ? Str::limit(strip_tags($this->description), 180) : null,
         ];
     }

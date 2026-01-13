@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Car;
 use App\Models\User;
-use App\Models\Dealer;
 use App\Models\Auction;
 use App\Models\BlogTag;
 use App\Models\BlogPost;
@@ -49,7 +48,7 @@ class AdminController extends Controller
     public function dashboard(): JsonResponse
     {
         $cacheKey = 'admin_dashboard_stats';
-        
+
         $stats = Cache::remember($cacheKey, self::DASHBOARD_CACHE_TTL, function () {
             return $this->calculateDashboardStats();
         });
@@ -72,8 +71,8 @@ class AdminController extends Controller
         $totalUsers       = User::count();
         $pendingUsers     = User::where('status', 'pending')->count();
         $activeUsers      = User::where('is_active', true)->count();
-        $dealerCount      = Dealer::count();
-        $regularUserCount = $totalUsers - $dealerCount;
+        $dealerCount      = User::where('type', 'dealer')->count();
+        $regularUserCount = User::where('type', 'user')->count();
 
         // Auction stats
         $totalAuctions     = Auction::count();
@@ -83,8 +82,8 @@ class AdminController extends Controller
         $pendingAuctions   = Auction::where('status', AuctionStatus::SCHEDULED)->count();
         $failedAuctions    = Auction::where('status', AuctionStatus::FAILED)->count();
 
-        // Verification stats
-        $pendingVerifications = Dealer::where('status', 'pending')->count();
+        // Verification stats (count pending dealer users instead of dealer records)
+        $pendingVerifications = User::where('type', 'dealer')->where('status', 'pending')->count();
 
         // Blog stats
         $totalBlogs     = BlogPost::count();
@@ -103,7 +102,7 @@ class AdminController extends Controller
             'pending_users'         => $pendingUsers,
             'dealers_count'         => $dealerCount,
             'regular_users_count'   => $regularUserCount,
-            
+
             // Auctions
             'total_auctions'        => $totalAuctions,
             'active_auctions'       => $activeAuctions,
@@ -111,20 +110,20 @@ class AdminController extends Controller
             'ended_auctions'        => $endedAuctions,
             'pending_auctions'      => $pendingAuctions,
             'failed_auctions'       => $failedAuctions,
-            
+
             // Verifications
             'pending_verifications' => $pendingVerifications,
-            
+
             // Blogs
             'total_blogs'           => $totalBlogs,
             'published_blogs'       => $publishedBlogs,
             'draft_blogs'           => $draftBlogs,
-            
+
             // Cars
             'total_cars'            => $totalCars,
             'cars_in_auction'       => $carsInAuction,
             'sold_cars'             => $soldCars,
-            
+
             // Metadata
             'cached_at'             => now()->toIso8601String(),
         ];
@@ -199,7 +198,7 @@ class AdminController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('content', 'like', "%{$search}%");
+                    ->orWhere('content', 'like', "%{$search}%");
             });
         }
 
@@ -207,7 +206,7 @@ class AdminController extends Controller
         $sortBy = $request->get('sort_by', 'created_at');
         $sortDir = $request->get('sort_dir', 'desc');
         $allowedSorts = ['created_at', 'title', 'views', 'status'];
-        
+
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
         }
@@ -242,12 +241,12 @@ class AdminController extends Controller
             $blog = BlogPost::findOrFail($id);
             $oldStatus = $blog->status;
             $blog->status = $request->status;
-            
+
             // Set published_at if publishing for the first time
             if ($request->status === 'published' && !$blog->published_at) {
                 $blog->published_at = now();
             }
-            
+
             $blog->save();
 
             Log::info('Blog status toggled', [
@@ -259,12 +258,11 @@ class AdminController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $request->status === 'published' 
-                    ? 'تم نشر المقال بنجاح' 
+                'message' => $request->status === 'published'
+                    ? 'تم نشر المقال بنجاح'
                     : 'تم إلغاء نشر المقال',
                 'data'    => $blog
             ]);
-
         } catch (\Exception $e) {
             Log::error('Blog status toggle failed', ['error' => $e->getMessage(), 'id' => $id]);
 
@@ -346,7 +344,6 @@ class AdminController extends Controller
                 'message' => $message,
                 'data'    => $tag
             ]);
-
         } catch (\Exception $e) {
             Log::error('Tag management failed', ['error' => $e->getMessage()]);
 
@@ -385,7 +382,7 @@ class AdminController extends Controller
     public function getTransactions(Request $request): JsonResponse
     {
         $query = Transcation::with(['wallet', 'wallet.user:id,first_name,last_name']);
-        
+
         // Filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -433,7 +430,7 @@ class AdminController extends Controller
             'auction:id,car_id,status,current_bid',
             'car:id,make,model,year,vin',
         ]);
-        
+
         // Filters
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -521,7 +518,7 @@ class AdminController extends Controller
             'control_room_approved' => 'required|boolean',
             'approved_for_live'     => 'required|boolean',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -533,7 +530,7 @@ class AdminController extends Controller
             DB::beginTransaction();
 
             $auction = Auction::with('car')->findOrFail($id);
-            
+
             $auction->start_time            = $request->start_time;
             $auction->end_time              = $request->end_time;
             $auction->minimum_bid           = $request->minimum_bid;
@@ -562,7 +559,6 @@ class AdminController extends Controller
                 'data'     => $auction->fresh(),
                 '_warning' => 'This endpoint is deprecated. Use PUT /api/admin/auctions/{id} instead.',
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Auction update failed', ['error' => $e->getMessage(), 'id' => $id]);
@@ -603,7 +599,7 @@ class AdminController extends Controller
     // ═══════════════════════════════════════════════════════════════════
     // REMOVED METHODS (Moved to dedicated controllers)
     // ═══════════════════════════════════════════════════════════════════
-    
+
     /*
      * ❌ REMOVED: getActiveAndScheduledSessions()
      * ✅ MOVED TO: App\Http\Controllers\AuctionSessionController::getActiveAndScheduledSessions()

@@ -36,8 +36,8 @@ class AuctionController extends Controller
         }
 
         $query = Auction::with([
-            'car:id,make,model,year,vin,evaluation_price,auction_status,dealer_id',
-            'car.dealer:id,user_id',
+            'car:id,make,model,year,vin,evaluation_price,auction_status,user_id',
+            'car.user:id,first_name,last_name,email,phone',
             'session:id,name,session_date,status',
         ]);
 
@@ -76,8 +76,8 @@ class AuctionController extends Controller
             $search = $request->search;
             $query->whereHas('car', function ($q) use ($search) {
                 $q->where('make', 'like', "%{$search}%")
-                  ->orWhere('model', 'like', "%{$search}%")
-                  ->orWhere('vin', 'like', "%{$search}%");
+                    ->orWhere('model', 'like', "%{$search}%")
+                    ->orWhere('vin', 'like', "%{$search}%");
             });
         }
 
@@ -85,7 +85,7 @@ class AuctionController extends Controller
         $sortBy = $request->get('sort_by', 'created_at');
         $sortDir = $request->get('sort_dir', 'desc');
         $allowedSorts = ['created_at', 'start_time', 'end_time', 'current_bid', 'status'];
-        
+
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
         }
@@ -116,7 +116,7 @@ class AuctionController extends Controller
 
         $auction = Auction::with([
             'car',
-            'car.dealer.user:id,first_name,last_name,email,phone',
+            'car.user:id,first_name,last_name,email,phone',
             'car.images',
             'session',
             'bids' => fn($q) => $q->orderBy('created_at', 'desc')->limit(20),
@@ -236,7 +236,6 @@ class AuctionController extends Controller
                 'message' => 'تم تحديث المزاد بنجاح',
                 'data'    => $auction->fresh(['car', 'session']),
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Auction update failed', ['error' => $e->getMessage(), 'auction_id' => $id]);
@@ -265,7 +264,7 @@ class AuctionController extends Controller
 
         $validator = Validator::make($request->all(), [
             'opening_price'    => 'required|numeric|min:0',
-            'approved_for_live'=> 'required|boolean',
+            'approved_for_live' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -276,17 +275,17 @@ class AuctionController extends Controller
         }
 
         try {
-            $auction = Auction::with('car.dealer.user')->findOrFail($id);
+            $auction = Auction::with('car.user')->findOrFail($id);
 
             $auction->approveByControlRoom(
                 $request->opening_price,
                 $request->approved_for_live
             );
 
-            // Notify dealer
-            if ($auction->car && $auction->car->dealer && $auction->car->dealer->user) {
+            // Notify car owner (dealer is now just a user with type='dealer')
+            if ($auction->car && $auction->car->user) {
                 try {
-                    $auction->car->dealer->user->notify(new CarApprovedForLiveNotification($auction));
+                    $auction->car->user->notify(new CarApprovedForLiveNotification($auction));
                 } catch (\Exception $e) {
                     Log::warning('Failed to send approval notification', ['error' => $e->getMessage()]);
                 }
@@ -305,12 +304,11 @@ class AuctionController extends Controller
 
             return response()->json([
                 'status'  => 'success',
-                'message' => $request->approved_for_live 
-                    ? 'تمت الموافقة على المزاد للبث المباشر' 
+                'message' => $request->approved_for_live
+                    ? 'تمت الموافقة على المزاد للبث المباشر'
                     : 'تم تحديث حالة الموافقة',
                 'data'    => $auction->fresh(),
             ]);
-
         } catch (\Exception $e) {
             Log::error('Approve for live failed', ['error' => $e->getMessage(), 'auction_id' => $id]);
 
@@ -360,7 +358,7 @@ class AuctionController extends Controller
                 if ($auction) {
                     $auction->status = $normalizedStatus;
                     $auction->save();
-                    
+
                     if ($auction->car) {
                         $this->syncCarStatus($auction);
                     }
@@ -382,7 +380,6 @@ class AuctionController extends Controller
                 'status'  => 'success',
                 'message' => "تم تحديث {$updated} مزاد بنجاح",
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Bulk status update failed', ['error' => $e->getMessage()]);

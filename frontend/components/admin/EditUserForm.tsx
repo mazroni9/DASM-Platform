@@ -33,14 +33,6 @@ interface User {
   type: string;
   status: string;
   is_active: boolean;
-  dealer?: {
-    id: number;
-    company_name: string;
-    commercial_registry: string;
-    description: string;
-    status: string;
-    is_active: boolean;
-  };
 }
 
 interface EditUserFormProps {
@@ -67,14 +59,6 @@ export default function EditUserForm({
     type: "",
     status: "",
     is_active: false,
-    dealer: {
-      id: "",
-      company_name: "",
-      commercial_registry: "",
-      description: "",
-      status: "",
-      is_active: false,
-    },
   });
   const [formData, setFormData] = useState({
     first_name: user.first_name || "",
@@ -84,11 +68,6 @@ export default function EditUserForm({
     type: user.type || "user",
     status: user.status || "pending",
     is_active: user.is_active || false,
-    // Dealer fields
-    company_name: user.dealer?.company_name || "",
-    commercial_registry: user.dealer?.commercial_registry || "",
-    description: user.dealer?.description || "",
-    dealer_status: user.dealer?.status || "pending",
   });
 
   const fetchUserDetails = async () => {
@@ -101,11 +80,6 @@ export default function EditUserForm({
         if (user.type == "admin") {
           response.data.data.type = "user";
         }
-        if (user.type == "dealer") {
-          //check rating if it is null or assign default value
-          let rating = response.data.data.dealer?.rating || 4.5;
-          response.data.data.dealer = { rating: rating };
-        }
         setUser(response.data.data);
         setFormData({
           first_name: user.first_name || "",
@@ -115,11 +89,6 @@ export default function EditUserForm({
           type: user.type || "user",
           status: user.status || "pending",
           is_active: user.is_active || false,
-          // Dealer fields
-          company_name: user.dealer?.company_name || "",
-          commercial_registry: user.dealer?.commercial_registry || "",
-          description: user.dealer?.description || "",
-          dealer_status: user.dealer?.status || "pending",
         });
         setLoading(false);
       }
@@ -159,14 +128,6 @@ export default function EditUserForm({
         status: formData.status,
         is_active: formData.is_active,
       };
-
-      // Only include dealer fields if the role is dealer
-      if (formData.type === UserRole.DEALER) {
-        dataToSend.company_name = formData.company_name;
-        dataToSend.commercial_registry = formData.commercial_registry;
-        dataToSend.description = formData.description;
-        dataToSend.dealer_status = formData.dealer_status;
-      }
 
       const response = await api.put(`/api/admin/users/${user_id}`, dataToSend);
 
@@ -332,74 +293,7 @@ export default function EditUserForm({
             </div>
           </div>
 
-          {/* Dealer Information - Only show if role is dealer */}
-          {(formData.type === UserRole.DEALER || user.dealer) && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
-                معلومات التاجر
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="company_name">اسم الشركة</Label>
-                  <Input
-                    id="company_name"
-                    type="text"
-                    value={formData.company_name}
-                    onChange={(e) =>
-                      handleInputChange("company_name", e.target.value)
-                    }
-                    placeholder="اسم الشركة"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="commercial_registry">رقم السجل التجاري</Label>
-                  <Input
-                    id="commercial_registry"
-                    type="text"
-                    value={formData.commercial_registry}
-                    onChange={(e) =>
-                      handleInputChange("commercial_registry", e.target.value)
-                    }
-                    placeholder="رقم السجل التجاري"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="dealer_status">حالة التاجر</Label>
-                  <Select
-                    value={formData.dealer_status}
-                    onValueChange={(value) =>
-                      handleInputChange("dealer_status", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر حالة التاجر" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">في انتظار التحقق</SelectItem>
-                      <SelectItem value="active">مُصدّق</SelectItem>
-                      <SelectItem value="rejected">مرفوض</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description">وصف الشركة</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange("description", e.target.value)
-                  }
-                  placeholder="وصف مختصر عن الشركة وأنشطتها"
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
+          {/* Dealer Information section removed - dealers no longer have special fields */}
 
           <DialogFooter className="flex gap-2">
             <Button

@@ -77,9 +77,6 @@ interface BidsLogsData {
     first_name: string;
     last_name: string;
   };
-  dealer: {
-    company_name: string;
-  };
 }
 
 export default function BidsLogsPage() {
@@ -249,11 +246,6 @@ export default function BidsLogsPage() {
                           <div className="text-sm font-medium text-foreground">
                             {bidLog.bidder.first_name} {bidLog.bidder.last_name}
                           </div>
-                          {bidLog.dealer && (
-                            <div className="text-xs text-foreground/70">
-                              {bidLog.dealer.company_name}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>

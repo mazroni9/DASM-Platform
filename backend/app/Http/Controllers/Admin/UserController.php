@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Dealer;
 use App\Models\VenueOwner;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -25,9 +24,8 @@ class UserController extends Controller
     {
         $query = User::query();
 
-        // ✅ Eager loading
+        // ✅ Eager loading (removed dealer since dealers table is dropped)
         $query->with([
-            'dealer:id,user_id,company_name,status,is_active',
             'venueOwner:id,user_id,venue_name,status',
             'area:id,name,code',
             'roles:id,name,display_name',
@@ -71,10 +69,10 @@ class UserController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('user_code', 'like', "%{$search}%");
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('user_code', 'like', "%{$search}%");
             });
         }
 
@@ -90,7 +88,7 @@ class UserController extends Controller
         $sortBy = $request->get('sort_by', 'created_at');
         $sortDir = $request->get('sort_dir', 'desc');
         $allowedSorts = ['created_at', 'first_name', 'last_name', 'email', 'type', 'status'];
-        
+
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
         }
@@ -111,7 +109,6 @@ class UserController extends Controller
     public function show($id): JsonResponse
     {
         $user = User::with([
-            'dealer',
             'venueOwner',
             'area',
             'roles',
@@ -184,8 +181,15 @@ class UserController extends Controller
             }
 
             $user->fill($request->only([
-                'first_name', 'last_name', 'email', 'phone',
-                'type', 'status', 'is_active', 'kyc_status', 'area_id'
+                'first_name',
+                'last_name',
+                'email',
+                'phone',
+                'type',
+                'status',
+                'is_active',
+                'kyc_status',
+                'area_id'
             ]));
 
             if ($request->filled('password')) {
@@ -202,9 +206,8 @@ class UserController extends Controller
             return response()->json([
                 'status'  => 'success',
                 'message' => 'تم تحديث بيانات المستخدم بنجاح',
-                'data'    => $user->fresh(['dealer', 'venueOwner', 'roles']),
+                'data'    => $user->fresh(['venueOwner', 'roles']),
             ]);
-
         } catch (\Exception $e) {
             Log::error('User update failed', ['error' => $e->getMessage(), 'user_id' => $id]);
 
@@ -275,7 +278,6 @@ class UserController extends Controller
                 'message' => 'تم تحديث حالة المستخدم بنجاح',
                 'data'    => $user,
             ]);
-
         } catch (\Exception $e) {
             Log::error('User status update failed', ['error' => $e->getMessage(), 'user_id' => $id]);
 
@@ -343,7 +345,6 @@ class UserController extends Controller
                 'status'  => 'success',
                 'message' => 'تم حذف المستخدم بنجاح',
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('User deletion failed', ['error' => $e->getMessage(), 'user_id' => $id]);
@@ -372,7 +373,7 @@ class UserController extends Controller
             'by_status' => User::select('status', DB::raw('COUNT(*) as count'))
                 ->groupBy('status')
                 ->pluck('count', 'status'),
-            'dealers'   => Dealer::count(),
+            'dealers'   => User::where('type', 'dealer')->count(),
             'venue_owners' => VenueOwner::count(),
             'new_today' => User::whereDate('created_at', today())->count(),
             'new_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()])->count(),
@@ -384,7 +385,7 @@ class UserController extends Controller
         ]);
     }
 
-         /**
+    /**
      * Approve a dealer verification request
      *
      * @param int $userId
@@ -393,32 +394,25 @@ class UserController extends Controller
     public function approveVerification($userId)
     {
         $user = User::findOrFail($userId);
-        $dealer = $user->dealer;
 
-        if (!$dealer) {
+        // Check if user is a dealer type
+        if ($user->type !== UserRole::DEALER && $user->type !== 'dealer') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User is not a dealer'
             ], 400);
         }
 
-        // Update dealer status
-        $dealer->is_active = true;
-        $dealer->status = 'active';
-        $dealer->save();
-
-        // Update user role if needed
-        if ($user->type !== 'dealer') {
-            $user->type = 'dealer';
-            $user->save();
-        }
+        // Update user status to active
+        $user->is_active = true;
+        $user->status = UserStatus::ACTIVE;
+        $user->save();
 
         return response()->json([
             'status' => 'success',
             'message' => 'Dealer verification approved successfully',
             'data' => [
                 'user' => $user,
-                'dealer' => $dealer
             ]
         ]);
     }
@@ -434,35 +428,26 @@ class UserController extends Controller
     public function rejectVerification($userId, Request $request)
     {
         $user = User::findOrFail($userId);
-        $dealer = $user->dealer;
 
-        if (!$dealer) {
+        // Check if user is a dealer type
+        if ($user->type !== UserRole::DEALER && $user->type !== 'dealer') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'User is not a dealer'
             ], 400);
         }
 
-        // Set rejection reason if provided
-        if ($request->has('reason')) {
-            $dealer->rejection_reason = $request->reason;
-        }
-
-        // Update dealer status
-        $dealer->is_active = false;
-        $dealer->status = 'rejected';
-        $dealer->save();
+        // Update user status to rejected
+        $user->is_active = false;
+        $user->status = UserStatus::PENDING;
+        $user->save();
 
         return response()->json([
             'status' => 'success',
             'message' => 'Dealer verification rejected successfully',
             'data' => [
                 'user' => $user,
-                'dealer' => $dealer
             ]
         ]);
     }
-
-
-
 }
