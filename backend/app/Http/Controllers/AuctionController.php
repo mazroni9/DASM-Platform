@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\Bid;
 use App\Models\Car;
-use App\Models\Dealer;
 use App\Models\Auction;
 use App\Models\Setting;
 use App\Enums\AuctionType;
@@ -33,7 +32,7 @@ class AuctionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
+        $query = Auction::with(['car', 'bids', 'broadcasts']);
 
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {
@@ -119,7 +118,7 @@ class AuctionController extends Controller
 
     public function getAllAuctionsIds(Request $request)
     {
-        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts']);
+        $query = Auction::with(['car', 'bids', 'broadcasts']);
 
         // Only show control room approved auctions in public listing by default
         if (!$request->has('control_room_approved')) {
@@ -175,7 +174,7 @@ class AuctionController extends Controller
 
     public function auctionByType(Request $request)
     {
-        $query = Auction::with(['car.dealer', 'bids', 'car', 'broadcasts'])
+        $query = Auction::with(['car', 'bids', 'broadcasts'])
             ->where('auction_type', $request->auction_type);
 
         $brands = Auction::query()
@@ -256,7 +255,7 @@ class AuctionController extends Controller
             ->where('type', 'live')
             ->with('auctions.car')
             ->with('auctions.bids')
-            ->with('auctions.car.dealer')
+            ->with('auctions.car')
             ->first();
 
         if (!$live_session) {
@@ -276,7 +275,7 @@ class AuctionController extends Controller
 
     public function AuctionsFinished()
     {
-        $query = Auction::with(['car.dealer', 'bids', 'car'])
+        $query = Auction::with(['car', 'bids'])
             ->where('status', AuctionStatus::ENDED->value);
         $auctions = $query->paginate(10);
 
@@ -326,8 +325,8 @@ class AuctionController extends Controller
         // تأكد أن السيارة تابعة للمستخدم
         $user = Auth::user();
         $car  = Car::find($request->car_id);
-        $isOwner = ($user->type === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
-            || ($car->user_id === $user->id);
+        // Car ownership check - dealers are now users with type='dealer'
+        $isOwner = ($car->user_id === $user->id);
 
         if (!$isOwner) {
             return response()->json([
@@ -394,8 +393,8 @@ class AuctionController extends Controller
         $user = Auth::user();
         $car  = Car::findOrFail($request->car_id);
 
-        $isOwner = ($user->type === 'dealer' && $user->dealer && $car->dealer_id === $user->dealer->id)
-            || ($car->user_id === $user->id);
+        // Car ownership check - dealers are now users with type='dealer'
+        $isOwner = ($car->user_id === $user->id);
 
         if (!$isOwner) {
             return response()->json([
@@ -869,7 +868,7 @@ class AuctionController extends Controller
         $targetData = $baseDataByStatus[$targetStatus];
 
         /** ---------- Fetch cars ---------- */
-        $cars = Car::with(['user', 'dealer'])
+        $cars = Car::with(['user'])
             ->whereIn('id', $carIds)
             ->get();
 
@@ -1003,7 +1002,7 @@ class AuctionController extends Controller
                 }
 
                 /** ---------- Notifications ---------- */
-                $recipient = $car->user ?? $car->dealer;
+                $recipient = $car->user;
                 if ($recipient && method_exists($recipient, 'notify')) {
                     try {
                         $recipient->notify(new CarMovedToAuctionNotification($car, $auction, $targetStatus));
@@ -1196,8 +1195,8 @@ class AuctionController extends Controller
      */
     public function show($id)
     {
-        // Update to include both dealer and user relationship
-        $auction = Auction::with(['car', 'car.dealer.user', 'car.user', 'bids.user'])
+        // Update to include user relationship only
+        $auction = Auction::with(['car', 'car.user', 'bids.user'])
             ->findOrFail($id);
 
         // Check if status needs updating based on time
@@ -1269,13 +1268,8 @@ class AuctionController extends Controller
         $auction = Auction::findOrFail($id);
         $user = Auth::user();
 
-        // Verify ownership based on user role
-        $isOwner = false;
-        if ($user->type === 'dealer' && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
-            $isOwner = true;
-        } elseif ($auction->car->user_id === $user->id) {
-            $isOwner = true;
-        }
+        // Verify ownership - all users use user_id for car ownership
+        $isOwner = $auction->car->user_id === $user->id;
 
         if (!$isOwner) {
             return response()->json([
@@ -1350,13 +1344,8 @@ class AuctionController extends Controller
         $auction = Auction::findOrFail($id);
         $user = Auth::user();
 
-        // Verify ownership based on user role
-        $isOwner = false;
-        if ($user->type === 'dealer' && $user->dealer && $auction->car->dealer_id === $user->dealer->id) {
-            $isOwner = true;
-        } elseif ($auction->car->user_id === $user->id) {
-            $isOwner = true;
-        }
+        // Verify ownership - all users use user_id for car ownership
+        $isOwner = $auction->car->user_id === $user->id;
 
         if (!$isOwner) {
             return response()->json([
@@ -1400,17 +1389,10 @@ class AuctionController extends Controller
         $user = Auth::user();
         $query = null;
 
-        if ($user->type === 'dealer' && $user->dealer) {
-            // Get auctions for dealer's cars
-            $query = Auction::whereHas('car', function ($q) use ($user) {
-                $q->where('dealer_id', $user->dealer->id);
-            });
-        } else {
-            // Get auctions for regular user's cars
-            $query = Auction::whereHas('car', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
-        }
+        // All users (including dealers) use user_id for car ownership
+        $query = Auction::whereHas('car', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        });
 
         $query->with(['car', 'bids']);
 
@@ -1441,11 +1423,9 @@ class AuctionController extends Controller
     public function approvedAuctions(Request $request)
     {
         $user = Auth::user();
-        $query = null;
-        $dealer = Dealer::where('user_id', $user->id)->first();
         $query = Auction::where('control_room_approved', true);
 
-        $query->with(['car', 'bids', $dealer]);
+        $query->with(['car', 'bids']);
 
 
         // Sort options
@@ -1477,8 +1457,8 @@ class AuctionController extends Controller
         $auction = Auction::with(['car', 'bids.user'])->findOrFail($id);
         $user = Auth::user();
 
-        // Verify ownership based on user role - this endpoint is dealer-only
-        if (!$user->dealer || $auction->car->dealer_id !== $user->dealer->id) {
+        // Verify ownership - all users use user_id for car ownership
+        if ($auction->car->user_id !== $user->id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'You can only view analytics for your own auctions'
@@ -1532,7 +1512,7 @@ class AuctionController extends Controller
     public function purchaseConfirmation($auction_id)
     {
         $user = Auth::user();
-        $auction = Auction::with(['car', 'bids', 'car.dealer'])
+        $auction = Auction::with(['car', 'bids', 'car.user'])
             ->findOrFail($auction_id);
 
         $settlement = Settlement::where('auction_id', $auction_id)

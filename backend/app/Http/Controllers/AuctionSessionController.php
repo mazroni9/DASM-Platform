@@ -25,7 +25,7 @@ class AuctionSessionController extends Controller
     public function getActiveLiveSessions(): JsonResponse
     {
         $cacheKey = 'active_live_sessions_page_' . request()->get('page', 1);
-        
+
         $liveSessions = Cache::remember($cacheKey, self::CACHE_TTL, function () {
             return AuctionSession::query()
                 ->where('status', 'active')
@@ -55,26 +55,25 @@ class AuctionSessionController extends Controller
     public function getLiveSession(string $id): JsonResponse
     {
         $cacheKey = "live_session_{$id}";
-        
+
         $sessionData = Cache::remember($cacheKey, 60, function () use ($id) {
             $liveSession = AuctionSession::query()
                 ->where('type', 'live')
                 ->with([
                     'auctions' => function ($query) {
                         $query->where('approved_for_live', true)
-                              ->whereNotIn('status', [
-                                  AuctionStatus::ENDED->value,
-                                  AuctionStatus::COMPLETED->value,
-                                  ...AuctionStatus::canceledValues(),
-                              ])
-                              ->orderBy('start_time', 'asc')
-                              ->with([
-                                  'car:id,make,model,year,vin,color,odometer,evaluation_price,auction_status',
-                                  'car.images' => fn($q) => $q->limit(5),
-                                  'car.dealer:id,user_id,company_name',
-                                  'bids' => fn($q) => $q->orderBy('created_at', 'desc')->limit(10),
-                                  'bids.user:id,first_name,last_name',
-                              ]);
+                            ->whereNotIn('status', [
+                                AuctionStatus::ENDED->value,
+                                AuctionStatus::COMPLETED->value,
+                                ...AuctionStatus::canceledValues(),
+                            ])
+                            ->orderBy('start_time', 'asc')
+                            ->with([
+                                'car:id,make,model,year,vin,color,odometer,evaluation_price,auction_status',
+                                'car.images' => fn($q) => $q->limit(5),
+                                'bids' => fn($q) => $q->orderBy('created_at', 'desc')->limit(10),
+                                'bids.user:id,first_name,last_name',
+                            ]);
                     },
                     'owner:id,first_name,last_name',
                     'owner.venueOwner:id,user_id,venue_name',

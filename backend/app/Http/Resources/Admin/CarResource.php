@@ -36,21 +36,13 @@ class CarResource extends JsonResource
             "engine" => $this->engine,
             "transmission" => CarTransmission::getTranslations()[$this->transmission->value],
             //"dealer_id" => $this->dealer_id,
+            // dealer key removed - dealers table dropped
             "user" => [
                 'id' => $this->user_id,
                 'first_name' => $this->user->first_name,
                 'last_name' => $this->user->last_name,
                 'name' => $this->user->first_name . ' ' . $this->user->last_name
             ],
-            "dealer" => $this->dealer ? [
-                'id' => $this->dealer_id,
-                'name' => $this->dealer?->company_name,
-                'user' => $this->dealer?->user ? [
-                    'id' => $this->dealer?->user_id,
-                    'first_name' => $this->dealer?->user?->first_name,
-                    'last_name' => $this->dealer?->user?->last_name
-                ] : null,
-            ] : null,
             "evaluation_price" =>  $this->evaluation_price, //$this->active_auction?->current_bid ??
             "province" => $this->province,
             "created_at" => $this->created_at?->format('Y-m-d'),

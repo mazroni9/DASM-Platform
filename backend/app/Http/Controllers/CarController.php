@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Car;
 use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\Dealer;
 use App\Models\Auction;
 use App\Enums\AuctionType;
 use App\Enums\CarCondition;
@@ -48,9 +48,6 @@ class CarController extends Controller
         $user = Auth::user();
 
         $query = Car::where('user_id', $user->id);
-        if ($user->type === 'dealer' && $user->dealer) {
-            $query->where('dealer_id', $user->dealer->id);
-        }
 
         $query->with('auctions');
 
@@ -152,11 +149,8 @@ class CarController extends Controller
         $user = Auth::user();
         $query = Car::query();
 
-        if ($user->type === 'dealer' && $user->dealer) {
-            $query->where('dealer_id', $user->dealer->id);
-        } else {
-            $query->where('user_id', $user->id);
-        }
+        // All users (including dealers) use user_id for ownership
+        $query->where('user_id', $user->id);
 
         $cars = $query->paginate(10);
 
@@ -265,9 +259,7 @@ class CarController extends Controller
         try {
             $car = new Car();
 
-            if ($user->type === 'dealer' && $user->dealer) {
-                $car->dealer_id = $user->dealer->id;
-            }
+            // All car ownership is tracked by user_id
             $car->user_id = $user->id;
 
             // حفظ القيم
@@ -296,9 +288,9 @@ class CarController extends Controller
             // صور السيارة
             $this->logImageDebugInfo($request);
             $uploadedImages = $this->handleCarImageUpload($request, $car);
-            
+
             Log::error('uploadedImages to create car ' . $car->id, [
-               $uploadedImages
+                $uploadedImages
             ]);
 
             if (!empty($uploadedImages)) {
@@ -356,17 +348,16 @@ class CarController extends Controller
             ]);
 
             $car->refresh();
-          
+
             $admins = User::whereIn('type', ['admin', 'super_admin'])->get();
             Notification::send($admins, new NewCarAddedNotification($car->load('user')));
-            
-              DB::commit();
+
+            DB::commit();
             return response()->json([
                 'status'  => 'success',
                 'message' => 'تم إضافة السيارة بنجاح.',
                 'data'    => $car,
             ], 201);
-
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Failed to create car ' . $car->id, [
@@ -384,12 +375,8 @@ class CarController extends Controller
 
         if ($user->type === 'admin') {
             $car = Car::with('carAttributes')->find($id);
-        } elseif ($user->type === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)
-                ->where('dealer_id', $user->dealer->id)
-                ->with('carAttributes')
-                ->first();
         } else {
+            // All users (including dealers) use user_id for ownership
             $car = Car::where('id', $id)
                 ->where('user_id', $user->id)
                 ->with('carAttributes')
@@ -430,7 +417,7 @@ class CarController extends Controller
         $car = Car::with('reportImages', 'activeAuction', 'carAttributes')->find($id);
 
         if ($car) {
-            $car->load('dealer');
+            $car->load('user');
         }
 
         if (!$car) {
@@ -485,11 +472,8 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->type === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)->where('dealer_id', $user->dealer->id)->first();
-        } else {
-            $car = Car::where('id', $id)->where('user_id', $user->id)->first();
-        }
+        // All users (including dealers) use user_id for ownership
+        $car = Car::where('id', $id)->where('user_id', $user->id)->first();
 
         if (!$car) {
             return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لتعديلها.'], 404);
@@ -649,11 +633,8 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->type === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)->where('dealer_id', $user->dealer->id)->first();
-        } else {
-            $car = Car::where('id', $id)->where('user_id', $user->id)->first();
-        }
+        // All users (including dealers) use user_id for ownership
+        $car = Car::where('id', $id)->where('user_id', $user->id)->first();
 
         if (!$car) {
             return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لحذفها.'], 404);
@@ -679,9 +660,8 @@ class CarController extends Controller
     {
         $user = Auth::user();
 
-        $query = ($user->type === 'dealer' && $user->dealer)
-            ? Car::where('dealer_id', $user->dealer->id)
-            : Car::where('user_id', $user->id);
+        // All users (including dealers) use user_id for ownership
+        $query = Car::where('user_id', $user->id);
 
         $totalCars = $query->count();
 
@@ -843,7 +823,7 @@ class CarController extends Controller
 
     private function logImageDebugInfo(Request $request)
     {
-      Log::info('Image request information:', [
+        Log::info('Image request information:', [
             'has_images_field' => $request->has('images'),
             'has_images_file' => $request->hasFile('images'),
             'has_images_array_field' => $request->has('images[]'),

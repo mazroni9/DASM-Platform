@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 
 use Carbon\Carbon;
 use App\Models\User;
-use App\Models\Dealer;
 use App\Models\Investor;
 use App\Models\VenueOwner;
 use App\Enums\UserStatus;
@@ -178,14 +177,7 @@ class AuthController extends Controller
                 if ($isBusinessAccount) {
                     switch ($request->account_type) {
                         case 'dealer':
-                            Dealer::create([
-                                'user_id'             => $user->id,
-                                'company_name'        => $request->company_name,
-                                'commercial_registry' => $request->commercial_registry,
-                                'description'         => $request->description ?? null,
-                                'status'              => 'pending',
-                                'is_active'           => false,
-                            ]);
+                            // Dealer users don't need a separate record, type='dealer' is sufficient
                             break;
 
                         case 'venue_owner':
@@ -232,10 +224,9 @@ class AuthController extends Controller
                     'area_id'    => $user->area_id,
                 ],
             ], 201);
-
         } catch (QueryException $e) {
             $out = $this->interpretDbError($e, $request);
-            
+
             Log::error('Database error during registration', [
                 'sqlstate'   => $out['sqlstate'],
                 'reason'     => $out['reason'],
@@ -257,7 +248,6 @@ class AuthController extends Controller
                 'value'   => $out['value'] ?? null,
                 'constraint' => $out['constraint'] ?? null,
             ]), $out['http']);
-
         } catch (\RuntimeException $e) {
             Log::error('Runtime error during registration', [
                 'message' => $e->getMessage(),
@@ -269,7 +259,6 @@ class AuthController extends Controller
                 'message' => $e->getMessage(),
                 'reason'  => 'خطأ في منطق التطبيق (RuntimeException).',
             ], 500);
-
         } catch (\Exception $e) {
             Log::error('Error during user registration process', [
                 'error' => $e->getMessage(),
@@ -384,7 +373,7 @@ class AuthController extends Controller
             $user->email_verification_expires_at = null;
             $user->save();
         }
-      
+
         return response()->json([
             'status' => 'success',
             'message' => 'Email verified successfully'
@@ -764,9 +753,9 @@ class AuthController extends Controller
 
         // ✅ Backward compatible: match hashed OR old-plain token
         $user = User::where(function ($q) use ($tokenHash, $tokenPlain) {
-                $q->where('password_reset_token', $tokenHash)
-                  ->orWhere('password_reset_token', $tokenPlain);
-            })
+            $q->where('password_reset_token', $tokenHash)
+                ->orWhere('password_reset_token', $tokenPlain);
+        })
             ->where('password_reset_expires_at', '>', now())
             ->first();
 

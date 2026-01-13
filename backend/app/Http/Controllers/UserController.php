@@ -27,7 +27,7 @@ class UserController extends Controller
         }
 
         // تحميل العلاقات
-        $user->load(['dealer', 'venueOwner']);
+        $user->load(['venueOwner']);
 
         $permissions = $this->safePermissions($user);
 
@@ -49,12 +49,6 @@ class UserController extends Controller
 
             'permissions' => $permissions,
         ];
-
-        if ($user->dealer) {
-            $responseData['address']       = $user->dealer->address ?? null;
-            $responseData['company_name']  = $user->dealer->company_name ?? null;
-            $responseData['trade_license'] = $user->dealer->trade_license ?? null;
-        }
 
         if ($user->venueOwner) {
             $responseData['venue_name']    = $user->venueOwner->venue_name ?? null;
@@ -95,7 +89,11 @@ class UserController extends Controller
 
                 // تحديث بيانات المستخدم الأساسية فقط
                 $userFields = array_intersect_key($data, array_flip([
-                    'first_name', 'last_name', 'email', 'phone', 'area_id'
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'phone',
+                    'area_id'
                 ]));
 
                 if ($emailChanged) {
@@ -108,25 +106,15 @@ class UserController extends Controller
                     $user->update($userFields);
                 }
 
-                // Dealer
-                if (method_exists($user, 'isDealer') && $user->isDealer()) {
-                    $dealerData = array_intersect_key($data, array_flip([
-                        'address', 'company_name', 'trade_license'
-                    ]));
-
-                    if (!empty($dealerData)) {
-                        if ($user->dealer) {
-                            $user->dealer->update($dealerData);
-                        } else {
-                            $user->dealer()->create($dealerData);
-                        }
-                    }
-                }
+                // Dealer users don't need a separate record
+                // type='dealer' is sufficient for authorization checks
 
                 // Venue Owner
                 if (method_exists($user, 'isVenueOwner') && $user->isVenueOwner()) {
                     $venueData = array_intersect_key($data, array_flip([
-                        'venue_name', 'venue_address', 'description'
+                        'venue_name',
+                        'venue_address',
+                        'description'
                     ]));
 
                     if (!empty($venueData)) {
@@ -134,13 +122,13 @@ class UserController extends Controller
                             $user->venueOwner->update([
                                 'venue_name' => $venueData['venue_name'] ?? $user->venueOwner->venue_name,
                                 'address'    => $venueData['venue_address'] ?? $user->venueOwner->address,
-                                'description'=> $venueData['description'] ?? $user->venueOwner->description,
+                                'description' => $venueData['description'] ?? $user->venueOwner->description,
                             ]);
                         } else {
                             $user->venueOwner()->create([
                                 'venue_name' => $venueData['venue_name'] ?? null,
                                 'address'    => $venueData['venue_address'] ?? null,
-                                'description'=> $venueData['description'] ?? null,
+                                'description' => $venueData['description'] ?? null,
                             ]);
                         }
                     }
@@ -152,7 +140,7 @@ class UserController extends Controller
                 $this->sendVerificationEmail($user->refresh());
             }
 
-            $user->refresh()->load(['dealer', 'venueOwner']);
+            $user->refresh()->load(['venueOwner']);
 
             $responseData = [
                 'id' => $user->id,
@@ -167,12 +155,6 @@ class UserController extends Controller
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ];
-
-            if ($user->dealer) {
-                $responseData['address'] = $user->dealer->address ?? null;
-                $responseData['company_name'] = $user->dealer->company_name ?? null;
-                $responseData['trade_license'] = $user->dealer->trade_license ?? null;
-            }
 
             if ($user->venueOwner) {
                 $responseData['venue_name'] = $user->venueOwner->venue_name ?? null;

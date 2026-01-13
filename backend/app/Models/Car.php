@@ -35,7 +35,6 @@ class Car extends Model
     }
 
     protected $fillable = [
-        'dealer_id',
         'user_id',
         'make',
         'model',
@@ -119,11 +118,6 @@ class Car extends Model
     // ===========================
     // ✅ Relationships
     // ===========================
-    public function dealer()
-    {
-        return $this->belongsTo(Dealer::class);
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -141,7 +135,7 @@ class Car extends Model
 
     public function getOwnerAttribute()
     {
-        return $this->dealer_id ? $this->dealer?->user : $this->user;
+        return $this->user;
     }
 
     public function reportImages()

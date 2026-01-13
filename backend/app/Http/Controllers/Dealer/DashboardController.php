@@ -45,7 +45,7 @@ class DashboardController extends Controller
                     'id' => $user->id,
                     'name' => $user->first_name . ' ' . $user->last_name,
                     'plan_type' => 'PRO', // Placeholder
-                    'ai_enabled' => $user->dealer->ai_recommendations_enabled ?? false,
+                    'ai_enabled' => false, // TODO: Add ai_recommendations_enabled to users table if needed
                 ],
             ],
         ]);

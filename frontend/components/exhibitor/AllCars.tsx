@@ -110,7 +110,6 @@ async function apiFetch(path: string, init?: RequestInit) {
 /** ===== Types (Laravel) ===== */
 type CarFromApi = {
   id: number;
-  dealer_id: number | null;
   make: string;
   model: string;
   year: number;
@@ -259,7 +258,8 @@ function pickCarsPaginator(json: any): Paginator<CarFromApi> | null {
 
 function pickShowCar(json: any): CarFromApi | null {
   // {status, data:{car}}
-  if (json?.data?.car && typeof json.data.car === "object") return json.data.car;
+  if (json?.data?.car && typeof json.data.car === "object")
+    return json.data.car;
 
   // {car: {...}}
   if (json?.car && typeof json.car === "object") return json.car;
@@ -289,7 +289,9 @@ const Panel = ({
   children: React.ReactNode;
   className?: string;
 }) => (
-  <div className={`bg-card rounded-2xl shadow-lg border border-border ${className}`}>
+  <div
+    className={`bg-card rounded-2xl shadow-lg border border-border ${className}`}
+  >
     {children}
   </div>
 );
@@ -387,7 +389,10 @@ function ViewCarModal({
                 <Info label="سنة الصنع" value={String(car.year)} />
                 <Info label="VIN" value={car.vin} />
                 <Info label="الممشى (كم)" value={String(car.odometer ?? "")} />
-                <Info label="الحالة" value={mapStatusToArabic(car.auction_status)} />
+                <Info
+                  label="الحالة"
+                  value={mapStatusToArabic(car.auction_status)}
+                />
                 <Info
                   label="القير"
                   value={mapTransmissionLabel(car.transmission ?? "") || "—"}
@@ -395,7 +400,9 @@ function ViewCarModal({
                 <Info label="المحرك" value={car.engine ?? "—"} />
                 <Info
                   label="السعر التقييمي"
-                  value={`${toNumberSafe(car.evaluation_price).toLocaleString()} ر.س`}
+                  value={`${toNumberSafe(
+                    car.evaluation_price
+                  ).toLocaleString()} ر.س`}
                 />
                 <Info label="اللون" value={car.color ?? "—"} />
                 <Info label="اللوحة" value={car.plate ?? "—"} />
@@ -425,7 +432,9 @@ function ViewCarModal({
                     ))}
                   </div>
                 ) : (
-                  <div className="text-muted-foreground text-sm">لا توجد صور</div>
+                  <div className="text-muted-foreground text-sm">
+                    لا توجد صور
+                  </div>
                 )}
               </div>
             </div>
@@ -455,10 +464,18 @@ type EditFormState = {
   market_category: string;
 };
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className="block text-xs text-muted-foreground mb-1">{label}</label>
+      <label className="block text-xs text-muted-foreground mb-1">
+        {label}
+      </label>
       {children}
       <style jsx>{`
         .input {
@@ -663,7 +680,9 @@ function EditCarModal({
                   <select
                     className="input"
                     value={form.transmission}
-                    onChange={(e) => updateField("transmission", e.target.value)}
+                    onChange={(e) =>
+                      updateField("transmission", e.target.value)
+                    }
                   >
                     <option value="">اختر</option>
                     {transmissionOptions.map((o) => (
@@ -805,7 +824,13 @@ type Filters = {
   yearTo: string;
 };
 
-function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+function FilterChip({
+  label,
+  onClear,
+}: {
+  label: string;
+  onClear: () => void;
+}) {
   return (
     <span className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs border border-primary/20">
       {label}
@@ -886,10 +911,13 @@ function FilterPanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div>
-          <p className="block text-xs text-muted-foreground mb-2">حالة الإعلان</p>
+          <p className="block text-xs text-muted-foreground mb-2">
+            حالة الإعلان
+          </p>
           <div className="flex flex-wrap gap-2">
             {(["", ...statuses] as string[]).map((s) => {
-              const selected = filters.status === s || (s === "" && !filters.status);
+              const selected =
+                filters.status === s || (s === "" && !filters.status);
               return (
                 <button
                   key={`status-${s || "all"}`}
@@ -926,7 +954,9 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground mb-2">السعر من</label>
+          <label className="block text-xs text-muted-foreground mb-2">
+            السعر من
+          </label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
               <FiDollarSign />
@@ -943,7 +973,9 @@ function FilterPanel({
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground mb-2">السعر إلى</label>
+          <label className="block text-xs text-muted-foreground mb-2">
+            السعر إلى
+          </label>
           <div className="relative">
             <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
               <FiDollarSign />
@@ -1019,7 +1051,9 @@ function FilterPanel({
             >
               <Panel className="p-5 h-full overflow-y-auto rounded-l-2xl">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-foreground">الفلاتر</h3>
+                  <h3 className="text-base font-bold text-foreground">
+                    الفلاتر
+                  </h3>
                   <button
                     onClick={onClose}
                     className="text-muted-foreground hover:text-foreground"
@@ -1049,10 +1083,16 @@ function FilterPanel({
       {/* Desktop Floating Card */}
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+          >
             <Panel className="p-5 mb-6 hidden md:block">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-bold text-foreground">الفلاتر المتقدمة</h3>
+                <h3 className="text-base font-bold text-foreground">
+                  الفلاتر المتقدمة
+                </h3>
                 <div className="flex items-center gap-2">
                   {activeChips.slice(0, 4).map((c, i) => (
                     <FilterChip
@@ -1096,7 +1136,9 @@ export default function ExhibitorCars() {
   const [total, setTotal] = useState(0);
   const [perPage, setPerPage] = useState(10);
 
-  const [sortKey, setSortKey] = useState<"latest" | "oldest" | "price_desc" | "price_asc">("latest");
+  const [sortKey, setSortKey] = useState<
+    "latest" | "oldest" | "price_desc" | "price_asc"
+  >("latest");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -1113,7 +1155,9 @@ export default function ExhibitorCars() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [selectedCarData, setSelectedCarData] = useState<CarFromApi | null>(null);
+  const [selectedCarData, setSelectedCarData] = useState<CarFromApi | null>(
+    null
+  );
 
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -1229,10 +1273,14 @@ export default function ExhibitorCars() {
           String(c.year).includes(term)
       );
     }
-    if (filters.yearFrom) results = results.filter((c) => c.year >= Number(filters.yearFrom));
-    if (filters.yearTo) results = results.filter((c) => c.year <= Number(filters.yearTo));
-    if (filters.minPrice) results = results.filter((c) => c.price >= Number(filters.minPrice));
-    if (filters.maxPrice) results = results.filter((c) => c.price <= Number(filters.maxPrice));
+    if (filters.yearFrom)
+      results = results.filter((c) => c.year >= Number(filters.yearFrom));
+    if (filters.yearTo)
+      results = results.filter((c) => c.year <= Number(filters.yearTo));
+    if (filters.minPrice)
+      results = results.filter((c) => c.price >= Number(filters.minPrice));
+    if (filters.maxPrice)
+      results = results.filter((c) => c.price <= Number(filters.maxPrice));
 
     return results;
   }, [cars, filters, searchTerm]);
@@ -1346,7 +1394,11 @@ export default function ExhibitorCars() {
   return (
     <div dir="rtl" className="bg-background py-7 px-4 sm:px-6 lg:px-8">
       {/* Modals */}
-      <ViewCarModal open={viewOpen} onClose={() => setViewOpen(false)} car={selectedCarData} />
+      <ViewCarModal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        car={selectedCarData}
+      />
       <EditCarModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -1374,7 +1426,9 @@ export default function ExhibitorCars() {
               >
                 سيارات المعرض
               </motion.h1>
-              <p className="text-muted-foreground text-sm">إدارة السيارات المضافة إلى معرضك</p>
+              <p className="text-muted-foreground text-sm">
+                إدارة السيارات المضافة إلى معرضك
+              </p>
             </div>
             <PrimaryBtn
               onClick={goToAddCar}
@@ -1387,7 +1441,10 @@ export default function ExhibitorCars() {
           </div>
 
           <div className="flex flex-col md:flex-row gap-3">
-            <motion.div className="relative flex-grow" whileHover={{ scale: 1.003 }}>
+            <motion.div
+              className="relative flex-grow"
+              whileHover={{ scale: 1.003 }}
+            >
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <FiSearch className="text-muted-foreground" />
               </div>
@@ -1458,7 +1515,11 @@ export default function ExhibitorCars() {
 
         {/* Quick stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-7">
-          <StatCard title="إجمالي الصفحة الحالية" color="indigo" value={filteredCars.length} />
+          <StatCard
+            title="إجمالي الصفحة الحالية"
+            color="indigo"
+            value={filteredCars.length}
+          />
           <StatCard
             title="معلن"
             color="green"
@@ -1479,11 +1540,16 @@ export default function ExhibitorCars() {
         {/* Toolbar */}
         <div className="mb-5 flex justify-between items-center">
           <div className="text-muted-foreground text-sm">
-            <span className="font-medium text-foreground tabular-nums">{total}</span> إجمالي السيارات
+            <span className="font-medium text-foreground tabular-nums">
+              {total}
+            </span>{" "}
+            إجمالي السيارات
           </div>
 
           <div className="flex items-center">
-            <span className="text-muted-foreground mr-2 text-sm">ترتيب حسب:</span>
+            <span className="text-muted-foreground mr-2 text-sm">
+              ترتيب حسب:
+            </span>
             <select
               className="px-3 py-2 rounded-xl bg-background text-foreground border border-border focus:border-primary focus:ring-4 focus:ring-primary/20 text-sm"
               value={sortKey}
@@ -1509,8 +1575,12 @@ export default function ExhibitorCars() {
             <div className="text-muted-foreground mb-3">
               <FiSearch size={40} className="mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-1">لا توجد سيارات متطابقة</h3>
-            <p className="text-muted-foreground text-sm mb-5">عدّل الفلاتر أو أعد البحث.</p>
+            <h3 className="text-lg font-medium text-foreground mb-1">
+              لا توجد سيارات متطابقة
+            </h3>
+            <p className="text-muted-foreground text-sm mb-5">
+              عدّل الفلاتر أو أعد البحث.
+            </p>
             <PrimaryBtn
               onClick={() => {
                 resetFilters();
@@ -1553,10 +1623,15 @@ export default function ExhibitorCars() {
                             <FaCar className="text-primary" size={16} />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-semibold text-foreground">{car.title}</div>
+                            <div className="text-sm font-semibold text-foreground">
+                              {car.title}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {car.year} •{" "}
-                              {Number.isFinite(car.mileage) ? car.mileage.toLocaleString() : 0} كم
+                              {Number.isFinite(car.mileage)
+                                ? car.mileage.toLocaleString()
+                                : 0}{" "}
+                              كم
                             </div>
                           </div>
                         </div>
@@ -1564,7 +1639,10 @@ export default function ExhibitorCars() {
 
                       <td className="px-5 py-3.5">
                         <div className="text-sm font-bold text-primary tabular-nums">
-                          {Number.isFinite(car.price) ? car.price.toLocaleString() : 0} ر.س
+                          {Number.isFinite(car.price)
+                            ? car.price.toLocaleString()
+                            : 0}{" "}
+                          ر.س
                         </div>
                       </td>
 
@@ -1630,7 +1708,9 @@ export default function ExhibitorCars() {
             {lastPage > 1 && (
               <div className="py-4 px-5 border-t border-border flex items-center justify-between bg-muted/20">
                 <button
-                  onClick={() => currentPage > 1 && setCurrentPage((p) => p - 1)}
+                  onClick={() =>
+                    currentPage > 1 && setCurrentPage((p) => p - 1)
+                  }
                   disabled={currentPage === 1}
                   className="p-2 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
                 >
@@ -1638,11 +1718,17 @@ export default function ExhibitorCars() {
                 </button>
 
                 <span className="text-sm text-muted-foreground">
-                  صفحة <span className="font-bold text-foreground">{currentPage}</span> من {lastPage}
+                  صفحة{" "}
+                  <span className="font-bold text-foreground">
+                    {currentPage}
+                  </span>{" "}
+                  من {lastPage}
                 </span>
 
                 <button
-                  onClick={() => currentPage < lastPage && setCurrentPage((p) => p + 1)}
+                  onClick={() =>
+                    currentPage < lastPage && setCurrentPage((p) => p + 1)
+                  }
                   disabled={currentPage === lastPage}
                   className="p-2 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground disabled:opacity-50"
                 >
@@ -1675,14 +1761,20 @@ function StatCard({
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-card border border-border p-5 shadow-sm">
-      <div className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${colorClasses[color]}`} />
+      <div
+        className={`absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b ${colorClasses[color]}`}
+      />
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground mb-1">{title}</p>
           <div className="text-2xl font-bold text-foreground">{value}</div>
         </div>
-        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${colorClasses[color]} opacity-10`}>
-          <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${colorClasses[color]}`} />
+        <div
+          className={`p-2.5 rounded-xl bg-gradient-to-br ${colorClasses[color]} opacity-10`}
+        >
+          <div
+            className={`w-5 h-5 rounded-full bg-gradient-to-br ${colorClasses[color]}`}
+          />
         </div>
       </div>
     </div>

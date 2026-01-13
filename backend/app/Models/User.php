@@ -22,7 +22,10 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasApiTokens, HasFactory, Notifiable, CausesActivity, LogsActivity, HasRoles;
 
     protected $guard_name = 'sanctum';
-    protected function getDefaultGuardName(): string { return $this->guard_name; }
+    protected function getDefaultGuardName(): string
+    {
+        return $this->guard_name;
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -164,12 +167,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function wallet()
     {
         return $this->hasOne(Wallet::class);
-    }
-
-    // If the user is a dealer, they have one dealer record.
-    public function dealer()
-    {
-        return $this->hasOne(Dealer::class);
     }
 
     // ✅ If the user is a venue owner

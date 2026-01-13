@@ -326,7 +326,7 @@ class Auction extends Model
 
         Settlement::create([
             'auction_id' => $this->id,
-            'seller_id' => $this->car?->dealer_id,
+            'seller_id' => $this->car?->user_id,
             'buyer_id' => $userId,
             'car_id' => $this->car_id,
             'final_price' => $amount,
