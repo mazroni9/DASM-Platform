@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { usePusher } from "@/contexts/PusherContext";
 
@@ -31,9 +29,13 @@ import "ag-grid-community/styles/ag-theme-alpine.css";
 // تسجيل جميع وحدات AG Grid المجتمعية (مطلوب في الإصدار 34+)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+// ================= ثابت نوع المزاد =================
+const AUCTION_TYPE = "live_instant";
+const PAGE_SIZE = 50;
+
 // =============== أنواع TypeScript ===============
-type Broadcast = { stream_url: string };
-type Bid = { bid_amount: number; increment: number };
+type Broadcast = { stream_url?: string };
+type Bid = { bid_amount?: number | string; increment?: number | string };
 
 type CarInfo = {
   province?: string;
@@ -87,8 +89,9 @@ function toNumber(v: unknown, fallback = 0): number {
 
 async function isWithinAllowedTime(page: string): Promise<boolean> {
   try {
-    const response = await api.get(`api/check-time?page=${page}`);
-    return Boolean(response.data.allowed);
+    // ✅ لازم يبدأ بـ /api
+    const response = await api.get(`/api/check-time`, { params: { page } });
+    return Boolean(response.data?.allowed);
   } catch {
     return false;
   }
@@ -100,7 +103,7 @@ function normalizeAuction(raw: any): CarAuction {
     car_id: raw?.car_id ?? raw?.car?.id ?? 0,
 
     // API قد يرجّع opening_price أو starting_bid أو evaluation_price
-    opening_price: raw?.opening_price ?? raw?.starting_bid ?? 0,
+    opening_price: raw?.opening_price ?? raw?.starting_bid ?? raw?.evaluation_price ?? 0,
 
     // API عندك أحياناً min_price/max_price
     minimum_bid: raw?.minimum_bid ?? raw?.min_price ?? 0,
@@ -112,7 +115,6 @@ function normalizeAuction(raw: any): CarAuction {
     broadcasts: Array.isArray(raw?.broadcasts) ? raw.broadcasts : [],
     bids: Array.isArray(raw?.bids) ? raw.bids : [],
 
-    // ممكن تكون car مش موجودة لو الـ API مش بيضمّنها
     car: raw?.car ?? null,
   };
 }
@@ -128,18 +130,19 @@ export default function InstantAuctionPage() {
   const [cars, setCars] = useState<CarAuction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
+
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const [lastPage, setLastPage] = useState(1);
+
   const [filters, setFilters] = useState<FilterOptions>({ brand: "" });
-  const { isLoggedIn } = useAuth();
-  const router = useLoadingRouter();
 
   // =============== Infinity Scroll ===============
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sentryRef = useRef<HTMLDivElement>(null);
   const loadingGateRef = useRef(false);
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // لمنع race condition لما الصفحة تتغير بسرعة
+  const requestSeqRef = useRef(0);
 
   // =============== مكون حالة المزاد ===============
   const StatusBadge = ({ status }: { status: string }) => {
@@ -195,13 +198,13 @@ export default function InstantAuctionPage() {
         filter: false,
         cellRenderer: (params: ICellRendererParams<CarAuction>) => {
           const broadcasts = params.data?.broadcasts ?? [];
-          if (!broadcasts.length || !broadcasts[0]?.stream_url) {
-            return <span className="text-foreground/50">—</span>;
-          }
+          const url = broadcasts?.[0]?.stream_url;
+          if (!url) return <span className="text-foreground/50">—</span>;
+
           return (
             <LoadingLink
               target="_blank"
-              href={broadcasts[0].stream_url}
+              href={url}
               className="text-primary hover:text-primary/80 font-medium hover:underline transition-colors"
             >
               مشاهدة البث
@@ -327,9 +330,7 @@ export default function InstantAuctionPage() {
         sortable: true,
         filter: false,
         cellRenderer: (params: ICellRendererParams<CarAuction>) => {
-          const status = getAuctionStatus(
-            params.data?.car?.auction_status || ""
-          );
+          const status = getAuctionStatus(params.data?.car?.auction_status || "");
           return <StatusBadge status={status} />;
         },
       },
@@ -366,8 +367,10 @@ export default function InstantAuctionPage() {
     []
   );
 
-  // =============== جلب البيانات ===============
+  // =============== جلب البيانات (معدل عشان يتوافق مع Laravel) ===============
   const fetchAuctions = useCallback(async () => {
+    const seq = ++requestSeqRef.current;
+
     loadingGateRef.current = true;
     setLoading(currentPage === 1);
     setError(null);
@@ -376,46 +379,70 @@ export default function InstantAuctionPage() {
       const allowed = await isWithinAllowedTime("instant_auction");
       setIsAllowed(allowed);
 
-      const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
-      if (filters.brand) params.append("brand", filters.brand);
+      // لو الصفحة مش مسموح بيها، امسح الداتا وخلاص
+      if (!allowed) {
+        if (seq === requestSeqRef.current) {
+          setCars([]);
+          setCarsBrands([]);
+          setCarsTotal(0);
+          setLastPage(1);
+        }
+        return;
+      }
 
-      const response = await api.get(
-        `/api/approved-auctions/live_instant?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
-        { headers: { Accept: "application/json; charset=UTF-8" } }
-      );
+      // ✅ هنا الإصلاح المهم:
+      // - بنستخدم axios params بدل تجميع string
+      // - وبنبعت auction_type كـ query param كمان عشان backend بيستخدم $request->auction_type
+      const response = await api.get(`/api/approved-auctions/${AUCTION_TYPE}`, {
+        headers: { Accept: "application/json; charset=UTF-8" },
+        params: {
+          page: currentPage,
+          pageSize: PAGE_SIZE, // حتى لو backend مش بيستخدمه، مش هيضر
+          auction_type: AUCTION_TYPE, // ✅ مهم لتوافق $request->auction_type
+          active: 1, // ✅ لو عايز بس المزادات الجارية (اختياري لكن غالبًا ده المطلوب للسوق الفوري)
+          ...(searchTerm ? { search: searchTerm } : {}),
+          ...(filters.brand ? { brand: filters.brand } : {}),
+        },
+      });
 
-      // Laravel paginator غالباً: response.data.data = { data: [], total, ... }
-      const paginated = response.data?.data;
+      const paginated = response.data?.data; // paginator object
       const rows = Array.isArray(paginated?.data) ? paginated.data : [];
-
       const normalizedRows = rows.map(normalizeAuction);
 
-      setCarsBrands(response.data?.brands || []);
-      setTotalCount(toNumber(paginated?.total, 0));
-      setCarsTotal(toNumber(paginated?.total, 0));
+      // brands
+      const brands = Array.isArray(response.data?.brands) ? response.data.brands : [];
+      const total = toNumber(paginated?.total, 0);
+      const lp = toNumber(paginated?.last_page, 1);
 
-      setCars((prev) =>
-        currentPage > 1 ? [...prev, ...normalizedRows] : normalizedRows
-      );
+      // تجاهل نتيجة قديمة لو في طلب أحدث
+      if (seq !== requestSeqRef.current) return;
+
+      setCarsBrands(brands);
+      setCarsTotal(total);
+      setLastPage(lp);
+
+      setCars((prev) => (currentPage > 1 ? [...prev, ...normalizedRows] : normalizedRows));
     } catch (err) {
       console.error("فشل تحميل المزادات", err);
-      setError("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقًا.");
-      if (currentPage === 1) setCars([]);
+
+      if (seq === requestSeqRef.current) {
+        setError("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة لاحقًا.");
+        if (currentPage === 1) setCars([]);
+      }
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
       loadingGateRef.current = false;
     }
-  }, [currentPage, searchTerm, filters, isLoggedIn]);
+  }, [currentPage, searchTerm, filters.brand]);
 
   // =============== تأثير جلب البيانات ===============
-  const { subscribe, unsubscribe, isConnected } = usePusher();
-
   useEffect(() => {
     fetchAuctions();
   }, [fetchAuctions]);
 
   // =============== Pusher الاشتراك في قناة ===============
+  const { subscribe, unsubscribe, isConnected } = usePusher();
+
   useEffect(() => {
     if (!isConnected) return;
 
@@ -456,12 +483,7 @@ export default function InstantAuctionPage() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (
-          entry.isIntersecting &&
-          !loadingGateRef.current &&
-          isAllowed &&
-          currentPage < totalPages
-        ) {
+        if (entry.isIntersecting && !loadingGateRef.current && isAllowed && currentPage < lastPage) {
           setCurrentPage((p) => p + 1);
         }
       },
@@ -470,7 +492,7 @@ export default function InstantAuctionPage() {
 
     observer.observe(sentry);
     return () => observer.disconnect();
-  }, [currentPage, totalPages, isAllowed]);
+  }, [currentPage, lastPage, isAllowed]);
 
   // =============== تصفية السيارات ===============
   const filteredCars = useMemo(() => {
@@ -480,6 +502,12 @@ export default function InstantAuctionPage() {
       return true;
     });
   }, [cars, filters.brand]);
+
+  // =============== Helpers لتصفير الداتا عند تغيير البحث/الفلاتر ===============
+  const resetAndReload = () => {
+    setCars([]);
+    setCurrentPage(1);
+  };
 
   // =============== العرض الرئيسي ===============
   return (
@@ -518,7 +546,7 @@ export default function InstantAuctionPage() {
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  setCurrentPage(1);
+                  resetAndReload();
                 }}
                 className="w-full pr-11 pl-4 py-3.5 bg-background/70 border border-border rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-foreground placeholder-foreground/50 backdrop-blur-sm"
               />
@@ -566,7 +594,7 @@ export default function InstantAuctionPage() {
                         ...prev,
                         brand: e.target.value,
                       }));
-                      setCurrentPage(1);
+                      resetAndReload();
                     }}
                     className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
                   >
@@ -575,7 +603,7 @@ export default function InstantAuctionPage() {
                     </option>
                     {carsBrands.map((brand, idx) => (
                       <option
-                        key={idx}
+                        key={`${brand}-${idx}`}
                         value={brand}
                         className="bg-card text-foreground"
                       >
@@ -649,13 +677,9 @@ export default function InstantAuctionPage() {
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )}
-                  {!loading &&
-                    currentPage >= totalPages &&
-                    filteredCars.length > 0 && (
-                      <p className="text-sm text-foreground/50">
-                        تم عرض جميع السيارات
-                      </p>
-                    )}
+                  {!loading && currentPage >= lastPage && filteredCars.length > 0 && (
+                    <p className="text-sm text-foreground/50">تم عرض جميع السيارات</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -666,9 +690,7 @@ export default function InstantAuctionPage() {
         {loading && currentPage === 1 && (
           <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border p-10 text-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-foreground/70">
-              جارٍ تحميل بيانات السوق الفوري...
-            </p>
+            <p className="text-foreground/70">جارٍ تحميل بيانات السوق الفوري...</p>
           </div>
         )}
       </div>
