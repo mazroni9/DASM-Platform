@@ -39,7 +39,6 @@ import {
   Zap,
   Crown,
   TrendingUp,
-  Users,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
@@ -92,7 +91,7 @@ export default function AuctionsPage() {
       name: "الحراج المباشر",
       slug: "auctions-1main/live-market",
       description:
-        "بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصرا الى 7 مساءا",
+        "بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصراً إلى 7 مساءً",
       icon: Video,
       color: "text-primary",
       bgColor: "bg-card",
@@ -106,7 +105,7 @@ export default function AuctionsPage() {
       name: "السوق الفوري المباشر",
       slug: "auctions-1main/instant",
       description:
-        "مزادات بنظام المزايدات المفتوحه صعودا وهبوطا بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءا الى 10 مساءا",
+        "مزادات بنظام المزايدات المفتوحة صعوداً وهبوطاً بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءً إلى 10 مساءً",
       icon: Timer,
       color: "text-primary",
       bgColor: "bg-card",
@@ -117,10 +116,10 @@ export default function AuctionsPage() {
     },
     {
       currentPage: "late_auction",
-      name: "السوق المتاخر",
+      name: "السوق المتأخر",
       slug: "auctions-1main/silent",
       description:
-        "مزاد مكمل للمزاد الفوري ولكن بدون بث ولا يطلع المزايدين الاخرين على عروض بعض\nيبدأ من 10 مساءا الى 4 عصرا اليوم التالي",
+        "مزاد مكمل للمزاد الفوري ولكن بدون بث ولا تظهر عروض المزايدين لبعضهم\nيبدأ من 10 مساءً إلى 4 عصراً اليوم التالي",
       icon: BellOff,
       color: "text-primary",
       bgColor: "bg-card",
@@ -144,7 +143,7 @@ export default function AuctionsPage() {
     },
   ];
 
-  // ✅ أسواق السيارات (هنعرض السكشن ده فقط + نخلي الباقي مخفي)
+  // ✅ أسواق السيارات (المطلوب إظهارها)
   const auctionsCar: Auction[] = [
     {
       name: "سوق السيارات الفارهة",
@@ -207,6 +206,7 @@ export default function AuctionsPage() {
       stats: { items: "150+", rating: "4.5" },
     },
     {
+      // ✅ المطلوب: رجّع الاسم VIP (والـ slug يفضل companiesCars)
       name: "سوق vip",
       slug: "auctions-2car/companiesCars",
       description: "سيارات شركات بأسعار تصفية مخزون",
@@ -220,6 +220,7 @@ export default function AuctionsPage() {
     },
   ];
 
+  // ✅ باقي الأقسام زي ما كانت موجودة لكن هتفضل مخفية لأن SHOW_NON_MAIN_MARKETS = false
   const auctionsQuality: Auction[] = [
     {
       name: "الأجهزة الطبية المستعملة",
@@ -486,6 +487,7 @@ export default function AuctionsPage() {
     </motion.div>
   );
 
+  // ✅ Card موحّد، نفس الارتفاع لكل الكروت + بدون البيانات الوهمية
   const AuctionCard = ({ auction, index }: AuctionCardProps) => {
     const Icon = auction.icon;
 
@@ -494,59 +496,40 @@ export default function AuctionsPage() {
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.08 }}
+        transition={{ duration: 0.45, delay: index * 0.06 }}
+        className="h-full"
       >
-        <LoadingLink href={`/auctions/${auction.slug}`} className="group block">
+        <LoadingLink href={`/auctions/${auction.slug}`} className="group block h-full">
           <div
-            className={`relative overflow-hidden rounded-2xl border ${auction.borderColor} ${auction.bgColor} p-5 transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2 group-hover:border-primary h-full`}
+            className="
+              relative overflow-hidden rounded-2xl border border-border bg-card
+              p-5 transition-all duration-300
+              group-hover:shadow-xl group-hover:-translate-y-1 group-hover:border-primary
+              h-full min-h-[240px] flex flex-col
+            "
           >
-            {/* الإحصائيات */}
-            <div className="absolute top-3 right-3 flex gap-2">
-              {auction.stats.users && (
-                <div className="flex items-center gap-1 rounded-lg bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                  <Users className="w-3 h-3" />
-                  {auction.stats.users}
-                </div>
-              )}
-              {auction.stats.items && (
-                <div className="flex items-center gap-1 rounded-lg bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                  <Store className="w-3 h-3" />
-                  {auction.stats.items}
-                </div>
-              )}
-              {auction.stats.rating && (
-                <div className="flex items-center gap-1 rounded-lg bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-                  <Star className="w-3 h-3" />
-                  {auction.stats.rating}
-                </div>
-              )}
-            </div>
-
-            {/* المحتوى الرئيسي */}
-            <div className="mt-8 text-center">
-              <div
-                className={`inline-flex rounded-2xl bg-secondary p-3 shadow-lg mb-3 ${auction.color}`}
-              >
+            <div className="text-center flex-1 flex flex-col">
+              <div className="inline-flex mx-auto rounded-2xl bg-secondary p-3 shadow-sm mb-4 text-primary">
                 <Icon size={28} />
               </div>
 
-              <h3 className={`text-lg md:text-xl font-bold ${auction.color} mb-2 line-clamp-2`}>
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 line-clamp-2">
                 {auction.name}
               </h3>
 
-              <p className="text-muted-foreground text-sm leading-relaxed mb-5 line-clamp-3 whitespace-pre-line">
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 whitespace-pre-line">
                 {auction.description}
               </p>
 
               <div className="mt-auto">
-                <span className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:bg-primary/90">
+                <span className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-white transition-all duration-300 shadow-sm hover:bg-primary/90">
                   ابدأ المزايدة
                   <TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </div>
             </div>
 
-            <div className="absolute inset-0 rounded-2xl bg-foreground/0 transition-all duration-500 group-hover:bg-foreground/5" />
+            <div className="absolute inset-0 rounded-2xl bg-foreground/0 transition-all duration-300 group-hover:bg-foreground/5" />
           </div>
         </LoadingLink>
       </motion.div>
@@ -561,7 +544,7 @@ export default function AuctionsPage() {
       const hay = `${a.name} ${a.description}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [searchTerm, auctionsMain]);
+  }, [searchTerm]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -618,7 +601,7 @@ export default function AuctionsPage() {
             </div>
           )}
 
-          {/* ✅ المطلوب: إظهار سكشن سوق السيارات المخصص فقط */}
+          {/* ✅ سكشن سوق السيارات المخصص */}
           <Divider />
           <SectionTitle title="سوق السيارات المخصص" icon={Car} />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
@@ -627,7 +610,7 @@ export default function AuctionsPage() {
             ))}
           </div>
 
-          {/* ✅ باقي الأقسام تظل مخفية كما هي */}
+          {/* ✅ باقي الأقسام تظل موجودة لكن مخفية */}
           {SHOW_NON_MAIN_MARKETS && (
             <>
               <Divider />
