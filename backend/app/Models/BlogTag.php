@@ -2,20 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BlogTag extends Model
 {
-    use HasFactory;
+    protected $table = 'blog_tags';
 
-    protected $fillable = ['name'];
+    protected $fillable = [
+        'name',
+    ];
 
-    /**
-     * Get the posts for the tag
-     */
-    public function posts()
+    public function posts(): BelongsToMany
     {
-        return $this->belongsToMany(BlogPost::class, 'blog_post_tags', 'tag_id', 'post_id');
+        return $this->belongsToMany(
+            BlogPost::class,
+            'blog_post_tags',
+            'blog_tag_id',
+            'blog_post_id'
+        );
     }
 }

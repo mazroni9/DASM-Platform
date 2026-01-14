@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowRight, Link2, Save, Tags, RefreshCw } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { ArrowRight, Link2, Save, Tags, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
 
 type BlogCategory = {
   id: number | string;
@@ -14,31 +15,49 @@ type BlogCategory = {
   is_active?: boolean | number | null;
 };
 
-type ApiListResponse<T> =
+type ApiIndexResponse<T> =
+  | T[]
   | { data: T[]; meta?: { total?: number } }
-  | { data: { data: T[]; meta?: { total?: number } } }
-  | { pagination?: any; data?: any }
-  | T[];
+  | { data: { data: T[]; meta?: { total?: number }; total?: number; pagination?: { total?: number } } }
+  | { data: T[]; total?: number; meta?: { total?: number } }
+  | { items: T[]; pagination?: { total?: number } }
+  | { data?: any; pagination?: any; meta?: any; total?: any };
 
 function normalizeList<T>(resData: any): { list: T[] } {
   const root = resData;
 
   if (Array.isArray(root)) return { list: root as T[] };
 
+  if (Array.isArray(root?.data)) return { list: root.data as T[] };
+
+  if (Array.isArray(root?.items)) return { list: root.items as T[] };
+
   const d1 = root?.data;
-  if (Array.isArray(d1)) return { list: d1 as T[] };
+  if (Array.isArray(d1?.data)) return { list: d1.data as T[] };
 
-  const d2 = d1?.data;
-  if (Array.isArray(d2)) return { list: d2 as T[] };
-
-  const d3 = root?.data?.data;
-  if (Array.isArray(d3)) return { list: d3 as T[] };
+  if (Array.isArray(d1?.items)) return { list: d1.items as T[] };
 
   return { list: [] };
 }
 
+function toBool(v: any) {
+  return !(v === 0 || v === false);
+}
+
 function sameId(a: string | number, b: string | number) {
   return String(a) === String(b);
+}
+
+function slugify(input: string) {
+  const s = (input || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "")
+    .replace(/^-+|-+$/g, "");
+  return s;
 }
 
 export default function AdminBlogCategoryEditPage() {
@@ -50,6 +69,9 @@ export default function AdminBlogCategoryEditPage() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [autoSlug, setAutoSlug] = useState(false);
+  const slugTouchedRef = useRef(true);
+
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -57,53 +79,91 @@ export default function AdminBlogCategoryEditPage() {
     is_active: true,
   });
 
+  // Auto slug (اختياري)
+  useEffect(() => {
+    if (!autoSlug) return;
+    if (slugTouchedRef.current) return;
+    if (!form.name.trim()) return;
+    setForm((p) => ({ ...p, slug: slugify(p.name) }));
+  }, [form.name, autoSlug]);
+
+  const slugHelp = useMemo(() => {
+    const s = form.slug.trim();
+    if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
+    if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
+    return { type: "ok" as const, text: "تمام" };
+  }, [form.slug]);
+
   const validate = () => {
     const name = form.name.trim();
     const slug = form.slug.trim();
     if (!name) return "اسم التصنيف مطلوب";
-    if (!slug) return "الـSlug مطلوب";
-    if (slug.includes(" ")) return "الـSlug لا يجب أن يحتوي مسافات";
-    if (name.length > 255) return "اسم التصنيف طويل جدًا (255 حرف)";
-    if (slug.length > 255) return "الـSlug طويل جدًا (255 حرف)";
+    if (!slug) return "الرابط مطلوب";
+    if (slug.includes(" ")) return "الرابط لا يجب أن يحتوي مسافات";
+    if (name.length > 255) return "اسم التصنيف طويل";
+    if (slug.length > 255) return "الرابط طويل";
     return "";
   };
 
-  /**
-   * ✅ بدل GET /categories/{id}
-   * بنجيب من list endpoint ونفلتر.
-   *
-   * مهم: بعض الـ APIs بتعمل pagination
-   * فبنحاول نجيب صفحات أكتر لحد ما نلاقي الـ id (بعدد محاولات محدود)
-   */
+  const fetchById = async () => {
+    if (!id) return null;
+    const res = await api.get(`/api/admin/blog/categories/${id}`);
+    const data = res?.data?.data ?? res?.data;
+    if (data && (data.id != null || data.name != null)) return data as BlogCategory;
+    return null;
+  };
+
   const fetchFromListAndFind = async () => {
+    if (!id) return null;
+
+    const pageSize = 50;
+    const maxPagesToTry = 10;
+
+    for (let page = 1; page <= maxPagesToTry; page++) {
+      const res = await api.get<ApiIndexResponse<BlogCategory>>("/api/admin/blog/categories", {
+        params: {
+          page,
+          per_page: pageSize,
+          pageSize,
+        },
+      });
+
+      const { list } = normalizeList<BlogCategory>(res?.data);
+      const found = list.find((x) => sameId(x.id, id));
+      if (found) return found;
+
+      if (!list.length) break;
+    }
+
+    return null;
+  };
+
+  const fetchCategory = async () => {
     if (!id) return;
 
     try {
       setErrorMsg("");
       setLoading(true);
 
-      const pageSize = 50; // زوّد لو عندك تصنيفات كتير
-      const maxPagesToTry = 10; // حماية من loop لا نهائي
-
+      // جرّب تجيبها مباشرة، ولو مش متاح عندكم يرجع للقائمة
       let found: BlogCategory | null = null;
 
-      for (let page = 1; page <= maxPagesToTry; page++) {
-        const res = await api.get<ApiListResponse<BlogCategory>>("/api/admin/blog/categories", {
-          params: { page, pageSize },
-        });
-
-        const { list } = normalizeList<BlogCategory>(res?.data);
-
-        found = list.find((x) => sameId(x.id, id)) || null;
-
-        if (found) break;
-
-        // لو رجع list فاضي يبقى خلاص مفيش صفحات تاني
-        if (!list.length) break;
+      try {
+        found = await fetchById();
+      } catch {
+        found = null;
       }
 
       if (!found) {
-        setErrorMsg("لم يتم العثور على التصنيف المطلوب. قد يكون محذوف أو غير موجود.");
+        try {
+          found = await fetchFromListAndFind();
+        } catch {
+          found = null;
+        }
+      }
+
+      if (!found) {
+        setErrorMsg("لم يتم العثور على التصنيف المطلوب.");
         return;
       }
 
@@ -111,17 +171,17 @@ export default function AdminBlogCategoryEditPage() {
         name: found.name || "",
         slug: found.slug || "",
         description: found.description || "",
-        is_active: found.is_active === 0 ? false : true,
+        is_active: toBool(found.is_active),
       });
     } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || "فشل في تحميل بيانات التصنيف");
+      setErrorMsg(err?.response?.data?.message || "تعذر تحميل البيانات");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFromListAndFind();
+    fetchCategory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -146,9 +206,12 @@ export default function AdminBlogCategoryEditPage() {
       };
 
       await api.put(`/api/admin/blog/categories/${id}`, payload);
+
+      toast.success("تم الحفظ");
       router.push("/admin/blog/categories");
+      router.refresh();
     } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || "حدث خطأ أثناء الحفظ");
+      setErrorMsg(err?.response?.data?.message || "تعذر الحفظ");
     } finally {
       setSaving(false);
     }
@@ -158,12 +221,10 @@ export default function AdminBlogCategoryEditPage() {
     <div className="bg-card border border-border rounded-2xl p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xl font-extrabold text-primary line-clamp-2">
-            {form.name.trim() || "اسم التصنيف"}
-          </h2>
+          <h2 className="text-xl font-extrabold text-primary line-clamp-2">{form.name.trim() || "اسم التصنيف"}</h2>
           <p className="text-sm text-foreground/60 mt-2 flex items-center gap-2">
             <Link2 size={14} />
-            <span className="truncate">/blog/category/{form.slug.trim() || "slug"}</span>
+            <span className="truncate">/blog/category/{form.slug.trim() || "..."}</span>
           </p>
 
           <div className="mt-3">
@@ -200,7 +261,7 @@ export default function AdminBlogCategoryEditPage() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold text-primary">تعديل تصنيف</h1>
-          <p className="text-foreground/70 mt-2">تم تعديل الصفحة لتجلب البيانات من list endpoint بدل show endpoint.</p>
+          <p className="text-foreground/70 mt-2">حدّث البيانات ثم احفظ</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -209,16 +270,16 @@ export default function AdminBlogCategoryEditPage() {
             className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
-            رجوع للقائمة
+            رجوع
           </LoadingLink>
 
           <button
             type="button"
-            onClick={fetchFromListAndFind}
+            onClick={fetchCategory}
             className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            إعادة تحميل
+            تحديث
           </button>
         </div>
       </div>
@@ -233,7 +294,7 @@ export default function AdminBlogCategoryEditPage() {
         <div className="lg:col-span-2">
           <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6">
             {loading ? (
-              <div className="text-foreground/60">جارٍ تحميل البيانات...</div>
+              <div className="text-foreground/60">جارٍ التحميل...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -245,16 +306,68 @@ export default function AdminBlogCategoryEditPage() {
                       className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                       required
                     />
+                    <div className="text-xs text-foreground/60 mt-1">{form.name.length}/255</div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold mb-1">Slug</label>
-                    <input
-                      value={form.slug}
-                      onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
-                      className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-                      required
-                    />
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <label className="block text-sm font-bold">الرابط</label>
+                      <label className="flex items-center gap-2 text-xs text-foreground/70 select-none">
+                        <input
+                          type="checkbox"
+                          checked={autoSlug}
+                          onChange={(e) => {
+                            setAutoSlug(e.target.checked);
+                            if (e.target.checked) slugTouchedRef.current = false;
+                            else slugTouchedRef.current = true;
+                          }}
+                          className="accent-primary"
+                        />
+                        توليد تلقائي
+                      </label>
+                    </div>
+
+                    <div className="relative">
+                      <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/60" />
+                      <input
+                        value={form.slug}
+                        onChange={(e) => {
+                          slugTouchedRef.current = true;
+                          setForm((p) => ({ ...p, slug: e.target.value }));
+                        }}
+                        className="w-full p-3 pr-10 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+                        required
+                      />
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      {slugHelp.type === "ok" ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                          <span className="text-emerald-500">{slugHelp.text}</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="w-4 h-4 text-amber-500" />
+                          <span className="text-amber-500">{slugHelp.text}</span>
+                        </>
+                      )}
+                      <span className="text-foreground/50">({form.slug.length}/255)</span>
+                    </div>
+
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          slugTouchedRef.current = true;
+                          setAutoSlug(false);
+                          setForm((p) => ({ ...p, slug: slugify(p.name) }));
+                        }}
+                        className="text-xs px-3 py-2 rounded-lg border border-border hover:bg-border/60 transition"
+                      >
+                        توليد من الاسم
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -271,7 +384,7 @@ export default function AdminBlogCategoryEditPage() {
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 p-4">
                   <div>
                     <div className="font-bold">الحالة</div>
-                    <div className="text-xs text-foreground/60 mt-1">نشط = يظهر في الواجهة.</div>
+                    <div className="text-xs text-foreground/60 mt-1">نشط = يظهر</div>
                   </div>
 
                   <label className="inline-flex items-center gap-3 cursor-pointer select-none">
@@ -294,7 +407,7 @@ export default function AdminBlogCategoryEditPage() {
                     className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4" />
-                    {saving ? "جارٍ الحفظ..." : "حفظ التعديل"}
+                    {saving ? "جارٍ الحفظ..." : "حفظ"}
                   </button>
 
                   <LoadingLink

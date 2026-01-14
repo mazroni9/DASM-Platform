@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import { toast } from "react-hot-toast";
 import LoadingLink from "@/components/LoadingLink";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
@@ -25,11 +26,18 @@ type BlogCategory = {
 type ApiListResponse<T> =
   | { data: T[]; meta?: { total?: number } }
   | { data: { data: T[]; meta?: { total?: number } } }
+  | { data: T[]; total?: number }
   | T[];
 
 function normalizeList<T>(resData: any): { list: T[]; total?: number } {
   const root = resData;
   if (Array.isArray(root)) return { list: root as T[], total: root.length };
+
+  if (Array.isArray(root?.data)) {
+    const list = root.data as T[];
+    const total = typeof root.total === "number" ? root.total : root?.meta?.total ?? list.length;
+    return { list, total };
+  }
 
   const d1 = root?.data;
   if (Array.isArray(d1)) return { list: d1 as T[], total: root?.meta?.total ?? d1.length };
@@ -40,7 +48,6 @@ function normalizeList<T>(resData: any): { list: T[]; total?: number } {
   return { list: [], total: 0 };
 }
 
-// Unicode-friendly slugify (يدعم العربية)
 function slugify(input: string) {
   const s = (input || "")
     .trim()
@@ -53,7 +60,26 @@ function slugify(input: string) {
   return s;
 }
 
+function escapeHtml(text: string) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function contentToPreviewHtml(content: string) {
+  const c = (content || "").trim();
+  if (!c) return "";
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(c);
+  if (looksLikeHtml) return c;
+  return escapeHtml(c).replace(/\n/g, "<br />");
+}
+
 export default function AdminBlogPostCreatePage() {
+  const router = useRouter();
+
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loadingCats, setLoadingCats] = useState(false);
 
@@ -64,7 +90,6 @@ export default function AdminBlogPostCreatePage() {
 
   const [saving, setSaving] = useState(false);
 
-  // ✅ form مطابق لحقول الباك (مع status للـ UI فقط)
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -73,16 +98,13 @@ export default function AdminBlogPostCreatePage() {
     excerpt: "",
     content: "",
 
-    // ✅ Backend naming
-    cover_image: "",
+    // ✅ هنستخدم image (نفس اسم الباك)
+    image: "",
 
-    // ✅ UI field (mapped to is_published)
     status: "draft" as "draft" | "published",
-    published_at: "",
 
-    // ✅ SEO
-    seo_title: "",
-    seo_description: "",
+    search_title: "",
+    search_description: "",
   });
 
   const fetchCategories = async () => {
@@ -93,7 +115,6 @@ export default function AdminBlogPostCreatePage() {
 
       setCategories(list);
 
-      // ✅ اجعل أول تصنيف هو الافتراضي لو فاضي
       setForm((p) => {
         const nextCat = p.category_id || (list.length ? String(list[0].id) : "");
         return { ...p, category_id: nextCat };
@@ -111,7 +132,6 @@ export default function AdminBlogPostCreatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-slug from title
   useEffect(() => {
     if (!autoSlug) return;
     if (slugTouchedRef.current) return;
@@ -121,41 +141,43 @@ export default function AdminBlogPostCreatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.title, autoSlug]);
 
-  const slugHelp = useMemo(() => {
+  const linkHelp = useMemo(() => {
     const s = form.slug.trim();
-    if (!s) return { type: "warn" as const, text: "الـSlug ضروري للرابط (مثال: my-post)" };
+    if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
     if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
-    return { type: "ok" as const, text: "الرابط جاهز" };
+    return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
   const validate = () => {
     const title = form.title.trim();
     const slug = form.slug.trim();
+    const content = form.content.trim();
 
-    if (!categories.length) return { ok: false, msg: "لا توجد تصنيفات. أضف تصنيف أولاً ثم حاول مرة أخرى." };
-    if (!form.category_id) return { ok: false, msg: "التصنيف مطلوب (لا يمكن الحفظ بدون تصنيف)" };
+    if (!categories.length) return { ok: false, msg: "لا توجد تصنيفات حالياً" };
+    if (!form.category_id) return { ok: false, msg: "اختر تصنيف" };
 
     if (!title) return { ok: false, msg: "العنوان مطلوب" };
-    if (!slug) return { ok: false, msg: "الـSlug مطلوب (أو فعّل التوليد التلقائي)" };
-    if (title.length > 255) return { ok: false, msg: "العنوان طويل جدًا (255 حرف كحد أقصى)" };
-    if (slug.length > 255) return { ok: false, msg: "الـSlug طويل جدًا (255 حرف كحد أقصى)" };
+    if (!slug) return { ok: false, msg: "الرابط مطلوب" };
 
-    if (form.cover_image.trim()) {
+    // ✅ مهم جدًا: الباك يطلب content في الإنشاء
+    if (!content) return { ok: false, msg: "المحتوى مطلوب" };
+
+    if (!form.status) return { ok: false, msg: "الحالة مطلوبة" };
+
+    if (title.length > 255) return { ok: false, msg: "العنوان طويل" };
+    if (slug.length > 255) return { ok: false, msg: "الرابط طويل" };
+
+    if (form.image.trim()) {
       try {
         // eslint-disable-next-line no-new
-        new URL(form.cover_image.trim());
+        new URL(form.image.trim());
       } catch {
         return { ok: false, msg: "رابط الصورة غير صالح" };
       }
     }
 
-    if (form.status === "published" && form.published_at) {
-      const d = new Date(form.published_at);
-      if (Number.isNaN(d.getTime())) return { ok: false, msg: "تاريخ النشر غير صالح" };
-    }
-
-    if (form.seo_title.trim().length > 255) return { ok: false, msg: "SEO Title طويل جدًا (255 حرف كحد أقصى)" };
-    if (form.seo_description.trim().length > 5000) return { ok: false, msg: "SEO Description طويل جدًا" };
+    if (form.search_title.trim().length > 255) return { ok: false, msg: "عنوان البحث طويل" };
+    if (form.search_description.trim().length > 5000) return { ok: false, msg: "وصف البحث طويل" };
 
     return { ok: true as const };
   };
@@ -172,34 +194,33 @@ export default function AdminBlogPostCreatePage() {
     try {
       setSaving(true);
 
-      const catIdNum = Number(form.category_id);
-      const is_published = form.status === "published";
-
-      // ✅ Payload مطابق للموديل fillable بالباك
       const payload = {
         title: form.title.trim(),
+        // slug في الباك بيتعمل تلقائيًا من العنوان (إرساله مش مؤثر لكن مش هيبوّظ)
         slug: form.slug.trim(),
 
-        category_id: catIdNum,
+        category_id: Number(form.category_id),
 
         excerpt: form.excerpt?.trim() || null,
-        content: form.content?.trim() || null,
+        content: form.content.trim(), // ✅ required
 
-        cover_image: form.cover_image?.trim() || null,
+        // ✅ هنا الإصلاح الحقيقي
+        image: form.image?.trim() || null,
 
-        is_published,
-        published_at: is_published ? (form.published_at || null) : null,
+        status: form.status,
 
-        seo_title: form.seo_title?.trim() || null,
-        seo_description: form.seo_description?.trim() || null,
+        // SEO (لو عندك أعمدة)
+        seo_title: form.search_title?.trim() || null,
+        seo_description: form.search_description?.trim() || null,
       };
 
       await api.post("/api/admin/blog/posts", payload);
 
-      toast.success("تم إضافة المقال");
-      window.location.href = "/admin/blog/posts";
+      toast.success("تمت الإضافة");
+      router.push("/admin/blog/posts");
+      router.refresh();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "حدث خطأ أثناء الحفظ");
+      toast.error(err?.response?.data?.message || "تعذر الحفظ");
     } finally {
       setSaving(false);
     }
@@ -210,6 +231,8 @@ export default function AdminBlogPostCreatePage() {
       ? categories.find((c) => String(c.id) === String(form.category_id))?.name || "—"
       : "—";
 
+  const previewHtml = contentToPreviewHtml(form.content);
+
   return (
     <div className="min-h-screen bg-background text-foreground rtl">
       {/* Header */}
@@ -217,8 +240,8 @@ export default function AdminBlogPostCreatePage() {
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-primary">إضافة مقال جديد</h1>
-              <p className="text-foreground/60 mt-2 text-sm">أنشئ مقال بشكل منظم مع معاينة قبل الحفظ.</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-primary">إضافة مقال</h1>
+              <p className="text-foreground/60 mt-2 text-sm">اكتب المقال بشكل منظم مع معاينة قبل الحفظ</p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -227,7 +250,7 @@ export default function AdminBlogPostCreatePage() {
                 className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
               >
                 <ArrowRight className="w-4 h-4" />
-                رجوع للقائمة
+                رجوع
               </LoadingLink>
 
               <button
@@ -277,10 +300,10 @@ export default function AdminBlogPostCreatePage() {
         {activeTab === "preview" ? (
           <div className="bg-card border border-border rounded-2xl p-6 space-y-5 shadow-2xl">
             <div className="flex items-start gap-4">
-              {form.cover_image?.trim() ? (
+              {form.image?.trim() ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={form.cover_image.trim()}
+                  src={form.image.trim()}
                   alt=""
                   className="w-28 h-28 rounded-2xl object-cover border border-border"
                   onError={(e) => {
@@ -298,7 +321,7 @@ export default function AdminBlogPostCreatePage() {
 
                 <p className="text-sm text-foreground/60 mt-1 flex items-center gap-2">
                   <Link2 size={14} />
-                  <span className="truncate">/blog/{form.slug?.trim() || "slug"}</span>
+                  <span className="truncate">/blog/{form.slug?.trim() || "..."}</span>
                 </p>
 
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -328,30 +351,12 @@ export default function AdminBlogPostCreatePage() {
 
             <div className="rounded-2xl border border-border bg-background/40 p-4">
               <h4 className="font-bold mb-2">المحتوى</h4>
-              {form.content?.trim() ? (
-                <div
-                  className="prose max-w-none prose-invert prose-p:leading-7"
-                  dangerouslySetInnerHTML={{ __html: form.content }}
-                />
+              {previewHtml ? (
+                <div className="prose max-w-none prose-invert prose-p:leading-7" dangerouslySetInnerHTML={{ __html: previewHtml }} />
               ) : (
                 <p className="text-foreground/50">لا يوجد محتوى.</p>
               )}
             </div>
-
-            {(form.seo_title.trim() || form.seo_description.trim()) && (
-              <div className="rounded-2xl border border-border bg-background/40 p-4 space-y-3">
-                <h4 className="font-bold">SEO</h4>
-                {form.seo_title.trim() ? (
-                  <div className="text-sm">
-                    <span className="text-foreground/60">Title:</span>{" "}
-                    <span className="font-bold">{form.seo_title.trim()}</span>
-                  </div>
-                ) : null}
-                {form.seo_description.trim() ? (
-                  <div className="text-sm text-foreground/80 leading-6">{form.seo_description.trim()}</div>
-                ) : null}
-              </div>
-            )}
 
             <div className="flex gap-3">
               <button
@@ -365,7 +370,7 @@ export default function AdminBlogPostCreatePage() {
           </div>
         ) : (
           <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-2xl">
-            {/* Title + Slug */}
+            {/* Title + Link */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold mb-1">العنوان</label>
@@ -373,7 +378,7 @@ export default function AdminBlogPostCreatePage() {
                   value={form.title}
                   onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-                  placeholder="مثال: أفضل طرق شراء سيارة مزاد"
+                  placeholder="مثال: نصائح مهمة قبل شراء سيارة"
                   required
                 />
                 <div className="text-xs text-foreground/60 mt-1">{form.title.length}/255</div>
@@ -381,7 +386,7 @@ export default function AdminBlogPostCreatePage() {
 
               <div>
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <label className="block text-sm font-bold">Slug</label>
+                  <label className="block text-sm font-bold">الرابط</label>
                   <label className="flex items-center gap-2 text-xs text-foreground/70 select-none">
                     <input
                       type="checkbox"
@@ -408,21 +413,21 @@ export default function AdminBlogPostCreatePage() {
                       setForm((p) => ({ ...p, slug: e.target.value }));
                     }}
                     className="w-full p-3 pr-10 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-                    placeholder="my-post-slug"
+                    placeholder="عنوان-الرابط"
                     required
                   />
                 </div>
 
                 <div className="mt-1 flex items-center gap-2 text-xs">
-                  {slugHelp.type === "ok" ? (
+                  {linkHelp.type === "ok" ? (
                     <>
                       <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <span className="text-emerald-500">{slugHelp.text}</span>
+                      <span className="text-emerald-500">{linkHelp.text}</span>
                     </>
                   ) : (
                     <>
                       <AlertTriangle className="w-4 h-4 text-amber-500" />
-                      <span className="text-amber-500">{slugHelp.text}</span>
+                      <span className="text-amber-500">{linkHelp.text}</span>
                     </>
                   )}
                   <span className="text-foreground/50">({form.slug.length}/255)</span>
@@ -447,15 +452,10 @@ export default function AdminBlogPostCreatePage() {
                     </option>
                   ))}
                 </select>
-                {!categories.length && !loadingCats ? (
-                  <div className="text-xs text-red-500 mt-1">لا توجد تصنيفات — لا يمكن حفظ المقال.</div>
-                ) : (
-                  <div className="text-xs text-foreground/60 mt-1">اختر تصنيف لضمان عدم إرسال category_id فارغ.</div>
-                )}
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-1">الحالة</label>
+                <label className="block text-sm font-bold mb-1">الحالة (إجباري)</label>
                 <select
                   value={form.status}
                   onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}
@@ -467,41 +467,35 @@ export default function AdminBlogPostCreatePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-1">تاريخ النشر (اختياري)</label>
-                <input
-                  type="datetime-local"
-                  value={form.published_at ? form.published_at.slice(0, 16) : ""}
-                  onChange={(e) => setForm((p) => ({ ...p, published_at: e.target.value }))}
-                  disabled={form.status !== "published"}
-                  className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none disabled:opacity-50"
-                />
-                <div className="text-xs text-foreground/60 mt-1">يظهر فقط عند اختيار “منشور”.</div>
+                <label className="block text-sm font-bold mb-1">ملاحظة</label>
+                <div className="w-full p-3 border border-border rounded-xl bg-background/40 text-sm text-foreground/60">
+                  الباك إند بيحدد published_at تلقائيًا عند النشر.
+                </div>
               </div>
             </div>
 
-            {/* cover_image */}
+            {/* Image */}
             <div className="rounded-2xl border border-border bg-background/40 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <ImageIcon className="w-4 h-4 text-foreground/70" />
-                <label className="block text-sm font-bold">صورة المقال (cover_image URL)</label>
+                <label className="block text-sm font-bold">صورة المقال</label>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                 <div className="md:col-span-2">
                   <input
-                    value={form.cover_image}
-                    onChange={(e) => setForm((p) => ({ ...p, cover_image: e.target.value }))}
+                    value={form.image}
+                    onChange={(e) => setForm((p) => ({ ...p, image: e.target.value }))}
                     className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-                    placeholder="https://example.com/image.jpg"
+                    placeholder="ضع رابط الصورة هنا (اختياري)"
                   />
-                  <div className="text-xs text-foreground/60 mt-1">اختياري.</div>
                 </div>
 
                 <div className="rounded-xl border border-border bg-background/50 p-3 flex items-center justify-center">
-                  {form.cover_image?.trim() ? (
+                  {form.image?.trim() ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={form.cover_image.trim()}
+                      src={form.image.trim()}
                       alt="preview"
                       className="w-full h-24 object-cover rounded-lg border border-border"
                       onError={(e) => {
@@ -520,10 +514,7 @@ export default function AdminBlogPostCreatePage() {
 
             {/* Excerpt */}
             <div className="rounded-2xl border border-border bg-background/40 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-foreground/70" />
-                <label className="block text-sm font-bold">نبذة قصيرة</label>
-              </div>
+              <label className="block text-sm font-bold mb-2">نبذة قصيرة</label>
               <textarea
                 value={form.excerpt}
                 onChange={(e) => setForm((p) => ({ ...p, excerpt: e.target.value }))}
@@ -536,10 +527,7 @@ export default function AdminBlogPostCreatePage() {
             {/* Content */}
             <div className="rounded-2xl border border-border bg-background/40 p-4">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-foreground/70" />
-                  <label className="block text-sm font-bold">المحتوى (HTML)</label>
-                </div>
+                <label className="block text-sm font-bold">المحتوى (إجباري)</label>
                 <button
                   type="button"
                   onClick={() => setActiveTab("preview")}
@@ -553,33 +541,31 @@ export default function AdminBlogPostCreatePage() {
               <textarea
                 value={form.content}
                 onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
-                className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none font-mono text-sm"
+                className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
                 rows={12}
-                placeholder="<p>...</p>"
+                placeholder="اكتب محتوى المقال هنا..."
+                required
               />
             </div>
 
             {/* SEO */}
             <div className="rounded-2xl border border-border bg-background/40 p-4 space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-2">SEO Title (اختياري)</label>
+                <label className="block text-sm font-bold mb-2">عنوان يظهر في نتائج البحث (اختياري)</label>
                 <input
-                  value={form.seo_title}
-                  onChange={(e) => setForm((p) => ({ ...p, seo_title: e.target.value }))}
+                  value={form.search_title}
+                  onChange={(e) => setForm((p) => ({ ...p, search_title: e.target.value }))}
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
-                  placeholder="عنوان مناسب لمحركات البحث..."
                 />
-                <div className="text-xs text-foreground/60 mt-1">{form.seo_title.length}/255</div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-2">SEO Description (اختياري)</label>
+                <label className="block text-sm font-bold mb-2">وصف يظهر في نتائج البحث (اختياري)</label>
                 <textarea
-                  value={form.seo_description}
-                  onChange={(e) => setForm((p) => ({ ...p, seo_description: e.target.value }))}
+                  value={form.search_description}
+                  onChange={(e) => setForm((p) => ({ ...p, search_description: e.target.value }))}
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                   rows={3}
-                  placeholder="وصف مختصر يظهر في نتائج البحث..."
                 />
               </div>
             </div>
@@ -592,7 +578,7 @@ export default function AdminBlogPostCreatePage() {
                 className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" />
-                {saving ? "جارٍ الحفظ..." : "حفظ المقال"}
+                {saving ? "جارٍ الحفظ..." : "حفظ"}
               </button>
 
               <LoadingLink

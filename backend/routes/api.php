@@ -18,7 +18,7 @@ use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
-use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BlogController; // ✅ Public Blog Controller
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\BroadcastController;
@@ -47,6 +47,7 @@ use App\Http\Controllers\Admin\SalesController;
 use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
+use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW: Admin Blog Controller
 
 // ========= Admin Panel (New) =========
 use App\Http\Controllers\AdminPanel\UserController as AdminPanelUserController;
@@ -298,13 +299,14 @@ Route::prefix('market')->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// 2.5 Public Blog
+// 2.5 Public Blog (✅ Clean Public Blog)
 // ─────────────────────────────────────────────────────────────────────────
 Route::prefix('blog')->group(function () {
     Route::get('/', [BlogController::class, 'index']);
     Route::get('/latest/{count?}', [BlogController::class, 'latest'])->whereNumber('count');
     Route::get('/tags', [BlogController::class, 'tags']);
-    Route::get('/{slug}', [BlogController::class, 'show']);
+    Route::get('/categories', [BlogController::class, 'categories']); // ✅ NEW
+    Route::get('/{slug}', [BlogController::class, 'show']); // dynamic last
 });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -797,21 +799,17 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
         Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
 
-
-
-
         // ─────────────────────────────────────────────────────────────
-// 8.xx Employees Management
-// ─────────────────────────────────────────────────────────────
-Route::prefix('employees')->group(function () {
-    Route::get('/', [AdminEmployeeController::class, 'index'])->middleware('can:staff.view');
-    Route::post('/', [AdminEmployeeController::class, 'store'])->middleware('can:staff.create');
-    Route::get('/{id}', [AdminEmployeeController::class, 'show'])->whereNumber('id')->middleware('can:staff.view_details');
-    Route::put('/{id}', [AdminEmployeeController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
-    Route::patch('/{id}/status', [AdminEmployeeController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
-    Route::delete('/{id}', [AdminEmployeeController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
-});
-
+        // 8.xx Employees Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('employees')->group(function () {
+            Route::get('/', [AdminEmployeeController::class, 'index'])->middleware('can:staff.view');
+            Route::post('/', [AdminEmployeeController::class, 'store'])->middleware('can:staff.create');
+            Route::get('/{id}', [AdminEmployeeController::class, 'show'])->whereNumber('id')->middleware('can:staff.view_details');
+            Route::put('/{id}', [AdminEmployeeController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
+            Route::patch('/{id}/status', [AdminEmployeeController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
+            Route::delete('/{id}', [AdminEmployeeController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
+        });
 
         // ─────────────────────────────────────────────────────────────
         // 8.7 Bid Events
@@ -834,19 +832,39 @@ Route::prefix('employees')->group(function () {
         });
 
         // ─────────────────────────────────────────────────────────────
-        // 8.9 Blog Management
+        // 8.9 Blog Management (✅ NEW CLEAN ADMIN BLOG)
+        // Removed old:
+        // - /admin/blogs
+        // - /admin/blog-tags
+        // - /admin/blog (store/update/delete)
         // ─────────────────────────────────────────────────────────────
-        Route::prefix('blogs')->group(function () {
-            Route::get('/', [AdminController::class, 'blogs']);
-            Route::get('/tags', [AdminController::class, 'getBlogTags']);
-            Route::post('/{id}/status', [AdminController::class, 'toggleBlogStatus'])->whereNumber('id');
-        });
-        Route::post('/blog-tags', [AdminController::class, 'manageTags']);
-
         Route::prefix('blog')->group(function () {
-            Route::post('/', [BlogController::class, 'store']);
-            Route::put('/{id}', [BlogController::class, 'update'])->whereNumber('id');
-            Route::delete('/{id}', [BlogController::class, 'destroy'])->whereNumber('id');
+
+            // Posts
+            Route::prefix('posts')->group(function () {
+                Route::get('/', [AdminBlogController::class, 'postsIndex']);
+                Route::get('/{id}', [AdminBlogController::class, 'postsShow'])->whereNumber('id');
+                Route::post('/', [AdminBlogController::class, 'postsStore']);
+                Route::put('/{id}', [AdminBlogController::class, 'postsUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminBlogController::class, 'postsDestroy'])->whereNumber('id');
+                Route::post('/{id}/status', [AdminBlogController::class, 'postsToggleStatus'])->whereNumber('id');
+            });
+
+            // Categories
+            Route::prefix('categories')->group(function () {
+                Route::get('/', [AdminBlogController::class, 'categoriesIndex']);
+                Route::post('/', [AdminBlogController::class, 'categoriesStore']);
+                Route::put('/{id}', [AdminBlogController::class, 'categoriesUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminBlogController::class, 'categoriesDestroy'])->whereNumber('id');
+            });
+
+            // Tags
+            Route::prefix('tags')->group(function () {
+                Route::get('/', [AdminBlogController::class, 'tagsIndex']);
+                Route::post('/', [AdminBlogController::class, 'tagsStore']);
+                Route::put('/{id}', [AdminBlogController::class, 'tagsUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminBlogController::class, 'tagsDestroy'])->whereNumber('id');
+            });
         });
 
         // ─────────────────────────────────────────────────────────────
