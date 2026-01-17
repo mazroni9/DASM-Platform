@@ -1,4 +1,4 @@
-name: Branch is up to date
+name: check
 
 on:
   pull_request:
