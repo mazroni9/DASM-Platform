@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import LoadingLink from "@/components/LoadingLink";
+import React, { useEffect, useMemo, useState } from "react";
+import api from "@/lib/axios";
 import AuctionCard from "@/components/AuctionCard";
+import LoadingLink from "@/components/LoadingLink";
 import {
-  ArrowLeft,
-  Bus,
+  Building2,
   RefreshCw,
   AlertCircle,
   Layers,
   Clock,
+  ArrowLeft,
 } from "lucide-react";
-import axios from "@/lib/axios";
 
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
@@ -19,166 +19,42 @@ import PaginationItem from "@mui/material/PaginationItem";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
-type CarItem = {
-  id: number | string;
-  make?: string;
-  model?: string;
-  year?: number | string;
-  images?: string[] | string | null;
-
-  status?: string | boolean;
-  approved?: boolean;
-  is_approved?: boolean;
-  approval_status?: string;
-
-  active_auction?: {
-    id: number | string;
-    current_price?: number | string;
-    status?: string;
-  } | null;
-
-  activeAuction?: {
-    id: number | string;
-    current_price?: number | string;
-    status?: string;
-  } | null;
-
-  auction_status?: string;
-  active_status?: string;
-  current_price?: number | string;
-  auction_result?: any;
+type ActiveAuction = {
+  id?: number | string;
+  status?: string;
+  current_bid?: number | string | null;
+  current_price?: number | string | null;
 };
 
-type PaginationInfo = {
+type CarCard = {
+  id: number;
+  title?: string;
+  description?: string | null;
+  make?: string | null;
+  model?: string | null;
+  year?: number | string | null;
+  image?: string | null;
+  images?: any;
+  condition?: any;
+  auction_status?: string | null;
+  market_category?: string | null;
+  engine?: string | null;
+  transmission?: any;
+  evaluation_price?: number | string | null;
+  province?: string | null;
+  created_at?: string | null;
+  active_auction?: ActiveAuction | null;
+  activeAuction?: ActiveAuction | null;
+};
+
+type PaginationMeta = {
   total: number;
   last_page: number;
   current_page?: number;
   per_page?: number;
 };
 
-const MARKET = "buses";
-
-function toNumber(v: unknown, fallback = 0): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = parseFloat(v);
-    return Number.isFinite(n) ? n : fallback;
-  }
-  return fallback;
-}
-
-const resolveMarketEndpoint = () => {
-  try {
-    const base = (axios as any).defaults?.baseURL ?? "";
-    return String(base).endsWith("/api") ? "/market/cars" : "/api/market/cars";
-  } catch {
-    return "/api/market/cars";
-  }
-};
-
-const isApproved = (it: CarItem) => {
-  const v: any =
-    it.status ?? it.approval_status ?? it.approved ?? it.is_approved;
-  if (typeof v === "string") {
-    const s = v.toLowerCase();
-    return s === "approved" || s === "accept" || s === "accepted";
-  }
-  return Boolean(v);
-};
-
-const isActiveAuction = (it: CarItem) => {
-  const s = (
-    it.active_auction?.status ??
-    it.activeAuction?.status ??
-    it.auction_status ??
-    it.active_status ??
-    ""
-  )
-    .toString()
-    .toLowerCase();
-
-  return s === "active" || s === "on" || s === "running";
-};
-
-const firstImage = (images: CarItem["images"]) => {
-  try {
-    if (!images) return "/placeholder-car.jpg";
-    if (Array.isArray(images)) return images[0] || "/placeholder-car.jpg";
-    const str = String(images);
-
-    if (str.trim().startsWith("[")) {
-      const arr = JSON.parse(str);
-      return Array.isArray(arr) && arr[0] ? arr[0] : "/placeholder-car.jpg";
-    }
-
-    return str || "/placeholder-car.jpg";
-  } catch {
-    return "/placeholder-car.jpg";
-  }
-};
-
-const titleOf = (item: CarItem) => {
-  const parts = [item.year, item.make, item.model].filter(Boolean);
-  return parts.length ? parts.join(" - ") : "مركبة";
-};
-
-const priceOf = (item: CarItem) =>
-  item.active_auction?.current_price ??
-  item.activeAuction?.current_price ??
-  item.current_price ??
-  null;
-
-/**
- * يدعم أكثر من شكل للريسبونس:
- * - { status, data: [...], pagination: {...} }
- * - { status, data: { data: [...], pagination: {...} } }
- * - { status, data: paginator } (Laravel paginate)
- */
-function extractListAndPagination(resData: any): {
-  list: any[];
-  pagination: PaginationInfo;
-} {
-  const empty: PaginationInfo = {
-    total: 0,
-    last_page: 1,
-    current_page: 1,
-    per_page: 12,
-  };
-
-  const directList = resData?.data;
-  const directPagination = resData?.pagination;
-
-  const container = resData?.data;
-
-  const list: any[] =
-    Array.isArray(directList)
-      ? directList
-      : Array.isArray(container?.data)
-      ? container.data
-      : Array.isArray(container)
-      ? container
-      : [];
-
-  const pg =
-    directPagination && typeof directPagination === "object"
-      ? directPagination
-      : container?.pagination && typeof container.pagination === "object"
-      ? container.pagination
-      : container &&
-        typeof container === "object" &&
-        typeof container?.last_page !== "undefined"
-      ? container
-      : empty;
-
-  const pagination: PaginationInfo = {
-    total: toNumber(pg?.total, 0),
-    last_page: Math.max(1, toNumber(pg?.last_page, 1)),
-    current_page: toNumber(pg?.current_page, 1),
-    per_page: toNumber(pg?.per_page, 12),
-  };
-
-  return { list, pagination };
-}
+const MARKET_CATEGORY = "companiesCars";
 
 function formatDateTime(d: Date) {
   try {
@@ -194,77 +70,86 @@ function formatDateTime(d: Date) {
   }
 }
 
-export default function BusesMarketPage() {
-  const [items, setItems] = useState<CarItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const [pagination, setPagination] = useState<PaginationInfo>({
+export default function CompaniesCarsPage() {
+  const [cars, setCars] = useState<CarCard[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({
     total: 0,
     last_page: 1,
     current_page: 1,
-    per_page: 12,
+    per_page: 10,
   });
 
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const fetchMarketCars = useCallback(
-    async (signal?: AbortSignal) => {
-      try {
-        setLoading(true);
-        setErr(null);
+  const fetchCars = async (signal?: AbortSignal) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const endpoint = resolveMarketEndpoint();
+      const res = await api.get("/api/cars/in-auctions", {
+        params: { market_category: MARKET_CATEGORY, page },
+        headers: { Accept: "application/json; charset=UTF-8" },
+        signal: signal as any,
+      });
 
-        const res = await axios.get(endpoint, {
-          params: { market: MARKET, per_page: 12, page },
-          headers: { Accept: "application/json; charset=UTF-8" },
-          signal: signal as any,
-        });
+      const d = res?.data;
 
-        const { list, pagination: pg } = extractListAndPagination(res.data);
+      // ✅ نفس شكل الربط كما هو
+      const list: CarCard[] = Array.isArray(d?.data) ? d.data : [];
+      const pag: PaginationMeta =
+        d?.pagination && typeof d.pagination === "object"
+          ? d.pagination
+          : {
+              total: list.length,
+              last_page: 1,
+              current_page: 1,
+              per_page: 10,
+            };
 
-        // ✅ نفس الفلترة (بدون تغيير ربط الباك اند)
-        const filtered = (list as CarItem[]).filter(
-          (it) => isApproved(it) && isActiveAuction(it)
-        );
+      setCars(list);
+      setPagination({
+        total: Number(pag.total ?? 0),
+        last_page: Number(pag.last_page ?? 1),
+        current_page: Number(pag.current_page ?? page),
+        per_page: Number(pag.per_page ?? 10),
+      });
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") return;
 
-        setItems(filtered);
-        setPagination(pg);
-        setLastUpdated(new Date());
-      } catch (e: any) {
-        if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
-        setErr(e?.message || "تعذر جلب بيانات السوق");
-        setItems([]);
-        setPagination({
-          total: 0,
-          last_page: 1,
-          current_page: 1,
-          per_page: 12,
-        });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page]
-  );
+      console.error("فشل في تحميل سيارات الشركات:", err);
+      setCars([]);
+      setPagination({
+        total: 0,
+        last_page: 1,
+        current_page: 1,
+        per_page: 10,
+      });
+      setError(err?.message || "فشل في تحميل البيانات");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const ctrl = new AbortController();
-    fetchMarketCars(ctrl.signal);
+    fetchCars(ctrl.signal);
     return () => ctrl.abort();
-  }, [fetchMarketCars]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const showPagination = useMemo(() => {
     return !loading && (pagination?.last_page ?? 1) > 1;
   }, [loading, pagination]);
 
-  const shownCount = useMemo(() => items.length, [items]);
+  const shownCount = useMemo(() => cars.length, [cars]);
 
   const onRefresh = () => {
     const ctrl = new AbortController();
-    fetchMarketCars(ctrl.signal);
+    fetchCars(ctrl.signal);
   };
 
   return (
@@ -301,16 +186,17 @@ export default function BusesMarketPage() {
 
           <div className="relative">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 text-xs font-semibold w-fit">
-              <Bus className="w-4 h-4" />
-              سوق الحافلات
+              <Building2 className="w-4 h-4" />
+              سيارات الشركات
             </div>
 
             <h1 className="mt-3 text-2xl md:text-3xl font-bold text-foreground">
-              سوق الحافلات
+              سوق سيارات الشركات
             </h1>
 
             <p className="mt-2 text-sm md:text-base text-muted-foreground leading-relaxed max-w-3xl">
-              اكتشف الحافلات المتاحة واطّلع على التفاصيل لاختيار الأنسب لاحتياجك.
+              عروض مناسبة لقطاع الشركات والأساطيل — تصفح السيارات واختر الأنسب
+              لاحتياجك.
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -349,12 +235,12 @@ export default function BusesMarketPage() {
         </div>
 
         {/* Error */}
-        {err && (
+        {error && (
           <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
             <div className="text-sm">
               <div className="font-semibold text-foreground">حدث خطأ</div>
-              <div className="text-muted-foreground mt-1">{err}</div>
+              <div className="text-muted-foreground mt-1">{error}</div>
             </div>
           </div>
         )}
@@ -364,10 +250,10 @@ export default function BusesMarketPage() {
           <div className="p-5 md:p-6 border-b border-border/70 flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-lg md:text-xl font-bold text-foreground">
-                الحافلات المتاحة
+                السيارات المتاحة
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                تصفح القائمة واختر ما يناسبك.
+                استعرض النتائج وافتح تفاصيل أي سيارة من البطاقة.
               </p>
             </div>
 
@@ -384,48 +270,40 @@ export default function BusesMarketPage() {
           </div>
 
           <div className="p-5 md:p-6">
+            {/* Loading / Empty / Grid */}
             {loading ? (
-              <div className="rounded-3xl border border-border bg-background/60 p-10 text-center">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Bus className="w-7 h-7 text-primary animate-pulse" />
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  جاري تحميل الحافلات المتاحة...
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <AuctionCard key={index} loading={true} />
+                ))}
               </div>
-            ) : items.length === 0 ? (
+            ) : cars.length === 0 ? (
               <div className="rounded-3xl border border-border bg-background/60 p-10 text-center">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                  <Bus className="w-7 h-7 text-primary" />
+                  <Building2 className="w-7 h-7 text-primary" />
                 </div>
                 <div className="text-lg font-bold text-foreground">
-                  لا توجد حافلات متاحة حالياً
+                  لا توجد سيارات شركات متاحة حالياً
                 </div>
                 <div className="text-sm text-muted-foreground mt-2">
                   جرّب التحديث أو عد لاحقًا.
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {items.map((it) => {
-                  const cardProps: any = {
-                    title: titleOf(it),
-                    image: firstImage(it.images),
-                    current_price: priceOf(it),
-                    auction_result: it.auction_result ?? null,
-                    id: it.id,
-                  };
-                  return <AuctionCard key={String(it.id)} {...cardProps} />;
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {cars.map((item) => (
+                  <AuctionCard key={item.id} car={item} loading={false} />
+                ))}
               </div>
             )}
 
+            {/* Pagination */}
             {showPagination && (
               <Stack dir="rtl" spacing={2} className="mt-10 flex justify-center">
                 <Pagination
                   className="flex justify-center"
                   dir="rtl"
-                  count={pagination.last_page}
+                  count={pagination.last_page || 1}
                   page={page}
                   variant="outlined"
                   color="primary"
@@ -438,7 +316,7 @@ export default function BusesMarketPage() {
                       {...item}
                     />
                   )}
-                  onChange={(_, newPage) => setPage(newPage)}
+                  onChange={(_, p) => setPage(p)}
                 />
               </Stack>
             )}
