@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BlogCategory extends Model
 {
-  protected $table = 'blog_categories';
+    protected $table = 'blog_categories';
 
-  protected $fillable = [
-    'name','slug','description'
-  ];
+    protected $fillable = [
+        'name',
+        'slug',
+    ];
 
-  public function posts(): HasMany
-  {
-    return $this->hasMany(BlogPost::class, 'category_id');
-  }
+    public function posts(): HasMany
+    {
+        return $this->hasMany(BlogPost::class, 'category_id');
+    }
 }

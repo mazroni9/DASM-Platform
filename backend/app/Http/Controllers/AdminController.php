@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Car;
 use App\Models\User;
 use App\Models\Auction;
-use App\Models\BlogTag;
-use App\Models\BlogPost;
 use App\Models\Transcation;
 use App\Models\Settlement;
 use App\Enums\AuctionStatus;
@@ -19,14 +17,13 @@ use Illuminate\Support\Facades\Validator;
 
 /**
  * AdminController
- * 
+ *
  * ✅ REFACTORED: تم نقل Sessions methods لـ controllers مخصصة
- * 
+ *
  * Responsibilities:
  * - Dashboard statistics
- * - Blog management (TODO: move to Admin\BlogController)
  * - Transactions & Settlements overview
- * 
+ *
  * @see \App\Http\Controllers\Admin\AuctionController for auction management
  * @see \App\Http\Controllers\Admin\AuctionSessionController for sessions
  * @see \App\Http\Controllers\AuctionSessionController for public sessions
@@ -41,7 +38,7 @@ class AdminController extends Controller
     /**
      * Admin dashboard stats
      * GET /api/admin/dashboard
-     * 
+     *
      * ✅ Performance: Added caching for expensive queries
      * ✅ Security: Only returns aggregate data
      */
@@ -85,11 +82,6 @@ class AdminController extends Controller
         // Verification stats (count pending dealer users instead of dealer records)
         $pendingVerifications = User::where('type', 'dealer')->where('status', 'pending')->count();
 
-        // Blog stats
-        $totalBlogs     = BlogPost::count();
-        $publishedBlogs = BlogPost::where('status', 'published')->count();
-        $draftBlogs     = BlogPost::where('status', 'draft')->count();
-
         // Car stats
         $totalCars      = Car::count();
         $carsInAuction  = Car::where('auction_status', 'in_auction')->count();
@@ -114,11 +106,6 @@ class AdminController extends Controller
             // Verifications
             'pending_verifications' => $pendingVerifications,
 
-            // Blogs
-            'total_blogs'           => $totalBlogs,
-            'published_blogs'       => $publishedBlogs,
-            'draft_blogs'           => $draftBlogs,
-
             // Cars
             'total_cars'            => $totalCars,
             'cars_in_auction'       => $carsInAuction,
@@ -134,14 +121,6 @@ class AdminController extends Controller
      */
     private function getDynamicDashboardData(): array
     {
-        // Popular blogs
-        $popularBlogs = BlogPost::query()
-            ->select(['id', 'title', 'slug', 'views', 'created_at'])
-            ->where('status', 'published')
-            ->orderByDesc('views')
-            ->limit(5)
-            ->get();
-
         // Recent auctions
         $recentAuctions = Auction::query()
             ->with(['car:id,make,model,year,auction_status'])
@@ -165,209 +144,10 @@ class AdminController extends Controller
         ];
 
         return [
-            'popular_blogs'   => $popularBlogs,
             'recent_auctions' => $recentAuctions,
             'recent_users'    => $recentUsers,
             'today'           => $todayStats,
         ];
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // BLOG MANAGEMENT
-    // TODO: Move to Admin\BlogController
-    // ═══════════════════════════════════════════════════════════════════
-
-    /**
-     * Blogs list (with filters)
-     * GET /api/admin/blogs
-     */
-    public function blogs(Request $request): JsonResponse
-    {
-        $query = BlogPost::with(['user:id,first_name,last_name', 'tags:id,name']);
-
-        // Filters
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('tag')) {
-            $query->whereHas('tags', fn($q) => $q->where('name', $request->tag));
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%");
-            });
-        }
-
-        // Sorting
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortDir = $request->get('sort_dir', 'desc');
-        $allowedSorts = ['created_at', 'title', 'views', 'status'];
-
-        if (in_array($sortBy, $allowedSorts)) {
-            $query->orderBy($sortBy, $sortDir === 'asc' ? 'asc' : 'desc');
-        }
-
-        $perPage = min(50, max(1, (int) $request->get('per_page', 15)));
-        $blogs = $query->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data'    => $blogs
-        ]);
-    }
-
-    /**
-     * Toggle blog status (publish/unpublish)
-     * POST /api/admin/blogs/{id}/status
-     */
-    public function toggleBlogStatus($id, Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:published,draft',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors'  => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $blog = BlogPost::findOrFail($id);
-            $oldStatus = $blog->status;
-            $blog->status = $request->status;
-
-            // Set published_at if publishing for the first time
-            if ($request->status === 'published' && !$blog->published_at) {
-                $blog->published_at = now();
-            }
-
-            $blog->save();
-
-            Log::info('Blog status toggled', [
-                'blog_id'    => $id,
-                'old_status' => $oldStatus,
-                'new_status' => $request->status,
-                'admin_id'   => auth()->id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => $request->status === 'published'
-                    ? 'تم نشر المقال بنجاح'
-                    : 'تم إلغاء نشر المقال',
-                'data'    => $blog
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Blog status toggle failed', ['error' => $e->getMessage(), 'id' => $id]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء تحديث حالة المقال'
-            ], 500);
-        }
-    }
-
-    /**
-     * Manage blog tags (create/update/delete)
-     * POST /api/admin/blog-tags
-     */
-    public function manageTags(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'action' => 'required|in:create,update,delete',
-            'id'     => 'required_if:action,update,delete|integer|exists:blog_tags,id',
-            'name'   => 'required_if:action,create,update|string|max:50',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors'  => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $tag = null;
-            $message = '';
-
-            switch ($request->action) {
-                case 'create':
-                    // Check for duplicate
-                    if (BlogTag::where('name', $request->name)->exists()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'هذا الوسم موجود بالفعل'
-                        ], 422);
-                    }
-                    $tag = BlogTag::create(['name' => $request->name]);
-                    $message = 'تم إنشاء الوسم بنجاح';
-                    break;
-
-                case 'update':
-                    $tag = BlogTag::findOrFail($request->id);
-                    // Check for duplicate (exclude current)
-                    if (BlogTag::where('name', $request->name)->where('id', '!=', $request->id)->exists()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'هذا الوسم موجود بالفعل'
-                        ], 422);
-                    }
-                    $tag->name = $request->name;
-                    $tag->save();
-                    $message = 'تم تحديث الوسم بنجاح';
-                    break;
-
-                case 'delete':
-                    $tag = BlogTag::findOrFail($request->id);
-                    // Detach from all posts first
-                    $tag->posts()->detach();
-                    $tag->delete();
-                    $message = 'تم حذف الوسم بنجاح';
-                    $tag = null;
-                    break;
-            }
-
-            Log::info('Blog tag managed', [
-                'action'   => $request->action,
-                'tag_id'   => $request->id ?? $tag?->id,
-                'admin_id' => auth()->id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'data'    => $tag
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Tag management failed', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'حدث خطأ أثناء إدارة الوسم'
-            ], 500);
-        }
-    }
-
-    /**
-     * Get all blog tags
-     * GET /api/admin/blogs/tags
-     */
-    public function getBlogTags(): JsonResponse
-    {
-        $tags = BlogTag::withCount('posts')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data'    => $tags
-        ]);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -468,7 +248,7 @@ class AdminController extends Controller
 
     /**
      * Get a specific auction by ID (admin view)
-     * 
+     *
      * @deprecated Use Admin\AuctionController::show() instead
      * @see \App\Http\Controllers\Admin\AuctionController::show()
      */
@@ -495,7 +275,7 @@ class AdminController extends Controller
 
     /**
      * Update auction details (admin only)
-     * 
+     *
      * @deprecated Use Admin\AuctionController::update() instead
      * @see \App\Http\Controllers\Admin\AuctionController::update()
      */
@@ -604,7 +384,7 @@ class AdminController extends Controller
      * ❌ REMOVED: getActiveAndScheduledSessions()
      * ✅ MOVED TO: App\Http\Controllers\AuctionSessionController::getActiveAndScheduledSessions()
      * ✅ ROUTE: GET /api/sessions/active-scheduled
-     * 
+     *
      * ❌ REMOVED: showSessionPublic()
      * ✅ MOVED TO: App\Http\Controllers\AuctionSessionController::show()
      * ✅ ROUTE: GET /api/sessions/{id}

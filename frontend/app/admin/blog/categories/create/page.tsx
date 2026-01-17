@@ -4,9 +4,9 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, AlertTriangle, Link2, Save, Tags } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { ArrowRight, CheckCircle2, AlertTriangle, Link2, Save, Tags, Eye, FileText } from "lucide-react";
 
-// Unicode-friendly slugify (يدعم العربية)
 function slugify(input: string) {
   const s = (input || "")
     .trim()
@@ -37,7 +37,6 @@ export default function AdminBlogCategoryCreatePage() {
     is_active: true,
   });
 
-  // Auto-slug from name
   useEffect(() => {
     if (!autoSlug) return;
     if (slugTouchedRef.current) return;
@@ -47,24 +46,25 @@ export default function AdminBlogCategoryCreatePage() {
 
   const slugHelp = useMemo(() => {
     const s = form.slug.trim();
-    if (!s) return { type: "warn" as const, text: "الـSlug مطلوب للرابط" };
+    if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
     if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
-    return { type: "ok" as const, text: "الرابط جاهز" };
+    return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
   const validate = () => {
     const name = form.name.trim();
     const slug = form.slug.trim();
     if (!name) return "اسم التصنيف مطلوب";
-    if (!slug) return "الـSlug مطلوب";
-    if (slug.includes(" ")) return "الـSlug لا يجب أن يحتوي مسافات";
-    if (name.length > 255) return "اسم التصنيف طويل جدًا (255 حرف)";
-    if (slug.length > 255) return "الـSlug طويل جدًا (255 حرف)";
+    if (!slug) return "الرابط مطلوب";
+    if (slug.includes(" ")) return "الرابط لا يجب أن يحتوي مسافات";
+    if (name.length > 255) return "اسم التصنيف طويل";
+    if (slug.length > 255) return "الرابط طويل";
     return "";
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+
     const msg = validate();
     if (msg) {
       setErrorMsg(msg);
@@ -83,9 +83,12 @@ export default function AdminBlogCategoryCreatePage() {
       };
 
       await api.post("/api/admin/blog/categories", payload);
+
+      toast.success("تمت الإضافة");
       router.push("/admin/blog/categories");
+      router.refresh();
     } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || "حدث خطأ أثناء الحفظ");
+      setErrorMsg(err?.response?.data?.message || "تعذر الحفظ");
     } finally {
       setSaving(false);
     }
@@ -95,12 +98,10 @@ export default function AdminBlogCategoryCreatePage() {
     <div className="bg-card border border-border rounded-2xl p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xl font-extrabold text-primary line-clamp-2">
-            {form.name.trim() || "اسم التصنيف"}
-          </h2>
+          <h2 className="text-xl font-extrabold text-primary line-clamp-2">{form.name.trim() || "اسم التصنيف"}</h2>
           <p className="text-sm text-foreground/60 mt-2 flex items-center gap-2">
             <Link2 size={14} />
-            <span className="truncate">/blog/category/{form.slug.trim() || "slug"}</span>
+            <span className="truncate">/blog/category/{form.slug.trim() || "..."}</span>
           </p>
 
           <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -137,7 +138,7 @@ export default function AdminBlogCategoryCreatePage() {
       {/* Top bar */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">إضافة تصنيف جديد</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">إضافة تصنيف</h1>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -146,14 +147,15 @@ export default function AdminBlogCategoryCreatePage() {
             className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
-            رجوع للقائمة
+            رجوع
           </LoadingLink>
 
           <button
             type="button"
             onClick={() => setActiveTab((p) => (p === "edit" ? "preview" : "edit"))}
-            className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl"
+            className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
           >
+            {activeTab === "edit" ? <Eye className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
             {activeTab === "edit" ? "معاينة" : "تحرير"}
           </button>
         </div>
@@ -189,7 +191,7 @@ export default function AdminBlogCategoryCreatePage() {
 
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <label className="block text-sm font-bold">Slug</label>
+                    <label className="block text-sm font-bold">الرابط</label>
                     <label className="flex items-center gap-2 text-xs text-foreground/70 select-none">
                       <input
                         type="checkbox"
@@ -256,7 +258,7 @@ export default function AdminBlogCategoryCreatePage() {
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 p-4">
                 <div>
                   <div className="font-bold">الحالة</div>
-                  <div className="text-xs text-foreground/60 mt-1">نشط = يظهر في الواجهة.</div>
+                  <div className="text-xs text-foreground/60 mt-1">نشط = يظهر</div>
                 </div>
 
                 <label className="inline-flex items-center gap-3 cursor-pointer select-none">
@@ -266,9 +268,7 @@ export default function AdminBlogCategoryCreatePage() {
                     onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
                     className="h-5 w-5 accent-primary"
                   />
-                  <span className="text-sm font-semibold text-foreground/80">
-                    {form.is_active ? "نشط" : "غير نشط"}
-                  </span>
+                  <span className="text-sm font-semibold text-foreground/80">{form.is_active ? "نشط" : "غير نشط"}</span>
                 </label>
               </div>
 
@@ -280,7 +280,7 @@ export default function AdminBlogCategoryCreatePage() {
                   className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  {saving ? "جارٍ الحفظ..." : "حفظ التصنيف"}
+                  {saving ? "جارٍ الحفظ..." : "حفظ"}
                 </button>
 
                 <LoadingLink

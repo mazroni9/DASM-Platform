@@ -30,12 +30,13 @@ type BlogPostApi = {
   excerpt?: string | null;
   content?: string | null;
 
-  // ✅ الصحيح في الموديل
-  cover_image?: string | null;
-  is_published?: boolean | number | null;
+  // ✅ الصحيح في الباك الجديد
+  image?: string | null;
 
-  // ✅ compat (لو لسه راجع من مكان قديم)
+  // fallback قديم
+  cover_image?: string | null;
   thumbnail?: string | null;
+
   status?: "draft" | "published" | string | null;
 
   category?: BlogCategory | null;
@@ -43,26 +44,43 @@ type BlogPostApi = {
 
   published_at?: string | null;
   created_at?: string | null;
+
+  // fallback قديم
+  is_published?: boolean | number | null;
 };
 
 type ApiIndexResponse<T> =
   | { data: T[]; meta?: { total?: number } }
   | { data: { data: T[]; meta?: { total?: number } } }
+  | { data: T[]; total?: number }
+  | { data: { data: T[]; total?: number; meta?: { total?: number } } }
   | T[];
 
 function normalizeList<T>(resData: any): { list: T[]; total?: number } {
   const root = resData;
 
-  // array مباشرة
   if (Array.isArray(root)) return { list: root as T[], total: root.length };
 
-  // الشكل المتوقع من الكونترولر: { data: [...], meta: { total } }
+  // Laravel paginator style: { data: [...], total: n }
+  if (Array.isArray(root?.data)) {
+    const list = root.data as T[];
+    const total =
+      typeof root.total === "number"
+        ? root.total
+        : root?.meta?.total ?? list.length;
+    return { list, total };
+  }
+
+  // { data: [...] }
   const d1 = root?.data;
   if (Array.isArray(d1)) return { list: d1 as T[], total: root?.meta?.total ?? d1.length };
 
-  // شكل باجينيتور: { data: { data: [...], meta: { total } } }
+  // { data: { data: [...], meta/total } }
   const d2 = d1?.data;
-  if (Array.isArray(d2)) return { list: d2 as T[], total: d1?.meta?.total ?? root?.meta?.total ?? d2.length };
+  if (Array.isArray(d2)) {
+    const total = d1?.total ?? d1?.meta?.total ?? root?.meta?.total ?? d2.length;
+    return { list: d2 as T[], total: typeof total === "number" ? total : d2.length };
+  }
 
   return { list: [], total: 0 };
 }
@@ -70,7 +88,7 @@ function normalizeList<T>(resData: any): { list: T[]; total?: number } {
 function safeDateLabel(iso?: string | null) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("ar-SA", {
+    return new Date(iso).toLocaleDateString("ar-EG", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -80,16 +98,20 @@ function safeDateLabel(iso?: string | null) {
   }
 }
 
-// ✅ Helpers لتوحيد الداتا بين (القديم/الجديد)
+// ✅ هنا الإصلاح: الصورة من image
 function getCoverImage(p: BlogPostApi) {
-  return (p.cover_image || p.thumbnail || "").trim() || null;
+  return (p.image || p.cover_image || p.thumbnail || "").trim() || null;
 }
 
 function isPublished(p: BlogPostApi) {
+  const s = (p.status || "").toLowerCase();
+  if (s === "published") return true;
+  if (s === "draft") return false;
+
+  // fallback قديم
   if (typeof p.is_published === "boolean") return p.is_published;
   if (typeof p.is_published === "number") return p.is_published === 1;
-  const s = (p.status || "").toLowerCase();
-  return s === "published";
+  return false;
 }
 
 export default function AdminBlogPostsPage() {
@@ -98,7 +120,7 @@ export default function AdminBlogPostsPage() {
   const [loading, setLoading] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all"); // category_id
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -115,21 +137,21 @@ export default function AdminBlogPostsPage() {
     }
   };
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (pageOverride?: number) => {
+    const page = pageOverride ?? currentPage;
+
     try {
       setLoading(true);
 
       const params: any = {
-        page: currentPage,
-        pageSize,
-        search: search || undefined,
+        page,
+        per_page: pageSize,
+        search: search.trim() || undefined,
         category_id: categoryFilter !== "all" ? Number(categoryFilter) : undefined,
       };
 
-      // ✅ لو حابب فلترة منشور/مسودة من السيرفر (الكونترولر اللي عدلناه يدعم is_published)
-      if (statusFilter !== "all") {
-        params.is_published = statusFilter === "published";
-      }
+      // ✅ الباك إند بيفلتر بـ status فقط
+      if (statusFilter !== "all") params.status = statusFilter;
 
       const res = await api.get<ApiIndexResponse<BlogPostApi>>("/api/admin/blog/posts", { params });
       const { list, total } = normalizeList<BlogPostApi>(res?.data);
@@ -138,7 +160,8 @@ export default function AdminBlogPostsPage() {
       setTotalCount(typeof total === "number" ? total : list.length);
     } catch {
       setItems([]);
-      toast.error("فشل في تحميل المقالات");
+      setTotalCount(0);
+      toast.error("تعذر تحميل القائمة");
     } finally {
       setLoading(false);
     }
@@ -156,7 +179,7 @@ export default function AdminBlogPostsPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       setCurrentPage(1);
-      fetchPosts();
+      fetchPosts(1);
     }, 450);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,10 +189,10 @@ export default function AdminBlogPostsPage() {
     if (!confirm("متأكد من حذف المقال؟")) return;
     try {
       await api.delete(`/api/admin/blog/posts/${id}`);
-      toast.success("تم حذف المقال");
+      toast.success("تم الحذف");
       fetchPosts();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "فشل في الحذف");
+      toast.error(err?.response?.data?.message || "تعذر الحذف");
     }
   };
 
@@ -180,15 +203,13 @@ export default function AdminBlogPostsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">مقالات المدونة</h1>
-          <p className="text-foreground/70 mt-2">
-            بحث، تصفية، تعديل، حذف — الإضافة والتعديل مرتبطين الآن مع حقول الباك (cover_image / is_published)
-          </p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">المقالات</h1>
+          <p className="text-foreground/70 mt-2">بحث، تصفية، تعديل، حذف</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           <button
-            onClick={fetchPosts}
+            onClick={() => fetchPosts()}
             className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition px-4 py-2 rounded-xl flex items-center"
           >
             <RefreshCw className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`} />
@@ -218,7 +239,7 @@ export default function AdminBlogPostsPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث بعنوان المقال أو الـSlug..."
+                placeholder="ابحث بعنوان المقال أو الرابط..."
                 className="w-full bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -264,10 +285,10 @@ export default function AdminBlogPostsPage() {
               <thead>
                 <tr className="bg-border/50 border-b border-border">
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">العنوان</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">Slug</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الرابط</th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">التصنيف</th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">تاريخ</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">التاريخ</th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">إجراءات</th>
                 </tr>
               </thead>
@@ -306,7 +327,7 @@ export default function AdminBlogPostsPage() {
                                   target="_blank"
                                   rel="noreferrer"
                                   className="text-primary hover:opacity-90 flex-shrink-0"
-                                  title="فتح المقال"
+                                  title="فتح"
                                 >
                                   <ExternalLink size={16} />
                                 </a>
@@ -320,7 +341,7 @@ export default function AdminBlogPostsPage() {
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-foreground/80">{p.slug}</td>
+                      <td className="px-6 py-4 text-foreground/80">{p.slug || "—"}</td>
                       <td className="px-6 py-4 text-foreground/70">{p.category?.name || "—"}</td>
 
                       <td className="px-6 py-4">

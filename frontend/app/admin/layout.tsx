@@ -26,6 +26,7 @@ import {
   Building,
   UserCog,
   DollarSign,
+  Tags,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -159,11 +160,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "#",
       type: "header",
       icon: Calendar,
-      permissions: [
-        "sessions.view",
-        "live_streams.view",
-        "youtube_channels.view",
-      ],
+      permissions: ["sessions.view", "live_streams.view", "youtube_channels.view"],
     },
     {
       name: "إدارة الجلسات",
@@ -182,6 +179,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/youtube-channels",
       icon: Radio,
       permission: "youtube_channels.view",
+    },
+
+    // ✅ NEW: Blog Section
+    {
+      name: "المدونة",
+      href: "#",
+      type: "header",
+      icon: FileText,
+      // لو عندك permissions للمدونة ضيفهم هنا (اختياري)
+      // permissions: ["blog_posts.view", "blog_categories.view"],
+    },
+    {
+      name: "المقالات",
+      href: "/admin/blog/posts",
+      icon: FileText,
+      // لو عندك permission فعلي حطه هنا (اختياري)
+      // permission: "blog_posts.view",
+    },
+    {
+      name: "التصنيفات",
+      href: "/admin/blog/categories",
+      icon: Tags,
+      // لو عندك permission فعلي حطه هنا (اختياري)
+      // permission: "blog_categories.view",
     },
 
     {
@@ -279,6 +300,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
                     const Icon = item.icon;
                     const active = isActive(item.href);
+
                     if (item.type && item.type === "header") {
                       return (
                         <h3
@@ -294,6 +316,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         </h3>
                       );
                     }
+
                     return (
                       <li key={item.name}>
                         <LoadingLink

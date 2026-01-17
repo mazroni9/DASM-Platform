@@ -15,25 +15,22 @@ type BlogPost = {
   content?: string | null;
   excerpt?: string | null;
 
-  cover_image?: string | null;
-  is_published?: boolean | number | null;
-
+  image?: string | null;
   published_at?: string | null;
   created_at?: string | null;
 
   category?: { name: string; slug: string } | null;
+  tags?: { id: number | string; name: string }[];
+  user?: { id: number | string; first_name?: string; last_name?: string };
 
+  cover_image?: string | null;
   thumbnail?: string | null;
 };
 
 function safeDateLabel(iso?: string | null) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("ar-SA", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    return new Date(iso).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
   } catch {
     return "—";
   }
@@ -52,34 +49,47 @@ function safeDecode(v: string) {
   }
 }
 
-export default function BlogSinglePage({
-  params,
-}: {
-  params?: { slug?: string | string[] };
-}) {
+function escapeHtml(text: string) {
+  return (text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function contentToHtml(content: string) {
+  const c = (content || "").trim();
+  if (!c) return "";
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(c);
+  if (looksLikeHtml) return c;
+  return escapeHtml(c).replace(/\n/g, "<br />");
+}
+
+function isAbortError(err: any) {
+  const n = err?.name;
+  const c = err?.code;
+  const m = String(err?.message || "").toLowerCase();
+  return n === "CanceledError" || n === "AbortError" || c === "ERR_CANCELED" || m.includes("canceled") || m.includes("aborted");
+}
+
+export default function BlogSinglePage({ params }: { params?: { slug?: string | string[] } }) {
   const routeParams = useParams();
   const pathname = usePathname();
 
-  // ✅ استخراج slug بشكل مضمون (params -> useParams -> pathname)
   const slug = useMemo(() => {
-    // 1) من props params لو موجودة
     const p = params?.slug;
-    const fromProps =
-      typeof p === "string" ? p : Array.isArray(p) ? p[0] : "";
+    const fromProps = typeof p === "string" ? p : Array.isArray(p) ? p[0] : "";
 
-    // 2) من useParams لو موجود
     const rp: any = routeParams as any;
     const r = rp?.slug;
-    const fromRoute =
-      typeof r === "string" ? r : Array.isArray(r) ? r[0] : "";
+    const fromRoute = typeof r === "string" ? r : Array.isArray(r) ? r[0] : "";
 
-    // 3) fallback من الـ URL نفسه (آخر جزء في المسار)
     const parts = (pathname || "").split("/").filter(Boolean);
     const last = parts.length ? parts[parts.length - 1] : "";
     const fromPath = last ? safeDecode(last) : "";
 
-    const chosen = (fromProps || fromRoute || fromPath || "").trim();
-    return safeDecode(chosen).trim();
+    return safeDecode((fromProps || fromRoute || fromPath || "").trim()).trim();
   }, [params?.slug, routeParams, pathname]);
 
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -88,31 +98,24 @@ export default function BlogSinglePage({
   const lastFetchedSlugRef = useRef<string>("");
   const abortRef = useRef<AbortController | null>(null);
 
-  const cover = useMemo(() => {
-    if (!post) return "";
-    return (post.cover_image || post.thumbnail || "").trim();
-  }, [post]);
+  const cover = useMemo(() => (post ? (post.image || post.cover_image || post.thumbnail || "").trim() : ""), [post]);
 
-  const dateLabel = useMemo(() => {
-    if (!post) return "—";
-    return safeDateLabel(post.published_at || post.created_at);
-  }, [post]);
+  const dateLabel = useMemo(() => (post ? safeDateLabel(post.published_at || post.created_at) : "—"), [post]);
+
+  const articleHtml = useMemo(() => (post ? contentToHtml(post.content || "") : ""), [post]);
 
   const fetchPost = async (slugValue: string) => {
     const clean = (slugValue || "").trim();
 
-    // ✅ ممنوع أي طلب لو slug بايظ
     if (isBadSlug(clean)) {
       setPost(null);
       setLoading(false);
       return;
     }
 
-    // ✅ ممنوع تكرار نفس الطلب
     if (lastFetchedSlugRef.current === clean) return;
     lastFetchedSlugRef.current = clean;
 
-    // ✅ الغاء أي طلب سابق لو موجود
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -120,36 +123,29 @@ export default function BlogSinglePage({
     try {
       setLoading(true);
 
-      // ✅ مهم للعربي
       const encoded = encodeURIComponent(clean);
 
-      const res = await api.get(`/api/blog/posts/${encoded}`, {
-        signal: controller.signal,
-      });
+      // ✅ Public show الصحيح: GET /api/blog/{slug}
+      const res = await api.get(`/api/blog/${encoded}`, { signal: controller.signal });
+      const payload = res?.data;
 
-      const data = res?.data?.data ?? res?.data ?? null;
-
-      // لو الـ API رجّع فاضي أو مش نفس المقال
-      if (!data || !data?.title) {
+      if (payload?.success === false) {
         setPost(null);
-      } else {
-        setPost(data);
+        return;
       }
-    } catch {
+
+      const data = payload?.data ?? null;
+      setPost(data && data?.title ? (data as BlogPost) : null);
+    } catch (err: any) {
+      if (isAbortError(err)) return;
       setPost(null);
     } finally {
-      // لو الطلب ده اتلغى بسبب تغيير slug، ما نوقف loading هنا
-      if (!controller.signal.aborted) {
-        setLoading(false);
-      }
+      if (!controller.signal.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    // كل مرة slug يتغير → نجرب نجيب المقال
-    // ولو slug بايظ نعرض Not Found من غير أي request
     fetchPost(slug);
-
     return () => {
       if (abortRef.current) abortRef.current.abort();
     };
@@ -161,10 +157,7 @@ export default function BlogSinglePage({
       {/* Top bar */}
       <section className="bg-background border-b border-border">
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6">
-          <LoadingLink
-            href="/blog"
-            className="inline-flex items-center gap-2 text-foreground/70 hover:text-foreground font-semibold"
-          >
+          <LoadingLink href="/blog" className="inline-flex items-center gap-2 text-foreground/70 hover:text-foreground font-semibold">
             <ArrowRight className="w-4 h-4" />
             الرجوع للمدونة
           </LoadingLink>
@@ -201,15 +194,10 @@ export default function BlogSinglePage({
           ) : !post ? (
             <div className="bg-card border border-border rounded-3xl p-10 text-center">
               <p className="text-foreground font-bold text-lg">المقال غير موجود</p>
-              <p className="text-foreground/60 text-sm mt-2">
-                قد يكون تم حذفه أو تغيير الرابط.
-              </p>
+              <p className="text-foreground/60 text-sm mt-2">قد يكون تم حذفه أو تغيير الرابط.</p>
 
               <div className="mt-6 flex justify-center">
-                <LoadingLink
-                  href="/blog"
-                  className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold transition"
-                >
+                <LoadingLink href="/blog" className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold transition">
                   الرجوع للمدونة
                 </LoadingLink>
               </div>
@@ -226,10 +214,7 @@ export default function BlogSinglePage({
                         src={cover}
                         alt={post.title}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            "none";
-                        }}
+                        onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-foreground/60">
@@ -241,7 +226,6 @@ export default function BlogSinglePage({
                     )}
                   </div>
 
-                  {/* overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-transparent" />
 
                   <div className="absolute bottom-0 right-0 left-0 p-5 md:p-8">
@@ -257,14 +241,10 @@ export default function BlogSinglePage({
                       </span>
                     </div>
 
-                    <h1 className="mt-4 text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-foreground">
-                      {post.title}
-                    </h1>
+                    <h1 className="mt-4 text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-foreground">{post.title}</h1>
 
                     {post.excerpt ? (
-                      <p className="mt-4 text-foreground/80 leading-relaxed text-base md:text-lg max-w-4xl">
-                        {post.excerpt}
-                      </p>
+                      <p className="mt-4 text-foreground/80 leading-relaxed text-base md:text-lg max-w-4xl">{post.excerpt}</p>
                     ) : null}
                   </div>
                 </div>
@@ -274,9 +254,7 @@ export default function BlogSinglePage({
               <div className="lg:col-span-8">
                 <article className="bg-card border border-border rounded-3xl p-6 md:p-10 shadow-sm">
                   <div className="prose prose-zinc dark:prose-invert max-w-none prose-p:leading-8 prose-li:leading-8">
-                    <div
-                      dangerouslySetInnerHTML={{ __html: post.content || "" }}
-                    />
+                    <div dangerouslySetInnerHTML={{ __html: articleHtml }} />
                   </div>
                 </article>
               </div>
@@ -286,9 +264,7 @@ export default function BlogSinglePage({
                 <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm sticky top-6 space-y-4">
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
                     <p className="text-sm text-foreground/70">التصنيف</p>
-                    <p className="font-extrabold text-foreground mt-1">
-                      {post.category?.name || "عام"}
-                    </p>
+                    <p className="font-extrabold text-foreground mt-1">{post.category?.name || "عام"}</p>
                   </div>
 
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
@@ -297,10 +273,7 @@ export default function BlogSinglePage({
                   </div>
 
                   <div className="flex">
-                    <LoadingLink
-                      href="/blog"
-                      className="w-full bg-border hover:bg-border/80 py-3 rounded-2xl font-extrabold transition text-center"
-                    >
+                    <LoadingLink href="/blog" className="w-full bg-border hover:bg-border/80 py-3 rounded-2xl font-extrabold transition text-center">
                       رجوع
                     </LoadingLink>
                   </div>
