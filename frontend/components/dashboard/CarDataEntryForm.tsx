@@ -114,6 +114,8 @@ interface CarFormData {
   province: string;
   market_category: string;
   main_auction_duration: string;
+  start_immediately: boolean;
+  auction_start_date: string;
 
   // 🟦 حقول الكرفان
   usage: string; // "سكني" / "تجاري" / "فخم" / "مخصص"
@@ -150,6 +152,8 @@ const emptyCar: CarFormData = {
   province: "",
   market_category: "",
   main_auction_duration: "",
+  start_immediately: true,
+  auction_start_date: "",
 
   // الكرفان
   usage: "",
@@ -551,12 +555,18 @@ export default function CarDataEntryForm() {
         "province",
         "market_category",
         "main_auction_duration",
+        "start_immediately",
+        "auction_start_date",
       ];
 
       baseFields.forEach((k) => {
         const v = formData[k];
         if (v != null && String(v) !== "") {
-          fd.append(String(k), String(v));
+          if (k === "start_immediately") {
+            fd.append(String(k), v ? "1" : "0");
+          } else {
+            fd.append(String(k), String(v));
+          }
         }
       });
 
@@ -1122,6 +1132,64 @@ export default function CarDataEntryForm() {
               <option value="20">20 يوم</option>
               <option value="30">30 يوم</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground/80 mb-1">
+              وقت بدء المزاد
+            </label>
+            <div className="space-y-3 p-3 border border-border rounded-md bg-background">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="start_type"
+                  checked={Boolean(formData.start_immediately)}
+                  onChange={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      start_immediately: true,
+                      auction_start_date: "",
+                    }))
+                  }
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <span className="text-foreground">
+                  البدء فوراً بعد الموافقة
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="start_type"
+                  checked={!formData.start_immediately}
+                  onChange={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      start_immediately: false,
+                    }))
+                  }
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <span className="text-foreground">تحديد تاريخ مستقبلي</span>
+              </label>
+
+              {!formData.start_immediately && (
+                <div className="mr-6">
+                  <input
+                    type="date"
+                    name="auction_start_date"
+                    value={formData.auction_start_date}
+                    onChange={handleInputChange}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full p-2 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                  />
+                  <p className="text-xs text-foreground/60 mt-1">
+                    سيبدأ المزاد تلقائياً في الساعة 7:00 مساءً
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

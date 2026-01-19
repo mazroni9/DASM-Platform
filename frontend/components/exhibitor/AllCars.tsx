@@ -38,7 +38,7 @@ function resolveApiRoot() {
       "Production misconfigured: NEXT_PUBLIC_API_URL is missing.",
       "Set it to your Laravel host ROOT (WITHOUT /api).",
       "Example: https://dasm-development-branch.onrender.com OR https://dasm.com.sa/public",
-    ].join(" ")
+    ].join(" "),
   );
 }
 
@@ -81,7 +81,7 @@ async function apiFetch(path: string, init?: RequestInit) {
         ? "تستخدم نفس الدومين محليًا (dev-fallback)."
         : "تحقق من NEXT_PUBLIC_API_URL أو CORS على Laravel.";
     throw new Error(
-      `تعذر الاتصال بالخادم: ${url}\n${hint}\nالتفاصيل: ${err?.message || err}`
+      `تعذر الاتصال بالخادم: ${url}\n${hint}\nالتفاصيل: ${err?.message || err}`,
     );
   }
 
@@ -401,7 +401,7 @@ function ViewCarModal({
                 <Info
                   label="السعر التقييمي"
                   value={`${toNumberSafe(
-                    car.evaluation_price
+                    car.evaluation_price,
                   ).toLocaleString()} ر.س`}
                 />
                 <Info label="اللون" value={car.color ?? "—"} />
@@ -1156,7 +1156,7 @@ export default function ExhibitorCars() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedCarData, setSelectedCarData] = useState<CarFromApi | null>(
-    null
+    null,
   );
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -1270,7 +1270,7 @@ export default function ExhibitorCars() {
           c.title.toLowerCase().includes(term) ||
           c.brand.toLowerCase().includes(term) ||
           c.model.toLowerCase().includes(term) ||
-          String(c.year).includes(term)
+          String(c.year).includes(term),
       );
     }
     if (filters.yearFrom)
@@ -1287,7 +1287,7 @@ export default function ExhibitorCars() {
 
   const brands = useMemo(
     () => Array.from(new Set(cars.map((c) => c.brand).filter(Boolean))).sort(),
-    [cars]
+    [cars],
   );
 
   const activeFilterCount = useMemo(() => {
@@ -1319,7 +1319,7 @@ export default function ExhibitorCars() {
 
     try {
       const res = await apiFetch(`cars/${id}`);
-      const j: ShowCarApiResponse = await res.json().catch(() => ({} as any));
+      const j: ShowCarApiResponse = await res.json().catch(() => ({}) as any);
       const car = pickShowCar(j);
       if (!car) throw new Error("تعذر قراءة تفاصيل السيارة من الاستجابة.");
       setSelectedCarData(car);
@@ -1336,7 +1336,7 @@ export default function ExhibitorCars() {
 
     try {
       const res = await apiFetch(`cars/${id}`);
-      const j: ShowCarApiResponse = await res.json().catch(() => ({} as any));
+      const j: ShowCarApiResponse = await res.json().catch(() => ({}) as any);
       const car = pickShowCar(j);
       if (!car) throw new Error("تعذر قراءة بيانات التعديل من الاستجابة.");
       setSelectedCarData(car);
@@ -1367,8 +1367,8 @@ export default function ExhibitorCars() {
               status: mapStatusToArabic(updated.auction_status),
               addedDate: updated.created_at?.slice(0, 10) ?? "",
             }
-          : c
-      )
+          : c,
+      ),
     );
   };
 
@@ -1652,10 +1652,10 @@ export default function ExhibitorCars() {
                             car.status === "معلن"
                               ? "bg-green-500/15 text-green-600 border border-green-600/30 dark:text-green-300"
                               : car.status === "محجوز"
-                              ? "bg-amber-500/15 text-amber-600 border border-amber-600/30 dark:text-amber-200"
-                              : car.status === "مباع"
-                              ? "bg-rose-500/15 text-rose-600 border border-rose-600/30 dark:text-rose-300"
-                              : "bg-gray-500/15 text-gray-600 border border-gray-600/30 dark:text-gray-300"
+                                ? "bg-amber-500/15 text-amber-600 border border-amber-600/30 dark:text-amber-200"
+                                : car.status === "مباع"
+                                  ? "bg-rose-500/15 text-rose-600 border border-rose-600/30 dark:text-rose-300"
+                                  : "bg-gray-500/15 text-gray-600 border border-gray-600/30 dark:text-gray-300"
                           }`}
                         >
                           {car.status}
@@ -1683,7 +1683,9 @@ export default function ExhibitorCars() {
                             <FiEye size={18} />
                           </button>
                           <button
-                            onClick={() => openEdit(car.id)}
+                            onClick={() =>
+                              router.push(`/exhibitor/edit-car/${car.id}`)
+                            }
                             className="text-muted-foreground hover:text-primary transition-colors"
                             title="تعديل"
                           >

@@ -1,5 +1,5 @@
 <?php
- 
+
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -796,8 +796,8 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::post('/bulk-reject', [AdminAuctionController::class, 'bulkReject'])->middleware('can:auctions.reject');
         });
 
-        Route::put('/cars/bulk/approve-reject', [AuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
-        Route::put('/auctions/bulk/move-to-status', [AuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
+        Route::put('/cars/bulk/approve-reject', [AdminAuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
+        Route::put('/auctions/bulk/move-to-status', [AdminAuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
 
         // ─────────────────────────────────────────────────────────────
         // 8.xx Employees Management
