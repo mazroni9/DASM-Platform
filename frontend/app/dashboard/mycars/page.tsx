@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   CheckCircle,
   Loader2,
@@ -13,13 +13,13 @@ import {
   Search,
   Gauge,
   Settings,
-} from 'lucide-react';
+} from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
-import { Pagination } from 'react-laravel-paginex';
+import { Pagination } from "react-laravel-paginex";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -39,10 +39,11 @@ type LaravelPaginator<T> = {
 
 export default function MyCarsPage() {
   const [loading, setLoading] = useState(true);
-  const [paginationData, setPagination] = useState<LaravelPaginator<Car> | null>(null);
+  const [paginationData, setPagination] =
+    useState<LaravelPaginator<Car> | null>(null);
   const [cars, setCars] = useState<Car[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const { isLoggedIn } = useAuth();
   const router = useLoadingRouter();
@@ -51,58 +52,63 @@ export default function MyCarsPage() {
     containerClass: "pagination-container",
     prevButtonClass: "prev-button-class",
     nextButtonText: "التالي",
-    prevButtonText: "السابق"
+    prevButtonText: "السابق",
   };
 
   // ✅ status موحّد للواجهة: يجمع بين status و auction_status
   const getUiStatus = useCallback((car: any) => {
-    const raw = (car?.status ?? car?.auction_status ?? '').toString().toLowerCase();
+    const raw = (car?.status ?? car?.auction_status ?? "")
+      .toString()
+      .toLowerCase();
 
     // تطبيع شائع حسب منطق الباك (auction_status)
     // active => في المزاد
-    if (raw === 'active') return 'auction';
+    if (raw === "active") return "auction";
 
     // scheduled ممكن تعتبرها pending (بانتظار/مجدولة)
-    if (raw === 'scheduled') return 'pending';
+    if (raw === "scheduled") return "pending";
 
     // available لو موجودة عندك اعتبرها pending/processing حسب نظامكم
-    if (raw === 'available') return 'pending';
+    if (raw === "available") return "pending";
 
-    return raw || 'unknown';
+    return raw || "unknown";
   }, []);
 
-  const loadCars = useCallback(async (page = 1) => {
-    try {
-      const response = await api.get(`/api/cars?page=${page}`);
+  const loadCars = useCallback(
+    async (page = 1) => {
+      try {
+        const response = await api.get(`/api/cars?page=${page}`);
 
-      if (response?.data?.status !== 'success') {
-        throw new Error('Bad response');
+        if (response?.data?.status !== "success") {
+          throw new Error("Bad response");
+        }
+
+        const paginator: LaravelPaginator<Car> | Car[] = response.data.data;
+
+        // ✅ في باكك الحالي: data = paginator
+        if (paginator && typeof paginator === "object" && "data" in paginator) {
+          setPagination(paginator as LaravelPaginator<Car>);
+          setCars((paginator as LaravelPaginator<Car>).data ?? []);
+        } else {
+          // fallback احتياطي لو رجعت array مباشرة
+          setPagination(null);
+          setCars(Array.isArray(paginator) ? paginator : []);
+        }
+      } catch (error: any) {
+        // لو 401 عادة معناه session/token راح
+        if (error?.response?.status === 401) {
+          router.push("/auth/login?returnUrl=/dashboard/mycars");
+          return;
+        }
+
+        console.error("Error fetching cars:", error);
+        toast.error("حدث خطأ أثناء تحميل بيانات السيارات");
+      } finally {
+        setLoading(false);
       }
-
-      const paginator: LaravelPaginator<Car> | Car[] = response.data.data;
-
-      // ✅ في باكك الحالي: data = paginator
-      if (paginator && typeof paginator === 'object' && 'data' in paginator) {
-        setPagination(paginator as LaravelPaginator<Car>);
-        setCars((paginator as LaravelPaginator<Car>).data ?? []);
-      } else {
-        // fallback احتياطي لو رجعت array مباشرة
-        setPagination(null);
-        setCars(Array.isArray(paginator) ? paginator : []);
-      }
-    } catch (error: any) {
-      // لو 401 عادة معناه session/token راح
-      if (error?.response?.status === 401) {
-        router.push("/auth/login?returnUrl=/dashboard/mycars");
-        return;
-      }
-
-      console.error("Error fetching cars:", error);
-      toast.error("حدث خطأ أثناء تحميل بيانات السيارات");
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+    },
+    [router],
+  );
 
   // Verify user is authenticated
   useEffect(() => {
@@ -119,7 +125,7 @@ export default function MyCarsPage() {
   }, [isLoggedIn, loadCars]);
 
   const getData = async (p: any) => {
-    const page = typeof p === 'number' ? p : (p?.page ?? 1);
+    const page = typeof p === "number" ? p : (p?.page ?? 1);
     setLoading(true);
     await loadCars(page);
   };
@@ -128,16 +134,64 @@ export default function MyCarsPage() {
   const getStatusLabel = (car: any) => {
     const status = getUiStatus(car);
 
-    const statusMap: Record<string, { text: string; color: string; bg: string; border: string }> = {
-      pending: { text: 'بانتظار الموافقة', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30' },
-      processing: { text: 'تحت المعالجة', color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'border-blue-500/30' },
-      approved: { text: 'تم الاعتماد', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30' },
-      rejected: { text: 'مرفوضة', color: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-500/30' },
-      auction: { text: 'في المزاد', color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' },
-      sold: { text: 'مباعة', color: 'text-green-400', bg: 'bg-green-500/20', border: 'border-green-500/30' },
-      withdrawn: { text: 'مسحوبة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
-      archived: { text: 'مؤرشفة', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
-      unknown: { text: 'غير معروف', color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' },
+    const statusMap: Record<
+      string,
+      { text: string; color: string; bg: string; border: string }
+    > = {
+      pending: {
+        text: "بانتظار الموافقة",
+        color: "text-amber-400",
+        bg: "bg-amber-500/20",
+        border: "border-amber-500/30",
+      },
+      processing: {
+        text: "تحت المعالجة",
+        color: "text-blue-400",
+        bg: "bg-blue-500/20",
+        border: "border-blue-500/30",
+      },
+      approved: {
+        text: "تم الاعتماد",
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/20",
+        border: "border-emerald-500/30",
+      },
+      rejected: {
+        text: "مرفوضة",
+        color: "text-rose-400",
+        bg: "bg-rose-500/20",
+        border: "border-rose-500/30",
+      },
+      auction: {
+        text: "في المزاد",
+        color: "text-purple-400",
+        bg: "bg-purple-500/20",
+        border: "border-purple-500/30",
+      },
+      sold: {
+        text: "مباعة",
+        color: "text-green-400",
+        bg: "bg-green-500/20",
+        border: "border-green-500/30",
+      },
+      withdrawn: {
+        text: "مسحوبة",
+        color: "text-gray-400",
+        bg: "bg-gray-500/20",
+        border: "border-gray-500/30",
+      },
+      archived: {
+        text: "مؤرشفة",
+        color: "text-gray-400",
+        bg: "bg-gray-500/20",
+        border: "border-gray-500/30",
+      },
+      unknown: {
+        text: "غير معروف",
+        color: "text-gray-400",
+        bg: "bg-gray-500/20",
+        border: "border-gray-500/30",
+      },
     };
 
     return statusMap[status] || statusMap.unknown;
@@ -152,7 +206,7 @@ export default function MyCarsPage() {
         (car.model?.toLowerCase().includes(term) ?? false);
 
       const uiStatus = getUiStatus(car);
-      const matchesStatus = statusFilter === 'all' || uiStatus === statusFilter;
+      const matchesStatus = statusFilter === "all" || uiStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -162,9 +216,11 @@ export default function MyCarsPage() {
   const stats = useMemo(() => {
     return {
       total: paginationData?.total ?? cars.length,
-      inAuction: cars.filter((car: any) => getUiStatus(car) === 'auction').length,
-      pending: cars.filter((car: any) => getUiStatus(car) === 'pending').length,
-      approved: cars.filter((car: any) => getUiStatus(car) === 'approved').length,
+      inAuction: cars.filter((car: any) => getUiStatus(car) === "auction")
+        .length,
+      pending: cars.filter((car: any) => getUiStatus(car) === "pending").length,
+      approved: cars.filter((car: any) => getUiStatus(car) === "approved")
+        .length,
     };
   }, [cars, paginationData, getUiStatus]);
 
@@ -176,7 +232,9 @@ export default function MyCarsPage() {
             <Loader2 className="absolute inset-0 w-full h-full animate-spin text-purple-500" />
             <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-purple-500 animate-spin opacity-60"></div>
           </div>
-          <p className="text-lg text-gray-400 font-medium">جاري تحميل سياراتك...</p>
+          <p className="text-lg text-gray-400 font-medium">
+            جاري تحميل سياراتك...
+          </p>
         </div>
       </div>
     );
@@ -200,7 +258,9 @@ export default function MyCarsPage() {
                 <h1 className="text-2xl font-bold text-foreground">
                   سياراتي <span className="text-primary">({stats.total})</span>
                 </h1>
-                <p className="text-foreground/70 text-sm mt-1">إدارة وعرض جميع سياراتك المعروضة</p>
+                <p className="text-foreground/70 text-sm mt-1">
+                  إدارة وعرض جميع سياراتك المعروضة
+                </p>
               </div>
             </div>
 
@@ -213,7 +273,9 @@ export default function MyCarsPage() {
                   </div>
                   <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
+                <p className="text-lg font-bold text-foreground mt-1">
+                  {stats.total}
+                </p>
               </div>
 
               <div className="bg-background/40 rounded-lg p-3 border border-border">
@@ -223,7 +285,9 @@ export default function MyCarsPage() {
                   </div>
                   <span className="text-xs text-foreground/70">في المزاد</span>
                 </div>
-                <p className="text-lg font-bold text-purple-400 mt-1">{stats.inAuction}</p>
+                <p className="text-lg font-bold text-purple-400 mt-1">
+                  {stats.inAuction}
+                </p>
               </div>
 
               <div className="bg-background/40 rounded-lg p-3 border border-border">
@@ -231,9 +295,13 @@ export default function MyCarsPage() {
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Loader2 className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">بانتظار الموافقة</span>
+                  <span className="text-xs text-foreground/70">
+                    بانتظار الموافقة
+                  </span>
                 </div>
-                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
+                <p className="text-lg font-bold text-amber-400 mt-1">
+                  {stats.pending}
+                </p>
               </div>
 
               <div className="bg-background/40 rounded-lg p-3 border border-border">
@@ -243,7 +311,9 @@ export default function MyCarsPage() {
                   </div>
                   <span className="text-xs text-foreground/70">معتمدة</span>
                 </div>
-                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.approved}</p>
+                <p className="text-lg font-bold text-emerald-400 mt-1">
+                  {stats.approved}
+                </p>
               </div>
             </div>
           </div>
@@ -298,7 +368,9 @@ export default function MyCarsPage() {
 
           <div className="flex items-center gap-2 text-sm text-foreground/70">
             <Filter className="w-4 h-4" />
-            <span>عرض {filteredCars.length} من {cars.length} سيارة</span>
+            <span>
+              عرض {filteredCars.length} من {cars.length} سيارة
+            </span>
           </div>
         </div>
       </motion.div>
@@ -314,18 +386,19 @@ export default function MyCarsPage() {
           <div className="col-span-full text-center py-16">
             <div className="p-4 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
               <CarIcon className="w-12 h-12 text-foreground/50 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground/70 mb-2">لا توجد سيارات</h3>
+              <h3 className="text-lg font-medium text-foreground/70 mb-2">
+                لا توجد سيارات
+              </h3>
               <p className="text-foreground/50 text-sm mb-4">
-                {searchTerm || statusFilter !== 'all'
-                  ? 'لم نتمكن من العثور على سيارات تطابق معايير البحث'
-                  : 'لم تقم بإضافة أي سيارات بعد'
-                }
+                {searchTerm || statusFilter !== "all"
+                  ? "لم نتمكن من العثور على سيارات تطابق معايير البحث"
+                  : "لم تقم بإضافة أي سيارات بعد"}
               </p>
-              {(searchTerm || statusFilter !== 'all') ? (
+              {searchTerm || statusFilter !== "all" ? (
                 <button
                   onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
+                    setSearchTerm("");
+                    setStatusFilter("all");
                   }}
                   className="px-4 py-2 bg-primary/20 text-primary rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors"
                 >
@@ -345,10 +418,18 @@ export default function MyCarsPage() {
         ) : (
           filteredCars.map((car: any, index: number) => {
             const statusInfo = getStatusLabel(car);
-            const isApproved = Boolean(car?.auctions?.[0]?.control_room_approved);
+            // ✅ Fix: Sort auctions to get the latest one (backend default order is likely ID ASC)
+            const latestAuction = Array.isArray(car.auctions)
+              ? [...car.auctions].sort((a: any, b: any) => b.id - a.id)[0]
+              : null;
+
+            const isApproved = Boolean(latestAuction?.control_room_approved);
 
             const uiStatus = getUiStatus(car);
-            const canEdit = uiStatus === 'pending' || uiStatus === 'processing';
+            // Allow edit only if pending/processing AND NOT approved
+            const canEdit =
+              (uiStatus === "pending" || uiStatus === "processing") &&
+              !isApproved;
 
             return (
               <motion.div
@@ -364,15 +445,16 @@ export default function MyCarsPage() {
                   <div className="relative h-48 bg-background overflow-hidden">
                     <img
                       src={
-                        (Array.isArray(car.images) && car.images.length > 0)
+                        Array.isArray(car.images) && car.images.length > 0
                           ? car.images[0]
                           : "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg"
                       }
-                      alt={`${car.make ?? ''} ${car.year ?? ''}`}
+                      alt={`${car.make ?? ""} ${car.year ?? ""}`}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
+                        e.currentTarget.src =
+                          "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
                       }}
                     />
 
@@ -382,7 +464,7 @@ export default function MyCarsPage() {
                         "absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
                         statusInfo.bg,
                         statusInfo.border,
-                        statusInfo.color
+                        statusInfo.color,
                       )}
                     >
                       {statusInfo.text}
@@ -404,7 +486,8 @@ export default function MyCarsPage() {
                         {car.make} {car.model} - {car.year}
                       </h3>
                       <div className="text-2xl font-bold text-secondary">
-                        {car.evaluation_price?.toLocaleString?.('ar-EG') ?? car.evaluation_price}
+                        {car.evaluation_price?.toLocaleString?.("ar-EG") ??
+                          car.evaluation_price}
                       </div>
                     </div>
 

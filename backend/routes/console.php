@@ -11,11 +11,16 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::job(new UpdateCarAuctionJob('instant'))->dailyAt('19:00')
-->timezone('Asia/Riyadh');
+    ->timezone('Asia/Riyadh');
 Schedule::job(new UpdateCarAuctionJob('late'))->dailyAt('22:00')
-->timezone('Asia/Riyadh');
-// Schedule::job(new UpdateCarAuctionJob('live'))->dailyAt('16:00')
-// ->timezone('Asia/Riyadh');
+    ->timezone('Asia/Riyadh');
+
 Schedule::job(new MoveCarToFixedAuctionJob())->everyMinute();
-// Schedule::job(new MoveCarToFixedAuctionJob())->twiceDailyAt(22,16)
-// ->timezone('Asia/Riyadh');
+
+// Activate scheduled auctions at 7:00 PM (Instant Market opening time)
+Schedule::command('auction:activate-scheduled')
+    ->dailyAt('19:00')
+    ->timezone('Asia/Riyadh')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/scheduled-auctions.log'));

@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon; // ✅ مضاف لاستخدام الوقت
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewCarAddedNotification;
+use App\Notifications\CarDetailsUpdatedNotification;
 
 class CarController extends Controller
 {
@@ -195,6 +196,10 @@ class CarController extends Controller
             // ✅ المدة الجديدة للمزاد: 10 أو 20 أو 30 يوم
             'main_auction_duration' => 'nullable|integer|in:10,20,30',
 
+            // ✅ Auction Scheduling: Start Immediately or Select Future Date
+            'start_immediately'    => 'nullable|boolean',
+            'auction_start_date'   => 'nullable|date|after_or_equal:today',
+
             'evaluation_price' => 'required|numeric|min:0|max:9999999999.99',
             'min_price'        => 'required|numeric|min:0|max:9999999999.99',
             'max_price'        => 'required|numeric|min:0|max:9999999999.99',
@@ -319,17 +324,32 @@ class CarController extends Controller
 
             /**
              * ✅ إنشاء المزاد مباشرة بعد إضافة السيارة
-             * - وقت البداية: الآن
-             * - وقت النهاية: الآن + المدة التي اختارها صاحب السيارة (10 / 20 / 30 يوم)
+             * - Auction Scheduling System:
+             *   - If start_immediately = true (or auction_start_date is null/today): start upon approval
+             *   - If auction_start_date is in the future: schedule for that date at 7 PM
              */
 
             // لو ما اختارش مدة، نخليها افتراضياً 10 أيام
             $durationDays = (int)($car->main_auction_duration ?: 10);
+            $ksaTimezone = 'Asia/Riyadh';
 
-            $startTime = Carbon::now();
-            $endTime   = (clone $startTime)->addDays($durationDays);
+            // Determine start time based on user selection
+            $startImmediately = $request->boolean('start_immediately', true);
+            $auctionStartDate = $request->input('auction_start_date');
 
-            // تحديث حالة السيارة إلى scheduled بدلاً من available
+            if ($startImmediately || empty($auctionStartDate)) {
+                // Start immediately upon approval - use now as start time
+                // End time will be calculated when admin approves
+                $startTime = Carbon::now($ksaTimezone);
+                $endTime = $startTime->copy()->addDays($durationDays);
+            } else {
+                // Schedule for a future date at 7:00 PM
+                $startTime = Carbon::parse($auctionStartDate, $ksaTimezone)->setTime(19, 0, 0);
+                // End time will be calculated when the auction is activated by cron
+                $endTime = null;
+            }
+
+            // تحديث حالة السيارة إلى pending (awaiting admin approval)
             $car->auction_status = 'pending';
             $car->save();
 
@@ -337,12 +357,12 @@ class CarController extends Controller
                 'car_id'        => $car->id,
                 'start_time'    => $startTime,
                 'end_time'      => $endTime,
-                'minimum_bid'   => $car->min_price,   // تقدر تعدليها حسب منطقكم
+                'minimum_bid'   => $car->min_price,
                 'maximum_bid'   => $car->max_price,
                 'reserve_price' => $car->min_price,
                 'current_bid'   => 0,
                 'status'        => AuctionStatus::SCHEDULED,
-                'auction_type'  => AuctionType::SILENT_INSTANT, // يبدأ كسايلنت ثم يتغير حسب الوقت
+                'auction_type'  => AuctionType::SILENT_INSTANT,
                 'control_room_approved' => false,
                 'approved_for_live'     => false,
             ]);
@@ -386,6 +406,9 @@ class CarController extends Controller
         if (!$car) {
             return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لعرضها.'], 404);
         }
+
+        // Show hidden fields for the owner/admin
+        $car->makeVisible(['min_price', 'max_price', 'images']);
 
         $activeAuction = $car->auctions()
             ->whereIn('status', [AuctionStatus::SCHEDULED->value, AuctionStatus::ACTIVE->value])
@@ -479,8 +502,22 @@ class CarController extends Controller
             return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لتعديلها.'], 404);
         }
 
-        if (in_array($car->auction_status, ['scheduled', 'active'], true)) {
-            return response()->json(['status' => 'error', 'message' => 'لا يمكن تعديل بيانات السيارة أثناء وجود مزاد نشط أو مجدول.'], 400);
+        // Allow editing if auction status is pending/scheduled (which maps to car.auction_status = 'pending')
+        // Prevent editing if auction is active/live (car.auction_status = 'in_auction' or 'live')
+        // We check car.auction_status which is set to 'pending' for scheduled auctions.
+        // If it's 'live' or 'in_auction', we block.
+        if (in_array($car->auction_status, ['live', 'in_auction', 'active'], true)) {
+            return response()->json(['status' => 'error', 'message' => 'لا يمكن تعديل بيانات السيارة أثناء وجود مزاد نشط.'], 400);
+        }
+
+        // Security Check: Prevent modification if Control Room approved
+        $latestAuction = Auction::where('car_id', $car->id)
+            ->whereIn('status', [AuctionStatus::SCHEDULED, AuctionStatus::ACTIVE])
+            ->latest()
+            ->first();
+
+        if ($latestAuction && $latestAuction->control_room_approved) {
+            return response()->json(['status' => 'error', 'message' => 'Cannot edit vehicle details after admin approval.'], 403);
         }
 
         // تطبيع أرقام
@@ -528,6 +565,11 @@ class CarController extends Controller
             'bedrooms_count'   => 'sometimes|integer|min:0',
             'solar_power_kw'   => 'sometimes|numeric|min:0',
             'license_required' => 'sometimes|boolean',
+
+            // ✅ Auction Scheduling Updates
+            'main_auction_duration' => 'nullable|integer|in:10,20,30',
+            'start_immediately'    => 'nullable|boolean',
+            'auction_start_date'   => 'nullable|date|after_or_equal:today',
         ];
 
         [$messages, $attributes] = $this->arabicValidation();
@@ -614,10 +656,76 @@ class CarController extends Controller
 
         $car->save();
 
+        // ✅ Handle Auction Schedule Updates
+        // Only if we have scheduling fields and an associated scheduled auction
+        if ($request->hasAny(['main_auction_duration', 'start_immediately', 'auction_start_date'])) {
+            $latestAuction = Auction::where('car_id', $car->id)
+                ->where('status', AuctionStatus::SCHEDULED->value)
+                ->latest()
+                ->first();
+
+            if ($latestAuction) {
+                // Prepare new values
+                $durationDays = (int) ($request->has('main_auction_duration') ? $request->main_auction_duration : ($car->main_auction_duration ?: 10));
+
+                // Determine new start/end times
+                $ksaTimezone = 'Asia/Riyadh';
+                $startImmediately = $request->input('start_immediately'); // nullable boolean
+                $auctionStartDate = $request->input('auction_start_date');
+
+                // If start_immediately is explicitly true OR (it's not set/false BUT we have no date provided AND original was immediate... tricky)
+                // Let's rely on what's sent. 
+                // If start_immediately is true: reset to NOW
+                // If auction_start_date is set: set to that date 7 PM
+
+                $shouldUpdateTimes = false;
+                $newStartTime = null;
+                $newEndTime = null;
+
+                if ($request->boolean('start_immediately')) {
+                    // Switch to immediate
+                    $newStartTime = Carbon::now($ksaTimezone);
+                    $newEndTime = $newStartTime->copy()->addDays($durationDays);
+                    $shouldUpdateTimes = true;
+                } elseif ($request->filled('auction_start_date')) {
+                    // Switch to future date
+                    $newStartTime = Carbon::parse($auctionStartDate, $ksaTimezone)->setTime(19, 0, 0);
+                    $newEndTime = null; // Will be calculated on activation
+                    $shouldUpdateTimes = true;
+                } elseif ($request->has('main_auction_duration') && $latestAuction->start_time) {
+                    // Only duration changed, but we need to check if we need to update end_time
+                    // If currently scheduled for future (end_time is null), no need to update end_time
+                    // If currently "immediate" (has end_time), need to recalculate end_time
+                    if ($latestAuction->end_time) {
+                        // It was "immediate" style (start_time set, end_time set)
+                        // But wait, if it's SCHEDULED, it might not be live yet.
+                        // If it has end_time, we updated it.
+                        $newStartTime = Carbon::parse($latestAuction->start_time);
+                        $newEndTime = $newStartTime->copy()->addDays($durationDays);
+                        $shouldUpdateTimes = true;
+                    }
+                }
+
+                if ($shouldUpdateTimes) {
+                    $latestAuction->start_time = $newStartTime;
+                    $latestAuction->end_time = $newEndTime;
+                    $latestAuction->save();
+                }
+            }
+        }
+
         // تحديث خصائص الكرفان إن وُجدت
         $this->syncCaravanAttributes($request, $car);
 
         Cache::flush();
+
+        // Notification to Admins
+        try {
+            $admins = User::whereIn('type', ['admin', 'super_admin'])->get();
+            Notification::send($admins, new CarDetailsUpdatedNotification($car));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send update notification: ' . $e->getMessage());
+        }
 
         return response()->json([
             'status'  => 'success',

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
-import { useLoading } from '@/contexts/LoadingContext';
-import { useCallback } from 'react';
+import { useRouter } from "next/navigation";
+import { useLoading } from "@/contexts/LoadingContext";
+import { useCallback, useMemo } from "react";
 
 export function useLoadingRouter() {
   const router = useRouter();
@@ -14,7 +14,6 @@ export function useLoadingRouter() {
       try {
         router.push(href, options);
       } finally {
-        // Fallback timeout in case requestAnimationFrame doesn't fire
         setTimeout(() => stopLoading(), 50);
       }
     },
@@ -33,48 +32,42 @@ export function useLoadingRouter() {
     [router, startLoading, stopLoading]
   );
 
-  const refresh = useCallback(
-    async () => {
-      startLoading();
-      try {
-        router.refresh();
-      } finally {
-        setTimeout(() => stopLoading(), 200);
-      }
-    },
-    [router, startLoading, stopLoading]
-  );
+  const refresh = useCallback(async () => {
+    startLoading();
+    try {
+      router.refresh();
+    } finally {
+      setTimeout(() => stopLoading(), 200);
+    }
+  }, [router, startLoading, stopLoading]);
 
-  const back = useCallback(
-    async () => {
-      startLoading();
-      try {
-        router.back();
-      } finally {
-        setTimeout(() => stopLoading(), 50);
-      }
-    },
-    [router, startLoading, stopLoading]
-  );
+  const back = useCallback(async () => {
+    startLoading();
+    try {
+      router.back();
+    } finally {
+      setTimeout(() => stopLoading(), 50);
+    }
+  }, [router, startLoading, stopLoading]);
 
-  const forward = useCallback(
-    async () => {
-      startLoading();
-      try {
-        router.forward();
-      } finally {
-        setTimeout(() => stopLoading(), 50);
-      }
-    },
-    [router, startLoading, stopLoading]
-  );
+  const forward = useCallback(async () => {
+    startLoading();
+    try {
+      router.forward();
+    } finally {
+      setTimeout(() => stopLoading(), 50);
+    }
+  }, [router, startLoading, stopLoading]);
 
-  return {
-    push,
-    replace,
-    refresh,
-    back,
-    forward,
-    ...router,
-  };
+  return useMemo(
+    () => ({
+      push,
+      replace,
+      refresh,
+      back,
+      forward,
+      ...router,
+    }),
+    [push, replace, refresh, back, forward, router]
+  );
 }

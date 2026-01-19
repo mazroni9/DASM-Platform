@@ -85,6 +85,10 @@ interface FormData {
   province: string;
   city: string;
   plate: string;
+  // Auction Scheduling
+  main_auction_duration: 10 | 20 | 30;
+  start_immediately: boolean;
+  auction_start_date: string;
 }
 
 interface PreviewImage {
@@ -387,6 +391,10 @@ export default function AddCarForm() {
     province: "",
     city: "",
     plate: "",
+    // Auction Scheduling
+    main_auction_duration: 10,
+    start_immediately: true,
+    auction_start_date: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -552,6 +560,9 @@ export default function AddCarForm() {
       province: "المحافظة",
       city: "المدينة",
       plate: "رقم اللوحة",
+      main_auction_duration: "مدة المزاد",
+      start_immediately: "البدء فوراً",
+      auction_start_date: "تاريخ بدء المزاد",
     };
     return map[key];
   };
@@ -650,6 +661,12 @@ export default function AddCarForm() {
       city: String(effective.city).trim(),
       plate: String(effective.plate).trim(),
       auction_status: DEFAULT_AUCTION_STATUS,
+      // Auction Scheduling
+      main_auction_duration: effective.main_auction_duration,
+      start_immediately: effective.start_immediately,
+      auction_start_date: effective.start_immediately
+        ? null
+        : effective.auction_start_date || null,
     };
 
     try {
@@ -1115,6 +1132,117 @@ export default function AddCarForm() {
                       </div>
                     )}
                   </div>
+
+                  {/* 🆕 قسم جدولة المزاد */}
+                  <div className={`mt-6 rounded-xl overflow-hidden ${PANEL}`}>
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-blue-500/10">
+                      <FiCalendar className="text-blue-600" />
+                      <h3 className={`font-semibold ${TXT.main}`}>
+                        جدولة المزاد
+                      </h3>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      {/* مدة المزاد */}
+                      <div>
+                        <label className={`block text-sm ${TXT.sub} mb-2`}>
+                          مدة المزاد
+                        </label>
+                        <div className="flex gap-3">
+                          {[10, 20, 30].map((days) => (
+                            <button
+                              key={days}
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  main_auction_duration: days as 10 | 20 | 30,
+                                }))
+                              }
+                              className={`flex-1 py-2 px-4 rounded-lg border transition ${
+                                formData.main_auction_duration === days
+                                  ? "border-primary bg-primary/10 text-primary font-semibold"
+                                  : "border-border bg-card hover:bg-muted/50"
+                              }`}
+                            >
+                              {days} يوم
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* وقت بدء المزاد */}
+                      <div>
+                        <label className={`block text-sm ${TXT.sub} mb-2`}>
+                          وقت بدء المزاد
+                        </label>
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="start_type"
+                              checked={formData.start_immediately}
+                              onChange={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  start_immediately: true,
+                                  auction_start_date: "",
+                                }))
+                              }
+                              className="w-4 h-4 text-primary focus:ring-primary"
+                            />
+                            <span className={TXT.main}>
+                              البدء فوراً بعد الموافقة
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="start_type"
+                              checked={!formData.start_immediately}
+                              onChange={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  start_immediately: false,
+                                }))
+                              }
+                              className="w-4 h-4 text-primary focus:ring-primary"
+                            />
+                            <span className={TXT.main}>
+                              تحديد تاريخ مستقبلي
+                            </span>
+                          </label>
+
+                          {/* منتقي التاريخ */}
+                          {!formData.start_immediately && (
+                            <div className="pr-7">
+                              <input
+                                type="date"
+                                name="auction_start_date"
+                                value={formData.auction_start_date}
+                                onChange={handleInputChange}
+                                min={new Date().toISOString().split("T")[0]}
+                                className={`w-full rounded-xl bg-background ${
+                                  TXT.main
+                                }
+                                  border ${
+                                    !formData.auction_start_date &&
+                                    !formData.start_immediately
+                                      ? "border-amber-500"
+                                      : "border-border"
+                                  }
+                                  focus:border-primary focus:ring-4 focus:ring-primary/20
+                                  outline-none transition px-4 py-3`}
+                              />
+                              <p className="mt-2 text-xs text-muted-foreground">
+                                سيبدأ المزاد في الساعة 7:00 مساءً في التاريخ
+                                المحدد
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* العمود الأيمن: لوحة الذكاء الاصطناعي */}
@@ -1559,6 +1687,9 @@ export default function AddCarForm() {
                       province: "",
                       city: "",
                       plate: "",
+                      main_auction_duration: 10,
+                      start_immediately: true,
+                      auction_start_date: "",
                     });
                     setPreviewImages([]);
                     setOcrFile(null);

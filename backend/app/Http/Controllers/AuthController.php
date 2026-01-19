@@ -108,7 +108,7 @@ class AuthController extends Controller
         }
 
         // ✅ تحقق إضافي لحسابات الأعمال + فحص فريد على الجدول الصحيح
-        $isBusinessAccount = in_array($request->account_type, ['dealer', 'venue_owner', 'investor']);
+        $isBusinessAccount = in_array($request->account_type, ['venue_owner', 'investor']);
         if ($isBusinessAccount) {
             Log::info('Business account registration detected', [
                 'email'               => $request->email,
@@ -120,7 +120,7 @@ class AuthController extends Controller
             ]);
 
             $table = match ($request->account_type) {
-                'dealer'      => 'dealers',
+                //'dealer'      => 'dealers',
                 'venue_owner' => 'venue_owners',
                 'investor'    => 'investors',
                 default       => null,

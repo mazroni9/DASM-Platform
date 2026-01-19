@@ -150,9 +150,11 @@ export interface Auction {
   id: number;
   car_id: number;
   start_time: string;
-  end_time: string;
+  end_time: string | null;
   starting_price: number;
   status: string;
+  duration_days?: number;
+  control_room_approved?: boolean;
   created_at: string;
   updated_at: string;
 }
