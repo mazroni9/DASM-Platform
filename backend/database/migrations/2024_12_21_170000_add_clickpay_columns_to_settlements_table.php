@@ -6,49 +6,65 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     * 
-     * DASM-e Dual-Page Payment Model - ClickPay Integration
-     * Adds columns for:
-     * - Phase 1: Online Service Fees (via ClickPay)
-     * - Phase 2: Offline Bank Transfer (Car Price)
-     * - Partner/Individual Logic
-     */
     public function up(): void
     {
+        if (!Schema::hasTable('settlements')) {
+            // prevents migrate:fresh crash if settlements table isn't created yet
+            return;
+        }
+
         Schema::table('settlements', function (Blueprint $table) {
-            // Core Deal Info
-            $table->decimal('car_price', 12, 2)->nullable()->after('final_price');
-            $table->decimal('platform_commission', 12, 2)->nullable()->after('car_price');
+            if (!Schema::hasColumn('settlements', 'car_price')) {
+                $table->decimal('car_price', 12, 2)->nullable();
+            }
+            if (!Schema::hasColumn('settlements', 'platform_commission')) {
+                $table->decimal('platform_commission', 12, 2)->nullable();
+            }
 
-            // Phase 1: Service Fees (Online via ClickPay)
-            $table->decimal('service_fees_total', 12, 2)->nullable()->after('buyer_net_amount');
-            $table->string('service_fees_payment_status', 20)->default('PENDING')->after('service_fees_total');
-            $table->string('clickpay_transaction_ref', 100)->nullable()->after('service_fees_payment_status');
+            if (!Schema::hasColumn('settlements', 'service_fees_total')) {
+                $table->decimal('service_fees_total', 12, 2)->nullable();
+            }
+            if (!Schema::hasColumn('settlements', 'service_fees_payment_status')) {
+                $table->string('service_fees_payment_status', 20)->default('PENDING');
+            }
+            if (!Schema::hasColumn('settlements', 'clickpay_transaction_ref')) {
+                $table->string('clickpay_transaction_ref', 100)->nullable();
+            }
 
-            // Phase 2: Vehicle Price (Offline/Escrow)
-            $table->decimal('vehicle_price_total', 12, 2)->nullable()->after('clickpay_transaction_ref');
-            $table->string('escrow_payment_status', 20)->default('PENDING')->after('vehicle_price_total');
+            if (!Schema::hasColumn('settlements', 'vehicle_price_total')) {
+                $table->decimal('vehicle_price_total', 12, 2)->nullable();
+            }
+            if (!Schema::hasColumn('settlements', 'escrow_payment_status')) {
+                $table->string('escrow_payment_status', 20)->default('PENDING');
+            }
 
-            // Partner Logic
-            $table->string('seller_type', 20)->nullable()->after('escrow_payment_status');
-            $table->decimal('seller_commission_deduction', 12, 2)->nullable()->after('seller_type');
-            $table->decimal('partner_incentive', 12, 2)->nullable()->after('seller_commission_deduction');
-            $table->string('escrow_release_status', 20)->default('NOT_APPLICABLE')->after('partner_incentive');
+            if (!Schema::hasColumn('settlements', 'seller_type')) {
+                $table->string('seller_type', 20)->nullable();
+            }
+            if (!Schema::hasColumn('settlements', 'seller_commission_deduction')) {
+                $table->decimal('seller_commission_deduction', 12, 2)->nullable();
+            }
+            if (!Schema::hasColumn('settlements', 'partner_incentive')) {
+                $table->decimal('partner_incentive', 12, 2)->nullable();
+            }
+            if (!Schema::hasColumn('settlements', 'escrow_release_status')) {
+                $table->string('escrow_release_status', 20)->default('NOT_APPLICABLE');
+            }
 
-            // Verification
-            $table->string('verification_code', 20)->nullable()->after('escrow_release_status');
+            if (!Schema::hasColumn('settlements', 'verification_code')) {
+                $table->string('verification_code', 20)->nullable();
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
+        if (!Schema::hasTable('settlements')) {
+            return;
+        }
+
         Schema::table('settlements', function (Blueprint $table) {
-            $table->dropColumn([
+            $cols = [
                 'car_price',
                 'platform_commission',
                 'service_fees_total',
@@ -61,7 +77,13 @@ return new class extends Migration
                 'partner_incentive',
                 'escrow_release_status',
                 'verification_code',
-            ]);
+            ];
+
+            foreach ($cols as $col) {
+                if (Schema::hasColumn('settlements', $col)) {
+                    $table->dropColumn($col);
+                }
+            }
         });
     }
 };
