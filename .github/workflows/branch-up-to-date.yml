@@ -3,10 +3,11 @@ name: check
 on:
   pull_request:
     branches: [ master ]
+  push:
+    branches: [ master ]
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check
-        run: echo "OK"
+      - run: echo "OK"
