@@ -3,15 +3,49 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration {
+
     public function up(): void
     {
+        if (Schema::hasTable('blog_tags')) {
+
+            Schema::table('blog_tags', function (Blueprint $table) {
+                if (!Schema::hasColumn('blog_tags', 'id')) {
+                    $table->id();
+                }
+                if (!Schema::hasColumn('blog_tags', 'name')) {
+                    $table->string('name');
+                }
+                if (!Schema::hasColumn('blog_tags', 'created_at')) {
+                    $table->timestamp('created_at')->nullable();
+                }
+                if (!Schema::hasColumn('blog_tags', 'updated_at')) {
+                    $table->timestamp('updated_at')->nullable();
+                }
+            });
+
+            if (DB::getDriverName() === 'pgsql') {
+                DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS blog_tags_name_unique ON blog_tags (name)');
+            }
+
+            return;
+        }
+
         Schema::create('blog_tags', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->string('name');
             $table->timestamps();
         });
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS blog_tags_name_unique ON blog_tags (name)');
+        } else {
+            Schema::table('blog_tags', function (Blueprint $table) {
+                $table->unique('name');
+            });
+        }
     }
 
     public function down(): void
