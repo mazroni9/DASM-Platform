@@ -1,10 +1,8 @@
-// app/layout.tsx (Hydration-safe)
+// app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-// Removed ProtectedRoute - authentication now handled by middleware.ts
-// Client-side role-based redirects handled at page level where needed
-import ProtectedRoute from "@/components/ProtectedRoute";
+
 import Providers from "./providers";
 import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
@@ -12,39 +10,21 @@ import { PusherProvider } from "@/contexts/PusherContext";
 import ClientProviders from "@/components/ClientProviders";
 import GlobalLoader from "@/components/GlobalLoader";
 import AuthModal from "@/components/AuthModal";
-
-// ملاحظة: ضع suppressHydrationWarning على <html> و <body>
-// لمنع تحذيرات الاختلاف الناتجة عن إضافات المتصفح (مثل cz-shortcut-listen)
-// وأي فروقات طفيفة في السمات قبل تحميل React.
+import AppChrome from "@/components/AppChrome";
 
 const lamaSans = localFont({
   src: [
-    {
-      path: "../public/fonts/lama-sans/LamaSans-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/lama-sans/LamaSans-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
+    { path: "../public/fonts/lama-sans/LamaSans-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/lama-sans/LamaSans-Bold.woff2", weight: "700", style: "normal" },
   ],
   variable: "--font-lama",
   display: "swap",
 });
+
 const almarai = localFont({
   src: [
-    {
-      path: "../public/fonts/almarai/Almarai-Regular.ttf",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/almarai/Almarai-Bold.ttf",
-      weight: "700",
-      style: "normal",
-    },
+    { path: "../public/fonts/almarai/Almarai-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../public/fonts/almarai/Almarai-Bold.ttf", weight: "700", style: "normal" },
   ],
   variable: "--font-almarai",
   display: "swap",
@@ -55,11 +35,7 @@ export const metadata: Metadata = {
   description: "منصة رقمية للمزادات المباشرة والفورية والمتأخرة",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="ar"
@@ -69,27 +45,25 @@ export default function RootLayout({
     >
       <head>
         <link rel="icon" href="/favicon.ico" />
-        {/* أي وسوم <meta> إضافية تُضاف هنا */}
       </head>
-      {/*
-        \u26a0\ufe0f مهم: إضافة suppressHydrationWarning هنا تعالج اختلاف السمات على <body>
-        الناتج عادةً من إضافات المتصفح або تغييرات مبكرة قبل ترطيب React.
-      */}
+
       <body
-        className={`${lamaSans.className} ${almarai.className} min-h-screen`}
+        className={`${lamaSans.className} ${almarai.className} min-h-screen flex flex-col`}
         suppressHydrationWarning
       >
-        {/* موحد تحميل عالمي + موفري الحالة */}
         <LoadingProvider>
           <PusherProvider>
             <Providers>
               <ClientProviders>
+                {/* ✅ الهيدر هنا فقط مرة واحدة (هيظهر في dashboards أكيد) */}
                 <Navbar />
-                <main>
-                  <ProtectedRoute>{children}</ProtectedRoute>
-                </main>
-                <AuthModal />
+
+                {/* ✅ AppChrome بقت للحماية/المودال فقط */}
+                <AppChrome authModal={<AuthModal />}>
+                  {children}
+                </AppChrome>
               </ClientProviders>
+
               <GlobalLoader />
             </Providers>
           </PusherProvider>
