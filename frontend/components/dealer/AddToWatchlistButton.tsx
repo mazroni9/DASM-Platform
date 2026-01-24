@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
+import api from "@/lib/axios";
 
 interface WatchlistMenu {
   id: number;
@@ -96,16 +97,11 @@ export default function AddToWatchlistButton({
 
     try {
       // Call quick-add endpoint
-      const response = await fetch("/api/dealer/watchlists/quick-add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ car_id: carId }),
+      const response = await api.post("/api/dealer/watchlists/quick-add", {
+        car_id: carId,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status === "success") {
         // Handle different actions
@@ -162,16 +158,12 @@ export default function AddToWatchlistButton({
 
     setLoading(true);
     try {
-      const response = await fetch("/api/dealer/watchlists/quick-add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ car_id: carId, menu_id: menuId }),
+      const response = await api.post("/api/dealer/watchlists/quick-add", {
+        car_id: carId,
+        menu_id: menuId,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status === "success") {
         setIsInWatchlist(true);
@@ -213,32 +205,20 @@ export default function AddToWatchlistButton({
     setCreatingMenu(true);
     try {
       // First create the menu
-      const createResponse = await fetch("/api/dealer/watchlists", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: newMenuName }),
+      const createResponse = await api.post("/api/dealer/watchlists", {
+        name: newMenuName,
       });
 
-      const createData = await createResponse.json();
+      const createData = createResponse.data;
 
       if (createData.status === "success") {
         // Then add the car to the new menu
-        const addResponse = await fetch("/api/dealer/watchlists/quick-add", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            car_id: carId,
-            menu_id: createData.data.id,
-          }),
+        const addResponse = await api.post("/api/dealer/watchlists/quick-add", {
+          car_id: carId,
+          menu_id: createData.data.id,
         });
 
-        const addData = await addResponse.json();
+        const addData = addResponse.data;
 
         if (addData.status === "success") {
           setIsInWatchlist(true);
@@ -275,16 +255,11 @@ export default function AddToWatchlistButton({
   const removeFromWatchlist = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/dealer/watchlists/quick-remove", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ car_id: carId }),
+      const response = await api.post("/api/dealer/watchlists/quick-remove", {
+        car_id: carId,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status === "success") {
         setIsInWatchlist(false);

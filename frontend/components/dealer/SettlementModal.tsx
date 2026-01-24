@@ -11,6 +11,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import api from "@/lib/axios";
 
 interface Transaction {
   id: number;
@@ -38,7 +39,7 @@ export default function SettlementModal({
 }: SettlementModalProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(false);
 
@@ -51,12 +52,8 @@ export default function SettlementModal({
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/dealer/wallet/transactions?limit=5", {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-      const data = await response.json();
+      const response = await api.get("/api/dealer/wallet/transactions?limit=5");
+      const data = response.data;
       if (data.status === "success") {
         setTransactions(data.data.transactions);
         setWalletSummary(data.data.wallet_summary);
@@ -159,7 +156,7 @@ export default function SettlementModal({
                       key={tx.id}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                        "bg-background/50 border-border hover:bg-background"
+                        "bg-background/50 border-border hover:bg-background",
                       )}
                     >
                       {getTransactionIcon(tx.type)}
@@ -176,7 +173,7 @@ export default function SettlementModal({
                           "font-bold text-sm",
                           tx.type.toUpperCase() === "DEPOSIT"
                             ? "text-emerald-400"
-                            : "text-red-400"
+                            : "text-red-400",
                         )}
                       >
                         {tx.type.toUpperCase() === "DEPOSIT" ? "+" : "-"}

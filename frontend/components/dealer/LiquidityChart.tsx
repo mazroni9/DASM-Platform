@@ -17,6 +17,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { cn } from "@/lib/utils";
+import api from "@/lib/axios";
 
 // Register Chart.js components
 ChartJS.register(
@@ -54,14 +55,11 @@ export default function LiquidityChart({ authToken }: LiquidityChartProps) {
     setError(null);
 
     try {
-      const response = await fetch(
+      const response = await api.get(
         `/api/dealer/dashboard/liquidity-stats?period=${period}`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        },
       );
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === "success") {
         setData(result.data);

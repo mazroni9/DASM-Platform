@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import api from "@/lib/axios";
 
 interface WatchlistMenu {
   id: number;
@@ -51,10 +52,8 @@ export default function WatchlistTable() {
   // Fetch watchlist menus
   const fetchMenus = async () => {
     try {
-      const response = await fetch("/api/dealer/watchlists", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
+      const response = await api.get("/api/dealer/watchlists");
+      const data = response.data;
       if (data.status === "success") {
         setMenus(data.data);
       }
@@ -72,10 +71,8 @@ export default function WatchlistTable() {
           ? "/api/dealer/watchlists/all-items"
           : `/api/dealer/watchlists/${menuId}/items`;
 
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
+      const response = await api.get(url);
+      const data = response.data;
 
       if (data.status === "success") {
         setItems(menuId === "all" ? data.data : data.data.items);
@@ -93,16 +90,11 @@ export default function WatchlistTable() {
     setCreating(true);
 
     try {
-      const response = await fetch("/api/dealer/watchlists", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name: newMenuName }),
+      const response = await api.post("/api/dealer/watchlists", {
+        name: newMenuName,
       });
 
-      const data = await response.json();
+      const data = response.data;
       if (data.status === "success") {
         setMenus((prev) => [...prev, data.data]);
         setNewMenuName("");
@@ -122,16 +114,11 @@ export default function WatchlistTable() {
     if (!confirm("هل أنت متأكد من حذف هذه القائمة؟")) return;
 
     try {
-      const response = await fetch(`/api/dealer/watchlists/${menuId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/api/dealer/watchlists/${menuId}`);
 
-      if (response.ok) {
-        setMenus((prev) => prev.filter((m) => m.id !== menuId));
-        if (activeMenuId === menuId) {
-          setActiveMenuId("all");
-        }
+      setMenus((prev) => prev.filter((m) => m.id !== menuId));
+      if (activeMenuId === menuId) {
+        setActiveMenuId("all");
       }
     } catch (error) {
       console.error("Failed to delete menu:", error);
@@ -141,25 +128,17 @@ export default function WatchlistTable() {
   // Remove item from menu
   const handleRemoveItem = async (menuId: number, carId: number) => {
     try {
-      const response = await fetch(
-        `/api/dealer/watchlists/${menuId}/items/${carId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      await api.delete(`/api/dealer/watchlists/${menuId}/items/${carId}`);
 
-      if (response.ok) {
-        setItems((prev) =>
-          prev.filter(
-            (item) => !(item.menu_id === menuId && item.vehicle_id === carId),
-          ),
-        );
-        // Update menu count
-        setMenus((prev) =>
-          prev.map((m) => (m.id === menuId ? { ...m, count: m.count - 1 } : m)),
-        );
-      }
+      setItems((prev) =>
+        prev.filter(
+          (item) => !(item.menu_id === menuId && item.vehicle_id === carId),
+        ),
+      );
+      // Update menu count
+      setMenus((prev) =>
+        prev.map((m) => (m.id === menuId ? { ...m, count: m.count - 1 } : m)),
+      );
     } catch (error) {
       console.error("Failed to remove item:", error);
     }

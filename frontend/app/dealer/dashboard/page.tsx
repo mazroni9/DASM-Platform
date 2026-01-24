@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDealerSocket } from "@/hooks/useDealerSocket";
 import { useDealerStore } from "@/store/dealerStore";
 import { cn } from "@/lib/utils";
+import api from "@/lib/axios";
 
 // Import dealer components
 import ConnectionStatus from "@/components/dealer/ConnectionStatus";
@@ -46,7 +47,7 @@ export default function DealerDashboardPage() {
       userId: user?.id || 0,
       authToken: token || "",
       aiEnabled,
-    }
+    },
   );
 
   // Fetch initial dashboard data
@@ -54,13 +55,9 @@ export default function DealerDashboardPage() {
     if (!token) return;
 
     try {
-      const response = await fetch("/api/dealer/dashboard/init", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/api/dealer/dashboard/init");
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status === "success") {
         const { wallet, active_auctions, user: userData } = data.data;
@@ -78,7 +75,7 @@ export default function DealerDashboardPage() {
           userData.id,
           userData.name,
           userData.plan_type,
-          userData.ai_enabled
+          userData.ai_enabled,
         );
 
         setIsInitialized(true);
@@ -112,14 +109,7 @@ export default function DealerDashboardPage() {
 
     // Persist to backend
     try {
-      await fetch("/api/dealer/ai/toggle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ enabled: newState }),
-      });
+      await api.post("/api/dealer/ai/toggle", { enabled: newState });
     } catch (error) {
       console.error("Failed to toggle AI:", error);
       toggleAi(!newState); // Revert on error
@@ -129,19 +119,12 @@ export default function DealerDashboardPage() {
   // Handle bid placement
   const handleBid = async (auctionId: number, amount: number) => {
     try {
-      const response = await fetch("/api/dealer/bid", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          auction_id: auctionId,
-          amount,
-        }),
+      const response = await api.post("/api/dealer/bid", {
+        auction_id: auctionId,
+        amount,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status !== "success") {
         alert(data.message || "فشل في تقديم المزايدة");
@@ -197,7 +180,7 @@ export default function DealerDashboardPage() {
               <Radio
                 className={cn(
                   "w-4 h-4",
-                  aiEnabled ? "text-primary" : "text-foreground/40"
+                  aiEnabled ? "text-primary" : "text-foreground/40",
                 )}
               />
               <span className="text-sm text-foreground/70">

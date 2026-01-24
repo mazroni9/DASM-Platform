@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDealerSocket } from "@/hooks/useDealerSocket";
 import { useDealerStore } from "@/store/dealerStore";
 import { cn } from "@/lib/utils";
+import api from "@/lib/axios";
 
 // Import dealer components
 import ConnectionStatus from "@/components/dealer/ConnectionStatus";
@@ -56,13 +57,9 @@ export default function DealerDashboardPage() {
     if (!token) return;
 
     try {
-      const response = await fetch("/api/dealer/dashboard/init", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/api/dealer/dashboard/init");
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status === "success") {
         const { wallet, active_auctions, user: userData } = data.data;
@@ -114,14 +111,7 @@ export default function DealerDashboardPage() {
 
     // Persist to backend
     try {
-      await fetch("/api/dealer/ai/toggle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ enabled: newState }),
-      });
+      await api.post("/api/dealer/ai/toggle", { enabled: newState });
     } catch (error) {
       console.error("Failed to toggle AI:", error);
       toggleAi(!newState); // Revert on error
@@ -137,13 +127,9 @@ export default function DealerDashboardPage() {
 
     const fetchRecommendations = async () => {
       try {
-        const response = await fetch("/api/dealer/ai/recommendations", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await api.get("/api/dealer/ai/recommendations");
 
-        const data = await response.json();
+        const data = response.data;
 
         if (data.status === "success" && data.data?.recommendations) {
           // Clear existing and add new recommendations
@@ -183,19 +169,12 @@ export default function DealerDashboardPage() {
   // Handle bid placement
   const handleBid = async (auctionId: number, amount: number) => {
     try {
-      const response = await fetch("/api/dealer/bid", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          auction_id: auctionId,
-          amount,
-        }),
+      const response = await api.post("/api/dealer/bid", {
+        auction_id: auctionId,
+        amount,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.status !== "success") {
         alert(data.message || "فشل في تقديم المزايدة");
@@ -323,7 +302,7 @@ export default function DealerDashboardPage() {
 
           <div className="space-y-6">
             {/* AI Sniper Zone */}
-            <SniperZoneEnhanced  />
+            <SniperZoneEnhanced />
 
             {/* Live Auction Grid */}
             <div className="bg-card border border-border rounded-xl p-4">

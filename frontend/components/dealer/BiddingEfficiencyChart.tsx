@@ -16,13 +16,14 @@ import {
 import { Bar } from "react-chartjs-2";
 
 // Register Chart.js components
+import api from "@/lib/axios";
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface BiddingEfficiencyChartProps {
@@ -51,11 +52,9 @@ export default function BiddingEfficiencyChart({
     setError(null);
 
     try {
-      const response = await fetch("/api/dealer/dashboard/bidding-stats", {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
+      const response = await api.get("/api/dealer/dashboard/bidding-stats");
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.status === "success") {
         setData(result.data);
