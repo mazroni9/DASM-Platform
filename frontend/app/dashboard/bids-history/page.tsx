@@ -144,7 +144,7 @@ const BidLogsTimeline = () => {
       case "autobid_fired":
         return {
           bgColor: "bg-primary",
-          textColor: "text-white",
+          textColor: "text-primary-foreground",
           borderColor: "border-primary",
           cardBg: "bg-card",
           cardBorder: "border-border",
@@ -288,7 +288,12 @@ const BidLogsTimeline = () => {
             <Skeleton variant="text" width={150} sx={{ fontSize: "1rem" }} />
             <Skeleton variant="text" width={100} sx={{ fontSize: "0.75rem" }} />
           </div>
-          <Skeleton variant="rectangular" width={80} height={24} className="rounded-full" />
+          <Skeleton
+            variant="rectangular"
+            width={80}
+            height={24}
+            className="rounded-full"
+          />
         </div>
         <div className="flex items-center justify-between">
           <div>
@@ -299,7 +304,12 @@ const BidLogsTimeline = () => {
             <Skeleton variant="text" width={60} sx={{ fontSize: "0.75rem" }} />
           </div>
         </div>
-        <Skeleton variant="text" width={100} sx={{ fontSize: "0.875rem" }} className="mt-1" />
+        <Skeleton
+          variant="text"
+          width={100}
+          sx={{ fontSize: "0.875rem" }}
+          className="mt-1"
+        />
       </div>
     </div>
   );
@@ -310,22 +320,30 @@ const BidLogsTimeline = () => {
       <div className="bg-card rounded-lg shadow-sm mb-6 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">سجل المزايدات</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              سجل المزايدات
+            </h1>
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 pt-4 border-t">
           <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {stats.total}
+            </div>
             <div className="text-sm text-foreground/70">إجمالي المزايدات</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.bid_placed}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.bid_placed}
+            </div>
             <div className="text-sm text-foreground/70">مزايدات تمت</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-foreground/50">{stats.outbid}</div>
+            <div className="text-2xl font-bold text-foreground/50">
+              {stats.outbid}
+            </div>
             <div className="text-sm text-foreground/70">تم تجاوزها</div>
           </div>
         </div>
@@ -338,7 +356,7 @@ const BidLogsTimeline = () => {
             onClick={() => setFilter("all")}
             className={`px-4 py-2 rounded-lg text-sm ${
               filter === "all"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-border text-foreground hover:bg-border/80"
             }`}
           >
@@ -349,7 +367,7 @@ const BidLogsTimeline = () => {
             onClick={() => setFilter("bid_placed")}
             className={`px-4 py-2 rounded-lg text-sm ${
               filter === "bid_placed"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-border text-foreground hover:bg-border/80"
             }`}
           >
@@ -360,7 +378,7 @@ const BidLogsTimeline = () => {
             onClick={() => setFilter("outbid")}
             className={`px-4 py-2 rounded-lg text-sm ${
               filter === "outbid"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-border text-foreground hover:bg-border/80"
             }`}
           >
@@ -384,108 +402,107 @@ const BidLogsTimeline = () => {
 
       {/* Timeline */}
       <div className="relative">
-        {loading ? (
-          Array.from(new Array(5)).map((_, index) => <SkeletonCard key={index} />)
-        ) : (
-          logs.map((log, i) => {
-            const eventType = (log.event_type || "unknown").toString();
-            const style = getEventStyle(eventType);
+        {loading
+          ? Array.from(new Array(5)).map((_, index) => (
+              <SkeletonCard key={index} />
+            ))
+          : logs.map((log, i) => {
+              const eventType = (log.event_type || "unknown").toString();
+              const style = getEventStyle(eventType);
 
-            const auctionId = log.auction_id ?? log.auction?.id ?? 0;
-            const bidAmount = log.bid_amount ?? log.amount ?? 0;
+              const auctionId = log.auction_id ?? log.auction?.id ?? 0;
+              const bidAmount = log.bid_amount ?? log.amount ?? 0;
 
-            const ts = getBestTimestamp(log);
+              const ts = getBestTimestamp(log);
 
-            const key =
-              log.bid_id ??
-              log.id ??
-              `${auctionId}-${ts}-${i}`;
+              const key = log.bid_id ?? log.id ?? `${auctionId}-${ts}-${i}`;
 
-            return (
-              <div key={key} className="relative pr-16 mb-8">
-                {/* Timeline Icon */}
-                <div
-                  className={`absolute right-0 top-0 w-12 h-12 bg-gradient-to-br ${
-                    style.badgeBg
-                  } rounded-full flex items-center justify-center shadow-lg ${
-                    style.pulse ? "animate-pulse" : ""
-                  }`}
-                >
-                  {getEventIcon(eventType)}
-                </div>
-
-                {/* Timeline Line */}
-                {i < logs.length - 1 && (
-                  <div className="absolute right-6 top-12 bottom-0 w-0.5 bg-gradient-to-b from-primary to-border"></div>
-                )}
-
-                {/* Card */}
-                <div
-                  className={`${style.cardBg} rounded-lg shadow-sm p-5 border-r-4 ${style.borderColor} transition-all hover:-translate-x-1 hover:shadow-md`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="font-semibold text-foreground mb-1">
-                        {log.event || getEventBadge(eventType)}
-                      </div>
-                      <div className="text-xs text-foreground/70 flex items-center gap-2">
-                        <span>{getChannelText(log.channel || "web")}</span>
-                        {log.reason_code && (
-                          <>
-                            <span>•</span>
-                            <span>{log.reason_code}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <span
-                      className={`px-3 py-1 ${style.badgeBg} ${style.badgeText} text-xs rounded-full font-semibold whitespace-nowrap`}
-                    >
-                      {getEventBadge(eventType)}
-                    </span>
+              return (
+                <div key={key} className="relative pr-16 mb-8">
+                  {/* Timeline Icon */}
+                  <div
+                    className={`absolute right-0 top-0 w-12 h-12 bg-gradient-to-br ${
+                      style.badgeBg
+                    } rounded-full flex items-center justify-center shadow-lg ${
+                      style.pulse ? "animate-pulse" : ""
+                    }`}
+                  >
+                    {getEventIcon(eventType)}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div
-                        className={`text-2xl font-bold ${
-                          eventType === "outbid"
-                            ? "text-foreground/70"
-                            : "text-foreground"
-                        }`}
+                  {/* Timeline Line */}
+                  {i < logs.length - 1 && (
+                    <div className="absolute right-6 top-12 bottom-0 w-0.5 bg-gradient-to-b from-primary to-border"></div>
+                  )}
+
+                  {/* Card */}
+                  <div
+                    className={`${style.cardBg} rounded-lg shadow-sm p-5 border-r-4 ${style.borderColor} transition-all hover:-translate-x-1 hover:shadow-md`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="font-semibold text-foreground mb-1">
+                          {log.event || getEventBadge(eventType)}
+                        </div>
+                        <div className="text-xs text-foreground/70 flex items-center gap-2">
+                          <span>{getChannelText(log.channel || "web")}</span>
+                          {log.reason_code && (
+                            <>
+                              <span>•</span>
+                              <span>{log.reason_code}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`px-3 py-1 ${style.badgeBg} ${style.badgeText} text-xs rounded-full font-semibold whitespace-nowrap`}
                       >
-                        <PriceWithIcon price={bidAmount} />
+                        {getEventBadge(eventType)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div
+                          className={`text-2xl font-bold ${
+                            eventType === "outbid"
+                              ? "text-foreground/70"
+                              : "text-foreground"
+                          }`}
+                        >
+                          <PriceWithIcon price={bidAmount} />
+                        </div>
+                      </div>
+
+                      <div className="text-left">
+                        <div className="text-sm text-foreground/80 flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {formatTime(ts)}
+                        </div>
+                        <div className="text-xs text-foreground/50 mt-1">
+                          {ts
+                            ? new Date(ts).toLocaleString("ar-SA", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "—"}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-left">
-                      <div className="text-sm text-foreground/80 flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {formatTime(ts)}
-                      </div>
-                      <div className="text-xs text-foreground/50 mt-1">
-                        {ts
-                          ? new Date(ts).toLocaleString("ar-SA", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "—"}
-                      </div>
-                    </div>
+                    <p className="text-foreground/80 mt-1">
+                      رقم المزاد #{auctionId || "—"}
+                    </p>
                   </div>
-
-                  <p className="text-foreground/80 mt-1">
-                    رقم المزاد #{auctionId || "—"}
-                  </p>
                 </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })}
 
         {loadingMore &&
-          Array.from(new Array(2)).map((_, index) => <SkeletonCard key={index} />)}
+          Array.from(new Array(2)).map((_, index) => (
+            <SkeletonCard key={index} />
+          ))}
       </div>
 
       {logs.length === 0 && !loading && (

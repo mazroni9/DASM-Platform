@@ -146,18 +146,18 @@ export default function WatchlistTable() {
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (response.ok) {
         setItems((prev) =>
           prev.filter(
-            (item) => !(item.menu_id === menuId && item.vehicle_id === carId)
-          )
+            (item) => !(item.menu_id === menuId && item.vehicle_id === carId),
+          ),
         );
         // Update menu count
         setMenus((prev) =>
-          prev.map((m) => (m.id === menuId ? { ...m, count: m.count - 1 } : m))
+          prev.map((m) => (m.id === menuId ? { ...m, count: m.count - 1 } : m)),
         );
       }
     } catch (error) {
@@ -241,8 +241,8 @@ export default function WatchlistTable() {
             className={cn(
               "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300",
               activeMenuId === "all"
-                ? "bg-primary text-white"
-                : "bg-background/50 text-foreground/60 hover:bg-border hover:text-foreground"
+                ? "bg-primary text-primary-foreground"
+                : "bg-background/50 text-foreground/60 hover:bg-border hover:text-foreground",
             )}
           >
             الكل ({totalCount})
@@ -254,8 +254,8 @@ export default function WatchlistTable() {
                 className={cn(
                   "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 pr-8",
                   activeMenuId === menu.id
-                    ? "bg-primary text-white"
-                    : "bg-background/50 text-foreground/60 hover:bg-border hover:text-foreground"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background/50 text-foreground/60 hover:bg-border hover:text-foreground",
                 )}
               >
                 {menu.name} ({menu.count})
@@ -350,7 +350,7 @@ export default function WatchlistTable() {
                     <span
                       className={cn(
                         "text-xs px-2 py-1 rounded",
-                        getStatusColor(item.status)
+                        getStatusColor(item.status),
                       )}
                     >
                       {item.status === "active" ? "نشط" : item.status}
@@ -372,7 +372,7 @@ export default function WatchlistTable() {
                         onClick={() =>
                           handleRemoveItem(
                             item.menu_id || (activeMenuId as number),
-                            item.vehicle_id
+                            item.vehicle_id,
                           )
                         }
                         className="p-2 bg-red-500/10 text-red-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"

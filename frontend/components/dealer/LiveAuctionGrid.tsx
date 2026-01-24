@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, TrendingUp, Gavel, Flame } from "lucide-react";
+import { Clock, TrendingUp, Gavel, Flame, SaudiRiyal } from "lucide-react";
 import { useDealerStore, Auction } from "@/store/dealerStore";
 import { cn } from "@/lib/utils";
 
@@ -18,13 +18,13 @@ export default function LiveAuctionGrid({ onBid }: LiveAuctionGridProps) {
     const increment = Math.max(auction.current_bid * 0.01, 100);
     const newAmount = Math.ceil(auction.current_bid + increment);
 
-    if (wallet.availableBalance >= newAmount) {
-      // Optimistic update
-      optimisticBid(auction.id, newAmount);
-      onBid(auction.id, newAmount);
-    } else {
-      alert("رصيد غير كافي");
-    }
+    onBid(auction.id, newAmount);
+    // if (wallet.availableBalance >= newAmount) {
+    //   // Optimistic update
+    //   optimisticBid(auction.id, newAmount);
+    // } else {
+    //   alert("رصيد غير كافي");
+    // }
   };
 
   const getTimeRemaining = (endTime: string) => {
@@ -89,9 +89,9 @@ export default function LiveAuctionGrid({ onBid }: LiveAuctionGridProps) {
 
           {/* Car Image */}
           <div className="relative h-32 bg-gradient-to-b from-transparent to-black/50">
-            {auction.car?.image ? (
+            {auction.car?.images ? (
               <img
-                src={auction.car.image}
+                src={auction.car.images[0]}
                 alt={`${auction.car.brand} ${auction.car.model}`}
                 className="w-full h-full object-cover"
               />
@@ -125,19 +125,19 @@ export default function LiveAuctionGrid({ onBid }: LiveAuctionGridProps) {
                   animate={{ scale: 1, color: "inherit" }}
                   className="text-lg font-bold text-primary"
                 >
-                  {auction.current_bid.toLocaleString()} ر.س
+                  {auction.current_bid?.toLocaleString() || 0} <SaudiRiyal/>
                 </motion.p>
               </div>
 
               {/* Quick Bid Button */}
               <button
                 onClick={() => handleQuickBid(auction)}
-                disabled={wallet.availableBalance < auction.current_bid * 1.01}
+               // disabled={wallet.availableBalance < auction.current_bid * 1.01}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all",
-                  wallet.availableBalance >= auction.current_bid * 1.01
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-foreground/10 text-foreground/40 cursor-not-allowed"
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all bg-primary text-primary-foreground hover:bg-primary/90",
+                  // wallet.availableBalance >= auction.current_bid * 1.01
+                  //   ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  //   : "bg-foreground/10 text-foreground/40 cursor-not-allowed"
                 )}
               >
                 <TrendingUp className="w-4 h-4" />

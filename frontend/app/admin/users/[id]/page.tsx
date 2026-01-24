@@ -89,13 +89,13 @@ export default function UserDetailPage({}: { params: { id: string } }) {
     try {
       const response = await api.post(
         `/api/admin/users/${params.id}/toggle-status`,
-        { status: "active", is_active: true }
+        { status: "active", is_active: true },
       );
 
       if (response.data && response.data.status === "success") {
         toast.success("تم تفعيل المستخدم بنجاح");
         setUser((prev) =>
-          prev ? { ...prev, is_active: true, status: "active" } : null
+          prev ? { ...prev, is_active: true, status: "active" } : null,
         );
       }
     } catch (error) {
@@ -111,13 +111,13 @@ export default function UserDetailPage({}: { params: { id: string } }) {
     try {
       const response = await api.post(
         `/api/admin/users/${params.id}/toggle-status`,
-        { status: "rejected", is_active: false }
+        { status: "rejected", is_active: false },
       );
 
       if (response.data && response.data.status === "success") {
         toast.success("تم رفض المستخدم بنجاح");
         setUser((prev) =>
-          prev ? { ...prev, is_active: false, status: "rejected" } : null
+          prev ? { ...prev, is_active: false, status: "rejected" } : null,
         );
       }
     } catch (error) {
@@ -132,7 +132,7 @@ export default function UserDetailPage({}: { params: { id: string } }) {
     setProcessingAction("verify");
     try {
       const response = await api.post(
-        `/api/admin/users/${params.id}/approve-verification`
+        `/api/admin/users/${params.id}/approve-verification`,
       );
 
       if (response.data && response.data.status === "success") {
@@ -274,8 +274,8 @@ export default function UserDetailPage({}: { params: { id: string } }) {
           {/* User Info */}
           <div className="flex items-center space-x-4 space-x-reverse">
             <div className="relative">
-              <div className="bg-primary p-3 rounded-2xl">
-                <span className="text-primary-foreground font-bold text-xl">
+              <div className="bg-primary text-primary-foreground p-3 rounded-2xl">
+                <span className="font-bold text-xl">
                   {user.first_name.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -295,10 +295,10 @@ export default function UserDetailPage({}: { params: { id: string } }) {
                     user.type === "admin"
                       ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
                       : user.type === "moderator"
-                      ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
-                      : user.type === "dealer"
-                      ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                      : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                        ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
+                        : user.type === "dealer"
+                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                          : "bg-gray-500/20 text-gray-400 border-gray-500/30"
                   }`}
                 >
                   {getRoleIcon(user.type)}
@@ -306,17 +306,17 @@ export default function UserDetailPage({}: { params: { id: string } }) {
                     {user.type === "dealer"
                       ? "تاجر"
                       : user.type === "admin"
-                      ? "مدير"
-                      : user.type === "moderator"
-                      ? "مشرف"
-                      : "مستخدم"}
+                        ? "مدير"
+                        : user.type === "moderator"
+                          ? "مشرف"
+                          : "مستخدم"}
                   </span>
                 </span>
 
                 {/* Status Badge */}
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
-                    user.status
+                    user.status,
                   )}`}
                 >
                   {user.status === "active" && (
@@ -332,8 +332,8 @@ export default function UserDetailPage({}: { params: { id: string } }) {
                     {user.status === "active"
                       ? "مفعل"
                       : user.status === "pending"
-                      ? "في انتظار التفعيل"
-                      : "مرفوض"}
+                        ? "في انتظار التفعيل"
+                        : "مرفوض"}
                   </span>
                 </span>
 

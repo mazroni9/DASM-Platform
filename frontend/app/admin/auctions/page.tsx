@@ -101,7 +101,7 @@ export default function AdminAuctionsPage() {
       if (filter) params.append("status", filter);
 
       const response = await api.get(
-        `/api/admin/auctions?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`
+        `/api/admin/auctions?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
       );
       if (response.data.status === "success") {
         const data = response.data.data.data || response.data.data;
@@ -151,7 +151,7 @@ export default function AdminAuctionsPage() {
     setSelectedAuctions((prev) =>
       prev.includes(auctionId)
         ? prev.filter((id) => id !== auctionId)
-        : [...prev, auctionId]
+        : [...prev, auctionId],
     );
   };
 
@@ -212,7 +212,7 @@ export default function AdminAuctionsPage() {
         } else {
           if (selectedAuctions.length === 1) {
             const live = window.confirm(
-              "هل تريد اعتماد هذا المزاد للبث المباشر؟\n(موافق = بث مباشر، إلغاء = موافقة كجدولة)"
+              "هل تريد اعتماد هذا المزاد للبث المباشر؟\n(موافق = بث مباشر، إلغاء = موافقة كجدولة)",
             );
             if (live) {
               await bulkApproveLive(selectedAuctions[0]);
@@ -279,7 +279,7 @@ export default function AdminAuctionsPage() {
       if (!Number.isNaN(openingPrice) && approvalData.opening_price !== "") {
         await api.put(
           `/api/admin/auctions/${selectedAuction.id}/set-open-price`,
-          { price: openingPrice }
+          { price: openingPrice },
         );
       }
 
@@ -646,7 +646,7 @@ export default function AdminAuctionsPage() {
                     <tbody className="divide-y divide-border">
                       {filteredAuctions.map((auction) => {
                         const TypeIcon = getAuctionTypeIcon(
-                          auction.auction_type
+                          auction.auction_type,
                         );
                         return (
                           <tr
@@ -663,8 +663,8 @@ export default function AdminAuctionsPage() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center">
-                                <div className="bg-primary p-2 rounded-xl">
-                                  <Car className="w-4 h-4 text-white" />
+                                <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                                  <Car className="w-4 h-4" />
                                 </div>
                                 <div className="mr-4">
                                   <div
@@ -674,7 +674,7 @@ export default function AdminAuctionsPage() {
                                         `/carDetails/${
                                           auction.car?.id || auction.id
                                         }`,
-                                        "_blank"
+                                        "_blank",
                                       )
                                     }
                                   >
@@ -698,7 +698,7 @@ export default function AdminAuctionsPage() {
                             <td className="px-6 py-4">
                               <span
                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                                  auction.status
+                                  auction.status,
                                 )}`}
                               >
                                 {getStatusText(auction.status)}
@@ -729,7 +729,7 @@ export default function AdminAuctionsPage() {
                                   onClick={() =>
                                     window.open(
                                       `/auctions/${auction.id}`,
-                                      "_blank"
+                                      "_blank",
                                     )
                                   }
                                   className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300"
@@ -746,7 +746,7 @@ export default function AdminAuctionsPage() {
                                         onClick={async function complete() {
                                           const status = await api.put(
                                             `/api/admin/auctions/${auction.id}/status`,
-                                            { status: "completed" }
+                                            { status: "completed" },
                                           );
                                           if (
                                             status.data.status === "success"
@@ -767,13 +767,13 @@ export default function AdminAuctionsPage() {
                                         onClick={async function cancel() {
                                           const status = await api.put(
                                             `/api/admin/auctions/${auction.id}/status`,
-                                            { status: "ended" }
+                                            { status: "ended" },
                                           );
                                           if (
                                             status.data.status === "success"
                                           ) {
                                             toast.success(
-                                              "تم الغاء المزاد بنجاح"
+                                              "تم الغاء المزاد بنجاح",
                                             );
                                             router.refresh();
                                           } else {
@@ -801,7 +801,7 @@ export default function AdminAuctionsPage() {
                                           {
                                             auction_type: "live",
                                             approved_for_live: true,
-                                          }
+                                          },
                                         );
                                         if (status.data.status === "success") {
                                           toast.success("تم بدأ البث بنجاح");
@@ -867,7 +867,7 @@ export default function AdminAuctionsPage() {
                 </div>
                 <button
                   onClick={fetchPendingAuctions}
-                  className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
                 >
                   <Search className="w-4 h-4 ml-2" />
                   بحث

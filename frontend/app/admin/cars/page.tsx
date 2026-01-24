@@ -252,7 +252,7 @@ function extractStats(raw: any): Partial<StatsState> | null {
 
 function calcStatsFallback(
   list: CarData[],
-  totalFromPagination?: number
+  totalFromPagination?: number,
 ): StatsState {
   const counts = {
     pending: 0,
@@ -349,7 +349,7 @@ export default function AdminCarsPage() {
         params.append("transmission", filters.transmission);
 
       const response = await api.get(
-        `/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`
+        `/api/admin/cars?page=${currentPage}&pageSize=${pageSize}&${params.toString()}`,
       );
 
       const { list, pagination } = extractCarsResponse(response.data);
@@ -411,13 +411,13 @@ export default function AdminCarsPage() {
 
       // لو مفيش Normalize، اعمل fallback
       setStats(
-        calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined)
+        calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined),
       );
     } catch (error) {
       console.error("Error fetching stats:", error);
       // fallback بدل ما تفضل 0
       setStats(
-        calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined)
+        calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined),
       );
     } finally {
       setStatsLoading(false);
@@ -452,7 +452,7 @@ export default function AdminCarsPage() {
   };
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -471,7 +471,7 @@ export default function AdminCarsPage() {
 
       const response = await api.put(
         `/api/admin/auctions/${carOjbect["id"]}/set-open-price`,
-        carOjbect
+        carOjbect,
       );
 
       if (response.data?.status === "success") {
@@ -829,7 +829,7 @@ export default function AdminCarsPage() {
                 <div className="relative">
                   <button
                     onClick={() => setShowBulkActions(!showBulkActions)}
-                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
                   >
                     إجراءات جماعية
                     <ChevronDown
@@ -1038,12 +1038,12 @@ export default function AdminCarsPage() {
                   const owner = car.dealer?.user
                     ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)`
                     : car.user
-                    ? car.user.name ||
-                      `${car.user.first_name || ""} ${
-                        car.user.last_name || ""
-                      }`.trim() ||
-                      "غير محدد"
-                    : "غير محدد";
+                      ? car.user.name ||
+                        `${car.user.first_name || ""} ${
+                          car.user.last_name || ""
+                        }`.trim() ||
+                        "غير محدد"
+                      : "غير محدد";
 
                   return (
                     <tr
@@ -1063,8 +1063,8 @@ export default function AdminCarsPage() {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="bg-primary p-2 rounded-xl">
-                            <Car className="w-4 h-4 text-white" />
+                          <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                            <Car className="w-4 h-4" />
                           </div>
 
                           <div className="mr-4">
@@ -1092,7 +1092,7 @@ export default function AdminCarsPage() {
                         <span
                           className={cn(
                             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                            getStatusColor(car.auction_status)
+                            getStatusColor(car.auction_status),
                           )}
                         >
                           {getStatusText(car.auction_status)}
@@ -1103,7 +1103,7 @@ export default function AdminCarsPage() {
                         <span
                           className={cn(
                             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                            getApprovalColor(car.auction_status)
+                            getApprovalColor(car.auction_status),
                           )}
                         >
                           {getApprovalText(car.auction_status)}
@@ -1177,13 +1177,13 @@ export default function AdminCarsPage() {
                               onClick={() => {
                                 setFormData({
                                   price: String(
-                                    asNumber(car.evaluation_price) || ""
+                                    asNumber(car.evaluation_price) || "",
                                   ),
                                   id: car.active_auction?.id || "",
                                 });
                                 setShowModal(true);
                               }}
-                              className="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300"
+                              className="bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg text-xs transition-all duration-300"
                               title="تحديد السعر للمزاد"
                             >
                               حدد السعر
@@ -1396,7 +1396,7 @@ export function ActionsMenu({
     action: string,
     label: string,
     Icon: any,
-    danger = false
+    danger = false,
   ) => (
     <MenuItem
       onClick={() => {
@@ -1408,7 +1408,7 @@ export function ActionsMenu({
       <div
         className={cn(
           "w-full flex items-center justify-between",
-          danger && "text-red-600"
+          danger && "text-red-600",
         )}
       >
         <span className="text-sm">{label}</span>
@@ -1444,7 +1444,7 @@ export function ActionsMenu({
         {actionItem(
           "approve-auctions-with-price",
           "الموافقة على المزادات",
-          CheckSquare
+          CheckSquare,
         )}
         {actionItem("reject-auctions", "رفض المزادات", X)}
         {actionItem("move-to-live", "نقل إلى الحراج المباشر", Play)}

@@ -160,7 +160,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "#",
       type: "header",
       icon: Calendar,
-      permissions: ["sessions.view", "live_streams.view", "youtube_channels.view"],
+      permissions: [
+        "sessions.view",
+        "live_streams.view",
+        "youtube_channels.view",
+      ],
     },
     {
       name: "إدارة الجلسات",
@@ -273,8 +277,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               {/* Sidebar Header */}
               <div className="bg-card border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary p-2 rounded-xl">
-                    <Building className="w-6 h-6 text-white" />
+                  <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                    <Building className="w-6 h-6" />
                   </div>
                   <div>
                     <h2 className="font-bold text-lg">لوحة الإدارة</h2>

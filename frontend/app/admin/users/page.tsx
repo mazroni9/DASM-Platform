@@ -154,7 +154,7 @@ export default function UsersManagementPage() {
         (user) =>
           user.first_name.toLowerCase().includes(searchLower) ||
           user.last_name.toLowerCase().includes(searchLower) ||
-          user.email.toLowerCase().includes(searchLower)
+          user.email.toLowerCase().includes(searchLower),
       );
     }
 
@@ -171,7 +171,7 @@ export default function UsersManagementPage() {
         result = result.filter((user) => user.status === "rejected");
       } else if (statusFilter === "dealer_pending") {
         result = result.filter(
-          (user) => user.type === "dealer" && user.status === "pending"
+          (user) => user.type === "dealer" && user.status === "pending",
         );
       }
     }
@@ -187,7 +187,7 @@ export default function UsersManagementPage() {
         {
           status: "active",
           is_active: true,
-        }
+        },
       );
 
       if (response.data && response.data.status === "success") {
@@ -196,8 +196,8 @@ export default function UsersManagementPage() {
           prevUsers.map((user) =>
             user.id === userId
               ? { ...user, is_active: true, status: "active" }
-              : user
-          )
+              : user,
+          ),
         );
       }
     } catch (error) {
@@ -216,7 +216,7 @@ export default function UsersManagementPage() {
         {
           status: "rejected",
           is_active: false,
-        }
+        },
       );
 
       if (response.data && response.data.status === "success") {
@@ -225,8 +225,8 @@ export default function UsersManagementPage() {
           prevUsers.map((user) =>
             user.id === userId
               ? { ...user, is_active: false, status: "rejected" }
-              : user
-          )
+              : user,
+          ),
         );
       }
     } catch (error) {
@@ -244,7 +244,7 @@ export default function UsersManagementPage() {
         `api/admin/users/${userId}/toggle-status`,
         {
           is_active: !currentStatus,
-        }
+        },
       );
 
       if (response.data && response.data.status === "success") {
@@ -257,8 +257,8 @@ export default function UsersManagementPage() {
                   is_active: !currentStatus,
                   status: response.data.data.status,
                 }
-              : user
-          )
+              : user,
+          ),
         );
       }
     } catch (error) {
@@ -273,7 +273,7 @@ export default function UsersManagementPage() {
     setProcessingUserId(userId);
     try {
       const response = await api.post(
-        `/api/admin/dealers/${userId}/approve-verification`
+        `/api/admin/dealers/${userId}/approve-verification`,
       );
 
       if (response.data && response.data.status === "success") {
@@ -286,8 +286,8 @@ export default function UsersManagementPage() {
                   is_active: true,
                   status: "active",
                 }
-              : user
-          )
+              : user,
+          ),
         );
       }
     } catch (error) {
@@ -301,8 +301,8 @@ export default function UsersManagementPage() {
                 is_active: true,
                 status: "active",
               }
-            : user
-        )
+            : user,
+        ),
       );
     } finally {
       setProcessingUserId(null);
@@ -550,8 +550,8 @@ export default function UsersManagementPage() {
                     {/* User Info */}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="bg-primary p-2 rounded-xl">
-                          <span className="text-primary-foreground font-semibold text-sm">
+                        <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                          <span className="font-semibold text-sm">
                             {user.first_name.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -589,23 +589,23 @@ export default function UsersManagementPage() {
                             user.type === "admin"
                               ? "text-purple-400"
                               : user.type === "moderator"
-                              ? "text-orange-400"
-                              : user.type === "dealer"
-                              ? "text-blue-400"
-                              : user.type === "venue_owner"
-                              ? "text-cyan-400"
-                              : "text-gray-400"
+                                ? "text-orange-400"
+                                : user.type === "dealer"
+                                  ? "text-blue-400"
+                                  : user.type === "venue_owner"
+                                    ? "text-cyan-400"
+                                    : "text-gray-400"
                           }`}
                         >
                           {user.type === "dealer"
                             ? "تاجر"
                             : user.type === "admin"
-                            ? "مدير"
-                            : user.type === "moderator"
-                            ? "مشرف"
-                            : user.type === "venue_owner"
-                            ? "صاحب معرض"
-                            : "مستخدم"}
+                              ? "مدير"
+                              : user.type === "moderator"
+                                ? "مشرف"
+                                : user.type === "venue_owner"
+                                  ? "صاحب معرض"
+                                  : "مستخدم"}
                         </span>
                       </div>
                     </td>
@@ -615,7 +615,7 @@ export default function UsersManagementPage() {
                       <div className="space-y-2">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                            user.status
+                            user.status,
                           )}`}
                         >
                           {user.status === "active" && (
@@ -630,8 +630,8 @@ export default function UsersManagementPage() {
                           {user.status === "active"
                             ? "مفعل"
                             : user.status === "pending"
-                            ? "في الانتظار"
-                            : "مرفوض"}
+                              ? "في الانتظار"
+                              : "مرفوض"}
                         </span>
 
                         {user.type === "dealer" && (

@@ -3,13 +3,13 @@ import { useParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import CommissionTierForm from "@/components/admin/CommissionTierForm";
 import { Button } from "@/components/ui/button";
-import { 
-    ArrowLeft, 
-    Settings, 
-    RefreshCw,
-    Shield,
-    Sparkles,
-    BarChart3
+import {
+  ArrowLeft,
+  Settings,
+  RefreshCw,
+  Shield,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 
 export default function Page() {
@@ -39,8 +39,8 @@ export default function Page() {
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <div className="bg-primary p-3 rounded-xl">
-            <Settings className="w-6 h-6 text-primary-foreground" />
+          <div className="bg-primary text-primary-foreground p-3 rounded-xl">
+            <Settings className="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -64,9 +64,9 @@ export default function Page() {
 
           {/* Form Container */}
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
-            <CommissionTierForm 
-              id={id} 
-              onSuccess={() => r.push("/admin/commission-tiers")} 
+            <CommissionTierForm
+              id={id}
+              onSuccess={() => r.push("/admin/commission-tiers")}
             />
           </div>
         </div>
@@ -79,23 +79,31 @@ export default function Page() {
               <Sparkles className="w-5 h-5 ml-2" />
               نصائح سريعة
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">تأكد من صحة نطاق الأسعار</span>
+                <span className="text-muted-foreground">
+                  تأكد من صحة نطاق الأسعار
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">العمولة التدريجية تناسب الأسعار المتغيرة</span>
+                <span className="text-muted-foreground">
+                  العمولة التدريجية تناسب الأسعار المتغيرة
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">اختر اسمًا واضحًا يعبر عن الفئة</span>
+                <span className="text-muted-foreground">
+                  اختر اسمًا واضحًا يعبر عن الفئة
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">سيتم تطبيق التغييرات فور الحفظ</span>
+                <span className="text-muted-foreground">
+                  سيتم تطبيق التغييرات فور الحفظ
+                </span>
               </div>
             </div>
           </div>
@@ -106,23 +114,31 @@ export default function Page() {
               <BarChart3 className="w-5 h-5 ml-2" />
               إرشادات التعديل
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">يمكن تعطيل الفئة مؤقتًا دون حذفها</span>
+                <span className="text-muted-foreground">
+                  يمكن تعطيل الفئة مؤقتًا دون حذفها
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">التغييرات تؤثر على المعاملات الجديدة فقط</span>
+                <span className="text-muted-foreground">
+                  التغييرات تؤثر على المعاملات الجديدة فقط
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">احتفظ بنسخة من الإعدادات السابقة</span>
+                <span className="text-muted-foreground">
+                  احتفظ بنسخة من الإعدادات السابقة
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">اختبر العمولة الجديدة قبل التطبيق</span>
+                <span className="text-muted-foreground">
+                  اختبر العمولة الجديدة قبل التطبيق
+                </span>
               </div>
             </div>
           </div>
@@ -133,7 +149,7 @@ export default function Page() {
               <Shield className="w-5 h-5 ml-2" />
               معلومات الدعم
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="text-muted-foreground">
                 <div className="font-medium">معرف الفئة:</div>
@@ -156,7 +172,8 @@ export default function Page() {
       <div className="mt-8 bg-muted rounded-xl p-4">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-sm text-muted-foreground">
-            جاري تحديث فئة العمولة رقم <span className="text-primary font-mono">{id}</span>
+            جاري تحديث فئة العمولة رقم{" "}
+            <span className="text-primary font-mono">{id}</span>
           </div>
           <div className="flex items-center space-x-3 space-x-reverse">
             <Button
@@ -167,7 +184,9 @@ export default function Page() {
               إلغاء والعودة
             </Button>
             <Button
-              onClick={() => document.getElementById('commission-form-submit')?.click()}
+              onClick={() =>
+                document.getElementById("commission-form-submit")?.click()
+              }
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <RefreshCw className="w-4 h-4 ml-2" />

@@ -5,7 +5,15 @@ import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { ArrowRight, Link2, Save, Tags, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  ArrowRight,
+  Link2,
+  Save,
+  Tags,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+} from "lucide-react";
 
 type BlogCategory = {
   id: number | string;
@@ -18,7 +26,14 @@ type BlogCategory = {
 type ApiIndexResponse<T> =
   | T[]
   | { data: T[]; meta?: { total?: number } }
-  | { data: { data: T[]; meta?: { total?: number }; total?: number; pagination?: { total?: number } } }
+  | {
+      data: {
+        data: T[];
+        meta?: { total?: number };
+        total?: number;
+        pagination?: { total?: number };
+      };
+    }
   | { data: T[]; total?: number; meta?: { total?: number } }
   | { items: T[]; pagination?: { total?: number } }
   | { data?: any; pagination?: any; meta?: any; total?: any };
@@ -90,7 +105,8 @@ export default function AdminBlogCategoryEditPage() {
   const slugHelp = useMemo(() => {
     const s = form.slug.trim();
     if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
-    if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
+    if (s.includes(" "))
+      return { type: "warn" as const, text: "يفضل بدون مسافات" };
     return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
@@ -109,7 +125,8 @@ export default function AdminBlogCategoryEditPage() {
     if (!id) return null;
     const res = await api.get(`/api/admin/blog/categories/${id}`);
     const data = res?.data?.data ?? res?.data;
-    if (data && (data.id != null || data.name != null)) return data as BlogCategory;
+    if (data && (data.id != null || data.name != null))
+      return data as BlogCategory;
     return null;
   };
 
@@ -120,13 +137,16 @@ export default function AdminBlogCategoryEditPage() {
     const maxPagesToTry = 10;
 
     for (let page = 1; page <= maxPagesToTry; page++) {
-      const res = await api.get<ApiIndexResponse<BlogCategory>>("/api/admin/blog/categories", {
-        params: {
-          page,
-          per_page: pageSize,
-          pageSize,
+      const res = await api.get<ApiIndexResponse<BlogCategory>>(
+        "/api/admin/blog/categories",
+        {
+          params: {
+            page,
+            per_page: pageSize,
+            pageSize,
+          },
         },
-      });
+      );
 
       const { list } = normalizeList<BlogCategory>(res?.data);
       const found = list.find((x) => sameId(x.id, id));
@@ -221,10 +241,14 @@ export default function AdminBlogCategoryEditPage() {
     <div className="bg-card border border-border rounded-2xl p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xl font-extrabold text-primary line-clamp-2">{form.name.trim() || "اسم التصنيف"}</h2>
+          <h2 className="text-xl font-extrabold text-primary line-clamp-2">
+            {form.name.trim() || "اسم التصنيف"}
+          </h2>
           <p className="text-sm text-foreground/60 mt-2 flex items-center gap-2">
             <Link2 size={14} />
-            <span className="truncate">/blog/category/{form.slug.trim() || "..."}</span>
+            <span className="truncate">
+              /blog/category/{form.slug.trim() || "..."}
+            </span>
           </p>
 
           <div className="mt-3">
@@ -248,7 +272,9 @@ export default function AdminBlogCategoryEditPage() {
       <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
         <div className="font-bold mb-2">الوصف</div>
         {form.description.trim() ? (
-          <p className="text-foreground/70 leading-7">{form.description.trim()}</p>
+          <p className="text-foreground/70 leading-7">
+            {form.description.trim()}
+          </p>
         ) : (
           <p className="text-foreground/50">لا يوجد وصف.</p>
         )}
@@ -260,7 +286,9 @@ export default function AdminBlogCategoryEditPage() {
     <div className="min-h-screen bg-background text-foreground p-2 rtl">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">تعديل تصنيف</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
+            تعديل تصنيف
+          </h1>
           <p className="text-foreground/70 mt-2">حدّث البيانات ثم احفظ</p>
         </div>
 
@@ -292,21 +320,30 @@ export default function AdminBlogCategoryEditPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6">
+          <form
+            onSubmit={submit}
+            className="bg-card border border-border rounded-2xl p-6 space-y-6"
+          >
             {loading ? (
               <div className="text-foreground/60">جارٍ التحميل...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold mb-1">اسم التصنيف</label>
+                    <label className="block text-sm font-bold mb-1">
+                      اسم التصنيف
+                    </label>
                     <input
                       value={form.name}
-                      onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, name: e.target.value }))
+                      }
                       className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                       required
                     />
-                    <div className="text-xs text-foreground/60 mt-1">{form.name.length}/255</div>
+                    <div className="text-xs text-foreground/60 mt-1">
+                      {form.name.length}/255
+                    </div>
                   </div>
 
                   <div>
@@ -318,7 +355,8 @@ export default function AdminBlogCategoryEditPage() {
                           checked={autoSlug}
                           onChange={(e) => {
                             setAutoSlug(e.target.checked);
-                            if (e.target.checked) slugTouchedRef.current = false;
+                            if (e.target.checked)
+                              slugTouchedRef.current = false;
                             else slugTouchedRef.current = true;
                           }}
                           className="accent-primary"
@@ -344,15 +382,21 @@ export default function AdminBlogCategoryEditPage() {
                       {slugHelp.type === "ok" ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          <span className="text-emerald-500">{slugHelp.text}</span>
+                          <span className="text-emerald-500">
+                            {slugHelp.text}
+                          </span>
                         </>
                       ) : (
                         <>
                           <AlertTriangle className="w-4 h-4 text-amber-500" />
-                          <span className="text-amber-500">{slugHelp.text}</span>
+                          <span className="text-amber-500">
+                            {slugHelp.text}
+                          </span>
                         </>
                       )}
-                      <span className="text-foreground/50">({form.slug.length}/255)</span>
+                      <span className="text-foreground/50">
+                        ({form.slug.length}/255)
+                      </span>
                     </div>
 
                     <div className="mt-3">
@@ -372,10 +416,14 @@ export default function AdminBlogCategoryEditPage() {
                 </div>
 
                 <div className="rounded-2xl border border-border bg-background/40 p-4">
-                  <label className="block text-sm font-bold mb-2">وصف (اختياري)</label>
+                  <label className="block text-sm font-bold mb-2">
+                    وصف (اختياري)
+                  </label>
                   <textarea
                     value={form.description}
-                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, description: e.target.value }))
+                    }
                     className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                     rows={4}
                   />
@@ -384,14 +432,18 @@ export default function AdminBlogCategoryEditPage() {
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 p-4">
                   <div>
                     <div className="font-bold">الحالة</div>
-                    <div className="text-xs text-foreground/60 mt-1">نشط = يظهر</div>
+                    <div className="text-xs text-foreground/60 mt-1">
+                      نشط = يظهر
+                    </div>
                   </div>
 
                   <label className="inline-flex items-center gap-3 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={form.is_active}
-                      onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, is_active: e.target.checked }))
+                      }
                       className="h-5 w-5 accent-primary"
                     />
                     <span className="text-sm font-semibold text-foreground/80">
@@ -404,7 +456,7 @@ export default function AdminBlogCategoryEditPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4" />
                     {saving ? "جارٍ الحفظ..." : "حفظ"}

@@ -5,24 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { commissionTierService } from "@/services/commission-tier-service";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { 
-    Eye, 
-    Pencil, 
-    RefreshCw, 
-    Search, 
-    Trash2, 
-    Filter,
-    Plus,
-    Download,
-    TrendingUp,
-    Percent,
-    Layers,
-    Shield,
-    ChevronDown,
-    MoreVertical,
-    AlertTriangle,
-    CheckCircle,
-    XCircle
+import {
+  Eye,
+  Pencil,
+  RefreshCw,
+  Search,
+  Trash2,
+  Filter,
+  Plus,
+  Download,
+  TrendingUp,
+  Percent,
+  Layers,
+  Shield,
+  ChevronDown,
+  MoreVertical,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { PriceWithIcon } from "@/components/ui/priceWithIcon";
 
@@ -78,11 +78,13 @@ export default function Page() {
   // Calculate statistics
   const stats = useMemo(() => {
     const total = rows.length;
-    const active = rows.filter(t => t.isActive).length;
-    const progressive = rows.filter(t => t.isProgressive).length;
-    const averageCommission = rows.length > 0 
-      ? rows.reduce((sum, t) => sum + (t.commissionAmount || 0), 0) / rows.length 
-      : 0;
+    const active = rows.filter((t) => t.isActive).length;
+    const progressive = rows.filter((t) => t.isProgressive).length;
+    const averageCommission =
+      rows.length > 0
+        ? rows.reduce((sum, t) => sum + (t.commissionAmount || 0), 0) /
+          rows.length
+        : 0;
 
     return { total, active, progressive, averageCommission };
   }, [rows]);
@@ -99,18 +101,16 @@ export default function Page() {
             إدارة وتنظيم فئات العمولة والرسوم في النظام
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <Button 
-            onClick={load} 
-            variant="outline" 
-            size="sm"
-          >
-            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? 'animate-spin' : ''}`} />
+          <Button onClick={load} variant="outline" size="sm">
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`}
+            />
             تحديث البيانات
           </Button>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => r.push("/admin/commission-tiers/create")}
             size="sm"
@@ -127,7 +127,9 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-sm">إجمالي الفئات</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.total}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.total}
+              </p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
               <Layers className="w-6 h-6 text-blue-400" />
@@ -139,7 +141,9 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-sm">الفئات النشطة</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.active}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.active}
+              </p>
             </div>
             <div className="bg-green-500/10 p-3 rounded-xl">
               <CheckCircle className="w-6 h-6 text-green-400" />
@@ -151,7 +155,9 @@ export default function Page() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-sm">الفئات التدريجية</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.progressive}</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {stats.progressive}
+              </p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
               <TrendingUp className="w-6 h-6 text-amber-400" />
@@ -164,7 +170,10 @@ export default function Page() {
             <div>
               <p className="text-muted-foreground text-sm">متوسط العمولة</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {formatCurrency(stats.averageCommission, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(stats.averageCommission, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
             </div>
             <div className="bg-purple-500/10 p-3 rounded-xl">
@@ -211,19 +220,13 @@ export default function Page() {
               <option value="no">غير تدريجية</option>
             </select>
 
-            <Button 
-              variant="outline" 
-              size="sm"
-            >
+            <Button variant="outline" size="sm">
               <Filter className="w-4 h-4 ml-2" />
               المزيد من الفلاتر
               <ChevronDown className="w-4 h-4 mr-2" />
             </Button>
 
-            <Button 
-              variant="outline" 
-              size="sm"
-            >
+            <Button variant="outline" size="sm">
               <Download className="w-4 h-4 ml-2" />
               تصدير التقرير
             </Button>
@@ -250,13 +253,27 @@ export default function Page() {
           <table className="w-full">
             <thead>
               <tr className="bg-muted border-b border-border">
-                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">اسم الفئة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">من سعر</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">إلى سعر</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">العمولة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">النوع</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الحالة</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">الإجراءات</th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-muted-foreground">
+                  اسم الفئة
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                  من سعر
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                  إلى سعر
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                  العمولة
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                  النوع
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                  الحالة
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">
+                  الإجراءات
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -269,8 +286,8 @@ export default function Page() {
                     {/* Tier Name */}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="bg-primary p-2 rounded-xl">
-                          <Percent className="w-4 h-4 text-primary-foreground" />
+                        <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                          <Percent className="w-4 h-4" />
                         </div>
                         <div className="mr-4">
                           <div className="text-sm font-medium text-foreground">
@@ -285,34 +302,30 @@ export default function Page() {
 
                     {/* Min Price */}
                     <td className="px-6 py-4 text-sm text-foreground">
-                      <PriceWithIcon 
-                        price={t.minPrice}
-                      />
+                      <PriceWithIcon price={t.minPrice} />
                     </td>
 
                     {/* Max Price */}
                     <td className="px-6 py-4 text-sm text-foreground">
-                      <PriceWithIcon
-                        price={t.maxPrice}
-                      />
+                      <PriceWithIcon price={t.maxPrice} />
                     </td>
 
                     {/* Commission Amount */}
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-cyan-400">
-                        <PriceWithIcon
-                          price={t.commissionAmount}
-                        />
+                        <PriceWithIcon price={t.commissionAmount} />
                       </div>
                     </td>
 
                     {/* Progressive Type */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                        t.isProgressive 
-                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
-                          : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          t.isProgressive
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                            : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                        }`}
+                      >
                         {t.isProgressive ? (
                           <>
                             <TrendingUp className="w-3 h-3 ml-1" />
@@ -329,11 +342,13 @@ export default function Page() {
 
                     {/* Status */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                        t.isActive 
-                          ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                          : 'bg-red-500/20 text-red-400 border-red-500/30'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          t.isActive
+                            ? "bg-green-500/20 text-green-400 border-green-500/30"
+                            : "bg-red-500/20 text-red-400 border-red-500/30"
+                        }`}
+                      >
                         {t.isActive ? (
                           <>
                             <CheckCircle className="w-3 h-3 ml-1" />
@@ -354,29 +369,30 @@ export default function Page() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => r.push(`/admin/commission-tiers/view/${t.id}`)}
+                          onClick={() =>
+                            r.push(`/admin/commission-tiers/view/${t.id}`)
+                          }
                         >
-                          <Eye size={16}/>
+                          <Eye size={16} />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => r.push(`/admin/commission-tiers/edit/${t.id}`)}
+                          onClick={() =>
+                            r.push(`/admin/commission-tiers/edit/${t.id}`)
+                          }
                         >
-                          <Pencil size={16}/>
+                          <Pencil size={16} />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
                           onClick={() => onDelete(t)}
                         >
-                          <Trash2 size={16}/>
+                          <Trash2 size={16} />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreVertical size={16}/>
+                        <Button size="icon" variant="ghost">
+                          <MoreVertical size={16} />
                         </Button>
                       </div>
                     </td>
@@ -388,24 +404,31 @@ export default function Page() {
                     <div className="flex flex-col items-center justify-center">
                       <Layers className="w-16 h-16 text-muted-foreground mb-4" />
                       <p className="text-muted-foreground text-lg mb-2">
-                        {searchTerm || activeFilter !== "all" || progressiveFilter !== "all"
+                        {searchTerm ||
+                        activeFilter !== "all" ||
+                        progressiveFilter !== "all"
                           ? "لا توجد نتائج مطابقة للبحث"
-                          : "لا توجد فئات عمولة مسجلة"
-                        }
+                          : "لا توجد فئات عمولة مسجلة"}
                       </p>
                       <p className="text-muted-foreground text-sm mb-6">
-                        {!searchTerm && activeFilter === "all" && progressiveFilter === "all" && 
-                         "ابدأ بإضافة فئات عمولة جديدة إلى النظام"}
+                        {!searchTerm &&
+                          activeFilter === "all" &&
+                          progressiveFilter === "all" &&
+                          "ابدأ بإضافة فئات عمولة جديدة إلى النظام"}
                       </p>
-                      {!searchTerm && activeFilter === "all" && progressiveFilter === "all" && (
-                        <Button 
-                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                          onClick={() => r.push("/admin/commission-tiers/create")}
-                        >
-                          <Plus className="w-4 h-4 ml-2" />
-                          إضافة فئة جديدة
-                        </Button>
-                      )}
+                      {!searchTerm &&
+                        activeFilter === "all" &&
+                        progressiveFilter === "all" && (
+                          <Button
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            onClick={() =>
+                              r.push("/admin/commission-tiers/create")
+                            }
+                          >
+                            <Plus className="w-4 h-4 ml-2" />
+                            إضافة فئة جديدة
+                          </Button>
+                        )}
                     </div>
                   </td>
                 </tr>
@@ -424,27 +447,32 @@ export default function Page() {
                 <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">تأكيد الحذف</h2>
-                <p className="text-muted-foreground text-sm">هل أنت متأكد من حذف هذه الفئة؟</p>
+                <h2 className="text-lg font-semibold text-foreground">
+                  تأكيد الحذف
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  هل أنت متأكد من حذف هذه الفئة؟
+                </p>
               </div>
             </div>
-            
+
             <div className="bg-muted rounded-xl p-4 mb-6">
               <div className="text-foreground font-medium">{confirm.name}</div>
               <div className="text-muted-foreground text-sm mt-1">
-                العمولة: {formatCurrency(confirm.commissionAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                العمولة:{" "}
+                {formatCurrency(confirm.commissionAmount, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
             </div>
 
             <div className="flex justify-end space-x-3 space-x-reverse">
-              <Button 
-                variant="outline" 
-                onClick={() => setConfirm(null)}
-              >
+              <Button variant="outline" onClick={() => setConfirm(null)}>
                 إلغاء
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={doDelete}
                 className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >

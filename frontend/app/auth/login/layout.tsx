@@ -2,7 +2,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'منصة قلب - المصادقة',
+  title: 'منصة داسم - المصادقة',
   description: 'صفحات تسجيل الدخول وإنشاء الحساب والتحقق',
 };
 

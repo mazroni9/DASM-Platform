@@ -51,7 +51,7 @@ const BidLogsTimeline = () => {
       const res = await api.get(url);
       const data = await res.data;
       setLogs((prev) =>
-        isNewFilter ? data.data || [] : [...prev, ...(data.data || [])]
+        isNewFilter ? data.data || [] : [...prev, ...(data.data || [])],
       );
       setPagination(data.pagination);
       if (isNewFilter) {
@@ -137,7 +137,7 @@ const BidLogsTimeline = () => {
         return {
           // اللون الأزرق للأتمتة/الـ autobid
           bgColor: "bg-primary", // لون DASM الأزرق
-          textColor: "text-white",
+          textColor: "text-primary-foreground",
           borderColor: "border-primary",
 
           cardBg: "bg-card", // لون خلفية الكارت المتوافق مع الثيم
@@ -319,7 +319,7 @@ const BidLogsTimeline = () => {
             onClick={() => setFilter("all")}
             className={`px-4 py-2 rounded-lg text-sm ${
               filter === "all"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-border text-foreground hover:bg-border/80"
             }`}
           >
@@ -329,7 +329,7 @@ const BidLogsTimeline = () => {
             onClick={() => setFilter("bid_placed")}
             className={`px-4 py-2 rounded-lg text-sm ${
               filter === "bid_placed"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-border text-foreground hover:bg-border/80"
             }`}
           >
@@ -339,7 +339,7 @@ const BidLogsTimeline = () => {
             onClick={() => setFilter("outbid")}
             className={`px-4 py-2 rounded-lg text-sm ${
               filter === "outbid"
-                ? "bg-primary text-white"
+                ? "bg-primary text-primary-foreground"
                 : "bg-border text-foreground hover:bg-border/80"
             }`}
           >

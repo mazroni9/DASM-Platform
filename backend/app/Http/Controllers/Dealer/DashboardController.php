@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Dealer;
 
-use App\Http\Controllers\Controller;
-use App\Models\Auction;
+use App\Models\Bid;
+use App\Models\Car;
 use App\Models\Wallet;
+use App\Models\Auction;
+use Illuminate\Support\Str;
 use App\Enums\AuctionStatus;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -22,10 +24,10 @@ class DashboardController extends Controller
         $wallet = Wallet::where('user_id', $user->id)->first();
 
         // Get active auctions the dealer might be interested in
-        $activeAuctions = Auction::with(['car:id,make,model,year,image'])
+        $activeAuctions = Auction::with(['car:id,make,model,year,images'])
             ->where('status', AuctionStatus::ACTIVE)
             ->orderBy('end_time', 'asc')
-            ->limit(10)
+            ->limit(4)
             ->get(['id', 'car_id', 'current_bid', 'end_time', 'auction_type', 'extended_until']);
 
         // Generate a latency check token for ping/pong
@@ -45,7 +47,7 @@ class DashboardController extends Controller
                     'id' => $user->id,
                     'name' => $user->first_name . ' ' . $user->last_name,
                     'plan_type' => 'PRO', // Placeholder
-                    'ai_enabled' => false, // TODO: Add ai_recommendations_enabled to users table if needed
+                    'ai_enabled' => (bool) $user->ai_enabled,
                 ],
             ],
         ]);
@@ -139,9 +141,11 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         // Get dealer's top bidded cars
-        $dealerBids = \App\Models\Bid::where('user_id', $user->id)
-            ->selectRaw('car_id, COUNT(*) as bid_count')
-            ->groupBy('car_id')
+        // Bids belong to Auction, Auction belongs to Car
+        $dealerBids = Bid::where('bids.user_id', $user->id)
+            ->join('auctions', 'bids.auction_id', '=', 'auctions.id')
+            ->selectRaw('auctions.car_id, COUNT(*) as bid_count')
+            ->groupBy('auctions.car_id')
             ->orderByDesc('bid_count')
             ->limit(5)
             ->get();
@@ -151,9 +155,10 @@ class DashboardController extends Controller
         // If dealer has less than 5 cars bid on, fallback to global trending
         if ($dealerBids->count() < 5) {
             $isGlobalData = true;
-            $dealerBids = \App\Models\Bid::selectRaw('car_id, COUNT(*) as bid_count')
-                ->where('created_at', '>=', now()->subDays(7)) // Recent activity
-                ->groupBy('car_id')
+            $dealerBids = Bid::join('auctions', 'bids.auction_id', '=', 'auctions.id')
+                ->selectRaw('auctions.car_id, COUNT(*) as bid_count')
+                ->where('bids.created_at', '>=', now()->subDays(7)) // Recent activity
+                ->groupBy('auctions.car_id')
                 ->orderByDesc('bid_count')
                 ->limit(5)
                 ->get();
@@ -161,7 +166,7 @@ class DashboardController extends Controller
 
         // Get car details
         $carIds = $dealerBids->pluck('car_id')->toArray();
-        $cars = \App\Models\Car::whereIn('id', $carIds)
+        $cars = Car::whereIn('id', $carIds)
             ->get(['id', 'make', 'model', 'year'])
             ->keyBy('id');
 

@@ -40,7 +40,11 @@ export default function AdminBlogCategoriesPage() {
       });
 
       const data = res?.data?.data ?? res?.data ?? [];
-      const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      const list = Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data)
+          ? data
+          : [];
       const pagination = res?.data?.pagination ?? null;
 
       setItems(list);
@@ -94,8 +98,12 @@ export default function AdminBlogCategoriesPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">تصنيفات المدونة</h1>
-          <p className="text-foreground/70 mt-2">إدارة التصنيفات بشكل احترافي (إضافة / تعديل / حذف)</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
+            تصنيفات المدونة
+          </h1>
+          <p className="text-foreground/70 mt-2">
+            إدارة التصنيفات بشكل احترافي (إضافة / تعديل / حذف)
+          </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -103,13 +111,15 @@ export default function AdminBlogCategoriesPage() {
             onClick={fetchCategories}
             className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition px-4 py-2 rounded-xl flex items-center"
           >
-            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`}
+            />
             تحديث
           </button>
 
           <LoadingLink
             href="/admin/blog/categories/create"
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition flex items-center"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition flex items-center"
           >
             <Plus className="w-4 h-4 ml-2" />
             إضافة تصنيف
@@ -147,11 +157,21 @@ export default function AdminBlogCategoriesPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-border/50 border-b border-border">
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الاسم</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">Slug</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الوصف</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">إجراءات</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الاسم
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    Slug
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الوصف
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الحالة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    إجراءات
+                  </th>
                 </tr>
               </thead>
 
@@ -162,11 +182,15 @@ export default function AdminBlogCategoriesPage() {
                     <td className="px-6 py-4 text-foreground/80">{c.slug}</td>
 
                     <td className="px-6 py-4 text-foreground/70">
-                      <div className="max-w-[420px] line-clamp-2">{c.description || "—"}</div>
+                      <div className="max-w-[420px] line-clamp-2">
+                        {c.description || "—"}
+                      </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${badgeClass(c.is_active)}`}>
+                      <span
+                        className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${badgeClass(c.is_active)}`}
+                      >
                         {c.is_active === 0 ? "غير نشط" : "نشط"}
                       </span>
                     </td>
@@ -195,7 +219,11 @@ export default function AdminBlogCategoriesPage() {
               </tbody>
             </table>
 
-            {empty ? <div className="text-center py-12 text-foreground/60">لا توجد تصنيفات</div> : null}
+            {empty ? (
+              <div className="text-center py-12 text-foreground/60">
+                لا توجد تصنيفات
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -6,22 +6,22 @@ import { commissionTierService } from "@/services/commission-tier-service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import CommissionCalculator from "@/components/admin/CommissionCalculator";
 import { Button } from "@/components/ui/button";
-import { 
-    ArrowLeft, 
-    Edit, 
-    RefreshCw, 
-    Percent, 
-    TrendingUp, 
-    Layers, 
-    CheckCircle, 
-    XCircle,
-    Calendar,
-    DollarSign,
-    BarChart3,
-    Calculator,
-    Shield,
-    Download,
-    Share
+import {
+  ArrowLeft,
+  Edit,
+  RefreshCw,
+  Percent,
+  TrendingUp,
+  Layers,
+  CheckCircle,
+  XCircle,
+  Calendar,
+  DollarSign,
+  BarChart3,
+  Calculator,
+  Shield,
+  Download,
+  Share,
 } from "lucide-react";
 
 export default function Page() {
@@ -107,10 +107,7 @@ export default function Page() {
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <Button
-            onClick={loadData}
-            variant="outline"
-          >
+          <Button onClick={loadData} variant="outline">
             <RefreshCw className="w-4 h-4 ml-2" />
             تحديث
           </Button>
@@ -130,17 +127,21 @@ export default function Page() {
           {/* Tier Header Card */}
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
             <div className="flex items-center space-x-4 space-x-reverse mb-6">
-              <div className="bg-primary p-3 rounded-xl">
-                <Percent className="w-6 h-6 text-primary-foreground" />
+              <div className="bg-primary text-primary-foreground p-3 rounded-xl">
+                <Percent className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">{data.name}</h2>
+                <h2 className="text-xl font-bold text-foreground">
+                  {data.name}
+                </h2>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                    data.isActive 
-                      ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                      : 'bg-red-500/20 text-red-400 border-red-500/30'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                      data.isActive
+                        ? "bg-green-500/20 text-green-400 border-green-500/30"
+                        : "bg-red-500/20 text-red-400 border-red-500/30"
+                    }`}
+                  >
                     {data.isActive ? (
                       <>
                         <CheckCircle className="w-3 h-3 ml-1" />
@@ -153,11 +154,13 @@ export default function Page() {
                       </>
                     )}
                   </span>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                    data.isProgressive 
-                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' 
-                      : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                      data.isProgressive
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                        : "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                    }`}
+                  >
                     {data.isProgressive ? (
                       <>
                         <TrendingUp className="w-3 h-3 ml-1" />
@@ -181,22 +184,38 @@ export default function Page() {
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-muted p-4 rounded-xl">
-                <div className="text-muted-foreground text-sm">العمولة الأساسية</div>
+                <div className="text-muted-foreground text-sm">
+                  العمولة الأساسية
+                </div>
                 <div className="text-2xl font-bold text-primary mt-1">
-                  {formatCurrency(data.commissionAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(data.commissionAmount, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
               </div>
               <div className="bg-muted p-4 rounded-xl">
-                <div className="text-muted-foreground text-sm">نطاق الأسعار</div>
+                <div className="text-muted-foreground text-sm">
+                  نطاق الأسعار
+                </div>
                 <div className="text-lg font-semibold text-foreground mt-1">
-                  {formatCurrency(data.minPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} - {' '}
-                  {data.maxPrice === null ? '∞' : formatCurrency(data.maxPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {formatCurrency(data.minPrice, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}{" "}
+                  -{" "}
+                  {data.maxPrice === null
+                    ? "∞"
+                    : formatCurrency(data.maxPrice, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
                 </div>
               </div>
               <div className="bg-muted p-4 rounded-xl">
                 <div className="text-muted-foreground text-sm">نوع الحساب</div>
                 <div className="text-lg font-semibold text-foreground mt-1">
-                  {data.isProgressive ? 'تدريجي' : 'ثابت'}
+                  {data.isProgressive ? "تدريجي" : "ثابت"}
                 </div>
               </div>
             </div>
@@ -212,20 +231,31 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">اسم الفئة</div>
-                  <div className="text-foreground font-semibold">{data.name}</div>
-                </div>
-
-                <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">أقل سعر</div>
-                  <div className="text-foreground font-semibold flex items-center">
-                    <DollarSign className="w-4 h-4 ml-1 text-green-400" />
-                    {formatCurrency(data.minPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    اسم الفئة
+                  </div>
+                  <div className="text-foreground font-semibold">
+                    {data.name}
                   </div>
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">نوع العمولة</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    أقل سعر
+                  </div>
+                  <div className="text-foreground font-semibold flex items-center">
+                    <DollarSign className="w-4 h-4 ml-1 text-green-400" />
+                    {formatCurrency(data.minPrice, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-muted p-4 rounded-xl">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    نوع العمولة
+                  </div>
                   <div className="flex items-center">
                     {data.isProgressive ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400">
@@ -244,27 +274,39 @@ export default function Page() {
 
               <div className="space-y-4">
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">أعلى سعر</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    أعلى سعر
+                  </div>
                   <div className="text-foreground font-semibold flex items-center">
                     <DollarSign className="w-4 h-4 ml-1 text-green-400" />
                     {data.maxPrice === null ? (
                       <span className="text-muted-foreground">غير محدد</span>
                     ) : (
-                      formatCurrency(data.maxPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      formatCurrency(data.maxPrice, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
                     )}
                   </div>
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">مبلغ العمولة</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    مبلغ العمولة
+                  </div>
                   <div className="text-primary font-bold text-lg flex items-center">
                     <Percent className="w-4 h-4 ml-1" />
-                    {formatCurrency(data.commissionAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCurrency(data.commissionAmount, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">حالة الفئة</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    حالة الفئة
+                  </div>
                   <div className="flex items-center">
                     {data.isActive ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
@@ -297,30 +339,26 @@ export default function Page() {
 
           {/* Quick Actions */}
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">إجراءات سريعة</h3>
-            
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              إجراءات سريعة
+            </h3>
+
             <div className="space-y-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start"
                 onClick={() => r.push(`/admin/commission-tiers/edit/${id}`)}
               >
                 <Edit className="w-4 h-4 ml-2" />
                 تعديل الفئة
               </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-              >
+
+              <Button variant="outline" className="w-full justify-start">
                 <Download className="w-4 h-4 ml-2" />
                 تصدير التقرير
               </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-              >
+
+              <Button variant="outline" className="w-full justify-start">
                 <Share className="w-4 h-4 ml-2" />
                 مشاركة المعلومات
               </Button>
@@ -329,8 +367,10 @@ export default function Page() {
 
           {/* Tier Information */}
           <div className="bg-muted rounded-2xl border border-border shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-primary mb-4">معلومات الفئة</h3>
-            
+            <h3 className="text-lg font-semibold text-primary mb-4">
+              معلومات الفئة
+            </h3>
+
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">معرف الفئة</span>
@@ -338,12 +378,16 @@ export default function Page() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">النوع</span>
-                <span className="text-foreground">{data.isProgressive ? 'تدريجية' : 'ثابتة'}</span>
+                <span className="text-foreground">
+                  {data.isProgressive ? "تدريجية" : "ثابتة"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">الحالة</span>
-                <span className={`${data.isActive ? 'text-green-400' : 'text-red-400'}`}>
-                  {data.isActive ? 'مفعلة' : 'معطلة'}
+                <span
+                  className={`${data.isActive ? "text-green-400" : "text-red-400"}`}
+                >
+                  {data.isActive ? "مفعلة" : "معطلة"}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -361,7 +405,7 @@ export default function Page() {
           <TrendingUp className="w-5 h-5 ml-2 text-green-400" />
           إحصائيات الاستخدام
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-primary">0</div>
@@ -377,7 +421,9 @@ export default function Page() {
           </div>
           <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-blue-400">0</div>
-            <div className="text-muted-foreground text-sm">المستخدمين النشطين</div>
+            <div className="text-muted-foreground text-sm">
+              المستخدمين النشطين
+            </div>
           </div>
         </div>
       </div>

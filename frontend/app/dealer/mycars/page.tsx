@@ -198,8 +198,8 @@ export default function MyCarsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary rounded-xl">
-                <CarIcon className="w-6 h-6 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <CarIcon className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
@@ -468,7 +468,7 @@ export default function MyCarsPage() {
                         target="_blank"
                         href={`/carDetails/${car.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary/30 hover:bg-primary/30 transition-all duration-300 group/view"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg border border-primary/30 hover:bg-primary/30 transition-all duration-300 group/view"
                       >
                         <Eye className="w-3 h-3 transition-transform group-hover/view:scale-110" />
                         <span className="text-xs font-medium">عرض</span>
