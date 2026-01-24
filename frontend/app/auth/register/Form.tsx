@@ -30,9 +30,7 @@ import {
   SelectGroup,
   SelectLabel,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import axios, { AxiosError } from "axios";
-import LoadingLink from "@/components/LoadingLink";
 
 // ✅ أضفنا area_label اختيارية لتخزين اسم المنطقة/الدولة للعرض فقط
 const registerSchema = z
@@ -169,8 +167,6 @@ export default function RegisterForm() {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
 
     try {
-      // ✅ لا نرسل area_id إطلاقًا هنا (لأننا ما عندنا IDs من DB)
-      // بننظّف بعض الحقول لتفادي تعارضات بسبب مسافات:
       const payload: Record<string, any> = {
         first_name: data.first_name.trim(),
         last_name: data.last_name.trim(),
@@ -183,7 +179,6 @@ export default function RegisterForm() {
         commercial_registry: data.commercial_registry?.trim() || undefined,
         description: data.description?.trim() || undefined,
         address: data.address?.trim() || undefined,
-        // نبعث اسم المنطقة/الدولة للعرض فقط (اختياري)
         area_label: data.area_label || undefined,
       };
 
@@ -228,9 +223,7 @@ export default function RegisterForm() {
               break;
             }
           }
-          if (
-            errorMessage === "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى"
-          ) {
+          if (errorMessage === "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى") {
             const firstField = Object.keys(errs)[0];
             if (firstField && errs[firstField].length > 0) {
               errorMessage = errs[firstField][0];
@@ -253,9 +246,7 @@ export default function RegisterForm() {
   const handleAreaChange = (value: string) => {
     setAreaValue(value);
 
-    // نخزن الاسم المعروض في area_label (مفيد للعرض فقط)
     const labelMap: Record<string, string> = {
-      // مناطق المملكة (ثابتة)
       "region:riyadh": "منطقة الرياض",
       "region:makkah": "منطقة مكة المكرمة",
       "region:sharqiyah": "المنطقة الشرقية",
@@ -267,7 +258,6 @@ export default function RegisterForm() {
       "region:hail": "منطقة حائل",
       "region:asir": "منطقة عسير",
 
-      // الدول
       "country:eg": "مصر",
       "country:sy": "سوريا",
       "country:ps": "فلسطين",
@@ -282,8 +272,15 @@ export default function RegisterForm() {
     };
 
     // لا نرسل area_id إطلاقًا هنا (لأن القيمة ليست ID من قاعدة البيانات)
-    setValue("area_id", undefined as unknown as string);
-    setValue("area_label", labelMap[value] || undefined);
+    setValue("area_id", undefined as unknown as string, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+
+    setValue("area_label", labelMap[value] || undefined, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
   };
 
   return (
@@ -400,47 +397,37 @@ export default function RegisterForm() {
           <Label htmlFor="area_id" className="text-foreground font-medium">
             المنطقة / الدولة
           </Label>
+
           <div className="relative">
             <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
               <Map className="h-5 w-5 text-foreground/50" />
             </div>
+
             <Select onValueChange={handleAreaChange} value={areaValue}>
-              <SelectTrigger
-                id="area_id"
-                type="button" // 🔒 يمنع submit أو سلوك زر
-                className="pl-3 pr-10 h-10"
-              >
+              <SelectTrigger id="area_id" type="button" className="pl-3 pr-10 h-10">
                 <SelectValue placeholder="اختر المنطقة أو الدولة" />
               </SelectTrigger>
+
+              {/* ✅ FIX: Scroll + collision-safe */}
               <SelectContent
-                position="popper" // 🔧 يثبّت القائمة كـ popper
+                position="popper"
                 side="bottom"
                 align="end"
                 sideOffset={6}
-                avoidCollisions={false}
-                className="z-50 max-h-72 overflow-y-auto overscroll-contain"
+                collisionPadding={12}
+                className="z-[60] max-h-72 overflow-y-auto overscroll-contain touch-pan-y"
                 dir="rtl"
               >
                 <SelectGroup>
                   <SelectLabel>مناطق المملكة (ثابتة)</SelectLabel>
                   <SelectItem value="region:riyadh">منطقة الرياض</SelectItem>
-                  <SelectItem value="region:makkah">
-                    منطقة مكة المكرمة
-                  </SelectItem>
-                  <SelectItem value="region:sharqiyah">
-                    المنطقة الشرقية
-                  </SelectItem>
+                  <SelectItem value="region:makkah">منطقة مكة المكرمة</SelectItem>
+                  <SelectItem value="region:sharqiyah">المنطقة الشرقية</SelectItem>
                   <SelectItem value="region:tabuk">منطقة تبوك</SelectItem>
-                  <SelectItem value="region:madinah">
-                    منطقة المدينة المنورة
-                  </SelectItem>
-                  <SelectItem value="region:northern-borders">
-                    منطقة الحدود الشمالية
-                  </SelectItem>
+                  <SelectItem value="region:madinah">منطقة المدينة المنورة</SelectItem>
+                  <SelectItem value="region:northern-borders">منطقة الحدود الشمالية</SelectItem>
                   <SelectItem value="region:qassim">منطقة القصيم</SelectItem>
-                  <SelectItem value="region:almujammah">
-                    منطقة المجمعة
-                  </SelectItem>
+                  <SelectItem value="region:almujammah">منطقة المجمعة</SelectItem>
                   <SelectItem value="region:hail">منطقة حائل</SelectItem>
                   <SelectItem value="region:asir">منطقة عسير</SelectItem>
                 </SelectGroup>
@@ -462,7 +449,6 @@ export default function RegisterForm() {
               </SelectContent>
             </Select>
           </div>
-          {/* مفيش خطأ هنا لأننا لا نتحقق من area_id في الفرونت */}
         </div>
 
         {/* كلمة المرور */}
@@ -533,24 +519,25 @@ export default function RegisterForm() {
                   | "venue_owner"
                   | "investor";
                 setAccountType(typedValue);
-                setValue("account_type", typedValue);
+                setValue("account_type", typedValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
               }}
               value={accountType}
             >
-              <SelectTrigger
-                id="account_type"
-                type="button"
-                className="pl-3 pr-10 h-10"
-              >
+              <SelectTrigger id="account_type" type="button" className="pl-3 pr-10 h-10">
                 <SelectValue placeholder="اختر نوع الحساب" />
               </SelectTrigger>
+
+              {/* ✅ نفس إصلاح السكرول هنا */}
               <SelectContent
                 position="popper"
                 side="bottom"
                 align="end"
                 sideOffset={6}
-                avoidCollisions={false}
-                className="z-50 max-h-72 overflow-y-auto overscroll-contain"
+                collisionPadding={12}
+                className="z-[60] max-h-72 overflow-y-auto overscroll-contain touch-pan-y"
                 dir="rtl"
               >
                 <SelectItem value="user">مستخدم</SelectItem>
@@ -563,14 +550,10 @@ export default function RegisterForm() {
         </div>
 
         {/* الحقول الديناميكية - venue_owner و investor فقط */}
-
         {accountType === "venue_owner" && (
           <>
             <div className="space-y-2">
-              <Label
-                htmlFor="company_name"
-                className="text-foreground font-medium"
-              >
+              <Label htmlFor="company_name" className="text-foreground font-medium">
                 اسم المعرض
               </Label>
               <div className="relative">
@@ -585,9 +568,7 @@ export default function RegisterForm() {
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">
-                  {errors.company_name.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
               )}
             </div>
 
@@ -642,14 +623,11 @@ export default function RegisterForm() {
         {accountType === "investor" && (
           <>
             <div className="space-y-2">
-              <Label
-                htmlFor="company_name"
-                className="text-foreground font-medium"
-              >
+              <Label htmlFor="company_name" className="text-foreground font-medium">
                 اسم الشركة الاستثمارية
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex.items-center pointer-events-none">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                   <Building className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input
@@ -660,9 +638,7 @@ export default function RegisterForm() {
                 />
               </div>
               {errors.company_name && (
-                <p className="text-sm text-red-500">
-                  {errors.company_name.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
               )}
             </div>
 
@@ -674,7 +650,7 @@ export default function RegisterForm() {
                 السجل التجاري
               </Label>
               <div className="relative">
-                <div className="absolute inset-y-0 right-3 flex.items-center pointer-events-none">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                   <ClipboardList className="h-5 w-5 text-foreground/50" />
                 </div>
                 <Input

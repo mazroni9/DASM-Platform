@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
-import {
-  Dialog,
-  DialogContent,
-} from "@mui/material";
+import { Dialog, DialogContent } from "@mui/material";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -48,16 +45,23 @@ export default function AuthModal() {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError(null);
+
     const result = await login(loginEmail, loginPassword);
+
     if (result.success) {
       toast.success("تم تسجيل الدخول بنجاح!");
       closeAuthModal();
       resetForms();
     } else {
-      setLoginError(
-        result.error || "فشل تسجيل الدخول. يرجى التحقق من بياناتك."
-      );
+      if (result.needsVerification) {
+        setLoginError("يرجى التحقق من بريدك الإلكتروني أولاً لتفعيل حسابك.");
+      } else if (result.pendingApproval) {
+        setLoginError(result.error || "حسابك قيد مراجعة الإدارة.");
+      } else {
+        setLoginError(result.error || "فشل تسجيل الدخول. يرجى التحقق من بياناتك.");
+      }
     }
+
     setLoginLoading(false);
   };
 
@@ -80,22 +84,23 @@ export default function AuthModal() {
         phone: regPhone,
         password: regPassword,
         password_confirmation: regPasswordConfirmation,
-        type: "user", // As requested
+
+        // ✅ backend expects account_type
+        account_type: "user",
       });
 
-      toast.success("تم تسجيل حسابك بنجاح! جاري تسجيل الدخول...");
-      const loginResult = await login(regEmail, regPassword);
-      if (loginResult.success) {
-        closeAuthModal();
-        resetForms();
-      } else {
-        setRegError(
-          "تم التسجيل ولكن فشل تسجيل الدخول التلقائي. يرجى تسجيل الدخول يدويًا."
-        );
-      }
+      toast.success("تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني لتفعيل الحساب.");
+
+      // Move to login tab and prefill email
+      setActiveTab("login");
+      setLoginEmail(regEmail);
+      setLoginPassword("");
+
+      // Keep modal open to allow user to login later
+      // closeAuthModal();
+      // resetForms();
     } catch (err: any) {
-      const message =
-        err.response?.data?.message || "حدث خطأ أثناء التسجيل.";
+      const message = err.response?.data?.message || "حدث خطأ أثناء التسجيل.";
       setRegError(message);
     } finally {
       setRegLoading(false);
@@ -106,6 +111,7 @@ export default function AuthModal() {
     setLoginEmail("");
     setLoginPassword("");
     setLoginError(null);
+
     setRegFirstName("");
     setRegLastName("");
     setRegEmail("");
@@ -117,7 +123,7 @@ export default function AuthModal() {
 
   const handleClose = () => {
     closeAuthModal();
-    setTimeout(resetForms, 300); // Delay reset to avoid flicker
+    setTimeout(resetForms, 300);
   };
 
   return (
@@ -134,10 +140,7 @@ export default function AuthModal() {
         },
       }}
     >
-      <DialogContent
-        className="bg-card text-foreground p-0"
-        style={{ overflow: "visible" }}
-      >
+      <DialogContent className="bg-card text-foreground p-0" style={{ overflow: "visible" }}>
         <div className="relative flex min-h-[550px]">
           <button
             aria-label="close"
@@ -149,17 +152,9 @@ export default function AuthModal() {
 
           {/* Right Side - Branding */}
           <div className="hidden md:flex flex-col items-center justify-center w-1/2 bg-background p-8 text-center">
-            <img
-              src="/logo.jpg"
-              alt="DASM Platform Logo"
-              className="w-[150px] mb-5"
-            />
-            <h2 className="text-2xl font-bold">
-              مرحباً بك في منصة DASM
-            </h2>
-            <p className="mt-2 text-foreground/80">
-              انضم إلى أكبر سوق للمزادات في المنطقة.
-            </p>
+            <img src="/logo.jpg" alt="DASM Platform Logo" className="w-[150px] mb-5" />
+            <h2 className="text-2xl font-bold">مرحباً بك في منصة DASM</h2>
+            <p className="mt-2 text-foreground/80">انضم إلى أكبر سوق للمزادات في المنطقة.</p>
           </div>
 
           {/* Left Side - Forms */}
@@ -213,16 +208,14 @@ export default function AuthModal() {
                     dir="ltr"
                   />
                 </div>
+
                 {loginError && (
                   <Alert variant="destructive">
                     <AlertDescription>{loginError}</AlertDescription>
                   </Alert>
                 )}
-                <Button
-                  type="submit"
-                  disabled={loginLoading}
-                  className="w-full"
-                >
+
+                <Button type="submit" disabled={loginLoading} className="w-full">
                   {loginLoading ? (
                     <span className="flex items-center justify-center">
                       <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
@@ -257,6 +250,7 @@ export default function AuthModal() {
                     />
                   </div>
                 </div>
+
                 <div className="space-y-1">
                   <Label htmlFor="reg-email">البريد الإلكتروني</Label>
                   <Input
@@ -265,19 +259,21 @@ export default function AuthModal() {
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                     dir="ltr"
+                    dir="ltr"
                   />
                 </div>
-                 <div className="space-y-1">
+
+                <div className="space-y-1">
                   <Label htmlFor="reg-phone">رقم الجوال</Label>
                   <Input
                     id="reg-phone"
                     required
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
-                     dir="ltr"
+                    dir="ltr"
                   />
                 </div>
+
                 <div className="space-y-1">
                   <Label htmlFor="reg-password">كلمة المرور</Label>
                   <Input
@@ -286,9 +282,10 @@ export default function AuthModal() {
                     required
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                     dir="ltr"
+                    dir="ltr"
                   />
                 </div>
+
                 <div className="space-y-1">
                   <Label htmlFor="reg-password-confirm">تأكيد كلمة المرور</Label>
                   <Input
@@ -296,24 +293,20 @@ export default function AuthModal() {
                     type="password"
                     required
                     value={regPasswordConfirmation}
-                    onChange={(e) =>
-                      setRegPasswordConfirmation(e.target.value)
-                    }
-                     dir="ltr"
+                    onChange={(e) => setRegPasswordConfirmation(e.target.value)}
+                    dir="ltr"
                   />
                 </div>
+
                 {regError && (
                   <Alert variant="destructive">
                     <AlertDescription>{regError}</AlertDescription>
                   </Alert>
                 )}
-                <Button
-                  type="submit"
-                  disabled={regLoading}
-                  className="w-full"
-                >
+
+                <Button type="submit" disabled={regLoading} className="w-full">
                   {regLoading ? (
-                     <span className="flex items-center justify-center">
+                    <span className="flex items-center justify-center">
                       <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
                       جاري الإنشاء...
                     </span>

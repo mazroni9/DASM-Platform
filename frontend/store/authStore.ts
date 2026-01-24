@@ -17,13 +17,11 @@ interface User {
   status?: string;
   permissions?: string[];
 
-  // صاحب المعرض
   venue_name?: string;
   venue_address?: string;
   description?: string;
   rating?: number | string;
 
-  // أخرى
   address?: string;
   company_name?: string;
   trade_license?: string;
@@ -43,16 +41,16 @@ interface AuthState {
   initialized: boolean;
   lastProfileFetch: number;
 
+  hydrated: boolean;
+  setHydrated: (v: boolean) => void;
+
   isAuthModalOpen: boolean;
   authModalInitialTab: "login" | "register";
   openAuthModal: (tab?: "login" | "register") => void;
   closeAuthModal: () => void;
 
   initializeFromStorage: () => Promise<boolean>;
-  fetchProfile: (opts?: {
-    force?: boolean;
-    silent?: boolean;
-  }) => Promise<boolean>;
+  fetchProfile: (opts?: { force?: boolean; silent?: boolean }) => Promise<boolean>;
 
   login: (
     email: string,
@@ -74,26 +72,41 @@ interface AuthState {
     error?: string;
   }>;
 
-  logout: (opts?: {
-    skipRequest?: boolean;
-    redirectToLogin?: boolean;
-  }) => Promise<void>;
+  logout: (opts?: { skipRequest?: boolean; redirectToLogin?: boolean }) => Promise<void>;
   refreshToken: () => Promise<boolean>;
 }
 
 const PROFILE_CACHE_DURATION = 5 * 60 * 1000;
-// const TOKEN_EXPIRY_MINUTES = 15; // Not used for cookie anymore
-// const AUTH_COOKIE_NAME = "auth-token"; // Not used for access token anymore
-
 const isBrowser = () => typeof window !== "undefined";
 
-// Helper to extract user data
+// ✅ Cookie sync for middleware (non-HttpOnly)
+const setTokenCookie = (token: string | null) => {
+  if (!isBrowser()) return;
+
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  const sameSite = "; SameSite=Lax";
+  const path = "; Path=/";
+
+  if (!token) {
+    document.cookie = `access_token=; Max-Age=0${path}${sameSite}${secure}`;
+    return;
+  }
+
+  // خليه أسبوع (عدّل المدة براحتك)
+  const maxAge = 60 * 60 * 24 * 7;
+  document.cookie = `access_token=${encodeURIComponent(token)}; Max-Age=${maxAge}${path}${sameSite}${secure}`;
+};
+
+// ✅ Helper to extract user data safely
 const extractUser = (respOrObj: any): User | null => {
   const root = respOrObj?.data ?? respOrObj;
   if (!root) return null;
+
+  if (root.user && typeof root.user === "object") return root.user as User;
   if (root.data && typeof root.data === "object") return root.data as User;
   if (root.success && root.data) return root.data as User;
-  if (typeof root === "object") return root as User;
+  if (typeof root === "object" && root.id && root.email) return root as User;
+
   return null;
 };
 
@@ -108,6 +121,9 @@ export const useAuthStore = create<AuthState>()(
       initialized: false,
       lastProfileFetch: 0,
 
+      hydrated: false,
+      setHydrated: (v) => set({ hydrated: v }),
+
       isAuthModalOpen: false,
       authModalInitialTab: "login",
       openAuthModal: (tab = "login") =>
@@ -119,36 +135,57 @@ export const useAuthStore = create<AuthState>()(
 
         set({ loading: true });
 
-        const token = isBrowser() ? localStorage.getItem("token") : null;
+        const token =
+          get().token || (isBrowser() ? localStorage.getItem("token") : null);
+
         if (!token) {
-          // No token in storage, assume logged out
-          set({ loading: false, initialized: true });
+          if (isBrowser()) {
+            localStorage.removeItem("token");
+          }
+          setTokenCookie(null);
+
+          delete axios.defaults.headers.common["Authorization"];
+          if (api.defaults) delete api.defaults.headers.common["Authorization"];
+
+          set({
+            user: null,
+            token: null,
+            isLoggedIn: false,
+            lastProfileFetch: 0,
+            loading: false,
+            error: null,
+            initialized: true,
+          });
           return false;
         }
 
-        // Set token in headers
+        setTokenCookie(token);
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        if (api.defaults)
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         set({ token, isLoggedIn: true });
 
-        get()
-          .fetchProfile({ force: true, silent: true })
-          .finally(() => {
-            set({ loading: false, initialized: true });
-          });
-
-        return true;
+        try {
+          await get().fetchProfile({ force: true, silent: true });
+          return true;
+        } finally {
+          set({ loading: false, initialized: true });
+        }
       },
 
       fetchProfile: async (opts) => {
         const force = opts?.force ?? false;
         const silent = opts?.silent ?? false;
 
+        const token =
+          get().token || (isBrowser() ? localStorage.getItem("token") : null);
+
+        if (!token) return false;
+
         try {
           const state = get();
           const now = Date.now();
+
           const cacheValid =
             !force &&
             state.user &&
@@ -158,23 +195,7 @@ export const useAuthStore = create<AuthState>()(
           if (cacheValid) return true;
           if (!silent) set({ loading: true });
 
-          let resp: any;
-          if (force) {
-            resp = await api.get("/api/user/profile"); // Skip cache
-          } else {
-            const { cachedApiRequest } = await import("@/lib/request-cache");
-            resp = await cachedApiRequest(
-              "/api/user/profile",
-              {
-                headers: {
-                  Authorization: api.defaults?.headers?.common?.[
-                    "Authorization"
-                  ] as string,
-                },
-              },
-              PROFILE_CACHE_DURATION
-            );
-          }
+          const resp = await api.get("/api/user/profile");
 
           const userData = extractUser(resp);
           if (!userData) {
@@ -193,33 +214,29 @@ export const useAuthStore = create<AuthState>()(
           return true;
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {
-            console.error(
-              "fetchProfile error:",
-              error?.response?.data || error
-            );
+            // eslint-disable-next-line no-console
+            console.error("fetchProfile error:", error?.response?.data || error);
           }
 
           if (error?.response?.status === 401) {
-            // Let the interceptor handle 401s usually, but if this is called directly and fails:
-            // The interceptor might have already tried to refresh.
-            // If we are here, it means refresh failed or wasn't possible.
-            // We should probably logout locally.
+            if (isBrowser()) {
+              localStorage.removeItem("token");
+              localStorage.removeItem("auth-storage");
+            }
+            setTokenCookie(null);
 
-            // However, fetchProfile is often called after login or init.
-            // If it fails with 401, it means the token is invalid.
-
-            if (typeof window !== "undefined") localStorage.removeItem("token");
             delete axios.defaults.headers.common["Authorization"];
-            if (api.defaults)
-              delete api.defaults.headers.common["Authorization"];
+            if (api.defaults) delete api.defaults.headers.common["Authorization"];
 
             set({
               user: null,
               token: null,
               isLoggedIn: false,
               loading: false,
+              lastProfileFetch: 0,
               error: "غير مصرح",
             });
+
             return false;
           }
 
@@ -236,29 +253,25 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email, password) => {
         set({ loading: true, error: null });
+
         try {
-          // Login request - backend sets HttpOnly cookie for refresh token
           const response = await api.post(`/api/login`, { email, password });
           const data = response.data;
 
-          if (
-            data.status === "error" &&
-            data.message === "Email not verified"
-          ) {
+          if (data.status === "error" && data.message === "Email not verified") {
             set({ loading: false });
             return { success: false, needsVerification: true };
           }
 
           const token = data.access_token;
 
-          // Store access token in localStorage (and state)
           if (isBrowser() && token) {
             localStorage.setItem("token", token);
           }
           if (token) {
+            setTokenCookie(token);
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            if (api.defaults)
-              api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           }
 
           const loginUser = extractUser(data);
@@ -271,32 +284,38 @@ export const useAuthStore = create<AuthState>()(
               lastProfileFetch: 0,
             }));
           } else {
-            set({ token, isLoggedIn: true, error: null, lastProfileFetch: 0 });
+            set({
+              token,
+              isLoggedIn: true,
+              error: null,
+              lastProfileFetch: 0,
+            });
           }
 
           await get().fetchProfile({ force: true, silent: true });
 
-          // Get user role for redirect
           const currentUser = get().user;
           const userRole = currentUser?.type || loginUser?.type || "user";
 
-          // Role-based redirect mapping
           const roleRedirectMap: { [key: string]: string } = {
             admin: "/admin",
             super_admin: "/admin",
+            moderator: "/admin",
+            employee: "/admin",
             venue_owner: "/exhibitor",
             dealer: "/dealer",
-            user: "/dashboard",
-            moderator: "/admin",
             investor: "/investor/dashboard",
+            user: "/dashboard",
           };
 
           const redirectTo = roleRedirectMap[userRole] || "/dashboard";
 
-          set({ loading: false });
+          set({ loading: false, initialized: true });
           return { success: true, redirectTo };
         } catch (err: any) {
+          // eslint-disable-next-line no-console
           console.error("Login error details:", err);
+
           let errorMessage = "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.";
 
           if (err.response?.data) {
@@ -310,6 +329,7 @@ export const useAuthStore = create<AuthState>()(
                 error: responseData.message,
               };
             }
+
             if (
               err.response.status === 401 &&
               responseData.message === "Email not verified"
@@ -317,18 +337,18 @@ export const useAuthStore = create<AuthState>()(
               set({ loading: false });
               return { success: false, needsVerification: true };
             }
+
             if (err.response.status === 422) {
               if (responseData.error) errorMessage = responseData.error;
-              else if (responseData.message)
-                errorMessage = responseData.message;
-              else if (responseData.first_error)
-                errorMessage = responseData.first_error;
-            } else if (responseData.message)
+              else if (responseData.message) errorMessage = responseData.message;
+              else if (responseData.first_error) errorMessage = responseData.first_error;
+            } else if (responseData.message) {
               errorMessage = responseData.message;
-            else if (responseData.error) errorMessage = responseData.error;
+            } else if (responseData.error) {
+              errorMessage = responseData.error;
+            }
           } else if (err.request) {
-            errorMessage =
-              "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
+            errorMessage = "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
           }
 
           set({ loading: false, error: errorMessage });
@@ -338,23 +358,23 @@ export const useAuthStore = create<AuthState>()(
 
       verifyCode: async (email, code) => {
         set({ loading: true, error: null });
+
         try {
           const response = await api.post(`/api/verify-otp`, {
             email,
             otp: code,
           });
-          const data = response.data;
 
+          const data = response.data;
           const token = data.access_token;
 
-          // Store access token in localStorage (and state)
           if (isBrowser() && token) {
             localStorage.setItem("token", token);
           }
           if (token) {
+            setTokenCookie(token);
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            if (api.defaults)
-              api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           }
 
           const loginUser = extractUser(data);
@@ -372,30 +392,28 @@ export const useAuthStore = create<AuthState>()(
 
           await get().fetchProfile({ force: true, silent: true });
 
-          // Get user role for redirect
           const currentUser = get().user;
           const userRole = currentUser?.type || loginUser?.type || "user";
 
-          // Role-based redirect mapping
           const roleRedirectMap: { [key: string]: string } = {
             admin: "/admin",
             super_admin: "/admin",
+            moderator: "/admin",
+            employee: "/admin",
             venue_owner: "/exhibitor",
             dealer: "/dealer",
-            user: "/dashboard",
-            moderator: "/admin",
             investor: "/investor/dashboard",
+            user: "/dashboard",
           };
 
           const redirectTo = roleRedirectMap[userRole] || "/dashboard";
 
-          set({ loading: false });
+          set({ loading: false, initialized: true });
           return { success: true, redirectTo };
         } catch (err: any) {
           let errorMessage = "فشل التحقق من الرمز";
-          if (err.response?.data?.message) {
-            errorMessage = err.response.data.message;
-          }
+          if (err.response?.data?.message) errorMessage = err.response.data.message;
+
           set({ loading: false, error: errorMessage });
           return { success: false, error: errorMessage };
         }
@@ -407,27 +425,29 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           if (!skipRequest) {
-            // Call backend to revoke tokens and clear cookie
             await api.post(`/api/logout`).catch((error) => {
+              // eslint-disable-next-line no-console
               console.error("Logout API error:", error);
             });
           }
         } finally {
-          if (isBrowser()) localStorage.removeItem("token");
+          if (isBrowser()) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("auth-storage");
+          }
+          setTokenCookie(null);
+
           delete axios.defaults.headers.common["Authorization"];
           if (api.defaults) delete api.defaults.headers.common["Authorization"];
-
-          // We don't manually clear the cookie here because it's HttpOnly.
-          // The backend logout endpoint should have cleared it.
-          // If the backend call failed, the cookie might still be there,
-          // but the access token is gone from client, so they are effectively logged out
-          // until they try to refresh (which will fail if we implement it right) or login again.
 
           set({
             user: null,
             token: null,
             isLoggedIn: false,
+            loading: false,
+            error: null,
             lastProfileFetch: 0,
+            initialized: true,
           });
 
           if (redirectToLogin && isBrowser()) {
@@ -438,22 +458,17 @@ export const useAuthStore = create<AuthState>()(
 
       refreshToken: async () => {
         try {
-          // We do NOT send the old access token in the header for the refresh request
-          // The backend relies solely on the HttpOnly cookie.
-          // However, we might want to ensure we don't send an invalid Bearer token if it's set in defaults.
-          // But usually, it doesn't hurt if the backend ignores it.
-          // To be safe and clean, we can explicitly unset it for this request or create a new instance.
-          // But since api.post uses the instance with interceptors, we need to be careful not to trigger a loop.
-          // The interceptor handles the loop check.
+          const existingToken =
+            get().token || (isBrowser() ? localStorage.getItem("token") : null);
 
-          // Note: We need { withCredentials: true } to send the cookie.
+          // ✅ مهم: لو مفيش access token، متعملش refresh (منع silent relogin)
+          if (!existingToken) return false;
+
           const response = await api.post(
             `/api/refresh`,
             {},
             {
               withCredentials: true,
-              // Explicitly remove Authorization header for this request to avoid confusion,
-              // though the backend logic I wrote ignores it for the refresh token itself.
               headers: { Authorization: "" },
             }
           );
@@ -464,32 +479,28 @@ export const useAuthStore = create<AuthState>()(
             if (isBrowser()) {
               localStorage.setItem("token", access_token);
             }
-            axios.defaults.headers.common[
-              "Authorization"
-            ] = `Bearer ${access_token}`;
-            if (api.defaults)
-              api.defaults.headers.common[
-                "Authorization"
-              ] = `Bearer ${access_token}`;
+            setTokenCookie(access_token);
 
-            const state = get();
-            const now = Date.now();
-            // Optionally update user data if returned or needed
+            axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
 
             set({ token: access_token, isLoggedIn: true });
             return true;
-          } else {
-            console.error(
-              "Token refresh response missing access_token:",
-              response.data
-            );
-            return false;
           }
-        } catch (error: any) {
-          console.error("Token refresh failed:", error);
-          // If refresh fails, we should logout locally
 
-          if (isBrowser()) localStorage.removeItem("token");
+          // eslint-disable-next-line no-console
+          console.error("Token refresh response missing access_token:", response.data);
+          return false;
+        } catch (error: any) {
+          // eslint-disable-next-line no-console
+          console.error("Token refresh failed:", error);
+
+          if (isBrowser()) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("auth-storage");
+          }
+          setTokenCookie(null);
+
           delete axios.defaults.headers.common["Authorization"];
           if (api.defaults) delete api.defaults.headers.common["Authorization"];
 
@@ -499,6 +510,7 @@ export const useAuthStore = create<AuthState>()(
             isLoggedIn: false,
             lastProfileFetch: 0,
           });
+
           return false;
         }
       },
@@ -513,7 +525,7 @@ export const useAuthStore = create<AuthState>()(
         lastProfileFetch: state.lastProfileFetch,
       }),
       version: 2,
-      migrate: (persisted: any, _version) => {
+      migrate: (persisted: any) => {
         try {
           if (!persisted) return persisted;
           const u = persisted.user;
@@ -523,6 +535,21 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           return persisted;
         }
+      },
+
+      // ✅ hydration + cookie sync بعد rehydrate فعلاً
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          try {
+            setTokenCookie(state?.token ?? null);
+            state?.setHydrated(true);
+          } finally {
+            if (error && process.env.NODE_ENV === "development") {
+              // eslint-disable-next-line no-console
+              console.error("auth-storage rehydrate error:", error);
+            }
+          }
+        };
       },
     }
   )

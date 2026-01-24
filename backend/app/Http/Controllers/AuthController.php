@@ -93,7 +93,6 @@ class AuthController extends Controller
             'password.min'        => 'كلمة المرور يجب أن تكون على الأقل 8 أحرف',
 
             'account_type.in'     => 'نوع الحساب غير صالح',
-
             'area_id.exists'      => 'المنطقة غير صالحة',
         ]);
 
@@ -120,7 +119,6 @@ class AuthController extends Controller
             ]);
 
             $table = match ($request->account_type) {
-                //'dealer'      => 'dealers',
                 'venue_owner' => 'venue_owners',
                 'investor'    => 'investors',
                 default       => null,
@@ -166,7 +164,6 @@ class AuthController extends Controller
             }
         }
 
-        // ✅ رمز تحقق البريد
         $verificationToken = Str::random(60);
         Log::info('Generated verification token', ['token_length' => strlen($verificationToken)]);
 
@@ -193,10 +190,9 @@ class AuthController extends Controller
                     'type'                     => $request->account_type ?? 'user',
                     'email_verification_token' => $verificationToken,
                     'is_active'                => false,
-                    'area_id'                  => $request->area_id, // nullable
+                    'area_id'                  => $request->area_id,
                 ];
 
-                // تأكد أننا لا نمرر id بالخطأ حتى لو اتضاف في مكان آخر
                 unset($userData['id']);
 
                 if (Schema::hasColumn('users', 'status') && empty($userData['status'])) {
@@ -227,7 +223,6 @@ class AuthController extends Controller
 
                     switch ($request->account_type) {
                         case 'dealer':
-                            // Dealer users don't need a separate record, type='dealer' is sufficient
                             break;
 
                         case 'venue_owner':
@@ -281,9 +276,9 @@ class AuthController extends Controller
                 ],
             ], 201);
         } catch (QueryException $e) {
-            // 🔎 تفسير الخطأ وإرجاع سبب واضح
             Log::error($e);
             $out = $this->interpretDbError($e, $request);
+
             Log::error('Database error during registration', [
                 'sqlstate'   => $out['sqlstate'],
                 'reason'     => $out['reason'],
@@ -296,9 +291,9 @@ class AuthController extends Controller
 
             return response()->json(array_filter([
                 'status'  => 'error',
-                'message' => $out['message'],   // رسالة عامة ملائمة
-                'reason'  => $out['reason'],    // سبب إنساني واضح
-                'errors'  => $out['errors'] ?? null, // إن وُجدت
+                'message' => $out['message'],
+                'reason'  => $out['reason'],
+                'errors'  => $out['errors'] ?? null,
                 'sqlstate' => $out['sqlstate'],
                 'details' => config('app.debug') ? $out['details'] : null,
                 'column'  => $out['column'] ?? null,
@@ -392,13 +387,9 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Token is valid, mark email as verified
         $user->markEmailAsVerified();
-
-        // Refresh the user to get updated status
         $user->refresh();
 
-        // Notify admins if user is a dealer or venue_owner
         if (in_array($user->type->value ?? $user->type, ['dealer', 'venue_owner'])) {
             $this->notifyAdminsAboutBusinessAccountVerification($user);
         }
@@ -441,13 +432,11 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Generate new token if necessary
         if (!$user->email_verification_token) {
             $user->email_verification_token = Str::random(60);
             $user->save();
         }
 
-        // Send verification email
         $this->sendVerificationEmail($user);
 
         return response()->json([
@@ -456,9 +445,6 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Login user and create sanctum token
-     */
     /**
      * Login user and create sanctum token
      */
@@ -486,7 +472,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // دعم password_hash أو password حسب الموجود
         if (Schema::hasColumn('users', 'password_hash')) {
             if (!Hash::check($request->password, $user->password_hash)) {
                 throw ValidationException::withMessages([
@@ -506,7 +491,6 @@ class AuthController extends Controller
             ], 500);
         }
 
-        // Check if email is verified
         if (!$user->hasVerifiedEmail()) {
             return response()->json([
                 'status' => 'error',
@@ -515,8 +499,15 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Check if user is approved by admin
-        if ($user->status !== UserStatus::ACTIVE) {
+        // ✅ Compare status safely (enum or string)
+        $status = $user->status ?? null;
+        if ($status instanceof \BackedEnum) {
+            $status = $status->value;
+        }
+        $status = strtolower(trim((string)$status));
+        $activeValue = strtolower(UserStatus::ACTIVE->value ?? 'active');
+
+        if ($status !== $activeValue) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'حسابك غير مفعل من قبل الإدارة.',
@@ -524,25 +515,22 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // 1. Create Short-lived Access Token (15 minutes)
         $accessTokenExpiresAt = now()->addMinutes(15);
         $accessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
 
-        // 2. Create Long-lived Refresh Token (7 days)
         $refreshTokenExpiresAt = now()->addDays(7);
         $refreshToken = $user->createToken('refresh_token', ['issue-access-token'], $refreshTokenExpiresAt)->plainTextToken;
 
-        // 3. Create HttpOnly Cookie for Refresh Token
         $cookie = cookie(
             'refresh_token',
             $refreshToken,
-            60 * 24 * 7, // 7 days in minutes
+            60 * 24 * 7,
             '/',
             config('session.domain'),
-            true, // Secure
-            true, // HttpOnly
-            false, // Raw
-            'None' // SameSite
+            true,
+            true,
+            false,
+            'None'
         );
 
         return response()->json([
@@ -565,7 +553,6 @@ class AuthController extends Controller
      */
     public function refresh(Request $request)
     {
-        // 1. Get Refresh Token from Cookie
         $refreshToken = $request->cookie('refresh_token');
 
         if (!$refreshToken) {
@@ -575,12 +562,10 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // 2. Find the token in the database
-        // Sanctum tokens are stored as hashed values. We need to find the ID from the token string.
-        // The token format is usually "id|token_string".
         $tokenParts = explode('|', $refreshToken);
         if (count($tokenParts) !== 2) {
-            return response()->json(['message' => 'Invalid token format'], 401)->withCookie(cookie()->forget('refresh_token'));
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Invalid token format'], 401)->withCookie($forget);
         }
 
         $tokenId = $tokenParts[0];
@@ -589,48 +574,75 @@ class AuthController extends Controller
         $dbToken = PersonalAccessToken::find($tokenId);
 
         if (!$dbToken) {
-            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie(cookie()->forget('refresh_token'));
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie($forget);
         }
 
-        // 3. Validate Token (Hash check & Expiry)
+        // ✅ Ensure this is really a refresh token
+        if (($dbToken->name ?? null) !== 'refresh_token' || !$dbToken->can('issue-access-token')) {
+            $dbToken->delete();
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie($forget);
+        }
+
         if (!hash_equals($dbToken->token, hash('sha256', $tokenValue))) {
-            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie(cookie()->forget('refresh_token'));
+            $dbToken->delete();
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Invalid refresh token'], 401)->withCookie($forget);
         }
 
         if ($dbToken->expires_at && Carbon::parse($dbToken->expires_at)->isPast()) {
             $dbToken->delete();
-            return response()->json(['message' => 'Refresh token expired'], 401)->withCookie(cookie()->forget('refresh_token'));
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Refresh token expired'], 401)->withCookie($forget);
         }
 
-        // 4. Get User
         $user = $dbToken->tokenable;
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 401)->withCookie(cookie()->forget('refresh_token'));
+            $dbToken->delete();
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'User not found'], 401)->withCookie($forget);
         }
 
-        // 5. Rotate Tokens (Security Best Practice)
-        // Revoke the used refresh token
+        // ✅ Re-check same access rules as login (security)
+        if (!$user->hasVerifiedEmail()) {
+            $dbToken->delete();
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Email not verified'], 401)->withCookie($forget);
+        }
+
+        $status = $user->status ?? null;
+        if ($status instanceof \BackedEnum) {
+            $status = $status->value;
+        }
+        $status = strtolower(trim((string)$status));
+        $activeValue = strtolower(UserStatus::ACTIVE->value ?? 'active');
+
+        if ($status !== $activeValue) {
+            $dbToken->delete();
+            $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
+            return response()->json(['message' => 'Account not active'], 403)->withCookie($forget);
+        }
+
+        // Rotate tokens
         $dbToken->delete();
 
-        // Create new Access Token
         $accessTokenExpiresAt = now()->addMinutes(15);
         $newAccessToken = $user->createToken('access_token', ['*'], $accessTokenExpiresAt)->plainTextToken;
 
-        // Create new Refresh Token
         $refreshTokenExpiresAt = now()->addDays(7);
         $newRefreshToken = $user->createToken('refresh_token', ['issue-access-token'], $refreshTokenExpiresAt)->plainTextToken;
 
-        // 6. Return Response with new Cookie
         $cookie = cookie(
             'refresh_token',
             $newRefreshToken,
             60 * 24 * 7,
             '/',
             config('session.domain'),
-            true, // Secure
-            true, // HttpOnly
-            false, // Raw
+            true,
+            true,
+            false,
             'None'
         );
 
@@ -638,7 +650,7 @@ class AuthController extends Controller
             'access_token' => $newAccessToken,
             'token_type' => 'Bearer',
             'expires_at' => $accessTokenExpiresAt->toIso8601String(),
-            'user' => [ // Optional: return user info again if needed
+            'user' => [
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
@@ -653,37 +665,29 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke the active Access Token if present in header
+        // Always attempt to delete refresh token if cookie exists (even if user not authenticated)
+        $refreshToken = $request->cookie('refresh_token');
+        if ($refreshToken) {
+            $tokenParts = explode('|', $refreshToken);
+            if (count($tokenParts) === 2) {
+                $tokenId = $tokenParts[0];
+                PersonalAccessToken::where('id', $tokenId)->delete();
+            }
+        }
+
+        // Revoke current access token if authenticated
         $user = $request->user();
         if ($user) {
             $user->currentAccessToken()?->delete();
 
-            // Optionally revoke all tokens for this user if you want a full logout from all devices
-            // $user->tokens()->delete(); 
-
-            // Or just revoke the refresh token associated with the cookie if we could identify it easily
-            // But since we are stateless on the refresh endpoint until called, we might just clear the cookie
-            // and let the refresh token expire or be cleaned up later.
-            // However, for better security, if we had the refresh token in the request, we should delete it.
-
-            $refreshToken = $request->cookie('refresh_token');
-            if ($refreshToken) {
-                $tokenParts = explode('|', $refreshToken);
-                if (count($tokenParts) === 2) {
-                    $tokenId = $tokenParts[0];
-                    PersonalAccessToken::where('id', $tokenId)->delete();
-                }
-            }
+            // If you want a "hard logout" everywhere:
+            // $user->tokens()->delete();
         }
 
-        // Invalidate the session (if using web middleware, but we are API)
-        // $request->session()->invalidate();
-        // $request->session()->regenerateToken();
+        // Clear refresh cookie with same attributes
+        $forget = cookie('refresh_token', '', -1, '/', config('session.domain'), true, true, false, 'None');
 
-        // Clear the Refresh Token Cookie
-        $cookie = cookie()->forget('refresh_token', '/', config('session.domain'));
-
-        return response()->json(['message' => 'Logged out successfully'])->withCookie($cookie);
+        return response()->json(['message' => 'Logged out successfully'])->withCookie($forget);
     }
 
     /**
@@ -704,28 +708,23 @@ class AuthController extends Controller
         $user = User::where('email', Str::lower(trim((string)$request->email)))->first();
 
         if (!$user) {
-            // For security, don't reveal that the user doesn't exist
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني إذا كان الحساب موجودًا.'
             ]);
         }
 
-        // Generate a random token
         $token = Str::random(60);
 
-        // Store the token and expiration time in the user record
         $user->update([
             'password_reset_token' => $token,
-            'password_reset_expires_at' => now()->addMinutes(60) // Token expires after 60 minutes
+            'password_reset_expires_at' => now()->addMinutes(60)
         ]);
 
-        // Create the reset URL for the frontend
         $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
         $resetUrl = $frontendUrl . '/auth/reset-password?token=' . $token;
 
         try {
-            // Send the password reset email
             $user->notify(new \App\Notifications\ResetPasswordNotification($resetUrl));
 
             Log::info('Password reset email sent', ['email' => $user->email]);
@@ -764,9 +763,8 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => $validator->errors()->first()], 422);
         }
 
-        // Find the user with this token
         $user = User::where('password_reset_token', $request->token)
-            ->where('password_reset_expires_at', '>', now()) // Token must not be expired
+            ->where('password_reset_expires_at', '>', now())
             ->first();
 
         if (!$user) {
@@ -776,7 +774,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Update the password and clear the reset token
         $user->update([
             'password_hash' => Hash::make($request->password),
             'password_reset_token' => null,
@@ -796,9 +793,9 @@ class AuthController extends Controller
     // ============================
     private function interpretDbError(QueryException $e, Request $request): array
     {
-        $sqlState = $e->getCode();                 // SQLSTATE
-        $msg      = $e->getMessage();              // الرسالة الكاملة من PDO
-        $driver   = DB::getDriverName();           // mysql/pgsql/sqlite...
+        $sqlState = $e->getCode();
+        $msg      = $e->getMessage();
+        $driver   = DB::getDriverName();
         $reason   = 'خطأ في قاعدة البيانات.';
         $message  = 'حدث خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
         $http     = 500;
@@ -808,7 +805,6 @@ class AuthController extends Controller
         $value    = null;
         $constraint = null;
 
-        // حاول استخراج الحقل والقيمة والكونسترينت من DETAIL (خصوصًا PostgreSQL)
         $detail = $e->errorInfo[2] ?? $msg;
         if (preg_match('/Key \(([^)]+)\)=\(([^)]+)\)/', $detail, $m)) {
             $column = $m[1] ?? null;
@@ -818,27 +814,20 @@ class AuthController extends Controller
             $constraint = $m[1] ?? null;
         }
 
-        // 🔁 Helpers
         $contains = fn(string $needle) => $this->str_contains_ci($msg, $needle) || $this->str_contains_ci($detail, $needle);
 
-        // ========= Mapping شائع (Postgres / MySQL) =========
-        // undefined_table: 42P01 (pgsql), 42S02 (mysql)
         if (in_array($sqlState, ['42P01', '42S02'])) {
             $reason  = 'الجدول المطلوب غير موجود. تأكد من تشغيل المايجريشن.';
             $message = 'قاعدة البيانات غير مهيأة: يرجى تشغيل المايجريشن.';
             $http    = 500;
-        }
-        // undefined_column: 42703 (pgsql), 42S22 (mysql)
-        elseif (in_array($sqlState, ['42703', '42S22'])) {
+        } elseif (in_array($sqlState, ['42703', '42S22'])) {
             $reason  = 'هناك عمود مفقود في الجدول. تأكد من تحديث بنية قاعدة البيانات.';
             $message = 'عمود مفقود في الجدول. يرجى تشغيل أحدث المايجريشن.';
             $http    = 500;
             if ($contains('address') && $contains('venue_owners')) {
                 $reason = 'عمود address غير موجود في جدول venue_owners.';
             }
-        }
-        // unique_violation: 23505 (pgsql), 23000 (mysql ضمن Duplicate entry)
-        elseif ($sqlState === '23505' || ($sqlState === '23000' && $contains('Duplicate entry'))) {
+        } elseif ($sqlState === '23505' || ($sqlState === '23000' && $contains('Duplicate entry'))) {
             $http   = 422;
             $reason = 'تعارض في قيمة فريدة (duplicate).';
 
@@ -857,18 +846,14 @@ class AuthController extends Controller
             ) {
                 $message = 'رقم السجل التجاري مستخدم بالفعل';
                 $errors  = ['commercial_registry' => ['رقم السجل التجاري مستخدم بالفعل']];
-            }
-            // ✅ حالة تعارض الـ primary key على users.id
-            elseif (($column === 'id' && $constraint === 'users_pkey') || $contains('users_pkey')) {
-                $http    = 500; // خطأ تقني داخلي
+            } elseif (($column === 'id' && $constraint === 'users_pkey') || $contains('users_pkey')) {
+                $http    = 500;
                 $reason  = 'تعارض في المفتاح الأساسي للمستخدم (id). غالباً مشكلة في الترقيم التلقائي.';
                 $message = 'حدث خطأ تقني أثناء إنشاء الحساب. يرجى المحاولة مرة أخرى، وإذا استمرت المشكلة تواصل مع الدعم.';
             } else {
                 $message = 'تعارض مع قيد فريد في قاعدة البيانات.';
             }
-        }
-        // not_null_violation: 23502
-        elseif ($sqlState === '23502') {
+        } elseif ($sqlState === '23502') {
             $http   = 500;
             $reason = 'محاولة إدخال قيمة فارغة في عمود لا يقبل الفراغ.';
             if ($contains('"password_hash"')) {
@@ -878,9 +863,7 @@ class AuthController extends Controller
             } else {
                 $message = 'حقل مطلوب مفقود على مستوى قاعدة البيانات.';
             }
-        }
-        // foreign_key_violation: 23503
-        elseif ($sqlState === '23503') {
+        } elseif ($sqlState === '23503') {
             $http    = 422;
             $reason  = 'فشل تكامل المفتاح الأجنبي (قيمة غير موجودة).';
             $message = 'قيمة مرجعية غير صالحة. تحقق من المعرفات المرتبطة.';
@@ -888,24 +871,18 @@ class AuthController extends Controller
                 $errors  = ['area_id' => ['area_id غير صالح أو غير موجود']];
                 $message = 'المنطقة غير صالحة أو غير موجودة.';
             }
-        }
-        // invalid_text_representation (مثال UUID سيء): 22P02
-        elseif ($sqlState === '22P02') {
+        } elseif ($sqlState === '22P02') {
             $http    = 422;
             $reason  = 'قيمة ذات صيغة غير صالحة (مثلاً UUID غير صحيح).';
             $message = 'صيغة قيمة غير صالحة. تحقق من الحقول المعرّفة كـ UUID.';
             if ($contains('uuid') || $contains('area_id')) {
                 $errors = ['area_id' => ['صيغة area_id غير صالحة (UUID)']];
             }
-        }
-        // datatype_mismatch: 42804 (pgsql)
-        elseif ($sqlState === '42804') {
+        } elseif ($sqlState === '42804') {
             $http    = 400;
             $reason  = 'عدم تطابق في نوع البيانات.';
             $message = 'نوع البيانات المُرسل لا يتوافق مع العمود في قاعدة البيانات.';
-        }
-        // default fallback
-        else {
+        } else {
             $http    = 500;
             $reason  = 'خطأ قاعدة بيانات غير معروف.';
             $message = 'حدث خطأ في قاعدة البيانات. يرجى المحاولة مرة أخرى.';
@@ -935,7 +912,6 @@ class AuthController extends Controller
     private function notifyAdminsAboutBusinessAccountVerification(User $user): void
     {
         try {
-            // Get all admins and super_admins
             $admins = User::whereIn('type', [
                 UserRole::ADMIN->value,
                 UserRole::SUPER_ADMIN->value,

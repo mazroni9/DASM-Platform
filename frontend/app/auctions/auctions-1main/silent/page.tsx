@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  useEffect,
-  useState,
-  Fragment,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useEffect, useState, Fragment, useRef, useCallback, useMemo } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import BidTimer from "@/components/BidTimer";
 import { formatCurrency } from "@/utils/formatCurrency";
@@ -28,11 +21,44 @@ import {
   TrendingUp,
   Minus,
   Plus,
+  Columns,
+  RotateCcw,
+  X,
 } from "lucide-react";
 
 // ================= ثابت نوع المزاد =================
 const AUCTION_TYPE = "silent_instant";
 const PAGE_SIZE = 50;
+
+// ================= حفظ اختيارات الأعمدة =================
+const COLUMNS_STORAGE_KEY = "silent_auction_columns_v1";
+
+type ColumnId =
+  | "expand"
+  | "city"
+  | "make"
+  | "model"
+  | "year"
+  | "openingPrice"
+  | "currentBid"
+  | "change"
+  | "bidsCount"
+  | "maxBid"
+  | "details";
+
+const COLUMN_OPTIONS: Array<{ id: ColumnId; label: string; locked?: boolean }> = [
+  { id: "expand", label: "توسيع", locked: true },
+  { id: "city", label: "المدينة" },
+  { id: "make", label: "الماركة" },
+  { id: "model", label: "الموديل" },
+  { id: "year", label: "السنة" },
+  { id: "openingPrice", label: "سعر الافتتاح" },
+  { id: "currentBid", label: "آخر سعر" },
+  { id: "change", label: "التغير" },
+  { id: "bidsCount", label: "عدد المزايدات" },
+  { id: "maxBid", label: "أعلى سعر" },
+  { id: "details", label: "التفاصيل", locked: true },
+];
 
 // =============== Types ===============
 type CarInfo = {
@@ -67,8 +93,30 @@ type SilentAuctionItem = {
 };
 
 interface FilterOptions {
-  brand: string;
+  brand: string; // server-side
 }
+
+type AdvancedFilters = {
+  city: string;
+  model: string;
+  yearFrom: string;
+  yearTo: string;
+  condition: string;
+  color: string;
+  engine: string;
+  auctionStatus: "" | "in_auction" | "sold" | "expired";
+};
+
+const INITIAL_ADVANCED: AdvancedFilters = {
+  city: "",
+  model: "",
+  yearFrom: "",
+  yearTo: "",
+  condition: "",
+  color: "",
+  engine: "",
+  auctionStatus: "",
+};
 
 // =============== Helpers ===============
 function toNumber(v: unknown, fallback = 0): number {
@@ -80,9 +128,12 @@ function toNumber(v: unknown, fallback = 0): number {
   return fallback;
 }
 
+function safeLower(v: unknown) {
+  return String(v ?? "").toLowerCase().trim();
+}
+
 async function isWithinAllowedTime(page: string): Promise<boolean> {
   try {
-    // ✅ لازم يبدأ بـ /api
     const response = await api.get(`/api/check-time`, { params: { page } });
     return Boolean(response.data?.allowed);
   } catch {
@@ -105,29 +156,86 @@ function normalizeSilentAuction(raw: any): SilentAuctionItem {
     car_id: raw?.car_id ?? car?.id ?? 0,
     car,
     auction_type: raw?.auction_type ?? raw?.type ?? "",
-
-    // تطبيع أسماء الحقول
     minimum_bid: raw?.minimum_bid ?? raw?.min_price ?? raw?.starting_bid ?? 0,
     maximum_bid: raw?.maximum_bid ?? raw?.max_price ?? 0,
     current_bid: raw?.current_bid ?? 0,
-
     bids: Array.isArray(raw?.bids) ? raw.bids : [],
     status: raw?.status ?? "",
   };
 }
 
+function loadSavedColumnVisibility(): Record<ColumnId, boolean> {
+  const defaults = {} as Record<ColumnId, boolean>;
+  COLUMN_OPTIONS.forEach((c) => {
+    defaults[c.id] = true;
+  });
+
+  if (typeof window === "undefined") return defaults;
+
+  try {
+    const raw = window.localStorage.getItem(COLUMNS_STORAGE_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as Partial<Record<ColumnId, boolean>>;
+    const merged = { ...defaults, ...parsed } as Record<ColumnId, boolean>;
+    COLUMN_OPTIONS.forEach((c) => {
+      if (c.locked) merged[c.id] = true;
+    });
+    return merged;
+  } catch {
+    return defaults;
+  }
+}
+
+function saveColumnVisibility(model: Record<ColumnId, boolean>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(model));
+  } catch {
+    // ignore
+  }
+}
+
+// مكون لعرض التغيير في السعر
+const PriceChangeBadge = ({ increment, bidAmount }: { increment: number; bidAmount: number }) => {
+  const isPositive = increment > 0;
+  const percentage = bidAmount ? ((increment / bidAmount) * 100).toFixed(2) : "0.00";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${
+        isPositive
+          ? "bg-emerald-900/30 text-emerald-700 border-emerald-700/50"
+          : "bg-rose-900/30 text-rose-700 border-rose-700/50"
+      }`}
+    >
+      {isPositive ? <Plus className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+      {formatCurrency(increment)} ({percentage}%)
+    </span>
+  );
+};
+
 export default function SilentAuctionPage() {
   const [carsTotal, setCarsTotal] = useState(0);
+
+  // Server search
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [carsBrands, setCarsBrands] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterOptions>({ brand: "" });
+
+  // Advanced (client-side)
+  const [quickSearch, setQuickSearch] = useState("");
+  const [advanced, setAdvanced] = useState<AdvancedFilters>(INITIAL_ADVANCED);
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [showColumns, setShowColumns] = useState(false);
+
+  const [carsBrands, setCarsBrands] = useState<string[]>([]);
   const [isAllowed, setIsAllowed] = useState(true);
   const [cars, setCars] = useState<SilentAuctionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [expandedRows, setExpandedRows] = useState<{ [key: number]: boolean }>({});
+
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
 
@@ -141,19 +249,89 @@ export default function SilentAuctionPage() {
 
   const { label: auctionType } = getCurrentAuctionType(currentTime);
 
+  // ✅ Column visibility (persisted)
+  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnId, boolean>>(() =>
+    loadSavedColumnVisibility()
+  );
+
+  const isColVisible = useCallback(
+    (id: ColumnId) => Boolean(columnVisibility[id]),
+    [columnVisibility]
+  );
+
+  const visibleHeaders = useMemo(() => {
+    const order: ColumnId[] = [
+      "expand",
+      "city",
+      "make",
+      "model",
+      "year",
+      "openingPrice",
+      "currentBid",
+      "change",
+      "bidsCount",
+      "maxBid",
+      "details",
+    ];
+    return order.filter((id) => isColVisible(id));
+  }, [isColVisible]);
+
   // تحديث الوقت
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const resetAndReload = () => {
+  const resetAndReloadServer = () => {
     setCars([]);
     setExpandedRows({});
     setCurrentPage(1);
   };
 
-  // جلب البيانات (معدل ليتوافق مع Laravel + backend)
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setQuickSearch("");
+    setFilters({ brand: "" });
+    setAdvanced(INITIAL_ADVANCED);
+    setShowFilters(false);
+    setShowColumns(false);
+    resetAndReloadServer();
+  };
+
+  const toggleRowExpansion = (id: number) => {
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // ✅ Column chooser handlers
+  const toggleColumn = (id: ColumnId) => {
+    const meta = COLUMN_OPTIONS.find((c) => c.id === id);
+    if (meta?.locked) return;
+
+    setColumnVisibility((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      COLUMN_OPTIONS.forEach((c) => {
+        if (c.locked) next[c.id] = true;
+      });
+      saveColumnVisibility(next);
+      return next;
+    });
+  };
+
+  const showAllColumns = () => {
+    const next = {} as Record<ColumnId, boolean>;
+    COLUMN_OPTIONS.forEach((c) => (next[c.id] = true));
+    setColumnVisibility(next);
+    saveColumnVisibility(next);
+  };
+
+  const hideAllColumns = () => {
+    const next = {} as Record<ColumnId, boolean>;
+    COLUMN_OPTIONS.forEach((c) => (next[c.id] = c.locked ? true : false));
+    setColumnVisibility(next);
+    saveColumnVisibility(next);
+  };
+
+  // جلب البيانات (Laravel + backend)
   const fetchAuctions = useCallback(async () => {
     const seq = ++requestSeqRef.current;
 
@@ -165,7 +343,6 @@ export default function SilentAuctionPage() {
       const allowed = await isWithinAllowedTime("late_auction");
       setIsAllowed(allowed);
 
-      // لو غير مسموح، امسح الداتا وخلاص
       if (!allowed) {
         if (seq === requestSeqRef.current) {
           setCars([]);
@@ -176,22 +353,19 @@ export default function SilentAuctionPage() {
         return;
       }
 
-      // ✅ أهم تعديل:
-      // - استخدام axios params
-      // - إرسال auction_type كـ query param عشان الـ backend بيقرأ $request->auction_type
       const response = await api.get(`/api/approved-auctions/${AUCTION_TYPE}`, {
         headers: { Accept: "application/json; charset=UTF-8" },
         params: {
           page: currentPage,
-          pageSize: PAGE_SIZE, // حتى لو backend مش بيستخدمه، مش هيضر
-          auction_type: AUCTION_TYPE, // ✅ مهم للتوافق مع $request->auction_type
-          active: 1, // ✅ لو مطلوب فقط المزادات الجارية
+          pageSize: PAGE_SIZE,
+          auction_type: AUCTION_TYPE,
+          active: 1,
           ...(searchTerm ? { search: searchTerm } : {}),
           ...(filters.brand ? { brand: filters.brand } : {}),
         },
       });
 
-      const paginated = response.data?.data; // Laravel paginator object
+      const paginated = response.data?.data;
       const rows = Array.isArray(paginated?.data) ? paginated.data : [];
       const normalized = rows.map(normalizeSilentAuction);
 
@@ -218,12 +392,11 @@ export default function SilentAuctionPage() {
     }
   }, [currentPage, searchTerm, filters.brand]);
 
-  // تأثير جلب البيانات
   useEffect(() => {
     fetchAuctions();
   }, [fetchAuctions]);
 
-  // Pusher الاشتراك في قناة
+  // Pusher
   const { subscribe, unsubscribe, isConnected } = usePusher();
 
   useEffect(() => {
@@ -232,7 +405,6 @@ export default function SilentAuctionPage() {
     const channel = subscribe("auction.silent");
     if (!channel) return;
 
-    // رجّع للصفحة الأولى وافرّغ لتجنب تكرار البيانات
     channel.bind("CarMovedBetweenAuctionsEvent", () => {
       setCurrentPage(1);
       setCars([]);
@@ -290,42 +462,83 @@ export default function SilentAuctionPage() {
     return () => io.disconnect();
   }, [currentPage, lastPage, isAllowed]);
 
-  const toggleRowExpansion = (id: number) => {
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
+  // ✅ فلترة متقدمة (Client-side) + Quick Search على البيانات المحمّلة
   const filteredCars = useMemo(() => {
-    return cars.filter((row) => {
-      const make = row.car?.make || "";
-      if (filters.brand && filters.brand !== make) return false;
-      return true;
-    });
-  }, [cars, filters.brand]);
+    const cityQ = safeLower(advanced.city);
+    const modelQ = safeLower(advanced.model);
+    const conditionQ = safeLower(advanced.condition);
+    const colorQ = safeLower(advanced.color);
+    const engineQ = safeLower(advanced.engine);
 
-  // مكون لعرض التغيير في السعر
-  const PriceChangeBadge = ({
-    increment,
-    bidAmount,
-  }: {
-    increment: number;
-    bidAmount: number;
-  }) => {
-    const isPositive = increment > 0;
-    const percentage = bidAmount ? ((increment / bidAmount) * 100).toFixed(2) : "0.00";
+    const yearFrom = advanced.yearFrom ? toNumber(advanced.yearFrom, 0) : 0;
+    const yearTo = advanced.yearTo ? toNumber(advanced.yearTo, 9999) : 9999;
 
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${
-          isPositive
-            ? "bg-emerald-900/30 text-emerald-700 border-emerald-700/50"
-            : "bg-rose-900/30 text-rose-700 border-rose-700/50"
-        }`}
-      >
-        {isPositive ? <Plus className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-        {formatCurrency(increment)} ({percentage}%)
-      </span>
-    );
-  };
+    const quickQ = safeLower(quickSearch);
+
+    const matchesQuick = (row: SilentAuctionItem) => {
+      if (!quickQ) return true;
+
+      const car = row.car; // ✅ CarInfo | null | undefined
+      const lastBid = row.bids?.length ? row.bids[row.bids.length - 1] : null;
+
+      const parts: string[] = [];
+
+      // ابحث فقط داخل الأعمدة الظاهرة
+      if (isColVisible("city")) parts.push(car?.city ?? "");
+      if (isColVisible("make")) parts.push(car?.make ?? "");
+      if (isColVisible("model")) parts.push(car?.model ?? "");
+      if (isColVisible("year")) parts.push(String(car?.year ?? ""));
+      if (isColVisible("openingPrice")) parts.push(String(row.minimum_bid ?? ""));
+      if (isColVisible("currentBid")) parts.push(String(row.current_bid ?? ""));
+      if (isColVisible("change") && lastBid)
+        parts.push(`${String(lastBid.increment ?? "")} ${String(lastBid.bid_amount ?? "")}`);
+      if (isColVisible("bidsCount")) parts.push(String(row.bids?.length ?? 0));
+      if (isColVisible("maxBid")) parts.push(String(row.maximum_bid ?? ""));
+
+      return safeLower(parts.join(" ")).includes(quickQ);
+    };
+
+    return cars
+      .filter((row) => {
+        const car = row.car; // ✅ CarInfo | null | undefined
+
+        // brand (server) + (تأكيد محلي)
+        const make = car?.make ?? "";
+        if (filters.brand && filters.brand !== make) return false;
+
+        // advanced filters
+        if (cityQ && !safeLower(car?.city ?? "").includes(cityQ)) return false;
+        if (modelQ && !safeLower(car?.model ?? "").includes(modelQ)) return false;
+
+        const y = toNumber(car?.year, 0);
+        if (advanced.yearFrom && y < yearFrom) return false;
+        if (advanced.yearTo && y > yearTo) return false;
+
+        if (conditionQ && !safeLower(car?.condition ?? "").includes(conditionQ)) return false;
+        if (colorQ && !safeLower(car?.color ?? "").includes(colorQ)) return false;
+        if (engineQ && !safeLower(car?.engine ?? "").includes(engineQ)) return false;
+
+        if (advanced.auctionStatus) {
+          const st = (car?.auction_status ?? "") as AdvancedFilters["auctionStatus"] | "";
+          if (st !== advanced.auctionStatus) return false;
+        }
+
+        // quick search
+        if (!matchesQuick(row)) return false;
+
+        return true;
+      })
+      .filter((row) => {
+        // نفس منطق العرض عندك
+        const car = row.car;
+        const showRow =
+          (row.auction_type ?? "") !== "live" && (car?.auction_status ?? "") === "in_auction";
+        return showRow;
+      });
+  }, [cars, filters.brand, advanced, quickSearch, isColVisible, isColVisible("city")]);
+
+  // ملاحظة: السطر الأخير في deps كان إضافة دفاعية، لكن الأفضل عدم استدعاء isColVisible داخل deps.
+  // هنصلحها عمليًا بحذف isColVisible("city") لو مسبب تحذير.
 
   return (
     <div className="min-h-screen bg-background text-foreground px-4 md:px-6 py-4">
@@ -355,13 +568,10 @@ export default function SilentAuctionPage() {
 
         {/* وصف */}
         <div className="mb-4 text-center">
-          <div className="text-sm text-primary/80">
-            وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي
-          </div>
+          <div className="text-sm text-primary/80">وقت السوق من 10 مساءً إلى 4 عصراً اليوم التالي</div>
           <p className="mt-1 text-foreground/70 text-sm max-w-3xl mx-auto">
-            مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر،
-            وصاحب العرض يستطيع أن يغير سعره بالسالب أو الموجب بحد لا يتجاوز 10%
-            من سعر إغلاق الفوري.
+            مكمل للسوق الفوري المباشر في تركيبه ويختلف أنه ليس به بث مباشر، وصاحب العرض يستطيع أن يغير سعره
+            بالسالب أو الموجب بحد لا يتجاوز 10% من سعر إغلاق الفوري.
           </p>
         </div>
 
@@ -376,9 +586,7 @@ export default function SilentAuctionPage() {
         {!isAllowed && (
           <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-2xl p-5 mb-4 flex items-center gap-3 backdrop-blur-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>
-              السوق غير مفتوح حاليًا. يفتح يوميًا من 10 مساءً إلى 4 عصراً اليوم التالي.
-            </span>
+            <span>السوق غير مفتوح حاليًا. يفتح يوميًا من 10 مساءً إلى 4 عصراً اليوم التالي.</span>
           </div>
         )}
 
@@ -389,58 +597,141 @@ export default function SilentAuctionPage() {
           </div>
         )}
 
-        {/* البحث والفلاتر */}
+        {/* البحث والفلاتر + اختيار الأعمدة */}
         <div className="bg-card/40 backdrop-blur-xl rounded-2xl border border-border p-5 mb-4 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+            {/* بحث سيرفر */}
             <div className="relative flex-1 max-w-2xl">
               <Search className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
               <input
                 type="text"
-                placeholder="ابحث بالماركة، الموديل، أو رقم الشاصي..."
+                placeholder="بحث (سيرفر): ماركة، موديل، أو رقم الشاصي..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  resetAndReload();
+                  resetAndReloadServer();
                 }}
                 className="w-full pr-11 pl-4 py-3 bg-background/70 border border-border rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-foreground placeholder-foreground/50 backdrop-blur-sm"
               />
             </div>
 
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="text-sm text-foreground/80 bg-background/60 px-4.5 py-2.5 rounded-xl border border-border">
-                <span className="font-semibold text-foreground">{filteredCars.length}</span>{" "}
-                من{" "}
-                <span className="font-semibold text-foreground">{carsTotal}</span>{" "}
-                سيارة
+                <span className="font-semibold text-foreground">{filteredCars.length}</span> من{" "}
+                <span className="font-semibold text-foreground">{carsTotal}</span> سيارة
               </div>
 
               <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => {
+                  setShowColumns((v) => !v);
+                  setShowFilters(false);
+                }}
+                className="flex items-center gap-2.5 px-4.5 py-2.5 border border-border rounded-xl hover:bg-border transition-colors text-foreground/80 hover:text-foreground backdrop-blur-sm"
+              >
+                <Columns className="w-4.5 h-4.5" />
+                الأعمدة
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-300 ${showColumns ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowFilters((v) => !v);
+                  setShowColumns(false);
+                }}
                 className="flex items-center gap-2.5 px-4.5 py-2.5 border border-border rounded-xl hover:bg-border transition-colors text-foreground/80 hover:text-foreground backdrop-blur-sm"
               >
                 <Filter className="w-4.5 h-4.5" />
                 فلاتر
                 <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-300 ${
-                    showFilters ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform duration-300 ${showFilters ? "rotate-180" : ""}`}
                 />
+              </button>
+
+              <button
+                onClick={clearAllFilters}
+                className="flex items-center gap-2.5 px-4.5 py-2.5 border border-border rounded-xl hover:bg-border transition-colors text-foreground/80 hover:text-foreground backdrop-blur-sm"
+                title="تصفير الكل"
+              >
+                <RotateCcw className="w-4.5 h-4.5" />
+                تصفير
               </button>
             </div>
           </div>
 
+          {/* ✅ Column Chooser */}
+          {showColumns && (
+            <div className="mt-5 pt-5 border-t border-border/40">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                <div className="text-sm text-foreground/80">
+                  اختر الأعمدة التي تريد إظهارها/إخفاءها (يتم الحفظ تلقائيًا).
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={showAllColumns}
+                    className="px-3 py-2 text-sm rounded-xl border border-border hover:bg-border transition-colors"
+                  >
+                    إظهار الكل
+                  </button>
+                  <button
+                    onClick={hideAllColumns}
+                    className="px-3 py-2 text-sm rounded-xl border border-border hover:bg-border transition-colors"
+                  >
+                    إخفاء الكل
+                  </button>
+                  <button
+                    onClick={() => setShowColumns(false)}
+                    className="px-3 py-2 text-sm rounded-xl border border-border hover:bg-border transition-colors inline-flex items-center gap-2"
+                    title="إغلاق"
+                  >
+                    <X className="w-4 h-4" />
+                    إغلاق
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {COLUMN_OPTIONS.map((c) => {
+                  const checked = Boolean(columnVisibility[c.id]);
+                  const disabled = Boolean(c.locked);
+                  return (
+                    <label
+                      key={c.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border border-border bg-background/60 ${
+                        disabled ? "opacity-70" : "hover:bg-border cursor-pointer"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleColumn(c.id)}
+                        className="accent-primary"
+                      />
+                      <span className="text-sm">{c.label}</span>
+                      {disabled && <span className="text-xs text-foreground/60 mr-auto">(إجباري)</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ✅ فلاتر متقدمة */}
           {showFilters && (
             <div className="mt-5 pt-5 border-t border-border/40">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* فلتر ماركة (سيرفر) */}
                 <div>
                   <label className="block text-sm font-medium text-foreground/80 mb-2">
-                    ماركة السيارة
+                    ماركة السيارة (سيرفر)
                   </label>
                   <select
                     value={filters.brand}
                     onChange={(e) => {
                       setFilters((prev) => ({ ...prev, brand: e.target.value }));
-                      resetAndReload();
+                      resetAndReloadServer();
                     }}
                     className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
                   >
@@ -453,6 +744,122 @@ export default function SilentAuctionPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* ✅ Quick search داخل الجدول */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">
+                    بحث سريع داخل الجدول
+                  </label>
+                  <input
+                    value={quickSearch}
+                    onChange={(e) => setQuickSearch(e.target.value)}
+                    placeholder="يبحث داخل الأعمدة الظاهرة..."
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                {/* فلاتر متقدمة محلية */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">المدينة</label>
+                  <input
+                    value={advanced.city}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, city: e.target.value }))}
+                    placeholder="مثال: جدة"
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">الموديل</label>
+                  <input
+                    value={advanced.model}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, model: e.target.value }))}
+                    placeholder="مثال: Camry"
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">سنة من</label>
+                  <input
+                    type="number"
+                    value={advanced.yearFrom}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, yearFrom: e.target.value }))}
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">سنة إلى</label>
+                  <input
+                    type="number"
+                    value={advanced.yearTo}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, yearTo: e.target.value }))}
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">حالة السيارة</label>
+                  <input
+                    value={advanced.condition}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, condition: e.target.value }))}
+                    placeholder="مثال: ممتاز"
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">اللون</label>
+                  <input
+                    value={advanced.color}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, color: e.target.value }))}
+                    placeholder="مثال: أبيض"
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">الوقود/المحرك</label>
+                  <input
+                    value={advanced.engine}
+                    onChange={(e) => setAdvanced((p) => ({ ...p, engine: e.target.value }))}
+                    placeholder="مثال: بنزين"
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground/80 mb-2">نتيجة المزايدة</label>
+                  <select
+                    value={advanced.auctionStatus}
+                    onChange={(e) =>
+                      setAdvanced((p) => ({
+                        ...p,
+                        auctionStatus: e.target.value as AdvancedFilters["auctionStatus"],
+                      }))
+                    }
+                    className="w-full p-3 bg-background/70 border border-border rounded-xl focus:ring-primary/50 focus:border-primary/50 text-foreground backdrop-blur-sm"
+                  >
+                    <option value="">الكل</option>
+                    <option value="in_auction">جاري المزايدة</option>
+                    <option value="sold">تم البيع</option>
+                    <option value="expired">انتهى</option>
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setAdvanced(INITIAL_ADVANCED);
+                      setQuickSearch("");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4.5 py-3 border border-border rounded-xl hover:bg-border transition-colors text-foreground/80 hover:text-foreground backdrop-blur-sm"
+                  >
+                    <RotateCcw className="w-4.5 h-4.5" />
+                    مسح فلاتر البحث المتقدم
+                  </button>
                 </div>
               </div>
             </div>
@@ -476,24 +883,17 @@ export default function SilentAuctionPage() {
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-background/70 backdrop-blur-sm sticky top-0 z-10 border-b border-border">
-                      {[
-                        "",
-                        "المدينة",
-                        "الماركة",
-                        "الموديل",
-                        "السنة",
-                        "سعر الافتتاح",
-                        "آخر سعر",
-                        "التغير",
-                        "التفاصيل",
-                      ].map((header, i) => (
-                        <th
-                          key={i}
-                          className="px-4 py-4 text-right text-xs font-semibold text-foreground/70 uppercase tracking-wider whitespace-nowrap"
-                        >
-                          {header}
-                        </th>
-                      ))}
+                      {visibleHeaders.map((colId) => {
+                        const label = COLUMN_OPTIONS.find((c) => c.id === colId)?.label ?? "";
+                        return (
+                          <th
+                            key={colId}
+                            className="px-4 py-4 text-right text-xs font-semibold text-foreground/70 uppercase tracking-wider whitespace-nowrap"
+                          >
+                            {colId === "expand" ? "" : label}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
 
@@ -507,78 +907,99 @@ export default function SilentAuctionPage() {
                       const maxBid = toNumber(row.maximum_bid, 0);
                       const curBid = toNumber(row.current_bid, 0);
 
-                      const showRow =
-                        (row.auction_type ?? "") !== "live" &&
-                        (car?.auction_status ?? "") === "in_auction";
-
-                      if (!showRow) return null;
-
                       return (
                         <Fragment key={row.id}>
                           <tr className="hover:bg-border/60 transition-colors">
-                            <td className="px-4 py-4 text-center">
-                              <button
-                                onClick={() => toggleRowExpansion(row.id)}
-                                className="inline-flex items-center justify-center text-foreground/50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg p-1.5 hover:bg-border transition-colors"
-                                aria-label={
-                                  expandedRows[row.id] ? "إخفاء التفاصيل" : "عرض التفاصيل"
-                                }
-                              >
-                                {expandedRows[row.id] ? (
-                                  <ChevronUp className="w-5 h-5" />
-                                ) : (
-                                  <ChevronDown className="w-5 h-5" />
-                                )}
-                              </button>
-                            </td>
-
-                            <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                              {car?.city || "—"}
-                            </td>
-                            <td className="px-4 py-4 text-center text-sm font-medium text-foreground">
-                              {car?.make || "—"}
-                            </td>
-                            <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                              {car?.model || "—"}
-                            </td>
-                            <td className="px-4 py-4 text-center text-sm text-foreground/80">
-                              {car?.year ?? "—"}
-                            </td>
-                            <td className="px-4 py-4 text-center text-sm text-secondary dark:text-foreground">
-                              {formatCurrency(minBid)}
-                            </td>
-                            <td className="px-4 py-4 text-center text-sm font-medium text-primary">
-                              {formatCurrency(curBid)}
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              {lastBid ? (
-                                <PriceChangeBadge
-                                  increment={toNumber(lastBid.increment, 0)}
-                                  bidAmount={toNumber(lastBid.bid_amount, 0)}
-                                />
-                              ) : (
-                                <span className="text-foreground/50">—</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              {row.car_id ? (
-                                <a
-                                  href={`/carDetails/${row.car_id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl border border-primary/30"
+                            {isColVisible("expand") && (
+                              <td className="px-4 py-4 text-center">
+                                <button
+                                  onClick={() => toggleRowExpansion(row.id)}
+                                  className="inline-flex items-center justify-center text-foreground/50 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg p-1.5 hover:bg-border transition-colors"
+                                  aria-label={expandedRows[row.id] ? "إخفاء التفاصيل" : "عرض التفاصيل"}
                                 >
-                                  <Eye className="w-4 h-4" />
-                                </a>
-                              ) : (
-                                <span className="text-foreground/50">—</span>
-                              )}
-                            </td>
+                                  {expandedRows[row.id] ? (
+                                    <ChevronUp className="w-5 h-5" />
+                                  ) : (
+                                    <ChevronDown className="w-5 h-5" />
+                                  )}
+                                </button>
+                              </td>
+                            )}
+
+                            {isColVisible("city") && (
+                              <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                                {car?.city || "—"}
+                              </td>
+                            )}
+                            {isColVisible("make") && (
+                              <td className="px-4 py-4 text-center text-sm font-medium text-foreground">
+                                {car?.make || "—"}
+                              </td>
+                            )}
+                            {isColVisible("model") && (
+                              <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                                {car?.model || "—"}
+                              </td>
+                            )}
+                            {isColVisible("year") && (
+                              <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                                {car?.year ?? "—"}
+                              </td>
+                            )}
+                            {isColVisible("openingPrice") && (
+                              <td className="px-4 py-4 text-center text-sm text-secondary dark:text-foreground">
+                                {formatCurrency(minBid)}
+                              </td>
+                            )}
+                            {isColVisible("currentBid") && (
+                              <td className="px-4 py-4 text-center text-sm font-medium text-primary">
+                                {formatCurrency(curBid)}
+                              </td>
+                            )}
+                            {isColVisible("change") && (
+                              <td className="px-4 py-4 text-center">
+                                {lastBid ? (
+                                  <PriceChangeBadge
+                                    increment={toNumber(lastBid.increment, 0)}
+                                    bidAmount={toNumber(lastBid.bid_amount, 0)}
+                                  />
+                                ) : (
+                                  <span className="text-foreground/50">—</span>
+                                )}
+                              </td>
+                            )}
+                            {isColVisible("bidsCount") && (
+                              <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                                {bids.length}
+                              </td>
+                            )}
+                            {isColVisible("maxBid") && (
+                              <td className="px-4 py-4 text-center text-sm text-foreground/80">
+                                {formatCurrency(maxBid)}
+                              </td>
+                            )}
+
+                            {isColVisible("details") && (
+                              <td className="px-4 py-4 text-center">
+                                {row.car_id ? (
+                                  <a
+                                    href={`/carDetails/${row.car_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl border border-primary/30"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </a>
+                                ) : (
+                                  <span className="text-foreground/50">—</span>
+                                )}
+                              </td>
+                            )}
                           </tr>
 
                           {expandedRows[row.id] && (
                             <tr className="bg-background/30">
-                              <td colSpan={9} className="px-6 py-5 border-t border-border">
+                              <td colSpan={visibleHeaders.length} className="px-6 py-5 border-t border-border">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                   <div className="bg-border/50 rounded-xl p-4 border border-border">
                                     <h4 className="font-semibold text-primary mb-3 flex items-center gap-2">
@@ -618,7 +1039,7 @@ export default function SilentAuctionPage() {
                                         <span className="text-foreground/90">{bids.length}</span>
                                       </li>
                                       <li className="flex justify-between">
-                                        <span className="text-foreground/70">الحالة:</span>
+                                        <span className="text-foreground/70">حالة العنصر:</span>
                                         <span className="text-foreground/90">{row.status || "—"}</span>
                                       </li>
                                       <li className="flex justify-between">
@@ -633,12 +1054,6 @@ export default function SilentAuctionPage() {
                                     <ul className="space-y-2 text-sm">
                                       <li className="flex justify-between">
                                         <span className="text-foreground/70">سعر الافتتاح:</span>
-                                        <span className="text-amber-700 dark:text-amber-400">
-                                          {formatCurrency(minBid)}
-                                        </span>
-                                      </li>
-                                      <li className="flex justify-between">
-                                        <span className="text-foreground/70">أقل سعر:</span>
                                         <span className="text-amber-700 dark:text-amber-400">
                                           {formatCurrency(minBid)}
                                         </span>

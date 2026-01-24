@@ -1,27 +1,23 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-    const { initialized } = useAuthStore();
-    const [isLoading, setIsLoading] = useState(true);
+  const initialized = useAuthStore((s) => s.initialized);
 
-    useEffect(() => {
-        if (!initialized) {
-            return;
-        }
+  useEffect(() => {
+    // ✅ Ensure auth state is initialized at app start
+    useAuthStore.getState().initializeFromStorage();
+  }, []);
 
-        setIsLoading(false);
-    }, [initialized]);
+  if (!initialized) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <span>Loading...</span>
+      </div>
+    );
+  }
 
-    if (isLoading) {
-        return (
-            <div className="flex h-full w-full items-center justify-center">
-                <span>Loading...</span>
-            </div>
-        );
-    }
-
-    return <>{children}</>;
+  return <>{children}</>;
 }
