@@ -38,6 +38,8 @@ export default function DealerDashboardPage() {
     setActiveAuctions,
     toggleAi,
     setConnectionStatus,
+    addAiRecommendation,
+    clearAiRecommendations,
   } = useDealerStore();
 
   // Initialize WebSocket connection
@@ -46,7 +48,7 @@ export default function DealerDashboardPage() {
       userId: user?.id || 0,
       authToken: token || "",
       aiEnabled,
-    }
+    },
   );
 
   // Fetch initial dashboard data
@@ -78,7 +80,7 @@ export default function DealerDashboardPage() {
           userData.id,
           userData.name,
           userData.plan_type,
-          userData.ai_enabled
+          userData.ai_enabled,
         );
 
         setIsInitialized(true);
@@ -125,6 +127,58 @@ export default function DealerDashboardPage() {
       toggleAi(!newState); // Revert on error
     }
   };
+
+  // Fetch AI recommendations when enabled
+  useEffect(() => {
+    if (!aiEnabled || !token) {
+      clearAiRecommendations();
+      return;
+    }
+
+    const fetchRecommendations = async () => {
+      try {
+        const response = await fetch("/api/dealer/ai/recommendations", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.status === "success" && data.data?.recommendations) {
+          // Clear existing and add new recommendations
+          clearAiRecommendations();
+          data.data.recommendations.forEach(
+            (rec: {
+              vehicle_id: number;
+              name: string;
+              discount_percentage: number;
+              reason: string;
+              confidence_score: number;
+              current_price: number;
+              market_price: number;
+              timestamp: string;
+            }) => {
+              addAiRecommendation({
+                vehicleId: rec.vehicle_id,
+                name: rec.name,
+                discountPercentage: rec.discount_percentage,
+                reason: rec.reason,
+                confidenceScore: rec.confidence_score,
+                currentPrice: rec.current_price,
+                marketPrice: rec.market_price,
+                timestamp: rec.timestamp,
+              });
+            },
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch AI recommendations:", error);
+      }
+    };
+
+    fetchRecommendations();
+  }, [aiEnabled, token, addAiRecommendation, clearAiRecommendations]);
 
   // Handle bid placement
   const handleBid = async (auctionId: number, amount: number) => {
@@ -197,7 +251,7 @@ export default function DealerDashboardPage() {
               <Radio
                 className={cn(
                   "w-4 h-4",
-                  aiEnabled ? "text-primary" : "text-foreground/40"
+                  aiEnabled ? "text-primary" : "text-foreground/40",
                 )}
               />
               <span className="text-sm text-foreground/70">
@@ -269,7 +323,7 @@ export default function DealerDashboardPage() {
 
           <div className="space-y-6">
             {/* AI Sniper Zone */}
-            <SniperZoneEnhanced />
+            <SniperZoneEnhanced  />
 
             {/* Live Auction Grid */}
             <div className="bg-card border border-border rounded-xl p-4">

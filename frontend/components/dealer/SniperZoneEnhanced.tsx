@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Target, Zap, TrendingDown, ExternalLink } from "lucide-react";
 import { useDealerStore, AiRecommendation } from "@/store/dealerStore";
 import { cn } from "@/lib/utils";
+import LoadingLink from "../LoadingLink";
 
 interface SniperZoneEnhancedProps {
   onViewAuction?: (vehicleId: number) => void;
@@ -131,8 +132,9 @@ export default function SniperZoneEnhanced({
                   <div className="mt-2 text-xs text-foreground/40">
                     ثقة: {Math.round(rec.confidenceScore * 100)}%
                   </div>
-
-                  <ExternalLink className="w-4 h-4 text-foreground/30 mt-2" />
+                  <LoadingLink href={`/carDetails/${rec.vehicleId}`}>
+                    <ExternalLink className="w-4 h-4 text-foreground/30 mt-2" />
+                  </LoadingLink>
                 </div>
               </div>
             </motion.div>

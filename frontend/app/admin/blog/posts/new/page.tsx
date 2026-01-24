@@ -35,15 +35,23 @@ function normalizeList<T>(resData: any): { list: T[]; total?: number } {
 
   if (Array.isArray(root?.data)) {
     const list = root.data as T[];
-    const total = typeof root.total === "number" ? root.total : root?.meta?.total ?? list.length;
+    const total =
+      typeof root.total === "number"
+        ? root.total
+        : (root?.meta?.total ?? list.length);
     return { list, total };
   }
 
   const d1 = root?.data;
-  if (Array.isArray(d1)) return { list: d1 as T[], total: root?.meta?.total ?? d1.length };
+  if (Array.isArray(d1))
+    return { list: d1 as T[], total: root?.meta?.total ?? d1.length };
 
   const d2 = d1?.data;
-  if (Array.isArray(d2)) return { list: d2 as T[], total: d1?.meta?.total ?? root?.meta?.total ?? d2.length };
+  if (Array.isArray(d2))
+    return {
+      list: d2 as T[],
+      total: d1?.meta?.total ?? root?.meta?.total ?? d2.length,
+    };
 
   return { list: [], total: 0 };
 }
@@ -110,13 +118,16 @@ export default function AdminBlogPostCreatePage() {
   const fetchCategories = async () => {
     try {
       setLoadingCats(true);
-      const res = await api.get<ApiListResponse<BlogCategory>>("/api/admin/blog/categories");
+      const res = await api.get<ApiListResponse<BlogCategory>>(
+        "/api/admin/blog/categories",
+      );
       const { list } = normalizeList<BlogCategory>(res?.data);
 
       setCategories(list);
 
       setForm((p) => {
-        const nextCat = p.category_id || (list.length ? String(list[0].id) : "");
+        const nextCat =
+          p.category_id || (list.length ? String(list[0].id) : "");
         return { ...p, category_id: nextCat };
       });
     } catch {
@@ -144,7 +155,8 @@ export default function AdminBlogPostCreatePage() {
   const linkHelp = useMemo(() => {
     const s = form.slug.trim();
     if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
-    if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
+    if (s.includes(" "))
+      return { type: "warn" as const, text: "يفضل بدون مسافات" };
     return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
@@ -176,8 +188,10 @@ export default function AdminBlogPostCreatePage() {
       }
     }
 
-    if (form.search_title.trim().length > 255) return { ok: false, msg: "عنوان البحث طويل" };
-    if (form.search_description.trim().length > 5000) return { ok: false, msg: "وصف البحث طويل" };
+    if (form.search_title.trim().length > 255)
+      return { ok: false, msg: "عنوان البحث طويل" };
+    if (form.search_description.trim().length > 5000)
+      return { ok: false, msg: "وصف البحث طويل" };
 
     return { ok: true as const };
   };
@@ -228,7 +242,8 @@ export default function AdminBlogPostCreatePage() {
 
   const selectedCategoryName =
     form.category_id && categories.length
-      ? categories.find((c) => String(c.id) === String(form.category_id))?.name || "—"
+      ? categories.find((c) => String(c.id) === String(form.category_id))
+          ?.name || "—"
       : "—";
 
   const previewHtml = contentToPreviewHtml(form.content);
@@ -240,8 +255,12 @@ export default function AdminBlogPostCreatePage() {
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-primary">إضافة مقال</h1>
-              <p className="text-foreground/60 mt-2 text-sm">اكتب المقال بشكل منظم مع معاينة قبل الحفظ</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-primary">
+                إضافة مقال
+              </h1>
+              <p className="text-foreground/60 mt-2 text-sm">
+                اكتب المقال بشكل منظم مع معاينة قبل الحفظ
+              </p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -258,7 +277,9 @@ export default function AdminBlogPostCreatePage() {
                 className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
                 type="button"
               >
-                <RefreshCw className={`w-4 h-4 ${loadingCats ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${loadingCats ? "animate-spin" : ""}`}
+                />
                 تحديث التصنيفات
               </button>
             </div>
@@ -271,7 +292,7 @@ export default function AdminBlogPostCreatePage() {
               onClick={() => setActiveTab("edit")}
               className={`px-4 py-2 rounded-xl border transition flex items-center gap-2 ${
                 activeTab === "edit"
-                  ? "bg-primary text-white border-primary"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background border-border hover:bg-border/60"
               }`}
             >
@@ -284,7 +305,7 @@ export default function AdminBlogPostCreatePage() {
               onClick={() => setActiveTab("preview")}
               className={`px-4 py-2 rounded-xl border transition flex items-center gap-2 ${
                 activeTab === "preview"
-                  ? "bg-primary text-white border-primary"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background border-border hover:bg-border/60"
               }`}
             >
@@ -307,7 +328,8 @@ export default function AdminBlogPostCreatePage() {
                   alt=""
                   className="w-28 h-28 rounded-2xl object-cover border border-border"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
                   }}
                 />
               ) : (
@@ -317,11 +339,15 @@ export default function AdminBlogPostCreatePage() {
               )}
 
               <div className="min-w-0">
-                <h2 className="text-2xl font-bold text-primary line-clamp-2">{form.title?.trim() || "عنوان المقال"}</h2>
+                <h2 className="text-2xl font-bold text-primary line-clamp-2">
+                  {form.title?.trim() || "عنوان المقال"}
+                </h2>
 
                 <p className="text-sm text-foreground/60 mt-1 flex items-center gap-2">
                   <Link2 size={14} />
-                  <span className="truncate">/blog/{form.slug?.trim() || "..."}</span>
+                  <span className="truncate">
+                    /blog/{form.slug?.trim() || "..."}
+                  </span>
                 </p>
 
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -336,7 +362,8 @@ export default function AdminBlogPostCreatePage() {
                   </span>
 
                   <span className="text-xs text-foreground/60">
-                    التصنيف: <span className="font-bold">{selectedCategoryName}</span>
+                    التصنيف:{" "}
+                    <span className="font-bold">{selectedCategoryName}</span>
                   </span>
                 </div>
               </div>
@@ -345,14 +372,19 @@ export default function AdminBlogPostCreatePage() {
             {form.excerpt?.trim() ? (
               <div className="rounded-2xl border border-border bg-background/40 p-4">
                 <h4 className="font-bold mb-2">نبذة</h4>
-                <p className="text-foreground/80 leading-7">{form.excerpt.trim()}</p>
+                <p className="text-foreground/80 leading-7">
+                  {form.excerpt.trim()}
+                </p>
               </div>
             ) : null}
 
             <div className="rounded-2xl border border-border bg-background/40 p-4">
               <h4 className="font-bold mb-2">المحتوى</h4>
               {previewHtml ? (
-                <div className="prose max-w-none prose-invert prose-p:leading-7" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                <div
+                  className="prose max-w-none prose-invert prose-p:leading-7"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
               ) : (
                 <p className="text-foreground/50">لا يوجد محتوى.</p>
               )}
@@ -369,19 +401,26 @@ export default function AdminBlogPostCreatePage() {
             </div>
           </div>
         ) : (
-          <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-2xl">
+          <form
+            onSubmit={submit}
+            className="bg-card border border-border rounded-2xl p-6 space-y-6 shadow-2xl"
+          >
             {/* Title + Link */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-bold mb-1">العنوان</label>
                 <input
                   value={form.title}
-                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, title: e.target.value }))
+                  }
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                   placeholder="مثال: نصائح مهمة قبل شراء سيارة"
                   required
                 />
-                <div className="text-xs text-foreground/60 mt-1">{form.title.length}/255</div>
+                <div className="text-xs text-foreground/60 mt-1">
+                  {form.title.length}/255
+                </div>
               </div>
 
               <div>
@@ -430,7 +469,9 @@ export default function AdminBlogPostCreatePage() {
                       <span className="text-amber-500">{linkHelp.text}</span>
                     </>
                   )}
-                  <span className="text-foreground/50">({form.slug.length}/255)</span>
+                  <span className="text-foreground/50">
+                    ({form.slug.length}/255)
+                  </span>
                 </div>
               </div>
             </div>
@@ -438,10 +479,14 @@ export default function AdminBlogPostCreatePage() {
             {/* Meta */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-bold mb-1">التصنيف (إجباري)</label>
+                <label className="block text-sm font-bold mb-1">
+                  التصنيف (إجباري)
+                </label>
                 <select
                   value={form.category_id}
-                  onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, category_id: e.target.value }))
+                  }
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none disabled:opacity-60"
                   disabled={loadingCats || !categories.length}
                   required
@@ -455,10 +500,14 @@ export default function AdminBlogPostCreatePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-1">الحالة (إجباري)</label>
+                <label className="block text-sm font-bold mb-1">
+                  الحالة (إجباري)
+                </label>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, status: e.target.value as any }))
+                  }
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                 >
                   <option value="draft">مسودة</option>
@@ -485,7 +534,9 @@ export default function AdminBlogPostCreatePage() {
                 <div className="md:col-span-2">
                   <input
                     value={form.image}
-                    onChange={(e) => setForm((p) => ({ ...p, image: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, image: e.target.value }))
+                    }
                     className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                     placeholder="ضع رابط الصورة هنا (اختياري)"
                   />
@@ -499,7 +550,8 @@ export default function AdminBlogPostCreatePage() {
                       alt="preview"
                       className="w-full h-24 object-cover rounded-lg border border-border"
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        (e.currentTarget as HTMLImageElement).style.display =
+                          "none";
                       }}
                     />
                   ) : (
@@ -517,7 +569,9 @@ export default function AdminBlogPostCreatePage() {
               <label className="block text-sm font-bold mb-2">نبذة قصيرة</label>
               <textarea
                 value={form.excerpt}
-                onChange={(e) => setForm((p) => ({ ...p, excerpt: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, excerpt: e.target.value }))
+                }
                 className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                 rows={3}
                 placeholder="سطرين أو ثلاثة تلخص المقال..."
@@ -527,7 +581,9 @@ export default function AdminBlogPostCreatePage() {
             {/* Content */}
             <div className="rounded-2xl border border-border bg-background/40 p-4">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <label className="block text-sm font-bold">المحتوى (إجباري)</label>
+                <label className="block text-sm font-bold">
+                  المحتوى (إجباري)
+                </label>
                 <button
                   type="button"
                   onClick={() => setActiveTab("preview")}
@@ -540,7 +596,9 @@ export default function AdminBlogPostCreatePage() {
 
               <textarea
                 value={form.content}
-                onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, content: e.target.value }))
+                }
                 className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
                 rows={12}
                 placeholder="اكتب محتوى المقال هنا..."
@@ -551,19 +609,30 @@ export default function AdminBlogPostCreatePage() {
             {/* SEO */}
             <div className="rounded-2xl border border-border bg-background/40 p-4 space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-2">عنوان يظهر في نتائج البحث (اختياري)</label>
+                <label className="block text-sm font-bold mb-2">
+                  عنوان يظهر في نتائج البحث (اختياري)
+                </label>
                 <input
                   value={form.search_title}
-                  onChange={(e) => setForm((p) => ({ ...p, search_title: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, search_title: e.target.value }))
+                  }
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-2">وصف يظهر في نتائج البحث (اختياري)</label>
+                <label className="block text-sm font-bold mb-2">
+                  وصف يظهر في نتائج البحث (اختياري)
+                </label>
                 <textarea
                   value={form.search_description}
-                  onChange={(e) => setForm((p) => ({ ...p, search_description: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      search_description: e.target.value,
+                    }))
+                  }
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                   rows={3}
                 />
@@ -574,8 +643,13 @@ export default function AdminBlogPostCreatePage() {
             <div className="flex gap-3 pt-1">
               <button
                 type="submit"
-                disabled={saving || loadingCats || !categories.length || !form.category_id}
-                className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
+                disabled={
+                  saving ||
+                  loadingCats ||
+                  !categories.length ||
+                  !form.category_id
+                }
+                className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" />
                 {saving ? "جارٍ الحفظ..." : "حفظ"}

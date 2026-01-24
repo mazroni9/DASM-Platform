@@ -67,19 +67,24 @@ function normalizeList<T>(resData: any): { list: T[]; total?: number } {
     const total =
       typeof root.total === "number"
         ? root.total
-        : root?.meta?.total ?? list.length;
+        : (root?.meta?.total ?? list.length);
     return { list, total };
   }
 
   // { data: [...] }
   const d1 = root?.data;
-  if (Array.isArray(d1)) return { list: d1 as T[], total: root?.meta?.total ?? d1.length };
+  if (Array.isArray(d1))
+    return { list: d1 as T[], total: root?.meta?.total ?? d1.length };
 
   // { data: { data: [...], meta/total } }
   const d2 = d1?.data;
   if (Array.isArray(d2)) {
-    const total = d1?.total ?? d1?.meta?.total ?? root?.meta?.total ?? d2.length;
-    return { list: d2 as T[], total: typeof total === "number" ? total : d2.length };
+    const total =
+      d1?.total ?? d1?.meta?.total ?? root?.meta?.total ?? d2.length;
+    return {
+      list: d2 as T[],
+      total: typeof total === "number" ? total : d2.length,
+    };
   }
 
   return { list: [], total: 0 };
@@ -121,7 +126,9 @@ export default function AdminBlogPostsPage() {
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "published" | "draft"
+  >("all");
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -129,7 +136,9 @@ export default function AdminBlogPostsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get<ApiIndexResponse<BlogCategory>>("/api/admin/blog/categories");
+      const res = await api.get<ApiIndexResponse<BlogCategory>>(
+        "/api/admin/blog/categories",
+      );
       const { list } = normalizeList<BlogCategory>(res?.data);
       setCategories(list);
     } catch {
@@ -147,13 +156,17 @@ export default function AdminBlogPostsPage() {
         page,
         per_page: pageSize,
         search: search.trim() || undefined,
-        category_id: categoryFilter !== "all" ? Number(categoryFilter) : undefined,
+        category_id:
+          categoryFilter !== "all" ? Number(categoryFilter) : undefined,
       };
 
       // ✅ الباك إند بيفلتر بـ status فقط
       if (statusFilter !== "all") params.status = statusFilter;
 
-      const res = await api.get<ApiIndexResponse<BlogPostApi>>("/api/admin/blog/posts", { params });
+      const res = await api.get<ApiIndexResponse<BlogPostApi>>(
+        "/api/admin/blog/posts",
+        { params },
+      );
       const { list, total } = normalizeList<BlogPostApi>(res?.data);
 
       setItems(list);
@@ -203,7 +216,9 @@ export default function AdminBlogPostsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">المقالات</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
+            المقالات
+          </h1>
           <p className="text-foreground/70 mt-2">بحث، تصفية، تعديل، حذف</p>
         </div>
 
@@ -212,13 +227,15 @@ export default function AdminBlogPostsPage() {
             onClick={() => fetchPosts()}
             className="bg-card border border-border text-foreground/80 hover:bg-border hover:text-foreground transition px-4 py-2 rounded-xl flex items-center"
           >
-            <RefreshCw className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 ml-2 ${loading ? "animate-spin" : ""}`}
+            />
             تحديث
           </button>
 
           <LoadingLink
             href="/admin/blog/posts/new"
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl transition flex items-center"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition flex items-center"
           >
             <Plus className="w-4 h-4 ml-2" />
             إضافة مقال
@@ -284,12 +301,24 @@ export default function AdminBlogPostsPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-border/50 border-b border-border">
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">العنوان</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الرابط</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">التصنيف</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">التاريخ</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">إجراءات</th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    العنوان
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الرابط
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    التصنيف
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    الحالة
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    التاريخ
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
+                    إجراءات
+                  </th>
                 </tr>
               </thead>
 
@@ -309,7 +338,9 @@ export default function AdminBlogPostsPage() {
                               alt=""
                               className="w-10 h-10 rounded-lg object-cover border border-border flex-shrink-0"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                                (
+                                  e.currentTarget as HTMLImageElement
+                                ).style.display = "none";
                               }}
                             />
                           ) : (
@@ -335,14 +366,20 @@ export default function AdminBlogPostsPage() {
                             </div>
 
                             {p.excerpt ? (
-                              <p className="text-xs text-foreground/60 line-clamp-1 mt-1">{p.excerpt}</p>
+                              <p className="text-xs text-foreground/60 line-clamp-1 mt-1">
+                                {p.excerpt}
+                              </p>
                             ) : null}
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-foreground/80">{p.slug || "—"}</td>
-                      <td className="px-6 py-4 text-foreground/70">{p.category?.name || "—"}</td>
+                      <td className="px-6 py-4 text-foreground/80">
+                        {p.slug || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-foreground/70">
+                        {p.category?.name || "—"}
+                      </td>
 
                       <td className="px-6 py-4">
                         <span
@@ -357,7 +394,9 @@ export default function AdminBlogPostsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-foreground/60 text-sm">
-                        {pub ? safeDateLabel(p.published_at) : safeDateLabel(p.created_at)}
+                        {pub
+                          ? safeDateLabel(p.published_at)
+                          : safeDateLabel(p.created_at)}
                       </td>
 
                       <td className="px-6 py-4">
@@ -386,7 +425,9 @@ export default function AdminBlogPostsPage() {
             </table>
 
             {!loading && visible.length === 0 && (
-              <div className="text-center py-12 text-foreground/60">لا توجد مقالات</div>
+              <div className="text-center py-12 text-foreground/60">
+                لا توجد مقالات
+              </div>
             )}
           </div>
         </div>

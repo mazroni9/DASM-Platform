@@ -193,7 +193,7 @@ export default function AddToWatchlistButton({
 
         // Update local state - only this menu has the car now
         setMenus((prev) =>
-          prev.map((m) => ({ ...m, has_car: m.id === menuId }))
+          prev.map((m) => ({ ...m, has_car: m.id === menuId })),
         );
       } else {
         toast.error(data.message || "حدث خطأ");
@@ -321,7 +321,7 @@ export default function AddToWatchlistButton({
             ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
             : "bg-white/90 dark:bg-slate-800/90 text-foreground/60 hover:text-red-500 hover:bg-white dark:hover:bg-slate-700 border border-border/50",
           sizeClasses[size],
-          className
+          className,
         )}
       >
         {loading ? (
@@ -392,7 +392,7 @@ export default function AddToWatchlistButton({
                     "w-full px-3 py-2.5 text-right flex items-center justify-between transition-colors",
                     menu.has_car
                       ? "bg-emerald-500/5 text-emerald-500 cursor-default"
-                      : "hover:bg-muted/50 text-foreground"
+                      : "hover:bg-muted/50 text-foreground",
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export default function AddToWatchlistButton({
                   <button
                     onClick={createMenuAndAdd}
                     disabled={creatingMenu || !newMenuName.trim()}
-                    className="p-1.5 bg-primary text-white rounded-lg disabled:opacity-50"
+                    className="p-1.5 bg-primary text-primary-foreground rounded-lg disabled:opacity-50"
                   >
                     {creatingMenu ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

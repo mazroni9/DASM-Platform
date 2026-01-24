@@ -37,28 +37,28 @@ class BidController extends Controller
 
         try {
             // Lock wallet for update (pessimistic locking)
-            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+            // $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
 
-            if (!$wallet) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => 'error',
-                    'code' => 'WALLET_NOT_FOUND',
-                    'message' => 'Wallet not found',
-                ], 404);
-            }
+            // if (!$wallet) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'status' => 'error',
+            //         'code' => 'WALLET_NOT_FOUND',
+            //         'message' => 'Wallet not found',
+            //     ], 404);
+            // }
 
-            // Check balance
-            if ($wallet->available_balance < $bidAmount) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => 'error',
-                    'code' => 'INSUFFICIENT_FUNDS',
-                    'message' => 'Insufficient funds. Required: ' . number_format($bidAmount, 2) . ', Available: ' . number_format($wallet->available_balance, 2),
-                    'required' => $bidAmount,
-                    'available' => $wallet->available_balance,
-                ], 402);
-            }
+            // // Check balance
+            // if ($wallet->available_balance < $bidAmount) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'status' => 'error',
+            //         'code' => 'INSUFFICIENT_FUNDS',
+            //         'message' => 'Insufficient funds. Required: ' . number_format($bidAmount, 2) . ', Available: ' . number_format($wallet->available_balance, 2),
+            //         'required' => $bidAmount,
+            //         'available' => $wallet->available_balance,
+            //     ], 402);
+            // }
 
             // Get auction with lock
             $auction = Auction::where('id', $auctionId)
@@ -87,9 +87,9 @@ class BidController extends Controller
             }
 
             // Hold funds
-            $wallet->available_balance -= $bidAmount;
-            $wallet->funded_balance += $bidAmount;
-            $wallet->save();
+            // $wallet->available_balance -= $bidAmount;
+            // $wallet->funded_balance += $bidAmount;
+            // $wallet->save();
 
             // Release previous highest bidder's funds (if different user)
             $previousBid = Bid::where('auction_id', $auctionId)
@@ -126,7 +126,7 @@ class BidController extends Controller
 
             // Broadcast events (non-blocking)
             broadcast(new NewBidEvent($auction))->toOthers();
-            broadcast(new WalletBalanceUpdated($user->id, $wallet))->toOthers();
+            //broadcast(new WalletBalanceUpdated($user->id, $wallet))->toOthers();
 
             Log::info('Dealer bid placed', [
                 'user_id' => $user->id,
@@ -140,8 +140,8 @@ class BidController extends Controller
                 'data' => [
                     'bid_id' => $bid->id,
                     'current_bid' => $auction->current_bid,
-                    'new_balance' => $wallet->available_balance,
-                    'on_hold' => $wallet->funded_balance,
+                    // 'new_balance' => $wallet->available_balance,
+                    // 'on_hold' => $wallet->funded_balance,
                 ],
             ], 201);
         } catch (\Exception $e) {

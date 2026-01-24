@@ -59,7 +59,13 @@ type UiTransaction = {
 };
 
 const positiveTypes = new Set(["deposit", "refund", "sale", "transfer_in"]);
-const negativeTypes = new Set(["withdrawal", "purchase", "commission", "bid", "transfer_out"]);
+const negativeTypes = new Set([
+  "withdrawal",
+  "purchase",
+  "commission",
+  "bid",
+  "transfer_out",
+]);
 
 const safeNumber = (v: any) => {
   const n = Number(v);
@@ -96,7 +102,9 @@ const buildDescription = (t: ApiWalletTransaction) => {
   const typeAr = getTransactionTypeArabic(t.type);
   const pm = getPaymentMethodArabic(t.payment_method);
   const ref = t.reference ? ` • مرجع: ${t.reference}` : "";
-  const invoice = t.payment_gateway_invoice_id ? ` • فاتورة: ${t.payment_gateway_invoice_id}` : "";
+  const invoice = t.payment_gateway_invoice_id
+    ? ` • فاتورة: ${t.payment_gateway_invoice_id}`
+    : "";
   const method = pm ? ` • طريقة: ${pm}` : "";
   return `${typeAr}${method}${ref}${invoice}`;
 };
@@ -268,7 +276,10 @@ export default function MyWalletPage() {
         setWalletBalance({
           available: safeNumber(w.available_balance),
           funded: safeNumber(w.funded_balance),
-          total: safeNumber(w.total_balance ?? (safeNumber(w.available_balance) + safeNumber(w.funded_balance))),
+          total: safeNumber(
+            w.total_balance ??
+              safeNumber(w.available_balance) + safeNumber(w.funded_balance),
+          ),
         });
       }
 
@@ -278,7 +289,9 @@ export default function MyWalletPage() {
       if (typeFilter !== "all") params.set("type", typeFilter);
       if (statusFilter !== "all") params.set("status", statusFilter);
 
-      const txRes = await api.get(`/api/wallet/transactions?${params.toString()}`);
+      const txRes = await api.get(
+        `/api/wallet/transactions?${params.toString()}`,
+      );
 
       if (txRes.data?.status === "success") {
         const balance = txRes.data.balance;
@@ -291,7 +304,9 @@ export default function MyWalletPage() {
         });
 
         const paginated = txRes.data.data; // Laravel paginator
-        const rows: ApiWalletTransaction[] = Array.isArray(paginated?.data) ? paginated.data : [];
+        const rows: ApiWalletTransaction[] = Array.isArray(paginated?.data)
+          ? paginated.data
+          : [];
 
         setPagination({
           current_page: safeNumber(paginated?.current_page) || 1,
@@ -301,7 +316,10 @@ export default function MyWalletPage() {
         });
 
         // API أصلاً بيرتب desc، هنفترض كده. لو مش كده نرتبه:
-        const sorted = [...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const sorted = [...rows].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
 
         // running balance (من الحالي للأقدم)
         let running = totalNow;
@@ -317,7 +335,9 @@ export default function MyWalletPage() {
             signedAmount: signed,
             reference: t.reference ?? undefined,
             payment_method: t.payment_method ?? undefined,
-            invoice_id: t.payment_gateway_invoice_id ? String(t.payment_gateway_invoice_id) : undefined,
+            invoice_id: t.payment_gateway_invoice_id
+              ? String(t.payment_gateway_invoice_id)
+              : undefined,
             created_at: t.created_at,
             dateText,
             description: buildDescription(t),
@@ -366,14 +386,21 @@ export default function MyWalletPage() {
     });
   }, [transactions, searchTerm]);
 
-  const handleDeposit = () => router.push("/dashboard/my-transfers?action=deposit");
-  const handleWithdraw = () => router.push("/dashboard/my-transfers?action=withdraw");
+  const handleDeposit = () =>
+    router.push("/dashboard/my-transfers?action=deposit");
+  const handleWithdraw = () =>
+    router.push("/dashboard/my-transfers?action=withdraw");
 
   const transactionStats = useMemo(() => {
     const total = pagination?.total ?? transactions.length;
     const deposits = transactions.filter((t) => t.type === "deposit").length;
-    const withdrawals = transactions.filter((t) => t.type === "withdrawal").length;
-    const totalAmount = transactions.reduce((sum, t) => sum + Math.abs(t.signedAmount), 0);
+    const withdrawals = transactions.filter(
+      (t) => t.type === "withdrawal",
+    ).length;
+    const totalAmount = transactions.reduce(
+      (sum, t) => sum + Math.abs(t.signedAmount),
+      0,
+    );
     return { total, deposits, withdrawals, totalAmount };
   }, [transactions, pagination]);
 
@@ -388,8 +415,8 @@ export default function MyWalletPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary rounded-xl">
-                <WalletIcon className="w-6 h-6 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <WalletIcon className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
@@ -409,7 +436,9 @@ export default function MyWalletPage() {
               <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-2">
                   <WalletIcon className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-foreground/80">الرصيد الكلي</span>
+                  <span className="text-sm text-foreground/80">
+                    الرصيد الكلي
+                  </span>
                 </div>
                 <p className="text-2xl font-bold text-primary">
                   {walletBalance.total.toLocaleString("ar-SA")} ريال
@@ -466,22 +495,30 @@ export default function MyWalletPage() {
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">{transactionStats.total}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {transactionStats.total}
+            </div>
             <div className="text-sm text-foreground/70">إجمالي المعاملات</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-400">{transactionStats.deposits}</div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {transactionStats.deposits}
+            </div>
             <div className="text-sm text-foreground/70">إيداعات (بالصفحة)</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-rose-400">{transactionStats.withdrawals}</div>
+            <div className="text-2xl font-bold text-rose-400">
+              {transactionStats.withdrawals}
+            </div>
             <div className="text-sm text-foreground/70">سحوبات (بالصفحة)</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-cyan-400">
               {transactionStats.totalAmount.toLocaleString("ar-SA")}
             </div>
-            <div className="text-sm text-foreground/70">إجمالي المبالغ (بالصفحة)</div>
+            <div className="text-sm text-foreground/70">
+              إجمالي المبالغ (بالصفحة)
+            </div>
           </div>
         </div>
       </motion.div>
@@ -619,7 +656,7 @@ export default function MyWalletPage() {
                       className={cn(
                         "p-3 rounded-xl border backdrop-blur-sm transition-transform duration-300 group-hover:scale-110",
                         typeConfig.bg,
-                        typeConfig.border
+                        typeConfig.border,
                       )}
                     >
                       <TypeIcon className={cn("w-5 h-5", typeConfig.color)} />
@@ -634,11 +671,14 @@ export default function MyWalletPage() {
                         <div
                           className={cn(
                             "text-xl font-bold",
-                            isPositive ? "text-emerald-400" : "text-rose-400"
+                            isPositive ? "text-emerald-400" : "text-rose-400",
                           )}
                         >
                           {isPositive ? "+" : "-"}
-                          {Math.abs(t.signedAmount).toLocaleString("ar-SA")} ريال
+                          {Math.abs(t.signedAmount).toLocaleString(
+                            "ar-SA",
+                          )}{" "}
+                          ريال
                         </div>
                       </div>
 
@@ -671,7 +711,7 @@ export default function MyWalletPage() {
                         "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
                         statusConfig.bg,
                         statusConfig.border,
-                        statusConfig.color
+                        statusConfig.color,
                       )}
                     >
                       <StatusIcon className="w-3 h-3" />

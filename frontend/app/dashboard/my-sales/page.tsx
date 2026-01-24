@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
-import { 
-  Package, 
-  DollarSign, 
-  Truck, 
-  CheckCircle, 
+import {
+  Package,
+  DollarSign,
+  Truck,
+  CheckCircle,
   MessageSquare,
   Filter,
   Search,
@@ -20,136 +20,141 @@ import {
   Eye,
   Sparkles,
   ArrowLeft,
-  AlertCircle
-} from 'lucide-react';
+  AlertCircle,
+} from "lucide-react";
 
 // Mock data for sales
 const mockSales = [
   {
-    id: 's1',
-    itemId: 'item123', 
-    itemName: 'طابعة ليزر HP M404dn',
-    imageUrl: '/office-placeholder.png',
+    id: "s1",
+    itemId: "item123",
+    itemName: "طابعة ليزر HP M404dn",
+    imageUrl: "/office-placeholder.png",
     salePrice: 1500,
-    endDate: '2024-10-26',
-    status: 'paid_pending_delivery',
-    buyerUsername: 'أحمد علي',
+    endDate: "2024-10-26",
+    status: "paid_pending_delivery",
+    buyerUsername: "أحمد علي",
     buyerRating: 4.8,
-    commissionRate: 0.10,
-    category: 'أجهزة مكتبية',
+    commissionRate: 0.1,
+    category: "أجهزة مكتبية",
     bidCount: 12,
-    saleDate: '2024-10-25'
+    saleDate: "2024-10-25",
   },
   {
-    id: 's2',
-    itemId: 'server456',
-    itemName: 'سيرفر Dell PowerEdge R730',
-    imageUrl: '/server-placeholder.png',
+    id: "s2",
+    itemId: "server456",
+    itemName: "سيرفر Dell PowerEdge R730",
+    imageUrl: "/server-placeholder.png",
     salePrice: 8500,
-    endDate: '2024-10-25',
-    status: 'completed',
-    buyerUsername: 'فاطمة سعد',
+    endDate: "2024-10-25",
+    status: "completed",
+    buyerUsername: "فاطمة سعد",
     buyerRating: 4.9,
     commissionRate: 0.08,
-    category: 'سيرفرات',
+    category: "سيرفرات",
     bidCount: 8,
-    saleDate: '2024-10-24'
+    saleDate: "2024-10-24",
   },
   {
-    id: 's3',
-    itemId: 'medical789',
-    itemName: 'جهاز أشعة Siemens Mobilett',
-    imageUrl: '/medical-placeholder.png',
+    id: "s3",
+    itemId: "medical789",
+    itemName: "جهاز أشعة Siemens Mobilett",
+    imageUrl: "/medical-placeholder.png",
     salePrice: 3200,
-    endDate: '2024-10-24',
-    status: 'payment_pending',
-    buyerUsername: 'خالد فهد',
+    endDate: "2024-10-24",
+    status: "payment_pending",
+    buyerUsername: "خالد فهد",
     buyerRating: 4.5,
     commissionRate: 0.12,
-    category: 'أجهزة طبية',
+    category: "أجهزة طبية",
     bidCount: 15,
-    saleDate: '2024-10-23'
+    saleDate: "2024-10-23",
   },
   {
-    id: 's4',
-    itemId: 'car001',
-    itemName: 'تويوتا كامري 2023',
-    imageUrl: '/car-placeholder.png',
+    id: "s4",
+    itemId: "car001",
+    itemName: "تويوتا كامري 2023",
+    imageUrl: "/car-placeholder.png",
     salePrice: 55000,
-    endDate: '2024-10-23',
-    status: 'shipped',
-    buyerUsername: 'محمد عبدالله',
+    endDate: "2024-10-23",
+    status: "shipped",
+    buyerUsername: "محمد عبدالله",
     buyerRating: 4.7,
     commissionRate: 0.05,
-    category: 'سيارات',
+    category: "سيارات",
     bidCount: 23,
-    saleDate: '2024-10-22'
+    saleDate: "2024-10-22",
   },
 ];
 
 // Helper function
 const getSellerStatusConfig = (status: string) => {
   const statusMap = {
-    'payment_pending': { 
-      text: 'بانتظار دفع المشتري', 
-      color: 'text-amber-400',
-      bg: 'bg-amber-500/20',
-      border: 'border-amber-500/30',
-      icon: Clock
+    payment_pending: {
+      text: "بانتظار دفع المشتري",
+      color: "text-amber-400",
+      bg: "bg-amber-500/20",
+      border: "border-amber-500/30",
+      icon: Clock,
     },
-    'paid_pending_delivery': { 
-      text: 'تم الدفع - بانتظار التسليم', 
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/20',
-      border: 'border-blue-500/30',
-      icon: Package
+    paid_pending_delivery: {
+      text: "تم الدفع - بانتظار التسليم",
+      color: "text-blue-400",
+      bg: "bg-blue-500/20",
+      border: "border-blue-500/30",
+      icon: Package,
     },
-    'shipped': { 
-      text: 'تم الشحن', 
-      color: 'text-cyan-400',
-      bg: 'bg-cyan-500/20',
-      border: 'border-cyan-500/30',
-      icon: Truck
+    shipped: {
+      text: "تم الشحن",
+      color: "text-cyan-400",
+      bg: "bg-cyan-500/20",
+      border: "border-cyan-500/30",
+      icon: Truck,
     },
-    'delivered_pending_confirmation': { 
-      text: 'بانتظار تأكيد المشتري', 
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/20',
-      border: 'border-purple-500/30',
-      icon: Truck
+    delivered_pending_confirmation: {
+      text: "بانتظار تأكيد المشتري",
+      color: "text-purple-400",
+      bg: "bg-purple-500/20",
+      border: "border-purple-500/30",
+      icon: Truck,
     },
-    'completed': { 
-      text: 'مكتملة (تم التحويل)', 
-      color: 'text-emerald-400',
-      bg: 'bg-emerald-500/20',
-      border: 'border-emerald-500/30',
-      icon: CheckCircle
+    completed: {
+      text: "مكتملة (تم التحويل)",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/20",
+      border: "border-emerald-500/30",
+      icon: CheckCircle,
+    },
+  };
+
+  return (
+    statusMap[status] || {
+      text: status,
+      color: "text-gray-400",
+      bg: "bg-gray-500/20",
+      border: "border-gray-500/30",
+      icon: Package,
     }
-  };
-  
-  return statusMap[status] || { 
-    text: status, 
-    color: 'text-gray-400',
-    bg: 'bg-gray-500/20',
-    border: 'border-gray-500/30',
-    icon: Package
-  };
+  );
 };
 
 export default function MySalesPage() {
   const [sales, setSales] = useState(mockSales);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   // Filter sales
   const filteredSales = useMemo(() => {
-    return sales.filter(sale => {
-      const matchesSearch = sale.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           sale.category.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || sale.status === statusFilter;
-      const matchesCategory = categoryFilter === 'all' || sale.category === categoryFilter;
-      
+    return sales.filter((sale) => {
+      const matchesSearch =
+        sale.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sale.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || sale.status === statusFilter;
+      const matchesCategory =
+        categoryFilter === "all" || sale.category === categoryFilter;
+
       return matchesSearch && matchesStatus && matchesCategory;
     });
   }, [sales, searchTerm, statusFilter, categoryFilter]);
@@ -157,31 +162,38 @@ export default function MySalesPage() {
   // Calculate stats
   const stats = useMemo(() => {
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.salePrice, 0);
-    const totalCommission = sales.reduce((sum, sale) => sum + (sale.salePrice * sale.commissionRate), 0);
+    const totalCommission = sales.reduce(
+      (sum, sale) => sum + sale.salePrice * sale.commissionRate,
+      0,
+    );
     const netRevenue = totalRevenue - totalCommission;
-    
+
     return {
       total: sales.length,
-      completed: sales.filter(s => s.status === 'completed').length,
-      pending: sales.filter(s => s.status === 'payment_pending').length,
+      completed: sales.filter((s) => s.status === "completed").length,
+      pending: sales.filter((s) => s.status === "payment_pending").length,
       totalRevenue: totalRevenue,
       netRevenue: netRevenue,
-      totalCommission: totalCommission
+      totalCommission: totalCommission,
     };
   }, [sales]);
 
   const handleArrangeDelivery = (saleId: string) => {
     // Simulate delivery arrangement
-    setSales(sales.map(s => 
-      s.id === saleId ? { ...s, status: 'shipped' } : s
-    ));
+    setSales(
+      sales.map((s) => (s.id === saleId ? { ...s, status: "shipped" } : s)),
+    );
   };
 
   const handleConfirmShipment = (saleId: string) => {
     // Simulate shipment confirmation
-    setSales(sales.map(s => 
-      s.id === saleId ? { ...s, status: 'delivered_pending_confirmation' } : s
-    ));
+    setSales(
+      sales.map((s) =>
+        s.id === saleId
+          ? { ...s, status: "delivered_pending_confirmation" }
+          : s,
+      ),
+    );
   };
 
   const handleOpenDispute = (saleId: string) => {
@@ -190,13 +202,13 @@ export default function MySalesPage() {
   };
 
   const getCategories = () => {
-    return [...new Set(sales.map(s => s.category))];
+    return [...new Set(sales.map((s) => s.category))];
   };
 
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
@@ -204,14 +216,16 @@ export default function MySalesPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary rounded-xl">
-                <TrendingUp className="w-6 h-6 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <TrendingUp className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
                   مبيعاتي <span className="text-primary">({stats.total})</span>
                 </h1>
-                <p className="text-foreground/70 text-sm mt-1">إدارة وتتبع جميع مبيعاتك في المزادات</p>
+                <p className="text-foreground/70 text-sm mt-1">
+                  إدارة وتتبع جميع مبيعاتك في المزادات
+                </p>
               </div>
             </div>
 
@@ -224,7 +238,9 @@ export default function MySalesPage() {
                   </div>
                   <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
+                <p className="text-lg font-bold text-foreground mt-1">
+                  {stats.total}
+                </p>
               </div>
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
@@ -233,26 +249,34 @@ export default function MySalesPage() {
                   </div>
                   <span className="text-xs text-foreground/70">مكتملة</span>
                 </div>
-                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.completed}</p>
+                <p className="text-lg font-bold text-emerald-400 mt-1">
+                  {stats.completed}
+                </p>
               </div>
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Clock className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">بانتظار الدفع</span>
+                  <span className="text-xs text-foreground/70">
+                    بانتظار الدفع
+                  </span>
                 </div>
-                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
+                <p className="text-lg font-bold text-amber-400 mt-1">
+                  {stats.pending}
+                </p>
               </div>
               <div className="bg-background/40 rounded-lg p-3 border border-border">
                 <div className="flex items-center gap-2">
                   <div className="p-1 bg-cyan-500/20 rounded">
                     <DollarSign className="w-3 h-3 text-cyan-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">صافي الإيرادات</span>
+                  <span className="text-xs text-foreground/70">
+                    صافي الإيرادات
+                  </span>
                 </div>
                 <p className="text-lg font-bold text-cyan-400 mt-1">
-                  {stats.netRevenue.toLocaleString('ar-EG')}
+                  {stats.netRevenue.toLocaleString("ar-EG")}
                 </p>
               </div>
             </div>
@@ -261,11 +285,15 @@ export default function MySalesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 p-3 bg-background/30 rounded-lg border border-border">
               <div className="text-sm">
                 <span className="text-foreground/70">إجمالي المبيعات: </span>
-                <span className="text-foreground font-medium">{stats.totalRevenue.toLocaleString('ar-EG')} ريال</span>
+                <span className="text-foreground font-medium">
+                  {stats.totalRevenue.toLocaleString("ar-EG")} ريال
+                </span>
               </div>
               <div className="text-sm">
                 <span className="text-foreground/70">عمولة المنصة: </span>
-                <span className="text-rose-400 font-medium">-{stats.totalCommission.toLocaleString('ar-EG')} ريال</span>
+                <span className="text-rose-400 font-medium">
+                  -{stats.totalCommission.toLocaleString("ar-EG")} ريال
+                </span>
               </div>
             </div>
           </div>
@@ -283,7 +311,7 @@ export default function MySalesPage() {
       </motion.div>
 
       {/* Filters and Search Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -313,7 +341,9 @@ export default function MySalesPage() {
               <option value="payment_pending">بانتظار الدفع</option>
               <option value="paid_pending_delivery">تم الدفع</option>
               <option value="shipped">تم الشحن</option>
-              <option value="delivered_pending_confirmation">بانتظار التأكيد</option>
+              <option value="delivered_pending_confirmation">
+                بانتظار التأكيد
+              </option>
               <option value="completed">مكتملة</option>
             </select>
 
@@ -324,21 +354,25 @@ export default function MySalesPage() {
               className="bg-background/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-cyan-500/50 transition-colors"
             >
               <option value="all">جميع الفئات</option>
-              {getCategories().map(category => (
-                <option key={category} value={category}>{category}</option>
+              {getCategories().map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="flex items-center gap-2 text-sm text-foreground/70">
             <Filter className="w-4 h-4" />
-            <span>عرض {filteredSales.length} من {sales.length} عملية بيع</span>
+            <span>
+              عرض {filteredSales.length} من {sales.length} عملية بيع
+            </span>
           </div>
         </div>
       </motion.div>
 
       {/* Sales List */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -349,23 +383,27 @@ export default function MySalesPage() {
             <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
               <TrendingUp className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground/70 mb-2">
-                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all' 
-                  ? 'لا توجد نتائج' 
-                  : 'لا توجد مبيعات'
-                }
+                {searchTerm ||
+                statusFilter !== "all" ||
+                categoryFilter !== "all"
+                  ? "لا توجد نتائج"
+                  : "لا توجد مبيعات"}
               </h3>
               <p className="text-foreground/50 text-sm mb-4">
-                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
-                  ? 'لم نتمكن من العثور على مبيعات تطابق معايير البحث'
-                  : 'لم تقم ببيع أي عناصر في المزادات بعد'
-                }
+                {searchTerm ||
+                statusFilter !== "all" ||
+                categoryFilter !== "all"
+                  ? "لم نتمكن من العثور على مبيعات تطابق معايير البحث"
+                  : "لم تقم ببيع أي عناصر في المزادات بعد"}
               </p>
-              {(searchTerm || statusFilter !== 'all' || categoryFilter !== 'all') ? (
+              {searchTerm ||
+              statusFilter !== "all" ||
+              categoryFilter !== "all" ? (
                 <button
                   onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setCategoryFilter('all');
+                    setSearchTerm("");
+                    setStatusFilter("all");
+                    setCategoryFilter("all");
                   }}
                   className="px-4 py-2 bg-primary/20 text-primary rounded-lg border border-primary/30 hover:bg-primary/30 transition-colors"
                 >
@@ -388,7 +426,7 @@ export default function MySalesPage() {
             const StatusIcon = statusConfig.icon;
             const netAmount = sale.salePrice * (1 - sale.commissionRate);
             const commissionAmount = sale.salePrice * sale.commissionRate;
-            
+
             return (
               <motion.div
                 key={sale.id}
@@ -401,13 +439,14 @@ export default function MySalesPage() {
                   {/* Product Image */}
                   <div className="flex-shrink-0">
                     <div className="w-24 h-24 lg:w-32 lg:h-32 bg-background rounded-xl overflow-hidden">
-                      <img 
-                        src={sale.imageUrl} 
+                      <img
+                        src={sale.imageUrl}
                         alt={sale.itemName}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
-                          e.currentTarget.src = "https://via.placeholder.com/200x200?text=No+Image";
+                          e.currentTarget.src =
+                            "https://via.placeholder.com/200x200?text=No+Image";
                         }}
                       />
                     </div>
@@ -420,7 +459,7 @@ export default function MySalesPage() {
                         <h3 className="text-lg font-bold text-foreground group-hover:text-foreground/80 transition-colors mb-2">
                           {sale.itemName}
                         </h3>
-                        
+
                         <div className="flex flex-wrap gap-3 text-sm text-foreground/70 mb-3">
                           <div className="flex items-center gap-1">
                             <Package className="w-3 h-3" />
@@ -441,7 +480,9 @@ export default function MySalesPage() {
                           <div className="flex items-center gap-2 text-foreground/70">
                             <User className="w-4 h-4" />
                             <span>المشتري:</span>
-                            <span className="text-blue-300">{sale.buyerUsername}</span>
+                            <span className="text-blue-300">
+                              {sale.buyerUsername}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1 text-amber-400">
                             <span>⭐ {sale.buyerRating}</span>
@@ -453,23 +494,29 @@ export default function MySalesPage() {
                         {/* Price Info */}
                         <div className="text-right">
                           <div className="text-2xl font-bold text-secondary">
-                            {sale.salePrice.toLocaleString('ar-EG')} ريال
+                            {sale.salePrice.toLocaleString("ar-EG")} ريال
                           </div>
                           <div className="text-sm text-foreground/70 mt-1">
-                            صافي: <span className="text-emerald-400">{netAmount.toLocaleString('ar-EG')} ريال</span>
+                            صافي:{" "}
+                            <span className="text-emerald-400">
+                              {netAmount.toLocaleString("ar-EG")} ريال
+                            </span>
                           </div>
                           <div className="text-xs text-rose-400">
-                            عمولة: -{commissionAmount.toLocaleString('ar-EG')} ريال
+                            عمولة: -{commissionAmount.toLocaleString("ar-EG")}{" "}
+                            ريال
                           </div>
                         </div>
-                        
+
                         {/* Status Badge */}
-                        <div className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
-                          statusConfig.bg,
-                          statusConfig.border,
-                          statusConfig.color
-                        )}>
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
+                            statusConfig.bg,
+                            statusConfig.border,
+                            statusConfig.color,
+                          )}
+                        >
                           <StatusIcon className="w-3 h-3" />
                           {statusConfig.text}
                         </div>
@@ -478,18 +525,20 @@ export default function MySalesPage() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
-                      {sale.status === 'paid_pending_delivery' && (
-                        <button 
+                      {sale.status === "paid_pending_delivery" && (
+                        <button
                           onClick={() => handleArrangeDelivery(sale.id)}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30 hover:bg-indigo-500/30 transition-all duration-300 group/delivery"
                         >
                           <MessageSquare className="w-4 h-4 transition-transform group-hover/delivery:scale-110" />
-                          <span className="font-medium">تواصل مع المشتري للتسليم</span>
+                          <span className="font-medium">
+                            تواصل مع المشتري للتسليم
+                          </span>
                         </button>
                       )}
-                      
-                      {sale.status === 'shipped' && (
-                        <button 
+
+                      {sale.status === "shipped" && (
+                        <button
                           onClick={() => handleConfirmShipment(sale.id)}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:bg-cyan-500/30 transition-all duration-300 group/ship"
                         >
@@ -506,8 +555,8 @@ export default function MySalesPage() {
                         <span className="font-medium">عرض تفاصيل العنصر</span>
                       </LoadingLink>
 
-                      {sale.status !== 'completed' && (
-                        <button 
+                      {sale.status !== "completed" && (
+                        <button
                           onClick={() => handleOpenDispute(sale.id)}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500/20 text-rose-300 rounded-lg border border-rose-500/30 hover:bg-rose-500/30 transition-all duration-300 group/dispute"
                         >

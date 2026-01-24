@@ -189,13 +189,17 @@ export default function MyPurchasesPage() {
 
       if (response.data?.status === "success") {
         const paginated = response.data.data; // Laravel paginator
-        const rows: Settlement[] = Array.isArray(paginated?.data) ? paginated.data : [];
+        const rows: Settlement[] = Array.isArray(paginated?.data)
+          ? paginated.data
+          : [];
 
         setPaginationData(paginated);
 
         // ✅ صفحة "مشترياتي" = أنا buyer فقط
         const myId = user?.id;
-        const onlyMyPurchases = myId ? rows.filter((s) => s.buyer_id === myId) : rows;
+        const onlyMyPurchases = myId
+          ? rows.filter((s) => s.buyer_id === myId)
+          : rows;
 
         setPurchases(onlyMyPurchases);
       } else {
@@ -234,9 +238,11 @@ export default function MyPurchasesPage() {
         category.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
-        statusFilter === "all" || (purchase.status || "").toLowerCase() === statusFilter;
+        statusFilter === "all" ||
+        (purchase.status || "").toLowerCase() === statusFilter;
 
-      const matchesCategory = categoryFilter === "all" || category === categoryFilter;
+      const matchesCategory =
+        categoryFilter === "all" || category === categoryFilter;
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -249,11 +255,12 @@ export default function MyPurchasesPage() {
     }, 0);
 
     const completedCount = purchases.filter((p) =>
-      ["confirmed", "completed"].includes((p.status || "").toLowerCase())
+      ["confirmed", "completed"].includes((p.status || "").toLowerCase()),
     ).length;
 
-    const pendingCount = purchases.filter((p) => (p.status || "").toLowerCase() === "pending")
-      .length;
+    const pendingCount = purchases.filter(
+      (p) => (p.status || "").toLowerCase() === "pending",
+    ).length;
 
     return {
       total: purchases.length,
@@ -311,8 +318,8 @@ export default function MyPurchasesPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary rounded-xl">
-                <ShoppingBag className="w-6 h-6 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <ShoppingBag className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
@@ -333,7 +340,9 @@ export default function MyPurchasesPage() {
                   </div>
                   <span className="text-xs text-foreground/70">المجموع</span>
                 </div>
-                <p className="text-lg font-bold text-foreground mt-1">{stats.total}</p>
+                <p className="text-lg font-bold text-foreground mt-1">
+                  {stats.total}
+                </p>
               </div>
 
               <div className="bg-background/40 rounded-lg p-3 border border-border">
@@ -341,9 +350,13 @@ export default function MyPurchasesPage() {
                   <div className="p-1 bg-emerald-500/20 rounded">
                     <CheckCircle className="w-3 h-3 text-emerald-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">مكتملة/مؤكدة</span>
+                  <span className="text-xs text-foreground/70">
+                    مكتملة/مؤكدة
+                  </span>
                 </div>
-                <p className="text-lg font-bold text-emerald-400 mt-1">{stats.completed}</p>
+                <p className="text-lg font-bold text-emerald-400 mt-1">
+                  {stats.completed}
+                </p>
               </div>
 
               <div className="bg-background/40 rounded-lg p-3 border border-border">
@@ -351,9 +364,13 @@ export default function MyPurchasesPage() {
                   <div className="p-1 bg-amber-500/20 rounded">
                     <Clock className="w-3 h-3 text-amber-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">بانتظار الدفع</span>
+                  <span className="text-xs text-foreground/70">
+                    بانتظار الدفع
+                  </span>
                 </div>
-                <p className="text-lg font-bold text-amber-400 mt-1">{stats.pending}</p>
+                <p className="text-lg font-bold text-amber-400 mt-1">
+                  {stats.pending}
+                </p>
               </div>
 
               <div className="bg-background/40 rounded-lg p-3 border border-border">
@@ -361,7 +378,9 @@ export default function MyPurchasesPage() {
                   <div className="p-1 bg-cyan-500/20 rounded">
                     <DollarSign className="w-3 h-3 text-cyan-400" />
                   </div>
-                  <span className="text-xs text-foreground/70">إجمالي المشتريات</span>
+                  <span className="text-xs text-foreground/70">
+                    إجمالي المشتريات
+                  </span>
                 </div>
                 <p className="text-lg font-bold text-cyan-600 dark:text-cyan-400 mt-1">
                   {Number(stats.totalAmount || 0).toLocaleString("ar-SA")} ريال
@@ -373,7 +392,7 @@ export default function MyPurchasesPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <LoadingLink
               href="/auctions"
-              className="flex items-center gap-2 px-4 py-3 bg-primary text-white rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 group"
+              className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 group"
             >
               <Sparkles className="w-4 h-4 transition-transform group-hover:scale-110" />
               <span className="font-medium">استكشاف المزادات</span>
@@ -452,17 +471,23 @@ export default function MyPurchasesPage() {
             <div className="p-6 bg-card/30 rounded-2xl border border-border max-w-md mx-auto">
               <ShoppingBag className="w-16 h-16 text-foreground/50 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground/70 mb-2">
-                {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
+                {searchTerm ||
+                statusFilter !== "all" ||
+                categoryFilter !== "all"
                   ? "لا توجد نتائج"
                   : "لا توجد مشتريات"}
               </h3>
               <p className="text-foreground/50 text-sm mb-4">
-                {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
+                {searchTerm ||
+                statusFilter !== "all" ||
+                categoryFilter !== "all"
                   ? "لم نتمكن من العثور على مشتريات تطابق معايير البحث"
                   : "لم تقم بشراء أي عناصر من المزادات بعد"}
               </p>
 
-              {searchTerm || statusFilter !== "all" || categoryFilter !== "all" ? (
+              {searchTerm ||
+              statusFilter !== "all" ||
+              categoryFilter !== "all" ? (
                 <button
                   onClick={() => {
                     setSearchTerm("");
@@ -476,7 +501,7 @@ export default function MyPurchasesPage() {
               ) : (
                 <LoadingLink
                   href="/auctions"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:scale-105 transition-all duration-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:scale-105 transition-all duration-300"
                 >
                   <Sparkles className="w-4 h-4" />
                   استكشاف المزادات المتاحة
@@ -547,7 +572,9 @@ export default function MyPurchasesPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            <span>تاريخ الصفقة: {getDealDateText(purchase)}</span>
+                            <span>
+                              تاريخ الصفقة: {getDealDateText(purchase)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
@@ -562,14 +589,16 @@ export default function MyPurchasesPage() {
                       </div>
 
                       <div className="flex flex-col items-start lg:items-end gap-2">
-                        <div className="text-2xl font-bold text-secondary">{priceText}</div>
+                        <div className="text-2xl font-bold text-secondary">
+                          {priceText}
+                        </div>
 
                         <div
                           className={cn(
                             "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
                             statusConfig.bg,
                             statusConfig.border,
-                            statusConfig.color
+                            statusConfig.color,
                           )}
                         >
                           <StatusIcon className="w-3 h-3" />
@@ -620,7 +649,11 @@ export default function MyPurchasesPage() {
       {paginationData && paginationData?.last_page > 1 && (
         <div className="flex justify-center pt-2">
           <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
-            <Pagination data={paginationData} options={paginationOptions} changePage={changePage} />
+            <Pagination
+              data={paginationData}
+              options={paginationOptions}
+              changePage={changePage}
+            />
           </div>
         </div>
       )}

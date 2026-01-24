@@ -191,7 +191,7 @@ const MARKET_TRANSLATIONS: Record<string, any> = {
 const pickLabel = (
   val: any,
   key?: string,
-  translations?: Record<string, any>
+  translations?: Record<string, any>,
 ) => {
   // يحوّل أي قيمة إلى نص آمن للعرض
   if (val == null) {
@@ -211,8 +211,8 @@ const pickLabel = (
       val.ar ??
       val.en ??
       (key && translations
-        ? translations[key]?.ar ?? translations[key]?.en ?? key
-        : key ?? "")
+        ? (translations[key]?.ar ?? translations[key]?.en ?? key)
+        : (key ?? ""))
     );
   return String(val);
 };
@@ -244,7 +244,7 @@ const DEFAULT_TRANSMISSION_OPTIONS: Option[] = [
 
 const toOptions = (
   input: any,
-  translations?: Record<string, any>
+  translations?: Record<string, any>,
 ): Option[] => {
   // يحول array/object إلى مصفوفة Options مع تحويل اللصيقات لنص
   try {
@@ -278,19 +278,19 @@ export default function CarDataEntryForm() {
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
 
   const [conditionOptions, setConditionOptions] = useState<Option[]>(
-    DEFAULT_CONDITION_OPTIONS
+    DEFAULT_CONDITION_OPTIONS,
   );
   const [transmissionOptions, setTransmissionOptions] = useState<Option[]>(
-    DEFAULT_TRANSMISSION_OPTIONS
+    DEFAULT_TRANSMISSION_OPTIONS,
   );
   const [marketOptions, setMarketOptions] = useState<Option[]>(
-    DEFAULT_MARKET_OPTIONS
+    DEFAULT_MARKET_OPTIONS,
   );
 
   const [images, setImages] = useState<File[]>([]);
   const [reports, setReports] = useState<File[]>([]);
   const [registrationCardFile, setRegistrationCardFile] = useState<File | null>(
-    null
+    null,
   );
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [registrationCardPreview, setRegistrationCardPreview] =
@@ -368,7 +368,7 @@ export default function CarDataEntryForm() {
             label: pickLabel(
               translations[val] ?? MARKET_TRANSLATIONS[val] ?? val,
               val,
-              translations
+              translations,
             ),
           }));
 
@@ -404,7 +404,7 @@ export default function CarDataEntryForm() {
         (car: any) =>
           String(car.make).trim() === String(formData.make).trim() &&
           String(car.model).trim().includes(String(formData.model).trim()) &&
-          Math.floor(Number(car.year)) === Number(formData.year)
+          Math.floor(Number(car.year)) === Number(formData.year),
       );
       if (matching.length) {
         const avg =
@@ -428,7 +428,7 @@ export default function CarDataEntryForm() {
   /* ------------ handlers ------------ */
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -452,7 +452,7 @@ export default function CarDataEntryForm() {
           const formattedMin = minVal.toLocaleString();
           const formattedLimit = Math.floor(limit).toLocaleString();
           setMaxPriceError(
-            `بناءً على الحد الأدنى المدخل (${formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي ${formattedLimit} ريال.`
+            `بناءً على الحد الأدنى المدخل (${formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي ${formattedLimit} ريال.`,
           );
         } else {
           setMaxPriceError(null);
@@ -520,7 +520,7 @@ export default function CarDataEntryForm() {
       if (formData.market_category === "caravan") {
         required.push(
           { field: "usage", name: "نوع استخدام الكرفان" },
-          { field: "capacity_persons", name: "السعة (عدد الأشخاص)" }
+          { field: "capacity_persons", name: "السعة (عدد الأشخاص)" },
         );
       }
 
@@ -615,7 +615,7 @@ export default function CarDataEntryForm() {
       });
       if (response?.data?.status === "success") {
         toast.success(
-          "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة"
+          "تم إضافة السيارة وإنشاء المزاد بنجاح - في انتظار الموافقة",
         );
         setSubmitResult({
           success: true,
@@ -767,7 +767,7 @@ export default function CarDataEntryForm() {
               <option value="">-- اختر السنة --</option>
               {Array.from(
                 { length: 30 },
-                (_, i) => new Date().getFullYear() - i
+                (_, i) => new Date().getFullYear() - i,
               ).map((y) => (
                 <option key={y} value={y}>
                   {y}
@@ -1462,8 +1462,8 @@ export default function CarDataEntryForm() {
                     aiAnalysis.demandLevel === "مرتفع"
                       ? "text-green-600"
                       : aiAnalysis.demandLevel === "متوسط"
-                      ? "text-yellow-600"
-                      : "text-red-600"
+                        ? "text-yellow-600"
+                        : "text-red-600"
                   }`}
                 >
                   {aiAnalysis.demandLevel}
@@ -1787,7 +1787,7 @@ export default function CarDataEntryForm() {
           <button
             type="submit"
             disabled={isSubmitting || !!maxPriceError}
-            className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${
+            className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${
               isSubmitting || !!maxPriceError
                 ? "bg-border/50 cursor-not-allowed"
                 : "bg-primary hover:bg-primary/90"

@@ -3,19 +3,19 @@ import { useParams } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import SubscriptionPlanForm from "@/components/admin/SubscriptionPlanForm";
 import { Button } from "@/components/ui/button";
-import { 
-    ArrowLeft, 
-    Settings, 
-    RefreshCw,
-    Crown,
-    Sparkles,
-    BarChart3,
-    Target,
-    Shield,
-    Zap,
-    Users,
-    DollarSign,
-    Calendar
+import {
+  ArrowLeft,
+  Settings,
+  RefreshCw,
+  Crown,
+  Sparkles,
+  BarChart3,
+  Target,
+  Shield,
+  Zap,
+  Users,
+  DollarSign,
+  Calendar,
 } from "lucide-react";
 
 export default function Page() {
@@ -45,8 +45,8 @@ export default function Page() {
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <div className="bg-primary p-3 rounded-xl">
-            <Settings className="w-6 h-6 text-primary-foreground" />
+          <div className="bg-primary text-primary-foreground p-3 rounded-xl">
+            <Settings className="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -70,9 +70,9 @@ export default function Page() {
 
           {/* Form Container */}
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
-            <SubscriptionPlanForm 
-              id={id} 
-              onSuccess={() => r.push("/admin/subscription-plans")} 
+            <SubscriptionPlanForm
+              id={id}
+              onSuccess={() => r.push("/admin/subscription-plans")}
             />
           </div>
         </div>
@@ -85,23 +85,31 @@ export default function Page() {
               <Target className="w-5 h-5 ml-2" />
               نصائح سريعة
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">اختر اسمًا جذابًا يعكس قيمة الخطة</span>
+                <span className="text-muted-foreground">
+                  اختر اسمًا جذابًا يعكس قيمة الخطة
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">اضبط الأسعار بما يتناسب مع القيمة المقدمة</span>
+                <span className="text-muted-foreground">
+                  اضبط الأسعار بما يتناسب مع القيمة المقدمة
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">استخدم أوصافًا واضحة للمستخدمين</span>
+                <span className="text-muted-foreground">
+                  استخدم أوصافًا واضحة للمستخدمين
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">سيتم تطبيق التغييرات فور الحفظ</span>
+                <span className="text-muted-foreground">
+                  سيتم تطبيق التغييرات فور الحفظ
+                </span>
               </div>
             </div>
           </div>
@@ -112,23 +120,31 @@ export default function Page() {
               <DollarSign className="w-5 h-5 ml-2" />
               إرشادات التسعير
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">السعر الشهري يحسب تلقائيًا</span>
+                <span className="text-muted-foreground">
+                  السعر الشهري يحسب تلقائيًا
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">اختبر الأسعار الجديدة قبل التطبيق</span>
+                <span className="text-muted-foreground">
+                  اختبر الأسعار الجديدة قبل التطبيق
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">التغييرات تؤثر على المشتركين الجدد فقط</span>
+                <span className="text-muted-foreground">
+                  التغييرات تؤثر على المشتركين الجدد فقط
+                </span>
               </div>
               <div className="flex items-start space-x-2 space-x-reverse">
                 <div className="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-muted-foreground">احتفظ بنسخة من الإعدادات السابقة</span>
+                <span className="text-muted-foreground">
+                  احتفظ بنسخة من الإعدادات السابقة
+                </span>
               </div>
             </div>
           </div>
@@ -139,7 +155,7 @@ export default function Page() {
               <Users className="w-5 h-5 ml-2" />
               أنواع المستخدمين
             </h3>
-            
+
             <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">مزايد</span>
@@ -166,7 +182,7 @@ export default function Page() {
               <Shield className="w-5 h-5 ml-2" />
               معلومات الدعم
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="text-muted-foreground">
                 <div className="font-medium">معرف الخطة:</div>
@@ -189,7 +205,8 @@ export default function Page() {
       <div className="mt-8 bg-gray-800/50 rounded-xl p-4">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-sm text-gray-400">
-            جاري تحديث خطة الاشتراك رقم <span className="text-cyan-400 font-mono">{id}</span>
+            جاري تحديث خطة الاشتراك رقم{" "}
+            <span className="text-cyan-400 font-mono">{id}</span>
           </div>
           <div className="flex items-center space-x-3 space-x-reverse">
             <Button
@@ -201,7 +218,9 @@ export default function Page() {
               إلغاء والعودة
             </Button>
             <Button
-              onClick={() => document.getElementById('subscription-form-submit')?.click()}
+              onClick={() =>
+                document.getElementById("subscription-form-submit")?.click()
+              }
               className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white transition-all duration-300"
             >
               <RefreshCw className="w-4 h-4 ml-2" />
@@ -215,9 +234,12 @@ export default function Page() {
       <div className="mt-6 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-2xl border border-blue-500/20 shadow-lg p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-blue-400 mb-2">أفضل الممارسات</h3>
+            <h3 className="text-lg font-semibold text-blue-400 mb-2">
+              أفضل الممارسات
+            </h3>
             <p className="text-blue-300 text-sm">
-              استخدم أسماء واضحة مثل "الفضية"، "الذهبية"، "البلاتينية" لتمييز الخطط
+              استخدم أسماء واضحة مثل "الفضية"، "الذهبية"، "البلاتينية" لتمييز
+              الخطط
             </p>
           </div>
           <Crown className="w-8 h-8 text-blue-400" />

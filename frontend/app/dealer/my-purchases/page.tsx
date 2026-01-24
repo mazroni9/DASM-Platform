@@ -151,7 +151,7 @@ export default function MyPurchasesPage() {
   const stats = useMemo(() => {
     const totalAmount = purchases.reduce(
       (sum, purchase: any) => sum + (Number(purchase.buyer_net_amount) || 0),
-      0
+      0,
     );
     return {
       total: purchases.length,
@@ -165,8 +165,8 @@ export default function MyPurchasesPage() {
     // Simulate payment process
     setPurchases(
       purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "paid_pending_delivery" } : p
-      )
+        p.id === purchaseId ? { ...p, status: "paid_pending_delivery" } : p,
+      ),
     );
   };
 
@@ -174,8 +174,8 @@ export default function MyPurchasesPage() {
     // Simulate receipt confirmation
     setPurchases(
       purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "completed" } : p
-      )
+        p.id === purchaseId ? { ...p, status: "completed" } : p,
+      ),
     );
   };
 
@@ -209,8 +209,8 @@ export default function MyPurchasesPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary rounded-xl">
-                <ShoppingBag className="w-6 h-6 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <ShoppingBag className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
@@ -278,7 +278,7 @@ export default function MyPurchasesPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <LoadingLink
               href="/auctions"
-              className="flex items-center gap-2 px-4 py-3 bg-primary text-white rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 group"
+              className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 group"
             >
               <Sparkles className="w-4 h-4 transition-transform group-hover:scale-110" />
               <span className="font-medium">استكشاف المزادات</span>
@@ -390,7 +390,7 @@ export default function MyPurchasesPage() {
               ) : (
                 <LoadingLink
                   href="/auctions"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:scale-105 transition-all duration-300"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:scale-105 transition-all duration-300"
                 >
                   <Sparkles className="w-4 h-4" />
                   استكشاف المزادات المتاحة
@@ -448,7 +448,7 @@ export default function MyPurchasesPage() {
                             <span>
                               انتهى في{" "}
                               {new Date(purchase.created_at).toLocaleDateString(
-                                "ar-SA"
+                                "ar-SA",
                               )}
                             </span>
                           </div>
@@ -478,7 +478,7 @@ export default function MyPurchasesPage() {
                             "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm",
                             statusConfig.bg,
                             statusConfig.border,
-                            statusConfig.color
+                            statusConfig.color,
                           )}
                         >
                           <StatusIcon className="w-3 h-3" />

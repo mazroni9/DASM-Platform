@@ -153,7 +153,9 @@ export default function AdminEditBlogPostPage() {
   const fetchCategories = async () => {
     try {
       setLoadingCats(true);
-      const res = await api.get<ApiListResponse<BlogCategory>>("/api/admin/blog/categories");
+      const res = await api.get<ApiListResponse<BlogCategory>>(
+        "/api/admin/blog/categories",
+      );
       const { list } = normalizeList<BlogCategory>(res?.data);
       setCategories(list);
     } catch {
@@ -216,7 +218,8 @@ export default function AdminEditBlogPostPage() {
   const linkHelp = useMemo(() => {
     const s = form.slug.trim();
     if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
-    if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
+    if (s.includes(" "))
+      return { type: "warn" as const, text: "يفضل بدون مسافات" };
     return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
@@ -241,8 +244,10 @@ export default function AdminEditBlogPostPage() {
       }
     }
 
-    if (form.search_title.trim().length > 255) return { ok: false, msg: "عنوان البحث طويل" };
-    if (form.search_description.trim().length > 5000) return { ok: false, msg: "وصف البحث طويل" };
+    if (form.search_title.trim().length > 255)
+      return { ok: false, msg: "عنوان البحث طويل" };
+    if (form.search_description.trim().length > 5000)
+      return { ok: false, msg: "وصف البحث طويل" };
 
     return { ok: true as const };
   };
@@ -290,10 +295,10 @@ export default function AdminEditBlogPostPage() {
 
   const loading = loadingPost;
 
-  const categoryName =
-    form.category_id
-      ? categories.find((c) => String(c.id) === String(form.category_id))?.name || "تصنيف"
-      : "بدون تصنيف";
+  const categoryName = form.category_id
+    ? categories.find((c) => String(c.id) === String(form.category_id))?.name ||
+      "تصنيف"
+    : "بدون تصنيف";
 
   const previewHtml = contentToPreviewHtml(form.content);
 
@@ -307,7 +312,9 @@ export default function AdminEditBlogPostPage() {
               <Newspaper className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-primary">تعديل مقال</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-primary">
+                تعديل مقال
+              </h1>
               <p className="text-foreground/70 mt-1">تعديل ومعاينة قبل الحفظ</p>
             </div>
           </div>
@@ -336,9 +343,13 @@ export default function AdminEditBlogPostPage() {
             type="submit"
             form="edit-post-form"
             disabled={saving || loading}
-            className="bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl transition flex items-center"
+            className="bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground px-4 py-2 rounded-xl transition flex items-center"
           >
-            {saving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+            {saving ? (
+              <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 ml-2" />
+            )}
             حفظ
           </button>
         </div>
@@ -355,7 +366,9 @@ export default function AdminEditBlogPostPage() {
               <div className="border-b border-border p-5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FileText className="w-5 h-5 text-primary" />
-                  <h2 className="font-bold">{tab === "edit" ? "تحرير المحتوى" : "معاينة"}</h2>
+                  <h2 className="font-bold">
+                    {tab === "edit" ? "تحرير المحتوى" : "معاينة"}
+                  </h2>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -363,7 +376,9 @@ export default function AdminEditBlogPostPage() {
                     type="button"
                     onClick={() => setTab("edit")}
                     className={`px-3 py-2 rounded-xl border transition ${
-                      tab === "edit" ? "bg-primary text-white border-primary" : "border-border hover:bg-border/60"
+                      tab === "edit"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border hover:bg-border/60"
                     }`}
                   >
                     تحرير
@@ -372,7 +387,9 @@ export default function AdminEditBlogPostPage() {
                     type="button"
                     onClick={() => setTab("preview")}
                     className={`px-3 py-2 rounded-xl border transition ${
-                      tab === "preview" ? "bg-primary text-white border-primary" : "border-border hover:bg-border/60"
+                      tab === "preview"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border hover:bg-border/60"
                     }`}
                   >
                     معاينة
@@ -391,7 +408,9 @@ export default function AdminEditBlogPostPage() {
                           alt=""
                           className="w-24 h-24 rounded-2xl object-cover border border-border"
                           onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = "none";
+                            (
+                              e.currentTarget as HTMLImageElement
+                            ).style.display = "none";
                           }}
                         />
                       ) : (
@@ -401,10 +420,14 @@ export default function AdminEditBlogPostPage() {
                       )}
 
                       <div className="min-w-0">
-                        <h3 className="text-2xl font-bold text-primary leading-snug">{form.title.trim() || "عنوان المقال"}</h3>
+                        <h3 className="text-2xl font-bold text-primary leading-snug">
+                          {form.title.trim() || "عنوان المقال"}
+                        </h3>
                         <p className="text-sm text-foreground/60 mt-2 flex items-center gap-2">
                           <Link2 size={14} />
-                          <span className="truncate">/blog/{form.slug.trim() || "..."}</span>
+                          <span className="truncate">
+                            /blog/{form.slug.trim() || "..."}
+                          </span>
                         </p>
 
                         <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -418,38 +441,57 @@ export default function AdminEditBlogPostPage() {
                             {form.status === "published" ? "منشور" : "مسودة"}
                           </span>
 
-                          <span className="text-xs text-foreground/60">{categoryName}</span>
+                          <span className="text-xs text-foreground/60">
+                            {categoryName}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     {form.excerpt.trim() ? (
-                      <p className="text-foreground/70 mt-4 leading-7">{form.excerpt.trim()}</p>
+                      <p className="text-foreground/70 mt-4 leading-7">
+                        {form.excerpt.trim()}
+                      </p>
                     ) : (
-                      <p className="text-foreground/50 mt-4">لا توجد نبذة قصيرة.</p>
+                      <p className="text-foreground/50 mt-4">
+                        لا توجد نبذة قصيرة.
+                      </p>
                     )}
                   </div>
 
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
                     <h4 className="font-bold mb-2">المحتوى</h4>
                     {previewHtml ? (
-                      <div className="prose max-w-none prose-invert prose-p:leading-7" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                      <div
+                        className="prose max-w-none prose-invert prose-p:leading-7"
+                        dangerouslySetInnerHTML={{ __html: previewHtml }}
+                      />
                     ) : (
                       <p className="text-foreground/50">لا يوجد محتوى.</p>
                     )}
                   </div>
                 </div>
               ) : (
-                <form id="edit-post-form" onSubmit={submit} className="p-6 space-y-6">
+                <form
+                  id="edit-post-form"
+                  onSubmit={submit}
+                  className="p-6 space-y-6"
+                >
                   <div>
-                    <label className="block text-sm font-bold mb-2">العنوان</label>
+                    <label className="block text-sm font-bold mb-2">
+                      العنوان
+                    </label>
                     <input
                       value={form.title}
-                      onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, title: e.target.value }))
+                      }
                       className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                       required
                     />
-                    <div className="text-xs text-foreground/60 mt-1">{form.title.length}/255</div>
+                    <div className="text-xs text-foreground/60 mt-1">
+                      {form.title.length}/255
+                    </div>
                   </div>
 
                   <div>
@@ -461,7 +503,8 @@ export default function AdminEditBlogPostPage() {
                           checked={autoSlug}
                           onChange={(e) => {
                             setAutoSlug(e.target.checked);
-                            if (e.target.checked) slugTouchedRef.current = false;
+                            if (e.target.checked)
+                              slugTouchedRef.current = false;
                           }}
                           className="accent-primary"
                         />
@@ -486,15 +529,21 @@ export default function AdminEditBlogPostPage() {
                       {linkHelp.type === "ok" ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          <span className="text-emerald-500">{linkHelp.text}</span>
+                          <span className="text-emerald-500">
+                            {linkHelp.text}
+                          </span>
                         </>
                       ) : (
                         <>
                           <AlertTriangle className="w-4 h-4 text-amber-500" />
-                          <span className="text-amber-500">{linkHelp.text}</span>
+                          <span className="text-amber-500">
+                            {linkHelp.text}
+                          </span>
                         </>
                       )}
-                      <span className="text-foreground/50">({form.slug.length}/255)</span>
+                      <span className="text-foreground/50">
+                        ({form.slug.length}/255)
+                      </span>
                     </div>
 
                     <div className="mt-3 flex items-center gap-2">
@@ -516,14 +565,18 @@ export default function AdminEditBlogPostPage() {
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <ImageIcon className="w-4 h-4 text-foreground/70" />
-                      <label className="block text-sm font-bold">صورة المقال</label>
+                      <label className="block text-sm font-bold">
+                        صورة المقال
+                      </label>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                       <div className="md:col-span-2">
                         <input
                           value={form.image}
-                          onChange={(e) => setForm((p) => ({ ...p, image: e.target.value }))}
+                          onChange={(e) =>
+                            setForm((p) => ({ ...p, image: e.target.value }))
+                          }
                           className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                           placeholder="ضع رابط الصورة هنا (اختياري)"
                         />
@@ -537,7 +590,9 @@ export default function AdminEditBlogPostPage() {
                             alt="preview"
                             className="w-full h-28 object-cover rounded-lg border border-border"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                              (
+                                e.currentTarget as HTMLImageElement
+                              ).style.display = "none";
                             }}
                           />
                         ) : (
@@ -551,10 +606,14 @@ export default function AdminEditBlogPostPage() {
                   </div>
 
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
-                    <label className="block text-sm font-bold mb-2">نبذة قصيرة</label>
+                    <label className="block text-sm font-bold mb-2">
+                      نبذة قصيرة
+                    </label>
                     <textarea
                       value={form.excerpt}
-                      onChange={(e) => setForm((p) => ({ ...p, excerpt: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, excerpt: e.target.value }))
+                      }
                       className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                       rows={3}
                     />
@@ -575,7 +634,9 @@ export default function AdminEditBlogPostPage() {
 
                     <textarea
                       value={form.content}
-                      onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, content: e.target.value }))
+                      }
                       className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
                       rows={12}
                       placeholder="اكتب محتوى المقال هنا..."
@@ -584,18 +645,32 @@ export default function AdminEditBlogPostPage() {
 
                   <div className="rounded-2xl border border-border bg-background/40 p-4 space-y-4">
                     <div>
-                      <label className="block text-sm font-bold mb-2">عنوان يظهر في نتائج البحث (اختياري)</label>
+                      <label className="block text-sm font-bold mb-2">
+                        عنوان يظهر في نتائج البحث (اختياري)
+                      </label>
                       <input
                         value={form.search_title}
-                        onChange={(e) => setForm((p) => ({ ...p, search_title: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            search_title: e.target.value,
+                          }))
+                        }
                         className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold mb-2">وصف يظهر في نتائج البحث (اختياري)</label>
+                      <label className="block text-sm font-bold mb-2">
+                        وصف يظهر في نتائج البحث (اختياري)
+                      </label>
                       <textarea
                         value={form.search_description}
-                        onChange={(e) => setForm((p) => ({ ...p, search_description: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            search_description: e.target.value,
+                          }))
+                        }
                         className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                         rows={3}
                       />
@@ -620,17 +695,23 @@ export default function AdminEditBlogPostPage() {
                   onClick={fetchCategories}
                   className="text-xs px-3 py-2 rounded-xl border border-border hover:bg-border/60 transition flex items-center gap-2"
                 >
-                  <RefreshCw className={`w-4 h-4 ${loadingCats ? "animate-spin" : ""}`} />
+                  <RefreshCw
+                    className={`w-4 h-4 ${loadingCats ? "animate-spin" : ""}`}
+                  />
                   تحديث
                 </button>
               </div>
 
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-bold mb-2">التصنيف (إجباري)</label>
+                  <label className="block text-sm font-bold mb-2">
+                    التصنيف (إجباري)
+                  </label>
                   <select
                     value={form.category_id}
-                    onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, category_id: e.target.value }))
+                    }
                     className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                     disabled={loadingCats}
                   >
@@ -644,10 +725,14 @@ export default function AdminEditBlogPostPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold mb-2">الحالة (إجباري)</label>
+                  <label className="block text-sm font-bold mb-2">
+                    الحالة (إجباري)
+                  </label>
                   <select
                     value={form.status}
-                    onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as any }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, status: e.target.value as any }))
+                    }
                     className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                   >
                     <option value="draft">مسودة</option>
@@ -659,9 +744,13 @@ export default function AdminEditBlogPostPage() {
                   type="submit"
                   form="edit-post-form"
                   disabled={saving || loading}
-                  className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-3 rounded-xl transition flex items-center justify-center"
+                  className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground px-4 py-3 rounded-xl transition flex items-center justify-center"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 ml-2" />
+                  )}
                   حفظ
                 </button>
 

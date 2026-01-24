@@ -21,6 +21,7 @@ export interface Auction {
     model: string;
     year: number;
     image: string;
+    images: string[];
   };
 }
 
@@ -61,13 +62,13 @@ export interface DealerState {
     userId: number,
     name: string,
     planType: string,
-    aiEnabled: boolean
+    aiEnabled: boolean,
   ) => void;
   setWallet: (wallet: Partial<WalletState>) => void;
   updateAuctionPrice: (
     auctionId: number,
     price: number,
-    endTime?: string
+    endTime?: string,
   ) => void;
   setActiveAuctions: (auctions: Auction[]) => void;
   addAiRecommendation: (recommendation: AiRecommendation) => void;
@@ -114,7 +115,7 @@ export const useDealerStore = create<DealerState>((set) => ({
               current_bid: price,
               ...(endTime && { end_time: endTime }),
             }
-          : auction
+          : auction,
       ),
     })),
 
@@ -135,7 +136,9 @@ export const useDealerStore = create<DealerState>((set) => ({
   optimisticBid: (auctionId, amount) =>
     set((state) => ({
       activeAuctions: state.activeAuctions.map((auction) =>
-        auction.id === auctionId ? { ...auction, current_bid: amount } : auction
+        auction.id === auctionId
+          ? { ...auction, current_bid: amount }
+          : auction,
       ),
       wallet: {
         ...state.wallet,

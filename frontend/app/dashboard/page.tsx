@@ -68,7 +68,9 @@ export default function DashboardPage() {
   }, [profile, user]);
 
   const memberSinceYear = useMemo(() => {
-    const createdAt = (profile?.created_at || user?.created_at) as string | undefined;
+    const createdAt = (profile?.created_at || user?.created_at) as
+      | string
+      | undefined;
     if (!createdAt) return "";
     const d = new Date(createdAt);
     return Number.isNaN(d.getTime()) ? "" : String(d.getFullYear());
@@ -84,7 +86,8 @@ export default function DashboardPage() {
     if (!isLoggedIn) return;
 
     try {
-      const profileResponse = await api.get<ProfileResponse>("/api/user/profile");
+      const profileResponse =
+        await api.get<ProfileResponse>("/api/user/profile");
 
       const ok =
         profileResponse.data?.success === true ||
@@ -92,7 +95,9 @@ export default function DashboardPage() {
 
       if (!ok) {
         // فشل/Unauthorized
-        throw new Error(profileResponse.data?.message || "Failed to load profile");
+        throw new Error(
+          profileResponse.data?.message || "Failed to load profile",
+        );
       }
 
       const data = profileResponse.data.data || {};
@@ -183,7 +188,9 @@ export default function DashboardPage() {
     },
     {
       label: "رصيد المحفظة",
-      value: stats.walletBalance ? `${stats.walletBalance.toLocaleString()}` : "0",
+      value: stats.walletBalance
+        ? `${stats.walletBalance.toLocaleString()}`
+        : "0",
       bg: "bg-amber-500/10",
       border: "border-amber-500/20",
       glow: "shadow-amber-500/20",
@@ -210,7 +217,8 @@ export default function DashboardPage() {
     { id: 3, title: "استكشف المزادات المتاحة", date: "اليوم", type: "info" },
   ];
 
-  const displayActivities = activities.length > 0 ? activities : defaultActivities;
+  const displayActivities =
+    activities.length > 0 ? activities : defaultActivities;
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -223,8 +231,8 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-primary rounded-xl">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <Sparkles className="w-5 h-5" />
               </div>
               <h1 className="text-2xl font-bold text-foreground">
                 مرحباً بك، <span className="text-primary">{userName}</span>
@@ -233,7 +241,8 @@ export default function DashboardPage() {
 
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
-                {((profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer")
+                {(profile?.type || user?.type) === "user" ||
+                (profile?.type || user?.type) === "dealer"
                   ? "الاشتراك: مجاني"
                   : ""}
               </span>
@@ -243,8 +252,8 @@ export default function DashboardPage() {
             </div>
 
             <p className="text-foreground/80 text-sm leading-relaxed">
-              أنت على بعد نقرة من إدارة حسابك بكل سهولة وأمان.
-              استعرض بياناتك وتابع نشاطك.
+              أنت على بعد نقرة من إدارة حسابك بكل سهولة وأمان. استعرض بياناتك
+              وتابع نشاطك.
             </p>
           </div>
 
@@ -259,7 +268,7 @@ export default function DashboardPage() {
               href="/auctions"
               className="p-2 bg-primary rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
             >
-              <Rocket className="w-4 h-4 text-white" />
+              <Rocket className="w-4 h-4 text-primary-foreground" />
             </LoadingLink>
           </div>
         </div>
@@ -282,8 +291,8 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <div className="p-1.5 bg-primary rounded-lg">
-                  <Activity className="w-4 h-4 text-white" />
+                <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                  <Activity className="w-4 h-4" />
                 </div>
                 إحصائيات سريعة
               </h2>
@@ -292,7 +301,9 @@ export default function DashboardPage() {
                 disabled={refreshing}
                 className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all duration-300 disabled:opacity-50"
               >
-                <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
+                />
                 <span className="text-xs">تحديث</span>
               </button>
             </div>
@@ -310,7 +321,7 @@ export default function DashboardPage() {
                       "p-4 rounded-xl border backdrop-blur-sm shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl",
                       item.bg,
                       item.border,
-                      item.glow
+                      item.glow,
                     )}
                   >
                     <div className="flex items-center justify-between mb-3">
@@ -321,8 +332,12 @@ export default function DashboardPage() {
                         {item.trend}
                       </span>
                     </div>
-                    <p className="text-xs text-foreground/80 mb-1">{item.label}</p>
-                    <p className={cn("text-lg font-bold", item.text)}>{item.value}</p>
+                    <p className="text-xs text-foreground/80 mb-1">
+                      {item.label}
+                    </p>
+                    <p className={cn("text-lg font-bold", item.text)}>
+                      {item.value}
+                    </p>
                   </motion.div>
                 );
               })}
@@ -333,8 +348,8 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <div className="p-1.5 bg-primary rounded-lg">
-                  <Clock className="w-4 h-4 text-white" />
+                <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                  <Clock className="w-4 h-4" />
                 </div>
                 آخر النشاطات
               </h2>
@@ -356,7 +371,7 @@ export default function DashboardPage() {
                     <div
                       className={cn(
                         "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
-                        getActivityBgColor(activity.type)
+                        getActivityBgColor(activity.type),
                       )}
                     >
                       {getActivityIcon(activity.type)}

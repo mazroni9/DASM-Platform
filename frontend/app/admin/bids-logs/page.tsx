@@ -116,7 +116,7 @@ export default function BidsLogsPage() {
   const fetchBidsLogs = async () => {
     try {
       const response = await api.get(
-        `/api/admin/bids/events?page=${currentPage}`
+        `/api/admin/bids/events?page=${currentPage}`,
       );
 
       if (response.data && response.data.status === "success") {
@@ -149,7 +149,7 @@ export default function BidsLogsPage() {
         <h1 className="text-3xl font-bold text-foreground">سجلات المزايدات</h1>
         <Button
           onClick={fetchBidsLogs}
-          className="bg-primary hover:bg-primary/90"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
           variant="outline"
           size="sm"
         >

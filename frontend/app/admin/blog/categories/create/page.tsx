@@ -5,7 +5,16 @@ import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { ArrowRight, CheckCircle2, AlertTriangle, Link2, Save, Tags, Eye, FileText } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  Link2,
+  Save,
+  Tags,
+  Eye,
+  FileText,
+} from "lucide-react";
 
 function slugify(input: string) {
   const s = (input || "")
@@ -47,7 +56,8 @@ export default function AdminBlogCategoryCreatePage() {
   const slugHelp = useMemo(() => {
     const s = form.slug.trim();
     if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
-    if (s.includes(" ")) return { type: "warn" as const, text: "يفضل بدون مسافات" };
+    if (s.includes(" "))
+      return { type: "warn" as const, text: "يفضل بدون مسافات" };
     return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
@@ -98,10 +108,14 @@ export default function AdminBlogCategoryCreatePage() {
     <div className="bg-card border border-border rounded-2xl p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xl font-extrabold text-primary line-clamp-2">{form.name.trim() || "اسم التصنيف"}</h2>
+          <h2 className="text-xl font-extrabold text-primary line-clamp-2">
+            {form.name.trim() || "اسم التصنيف"}
+          </h2>
           <p className="text-sm text-foreground/60 mt-2 flex items-center gap-2">
             <Link2 size={14} />
-            <span className="truncate">/blog/category/{form.slug.trim() || "..."}</span>
+            <span className="truncate">
+              /blog/category/{form.slug.trim() || "..."}
+            </span>
           </p>
 
           <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -125,7 +139,9 @@ export default function AdminBlogCategoryCreatePage() {
       <div className="mt-5 rounded-2xl border border-border bg-background/40 p-4">
         <div className="font-bold mb-2">الوصف</div>
         {form.description.trim() ? (
-          <p className="text-foreground/70 leading-7">{form.description.trim()}</p>
+          <p className="text-foreground/70 leading-7">
+            {form.description.trim()}
+          </p>
         ) : (
           <p className="text-foreground/50">لا يوجد وصف.</p>
         )}
@@ -138,7 +154,9 @@ export default function AdminBlogCategoryCreatePage() {
       {/* Top bar */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">إضافة تصنيف</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">
+            إضافة تصنيف
+          </h1>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -152,10 +170,16 @@ export default function AdminBlogCategoryCreatePage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab((p) => (p === "edit" ? "preview" : "edit"))}
+            onClick={() =>
+              setActiveTab((p) => (p === "edit" ? "preview" : "edit"))
+            }
             className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2"
           >
-            {activeTab === "edit" ? <Eye className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+            {activeTab === "edit" ? (
+              <Eye className="w-4 h-4" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
             {activeTab === "edit" ? "معاينة" : "تحرير"}
           </button>
         </div>
@@ -174,19 +198,28 @@ export default function AdminBlogCategoryCreatePage() {
           {activeTab === "preview" ? (
             PreviewCard
           ) : (
-            <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6">
+            <form
+              onSubmit={submit}
+              className="bg-card border border-border rounded-2xl p-6 space-y-6"
+            >
               {/* name + slug */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold mb-1">اسم التصنيف</label>
+                  <label className="block text-sm font-bold mb-1">
+                    اسم التصنيف
+                  </label>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, name: e.target.value }))
+                    }
                     className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                     placeholder="مثال: سيارات مزادات"
                     required
                   />
-                  <div className="text-xs text-foreground/60 mt-1">{form.name.length}/255</div>
+                  <div className="text-xs text-foreground/60 mt-1">
+                    {form.name.length}/255
+                  </div>
                 </div>
 
                 <div>
@@ -200,7 +233,8 @@ export default function AdminBlogCategoryCreatePage() {
                           setAutoSlug(e.target.checked);
                           if (e.target.checked) {
                             slugTouchedRef.current = false;
-                            if (form.name.trim()) setForm((p) => ({ ...p, slug: slugify(p.name) }));
+                            if (form.name.trim())
+                              setForm((p) => ({ ...p, slug: slugify(p.name) }));
                           } else {
                             slugTouchedRef.current = true;
                           }
@@ -229,7 +263,9 @@ export default function AdminBlogCategoryCreatePage() {
                     {slugHelp.type === "ok" ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span className="text-emerald-500">{slugHelp.text}</span>
+                        <span className="text-emerald-500">
+                          {slugHelp.text}
+                        </span>
                       </>
                     ) : (
                       <>
@@ -237,17 +273,23 @@ export default function AdminBlogCategoryCreatePage() {
                         <span className="text-amber-500">{slugHelp.text}</span>
                       </>
                     )}
-                    <span className="text-foreground/50">({form.slug.length}/255)</span>
+                    <span className="text-foreground/50">
+                      ({form.slug.length}/255)
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* description */}
               <div className="rounded-2xl border border-border bg-background/40 p-4">
-                <label className="block text-sm font-bold mb-2">وصف (اختياري)</label>
+                <label className="block text-sm font-bold mb-2">
+                  وصف (اختياري)
+                </label>
                 <textarea
                   value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, description: e.target.value }))
+                  }
                   className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary focus:outline-none"
                   rows={4}
                   placeholder="وصف بسيط يظهر تحت التصنيف..."
@@ -258,17 +300,23 @@ export default function AdminBlogCategoryCreatePage() {
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 p-4">
                 <div>
                   <div className="font-bold">الحالة</div>
-                  <div className="text-xs text-foreground/60 mt-1">نشط = يظهر</div>
+                  <div className="text-xs text-foreground/60 mt-1">
+                    نشط = يظهر
+                  </div>
                 </div>
 
                 <label className="inline-flex items-center gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={form.is_active}
-                    onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, is_active: e.target.checked }))
+                    }
                     className="h-5 w-5 accent-primary"
                   />
-                  <span className="text-sm font-semibold text-foreground/80">{form.is_active ? "نشط" : "غير نشط"}</span>
+                  <span className="text-sm font-semibold text-foreground/80">
+                    {form.is_active ? "نشط" : "غير نشط"}
+                  </span>
                 </label>
               </div>
 
@@ -277,7 +325,7 @@ export default function AdminBlogCategoryCreatePage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
+                  className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground py-2 rounded-xl font-bold transition flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? "جارٍ الحفظ..." : "حفظ"}

@@ -317,8 +317,8 @@ export default function Page() {
                       {/* Plan Name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="bg-primary p-2 rounded-xl">
-                            <Crown className="w-4 h-4 text-primary-foreground" />
+                          <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                            <Crown className="w-4 h-4" />
                           </div>
                           <div className="mr-4">
                             <div className="text-sm font-medium text-foreground">
@@ -394,7 +394,7 @@ export default function Page() {
                             variant="ghost"
                             onClick={() =>
                               r.push(
-                                `/admin/subscription-plans/view/${plan.id}`
+                                `/admin/subscription-plans/view/${plan.id}`,
                               )
                             }
                           >
@@ -405,7 +405,7 @@ export default function Page() {
                             variant="ghost"
                             onClick={() =>
                               r.push(
-                                `/admin/subscription-plans/edit/${plan.id}`
+                                `/admin/subscription-plans/edit/${plan.id}`,
                               )
                             }
                           >

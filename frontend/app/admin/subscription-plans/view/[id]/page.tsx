@@ -5,27 +5,27 @@ import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { subscriptionPlanService } from "@/services/subscription-plan-service";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { Button } from "@/components/ui/button";
-import { 
-    ArrowLeft, 
-    Edit, 
-    RefreshCw, 
-    Loader2,
-    Crown,
-    Users,
-    Calendar,
-    DollarSign,
-    CheckCircle,
-    XCircle,
-    BarChart3,
-    Target,
-    Sparkles,
-    Shield,
-    Download,
-    Share,
-    Zap,
-    TrendingUp,
-    Clock,
-    Hash
+import {
+  ArrowLeft,
+  Edit,
+  RefreshCw,
+  Loader2,
+  Crown,
+  Users,
+  Calendar,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  BarChart3,
+  Target,
+  Sparkles,
+  Shield,
+  Download,
+  Share,
+  Zap,
+  TrendingUp,
+  Clock,
+  Hash,
 } from "lucide-react";
 
 export default function Page() {
@@ -111,10 +111,7 @@ export default function Page() {
         </div>
 
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <Button
-            onClick={loadData}
-            variant="outline"
-          >
+          <Button onClick={loadData} variant="outline">
             <RefreshCw className="w-4 h-4 ml-2" />
             تحديث
           </Button>
@@ -134,17 +131,21 @@ export default function Page() {
           {/* Plan Header Card */}
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
             <div className="flex items-center space-x-4 space-x-reverse mb-6">
-              <div className="bg-primary p-3 rounded-xl">
-                <Crown className="w-6 h-6 text-primary-foreground" />
+              <div className="bg-primary text-primary-foreground p-3 rounded-xl">
+                <Crown className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">{data.name}</h2>
+                <h2 className="text-xl font-bold text-foreground">
+                  {data.name}
+                </h2>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                    data.isActive 
-                      ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                      : 'bg-red-500/20 text-red-400 border-red-500/30'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                      data.isActive
+                        ? "bg-green-500/20 text-green-400 border-green-500/30"
+                        : "bg-red-500/20 text-red-400 border-red-500/30"
+                    }`}
+                  >
                     {data.isActive ? (
                       <>
                         <CheckCircle className="w-3 h-3 ml-1" />
@@ -174,13 +175,21 @@ export default function Page() {
               <div className="bg-muted p-4 rounded-xl">
                 <div className="text-muted-foreground text-sm">السعر الكلي</div>
                 <div className="text-2xl font-bold text-primary mt-1">
-                  {formatCurrency(data.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(data.price, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
               </div>
               <div className="bg-muted p-4 rounded-xl">
-                <div className="text-muted-foreground text-sm">السعر الشهري</div>
+                <div className="text-muted-foreground text-sm">
+                  السعر الشهري
+                </div>
                 <div className="text-2xl font-bold text-green-400 mt-1">
-                  {formatCurrency(data.monthlyPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(data.monthlyPrice, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
               </div>
               <div className="bg-muted p-4 rounded-xl">
@@ -202,12 +211,18 @@ export default function Page() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">اسم الخطة</div>
-                  <div className="text-foreground font-semibold">{data.name}</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    اسم الخطة
+                  </div>
+                  <div className="text-foreground font-semibold">
+                    {data.name}
+                  </div>
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">الوصف</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    الوصف
+                  </div>
                   <div className="text-foreground">
                     {data.description || (
                       <span className="text-muted-foreground">غير محدد</span>
@@ -216,7 +231,9 @@ export default function Page() {
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">نوع المستخدم</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    نوع المستخدم
+                  </div>
                   <div className="flex items-center text-foreground">
                     <Users className="w-4 h-4 ml-1 text-purple-400" />
                     {data.userTypeText}
@@ -224,7 +241,9 @@ export default function Page() {
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">المدة</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    المدة
+                  </div>
                   <div className="flex items-center text-foreground">
                     <Calendar className="w-4 h-4 ml-1 text-amber-400" />
                     {data.durationText}
@@ -234,23 +253,35 @@ export default function Page() {
 
               <div className="space-y-4">
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">السعر الكلي</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    السعر الكلي
+                  </div>
                   <div className="text-primary font-bold text-lg flex items-center">
                     <DollarSign className="w-4 h-4 ml-1" />
-                    {formatCurrency(data.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCurrency(data.price, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">السعر الشهري</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    السعر الشهري
+                  </div>
                   <div className="text-green-400 font-bold text-lg flex items-center">
                     <TrendingUp className="w-4 h-4 ml-1" />
-                    {formatCurrency(data.monthlyPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatCurrency(data.monthlyPrice, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </div>
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">ترتيب العرض</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    ترتيب العرض
+                  </div>
                   <div className="flex items-center text-foreground">
                     <Hash className="w-4 h-4 ml-1 text-blue-400" />
                     {data.orderIndex}
@@ -258,7 +289,9 @@ export default function Page() {
                 </div>
 
                 <div className="bg-muted p-4 rounded-xl">
-                  <div className="text-sm font-medium text-muted-foreground mb-2">حالة الخطة</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">
+                    حالة الخطة
+                  </div>
                   <div className="flex items-center">
                     {data.isActive ? (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
@@ -286,36 +319,46 @@ export default function Page() {
               <Sparkles className="w-5 h-5 ml-2 text-amber-400" />
               معلومات إضافية
             </h3>
-            
+
             <div className="space-y-4">
               <div className="bg-muted p-3 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">الرابط المخصص</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  الرابط المخصص
+                </div>
                 <div className="text-foreground font-mono text-sm bg-background px-2 py-1 rounded">
                   {data.slug}
                 </div>
               </div>
 
               <div className="bg-muted p-3 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">تاريخ الإنشاء</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  تاريخ الإنشاء
+                </div>
                 <div className="text-foreground flex items-center">
                   <Clock className="w-3 h-3 ml-1 text-muted-foreground" />
-                  {data.createdAt ? new Date(data.createdAt).toLocaleDateString('ar-SA', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  }) : "غير متاح"}
+                  {data.createdAt
+                    ? new Date(data.createdAt).toLocaleDateString("ar-SA", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "غير متاح"}
                 </div>
               </div>
 
               <div className="bg-muted p-3 rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">آخر تحديث</div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  آخر تحديث
+                </div>
                 <div className="text-foreground flex items-center">
                   <Zap className="w-3 h-3 ml-1 text-muted-foreground" />
-                  {data.updatedAt ? new Date(data.updatedAt).toLocaleDateString('ar-SA', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  }) : "غير متاح"}
+                  {data.updatedAt
+                    ? new Date(data.updatedAt).toLocaleDateString("ar-SA", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "غير متاح"}
                 </div>
               </div>
             </div>
@@ -323,30 +366,26 @@ export default function Page() {
 
           {/* Quick Actions */}
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">إجراءات سريعة</h3>
-            
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              إجراءات سريعة
+            </h3>
+
             <div className="space-y-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start"
                 onClick={() => r.push(`/admin/subscription-plans/edit/${id}`)}
               >
                 <Edit className="w-4 h-4 ml-2" />
                 تعديل الخطة
               </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-              >
+
+              <Button variant="outline" className="w-full justify-start">
                 <Download className="w-4 h-4 ml-2" />
                 تصدير التقرير
               </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-              >
+
+              <Button variant="outline" className="w-full justify-start">
                 <Share className="w-4 h-4 ml-2" />
                 مشاركة المعلومات
               </Button>
@@ -355,8 +394,10 @@ export default function Page() {
 
           {/* Plan Features */}
           <div className="bg-muted rounded-2xl border border-border shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-green-400 mb-4">مميزات الخطة</h3>
-            
+            <h3 className="text-lg font-semibold text-green-400 mb-4">
+              مميزات الخطة
+            </h3>
+
             <div className="space-y-3 text-sm">
               <div className="flex items-start space-x-2 space-x-reverse">
                 <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
@@ -385,7 +426,7 @@ export default function Page() {
           <Target className="w-5 h-5 ml-2 text-green-400" />
           إحصائيات الاستخدام
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-primary">0</div>
@@ -393,9 +434,14 @@ export default function Page() {
           </div>
           <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-green-400">
-              {formatCurrency(0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatCurrency(0, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </div>
-            <div className="text-muted-foreground text-sm">إجمالي الإيرادات</div>
+            <div className="text-muted-foreground text-sm">
+              إجمالي الإيرادات
+            </div>
           </div>
           <div className="bg-muted p-4 rounded-xl text-center">
             <div className="text-2xl font-bold text-amber-400">0%</div>

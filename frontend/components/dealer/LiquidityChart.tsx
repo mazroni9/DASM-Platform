@@ -27,7 +27,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 interface LiquidityChartProps {
@@ -58,7 +58,7 @@ export default function LiquidityChart({ authToken }: LiquidityChartProps) {
         `/api/dealer/dashboard/liquidity-stats?period=${period}`,
         {
           headers: { Authorization: `Bearer ${authToken}` },
-        }
+        },
       );
 
       const result = await response.json();
@@ -191,8 +191,8 @@ export default function LiquidityChart({ authToken }: LiquidityChartProps) {
             className={cn(
               "px-3 py-1 text-xs font-medium rounded-md transition-all",
               period === 7
-                ? "bg-primary text-white"
-                : "text-foreground/60 hover:text-foreground"
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground/60 hover:text-foreground",
             )}
           >
             7 أيام
@@ -202,8 +202,8 @@ export default function LiquidityChart({ authToken }: LiquidityChartProps) {
             className={cn(
               "px-3 py-1 text-xs font-medium rounded-md transition-all",
               period === 30
-                ? "bg-primary text-white"
-                : "text-foreground/60 hover:text-foreground"
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground/60 hover:text-foreground",
             )}
           >
             30 يوم

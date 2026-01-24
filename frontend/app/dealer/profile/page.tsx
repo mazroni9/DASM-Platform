@@ -153,7 +153,7 @@ export default function ProfilePage() {
   }, [isLoggedIn]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -216,7 +216,7 @@ export default function ProfilePage() {
         }
       } else {
         throw new Error(
-          response.data?.message || "حدث خطأ أثناء تحديث المعلومات"
+          response.data?.message || "حدث خطأ أثناء تحديث المعلومات",
         );
       }
     } catch (error: any) {
@@ -298,7 +298,7 @@ export default function ProfilePage() {
           });
         } else {
           throw new Error(
-            response.data?.message || "حدث خطأ أثناء تحديث إعدادات الأمان"
+            response.data?.message || "حدث خطأ أثناء تحديث إعدادات الأمان",
           );
         }
       } else if (profile?.two_factor_auth !== formData.twoFactorAuth) {
@@ -364,7 +364,7 @@ export default function ProfilePage() {
 
       const response = await api.put(
         "/api/user/notification-settings",
-        notificationData
+        notificationData,
       );
 
       if (response.data && response.data.success) {
@@ -384,7 +384,7 @@ export default function ProfilePage() {
         });
       } else {
         throw new Error(
-          response.data?.message || "حدث خطأ أثناء تحديث إعدادات الإشعارات"
+          response.data?.message || "حدث خطأ أثناء تحديث إعدادات الإشعارات",
         );
       }
     } catch (error: any) {
@@ -463,7 +463,7 @@ export default function ProfilePage() {
             </h2>
             <button
               onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-xl text-white hover:scale-105 transition-all duration-300"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary rounded-xl text-primary-foreground hover:scale-105 transition-all duration-300"
             >
               إعادة تحميل الصفحة
             </button>
@@ -486,8 +486,8 @@ export default function ProfilePage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary rounded-xl">
-                <User className="w-6 h-6 text-white" />
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <User className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
@@ -503,8 +503,8 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 backdrop-blur-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-white" />
+                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                    <User className="w-8 h-8" />
                   </div>
                   <div>
                     <h3 className="font-bold text-foreground text-lg">
@@ -528,7 +528,7 @@ export default function ProfilePage() {
                       "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
                       roleConfig.bg,
                       roleConfig.border,
-                      roleConfig.color
+                      roleConfig.color,
                     )}
                   >
                     {roleConfig.name}
@@ -538,7 +538,7 @@ export default function ProfilePage() {
                       "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
                       profile.is_active
                         ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
-                        : "bg-rose-500/20 border-rose-500/30 text-rose-400"
+                        : "bg-rose-500/20 border-rose-500/30 text-rose-400",
                     )}
                   >
                     {profile.is_active ? "مفعل ✅" : "غير مفعل ❌"}
@@ -619,13 +619,13 @@ export default function ProfilePage() {
                       "w-full p-4 rounded-xl border transition-all duration-300 text-right flex items-center gap-3 group",
                       isActive
                         ? `bg-${tab.color}-500/20 border-${tab.color}-500/30 text-${tab.color}-300 shadow-lg`
-                        : "bg-border/30 border-border text-foreground/70 hover:bg-border/70 hover:border-border"
+                        : "bg-border/30 border-border text-foreground/70 hover:bg-border/70 hover:border-border",
                     )}
                   >
                     <div
                       className={cn(
                         "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
-                        isActive ? `bg-${tab.color}-500/20` : "bg-border/30"
+                        isActive ? `bg-${tab.color}-500/20` : "bg-border/30",
                       )}
                     >
                       <TabIcon
@@ -633,7 +633,7 @@ export default function ProfilePage() {
                           "w-5 h-5",
                           isActive
                             ? `text-${tab.color}-400`
-                            : "text-foreground/70"
+                            : "text-foreground/70",
                         )}
                       />
                     </div>
@@ -691,7 +691,7 @@ export default function ProfilePage() {
                       "p-4 rounded-xl border backdrop-blur-sm flex items-center gap-3",
                       tabStatus.personal.status === "success"
                         ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/20 border-rose-500/30 text-rose-300"
+                        : "bg-rose-500/20 border-rose-500/30 text-rose-300",
                     )}
                   >
                     {tabStatus.personal.status === "success" ? (
@@ -854,7 +854,7 @@ export default function ProfilePage() {
                         "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
                         submitting
                           ? "bg-border text-foreground/70 cursor-not-allowed"
-                          : "bg-primary text-white hover:bg-primary/90 hover:scale-105"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105",
                       )}
                     >
                       {submitting ? (
@@ -883,8 +883,8 @@ export default function ProfilePage() {
                       tabStatus.security.status === "success"
                         ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
                         : tabStatus.security.status === "info"
-                        ? "bg-blue-500/20 border-blue-500/30 text-blue-300"
-                        : "bg-rose-500/20 border-rose-500/30 text-rose-300"
+                          ? "bg-blue-500/20 border-blue-500/30 text-blue-300"
+                          : "bg-rose-500/20 border-rose-500/30 text-rose-300",
                     )}
                   >
                     {tabStatus.security.status === "success" ? (
@@ -1008,7 +1008,7 @@ export default function ProfilePage() {
                         onChange={(e) =>
                           handleCheckboxChange(
                             "twoFactorAuth",
-                            e.target.checked
+                            e.target.checked,
                           )
                         }
                         className="mt-1"
@@ -1036,7 +1036,7 @@ export default function ProfilePage() {
                         "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
                         submitting
                           ? "bg-border text-foreground/70 cursor-not-allowed"
-                          : "bg-secondary text-white hover:bg-secondary/90 hover:scale-105"
+                          : "bg-secondary text-white hover:bg-secondary/90 hover:scale-105",
                       )}
                     >
                       {submitting ? (
@@ -1064,7 +1064,7 @@ export default function ProfilePage() {
                       "p-4 rounded-xl border backdrop-blur-sm flex items-center gap-3",
                       tabStatus.notifications.status === "success"
                         ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/20 border-rose-500/30 text-rose-300"
+                        : "bg-rose-500/20 border-rose-500/30 text-rose-300",
                     )}
                   >
                     {tabStatus.notifications.status === "success" ? (
@@ -1145,7 +1145,7 @@ export default function ProfilePage() {
                         "flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300",
                         submitting
                           ? "bg-border text-foreground/70 cursor-not-allowed"
-                          : "bg-secondary text-white hover:bg-secondary/90 hover:scale-105"
+                          : "bg-secondary text-white hover:bg-secondary/90 hover:scale-105",
                       )}
                     >
                       {submitting ? (

@@ -553,6 +553,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
 
         // AI Toggle
         Route::post('/ai/toggle', [DealerAiController::class, 'toggle']);
+        Route::get('/ai/recommendations', [DealerAiController::class, 'recommendations']);
 
         // Watchlists
         Route::prefix('watchlists')->group(function () {
