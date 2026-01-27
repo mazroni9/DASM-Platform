@@ -188,6 +188,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'owner_id' => $super_admin->id,
         ]);
 
+        app(PermissionRegistrar::class)->setPermissionsTeamId($platform_org->id);
+
         foreach ($permissionsByModule as $module => $permissions) {
             foreach ($permissions as $permission) {
                 Permission::firstOrCreate(
