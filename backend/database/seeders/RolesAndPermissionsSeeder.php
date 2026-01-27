@@ -9,6 +9,8 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Hash;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -94,6 +96,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 ['name' => 'auctions.archive', 'display_name' => 'أرشفة المزادات'],
                 ['name' => 'auctions.manage_status', 'display_name' => 'إدارة حالة المزادات'],
             ],
+            'auction_tests' => [
+                ['name' => 'auction_tests.view', 'display_name' => 'عرض اختبارات المزادات'],
+                ['name' => 'auction_tests.view_details', 'display_name' => 'عرض تفاصيل اختبارات المزادات'],
+                ['name' => 'auction_tests.run', 'display_name' => 'تشغيل اختبارات المزادات'],
+                ['name' => 'auction_tests.run_all', 'display_name' => 'تشغيل جميع اختبارات المزادات'],
+                ['name' => 'auction_tests.delete', 'display_name' => 'حذف نتائج اختبارات المزادات'],
+            ],
 
             // ** Sessions & Live Streaming **
             'sessions' => [
@@ -138,12 +147,44 @@ class RolesAndPermissionsSeeder extends Seeder
         ];
 
         // Create permissions
-        $super_admin = User::where('type','super_admin')->first();
-        $platform_org =  Organization::firstOrCreate([
+        // Check which column exists (type or role) and find or create super_admin
+        $columnName = Schema::hasColumn('users', 'type') ? 'type' : 'role';
+
+        $super_admin = User::where($columnName, 'super_admin')->first();
+
+        // Create super_admin user if doesn't exist
+        if (!$super_admin) {
+            $userData = [
+                'first_name' => 'Super',
+                'last_name' => 'Admin',
+                'email' => 'superadmin@dasm.platform',
+                'phone' => '0000000000',
+                'password_hash' => Hash::make('superadmin123'), // Temporary password - should be changed
+                $columnName => 'super_admin',
+            ];
+
+            // Add optional fields if they exist
+            if (Schema::hasColumn('users', 'email_verified_at')) {
+                $userData['email_verified_at'] = now();
+            }
+            if (Schema::hasColumn('users', 'is_active')) {
+                $userData['is_active'] = true;
+            }
+            if (Schema::hasColumn('users', 'status')) {
+                $userData['status'] = 'active';
+            }
+
+            $super_admin = User::create($userData);
+            echo "Created super_admin user with ID: {$super_admin->id}\n";
+        }
+
+        // Create platform organization
+        $platform_org = Organization::firstOrCreate([
             'name' => 'DASMe Platform',
             'slug' => 'dasm-e-platform',
             'type' => OrganizationType::PLATFORM,
             'status' => 'active',
+        ], [
             'owner_id' => $super_admin->id,
         ]);
 
@@ -160,7 +201,14 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // Create super_admin role
-        $super_admin = User::where('type','super_admin')->first();
+        // Check which column exists and find super_admin user
+        if (!$super_admin) {
+            if (Schema::hasColumn('users', 'type')) {
+                $super_admin = User::where('type', 'super_admin')->first();
+            } elseif (Schema::hasColumn('users', 'role')) {
+                $super_admin = User::where('role', 'super_admin')->first();
+            }
+        }
 
         $superAdminRole = Role::updateOrCreate(
             ['name' => 'super_admin', 'guard_name' => 'sanctum'],
@@ -174,7 +222,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create additional roles with Arabic display names and descriptions
         $adminRole = Role::updateOrCreate(
-            ['name' => 'admin', 'guard_name' => 'sanctum','organization_id' => $platform_org->id ],
+            ['name' => 'admin', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
             [
                 'display_name' => 'مدير',
                 'description' => 'مدير النظام مع صلاحيات محدودة'
@@ -193,10 +241,48 @@ class RolesAndPermissionsSeeder extends Seeder
             'sessions.view_details',
             'organizations.view',
             'organizations.view_details',
+            // Auction tests permissions
+            'auction_tests.view',
+            'auction_tests.view_details',
+            'auction_tests.run',
+            'auction_tests.run_all',
+            'auction_tests.delete',
         ]);
 
+        // Create admin user for testing
+        $adminUser = User::where('email', 'admin@dasm.platform')->first();
+        if (!$adminUser) {
+            $adminUserData = [
+                'first_name' => 'Admin',
+                'last_name' => 'User',
+                'email' => 'admin@dasm.platform',
+                'phone' => '0000000001',
+                'password_hash' => Hash::make('admin123'),
+                $columnName => 'admin',
+            ];
+
+            if (Schema::hasColumn('users', 'email_verified_at')) {
+                $adminUserData['email_verified_at'] = now();
+            }
+            if (Schema::hasColumn('users', 'is_active')) {
+                $adminUserData['is_active'] = true;
+            }
+            if (Schema::hasColumn('users', 'status')) {
+                $adminUserData['status'] = 'active';
+            }
+
+            $adminUser = User::create($adminUserData);
+            $adminUser->assignRole($adminRole);
+            echo "Created admin user with ID: {$adminUser->id}\n";
+        } else {
+            // Ensure admin user has the role
+            if (!$adminUser->hasRole('admin')) {
+                $adminUser->assignRole($adminRole);
+            }
+        }
+
         $moderatorRole = Role::updateOrCreate(
-            ['name' => 'moderator', 'guard_name' => 'sanctum','organization_id' => $platform_org->id],
+            ['name' => 'moderator', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
             [
                 'display_name' => 'مشرف',
                 'description' => 'مشرف على المزادات والمستخدمين'
@@ -226,7 +312,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'cars.view',
             'cars.view_details',
         ]);
-        
-       
+
+
     }
 }

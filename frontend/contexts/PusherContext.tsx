@@ -39,9 +39,10 @@ export function PusherProvider({ children }: PusherProviderProps) {
 
   // Initialize Pusher connection
   useEffect(() => {
-    if (!PUSHER_KEY) {
-      console.warn("[PusherContext] Missing PUSHER_APP_KEY");
-      setConnectionError("مفتاح Pusher غير موجود");
+    // Check if key is missing or is a placeholder
+    if (!PUSHER_KEY || PUSHER_KEY.includes('your_pusher') || PUSHER_KEY === '') {
+      console.warn("[PusherContext] Missing or invalid PUSHER_APP_KEY. Pusher will not be initialized.");
+      setConnectionError(null); // Don't show error, just skip initialization
       return;
     }
 
