@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             CommissionTierSeeder::class,
             SubscriptionPlanSeeder::class,
             AreaSeeder::class,
+            AuctionTestDataSeeder::class, // بيانات الاختبار
         ]);
     }
 }

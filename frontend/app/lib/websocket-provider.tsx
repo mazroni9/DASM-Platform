@@ -139,9 +139,10 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
   // WebSocket connection via Pusher
   useEffect(() => {
-    if (!PUSHER_KEY) {
-      console.warn("[WebSocketProvider] Missing PUSHER_APP_KEY");
-      setConnectionError("مفتاح الاتصال غير موجود");
+    // Check if key is missing or is a placeholder
+    if (!PUSHER_KEY || PUSHER_KEY.includes('your_pusher') || PUSHER_KEY === '') {
+      console.warn("[WebSocketProvider] Missing or invalid PUSHER_APP_KEY. Pusher will not be initialized.");
+      setConnectionError(null);
       return;
     }
 

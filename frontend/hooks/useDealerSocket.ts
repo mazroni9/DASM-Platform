@@ -35,6 +35,12 @@ export function useDealerSocket({
   const initPusher = useCallback(() => {
     if (pusherRef.current) return;
 
+    // Check if key is missing or is a placeholder
+    if (!PUSHER_KEY || PUSHER_KEY.includes('your_pusher') || PUSHER_KEY === '') {
+      console.warn("[DealerSocket] Missing or invalid PUSHER_KEY. Pusher will not be initialized.");
+      return;
+    }
+
     const pusher = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
       authEndpoint: "/api/broadcasting/auth",

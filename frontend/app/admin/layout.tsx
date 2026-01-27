@@ -27,6 +27,7 @@ import {
   UserCog,
   DollarSign,
   Tags,
+  TestTube,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -227,6 +228,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/activity-logs",
       icon: FileText,
       permission: "activity_logs.view",
+    },
+    {
+      name: "اختبارات المزادات",
+      href: "/admin/auction-tests",
+      icon: TestTube,
+      permission: "auction_tests.view",
     },
 
     {

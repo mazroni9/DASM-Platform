@@ -12,11 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Check which column exists (role or type)
+        $columnName = 'role';
+        if (Schema::hasColumn('users', 'type') && !Schema::hasColumn('users', 'role')) {
+            $columnName = 'type';
+        }
+
         // Drop the existing role constraint
         DB::statement("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;");
 
         // Add the updated role constraint with new roles including super_admin
-        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text = ANY (ARRAY['admin'::character varying, 'dealer'::character varying, 'user'::character varying, 'moderator'::character varying, 'venue_owner'::character varying, 'investor'::character varying, 'super_admin'::character varying]::text[]));");
+        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK ({$columnName}::text = ANY (ARRAY['admin'::character varying, 'dealer'::character varying, 'user'::character varying, 'moderator'::character varying, 'venue_owner'::character varying, 'investor'::character varying, 'super_admin'::character varying]::text[]));");
     }
 
     /**
@@ -24,10 +30,16 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Check which column exists (role or type)
+        $columnName = 'role';
+        if (Schema::hasColumn('users', 'type') && !Schema::hasColumn('users', 'role')) {
+            $columnName = 'type';
+        }
+
         // Drop the updated role constraint
         DB::statement("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;");
 
         // Restore the previous role constraint (without super_admin)
-        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text = ANY (ARRAY['admin'::character varying, 'dealer'::character varying, 'user'::character varying, 'moderator'::character varying, 'venue_owner'::character varying, 'investor'::character varying]::text[]));");
+        DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK ({$columnName}::text = ANY (ARRAY['admin'::character varying, 'dealer'::character varying, 'user'::character varying, 'moderator'::character varying, 'venue_owner'::character varying, 'investor'::character varying]::text[]));");
     }
 };
