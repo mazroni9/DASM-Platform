@@ -25,7 +25,6 @@ export function useTestWebSocket(): UseTestWebSocketReturn {
 
     const pusher = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
-      //forceTLS: true,
     });
 
     const channel = pusher.subscribe("admin.auction-tests");
