@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useEffect, useState, useCallback } from "react";
 import Pusher from "pusher-js";
 import type { TestResult } from "../types";
@@ -7,6 +8,17 @@ const PUSHER_CLUSTER =
   process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
   process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER ||
   "ap2";
+=======
+import { useEffect, useState, useCallback } from 'react';
+import Pusher from 'pusher-js';
+import type { TestResult } from '../types';
+
+const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || '';
+const PUSHER_CLUSTER =
+  process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
+  process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER ||
+  'ap2';
+>>>>>>> e7da2df1 (fix conflict)
 
 interface UseTestWebSocketReturn {
   connected: boolean;
