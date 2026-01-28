@@ -4,9 +4,10 @@
 import { useEffect, useRef, useCallback } from "react";
 import Pusher from "pusher-js";
 import { useDealerStore, AiRecommendation } from "@/store/dealerStore";
+import api from "@/lib/axios";
 
-const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY || "";
-const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "eu";
+const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || "";
+const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER || "eu";
 
 interface UseDealerSocketOptions {
   userId: number;
@@ -33,17 +34,13 @@ export function useDealerSocket({
 
   // Initialize Pusher
   const initPusher = useCallback(() => {
+    
     if (pusherRef.current) return;
 
-    // Check if key is missing or is a placeholder
-    if (!PUSHER_KEY || PUSHER_KEY.includes('your_pusher') || PUSHER_KEY === '') {
-      console.warn("[DealerSocket] Missing or invalid PUSHER_KEY. Pusher will not be initialized.");
-      return;
-    }
-
+    
     const pusher = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
-      authEndpoint: "/api/broadcasting/auth",
+      authEndpoint: `${process.env.NEXT_PUBLIC_API_URL || ""}/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -133,7 +130,7 @@ export function useDealerSocket({
         pusher.unsubscribe(`auction.${auctionId}`);
       };
     },
-    [updateAuctionPrice]
+    [updateAuctionPrice],
   );
 
   // Latency ping - Real measurement using API
@@ -142,22 +139,25 @@ export function useDealerSocket({
 
     pingIntervalRef.current = setInterval(async () => {
       const pusher = pusherRef.current;
-      if (pusher?.connection.state === "connected") {
-        const start = performance.now();
-        try {
-          // Simple ping to measure round-trip time
-          await fetch("/api/health", {
-            method: "HEAD",
-            cache: "no-store",
-          });
-          const latency = Math.round(performance.now() - start);
-          setConnectionStatus(true, latency);
-        } catch {
-          // If ping fails, still mark as connected but with unknown latency
-          setConnectionStatus(true, -1);
+      const isSocketConnected = pusher?.connection.state === "connected";
+
+      const start = performance.now();
+      try {
+        // Ping API to measure latency
+        await api.head("/api/_diag/health");
+        const latency = Math.round(performance.now() - start);
+        setConnectionStatus(isSocketConnected, latency);
+
+        if (!isSocketConnected) {
+          console.warn(
+            "[Connection] Socket not connected, but API is reachable. Latency:",
+            latency,
+          );
         }
-      } else {
-        setConnectionStatus(false, 0);
+      } catch (err) {
+        // API unreachable
+        console.error("[Connection] Ping failed");
+        setConnectionStatus(false, -1);
       }
     }, 5000);
   }, [setConnectionStatus]);
