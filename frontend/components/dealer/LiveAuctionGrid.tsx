@@ -2,30 +2,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Clock, TrendingUp, Gavel, Flame, SaudiRiyal } from "lucide-react";
 import { useDealerStore, Auction } from "@/store/dealerStore";
 import { cn } from "@/lib/utils";
 
-interface LiveAuctionGridProps {
-  onBid: (auctionId: number, amount: number) => void;
-}
-
-export default function LiveAuctionGrid({ onBid }: LiveAuctionGridProps) {
-  const { activeAuctions, wallet, optimisticBid } = useDealerStore();
-
-  const handleQuickBid = (auction: Auction) => {
-    const increment = Math.max(auction.current_bid * 0.01, 100);
-    const newAmount = Math.ceil(auction.current_bid + increment);
-
-    onBid(auction.id, newAmount);
-    // if (wallet.availableBalance >= newAmount) {
-    //   // Optimistic update
-    //   optimisticBid(auction.id, newAmount);
-    // } else {
-    //   alert("رصيد غير كافي");
-    // }
-  };
+export default function LiveAuctionGrid() {
+  const { activeAuctions } = useDealerStore();
 
   const getTimeRemaining = (endTime: string) => {
     const end = new Date(endTime).getTime();
@@ -70,7 +54,7 @@ export default function LiveAuctionGrid({ onBid }: LiveAuctionGridProps) {
             "relative rounded-xl border overflow-hidden transition-all duration-300",
             isEndingSoon(auction.end_time)
               ? "bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/30"
-              : "bg-card border-border hover:border-primary/30"
+              : "bg-card border-border hover:border-primary/30",
           )}
         >
           {/* Hot indicator */}
@@ -125,24 +109,20 @@ export default function LiveAuctionGrid({ onBid }: LiveAuctionGridProps) {
                   animate={{ scale: 1, color: "inherit" }}
                   className="text-lg font-bold text-primary"
                 >
-                  {auction.current_bid?.toLocaleString() || 0} <SaudiRiyal/>
+                  {auction.current_bid?.toLocaleString() || 0} <SaudiRiyal />
                 </motion.p>
               </div>
 
-              {/* Quick Bid Button */}
-              <button
-                onClick={() => handleQuickBid(auction)}
-               // disabled={wallet.availableBalance < auction.current_bid * 1.01}
+              {/* Details Link */}
+              <Link
+                href={`/carDetails/${auction.car?.id || auction.car_id}`}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all bg-primary text-primary-foreground hover:bg-primary/90",
-                  // wallet.availableBalance >= auction.current_bid * 1.01
-                  //   ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  //   : "bg-foreground/10 text-foreground/40 cursor-not-allowed"
                 )}
               >
                 <TrendingUp className="w-4 h-4" />
-                <span>مزايدة سريعة</span>
-              </button>
+                <span>عرض التفاصيل</span>
+              </Link>
             </div>
           </div>
         </motion.div>

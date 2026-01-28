@@ -75,7 +75,7 @@ use App\Http\Controllers\Exhibitor\AnalyticsController as ExhibitorAnalyticsCont
 // ========= Dealer Controllers =========
 use App\Http\Controllers\Dealer\DashboardController as DealerDashboardController;
 use App\Http\Controllers\Dealer\WalletController as DealerWalletController;
-use App\Http\Controllers\Dealer\BidController as DealerBidController;
+
 use App\Http\Controllers\Dealer\AiController as DealerAiController;
 use App\Http\Controllers\Dealer\WatchlistController as DealerWatchlistController;
 
@@ -548,8 +548,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
         // Wallet
         Route::get('/wallet/transactions', [DealerWalletController::class, 'transactions']);
 
-        // Bidding
-        Route::post('/bid', [DealerBidController::class, 'placeBid']);
+
 
         // AI Toggle
         Route::post('/ai/toggle', [DealerAiController::class, 'toggle']);

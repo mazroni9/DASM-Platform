@@ -166,28 +166,6 @@ export default function DealerDashboardPage() {
     fetchRecommendations();
   }, [aiEnabled, token, addAiRecommendation, clearAiRecommendations]);
 
-  // Handle bid placement
-  const handleBid = async (auctionId: number, amount: number) => {
-    try {
-      const response = await api.post("/api/dealer/bid", {
-        auction_id: auctionId,
-        amount,
-      });
-
-      const data = response.data;
-
-      if (data.status !== "success") {
-        alert(data.message || "فشل في تقديم المزايدة");
-        // Refresh to get correct state
-        fetchDashboardInit();
-      }
-    } catch (error) {
-      console.error("Bid failed:", error);
-      alert("حدث خطأ أثناء تقديم المزايدة");
-      fetchDashboardInit();
-    }
-  };
-
   const displayName =
     userName ||
     (user
@@ -310,7 +288,7 @@ export default function DealerDashboardPage() {
                 <Activity className="w-5 h-5 text-primary" />
                 <h3 className="font-bold text-foreground">المزادات الحية</h3>
               </div>
-              <LiveAuctionGrid onBid={handleBid} />
+              <LiveAuctionGrid />
             </div>
           </div>
         </motion.div>
