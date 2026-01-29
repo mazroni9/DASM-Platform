@@ -119,8 +119,14 @@ export default function BlogPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const postsAbortRef = useRef<AbortController | null>(null);
+  const didSearchMount = useRef(false);
 
   const canLoadMore = useMemo(() => page < lastPage && posts.length < total, [page, lastPage, posts.length, total]);
+
+  const activeCategoryName = useMemo(() => {
+    if (activeCategory === "all") return "الكل";
+    return categories.find((c) => c.slug === activeCategory)?.name || "—";
+  }, [activeCategory, categories]);
 
   const fetchCategories = async () => {
     try {
@@ -198,15 +204,18 @@ export default function BlogPage() {
     }
   };
 
-  // initial + category change
+  // ✅ Fetch categories مرة واحدة فقط
   useEffect(() => {
-    // reset list state
+    fetchCategories();
+  }, []);
+
+  // ✅ initial + category change (بدون إعادة جلب التصنيفات)
+  useEffect(() => {
     setPage(1);
     setPosts([]);
     setTotal(0);
     setLastPage(1);
 
-    fetchCategories();
     fetchPosts({ nextPage: 1, append: false });
 
     return () => {
@@ -215,8 +224,13 @@ export default function BlogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory]);
 
-  // search debounce
+  // ✅ search debounce (تخطي أول render لتجنب طلبين)
   useEffect(() => {
+    if (!didSearchMount.current) {
+      didSearchMount.current = true;
+      return;
+    }
+
     const t = setTimeout(() => {
       setPage(1);
       setPosts([]);
@@ -240,73 +254,86 @@ export default function BlogPage() {
 
   return (
     <>
-      {/* Hero */}
+      {/* ✅ Compact Header (بديل الـHero الكبير + دمج التصنيفات) */}
       <section className="bg-background border-b border-border rtl">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-12 md:py-16">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm font-extrabold">مدونة DASMe</span>
-            </div>
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6 md:py-8">
+          <div className="rounded-3xl border border-border bg-gradient-to-b from-primary/5 via-background to-background p-5 md:p-7">
+            {/* Top row */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-extrabold">مدونة DASMe</span>
+              </div>
 
-            <h1 className="text-3xl md:text-5xl font-extrabold text-primary mt-5">أحدث المقالات</h1>
-            <p className="text-foreground/70 max-w-2xl mx-auto mt-4">تصفّح حسب التصنيف، وابحث بسهولة عن المقال اللي يهمّك.</p>
-
-            <div className="max-w-3xl mx-auto mt-8">
-              <div className="relative">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/60" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="ابحث بعنوان المقال..."
-                  className="w-full bg-card border border-border rounded-2xl py-3 pr-12 pl-4 text-foreground placeholder:text-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+              <div className="text-xs font-bold text-foreground/60">
+                {loading ? "..." : `${total} مقالة`} • {activeCategoryName}
               </div>
             </div>
 
-            {errorMsg ? (
-              <div className="mt-6 max-w-3xl mx-auto rounded-2xl border border-red-500/20 bg-red-500/10 text-red-500 px-4 py-3 text-sm font-semibold">
-                {errorMsg}
+            {/* Title + Search */}
+            <div className="mt-4 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="max-w-2xl">
+                <h1 className="text-2xl md:text-4xl font-extrabold text-primary leading-tight">أحدث المقالات</h1>
+                <p className="text-foreground/70 mt-2 text-sm md:text-base">
+                  تصفّح حسب التصنيف أو ابحث بسرعة للوصول للمقال المناسب.
+                </p>
               </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
 
-      {/* Categories */}
-      <section className="bg-background border-b border-border rtl">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Tags className="w-4 h-4 text-primary" />
-            <span className="text-sm font-extrabold text-foreground">التصنيفات</span>
-          </div>
+              <div className="w-full md:max-w-md">
+                <div className="relative">
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/60" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="ابحث بعنوان المقال..."
+                    className="w-full bg-card border border-border rounded-2xl py-3 pr-12 pl-4 text-foreground placeholder:text-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveCategory("all")}
-              className={`px-4 py-2 rounded-full text-sm font-bold border transition ${
-                activeCategory === "all"
-                  ? "bg-primary text-white border-primary"
-                  : "bg-card text-foreground/80 border-border hover:bg-border/60"
-              }`}
-            >
-              الكل
-            </button>
+            {/* Categories (Horizontal / compact) */}
+            <div className="mt-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Tags className="w-4 h-4 text-primary" />
+                <span className="text-sm font-extrabold text-foreground">التصنيفات</span>
+                <span className="text-xs text-foreground/60 mr-1">— اختر تصنيف لتصفية النتائج</span>
+              </div>
 
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActiveCategory(c.slug)}
-                className={`px-4 py-2 rounded-full text-sm font-bold border transition ${
-                  activeCategory === c.slug
-                    ? "bg-primary text-white border-primary"
-                    : "bg-card text-foreground/80 border-border hover:bg-border/60"
-                }`}
-              >
-                {c.name}
-                {typeof c.posts_count === "number" ? <span className="mr-2 text-xs opacity-70">({c.posts_count})</span> : null}
-              </button>
-            ))}
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                <button
+                  onClick={() => setActiveCategory("all")}
+                  className={`whitespace-nowrap shrink-0 px-4 py-2 rounded-full text-sm font-bold border transition ${
+                    activeCategory === "all"
+                      ? "bg-primary text-white border-primary"
+                      : "bg-card text-foreground/80 border-border hover:bg-border/60"
+                  }`}
+                >
+                  الكل
+                </button>
+
+                {categories.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setActiveCategory(c.slug)}
+                    className={`whitespace-nowrap shrink-0 px-4 py-2 rounded-full text-sm font-bold border transition ${
+                      activeCategory === c.slug
+                        ? "bg-primary text-white border-primary"
+                        : "bg-card text-foreground/80 border-border hover:bg-border/60"
+                    }`}
+                  >
+                    {c.name}
+                    {typeof c.posts_count === "number" ? <span className="mr-2 text-xs opacity-70">({c.posts_count})</span> : null}
+                  </button>
+                ))}
+              </div>
+
+              {errorMsg ? (
+                <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-500 px-4 py-3 text-sm font-semibold">
+                  {errorMsg}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>

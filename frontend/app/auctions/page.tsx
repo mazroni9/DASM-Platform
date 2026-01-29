@@ -207,7 +207,7 @@ export default function AuctionsPage() {
     },
     {
       // ✅ المطلوب: رجّع الاسم VIP (والـ slug يفضل companiesCars)
-      name: "سوق vip",
+      name: "سوق سيارات الشركات",
       slug: "auctions-2car/companiesCars",
       description: "سيارات شركات بأسعار تصفية مخزون",
       icon: Building2,

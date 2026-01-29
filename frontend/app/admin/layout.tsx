@@ -28,6 +28,7 @@ import {
   DollarSign,
   Tags,
   TestTube,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -161,11 +162,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "#",
       type: "header",
       icon: Calendar,
-      permissions: [
-        "sessions.view",
-        "live_streams.view",
-        "youtube_channels.view",
-      ],
+      permissions: ["sessions.view", "live_streams.view", "youtube_channels.view"],
     },
     {
       name: "إدارة الجلسات",
@@ -192,21 +189,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "#",
       type: "header",
       icon: FileText,
-      // لو عندك permissions للمدونة ضيفهم هنا (اختياري)
       // permissions: ["blog_posts.view", "blog_categories.view"],
     },
     {
       name: "المقالات",
       href: "/admin/blog/posts",
       icon: FileText,
-      // لو عندك permission فعلي حطه هنا (اختياري)
       // permission: "blog_posts.view",
     },
     {
       name: "التصنيفات",
       href: "/admin/blog/categories",
       icon: Tags,
-      // لو عندك permission فعلي حطه هنا (اختياري)
       // permission: "blog_categories.view",
     },
 
@@ -241,21 +235,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "#",
       type: "header",
       icon: BarChart,
-      // Fallback permissions since settings/reports might be missing in seeder
       permissions: ["activity_logs.view", "users.view"],
     },
+
+    // ✅ NEW TAB: Similar Price Analysis
+    {
+      name: "تحليل الأسعار المشابهة",
+      href: "/similar-price-analysis",
+      icon: BarChart3,
+      // لو عندك Permission لاحقاً:
+      // permission: "reports.view",
+    },
+
     {
       name: "التقارير",
       href: "/admin/reports",
       icon: BarChart,
       permission: "activity_logs.view",
-    }, // Placeholder
+    },
     {
       name: "الإعدادات",
       href: "/admin/settings",
       icon: Settings,
       permission: "users.view",
-    }, // Placeholder
+    },
   ];
 
   const isActive = (path: string) => {
@@ -305,11 +308,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     if (item.type === "header") {
                       if (item.permissions && !canAny(item.permissions))
                         return null;
-                    } else if (item.permission) {
-                      if (!can(item.permission)) return null;
+                    } else if ((item as any).permission) {
+                      if (!can((item as any).permission)) return null;
                     }
 
-                    const Icon = item.icon;
+                    const Icon = item.icon as any;
                     const active = isActive(item.href);
 
                     if (item.type && item.type === "header") {
@@ -318,11 +321,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                           key={item.name}
                           className="text-sm text-primary font-bold pb-1 pt-3 flex items-center"
                         >
-                          {" "}
                           <Icon
                             style={{ width: "1em", height: "1em" }}
                             className="ms-2 me-1"
-                          />{" "}
+                          />
                           {item.name}
                         </h3>
                       );
