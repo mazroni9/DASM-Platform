@@ -31,6 +31,10 @@ import {
   AlertCircle,
   Car,
   Clock,
+  Columns,
+  ChevronDown,
+  RotateCcw,
+  X,
 } from "lucide-react";
 
 type PaginationInfo = {
@@ -43,6 +47,36 @@ type PaginationInfo = {
 type CarCard = any;
 
 const MARKET_CATEGORY = "luxuryCars";
+
+// ================= التحكم بعدد الأعمدة (Layout) + حفظ =================
+const GRID_COLS_STORAGE_KEY = "luxuryCars_grid_cols_v1";
+const GRID_OPTIONS: Array<{ value: 1 | 2 | 3 | 4; label: string }> = [
+  { value: 1, label: "عمود واحد" },
+  { value: 2, label: "عمودان" },
+  { value: 3, label: "3 أعمدة" },
+  { value: 4, label: "4 أعمدة" },
+];
+
+function loadSavedGridCols(): 1 | 2 | 3 | 4 {
+  if (typeof window === "undefined") return 3;
+  try {
+    const raw = window.localStorage.getItem(GRID_COLS_STORAGE_KEY);
+    const n = Number(raw);
+    if (n === 1 || n === 2 || n === 3 || n === 4) return n;
+    return 3;
+  } catch {
+    return 3;
+  }
+}
+
+function saveGridCols(v: 1 | 2 | 3 | 4) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(GRID_COLS_STORAGE_KEY, String(v));
+  } catch {
+    // ignore
+  }
+}
 
 function toNumber(v: unknown, fallback = 0): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -134,6 +168,37 @@ export default function LuxuryCarsPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // ✅ Panel التحكم بالأعمدة (عدد أعمدة البطاقات) + حفظ
+  const [showColumns, setShowColumns] = useState(false);
+  const [gridCols, setGridCols] = useState<1 | 2 | 3 | 4>(() =>
+    loadSavedGridCols()
+  );
+
+  const setColsAndSave = (v: 1 | 2 | 3 | 4) => {
+    setGridCols(v);
+    saveGridCols(v);
+  };
+
+  const gridClassName = useMemo(() => {
+    switch (gridCols) {
+      case 1:
+        return "grid-cols-1";
+      case 2:
+        return "grid-cols-1 md:grid-cols-2";
+      case 3:
+        return "grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3";
+      case 4:
+        return "grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+      default:
+        return "grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3";
+    }
+  }, [gridCols]);
+
+  const resetColumns = () => {
+    setColsAndSave(3);
+    setShowColumns(false);
+  };
+
   const fetchCars = async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
@@ -186,15 +251,20 @@ export default function LuxuryCarsPage() {
   const pageDesc =
     "اكتشف مجموعة مختارة من السيارات الفاخرة المعروضة للمزايدة. يتم تحديث القائمة تلقائيًا حسب السيارات المتاحة.";
 
+  const onRefresh = () => {
+    const ctrl = new AbortController();
+    fetchCars(ctrl.signal);
+  };
+
   return (
     <div dir="rtl" className="min-h-screen bg-background text-foreground">
       {/* خلفية ناعمة */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 via-background to-background" />
       <div className="absolute inset-0 -z-10 opacity-40 [background:radial-gradient(70%_50%_at_50%_0%,hsl(var(--primary)/0.18),transparent_70%)]" />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-6">
         {/* Top bar */}
-        <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <LoadingLink
             href="/auctions"
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2 text-sm rounded-full border border-primary/20 bg-primary/10 hover:bg-primary/15"
@@ -203,17 +273,87 @@ export default function LuxuryCarsPage() {
             العودة إلى المزادات
           </LoadingLink>
 
-          <button
-            type="button"
-            onClick={() => fetchCars()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card hover:bg-muted transition"
-            aria-label="تحديث"
-            title="تحديث"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            <span className="text-xs">تحديث</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowColumns((v) => !v)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card hover:bg-muted transition"
+              title="التحكم بعدد الأعمدة"
+            >
+              <Columns className="w-4 h-4" />
+              <span className="text-xs">الأعمدة</span>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${
+                  showColumns ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={onRefresh}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card hover:bg-muted transition"
+              aria-label="تحديث"
+              title="تحديث"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <span className="text-xs">تحديث</span>
+            </button>
+          </div>
         </div>
+
+        {/* ✅ Panel التحكم بالأعمدة */}
+        {showColumns && (
+          <div className="bg-card/70 backdrop-blur-xl border border-border rounded-3xl p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm text-foreground/80">
+                اختر عدد الأعمدة لعرض بطاقات السيارات الفاخرة (يتم الحفظ تلقائيًا).
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={resetColumns}
+                  className="px-3 py-2 text-sm rounded-xl border border-border hover:bg-muted transition inline-flex items-center gap-2"
+                  title="إعادة افتراضي"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  افتراضي
+                </button>
+
+                <button
+                  onClick={() => setShowColumns(false)}
+                  className="px-3 py-2 text-sm rounded-xl border border-border hover:bg-muted transition inline-flex items-center gap-2"
+                  title="إغلاق"
+                >
+                  <X className="w-4 h-4" />
+                  إغلاق
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {GRID_OPTIONS.map((opt) => {
+                const active = gridCols === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setColsAndSave(opt.value);
+                      setShowColumns(false);
+                    }}
+                    className={`px-3 py-3 rounded-2xl border text-sm transition ${
+                      active
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border bg-background/60 hover:bg-muted text-foreground/80"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Header */}
         <div className="bg-card/70 backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-sm">
@@ -283,19 +423,17 @@ export default function LuxuryCarsPage() {
 
         {/* Alerts */}
         {error && (
-          <div className="mt-6 rounded-3xl border border-red-500/20 bg-red-500/10 p-5 flex items-start gap-3">
+          <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-5 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
             <div className="text-sm">
               <div className="font-semibold text-foreground">حدث خطأ</div>
               <div className="text-muted-foreground mt-1">{error}</div>
               <button
                 type="button"
-                onClick={() => fetchCars()}
+                onClick={onRefresh}
                 className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card hover:bg-muted transition text-xs"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                 إعادة المحاولة
               </button>
             </div>
@@ -303,8 +441,8 @@ export default function LuxuryCarsPage() {
         )}
 
         {/* Content */}
-        <div className="mt-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div>
+          <div className={`grid ${gridClassName} gap-8`}>
             {loading ? (
               Array.from({ length: 6 }).map((_, index) => (
                 <AuctionCard key={index} loading={true} />
@@ -346,7 +484,10 @@ export default function LuxuryCarsPage() {
                 color="primary"
                 renderItem={(item) => (
                   <PaginationItem
-                    slots={{ previous: NavigateNextIcon, next: NavigateBeforeIcon }}
+                    slots={{
+                      previous: NavigateNextIcon,
+                      next: NavigateBeforeIcon,
+                    }}
                     {...item}
                   />
                 )}

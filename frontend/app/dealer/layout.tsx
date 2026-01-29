@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Crown,
   Activity,
+  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
@@ -86,6 +87,15 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
       icon: ArrowRight,
       description: "سجل التحويلات المالية",
     },
+
+    // ✅ NEW TAB
+    {
+      name: "تحليل الأسعار المشابهة",
+      href: "/similar-price-analysis",
+      icon: TrendingUp,
+      description: "تحليل الأسعار المشابهة المشابهة",
+    },
+
     {
       name: "خدمات الشحن",
       href: "/dealer/shipping",
@@ -164,7 +174,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                         <div
                           className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110",
-                            action.color,
+                            action.color
                           )}
                         >
                           <Icon className="w-3 h-3" />
@@ -188,7 +198,8 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                     const isActive =
                       pathname === tab.href ||
                       (tab.href !== "/dealer/dashboard" &&
-                        pathname.startsWith(tab.href));
+                        pathname?.startsWith(tab.href + "/"));
+
                     const Icon = tab.icon;
 
                     return (
@@ -199,7 +210,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                           "group flex items-center gap-2 p-3 rounded-lg transition-all duration-300 border",
                           isActive
                             ? "bg-primary/10 border-primary/20 text-primary shadow-lg"
-                            : "bg-background/30 border-border text-foreground/70 hover:bg-border hover:border-border hover:text-foreground",
+                            : "bg-background/30 border-border text-foreground/70 hover:bg-border hover:border-border hover:text-foreground"
                         )}
                       >
                         <div
@@ -207,7 +218,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                             "p-1.5 rounded-md transition-all duration-300",
                             isActive
                               ? "bg-white/10"
-                              : "bg-border/30 group-hover:bg-background/10 group-hover:text-foreground",
+                              : "bg-border/30 group-hover:bg-background/10 group-hover:text-foreground"
                           )}
                         >
                           <Icon className="w-3 h-3" />

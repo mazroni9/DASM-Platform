@@ -4,38 +4,19 @@ import type { NextRequest } from "next/server";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
 
-// Role-based dashboard path mapping
 const ROLE_DASHBOARD_PATHS: Record<string, string> = {
   admin: "/admin",
   super_admin: "/admin",
+  moderator: "/admin",
+  employee: "/admin",
   venue_owner: "/exhibitor",
   dealer: "/dealer",
-  user: "/dashboard",
-  moderator: "/admin",
   investor: "/investor/dashboard",
+  user: "/dashboard",
 };
-
-function buildMiddlewareApiUrl(request: NextRequest): string {
-  const origin = API_BASE_URL
-    ? API_BASE_URL.replace(/\/$/, "")
-    : request.nextUrl.origin;
-
-  return `${origin}/api/middleware/user-role`;
-}
-
-function getReturnUrl(request: NextRequest): string {
-  const path = request.nextUrl.pathname;
-  const search = request.nextUrl.search;
-  return `${path}${search}`;
-}
 
 function isGuestPath(pathname: string): boolean {
   return pathname.startsWith("/auth/");
-}
-
-function redirectTo(request: NextRequest, path: string): NextResponse {
-  const url = new URL(path, request.url);
-  return NextResponse.redirect(url);
 }
 
 function isPublicAssetOrInternal(pathname: string): boolean {
@@ -48,111 +29,109 @@ function isPublicAssetOrInternal(pathname: string): boolean {
   );
 }
 
-export async function proxy(request: NextRequest) {
-  // Allow preflight
-  if (request.method === "OPTIONS") {
-    return NextResponse.next();
+function buildApiUrl(request: NextRequest, path: string): string {
+  const origin = API_BASE_URL
+    ? API_BASE_URL.replace(/\/$/, "")
+    : request.nextUrl.origin; // will use rewrites when hitting /api/*
+  return `${origin}${path}`;
+}
+
+function safeReturnUrl(request: NextRequest): string {
+  const { nextUrl } = request;
+  const pathname = nextUrl.pathname;
+
+  // لو احنا أصلاً على login.. متعملش nesting للـ returnUrl
+  if (pathname.startsWith("/auth/login")) {
+    return nextUrl.searchParams.get("returnUrl") || "/";
   }
+
+  const raw = `${nextUrl.pathname}${nextUrl.search}`;
+  // امنع ان returnUrl يبقى login نفسه
+  if (raw.startsWith("/auth/login")) return "/";
+  return raw;
+}
+
+function redirectToLogin(request: NextRequest): NextResponse {
+  const loginUrl = new URL("/auth/login", request.url);
+  loginUrl.searchParams.set("returnUrl", safeReturnUrl(request));
+  return NextResponse.redirect(loginUrl);
+}
+
+function normalizeRole(v: any): string {
+  return String(v ?? "").toLowerCase().trim();
+}
+
+export async function proxy(request: NextRequest) {
+  if (request.method === "OPTIONS") return NextResponse.next();
 
   const { pathname } = request.nextUrl;
 
-  // Ignore Next internals, API routes, and common public assets
-  if (isPublicAssetOrInternal(pathname)) {
-    return NextResponse.next();
-  }
+  if (isPublicAssetOrInternal(pathname)) return NextResponse.next();
 
-  // Ignore requests to files (e.g. .png, .css, .js, etc.)
   const hasFileExtension = /\.[^/]+$/.test(pathname);
-  if (hasFileExtension) {
-    return NextResponse.next();
-  }
+  if (hasFileExtension) return NextResponse.next();
 
-  // Check for the HttpOnly refresh token cookie
-  const refreshTokenCookie = request.cookies.get("refresh_token")?.value;
+  // ✅ اعتمد على access_token cookie (اللي بيتعمل من setTokenCookie)
+  const accessTokenCookie = request.cookies.get("access_token")?.value;
+  const accessToken = accessTokenCookie ? decodeURIComponent(accessTokenCookie) : "";
 
-  // If user is not logged in: allow guest pages, otherwise redirect to login
-  if (!refreshTokenCookie) {
-    if (!isGuestPath(pathname)) {
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("returnUrl", getReturnUrl(request));
-      return NextResponse.redirect(loginUrl);
-    }
+  // مفيش token => guest
+  if (!accessToken) {
+    // اسمح بصفحات auth فقط
+    if (!isGuestPath(pathname)) return redirectToLogin(request);
     return NextResponse.next();
   }
 
   try {
-    // Call the middleware-specific endpoint to get user role using the refresh token
-    const apiUrl = buildMiddlewareApiUrl(request);
+    // ✅ endpoint مؤكد إنه شغال بالـ Bearer عندك
+    const apiUrl = buildApiUrl(request, "/api/user/profile");
 
-    const response = await fetch(apiUrl, {
+    const resp = await fetch(apiUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Cookie: `refresh_token=${refreshTokenCookie}`,
+        Authorization: `Bearer ${accessToken}`,
       },
-      credentials: "include",
       cache: "no-store",
     });
 
-    if (response.ok) {
-      const userData = await response.json();
-      const userRole: string = userData?.type;
-      const correctDashboardPath = ROLE_DASHBOARD_PATHS[userRole] || "/";
-
-      // If logged-in user visits auth pages, redirect them to their dashboard
-      if (isGuestPath(pathname)) {
-        return redirectTo(request, correctDashboardPath);
+    if (!resp.ok) {
+      // token invalid/expired => روح login
+      if (!isGuestPath(pathname)) {
+        const r = redirectToLogin(request);
+        r.cookies.delete("access_token");
+        return r;
       }
-
-      // Role-based route protection:
-      // If user is inside any dashboard area but not their correct one => redirect
-      const currentPathRoot = pathname.split("/")[1];
-
-      const dashboardRoots = Array.from(
-        new Set(
-          Object.values(ROLE_DASHBOARD_PATHS)
-            .map((p) => p.split("/")[1])
-            .filter(Boolean)
-        )
-      );
-
-      if (dashboardRoots.includes(currentPathRoot)) {
-        if (!pathname.startsWith(correctDashboardPath)) {
-          if (correctDashboardPath !== "/" || pathname !== "/") {
-            return redirectTo(request, correctDashboardPath);
-          }
-        }
-      }
-
       return NextResponse.next();
     }
 
-    if (response.status === 401) {
-      // Refresh token is invalid or expired
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("returnUrl", getReturnUrl(request));
+    const payload = await resp.json();
+    const role = normalizeRole(payload?.data?.type || payload?.type);
+    const correctDashboard = ROLE_DASHBOARD_PATHS[role] || "/";
 
-      const redirectResponse = NextResponse.redirect(loginUrl);
-      redirectResponse.cookies.delete("refresh_token");
-      return redirectResponse;
+    // لو داخل وهو على auth pages => ودّيه داشبورد مناسب
+    if (isGuestPath(pathname)) {
+      return NextResponse.redirect(new URL(correctDashboard, request.url));
     }
 
-    // Other errors: log and fall through
-    console.error("Middleware API returned status:", response.status);
-  } catch (error) {
-    console.error("Middleware auth check failed:", error);
+    // حماية المسارات حسب الجذر
+    const currentRoot = pathname.split("/")[1];
+    const dashboardRoots = Array.from(
+      new Set(Object.values(ROLE_DASHBOARD_PATHS).map((p) => p.split("/")[1]).filter(Boolean))
+    );
 
-    // Fallback behavior if backend call fails:
-    // - Allow guest paths
-    // - For protected areas, redirect to login (safer)
-    if (!isGuestPath(pathname)) {
-      const loginUrl = new URL("/auth/login", request.url);
-      loginUrl.searchParams.set("returnUrl", getReturnUrl(request));
-      return NextResponse.redirect(loginUrl);
+    if (dashboardRoots.includes(currentRoot)) {
+      if (!pathname.startsWith(correctDashboard)) {
+        return NextResponse.redirect(new URL(correctDashboard, request.url));
+      }
     }
+
+    return NextResponse.next();
+  } catch (e) {
+    // لو فشل الاتصال بالباك: خليك آمن → مسارات محمية تروح login
+    if (!isGuestPath(pathname)) return redirectToLogin(request);
+    return NextResponse.next();
   }
-
-  return NextResponse.next();
 }
 
 export const config = {

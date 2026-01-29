@@ -1,154 +1,673 @@
-'use client';
+/**
+ * ==================================================
+ * ملف: frontend/app/auctions/page.tsx
+ * الغرض: صفحة عرض جميع أسواق المزادات
+ * ==================================================
+ */
 
-import React from 'react';
+"use client";
+
+import { useMemo, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
-import Image from 'next/image';
-import { ChevronRight, Car, Truck, Home, Bus } from 'lucide-react';
+import {
+  Car,
+  Truck,
+  Building2,
+  Stethoscope,
+  Printer,
+  Server,
+  Leaf,
+  Timer,
+  BellOff,
+  BadgeCheck,
+  Video,
+  Star,
+  Gem,
+  Sailboat,
+  Home,
+  Plane,
+  Watch,
+  Brush,
+  Smartphone,
+  Sofa,
+  PencilRuler,
+  Store,
+  ShoppingBag,
+  Gift,
+  Search,
+  ChevronRight,
+  Zap,
+  Crown,
+  TrendingUp,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 
-export default function CarAuctionsPage() {
-  const carMarkets = [
-    // الصف الأول
-    {
-      id: 'luxury',
-      title: 'سوق السيارات الفارهة',
-      description: 'سيارات فارهة مميزة بأسعار منافسة',
-      image: '/showroom.png',
-      // theme-aware overlay + card styles
-      color: 'bg-primary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-primary',
-      icon: Car,
-      path: '/auctions/auctions-2car/luxuryCars',
-    },
-    {
-      id: 'classic',
-      title: 'سوق السيارات الكلاسيكية',
-      description: 'سيارات كلاسيكية نادرة وقطع مميزة للهواة والمقتنين',
-      image: '/1970 Plum Crazy Dodge Dart Swinger.png',
-      color: 'bg-primary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-primary',
-      icon: Car,
-      path: '/auctions/auctions-2car/classic',
-    },
-    {
-      id: 'caravan',
-      title: 'سوق الكرافانات',
-      description: 'كرافانات ومنازل متنقلة لمحبي السفر والرحلات',
-      image: '/caravan.png',
-      color: 'bg-primary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-primary',
-      icon: Home,
-      path: '/auctions/auctions-2car/caravan',
-    },
+type AuctionCategory = "main" | "cars" | "quality" | "special" | "general" | "big";
 
-    // الصف الثاني — تم الفصل بين الشاحنات والحافلات، وحذف الحكومة + الشركات لتفادي 404
+type AuctionStats = {
+  users?: string;
+  success?: string;
+  items?: string;
+  rating?: string;
+  shops?: string;
+};
+
+type Auction = {
+  currentPage?: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: LucideIcon;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  category: AuctionCategory;
+  featured: boolean;
+  stats: AuctionStats;
+};
+
+type SectionTitleProps = {
+  title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+  subtitlePosition?: "above" | "below";
+};
+
+type AuctionCardProps = {
+  auction: Auction;
+  index: number;
+};
+
+export default function AuctionsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ✅ نخلي باقي الأقسام مخفية (زي ما هو)
+  const SHOW_NON_MAIN_MARKETS = false;
+
+  const auctionsMain: Auction[] = [
     {
-      id: 'trucks',
-      title: 'سوق الشاحنات',
-      description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة',
-      image: '/trucks.jpg',
-      color: 'bg-secondary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-secondary',
-      icon: Truck,
-      path: '/auctions/auctions-2car/trucks',
+      currentPage: "live_auction",
+      name: "الحراج المباشر",
+      slug: "auctions-1main/live-market",
+      description:
+        "بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة\nيبدأ من 4 عصراً إلى 7 مساءً",
+      icon: Video,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "main",
+      featured: true,
+      stats: { users: "2.5K+", success: "98%" },
     },
     {
-      id: 'buses',
-      title: 'سوق الحافلات',
-      description: 'حافلات بجاهزية عالية مع خيارات متنوعة',
-      image: '/buses.jpg',
-      color: 'bg-secondary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-secondary',
-      icon: Bus,
-      path: '/auctions/auctions-2car/buses',
+      currentPage: "instant_auction",
+      name: "السوق الفوري المباشر",
+      slug: "auctions-1main/instant",
+      description:
+        "مزادات بنظام المزايدات المفتوحة صعوداً وهبوطاً بحسب ما يراه المشتري لمصلحته\nيبدأ من 7 مساءً إلى 10 مساءً",
+      icon: Timer,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "main",
+      featured: true,
+      stats: { users: "1.8K+", success: "95%" },
+    },
+    {
+      currentPage: "late_auction",
+      name: "السوق المتأخر",
+      slug: "auctions-1main/silent",
+      description:
+        "مزاد مكمل للمزاد الفوري ولكن بدون بث ولا تظهر عروض المزايدين لبعضهم\nيبدأ من 10 مساءً إلى 4 عصراً اليوم التالي",
+      icon: BellOff,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "main",
+      featured: true,
+      stats: { users: "1.2K+", success: "92%" },
+    },
+    {
+      currentPage: "fixed_auction",
+      name: "السوق الثابت",
+      slug: "auctions-1main/fixed",
+      description: "فرصتك الأخيرة لصفقات سريعة. أعلى سعر يفوز عند انتهاء الوقت.",
+      icon: Timer,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "main",
+      featured: true,
+      stats: { users: "1.2K+", success: "92%" },
     },
   ];
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* رأس الصفحة */}
-      <div className="bg-card py-10 md:py-14 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          {/* زر العودة */}
-          <div className="mb-8">
-            <LoadingLink 
-              href="/auctions" 
-              className="inline-flex items-center text-foreground/80 hover:text-foreground transition-colors group backdrop-blur-sm"
-            >
-              <ChevronRight className="ml-2 rtl:rotate-180 transform group-hover:-translate-x-1 transition-transform" size={20} />
-              <span className="font-medium">العودة للسوق الرئيسي</span>
-            </LoadingLink>
+  // ✅ أسواق السيارات (المطلوب إظهارها)
+  const auctionsCar: Auction[] = [
+    {
+      name: "سوق السيارات الفارهة",
+      slug: "auctions-2car/luxuryCars",
+      description: "سيارات فارهة مميزة بأسعار منافسة",
+      icon: Car,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "cars",
+      featured: false,
+      stats: { items: "500+", rating: "4.8" },
+    },
+    {
+      name: "سوق السيارات الكلاسيكية",
+      slug: "auctions-2car/classic",
+      description: "سيارات كلاسيكية نادرة وقطع مميزة للهواة والمقتنين",
+      icon: Car,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "cars",
+      featured: false,
+      stats: { items: "150+", rating: "4.9" },
+    },
+    {
+      name: "سوق الكرافانات",
+      slug: "auctions-2car/caravan",
+      description: "كرافانات ومنازل متنقلة لمحبي السفر والرحلات",
+      icon: Home,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "cars",
+      featured: false,
+      stats: { items: "80+", rating: "4.7" },
+    },
+    {
+      name: "سوق الشاحنات",
+      slug: "auctions-2car/trucks",
+      description: "شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة",
+      icon: Truck,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "cars",
+      featured: false,
+      stats: { items: "300+", rating: "4.6" },
+    },
+    {
+      name: "سوق الحافلات",
+      slug: "auctions-2car/buses",
+      description: "حافلات نقل ركاب بمواصفات متنوعة وحالة ممتازة",
+      icon: Car,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "cars",
+      featured: false,
+      stats: { items: "150+", rating: "4.5" },
+    },
+    {
+      // ✅ المطلوب: رجّع الاسم VIP (والـ slug يفضل companiesCars)
+      name: "سوق سيارات الشركات",
+      slug: "auctions-2car/companiesCars",
+      description: "سيارات شركات بأسعار تصفية مخزون",
+      icon: Building2,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "cars",
+      featured: false,
+      stats: { items: "400+", rating: "4.5" },
+    },
+  ];
+
+  // ✅ باقي الأقسام زي ما كانت موجودة لكن هتفضل مخفية لأن SHOW_NON_MAIN_MARKETS = false
+  const auctionsQuality: Auction[] = [
+    {
+      name: "الأجهزة الطبية المستعملة",
+      slug: "auctions-3quality/medical",
+      description: "أجهزة ومعدات طبية مستعملة بحالة جيدة",
+      icon: Stethoscope,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "quality",
+      featured: false,
+      stats: { items: "120+", rating: "4.7" },
+    },
+    {
+      name: "الآلات المكتبية المستعملة",
+      slug: "auctions-3quality/office-equipment",
+      description:
+        "معدات مكتبية مثل آلات تصوير متوسطة وكبيرة الحجم وأجهزة إلكترونية بأسعار تنافسية",
+      icon: Printer,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "quality",
+      featured: false,
+      stats: { items: "250+", rating: "4.6" },
+    },
+    {
+      name: "السيرفرات المستعملة",
+      slug: "auctions-3quality/used-servers",
+      description: "سيرفرات وأجهزة تخزين وشبكات بمواصفات جيدة",
+      icon: Server,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "quality",
+      featured: false,
+      stats: { items: "80+", rating: "4.8" },
+    },
+  ];
+
+  const auctionsSpecial: Auction[] = [
+    {
+      name: "المجوهرات والحلي الثمينة",
+      slug: "auctions-4special/jewelry",
+      description: "مجوهرات وحلي ثمينة متنوعة بتشكيلات راقية وجودة عالية",
+      icon: Gem,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: true,
+      stats: { items: "1K+", rating: "4.9" },
+    },
+    {
+      name: "القطع النادرة",
+      slug: "auctions-4special/heritage",
+      description: "مزاد للتحف النادرة والقطع الثمينة والمجوهرات القديمة",
+      icon: Star,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: true,
+      stats: { items: "500+", rating: "4.9" },
+    },
+    {
+      name: "مزادات VIP الخاصة",
+      slug: "auctions-4special/executive",
+      description: "مزادات خاصة تنفيذية لإدارات ومؤسسات محددة",
+      icon: BadgeCheck,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: true,
+      stats: { users: "VIP", rating: "5.0" },
+    },
+    {
+      name: "اللوحات الفنية",
+      slug: "auctions-4special/artworks",
+      description: "لوحات فنية أصلية ومميزة لفنانين معروفين",
+      icon: Brush,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: false,
+      stats: { items: "200+", rating: "4.8" },
+    },
+    {
+      name: "الساعات الفاخرة",
+      slug: "auctions-4special/watches",
+      description: "ساعات فاخرة ونادرة من ماركات عالمية",
+      icon: Watch,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: false,
+      stats: { items: "150+", rating: "4.9" },
+    },
+    {
+      name: "العقارات المميزة",
+      slug: "auctions-4special/realstate",
+      description: "عقارات ومنازل وفلل فاخرة في مواقع مميزة",
+      icon: Home,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: false,
+      stats: { items: "100+", rating: "4.7" },
+    },
+    {
+      name: "الطائرات الخاصة",
+      slug: "auctions-4special/jets",
+      description: "طائرات مستعملة بحالة جيدة ومعدلات جيدة للتنزه والصيد",
+      icon: Plane,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: false,
+      stats: { items: "25+", rating: "4.9" },
+    },
+    {
+      name: "اليخوت والقوارب",
+      slug: "auctions-4special/yachts",
+      description: "يخوت وقوارب تنزه وصيد بمختلف المواصفات والموديلات",
+      icon: Sailboat,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "special",
+      featured: false,
+      stats: { items: "50+", rating: "4.8" },
+    },
+  ];
+
+  const auctionsGeneral: Auction[] = [
+    {
+      name: "الأجهزة الإلكترونية",
+      slug: "auctions-5general/electronics",
+      description: "أجهزة إلكترونية متنوعة من هواتف وأجهزة لوحية وحواسيب",
+      icon: Smartphone,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "general",
+      featured: false,
+      stats: { items: "2K+", rating: "4.6" },
+    },
+    {
+      name: "الأثاث المنزلي",
+      slug: "auctions-5general/furniture",
+      description: "أثاث منزلي ومكتبي متنوع بحالة جيدة",
+      icon: Sofa,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "general",
+      featured: false,
+      stats: { items: "1.5K+", rating: "4.5" },
+    },
+    {
+      name: "المعدات العامة",
+      slug: "auctions-5general/equipment",
+      description: "معدات وأدوات للاستخدامات المتنوعة",
+      icon: PencilRuler,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "general",
+      featured: false,
+      stats: { items: "800+", rating: "4.4" },
+    },
+    {
+      name: "السوق الأخضر",
+      slug: "auctions-5general/green",
+      description: "منتجات صديقة للبيئة وتدعم الاستدامة",
+      icon: Leaf,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "general",
+      featured: false,
+      stats: { items: "300+", rating: "4.7" },
+    },
+  ];
+
+  const auctionsBig: Auction[] = [
+    {
+      name: "السوق الشامل",
+      slug: "auctions-6big",
+      description: "المنصة الوطنية الأولى للمزادات في المملكة العربية السعودية",
+      icon: Store,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "big",
+      featured: true,
+      stats: { items: "10K+", rating: "4.8" },
+    },
+    {
+      name: "عروض وتخفيضات حصرية",
+      slug: "auctions-6big/offers",
+      description: "تخفيضات وعروض مميزة على منتجات متنوعة",
+      icon: Gift,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "big",
+      featured: false,
+      stats: { items: "5K+", rating: "4.7" },
+    },
+    {
+      name: "متاجر تسوق محلية",
+      slug: "auctions-6big/local-shops",
+      description: "متاجر محلية ومنتجات متنوعة بأسعار تنافسية",
+      icon: ShoppingBag,
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
+      category: "big",
+      featured: false,
+      stats: { shops: "200+", rating: "4.6" },
+    },
+  ];
+
+  const Divider = () => (
+    <div className="col-span-full my-10">
+      <div className="h-px w-full rounded bg-border/60" />
+    </div>
+  );
+
+  const SectionTitle = ({
+    title,
+    subtitle,
+    icon: Icon,
+    subtitlePosition = "below",
+  }: SectionTitleProps) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="col-span-full mb-6 text-center"
+    >
+      {subtitle && subtitlePosition === "above" && (
+        <p className="text-sm md:text-base text-muted-foreground max-w-3xl mx-auto mb-3 leading-relaxed">
+          {subtitle}
+        </p>
+      )}
+
+      <div className="flex items-center justify-center gap-3 mb-2">
+        {Icon && <Icon className="w-7 h-7 text-primary" />}
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground">{title}</h2>
+      </div>
+
+      {subtitle && subtitlePosition === "below" && (
+        <p className="text-sm md:text-base text-muted-foreground max-w-3xl mx-auto mt-2 leading-relaxed">
+          {subtitle}
+        </p>
+      )}
+    </motion.div>
+  );
+
+  // ✅ Card موحّد، نفس الارتفاع لكل الكروت + بدون البيانات الوهمية
+  const AuctionCard = ({ auction, index }: AuctionCardProps) => {
+    const Icon = auction.icon;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.45, delay: index * 0.06 }}
+        className="h-full"
+      >
+        <LoadingLink href={`/auctions/${auction.slug}`} className="group block h-full">
+          <div
+            className="
+              relative overflow-hidden rounded-2xl border border-border bg-card
+              p-5 transition-all duration-300
+              group-hover:shadow-xl group-hover:-translate-y-1 group-hover:border-primary
+              h-full min-h-[240px] flex flex-col
+            "
+          >
+            <div className="text-center flex-1 flex flex-col">
+              <div className="inline-flex mx-auto rounded-2xl bg-secondary p-3 shadow-sm mb-4 text-primary">
+                <Icon size={28} />
+              </div>
+
+              <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 line-clamp-2">
+                {auction.name}
+              </h3>
+
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 whitespace-pre-line">
+                {auction.description}
+              </p>
+
+              <div className="mt-auto">
+                <span className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-white transition-all duration-300 shadow-sm hover:bg-primary/90">
+                  ابدأ المزايدة
+                  <TrendingUp className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </span>
+              </div>
+            </div>
+
+            <div className="absolute inset-0 rounded-2xl bg-foreground/0 transition-all duration-300 group-hover:bg-foreground/5" />
           </div>
-          
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center text-foreground">
-            سوق السيارات المتخصص
-          </h1>
-          <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto text-center text-foreground/80">
-            تصفح أسواق متخصصة: الفارهة، الكلاسيكية، الكرفانات، الشاحنات، الحافلات
-          </p>
+        </LoadingLink>
+      </motion.div>
+    );
+  };
+
+  // ✅ فلترة "الأسواق الرئيسية" فقط حسب البحث
+  const filteredMain = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return auctionsMain;
+    return auctionsMain.filter((a) => {
+      const hay = `${a.name} ${a.description}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [searchTerm]);
+
+  return (
+    <main className="min-h-screen bg-background">
+      {/* الهيدر */}
+      <div className="bg-card shadow-lg border-b border-border">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <LoadingLink
+                href="/"
+                className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-primary"
+              >
+                <ChevronRight className="w-5 h-5" />
+                الرئيسية
+              </LoadingLink>
+              <div className="h-6 w-px bg-border" />
+              <h1 className="text-2xl font-bold text-foreground">جميع الأسواق</h1>
+            </div>
+
+            {/* شريط البحث */}
+            <div className="relative max-w-md w-full">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+              <input
+                type="text"
+                placeholder="ابحث في الأسواق الرئيسية..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pr-10 pl-4 py-3 bg-card border border-border rounded-2xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-300"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* قائمة الأسواق */}
-      <div className="max-w-7xl mx-auto py-10 md:py-16 px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {carMarkets.map((market) => {
-            const Icon = market.icon;
-            return (
-              <LoadingLink 
-                key={market.id}
-                href={market.path}
-                className={`group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden transition-all duration-300 hover:border-border backdrop-blur-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 ${market.bgColor} hover:${market.hoverColor}`}
-              >
-                <div className="p-6 flex flex-col h-full">
-                  <div className="flex items-center mb-4">
-                    <div className={`p-3 rounded-xl mr-3 ${market.textColor} bg-card/60 backdrop-blur-sm border border-border/50`}>
-                      <Icon size={24} />
-                    </div>
-                    <h3 className={`text-xl font-bold ${market.textColor}`}>{market.title}</h3>
-                  </div>
-                  
-                  <div className="relative h-48 mb-5 overflow-hidden rounded-xl flex-shrink-0">
-                    {market.image ? (
-                      <Image 
-                        src={market.image}
-                        alt={market.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-card/50 flex items-center justify-center">
-                        <Car className="w-12 h-12 text-foreground/60" />
-                      </div>
-                    )}
-                    <div className={`absolute inset-0 ${market.color} opacity-15`}></div>
-                  </div>
-                  
-                  <p className="mb-5 flex-grow text-foreground/70">{market.description}</p>
-                  
-                  <div className="mt-auto pt-3">
-                    {/* زر "ابدأ التصفح" – أزرق بنص أبيض */}
-                    <span className="inline-flex items-center justify-between w-full px-4 py-2.5 rounded-xl border border-border bg-primary text-white group-hover:bg-primary/90 group-hover:border-border transition-all">
-                      <span className="font-medium">ابدأ التصفح</span>
-                      <ChevronRight className="w-4 h-4 rtl:rotate-180 opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-1 transition-all duration-300" />
-                    </span>
-                  </div>
-                </div>
-              </LoadingLink>
-            );
-          })}
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <>
+          <Divider />
+
+          <SectionTitle
+            title="الأسواق الرئيسية"
+            subtitle="أسواق تلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي؛ المنافسة تعتمد على العرض والطلب الطبيعي."
+            icon={Zap}
+          />
+
+          {filteredMain.length === 0 ? (
+            <div className="text-center py-14 text-muted-foreground">
+              لا توجد نتائج مطابقة للبحث.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {filteredMain.map((auction, index) => (
+                <AuctionCard key={auction.slug} auction={auction} index={index} />
+              ))}
+            </div>
+          )}
+
+          {/* ✅ سكشن سوق السيارات المخصص */}
+          <Divider />
+          <SectionTitle title="سوق السيارات المخصص" icon={Car} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {auctionsCar.map((auction, index) => (
+              <AuctionCard key={auction.slug} auction={auction} index={index} />
+            ))}
+          </div>
+
+          {/* ✅ باقي الأقسام تظل موجودة لكن مخفية */}
+          {SHOW_NON_MAIN_MARKETS && (
+            <>
+              <Divider />
+
+              <SectionTitle
+                title="سوق نوعي"
+                subtitle="منتجات ومعدات متخصصة بجودة عالية"
+                icon={TrendingUp}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsQuality.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
+
+              <Divider />
+
+              <SectionTitle
+                title="أسواق تخصصية"
+                subtitle="مزادات فريدة لمنتجات استثنائية"
+                icon={Crown}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsSpecial.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
+
+              <Divider />
+
+              <SectionTitle
+                title="أسواق عامة"
+                subtitle="منتجات متنوعة للاستخدام اليومي"
+                icon={ShoppingBag}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsGeneral.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
+
+              <Divider />
+
+              <SectionTitle
+                title="السوق الكبير"
+                subtitle="المنصة الشاملة لكل ما تحتاجه"
+                icon={Store}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                {auctionsBig.map((auction, index) => (
+                  <AuctionCard key={auction.slug} auction={auction} index={index} />
+                ))}
+              </div>
+            </>
+          )}
+        </>
       </div>
-    </div>
+    </main>
   );
 }
