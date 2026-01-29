@@ -67,6 +67,7 @@
         "cross-env": "^7.0.3",
         "eslint": "^9.32.0",
         "eslint-config-next": "15.3.1",
+        "knip": "^5.82.1",
         "postcss": "^8.4.24",
         "pusher-js": "^8.4.0",
         "sass": "^1.93.2",

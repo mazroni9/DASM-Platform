@@ -99,9 +99,7 @@ export default function BlogSinglePage({ params }: { params?: { slug?: string | 
   const abortRef = useRef<AbortController | null>(null);
 
   const cover = useMemo(() => (post ? (post.image || post.cover_image || post.thumbnail || "").trim() : ""), [post]);
-
   const dateLabel = useMemo(() => (post ? safeDateLabel(post.published_at || post.created_at) : "—"), [post]);
-
   const articleHtml = useMemo(() => (post ? contentToHtml(post.content || "") : ""), [post]);
 
   const fetchPost = async (slugValue: string) => {
@@ -156,7 +154,7 @@ export default function BlogSinglePage({ params }: { params?: { slug?: string | 
     <>
       {/* Top bar */}
       <section className="bg-background border-b border-border">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6 rtl">
           <LoadingLink href="/blog" className="inline-flex items-center gap-2 text-foreground/70 hover:text-foreground font-semibold">
             <ArrowRight className="w-4 h-4" />
             الرجوع للمدونة
@@ -170,11 +168,13 @@ export default function BlogSinglePage({ params }: { params?: { slug?: string | 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-pulse">
               <div className="lg:col-span-12">
-                <div className="h-[320px] md:h-[420px] bg-card border border-border rounded-3xl overflow-hidden">
+                <div className="h-[280px] md:h-[420px] bg-card border border-border rounded-3xl overflow-hidden">
                   <div className="h-full bg-border/70" />
                 </div>
               </div>
-              <div className="lg:col-span-8">
+
+              {/* ✅ المقال صار أكبر */}
+              <div className="lg:col-span-9">
                 <div className="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-4">
                   <div className="h-4 w-40 bg-border rounded" />
                   <div className="h-8 w-3/4 bg-border rounded" />
@@ -183,8 +183,10 @@ export default function BlogSinglePage({ params }: { params?: { slug?: string | 
                   <div className="h-4 w-4/6 bg-border rounded" />
                 </div>
               </div>
-              <div className="lg:col-span-4">
-                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-3">
+
+              {/* ✅ السايدبار أصغر */}
+              <div className="lg:col-span-3">
+                <div className="bg-card border border-border rounded-3xl p-5 md:p-6 space-y-3">
                   <div className="h-4 w-2/3 bg-border rounded" />
                   <div className="h-10 w-full bg-border rounded" />
                   <div className="h-10 w-full bg-border rounded" />
@@ -207,7 +209,7 @@ export default function BlogSinglePage({ params }: { params?: { slug?: string | 
               {/* Hero */}
               <div className="lg:col-span-12">
                 <div className="relative rounded-3xl overflow-hidden border border-border bg-card">
-                  <div className="h-[320px] md:h-[460px] bg-border/60">
+                  <div className="h-[280px] md:h-[440px] bg-border/60">
                     {cover ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -226,54 +228,112 @@ export default function BlogSinglePage({ params }: { params?: { slug?: string | 
                     )}
                   </div>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/35 to-transparent" />
 
                   <div className="absolute bottom-0 right-0 left-0 p-5 md:p-8">
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-foreground/80">
-                      <span className="inline-flex items-center gap-2 bg-card/60 border border-border backdrop-blur px-3 py-1.5 rounded-full">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/80">
+                      <span className="inline-flex items-center gap-2 bg-card/70 border border-border backdrop-blur px-3 py-1.5 rounded-full">
                         <Tags className="w-4 h-4 text-primary" />
                         {post.category?.name || "عام"}
                       </span>
 
-                      <span className="inline-flex items-center gap-2 bg-card/60 border border-border backdrop-blur px-3 py-1.5 rounded-full">
+                      <span className="inline-flex items-center gap-2 bg-card/70 border border-border backdrop-blur px-3 py-1.5 rounded-full">
                         <Calendar className="w-4 h-4 text-primary" />
                         {dateLabel}
                       </span>
+
+                      {post.tags?.length ? (
+                        <span className="inline-flex items-center gap-2 bg-card/70 border border-border backdrop-blur px-3 py-1.5 rounded-full">
+                          <Tags className="w-4 h-4 text-primary" />
+                          {post.tags.slice(0, 2).map((t) => t.name).join("، ")}
+                          {post.tags.length > 2 ? "..." : ""}
+                        </span>
+                      ) : null}
                     </div>
 
-                    <h1 className="mt-4 text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-foreground">{post.title}</h1>
+                    <h1 className="mt-4 text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-foreground">
+                      {post.title}
+                    </h1>
 
                     {post.excerpt ? (
-                      <p className="mt-4 text-foreground/80 leading-relaxed text-base md:text-lg max-w-4xl">{post.excerpt}</p>
+                      <p className="mt-3 text-foreground/80 leading-relaxed text-base md:text-lg max-w-4xl">
+                        {post.excerpt}
+                      </p>
                     ) : null}
                   </div>
                 </div>
               </div>
 
-              {/* Article */}
-              <div className="lg:col-span-8">
+              {/* ✅ Article (أكبر + شكل أجمل) */}
+              <div className="lg:col-span-9">
                 <article className="bg-card border border-border rounded-3xl p-6 md:p-10 shadow-sm">
-                  <div className="prose prose-zinc dark:prose-invert max-w-none prose-p:leading-8 prose-li:leading-8">
+                  <div className="flex items-center justify-between gap-3 mb-6">
+                    <div>
+                      <div className="text-xs font-bold text-foreground/50">محتوى المقال</div>
+                      <div className="h-1 w-14 bg-primary/30 rounded-full mt-2" />
+                    </div>
+                    <div className="text-xs text-foreground/50">{dateLabel}</div>
+                  </div>
+
+                  <div
+                    className="
+                      prose prose-zinc dark:prose-invert max-w-none
+                      prose-p:leading-8 prose-li:leading-8
+                      prose-headings:font-extrabold prose-headings:text-foreground
+                      prose-a:text-primary prose-a:font-bold prose-a:no-underline hover:prose-a:underline
+                      prose-img:rounded-2xl prose-img:border prose-img:border-border
+                      prose-hr:border-border
+                      prose-blockquote:border-primary/30
+                    "
+                  >
                     <div dangerouslySetInnerHTML={{ __html: articleHtml }} />
                   </div>
                 </article>
               </div>
 
-              {/* Sidebar */}
-              <aside className="lg:col-span-4">
-                <div className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-sm sticky top-6 space-y-4">
+              {/* ✅ Sidebar أصغر + أنظف */}
+              <aside className="lg:col-span-3">
+                <div className="bg-card border border-border rounded-3xl p-5 md:p-6 shadow-sm lg:sticky lg:top-6 space-y-3">
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
-                    <p className="text-sm text-foreground/70">التصنيف</p>
+                    <div className="flex items-center gap-2 text-sm text-foreground/70">
+                      <Tags className="w-4 h-4 text-primary" />
+                      التصنيف
+                    </div>
                     <p className="font-extrabold text-foreground mt-1">{post.category?.name || "عام"}</p>
                   </div>
 
                   <div className="rounded-2xl border border-border bg-background/40 p-4">
-                    <p className="text-sm text-foreground/70">تاريخ النشر</p>
+                    <div className="flex items-center gap-2 text-sm text-foreground/70">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      تاريخ النشر
+                    </div>
                     <p className="font-bold text-foreground mt-1">{dateLabel}</p>
                   </div>
 
+                  {post.tags?.length ? (
+                    <div className="rounded-2xl border border-border bg-background/40 p-4">
+                      <div className="flex items-center gap-2 text-sm text-foreground/70">
+                        <Tags className="w-4 h-4 text-primary" />
+                        الوسوم
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {post.tags.slice(0, 8).map((t) => (
+                          <span
+                            key={t.id}
+                            className="px-3 py-1 rounded-full text-xs font-bold bg-card border border-border text-foreground/80"
+                          >
+                            {t.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
                   <div className="flex">
-                    <LoadingLink href="/blog" className="w-full bg-border hover:bg-border/80 py-3 rounded-2xl font-extrabold transition text-center">
+                    <LoadingLink
+                      href="/blog"
+                      className="w-full bg-border hover:bg-border/80 py-3 rounded-2xl font-extrabold transition text-center"
+                    >
                       رجوع
                     </LoadingLink>
                   </div>

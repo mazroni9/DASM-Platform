@@ -49,7 +49,16 @@ const navItems = [
     icon: FiRadio,
     label: "جلسات البث المباشر",
   },
+
   { href: "/exhibitor/analytics", icon: FiBarChart2, label: "التحليلات" },
+
+  // ✅ NEW TAB
+  {
+    href: "/similar-price-analysis",
+    icon: FiBarChart2,
+    label: "تحليل الأسعار المشابهة",
+  },
+
   { href: "/exhibitor/wallet", icon: FaWallet, label: "رصيد المحفظة" },
   { href: "/exhibitor/ratings", icon: FiStar, label: "التقييمات" },
   { href: "/exhibitor/shipping", icon: FiTruck, label: "الشحن" },
@@ -142,9 +151,7 @@ export function Sidebar() {
                     <span
                       className={cx(
                         "truncate text-sm",
-                        active
-                          ? "font-semibold text-primary"
-                          : "text-foreground"
+                        active ? "font-semibold text-primary" : "text-foreground"
                       )}
                     >
                       {item.label}

@@ -78,6 +78,7 @@ use App\Http\Controllers\Dealer\WalletController as DealerWalletController;
 
 use App\Http\Controllers\Dealer\AiController as DealerAiController;
 use App\Http\Controllers\Dealer\WatchlistController as DealerWatchlistController;
+use App\Http\Controllers\Market\PublicCarExplorerController;
 
 // ========= Payment =========
 use App\Http\Controllers\Payment\ClickPayController;
@@ -299,6 +300,18 @@ Route::prefix('market')->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// 2.X Public Similar Price Analysis (Explorer) ✅ PUBLIC ✅ FIXED
+// ─────────────────────────────────────────────────────────────────────────
+// ✅ مهم: دي هي الوحيدة اللي لازم تفضل لـ /api/market/explorer/*
+// ✅ ممنوع يكون فيه نسخة تانية جوه auth:sanctum لنفس المسار
+Route::prefix('market/explorer')
+    ->group(function () {
+        Route::get('/cars', [PublicCarExplorerController::class, 'index']);
+        Route::get('/cars/stats', [PublicCarExplorerController::class, 'stats']);
+        Route::get('/cars/{car}', [PublicCarExplorerController::class, 'show'])->whereNumber('car');
+    });
+
+// ─────────────────────────────────────────────────────────────────────────
 // 2.5 Public Blog (✅ Clean Public Blog)
 // ─────────────────────────────────────────────────────────────────────────
 Route::prefix('blog')->group(function () {
@@ -432,6 +445,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/car-statistics', [CarController::class, 'statistics']);
 
     // ─────────────────────────────────────────────────────────────────
+    // ✅ 4.15 Market Explorer (REMOVED)
+    // ─────────────────────────────────────────────────────────────────
+    // ❌ كان هنا Routes بتعمل Collision مع Public:
+    // /api/market/explorer/cars
+    // /api/market/explorer/cars/stats
+    // ✅ النسخة العامة موجودة في Section 2.X (PublicCarExplorerController)
+
+    // ─────────────────────────────────────────────────────────────────
     // 4.5 Auctions Management
     // ─────────────────────────────────────────────────────────────────
     Route::prefix('auctions')->group(function () {
@@ -547,8 +568,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
 
         // Wallet
         Route::get('/wallet/transactions', [DealerWalletController::class, 'transactions']);
-
-
 
         // AI Toggle
         Route::post('/ai/toggle', [DealerAiController::class, 'toggle']);
@@ -687,6 +706,7 @@ Route::middleware('auth:sanctum')
         // ─────────────────────────────────────────────────────────────
         Route::prefix('market')->group(function () {
             Route::get('/cars', [CarExplorerController::class, 'index']);
+            Route::get('/cars/stats', [CarExplorerController::class, 'stats']); // ✅ NEW
             Route::get('/cars/{car}', [CarExplorerController::class, 'show'])->whereNumber('car');
         });
 
@@ -833,10 +853,6 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
 
         // ─────────────────────────────────────────────────────────────
         // 8.9 Blog Management (✅ NEW CLEAN ADMIN BLOG)
-        // Removed old:
-        // - /admin/blogs
-        // - /admin/blog-tags
-        // - /admin/blog (store/update/delete)
         // ─────────────────────────────────────────────────────────────
         Route::prefix('blog')->group(function () {
 

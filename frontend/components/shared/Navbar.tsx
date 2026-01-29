@@ -5,7 +5,13 @@ import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Image from "next/image";
-import { RefreshCw, LogOut, Menu, TvMinimalPlay } from "lucide-react";
+import {
+  RefreshCw,
+  LogOut,
+  Menu,
+  TvMinimalPlay,
+  Layers,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
@@ -32,8 +38,14 @@ const Navbar = () => {
   const isAdmin =
     user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN;
 
+  // ✅ Added new nav item pointing to /similar-price-analysis
   const navigationItems: NavigationItem[] = [
     { href: "/auctions", label: "الأسواق الرقمية", icon: TvMinimalPlay },
+    {
+      href: "/similar-price-analysis",
+      label: "تحليل الأسعار المشابهة",
+      icon: Layers,
+    },
   ];
 
   const isActive = (path: string) =>
@@ -84,7 +96,6 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen]);
 
-  // كلاس يساعد نخلي الألوان واضحة داخل UserMenu/NotificationMenu
   const forceBright =
     "[&_*]:!text-foreground [&_svg]:!text-primary [&_sup]:!bg-primary [&_sup]:!text-white";
 
@@ -108,7 +119,6 @@ const Navbar = () => {
                 />
               </div>
 
-              {/* عنوان الموقع + كلمة DASMe بألوان الشعار واتجاه LTR */}
               <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
                 <span>المزادات الرقمية</span>
                 <span
@@ -127,20 +137,23 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div
-            className="hidden md:flex items-center gap-6 font-medium"
+            className="hidden md:flex items-center gap-2 lg:gap-6 font-medium"
             dir="rtl"
           >
-            <LoadingLink
-              href="/auctions"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                isActive("/auctions")
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-border hover:text-primary"
-              }`}
-            >
-              <TvMinimalPlay size={18} />
-              <span>الأسواق الرقمية</span>
-            </LoadingLink>
+            {navigationItems.map((item) => (
+              <LoadingLink
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 whitespace-nowrap ${
+                  isActive(item.href)
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-border hover:text-primary"
+                }`}
+              >
+                <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+                <span>{item.label}</span>
+              </LoadingLink>
+            ))}
           </div>
 
           {/* Desktop Auth & Actions */}
@@ -198,7 +211,9 @@ const Navbar = () => {
               aria-expanded={mobileMenuOpen}
             >
               <Menu
-                className={`h-5 w-5 ${mobileMenuOpen ? "rotate-90" : ""}`}
+                className={`h-5 w-5 transition-transform ${
+                  mobileMenuOpen ? "rotate-90" : ""
+                }`}
               />
             </button>
           </div>
@@ -208,7 +223,7 @@ const Navbar = () => {
         <div
           className={`lg:hidden mobile-menu-container overflow-hidden transition-all duration-300 ease-in-out ${
             mobileMenuOpen
-              ? "max-h-96 opacity-100 mt-4 pb-4"
+              ? "max-h-[520px] opacity-100 mt-4 pb-4"
               : "max-h-0 opacity-0"
           }`}
         >
