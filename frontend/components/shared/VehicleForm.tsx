@@ -499,7 +499,7 @@ export default function VehicleForm({
       const maxVal =
         name === "max_price" ? Number(value) : Number(formData.max_price);
 
-      if (!isNaN(minVal) && !isNaN(maxVal) && maxVal > 0) {
+      if (!isNaN(minVal)) {
         let limit = 0;
         if (minVal >= 40000) {
           limit = minVal * 1.1;
@@ -507,7 +507,13 @@ export default function VehicleForm({
           limit = minVal * 1.15;
         }
 
-        if (maxVal > limit) {
+        let maxValLimit = NaN;
+        if (name === "min_price") {
+          maxValLimit = Math.floor(limit);
+          setFormData((prev) => ({...prev, ['max_price']: maxValLimit.toFixed() }));
+        }
+
+        if (isNaN(maxValLimit) && !isNaN(maxVal) && maxVal > 0 && maxVal > limit) {
           const formattedMin = minVal.toLocaleString();
           const formattedLimit = Math.floor(limit).toLocaleString();
           setMaxPriceError(
