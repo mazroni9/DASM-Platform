@@ -16,9 +16,6 @@ class Settlement extends Model
         'car_id',
         'final_price',
         'platform_fee',
-        'tam_fee',
-        'net_amount',
-        'muroor_fee',
         'buyer_net_amount',
         'status',
         // DASM Dual-Page Payment Model - Multi-Gateway Support
