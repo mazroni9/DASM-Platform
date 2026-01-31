@@ -15,7 +15,6 @@ import {
   TrendingUp,
   Users,
   Award,
-  ArrowRight,
   Radio,
   PlayCircle,
   Clock,
@@ -25,14 +24,15 @@ import { motion } from "framer-motion";
 import Footer from "@/components/shared/Footer";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
 import api from "@/lib/axios";
-import LoadingLink from "@/components/LoadingLink";
 
 // ========== Utilities ==========
+
 function toEmbedUrl(url?: string | null): string | null {
   if (!url) return null;
   try {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./, "");
+
     // YouTube
     if (host === "youtube.com" || host === "m.youtube.com") {
       const id = u.searchParams.get("v");
@@ -43,12 +43,14 @@ function toEmbedUrl(url?: string | null): string | null {
       const id = u.pathname.slice(1);
       if (id) return `https://www.youtube.com/embed/${id}?rel=0`;
     }
+
     // Vimeo (basic)
     if (host === "vimeo.com") {
       const id = u.pathname.split("/").filter(Boolean)[0];
       if (id) return `https://player.vimeo.com/video/${id}`;
     }
     if (host === "player.vimeo.com") return url;
+
     return url;
   } catch {
     return null;
@@ -56,6 +58,7 @@ function toEmbedUrl(url?: string | null): string | null {
 }
 
 // ========== typing effect للعنوان الرئيسي (مرة واحدة) ==========
+
 const TypingMainTitle = ({
   text,
   speed = 60,
@@ -92,6 +95,7 @@ const TypingMainTitle = ({
 };
 
 // ========== typing & deleting loop للجمل الدوّارة ==========
+
 const RotatingSentences = ({
   start,
   sentences = [
@@ -159,6 +163,7 @@ const RotatingSentences = ({
 };
 
 // ========== عدّ تنازلي بسيط للمزادات ==========
+
 const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
   dayjs.extend(relativeTime);
   dayjs.locale("ar");
@@ -174,9 +179,11 @@ const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
       const end = dayjs(endTime);
       if (!end.isValid()) return setTimeLeft("");
       const diff = end.diff(now);
+
       if (diff <= 0) return setTimeLeft("انتهى المزاد");
       setTimeLeft(end.fromNow(true));
     };
+
     updateCountdown();
     const timer = setInterval(updateCountdown, 60 * 1000);
     return () => clearInterval(timer);
@@ -190,6 +197,7 @@ const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
 };
 
 // ========== قسم البث الاحترافي ==========
+
 type Broadcast = {
   title?: string | null;
   description?: string | null;
@@ -349,202 +357,8 @@ const LiveBroadcastSection = () => {
   );
 };
 
-// ========== قسم السيارات المميزة / شيء مميز ==========
-type CarType = {
-  id: string | number;
-  make?: string;
-  model?: string;
-  year?: string | number;
-  images?: string[] | null;
-  active_auction?: {
-    end_time?: string | null;
-    current_bid?: number | string | null;
-  } | null;
-  total_bids?: number | string | null;
-};
-
-const FeaturedCars = () => {
-  const [cars, setCars] = useState<CarType[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    const fetchFeaturedCars = async () => {
-      try {
-        const response = await api.get("/api/featured-cars");
-        const data = response?.data?.data ?? [];
-        if (mounted) setCars(Array.isArray(data) ? data : []);
-      } catch {
-        if (mounted) setCars([]);
-      }
-    };
-    fetchFeaturedCars();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (!cars || cars.length === 0) return <></>;
-
-  const primaryCar = cars[0];
-
-  const showcaseExtras = [
-    {
-      id: "realestate",
-      title: "أرض تجارية / عمارة مميزة",
-      subtitle: "موقع استثماري على شارع تجاري حيوي",
-      image:
-        "https://source.unsplash.com/featured/?real-estate,building,city,night",
-      badge: "مزاد عقاري",
-      href: "/auctions/auctions-4special/realstate",
-    },
-    {
-      id: "jewelry",
-      title: "عقد مجوهرات فاخر",
-      subtitle: "قطع مميزة لهواة الفخامة والاقتناء",
-      image: "https://source.unsplash.com/featured/?jewelry,necklace,luxury",
-      badge: "مزاد مجوهرات",
-      href: "/auctions/auctions-4special/jewelry",
-    },
-    {
-      id: "rolex-yacht",
-      title: "ساعة رولكس / يخت صغير",
-      subtitle: "رموز الرفاهية والتميز في مزادات فاخرة",
-      image:
-        "https://source.unsplash.com/featured/?rolex,luxury,watch,yacht,boat",
-      badge: "مزادات فاخرة",
-      href: "/auctions/auctions-4special/watches",
-    },
-  ];
-
-  return (
-    <section className="py-16 md:py-20 bg-background">
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 md:mb-12">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary"
-          >
-            شيء مميز
-          </motion.h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {primaryCar && (
-            <motion.div
-              key={primaryCar.id ?? "primary-car"}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0 }}
-              className="bg-card rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-            >
-              {(() => {
-                const title = [primaryCar.make, primaryCar.model, primaryCar.year]
-                  .filter(Boolean)
-                  .join(" ");
-                const imageSrc =
-                  Array.isArray(primaryCar.images) &&
-                  primaryCar.images.length > 0 &&
-                  primaryCar.images[0]
-                    ? primaryCar.images[0]
-                    : "/placeholder-car.jpg";
-                const currentBid = primaryCar?.active_auction?.current_bid ?? "—";
-                const totalBids = primaryCar?.total_bids ?? 0;
-                const endTime = primaryCar?.active_auction?.end_time ?? undefined;
-
-                return (
-                  <>
-                    <div className="relative h-40 sm:h-48 overflow-hidden">
-                      <img
-                        src={imageSrc}
-                        alt={title || "Car"}
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                      />
-                      <div className="absolute top-3 right-3 bg-secondary text-white px-2 py-1 rounded-full text-xs sm:text-sm font-bold">
-                        <AuctionCountdown endTime={endTime} />
-                      </div>
-                    </div>
-                    <div className="p-4 sm:p-6">
-                      <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2">
-                        {title || "سيارة مميزة"}
-                      </h3>
-                      <div className="flex justify-between items-center mb-3 sm:mb-4">
-                        <span className="text-secondary font-bold text-base sm:text-lg">
-                          {currentBid} ر.س
-                        </span>
-                        <span className="text-foreground text-xs sm:text-sm">
-                          {totalBids} مزايدة
-                        </span>
-                      </div>
-                      <LoadingLink href={`/carDetails/${primaryCar.id}`}>
-                        <button className="w-full bg-primary hover:bg-opacity-90 text-white py-2 sm:py-3 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base">
-                          شارك في المزاد
-                        </button>
-                      </LoadingLink>
-                    </div>
-                  </>
-                );
-              })()}
-            </motion.div>
-          )}
-
-          {showcaseExtras.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: (index + 1) * 0.1 }}
-            >
-              <LoadingLink href={item.href}>
-                <div className="bg-card rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
-                  <div className="relative h-40 sm:h-48 overflow-hidden">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                    />
-                    <div className="absolute top-3 right-3 bg-emerald-700/90 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
-                      {item.badge}
-                    </div>
-                  </div>
-                  <div className="p-4 sm:p-6 flex-1 flex flex-col">
-                    <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-foreground/80 text-sm sm:text-base mb-4 line-clamp-3">
-                      {item.subtitle}
-                    </p>
-                    <div className="mt-auto">
-                      <span className="inline-flex items-center justify-center w-full bg-primary text-white py-2 sm:py-3 rounded-lg font-medium text-sm sm:text-base hover:bg-primary/90 transition">
-                        شاهد المزاد
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </LoadingLink>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="text-center mt-10 md:mt-12">
-          <motion.a
-            href="/auctions"
-            whileHover={{ scale: 1.05 }}
-            className="inline-flex items-center gap-2 bg-card text-primary font-bold py-3 px-6 rounded-xl border border-border hover:bg-border transition-all duration-300 text-sm md:text-base"
-          >
-            عرض جميع المزادات
-            <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-          </motion.a>
-        </div>
-      </div>
-    </section>
-  );
-};
-
 // ========== قسم الإحصائيات ==========
+
 const StatsSection = () => {
   const stats = [
     {
@@ -572,6 +386,7 @@ const StatsSection = () => {
       color: "bg-secondary",
     },
   ];
+
   return (
     <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
@@ -617,6 +432,7 @@ const StatsSection = () => {
 };
 
 // ========== قسم المزايا ==========
+
 const BenefitsSection = () => {
   const benefits = [
     {
@@ -657,7 +473,6 @@ const BenefitsSection = () => {
             نقدم لك تجربة مزادات استثنائية بمعايير عالية من الجودة والموثوقية
           </p>
         </div>
-
         <div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
           dir="ltr"
@@ -691,6 +506,7 @@ const BenefitsSection = () => {
 };
 
 // ========== الصفحة الرئيسية ==========
+
 export default function Page() {
   const [titleDone, setTitleDone] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -732,8 +548,8 @@ export default function Page() {
       <LiveBroadcastSection />
 
       {/* الأقسام */}
-      <FeaturedCars />
       <StatsSection />
+
       <BenefitsSection />
 
       <Footer />
