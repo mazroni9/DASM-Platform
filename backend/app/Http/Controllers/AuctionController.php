@@ -997,8 +997,7 @@ class AuctionController extends Controller
                 'car_id',
                 'final_price',
                 'platform_fee',
-                'tam_fee',
-                'muroor_fee',
+                
                 'buyer_net_amount',
                 'status',
                 'service_fees_payment_status',
