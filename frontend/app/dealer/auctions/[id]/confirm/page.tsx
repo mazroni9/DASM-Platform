@@ -45,7 +45,7 @@ export default function DealerConfirmSalePage({ params }: PageProps) {
     async function fetchSettlement() {
       try {
         const response = await api.get(
-          `/api/auctions/calculate-settlement/${car_id}`
+          `/api/auctions/calculate-settlement/${car_id}`,
         );
         if (response.data?.status === "success") {
           const responseData = response.data.data?.data || response.data.data;
@@ -76,7 +76,7 @@ export default function DealerConfirmSalePage({ params }: PageProps) {
 
       if (response.data?.status === "success") {
         toast.success("تم تأكيد البيع بنجاح!");
-        router.push(`/dealer/my-cars`);
+        router.replace(`/dealer/my-cars`);
       } else {
         toast.error(response.data?.message || "خطأ في تأكيد البيع");
       }
@@ -406,7 +406,7 @@ export default function DealerConfirmSalePage({ params }: PageProps) {
                     "flex-1 py-4 px-6 rounded-xl text-lg font-bold transition-all duration-200 flex items-center justify-center gap-3",
                     isChecked && !submitting
                       ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg hover:shadow-xl"
-                      : "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
+                      : "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700",
                   )}
                 >
                   {submitting ? (

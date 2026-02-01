@@ -86,7 +86,7 @@ export default function ExhibitorNewSessionPage() {
         activeBg: "bg-blue-600/10",
       },
     ],
-    []
+    [],
   );
 
   const statusOptions = useMemo(
@@ -96,13 +96,13 @@ export default function ExhibitorNewSessionPage() {
       { value: "completed" as SessionStatus, label: "مكتملة" },
       { value: "cancelled" as SessionStatus, label: "ملغاة" },
     ],
-    []
+    [],
   );
 
   const onChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -129,7 +129,7 @@ export default function ExhibitorNewSessionPage() {
 
       if (res?.data?.success || res?.status === 201 || res?.status === 200) {
         toast.success(res?.data?.message || "تم إنشاء الجلسة بنجاح");
-        router.push("/exhibitor/sessions");
+        router.replace("/exhibitor/sessions");
       } else {
         toast.error(res?.data?.message || "تعذر إنشاء الجلسة");
       }
@@ -140,7 +140,7 @@ export default function ExhibitorNewSessionPage() {
           ([k, v]: [string, any]) => {
             bag[k] = Array.isArray(v) ? String(v[0]) : String(v);
             toast.error(bag[k]);
-          }
+          },
         );
         setErrors(bag);
       } else {
@@ -311,7 +311,7 @@ export default function ExhibitorNewSessionPage() {
                               <span
                                 className={`w-3 h-3 rounded-full ${t.activeBorder.replace(
                                   "border-",
-                                  "bg-"
+                                  "bg-",
                                 )}`}
                               />
                             )}
