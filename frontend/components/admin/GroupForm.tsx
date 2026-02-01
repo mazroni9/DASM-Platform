@@ -12,7 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { permissionsByModule } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -37,7 +42,7 @@ const organizationOptions = [
 
 const totalPermissions = permissionsByModule.reduce(
   (total, module) => total + module.permissions.length,
-  0
+  0,
 );
 
 const groupSchema = z.object({
@@ -65,7 +70,7 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
     setOpenModules((prev) => prev.filter((module) => module !== moduleName));
   const openModule = (moduleName: string) =>
     setOpenModules((prev) =>
-      prev.includes(moduleName) ? prev : [...prev, moduleName]
+      prev.includes(moduleName) ? prev : [...prev, moduleName],
     );
 
   const {
@@ -97,13 +102,13 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
   const filteredOrganizations = useMemo(() => {
     if (!orgSearch.trim()) return organizationOptions;
     return organizationOptions.filter((org) =>
-      org.name.toLowerCase().includes(orgSearch.trim().toLowerCase())
+      org.name.toLowerCase().includes(orgSearch.trim().toLowerCase()),
     );
   }, [orgSearch]);
 
   const handleOrganizationToggle = (
     organizationId: string,
-    checked: CheckedState
+    checked: CheckedState,
   ) => {
     const isChecked = checked === true;
     const current = new Set(selectedOrganizations);
@@ -120,16 +125,20 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
   const handleModuleSelectAll = (
     moduleName: string,
     modulePermissions: string[],
-    checked: CheckedState
+    checked: CheckedState,
   ) => {
     const isChecked = checked === true;
     const currentPermissions = new Set(selectedPermissions);
 
     if (isChecked) {
-      modulePermissions.forEach((permission) => currentPermissions.add(permission));
+      modulePermissions.forEach((permission) =>
+        currentPermissions.add(permission),
+      );
       closeModule(moduleName);
     } else {
-      modulePermissions.forEach((permission) => currentPermissions.delete(permission));
+      modulePermissions.forEach((permission) =>
+        currentPermissions.delete(permission),
+      );
       openModule(moduleName);
     }
 
@@ -137,7 +146,7 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
   };
 
   const onSubmit = (data: GroupFormValues) => {
-    router.push("/admin/groups");
+    router.replace("/admin/groups");
   };
 
   const pageTitle = mode === "create" ? "إنشاء قروب جديد" : "تعديل القروب";
@@ -151,7 +160,7 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/admin/groups")}
+            onClick={() => router.replace("/admin/groups")}
             className="flex items-center"
           >
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -167,22 +176,40 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label htmlFor="name" className="mb-1 block text-sm font-medium text-foreground">
+              <label
+                htmlFor="name"
+                className="mb-1 block text-sm font-medium text-foreground"
+              >
                 اسم القروب
               </label>
-              <Input id="name" placeholder="مثال: التجار المميزون" {...register("name")} />
+              <Input
+                id="name"
+                placeholder="مثال: التجار المميزون"
+                {...register("name")}
+              />
               {errors.name && (
-                <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="slug" className="mb-1 block text-sm font-medium text-foreground">
+              <label
+                htmlFor="slug"
+                className="mb-1 block text-sm font-medium text-foreground"
+              >
                 (سلاغ) المعرف
               </label>
-              <Input id="slug" placeholder="مثال: premium_traders" {...register("slug")} />
+              <Input
+                id="slug"
+                placeholder="مثال: premium_traders"
+                {...register("slug")}
+              />
               {errors.slug && (
-                <p className="mt-1 text-xs text-red-500">{errors.slug.message}</p>
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.slug.message}
+                </p>
               )}
             </div>
 
@@ -217,7 +244,7 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
                         "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition",
                         isActive
                           ? "border-primary ring-2 ring-primary/40"
-                          : "border-input hover:border-primary/60"
+                          : "border-input hover:border-primary/60",
                       )}
                     >
                       <span
@@ -268,17 +295,21 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
                         "flex items-center justify-between rounded-2xl border p-4 transition",
                         isChecked
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/40"
+                          : "border-border hover:border-primary/40",
                       )}
                     >
                       <div>
                         <p className="font-semibold">{org.name}</p>
-                        <p className="text-xs text-muted-foreground">{org.type}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {org.type}
+                        </p>
                       </div>
                       <Checkbox
                         id={org.id}
                         checked={isChecked}
-                        onCheckedChange={(checked) => handleOrganizationToggle(org.id, checked)}
+                        onCheckedChange={(checked) =>
+                          handleOrganizationToggle(org.id, checked)
+                        }
                       />
                     </label>
                   );
@@ -307,17 +338,18 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
                 onValueChange={setOpenModules}
               >
                 {permissionsByModule.map((module) => {
-                  const allModulePermissionsSelected = module.permissions.every((permission) =>
-                    selectedPermissions.includes(permission)
+                  const allModulePermissionsSelected = module.permissions.every(
+                    (permission) => selectedPermissions.includes(permission),
                   );
-                  const someModulePermissionsSelected = module.permissions.some((permission) =>
-                    selectedPermissions.includes(permission)
+                  const someModulePermissionsSelected = module.permissions.some(
+                    (permission) => selectedPermissions.includes(permission),
                   );
-                  const moduleCheckboxState: CheckedState = allModulePermissionsSelected
-                    ? true
-                    : someModulePermissionsSelected
-                      ? "indeterminate"
-                      : false;
+                  const moduleCheckboxState: CheckedState =
+                    allModulePermissionsSelected
+                      ? true
+                      : someModulePermissionsSelected
+                        ? "indeterminate"
+                        : false;
 
                   return (
                     <AccordionItem key={module.module} value={module.module}>
@@ -326,15 +358,21 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
                           <Checkbox
                             checked={moduleCheckboxState}
                             onCheckedChange={(checked) =>
-                              handleModuleSelectAll(module.module, module.permissions, checked)
+                              handleModuleSelectAll(
+                                module.module,
+                                module.permissions,
+                                checked,
+                              )
                             }
                           />
                           <span className="font-semibold">{module.module}</span>
                           <span className="text-xs text-muted-foreground">
                             (من {module.permissions.length} محددة{" "}
-                            {selectedPermissions.filter((permission) =>
-                              module.permissions.includes(permission)
-                            ).length}
+                            {
+                              selectedPermissions.filter((permission) =>
+                                module.permissions.includes(permission),
+                              ).length
+                            }
                             )
                           </span>
                         </div>
@@ -356,13 +394,16 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
                                         checked === true
                                           ? [...(field.value || []), permission]
                                           : (field.value || []).filter(
-                                              (value: string) => value !== permission
+                                              (value: string) =>
+                                                value !== permission,
                                             );
                                       field.onChange(newValue);
 
-                                      const allSelected = module.permissions.every((modulePermission) =>
-                                        newValue.includes(modulePermission)
-                                      );
+                                      const allSelected =
+                                        module.permissions.every(
+                                          (modulePermission) =>
+                                            newValue.includes(modulePermission),
+                                        );
 
                                       if (allSelected) {
                                         closeModule(module.module);
@@ -388,7 +429,11 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => router.push("/admin/groups")}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.replace("/admin/groups")}
+        >
           إلغاء
         </Button>
         <Button type="submit">{submitLabel}</Button>
@@ -396,4 +441,3 @@ export function GroupForm({ mode, initialData }: GroupFormProps) {
     </form>
   );
 }
-
