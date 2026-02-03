@@ -51,6 +51,13 @@ function safeReturnUrl(request: NextRequest): string {
   return raw;
 }
 
+/**
+ * Redirect to login page for unauthenticated requests.
+ * Note: Browser history replace behavior is enforced client-side via:
+ * - authStore.logout() uses window.location.replace()
+ * - Layout guards use router.replace() for security redirects
+ * NextResponse.redirect() creates a server-side redirect (307 by default).
+ */
 function redirectToLogin(request: NextRequest): NextResponse {
   const loginUrl = new URL("/auth/login", request.url);
   loginUrl.searchParams.set("returnUrl", safeReturnUrl(request));
@@ -58,7 +65,9 @@ function redirectToLogin(request: NextRequest): NextResponse {
 }
 
 function normalizeRole(v: any): string {
-  return String(v ?? "").toLowerCase().trim();
+  return String(v ?? "")
+    .toLowerCase()
+    .trim();
 }
 
 export async function proxy(request: NextRequest) {
@@ -73,7 +82,9 @@ export async function proxy(request: NextRequest) {
 
   // ✅ اعتمد على access_token cookie (اللي بيتعمل من setTokenCookie)
   const accessTokenCookie = request.cookies.get("access_token")?.value;
-  const accessToken = accessTokenCookie ? decodeURIComponent(accessTokenCookie) : "";
+  const accessToken = accessTokenCookie
+    ? decodeURIComponent(accessTokenCookie)
+    : "";
 
   // مفيش token => guest
   if (!accessToken) {
@@ -117,7 +128,11 @@ export async function proxy(request: NextRequest) {
     // حماية المسارات حسب الجذر
     const currentRoot = pathname.split("/")[1];
     const dashboardRoots = Array.from(
-      new Set(Object.values(ROLE_DASHBOARD_PATHS).map((p) => p.split("/")[1]).filter(Boolean))
+      new Set(
+        Object.values(ROLE_DASHBOARD_PATHS)
+          .map((p) => p.split("/")[1])
+          .filter(Boolean),
+      ),
     );
 
     if (dashboardRoots.includes(currentRoot)) {

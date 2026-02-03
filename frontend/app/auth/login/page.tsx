@@ -10,11 +10,9 @@ export default function LoginPage() {
     <Suspense fallback={<SuspenseLoader />}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            تسجيل الدخول
-          </h1>
+          <h1 className="text-3xl font-bold text-foreground">تسجيل الدخول</h1>
           <p className="mt-2 text-foreground text-sm">
-            واجهة خاصة بالمحرّجين وفريق الكنترول
+            سجل دخولك للوصول إلى حسابك وإدارة عملياتك في منصة Dasme للمزادات
           </p>
         </div>
 
@@ -24,7 +22,7 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center">
           <p className="text-xs text-foreground">
-            © {new Date().getFullYear()} منصة قلب. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} منصة Dasme. جميع الحقوق محفوظة.
           </p>
         </div>
       </div>

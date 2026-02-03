@@ -160,13 +160,11 @@ class SettlementController extends Controller
             $buyer = User::find($highestBid->user_id);
             $seller = $auction->car?->owner;
 
-            $platformFee = CommissionTier::getCommissionForPrice($highestBid->highest_bid);
-            $tamFeeSetting = Setting::where('key', 'tamFee')->first();
-            $tamFee = $tamFeeSetting->value;
-            $muroorFee = Setting::where('key', 'muroorFee')->first()->value;
-            //$myfatoorahFee = 200;
-            $netAmount = $highestBid->highest_bid - ($platformFee);
-            $buyerNetAmount = $highestBid->highest_bid + $platformFee + $tamFee + $muroorFee;
+            // Calculate service fees using the new unified method
+            $carPrice = (float) $highestBid->highest_bid;
+            $fees = CommissionTier::calculateServiceFees($carPrice);
+            $isPartner = $seller?->isVenueOwner() ?? false;
+            $sellerType = $isPartner ? 'partner' : 'individual';
 
             $settlements = Settlement::create([
                 'auction_id' => $auction->id,
@@ -174,11 +172,13 @@ class SettlementController extends Controller
                 'buyer_id' => $buyer->id,
                 'car_id' => $auction->car_id,
                 'final_price' => $highestBid->highest_bid,
-                'platform_fee' => $platformFee,
-                'tam_fee' => $tamFee,
-                'muroor_fee' => $muroorFee,
-                'net_amount' => $netAmount,
-                'buyer_net_amount' => $buyerNetAmount,
+                'platform_fee' => $fees['commission'],
+                'platform_commission' => $fees['commission'],
+                'car_price' => $carPrice,
+                'service_fees_total' => $fees['total'],
+                'vehicle_price_total' => $carPrice,
+                'seller_type' => $sellerType,
+                'buyer_net_amount' => $carPrice + $fees['total'],
                 'status' => 'pending'
             ]);
 
