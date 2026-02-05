@@ -2,154 +2,173 @@
 
 import React from 'react';
 import LoadingLink from "@/components/LoadingLink";
-import Image from 'next/image';
-import { ChevronRight, Car, Truck, Home, Bus } from 'lucide-react';
+import Image from "next/image";
+import { ChevronRight, Car, Truck, Home, Bus, Building2, Gem, Heart } from "lucide-react";
 
 export default function CarAuctionsPage() {
   const carMarkets = [
-    // الصف الأول
+    // الصف الأول - الفخامة والكلاسيك
     {
       id: 'luxury',
       title: 'سوق السيارات الفارهة',
-      description: 'سيارات فارهة مميزة بأسعار منافسة',
-      image: '/showroom.png',
-      // theme-aware overlay + card styles
-      color: 'bg-primary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-primary',
-      icon: Car,
+      description: 'أحدث صيحات السيارات الفاخرة بأداء عالي وتصاميم عصرية لا تضاهى.',
+      // صورة بورش أو أودي رياضية فاخرة
+      image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=1200&auto=format&fit=crop',
+      // لون العنوان عند الهوفر
+      accentColor: 'group-hover:text-blue-400',
+      // لون خلفية أيقونة الزر
+      btnAccent: 'hover:bg-blue-600',
+      icon: Gem,
       path: '/auctions/auctions-2car/luxuryCars',
     },
     {
       id: 'classic',
       title: 'سوق السيارات الكلاسيكية',
-      description: 'سيارات كلاسيكية نادرة وقطع مميزة للهواة والمقتنين',
-      image: '/1970 Plum Crazy Dodge Dart Swinger.png',
-      color: 'bg-primary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-primary',
-      icon: Car,
+      description: 'قطع نادرة وسيارات عريقة تعود لعصور ذهبية للمقتنين المحترفين.',
+      // صورة سيارة موستانج كلاسيكية
+      image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1200&auto=format&fit=crop',
+      accentColor: 'group-hover:text-amber-400',
+      btnAccent: 'hover:bg-amber-600',
+      icon: Heart,
       path: '/auctions/auctions-2car/classic',
     },
     {
       id: 'caravan',
       title: 'سوق الكرافانات',
-      description: 'كرافانات ومنازل متنقلة لمحبي السفر والرحلات',
-      image: '/caravan.png',
-      color: 'bg-primary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-primary',
+      description: 'حرية السفر مع منازل متنقلة مريحة ومجهزة لجميع احتياجات الرحلات.',
+      // صورة كرافان وسط الطبيعة
+      image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1200&auto=format&fit=crop',
+      accentColor: 'group-hover:text-emerald-400',
+      btnAccent: 'hover:bg-emerald-600',
       icon: Home,
       path: '/auctions/auctions-2car/caravan',
     },
 
-    // الصف الثاني — تم تحديث الصور بصور احترافية
+    // الصف الثاني - النقل الثقيل والشركات
     {
       id: 'trucks',
       title: 'سوق الشاحنات',
-      description: 'شاحنات ومعدات ثقيلة بحالة تشغيل ممتازة',
-      // صورة شاحنة فولفو حديثة وفخمة
-      image: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=800&q=80',
-      color: 'bg-secondary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-secondary',
+      description: 'شاحنات ضخمة وثقيلة بمواصفات قوية لأعمال النقل والإنشاءات.',
+      // صورة شاحنة سكانيا أو فولفو
+      image: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=1200&auto=format&fit=crop',
+      accentColor: 'group-hover:text-indigo-400',
+      btnAccent: 'hover:bg-indigo-600',
       icon: Truck,
       path: '/auctions/auctions-2car/trucks',
     },
     {
       id: 'buses',
       title: 'سوق الحافلات',
-      description: 'حافلات بجاهزية عالية مع خيارات متنوعة',
+      description: 'حافلات سياحية وركاب بمقاعد مريحة وتجهيزات أمان عالية المستوى.',
       // صورة حافلة سياحية حديثة
-      image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
-      color: 'bg-secondary/10',
-      bgColor: 'bg-card/40',
-      hoverColor: 'bg-card/60',
-      textColor: 'text-secondary',
+      image: 'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?q=80&w=1200&auto=format&fit=crop',
+      accentColor: 'group-hover:text-orange-400',
+      btnAccent: 'hover:bg-orange-600',
       icon: Bus,
       path: '/auctions/auctions-2car/buses',
+    },
+
+    // سوق سيارات الشركات
+    {
+      id: 'companiesCars',
+      title: 'سوق سيارات الشركات',
+      description: 'أسطول سيارات الشركات والمؤسسات بأسعار تصفية مميزة.',
+      // صورة موقف سيارات فاخرة للشركات
+      image: 'https://images.unsplash.com/photo-1550355291-bbee04a92027?q=80&w=1200&auto=format&fit=crop',
+      accentColor: 'group-hover:text-rose-400',
+      btnAccent: 'hover:bg-rose-600',
+      icon: Building2,
+      path: '/auctions/auctions-2car/companiesCars',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* رأس الصفحة */}
-      <div className="bg-card py-10 md:py-14 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          {/* زر العودة */}
-          <div className="mb-8">
-            <LoadingLink 
-              href="/auctions" 
-              className="inline-flex items-center text-foreground/80 hover:text-foreground transition-colors group backdrop-blur-sm"
-            >
-              <ChevronRight className="ml-2 rtl:rotate-180 transform group-hover:-translate-x-1 transition-transform" size={20} />
-              <span className="font-medium">العودة للسوق الرئيسي</span>
-            </LoadingLink>
-          </div>
-          
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center text-foreground">
-            سوق السيارات المتخصص
-          </h1>
-          <p className="text-lg md:text-xl opacity-90 max-w-3xl mx-auto text-center text-foreground/80">
-            تصفح أسواق متخصصة: الفارهة، الكلاسيكية، الكرفانات، الشاحنات، الحافلات
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#050b14] text-white selection:bg-blue-500 selection:text-white relative overflow-hidden">
+      
+      {/* خلفية جمالية متوهجة */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-900/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[100px]" />
       </div>
 
-      {/* قائمة الأسواق */}
-      <div className="max-w-7xl mx-auto py-10 md:py-16 px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {carMarkets.map((market) => {
-            const Icon = market.icon;
-            return (
-              <LoadingLink 
-                key={market.id}
-                href={market.path}
-                className={`group flex flex-col h-full rounded-2xl border border-border/50 overflow-hidden transition-all duration-300 hover:border-border backdrop-blur-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 ${market.bgColor} hover:${market.hoverColor}`}
-              >
-                <div className="p-6 flex flex-col h-full">
-                  <div className="flex items-center mb-4">
-                    <div className={`p-3 rounded-xl mr-3 ${market.textColor} bg-card/60 backdrop-blur-sm border border-border/50`}>
-                      <Icon size={24} />
-                    </div>
-                    <h3 className={`text-xl font-bold ${market.textColor}`}>{market.title}</h3>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* رأس الصفحة */}
+        <header className="pt-20 pb-14 text-center">
+          <div className="flex justify-center mb-8">
+            <LoadingLink
+              href="/#auctions"
+              className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-300 backdrop-blur-md"
+            >
+              <ChevronRight className="w-5 h-5 rtl:rotate-180 transition-transform group-hover:-translate-x-1" />
+              <span className="text-sm font-semibold tracking-wide">عودة للرئيسية</span>
+            </LoadingLink>
+          </div>
+
+          <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white drop-shadow-lg">
+            سوق السيارات المتخصص
+          </h1>
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-light">
+            استكشف مجموعتنا الحصرية من السيارات والمركبات. كل قسم مصمم لتلبية أعلى معايير الجودة والأداء.
+          </p>
+        </header>
+
+        {/* شبكة الأسواق */}
+        <main className="pb-32">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {carMarkets.map((market) => {
+              const Icon = market.icon;
+              return (
+                <LoadingLink
+                  key={market.id}
+                  href={market.path}
+                  className="group relative flex flex-col h-full rounded-3xl bg-[#0f172a] border border-white/5 overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-white/10 hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)]"
+                >
+                  {/* منطقة الصورة */}
+                  <div className="relative h-64 md:h-72 overflow-hidden">
+                    <Image
+                      src={market.image}
+                      alt={market.title}
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                    {/* طبقة تعتيم خفيفة جداً لتمييز النص إذا احتجنا، لكن هنا نتركها صافية للجمالية */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent opacity-80" />
                   </div>
-                  
-                  <div className="relative h-48 mb-5 overflow-hidden rounded-xl flex-shrink-0">
-                    {market.image ? (
-                      <Image 
-                        src={market.image}
-                        alt={market.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-card/50 flex items-center justify-center">
-                        <Car className="w-12 h-12 text-foreground/60" />
+
+                  {/* منطقة المحتوى */}
+                  <div className="relative z-20 p-7 flex flex-col flex-grow -mt-20">
+                    
+                    {/* أيقونة */}
+                    <div className="mb-4">
+                      <div className="inline-flex p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shadow-xl group-hover:bg-white transition-colors duration-300">
+                        <Icon size={26} className="text-white group-hover:text-[#0f172a] transition-colors duration-300" />
                       </div>
-                    )}
-                    <div className={`absolute inset-0 ${market.color} opacity-15`}></div>
+                    </div>
+
+                    {/* العنوان - تم إصلاحه ليكون أبيض ثم يتغير للون المميز */}
+                    <h3 className={`text-2xl font-bold mb-3 text-white transition-colors duration-300 ${market.accentColor}`}>
+                      {market.title}
+                    </h3>
+                    
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                      {market.description}
+                    </p>
+
+                    {/* زر الإجراء */}
+                    <div className="mt-auto pt-4 border-t border-white/5">
+                      <div className={`flex items-center justify-between w-full text-sm font-bold text-white bg-white/5 border border-white/10 rounded-xl px-5 py-3.5 transition-all duration-300 group-hover:bg-white group-hover:text-black ${market.btnAccent}`}>
+                        <span>تصفح السيارات</span>
+                        <ChevronRight className="w-5 h-5 rtl:rotate-180 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </div>
                   </div>
-                  
-                  <p className="mb-5 flex-grow text-foreground/70">{market.description}</p>
-                  
-                  <div className="mt-auto pt-3">
-                    {/* زر "ابدأ التصفح" – أزرق بنص أبيض */}
-                    <span className="inline-flex items-center justify-between w-full px-4 py-2.5 rounded-xl border border-border bg-primary text-white group-hover:bg-primary/90 group-hover:border-border transition-all">
-                      <span className="font-medium">ابدأ التصفح</span>
-                      <ChevronRight className="w-4 h-4 rtl:rotate-180 opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-1 transition-all duration-300" />
-                    </span>
-                  </div>
-                </div>
-              </LoadingLink>
-            );
-          })}
-        </div>
+                </LoadingLink>
+              );
+            })}
+          </div>
+        </main>
       </div>
     </div>
   );
