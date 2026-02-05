@@ -547,7 +547,7 @@ export default function SilentAuctionPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
           <div className="flex justify-end lg:justify-start">
             <LoadingLink
-              href="/auctions"
+              href="/auctions/auctions-1main"
               className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2.5 text-sm rounded-xl border border-border hover:border-primary/50 bg-card/50 hover:bg-card backdrop-blur-sm"
             >
               <ChevronRight className="h-4 w-4 rtl:rotate-180" />

@@ -149,7 +149,7 @@ export default function InstantAuctionCarDetailsPage() {
       <div className="border-b border-border bg-card/60 backdrop-blur">
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground">
-            <LoadingLink href="/auctions" className="hover:text-primary">الأسواق</LoadingLink>
+            <LoadingLink href="/auctions/auctions-1main" className="hover:text-primary">الأسواق</LoadingLink>
             <span className="text-foreground/50">/</span>
             <LoadingLink href="/auctions/auctions-1main/instant" className="hover:text-primary">السوق الفوري</LoadingLink>
             <span className="text-foreground/50">/</span>
