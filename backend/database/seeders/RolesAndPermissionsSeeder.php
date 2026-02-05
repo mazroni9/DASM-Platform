@@ -188,6 +188,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'owner_id' => $super_admin->id,
         ]);
 
+        // Ensure super_admin belongs to platform org (required for model_has_roles.organization_id)
+        if (Schema::hasColumn('users', 'organization_id')) {
+            $super_admin->update(['organization_id' => $platform_org->id]);
+        }
+
         foreach ($permissionsByModule as $module => $permissions) {
             foreach ($permissions as $permission) {
                 Permission::firstOrCreate(
@@ -261,6 +266,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 $columnName => 'admin',
             ];
 
+            if (Schema::hasColumn('users', 'organization_id')) {
+                $adminUserData['organization_id'] = $platform_org->id;
+            }
             if (Schema::hasColumn('users', 'email_verified_at')) {
                 $adminUserData['email_verified_at'] = now();
             }
@@ -272,11 +280,14 @@ class RolesAndPermissionsSeeder extends Seeder
             }
 
             $adminUser = User::create($adminUserData);
+            app()[PermissionRegistrar::class]->setPermissionsTeamId($platform_org->id);
             $adminUser->assignRole($adminRole);
             echo "Created admin user with ID: {$adminUser->id}\n";
         } else {
-            // Ensure admin user has the role
+            // Ensure admin user has the role (with team context for model_has_roles.organization_id)
             if (!$adminUser->hasRole('admin')) {
+                $teamId = $adminUser->organization_id ?? $platform_org->id;
+                app()[PermissionRegistrar::class]->setPermissionsTeamId($teamId);
                 $adminUser->assignRole($adminRole);
             }
         }

@@ -96,17 +96,22 @@ export async function proxy(request: NextRequest) {
     });
 
     if (!resp.ok) {
-      // token invalid/expired => روح login
-      if (!isGuestPath(pathname)) {
+      if (resp.status === 401 && !isGuestPath(pathname)) {
         const r = redirectToLogin(request);
         r.cookies.delete("access_token");
         return r;
       }
+      if (isGuestPath(pathname)) return NextResponse.next();
       return NextResponse.next();
     }
 
     const payload = await resp.json();
-    const role = normalizeRole(payload?.data?.type || payload?.type);
+    const rawType = payload?.data?.type ?? payload?.type;
+    const role = normalizeRole(
+      typeof rawType === "object" && rawType !== null && "value" in rawType
+        ? (rawType as { value: string }).value
+        : rawType
+    );
     const correctDashboard = ROLE_DASHBOARD_PATHS[role] || "/";
 
     // لو داخل وهو على auth pages => ودّيه داشبورد مناسب
@@ -127,9 +132,9 @@ export async function proxy(request: NextRequest) {
     }
 
     return NextResponse.next();
-  } catch (e) {
-    // لو فشل الاتصال بالباك: خليك آمن → مسارات محمية تروح login
-    if (!isGuestPath(pathname)) return redirectToLogin(request);
+  } catch (_e) {
+    // فشل الاتصال بالباكند أو أي خطأ: اترك الصفحة تُحمّل والعميل يتحقق (يتجنب 307 بعد تسجيل الدخول)
+    if (!isGuestPath(pathname)) return NextResponse.next();
     return NextResponse.next();
   }
 }
