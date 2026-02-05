@@ -96,15 +96,17 @@ const Navbar = () => {
 
               <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
                 <span>المزادات الرقمية</span>
+
                 <span
                   dir="ltr"
                   className="inline-flex items-baseline leading-none text-xl"
                 >
-                  <span style={{ color: "#003b70" }}>D</span>
-                  <span style={{ color: "#009345" }}>A</span>
-                  <span style={{ color: "#003b70" }}>S</span>
-                  <span style={{ color: "#003b70" }}>M</span>
-                  <span style={{ color: "#009345" }}>e</span>
+                  {/* ✅ الأزرق يصير أبيض في الـ dark */}
+                  <span className="text-[#003b70] dark:text-white">D</span>
+                  <span className="text-[#009345]">A</span>
+                  <span className="text-[#003b70] dark:text-white">S</span>
+                  <span className="text-[#003b70] dark:text-white">M</span>
+                  <span className="text-[#009345]">e</span>
                 </span>
               </span>
             </LoadingLink>
