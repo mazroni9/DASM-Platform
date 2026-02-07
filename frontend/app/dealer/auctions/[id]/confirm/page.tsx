@@ -89,7 +89,7 @@ export default function DealerConfirmSalePage({ params }: PageProps) {
   };
 
   const handleCancel = () => {
-    router.push(`/dealer/auctions/${car_id}`);
+    router.replace(`/dealer/auctions/${car_id}`);
   };
 
   // Loading State
