@@ -1,25 +1,26 @@
-"use client";
+'use client';
 
 import LoadingLink from "@/components/LoadingLink";
 import Link from "next/link";
 import {
   Timer,
   BellOff,
+  Video,
   Tv,
+  ArrowUpDown,
+  Eye,
   Settings,
   ExternalLink,
   ChevronRight,
   Shield,
   Users,
   Clock,
+  Play,
   Tag,
-  Radio,
-  SignalHigh,
-  ArrowRight,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AuctionsFinished from "@/components/AuctionsFinished";
+import AuctionsFinished from "@components/AuctionsFinished"; // تأكد من المسار الصحيح
 
 // =====================
 // الأنواع والبيانات
@@ -32,21 +33,16 @@ type AuctionMain = {
   id: AuctionId;
   name: string;
   slug: "live-market" | "instant" | "silent" | "fixed";
-  href: string;
+  href: string; // المسار النهائي للصفحة
   description: string;
   time: string;
   icon: LucideIcon;
-  theme: {
-    primary: string;
-    from: string;
-    to: string;
-    ring: string;
-    iconBg: string;
-    glow: string;
-  };
-  overlayImg?: string;
-  overlayOpacity?: string;
-  overlayGradient?: string;
+  accent: string; // لون النص
+  ring: string; // لون الإطار
+  bgGrad: string; // خلفية البطاقة
+  overlayImg?: string; // صورة خلفية اختيارية
+  overlayOpacity?: string; // شفافية الخلفية
+  overlayGradient?: string; // جريدينت إضافي فوق الصورة لاحترافية أعلى
 };
 
 const AUCTIONS_MAIN: AuctionMain[] = [
@@ -55,91 +51,113 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     name: "الحراج المباشر",
     slug: "live-market",
     href: "/auctions/auctions-1main/live-market",
-    description: "بث تفاعلي مباشر تجربة مزايدة فورية وشفافية كاملة.",
-    time: "٤:٠٠ م - ٧:٠٠ م",
-    icon: Radio,
-    theme: {
-      primary: "text-rose-500",
-      from: "from-rose-500/10",
-      to: "to-rose-900/5",
-      ring: "group-hover:border-rose-500/50",
-      iconBg: "bg-rose-500/10",
-      glow: "shadow-rose-500/20",
-    },
-    overlayImg: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000&auto=format&fit=crop",
-    overlayOpacity: "opacity-80",
-    overlayGradient: "bg-gradient-to-t from-black/80 via-black/20 to-transparent",
+    description:
+      "بث مباشر للمزايدة مع البائع والمشتري وعملاء المنصة — تجربة تفاعلية وسريعة",
+    time: "من الرابعة عصرًا إلى السابعة مساءً",
+    icon: Video,
+    accent: "text-red-500",
+    ring: "ring-red-600/40",
+    bgGrad: "bg-card",
+    overlayImg: "/showroom.jpg",
+    overlayOpacity: "opacity-25",
+    overlayGradient: "bg-gradient-to-t from-black/80 via-black/50 to-black/10",
   },
   {
     id: "instant_auction",
-    name: "السوق الفوري",
+    name: "السوق الفوري المباشر",
     slug: "instant",
     href: "/auctions/auctions-1main/instant",
-    description: "مزادات تنافسية بأسعار تصاعدية تبدأ من سعر الافتتاح.",
-    time: "٧:٠٠ م - ١٠:٠٠ م",
+    description:
+      "مزادات تصاعدية تبدأ من سعر افتتاح ثابت، ويستمر المشترون برفع عروضهم حتى الوصول للسعر المرغوب من البائع داخل مدة المزاد المحددة.",
+    time: "يومياً من الساعة 7 مساءً حتى 10 مساءً.",
     icon: Timer,
-    theme: {
-      primary: "text-blue-500",
-      from: "from-blue-500/10",
-      to: "to-blue-900/5",
-      ring: "group-hover:border-blue-500/50",
-      iconBg: "bg-blue-500/10",
-      glow: "shadow-blue-500/20",
-    },
+    accent: "text-primary",
+    ring: "ring-primary/40",
+    bgGrad: "bg-card",
+    // 🔹 استخدام احترافي لصورة grok auctioneer في السوق الفوري
     overlayImg: "/grok auctioneer.jpg",
-    overlayOpacity: "opacity-80",
-    overlayGradient: "bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent",
+    overlayOpacity: "opacity-40",
+    overlayGradient:
+      "bg-gradient-to-t from-slate-950/80 via-slate-950/50 to-slate-950/10",
   },
   {
     id: "late_auction",
     name: "السوق المتأخر",
     slug: "silent",
     href: "/auctions/auctions-1main/silent",
-    description: "مزاد هادئ وسرّي دون بث، قدم عرضك وانتظر النتيجة.",
-    time: "١٠:٠٠ م - ٤:٠٠ م",
+    description:
+      "مكمل للمزاد الفوري لكن بدون بث، عروض سرّية لا يطلع المزايدون على بعضها",
+    time: "من العاشرة مساءً إلى الرابعة عصرًا",
     icon: BellOff,
-    theme: {
-      primary: "text-violet-500",
-      from: "from-violet-500/10",
-      to: "to-violet-900/5",
-      ring: "group-hover:border-violet-500/50",
-      iconBg: "bg-violet-500/10",
-      glow: "shadow-violet-500/20",
-    },
+    accent: "text-secondary",
+    ring: "ring-secondary/40",
+    bgGrad: "bg-card",
+    // 🔹 خلفية احترافية للسوق المتأخر
     overlayImg: "/late_auction.webp",
-    overlayOpacity: "opacity-80",
-    overlayGradient: "bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent",
+    overlayOpacity: "opacity-40",
+    overlayGradient:
+      "bg-gradient-to-t from-slate-950/80 via-slate-900/45 to-transparent",
   },
   {
     id: "fixed_auction",
     name: "المزاد الثابت",
     slug: "fixed",
     href: "/auctions/auctions-1main/fixed",
-    description: "فرصة ثانية للسيارات التي لم تباع بأسعار محددة.",
-    time: "السبت (٤ ساعات)",
+    description:
+      "سيارات لم تُبع في المزادات الأخرى تُعرض هنا كفرصة ثانية في مزاد تقليدي بسيط ومحدد بوقت، وعند انتهاء العداد يفوز أعلى مزايد تلقائيًا.",
+    // ✅ تعديل النص المطلوب على الغلاف:
+    time: "يقام أسبوعيًا كل يوم سبت لمدة 4 ساعات.",
     icon: Tag,
-    theme: {
-      primary: "text-emerald-500",
-      from: "from-emerald-500/10",
-      to: "to-emerald-900/5",
-      ring: "group-hover:border-emerald-500/50",
-      iconBg: "bg-emerald-500/10",
-      glow: "shadow-emerald-500/20",
-    },
+    accent: "text-emerald-500",
+    ring: "ring-emerald-500/40",
+    bgGrad: "bg-card",
+    // 🔹 خلفية احترافية للمزاد الثابت
     overlayImg: "/fixed_auction.jpg",
-    overlayOpacity: "opacity-80",
-    overlayGradient: "bg-gradient-to-t from-emerald-950/80 via-emerald-900/20 to-transparent",
+    overlayOpacity: "opacity-40",
+    overlayGradient:
+      "bg-gradient-to-t from-emerald-950/80 via-emerald-900/50 to-transparent",
   },
 ];
 
 // =====================
-// المكونات
+// مكونات صغيرة
 // =====================
+const SectionHeader = ({
+  title,
+  subtitle,
+  icon: Icon,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mb-8 text-center"
+  >
+    <div className="flex items-center justify-center gap-3 mb-3">
+      {Icon ? (
+        <span className="inline-flex p-3 rounded-2xl bg-card/50 backdrop-blur-sm">
+          <Icon className="w-6 h-6 text-foreground" aria-hidden="true" />
+        </span>
+      ) : null}
+      <h1 className="text-3xl md:text-4xl font-extrabold text-foreground">
+        {title}
+      </h1>
+    </div>
+    {subtitle ? (
+      <p className="text-primary max-w-2xl mx-auto leading-relaxed">
+        {subtitle}
+      </p>
+    ) : null}
+  </motion.div>
+);
 
 const StatChip = ({ icon: Icon, label }: { icon: LucideIcon; label: string }) => (
-  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 backdrop-blur-md shadow-sm">
-    <Icon className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-    <span className="text-xs font-bold tracking-wide">{label}</span>
+  <div className="inline-flex items-center gap-2 bg-card/50 text-foreground px-3 py-1.5 rounded-xl backdrop-blur-sm border border-border">
+    <Icon className="w-4 h-4" aria-hidden="true" />
+    <span className="text-sm font-medium">{label}</span>
   </div>
 );
 
@@ -154,167 +172,192 @@ const PresenterPanel = ({
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, height: 0, y: -20 }}
-      animate={{ opacity: 1, height: "auto", y: 0 }}
-      exit={{ opacity: 0, height: 0, y: -20 }}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
-      className="mb-10 w-full overflow-hidden"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      className="mb-8 p-5 md:p-6 bg-card/90 text-foreground rounded-2xl shadow-xl border border-border/80 backdrop-blur-md"
+      role="region"
+      aria-label="لوحة تحكم المعلق"
     >
-      <div className="bg-[#0f172a]/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 md:p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
-        
-        <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-white/5 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
-                <Tv className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">مركز التحكم (المعلق)</h2>
-                <p className="text-xs text-slate-400">إدارة وتوجيه البث المباشر</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
-            >
-              <Settings className="h-5 w-5" />
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-xl font-bold">شاشة المعلق - لوحة التحكم</h2>
+        <button
+          onClick={onClose}
+          className="p-2 bg-background/60 hover:bg-border rounded-xl border border-border transition-colors"
+          title="إغلاق لوحة التحكم"
+          aria-label="إغلاق لوحة التحكم"
+        >
+          <Settings className="h-5 w-5" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-background/70 p-4 rounded-xl border border-border">
+          <h3 className="font-semibold mb-3 text-foreground/80">المزاد الحالي</h3>
+          <select
+            value={current}
+            onChange={(e) => onSelect(e.target.value)}
+            className="w-full p-2 rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            title="اختيار المزاد الحالي"
+            aria-label="اختيار المزاد الحالي"
+          >
+            <option value="">اختر المزاد</option>
+            {AUCTIONS_MAIN.map((a) => (
+              <option key={a.slug} value={a.slug}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="bg-background/70 p-4 rounded-xl border border-border">
+          <h3 className="font-semibold mb-3 text-foreground/80">عرض البيانات</h3>
+          <div className="flex gap-2">
+            <button className="flex-1 p-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors">
+              <ArrowUpDown className="h-4 w-4 mx-auto" aria-hidden="true" />
+              <span className="text-xs">جدول المزاد</span>
+            </button>
+            <button className="flex-1 p-2 rounded-xl bg-secondary hover:bg-secondary/90 text-xs font-semibold transition-colors">
+              <Eye className="h-4 w-4 mx-auto" aria-hidden="true" />
+              <span className="text-xs">تفاصيل السلعة</span>
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-4 bg-black/40 border border-white/5 rounded-2xl p-5">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">القناة الحالية</label>
-              <select
-                value={current}
-                onChange={(e) => onSelect(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 text-white rounded-xl p-3 focus:ring-2 focus:ring-primary focus:outline-none transition-all appearance-none cursor-pointer hover:bg-white/10"
-              >
-                <option value="" className="bg-slate-900">اختر المزاد...</option>
-                {AUCTIONS_MAIN.map((a) => (
-                  <option key={a.slug} value={a.slug} className="bg-slate-900">
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-              {current && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  <LoadingLink
-                    href={`/auctions/auctions-1main/${current}`}
-                    target="_blank"
-                    className="flex items-center justify-center w-full gap-2 p-2.5 bg-primary hover:bg-primary/90 rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-primary/25"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    <span>فتح البث</span>
-                  </LoadingLink>
-                </div>
-              )}
+        </div>
+
+        <div className="bg-background/70 p-4 rounded-xl border border-border">
+          <h3 className="font-semibold mb-3 text-foreground/80">روابط سريعة</h3>
+          {current ? (
+            <LoadingLink
+              href={`/auctions/auctions-1main/${current}`}
+              target="_blank"
+              className="flex items-center justify-center gap-2 p-2 bg-primary hover:bg-primary/90 rounded-xl text-sm font-medium text-white transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              <span>فتح في نافذة جديدة</span>
+            </LoadingLink>
+          ) : (
+            <p className="text-foreground/70 text-sm">اختر مزادًا لعرض الرابط</p>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-background/70 p-4 rounded-xl border border-border mt-4">
+        <h3 className="font-semibold mb-3 text-foreground/80">معاينة البث</h3>
+        <div className="aspect-video bg-black/80 rounded-xl flex items-center justify-center text-foreground/50 border border-border overflow-hidden">
+          {current ? (
+            <iframe
+              className="w-full h-full rounded-xl"
+              src="https://www.youtube.com/embed/live_stream?channel=UCxiLyu5z-T0FanDNotwTJcg&autoplay=0"
+              title="معاينة البث المباشر"
+              allowFullScreen
+            />
+          ) : (
+            <div className="text-center py-10">
+              <Tv className="h-10 w-10 mx-auto mb-2" aria-hidden="true" />
+              <p>يرجى اختيار المزاد لعرض البث</p>
             </div>
-            <div className="md:col-span-8 bg-black/40 border border-white/5 rounded-2xl p-1 relative aspect-video md:aspect-auto overflow-hidden flex items-center justify-center">
-              {current ? (
-                <iframe
-                  className="w-full h-full rounded-xl border border-white/5"
-                  src="https://www.youtube.com/embed/live_stream?channel=UCxiLyu5z-T0FanDNotwTJcg&autoplay=0&controls=0"
-                  title="معاينة البث"
-                  allowFullScreen
-                />
-              ) : (
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/10">
-                    <SignalHigh className="h-6 w-6 text-slate-500" />
-                  </div>
-                  <p className="text-slate-500 text-sm">بانتظار اختيار القناة...</p>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </motion.div>
   );
 };
 
-// =====================
-// بطاقة المزاد
-// =====================
-
 const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }) => {
   const Icon = auction.icon;
+  const isLive = auction.slug === "live-market";
   const hasOverlay = Boolean(auction.overlayImg);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay: index * 0.1, type: "spring", stiffness: 50 }}
-      className="group relative h-full w-full"
+      viewport={{ once: true }}
+      transition={{ duration: 0.45, delay: index * 0.06 }}
+      className="group relative h-full"
     >
       <LoadingLink
         href={auction.href}
-        className="block h-full w-full"
+        className={`block h-full max-w-sm mx-auto rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
         aria-label={`الدخول إلى ${auction.name}`}
       >
-        {/* الحاوية الرئيسية للبطاقة */}
-        <div 
-          className="relative h-[550px] w-full rounded-[2rem] bg-[#0f172a] border border-white/5 overflow-hidden transition-all duration-500 
-          hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/10" 
-        >
-          {/* صورة الخلفية والطبقات */}
-          <div className={`absolute inset-0 bg-gradient-to-b ${auction.theme.from} ${auction.theme.to} transition-all duration-500`} />
-          
-          {hasOverlay && (
-            <>
-              <div
-                className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-110 ${auction.overlayOpacity}`}
-                style={{ backgroundImage: `url('${auction.overlayImg}')` }}
-              />
-              <div className={`absolute inset-0 ${auction.overlayGradient}`} />
-            </>
-          )}
+        {/* 🔹 خلفية صورة ديناميكية لكل نوع مزاد */}
+        {hasOverlay && (
+          <>
+            <div
+              className={`absolute inset-0 bg-center bg-no-repeat bg-cover pointer-events-none ${
+                auction.overlayOpacity ?? "opacity-20"
+              }`}
+              style={{ backgroundImage: `url('${auction.overlayImg}')` }}
+              aria-hidden="true"
+            />
+            <div
+              className={`absolute inset-0 pointer-events-none ${
+                auction.overlayGradient ??
+                "bg-gradient-to-t from-black/50 via-black/30 to-transparent"
+              }`}
+              aria-hidden="true"
+            />
+          </>
+        )}
 
-          {/* محتوى البطاقة */}
-          <div className="relative z-10 flex flex-col h-full p-6 md:p-7">
-            {/* الأيقونة والعنوان */}
-            <div className="mb-auto">
-              <div className="inline-flex p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 mb-5 group-hover:bg-white/20 transition-colors shadow-lg">
-                <Icon className={`h-6 w-6 ${auction.theme.primary}`} strokeWidth={2.5} />
-              </div>
-              
-              <h3 className={`text-xl md:text-2xl font-black text-white mb-3 leading-tight drop-shadow-md`}>
-                {auction.name}
-              </h3>
-              
-              <p className="text-slate-100 text-sm leading-relaxed font-medium mb-4 line-clamp-3 drop-shadow-sm">
-                {auction.description}
-              </p>
-
-              <div className="flex items-center gap-2 text-slate-200 text-xs font-bold uppercase tracking-wider mb-4 bg-black/40 w-fit px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{auction.time}</span>
-              </div>
-            </div>
-
-            {/* زر الإجراء */}
-            <div className="mt-auto">
-              <div className={`flex items-center justify-between w-full text-sm font-bold text-white bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3.5 transition-all duration-300 group-hover:bg-white group-hover:text-black ${auction.theme.ring}`}>
-                <span>ابدأ المزايدة</span>
-                <ChevronRight className="w-5 h-5 rtl:rotate-180 transition-transform group-hover:translate-x-1" />
-              </div>
-            </div>
+        {/* محتوى */}
+        <div className="relative z-10 p-4 lg:p-5 flex flex-col h-full">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <span className="p-2.5 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/70">
+              <Icon className={`w-5 h-5 ${auction.accent}`} aria-hidden="true" />
+            </span>
+            <h3 className={`text-base md:text-lg font-bold ${auction.accent}`}>
+              {auction.name}
+            </h3>
+          </div>
+          <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
+            {auction.description}
+          </p>
+          <div className="flex items-center justify-center gap-2 text-foreground/90 text-xs md:text-sm mb-3">
+            <Clock className="w-4 h-4" aria-hidden="true" />
+            <span>{auction.time}</span>
           </div>
 
-          {/* لمعان خفيف جداً */}
-          <div className="absolute inset-0 rounded-[2rem] ring-1 ring-inset ring-white/10 pointer-events-none" />
+          {/* فيديو صغير للحراج المباشر فقط */}
+          {isLive ? (
+            <div className="w-full max-w-[200px] mx-auto mb-4">
+              <video
+                className="w-full rounded-xl border border-border/80 shadow-sm"
+                poster="/showroom.jpg"
+                muted
+                loop
+                autoPlay
+                playsInline
+                preload="metadata"
+              >
+                <source src="/live-auction.mp4" type="video/mp4" />
+                متصفحك لا يدعم عنصر الفيديو.
+              </video>
+            </div>
+          ) : null}
+
+          <div className="mt-auto text-center">
+            <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card/60 text-foreground text-xs md:text-sm font-semibold border border-border group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-colors">
+              ادخل السوق الآن
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </div>
         </div>
+
+        {/* تأثير طبقة لمعان خفيف */}
+        <div
+          className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/0 to-white/5 group-hover:from-white/10 group-hover:to-white/20 transition-all"
+          aria-hidden="true"
+        />
       </LoadingLink>
     </motion.div>
   );
 };
 
 // =====================
-// الصفحة الرئيسية
+// الصفحة
 // =====================
-
 export default function AuctionsMainPage() {
   const [showPresenter, setShowPresenter] = useState(false);
   const [currentAuction, setCurrentAuction] = useState<string>("");
@@ -324,99 +367,87 @@ export default function AuctionsMainPage() {
 
   return (
     <main
-      className="min-h-screen bg-[#050b14] text-white selection:bg-primary selection:text-white relative overflow-x-hidden"
+      className="min-h-screen bg-gradient-to-b from-background via-background to-background/95"
       dir="rtl"
     >
-      {/* خلفية جمالية */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px]" />
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 py-8 md:py-12">
-        
-        {/* ✅ زر العودة - تم نقله هنا فوق الهيرو */}
-        <div className="flex justify-start mb-6">
-          <Link
-            href="/#auctions"
-            className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-all text-sm font-medium backdrop-blur-sm"
-          >
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span>عودة للرئيسية</span>
-          </Link>
-        </div>
-
-        {/* قسم الهيرو (Hero) */}
-        <div className="relative mb-12 md:mb-16">
-          <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-primary opacity-50" />
-            
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-              <div className="md:w-2/3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-4">
-                  <Shield className="w-3 h-3" />
-                  نظام مزايدات آمن
-                </div>
-                <h1 className="text-3xl md:text-5xl font-black mb-4 leading-tight">
-                  محرك المزادات <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">الرباعي</span>
+      {/* Hero */}
+      <div className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_40%),radial-gradient(circle_at_70%_30%,rgba(168,85,247,0.14),transparent_35%)]"
+          aria-hidden="true"
+        />
+        <div className="container mx-auto px-4 py-10 relative">
+          <div className="relative rounded-3xl border border-border bg-card/80 backdrop-blur-md shadow-xl px-5 py-7 md:px-8 md:py-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-2">
+                  محرك المزادات الرباعي لأسواق المنصة
                 </h1>
-                <p className="text-slate-400 text-lg md:text-xl leading-relaxed max-w-2xl font-light">
-                  تجربة مزايدة عادلة وشفافة. منصة متكاملة تربط البائعين بالمشترين في بيئة تنافسية آمنة وموثوقة.
+                <p className="text-primary max-w-2xl text-sm md:text-base leading-relaxed">
+                  نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي.
+                  المنافسة تعتمد على العرض والطلب الطبيعي.
                 </p>
               </div>
-              
-              {/* زر شاشة المعلق فقط هنا */}
-              <div className="flex flex-col sm:flex-row gap-3 md:w-1/3 justify-end">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={handlePrevToggle}
-                  className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm transition-all duration-300 ${showPresenter ? 'bg-white text-black' : 'bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)]'}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold shadow-lg transition-colors"
+                  aria-pressed={showPresenter}
+                  aria-label="فتح/إغلاق شاشة المعلق"
                 >
-                  <Tv className="h-5 w-5" />
+                  <Tv className="h-5 w-5" aria-hidden="true" />
                   شاشة المعلق
                 </button>
+
+                {/* الزر المصحّح: العودة لجميع الأسواق */}
+                <Link
+                  href="/auctions"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/50 text-foreground hover:bg-border border border-border font-semibold text-sm"
+                >
+                  العودة لجميع الأسواق
+                </Link>
               </div>
             </div>
 
-            {/* شريط الإحصائيات */}
-            <div className="flex flex-wrap gap-4 mt-8 pt-8 border-t border-white/5">
-              <StatChip icon={Shield} label="تشفير كامل للبيانات" />
-              <StatChip icon={Users} label="أكثر من 50,000 مشتري" />
-              <StatChip icon={Clock} label="بث مباشر 24/7" />
+            <div className="mt-5 flex flex-wrap gap-3">
+              <StatChip icon={Shield} label="أمان تام" />
+              <StatChip icon={Users} label="+50K مشترك" />
+              <StatChip icon={Clock} label="مباشر يوميًا" />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* لوحة التحكم القابلة للطي */}
-        <div className="w-full">
-          <AnimatePresence>
-            {showPresenter && (
-              <PresenterPanel
-                current={currentAuction}
-                onClose={() => setShowPresenter(false)}
-                onSelect={(slug) => setCurrentAuction(slug)}
-              />
-            )}
-          </AnimatePresence>
-        </div>
+      {/* Presenter Panel */}
+      <div className="container mx-auto px-4">
+        <AnimatePresence>
+          {showPresenter && (
+            <PresenterPanel
+              current={currentAuction}
+              onClose={() => setShowPresenter(false)}
+              onSelect={(slug) => setCurrentAuction(slug)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
 
-        {/* شبكة البطاقات */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+      {/* Cards */}
+      <div className="container mx-auto px-4 pb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {cards.map((a, i) => (
             <AuctionCard key={a.slug} auction={a} index={i} />
           ))}
         </div>
 
-        {/* قسم المزادات المنتهية */}
-        <div className="bg-[#0f172a]/50 backdrop-blur-md border border-white/5 rounded-3xl p-6 md:p-8 relative">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <span className="w-1.5 h-6 bg-slate-600 rounded-full"></span>
-            أرشيف المزادات المنتهية
+        {/* Finished Section */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            المزادات المنتهية
           </h2>
-          <div className="w-full">
+          <div className="rounded-2xl border border-border/70 bg-card/80 backdrop-blur-md p-4 md:p-5 shadow-md">
             <AuctionsFinished />
           </div>
         </div>
-
       </div>
     </main>
   );
