@@ -1,12 +1,14 @@
 // =============================================================
 // 🏗️ الصفحة الرئيسية – DASMe | Digital Auctions Specialists Markets
-// ✨ تصميم احترافي عالمي – Hero 100vh + Robust Slideshow (Skip broken) + Slow Zoom
+// ✨ تصميم احترافي عالمي – معالجة أخطاء runtime + حماية الهيدرِيشِن + قسم البث الاحترافي
 // =============================================================
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-
+import React, { useState, useEffect, useMemo } from "react";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/ar";
 import {
   Car,
   Shield,
@@ -17,37 +19,11 @@ import {
   PlayCircle,
   Clock,
   DollarSign,
-  ChevronDown,
 } from "lucide-react";
-
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Footer from "@/components/shared/Footer";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
 import api from "@/lib/axios";
-
-// ========== 📸 صور الخلفية (محدّثة + أكثر + مع حماية من الروابط المعطوبة) ==========
-type HeroImage = { src: string; alt: string };
-
-const UNSPLASH_IXID =
-  "M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-
-const u = (photoId: string, w = 2400) =>
-  `https://images.unsplash.com/${photoId}?ixlib=rb-4.0.3&ixid=${UNSPLASH_IXID}&auto=format&fit=crop&w=${w}&q=80`;
-
-const HERO_IMAGES: HeroImage[] = [
-  // ✅ (روابط بصيغة ixlib/ixid الحديثة لتقليل احتمالات 404)
-  { alt: "Luxury car front view", src: u("photo-1568605117036-5fe5e7bab0b7") },
-  { alt: "Classic red car", src: u("photo-1494976388531-d1058494cdd8") },
-  { alt: "Sports car on the road", src: u("photo-1511919884226-fd3cad34687c") },
-  { alt: "Sports car close up", src: u("photo-1492144534655-ae79c964c9d7") },
-  { alt: "Luxury car showroom", src: u("photo-1603584173870-7f23fdae1b7a") },
-
-  // ✅ رابطك الثاني بعد الإصلاح (كان غالباً يبوّظ بدون ixlib)
-  { alt: "Silver Mercedes - clean & professional", src: u("photo-1617788138017-80ad40651399") },
-
-  // ✅ رابطك الثالث بعد الإصلاح (Ferrari)
-  { alt: "Red supercar - vibrant", src: u("photo-1580273916550-e323be2ebcc9") },
-];
 
 // ========== Utilities ==========
 
@@ -56,6 +32,8 @@ function toEmbedUrl(url?: string | null): string | null {
   try {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./, "");
+
+    // YouTube
     if (host === "youtube.com" || host === "m.youtube.com") {
       const id = u.searchParams.get("v");
       if (id) return `https://www.youtube.com/embed/${id}?rel=0`;
@@ -65,18 +43,21 @@ function toEmbedUrl(url?: string | null): string | null {
       const id = u.pathname.slice(1);
       if (id) return `https://www.youtube.com/embed/${id}?rel=0`;
     }
+
+    // Vimeo (basic)
     if (host === "vimeo.com") {
       const id = u.pathname.split("/").filter(Boolean)[0];
       if (id) return `https://player.vimeo.com/video/${id}`;
     }
     if (host === "player.vimeo.com") return url;
+
     return url;
   } catch {
     return null;
   }
 }
 
-// ========== Components ==========
+// ========== typing effect للعنوان الرئيسي (مرة واحدة) ==========
 
 const TypingMainTitle = ({
   text,
@@ -102,16 +83,18 @@ const TypingMainTitle = ({
 
   return (
     <h1
-      className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-tight drop-shadow-2xl"
+      className="text-3xl md:text-5xl lg:text-6xl font-bold text-primary leading-tight"
       suppressHydrationWarning
     >
       {displayed}
       {charIndex < text.length ? (
-        <span className="inline-block w-[3px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-cyan-400" />
+        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-primary" />
       ) : null}
     </h1>
   );
 };
+
+// ========== typing & deleting loop للجمل الدوّارة ==========
 
 const RotatingSentences = ({
   start,
@@ -137,10 +120,12 @@ const RotatingSentences = ({
 
   useEffect(() => {
     if (!start) return;
+
     const current = sentences[sentenceIndex];
     const typingSpeed = 50;
     const deletingSpeed = 40;
     const pauseAtEnd = 1400;
+
     const delay = isDeleting ? deletingSpeed : typingSpeed;
 
     const timer = setTimeout(() => {
@@ -155,27 +140,63 @@ const RotatingSentences = ({
         }
       }
     }, delay);
+
     return () => clearTimeout(timer);
   }, [start, charIndex, isDeleting, sentenceIndex, sentences]);
 
   if (!start) return null;
+
   const current = sentences[sentenceIndex];
   const text = current.slice(0, charIndex);
 
   return (
     <p
-      className="text-white/90 text-lg md:text-2xl font-medium max-w-3xl mx-auto mt-6 leading-relaxed drop-shadow-lg min-h-[3.5rem]"
+      className="text-foreground text-lg md:text-xl max-w-3xl mx-auto mt-6 leading-relaxed"
       suppressHydrationWarning
     >
       {text}
       {!isDeleting && charIndex === current.length ? (
-        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-cyan-400" />
+        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-primary" />
       ) : null}
     </p>
   );
 };
 
-// ========== Live Broadcast ==========
+// ========== عدّ تنازلي بسيط للمزادات ==========
+
+const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
+  dayjs.extend(relativeTime);
+  dayjs.locale("ar");
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    if (!endTime) {
+      setTimeLeft("");
+      return;
+    }
+    const updateCountdown = () => {
+      const now = dayjs();
+      const end = dayjs(endTime);
+      if (!end.isValid()) return setTimeLeft("");
+      const diff = end.diff(now);
+
+      if (diff <= 0) return setTimeLeft("انتهى المزاد");
+      setTimeLeft(end.fromNow(true));
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 60 * 1000);
+    return () => clearInterval(timer);
+  }, [endTime]);
+
+  return (
+    <span suppressHydrationWarning>
+      {timeLeft ? `ينتهي خلال ${timeLeft}` : "—"}
+    </span>
+  );
+};
+
+// ========== قسم البث الاحترافي ==========
 
 type Broadcast = {
   title?: string | null;
@@ -336,7 +357,7 @@ const LiveBroadcastSection = () => {
   );
 };
 
-// ========== Stats Section ==========
+// ========== قسم الإحصائيات ==========
 
 const StatsSection = () => {
   const stats = [
@@ -382,6 +403,7 @@ const StatsSection = () => {
             إحصائيات حقيقية تثبت جودة خدماتنا وثقة عملائنا
           </p>
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {stats.map((stat, index) => (
             <motion.div
@@ -409,7 +431,7 @@ const StatsSection = () => {
   );
 };
 
-// ========== Benefits Section ==========
+// ========== قسم المزايا ==========
 
 const BenefitsSection = () => {
   const benefits = [
@@ -483,153 +505,53 @@ const BenefitsSection = () => {
   );
 };
 
-// ========== HERO helpers (skip broken images) ==========
-
-function nextAvailableIndex(from: number, broken: boolean[]) {
-  const len = broken.length;
-  for (let step = 1; step <= len; step++) {
-    const idx = (from + step) % len;
-    if (!broken[idx]) return idx;
-  }
-  return from; // لو كله بايظ (نادر) خليك على نفس الصورة
-}
-
-// ========== Page ==========
+// ========== الصفحة الرئيسية ==========
 
 export default function Page() {
   const [titleDone, setTitleDone] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Hero slideshow state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [broken, setBroken] = useState<boolean[]>(
-    () => Array(HERO_IMAGES.length).fill(false)
-  );
-
-  const allBroken = useMemo(() => broken.every(Boolean), [broken]);
-
-  // preload next image فقط (خفيف)
-  useEffect(() => {
-    const next = nextAvailableIndex(currentImageIndex, broken);
-    const img = new Image();
-    img.src = HERO_IMAGES[next]?.src;
-  }, [currentImageIndex, broken]);
-
-  // slideshow timing (متوافق مع slow zoom)
-  useEffect(() => {
-    setMounted(true);
-
-    if (allBroken) return;
-
-    // ✅ كل 7 ثواني (أهدى + يدي وقت للزوم)
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => nextAvailableIndex(prev, broken));
-    }, 7000);
-
-    return () => clearInterval(interval);
-  }, [broken, allBroken]);
-
-  const handleImageError = (idx: number) => {
-    setBroken((prev) => {
-      if (prev[idx]) return prev;
-      const copy = [...prev];
-      copy[idx] = true;
-      return copy;
-    });
-
-    // انقل فورًا للصورة التالية السليمة
-    setCurrentImageIndex((prev) => nextAvailableIndex(prev, broken));
-  };
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
-      {/* ✅ HERO SECTION - 100VH + Cinematic Zoom & Fade + Skip broken */}
-      <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-slate-900">
-        {/* Fallback Background (حتى لو الإنترنت فصل/الصور فشلت) */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#07101f] via-[#0a1628] to-black" />
-
-        {/* Background Slideshow */}
-        <div className="absolute inset-0 z-0">
-          {!allBroken ? (
-            <AnimatePresence mode="sync">
-              <motion.img
-                key={`${currentImageIndex}-${HERO_IMAGES[currentImageIndex]?.src}`}
-                src={HERO_IMAGES[currentImageIndex]?.src}
-                alt={HERO_IMAGES[currentImageIndex]?.alt || "Luxury Car Background"}
-                onError={() => handleImageError(currentImageIndex)}
-                // بداية
-                initial={{ opacity: 0, scale: 1.02 }}
-                // نهاية (زوم بطيء)
-                animate={{ opacity: 1, scale: 1.12 }}
-                // خروج
-                exit={{ opacity: 0 }}
-                transition={{
-                  opacity: { duration: 0.8, ease: "easeOut" },
-                  scale: { duration: 7.2, ease: "linear" },
-                }}
-                className="absolute inset-0 w-full h-full object-cover will-change-transform"
-                loading="eager"
-                fetchPriority="high"
-              />
-            </AnimatePresence>
-          ) : null}
-
-          {/* Overlay: طبقة سوداء شفافة لقراءة النصوص */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-black/50 to-black/30 z-10" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-20 container mx-auto px-4 sm:px-6 text-center">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-secondary dark:bg-background">
+        <div className="container mx-auto px-4 sm:px-6 py-16 md:py-20 lg:py-24 relative z-10 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
-            className="flex flex-col items-center"
+            transition={{ duration: 0.8 }}
           >
             <TypingMainTitle
               text="Digital Auctions Specialists Markets"
               speed={60}
               onDone={() => setTitleDone(true)}
             />
-
             <RotatingSentences start={mounted && titleDone} />
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5, duration: 1 }}
-              className="text-white/80 text-base md:text-xl max-w-2xl mx-auto mt-6 leading-relaxed drop-shadow-md px-4"
-            >
+            <p className="text-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 md:mt-6 leading-relaxed px-4">
               منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات
               ذكية، شفافية مطلقة، ووصول عالمي.
-            </motion.p>
+            </p>
           </motion.div>
         </div>
-
-        {/* Scroll Indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, y: [0, 10, 0] }}
-          transition={{ delay: 2, duration: 2, repeat: Infinity }}
-          className="absolute bottom-10 z-20 flex flex-col items-center gap-2 text-white/70"
-        >
-          <span className="text-xs font-medium tracking-widest uppercase">
-            اكتشف المزيد
-          </span>
-          <ChevronDown className="w-6 h-6" />
-        </motion.div>
       </section>
 
-      {/* Other Sections */}
-      <section className="py-12 md:py-16 bg-background border-y border-border">
+      {/* ✅ اختر السوق المتخصص — نفس السكشن الصحيح بالظبط */}
+      <section className="py-8 md:py-12 bg-background border-y border-border">
         <div className="container mx-auto px-4 sm:px-6">
           <MarketTypeNav />
         </div>
       </section>
 
+      {/* قسم البث الاحترافي */}
       <LiveBroadcastSection />
+
+      {/* الأقسام */}
       <StatsSection />
+
       <BenefitsSection />
+
       <Footer />
     </>
   );
