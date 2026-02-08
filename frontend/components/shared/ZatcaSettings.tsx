@@ -110,6 +110,7 @@ export default function ZatcaSettings({
         city: val("city"),
         invoice_report_type: val("invoice_report_type"),
         report_method: val("report_method"),
+        is_zatca_verified: zatcaSettings.is_zatca_verified,
       }));
     }
   }, [initialData]);
@@ -245,25 +246,20 @@ export default function ZatcaSettings({
 
       const fd = new FormData();
 
-      const baseFields: (keyof ZatcaVerifiyFormData)[] = [
-        "otp",
-      ];
-
-      baseFields.forEach((k) => {
-        const v = formData[k];
-        fd.append(String(k), String(v));
-      });
+      fd.append('otp', String(verifyFormData.otp));
 
       const response = await api.post(verifyEndpoint, fd);
 
       if (response?.data?.success) {
         toast.success("تم تفعيل الزكاة والدخل بنجاح");
 
+        setFormData(prev => ({...prev, is_zatca_verified: true}));
+
         if (onSuccess) {
           onSuccess(response?.data?.data);
         }
       } else {
-        toast.error("فشل في العملية");
+        toast.error(response?.data?.data?.message);
       }
     } catch (error: any) {
       // Error Handling

@@ -727,7 +727,7 @@ Route::middleware('auth:sanctum')
         // ─────────────────────────────────────────────────────────────
         // 
         Route::apiResource('zatcaSettings', ExhibitorZatcaSettingsController::class)->only(['index', 'store']);
-        Route::apiResource('zatcaVerify', ExhibitorZatcaVerifyController::class);
+        Route::post('zatcaVerify', ExhibitorZatcaVerifyController::class);
     });
 
 /*
