@@ -1,6 +1,6 @@
-<?php 
+<?php
 
-namespace App\Classes;
+namespace Bl\FatooraZatca\Classes;
 
 class ReportMethod
 {

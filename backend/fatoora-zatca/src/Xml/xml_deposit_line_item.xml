@@ -1,0 +1,39 @@
+    <cac:InvoiceLine>
+        <cbc:ID>ITEM_ID</cbc:ID>
+        <cbc:InvoicedQuantity unitCode="PCE">0.00</cbc:InvoicedQuantity>
+        <cbc:LineExtensionAmount currencyID="SET_CURRENCY">0.00</cbc:LineExtensionAmount>
+        <cac:DocumentReference>
+            <cbc:ID>SET_INVOICE_SERIAL_NUMBER</cbc:ID>
+            <cbc:IssueDate>SET_ISSUE_DATE</cbc:IssueDate>
+            <cbc:IssueTime>SET_ISSUE_TIME</cbc:IssueTime>
+            <cbc:DocumentTypeCode>386</cbc:DocumentTypeCode>
+        </cac:DocumentReference>
+        <cac:TaxTotal>
+            <cbc:TaxAmount currencyID="SET_CURRENCY">0.00</cbc:TaxAmount>
+            <cbc:RoundingAmount currencyID="SET_CURRENCY">0.00</cbc:RoundingAmount>
+            <cac:TaxSubtotal>
+                <cbc:TaxableAmount currencyID="SET_CURRENCY">SET_TAXABLE_AMOUNT</cbc:TaxableAmount>
+                <cbc:TaxAmount currencyID="SET_CURRENCY">SET_TAX_AMOUNT</cbc:TaxAmount>
+                <cac:TaxCategory>
+                    <cbc:ID>S</cbc:ID>
+                    <cbc:Percent>15.00</cbc:Percent>
+                    <cac:TaxScheme>
+                        <cbc:ID>VAT</cbc:ID>
+                    </cac:TaxScheme>
+                </cac:TaxCategory>
+            </cac:TaxSubtotal>
+        </cac:TaxTotal>
+        <cac:Item>
+            <cbc:Name>ITEM_NAME</cbc:Name>
+            <cac:ClassifiedTaxCategory>
+                <cbc:ID>S</cbc:ID>
+                <cbc:Percent>15.00</cbc:Percent>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:ClassifiedTaxCategory>
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="SET_CURRENCY">0.00</cbc:PriceAmount>
+        </cac:Price>
+    </cac:InvoiceLine>

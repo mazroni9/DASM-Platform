@@ -20,8 +20,10 @@
         "laravel/tinker": "^2.10.1",
         "myfatoorah/library": "^2.2",
         "nwidart/laravel-modules": "^12.0",
+        "phpseclib/phpseclib": "~3.0",
         "predis/predis": "^3.2",
         "pusher/pusher-php-server": "^7.2",
+        "simplesoftwareio/simple-qrcode": "~4.2",
         "spatie/laravel-activitylog": "^4.10",
         "spatie/laravel-permission": "^6.23"
     },
@@ -39,7 +41,8 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
-            "Modules\\": "Modules/"
+            "Modules\\": "Modules/",
+            "Bl\\FatooraZatca\\": "fatoora-zatca/src/"
         },
         "files":[
             "app/Helpers/SettingsHelper.php"

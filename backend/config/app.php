@@ -163,6 +163,7 @@ return [
         // Package Service Providers...
         // Use our custom CloudinaryServiceProvider instead of the package one
         App\Providers\CloudinaryServiceProvider::class,
+        Bl\FatooraZatca\FatooraZatcaServiceProvider::class,
 
         // Application Service Providers...
         App\Providers\AppServiceProvider::class,

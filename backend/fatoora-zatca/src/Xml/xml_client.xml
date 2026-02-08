@@ -1,0 +1,19 @@
+        <cac:Party>
+SET_CLIENT_PARTY_IDENTIFICATION
+            <cac:PostalAddress>
+                <cbc:StreetName>SET_CLIENT_STREET_NAME</cbc:StreetName>
+                <cbc:BuildingNumber>SET_CLIENT_BUILDING_NUMBER</cbc:BuildingNumber>
+                <cbc:PlotIdentification>SET_CLIENT_PLOT_IDENTIFICATION</cbc:PlotIdentification>
+                <cbc:CitySubdivisionName>SET_CLIENT_SUB_DIVISION_NAME</cbc:CitySubdivisionName>
+                <cbc:CityName>SET_CLIENT_CITY_NAME</cbc:CityName>
+                <cbc:PostalZone>SET_CLIENT_POSTAL_ZONE</cbc:PostalZone>
+                
+                <cac:Country>
+                    <cbc:IdentificationCode>SET_CLIENT_COUNTRY_CODE</cbc:IdentificationCode>
+                </cac:Country>
+            </cac:PostalAddress>
+SET_CLIENT_PARTY_TAX_SCHEMA
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName>SET_CLIENT_REGISTRATION_NAME</cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>

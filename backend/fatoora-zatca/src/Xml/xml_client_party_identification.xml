@@ -1,0 +1,3 @@
+            <cac:PartyIdentification>
+                <cbc:ID schemeID="NAT">SET_CLIENT_NATIONAL_ID</cbc:ID>
+            </cac:PartyIdentification>

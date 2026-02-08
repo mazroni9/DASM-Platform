@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Classes\ReportMethod;
+use Bl\FatooraZatca\Classes\ReportMethod;
 
 class ZatcaUser extends User
 {

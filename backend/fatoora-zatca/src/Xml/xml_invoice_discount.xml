@@ -1,0 +1,12 @@
+    <cac:AllowanceCharge>
+        <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+        <cbc:AllowanceChargeReason>SET_DISCOUNT_REASON</cbc:AllowanceChargeReason>
+        <cbc:Amount currencyID="SAR">SET_DISCOUNT_AMOUNT</cbc:Amount>
+        <cac:TaxCategory>
+            <cbc:ID>SET_TAX_CATEGORY_CODE</cbc:ID>
+            <cbc:Percent>SET_TAX_PERCENTAGE</cbc:Percent>
+            <cac:TaxScheme>
+                <cbc:ID>VAT</cbc:ID>
+            </cac:TaxScheme>
+        </cac:TaxCategory>
+    </cac:AllowanceCharge>
