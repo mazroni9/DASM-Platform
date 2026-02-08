@@ -48,6 +48,7 @@ use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW: Admin Blog Controller
+use App\Http\Controllers\Admin\AuctionActivityLogController;
 
 // ========= Admin Panel (New) =========
 use App\Http\Controllers\AdminPanel\UserController as AdminPanelUserController;
@@ -748,6 +749,15 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         // ─────────────────────────────────────────────────────────────
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])
             ->middleware('can:activity_logs.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.2.1 Auction Activity Log (Real-time منطق المزادات)
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('auction-activity-log')->middleware('can:auctions.view')->group(function () {
+            Route::get('/', [AuctionActivityLogController::class, 'index']);
+            Route::get('/config', [AuctionActivityLogController::class, 'config']);
+            Route::put('/config', [AuctionActivityLogController::class, 'updateConfig']);
+        });
 
         // ─────────────────────────────────────────────────────────────
         // 8.3 Users Management

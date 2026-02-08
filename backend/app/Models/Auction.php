@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Services\AuctionRealtimeLogService;
 
 class Auction extends Model
 {
@@ -38,6 +39,7 @@ class Auction extends Model
     protected $fillable = [
         'car_id',
         'session_id',
+        'is_test',
         'start_time',
         'end_time',
         'minimum_bid',
@@ -63,6 +65,7 @@ class Auction extends Model
         'last_bid_time' => 'datetime',
         'control_room_approved' => 'boolean',
         'approved_for_live' => 'boolean',
+        'is_test' => 'boolean',
     ];
 
     protected $appends = [
@@ -242,11 +245,24 @@ class Auction extends Model
     public function processBid($amount, $userId): array
     {
         if (!$this->isActive()) {
+            AuctionRealtimeLogService::log('bid_rejected', 'auction', (int) $this->id, [
+                'reason' => 'auction_not_active',
+                'message' => 'This auction is not active',
+                'user_id' => $userId,
+                'bid_amount' => (float) $amount,
+            ]);
             return ['success' => false, 'message' => 'This auction is not active'];
         }
 
         $current = (float) ($this->current_bid ?? 0);
         if ((float)$amount <= $current) {
+            AuctionRealtimeLogService::log('bid_rejected', 'auction', (int) $this->id, [
+                'reason' => 'bid_not_higher',
+                'message' => 'Bid must be higher than current bid',
+                'user_id' => $userId,
+                'bid_amount' => (float) $amount,
+                'current_bid' => $current,
+            ]);
             return ['success' => false, 'message' => 'Bid must be higher than current bid'];
         }
 
@@ -267,11 +283,24 @@ class Auction extends Model
                 $maxAllowed = $basePrice * 1.3; // +30%
 
                 if ((float)$amount < $minAllowed || (float)$amount > $maxAllowed) {
+                    AuctionRealtimeLogService::log('bid_rejected', 'auction', (int) $this->id, [
+                        'reason' => 'outside_range',
+                        'message' => 'Bid must be within the allowed range',
+                        'user_id' => $userId,
+                        'bid_amount' => (float) $amount,
+                        'min_allowed' => $minAllowed,
+                        'max_allowed' => $maxAllowed,
+                    ]);
                     return ['success' => false, 'message' => 'Bid must be within the allowed range'];
                 }
 
                 if ($this->auction_type === AuctionType::SILENT_INSTANT && (float)$amount >= (float)($this->reserve_price ?? 0)) {
                     $this->acceptBid($amount, $userId);
+                    AuctionRealtimeLogService::log('bid_auto_accepted', 'auction', (int) $this->id, [
+                        'user_id' => $userId,
+                        'bid_amount' => (float) $amount,
+                        'reserve_price' => (float)($this->reserve_price ?? 0),
+                    ]);
                     return [
                         'success' => true,
                         'message' => 'Bid accepted automatically',
@@ -300,6 +329,15 @@ class Auction extends Model
         $this->save();
 
         $this->maybeExtendOnLastMinuteBid($now);
+
+        AuctionRealtimeLogService::log('bid_placed', 'auction', (int) $this->id, [
+            'bid_id' => $bid->id,
+            'user_id' => $userId,
+            'bid_amount' => (float) $amount,
+            'previous_bid' => $current,
+            'increment' => $increment,
+            'auction_type' => $this->auction_type instanceof AuctionType ? $this->auction_type->value : (string) $this->auction_type,
+        ]);
 
         return ['success' => true, 'message' => 'Bid placed successfully', 'bid' => $bid];
     }
@@ -334,6 +372,13 @@ class Auction extends Model
             'tam_fee' => 0,
             'net_amount' => $amount - $this->calculatePlatformFee($amount),
             'status' => 'pending'
+        ]);
+
+        AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
+            'reason' => 'bid_accepted',
+            'status' => 'ended',
+            'winner_id' => $userId,
+            'final_price' => (float) $amount,
         ]);
 
         return $this;
@@ -374,6 +419,13 @@ class Auction extends Model
             $this->updateAuctionTypeBasedOnTime();
             $this->save();
 
+            AuctionRealtimeLogService::log('auction_started', 'auction', (int) $this->id, [
+                'status' => 'active',
+                'auction_type' => $this->auction_type instanceof AuctionType ? $this->auction_type->value : (string) $this->auction_type,
+                'start_time' => $this->start_time?->toIso8601String(),
+                'end_time' => $this->end_time?->toIso8601String(),
+            ]);
+
             if ($this->car) {
                 $this->car->auction_status = 'in_auction';
                 $this->car->save();
@@ -395,8 +447,20 @@ class Auction extends Model
         if ($this->isActive()) {
             if ((float)($this->current_bid ?? 0) >= (float)($this->reserve_price ?? 0)) {
                 $this->status = AuctionStatus::ENDED;
+                AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
+                    'reason' => 'time_or_manual',
+                    'status' => 'ended',
+                    'current_bid' => (float)($this->current_bid ?? 0),
+                    'reserve_price' => (float)($this->reserve_price ?? 0),
+                ]);
             } else {
                 $this->status = AuctionStatus::FAILED;
+                AuctionRealtimeLogService::log('auction_failed', 'auction', (int) $this->id, [
+                    'reason' => 'reserve_not_met',
+                    'status' => 'failed',
+                    'current_bid' => (float)($this->current_bid ?? 0),
+                    'reserve_price' => (float)($this->reserve_price ?? 0),
+                ]);
 
                 if ($this->car) {
                     $this->car->auction_status = 'available';

@@ -29,6 +29,7 @@ import {
   Tags,
   TestTube,
   BarChart3,
+  ScrollText,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -233,6 +234,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: TestTube,
       permission: "auction_tests.view",
     },
+    {
+      name: "سجل المزادات الفوري",
+      href: "/admin/auction-activity-log",
+      icon: ScrollText,
+      permission: "auctions.view",
+    },
 
     {
       name: "التقارير والإعدادات",
@@ -339,26 +346,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         <LoadingLink
                           href={item.href}
                           className={`group flex items-center p-3 rounded-xl transition-all border
-                            ${
-                              active
-                                ? "bg-primary/10 text-primary border-primary/30 shadow"
-                                : "bg-background/30 text-foreground/70 border-border hover:bg-border hover:text-foreground"
+                            ${active
+                              ? "bg-primary/10 text-primary border-primary/30 shadow"
+                              : "bg-background/30 text-foreground/70 border-border hover:bg-border hover:text-foreground"
                             }`}
                         >
                           <Icon
-                            className={`w-5 h-5 ms-2 ${
-                              active
+                            className={`w-5 h-5 ms-2 ${active
                                 ? "text-primary"
                                 : "text-foreground/70 group-hover:text-foreground"
-                            }`}
+                              }`}
                           />
                           <span className="ms-1 flex-1 text-sm font-medium">
                             {item.name}
                           </span>
                           <ChevronRight
-                            className={`w-4 h-4 ${
-                              active ? "text-primary" : "text-foreground/50"
-                            }`}
+                            className={`w-4 h-4 ${active ? "text-primary" : "text-foreground/50"
+                              }`}
                           />
                         </LoadingLink>
                       </li>
