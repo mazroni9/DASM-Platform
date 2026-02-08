@@ -37,6 +37,7 @@ const normalizePath = (p?: string) => {
 /* ===== عناصر القائمة ===== */
 const navItems = [
   { href: "/exhibitor", icon: FiHome, label: "الرئيسية" },
+  { href: "/exhibitor/zatca-settings", icon: FiPlusSquare, label: "الزكاة والدخل" },
   { href: "/exhibitor/add-car", icon: FiPlusSquare, label: "إضافة سيارة" },
   { href: "/exhibitor/all-cars", icon: FiLayers, label: "جميع السيارات" },
   { href: "/exhibitor/auctions", icon: FiDollarSign, label: "المزادات" },

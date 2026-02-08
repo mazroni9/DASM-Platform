@@ -71,6 +71,8 @@ use App\Http\Controllers\Exhibitor\ExtraServiceController as ExhibitorExtraServi
 use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExtraServiceRequestController;
 use App\Http\Controllers\Exhibitor\CarExplorerController;
 use App\Http\Controllers\Exhibitor\AnalyticsController as ExhibitorAnalyticsController;
+use App\Http\Controllers\Exhibitor\ExhibitorZatcaSettingsController;
+use App\Http\Controllers\Exhibitor\ExhibitorZatcaVerifyController;
 
 // ========= Dealer Controllers =========
 use App\Http\Controllers\Dealer\DashboardController as DealerDashboardController;
@@ -719,6 +721,13 @@ Route::middleware('auth:sanctum')
             Route::get('/top-models', [ExhibitorAnalyticsController::class, 'topModels']);
             Route::get('/bids-heatmap', [ExhibitorAnalyticsController::class, 'bidsHeatmap']);
         });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.9 Zatca Settings
+        // ─────────────────────────────────────────────────────────────
+        // 
+        Route::apiResource('zatcaSettings', ExhibitorZatcaSettingsController::class)->only(['index', 'store']);
+        Route::apiResource('zatcaVerify', ExhibitorZatcaVerifyController::class);
     });
 
 /*
