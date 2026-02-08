@@ -124,7 +124,7 @@ export default function ExhibitorEditSessionPage() {
         activeBg: "bg-blue-600/10",
       },
     ],
-    []
+    [],
   );
 
   const statusOptions = useMemo(
@@ -134,7 +134,7 @@ export default function ExhibitorEditSessionPage() {
       { value: "completed" as SessionStatus, label: "مكتملة" },
       { value: "cancelled" as SessionStatus, label: "ملغاة" },
     ],
-    []
+    [],
   );
 
   const fetchSession = async () => {
@@ -153,7 +153,7 @@ export default function ExhibitorEditSessionPage() {
       });
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "فشل في جلب بيانات الجلسة");
-      router.push("/exhibitor/sessions");
+      router.replace("/exhibitor/sessions");
     } finally {
       setLoading(false);
     }
@@ -167,7 +167,7 @@ export default function ExhibitorEditSessionPage() {
   const onChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -194,7 +194,7 @@ export default function ExhibitorEditSessionPage() {
       const res = await api.put(`/api/exhibitor/sessions/${id}`, payload);
       if (res?.status === 200) {
         toast.success(res?.data?.message || "تم حفظ التعديلات");
-        router.push("/exhibitor/sessions");
+        router.replace("/exhibitor/sessions");
       } else {
         toast.error(res?.data?.message || "تعذّر حفظ التعديلات");
       }
@@ -205,7 +205,7 @@ export default function ExhibitorEditSessionPage() {
           ([k, v]: [string, any]) => {
             bag[k] = Array.isArray(v) ? String(v[0]) : String(v);
             toast.error(bag[k]);
-          }
+          },
         );
         setErrors(bag);
       } else {
@@ -387,7 +387,7 @@ export default function ExhibitorEditSessionPage() {
                                 <div
                                   className={`w-3 h-3 rounded-full ${t.activeBorder.replace(
                                     "border-",
-                                    "bg-"
+                                    "bg-",
                                   )}`}
                                 />
                               )}

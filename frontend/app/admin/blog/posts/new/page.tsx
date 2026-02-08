@@ -231,7 +231,7 @@ export default function AdminBlogPostCreatePage() {
       await api.post("/api/admin/blog/posts", payload);
 
       toast.success("تمت الإضافة");
-      router.push("/admin/blog/posts");
+      router.replace("/admin/blog/posts");
       router.refresh();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "تعذر الحفظ");

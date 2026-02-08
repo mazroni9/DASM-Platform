@@ -15,7 +15,7 @@ export default function VenuesDashboard() {
       (!user ||
         (user.type !== UserRole.ADMIN && user.type !== UserRole.SUPER_ADMIN))
     ) {
-      router.push("/auth/login");
+      router.replace("/auth/login");
     }
   }, [user, isLoading, router]);
 

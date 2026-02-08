@@ -184,11 +184,11 @@ export default function MyWalletPage() {
 
   // Navigate to deposit/withdraw pages
   const handleDeposit = () => {
-    router.push("/dealer/my-transfers?action=deposit");
+    router.replace("/dealer/my-transfers?action=deposit");
   };
 
   const handleWithdraw = () => {
-    router.push("/dealer/my-transfers?action=withdraw");
+    router.replace("/dealer/my-transfers?action=withdraw");
   };
 
   // Get transaction type config

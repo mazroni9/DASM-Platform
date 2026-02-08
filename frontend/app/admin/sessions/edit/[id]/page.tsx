@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import api from '@/lib/axios';
-import toast from 'react-hot-toast';
-import LoadingLink from '@/components/LoadingLink';
-import { 
-  ArrowRight, 
-  Save, 
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import api from "@/lib/axios";
+import toast from "react-hot-toast";
+import LoadingLink from "@/components/LoadingLink";
+import {
+  ArrowRight,
+  Save,
   Calendar,
   Volume2,
   Zap,
@@ -16,16 +16,16 @@ import {
   FileText,
   Settings,
   RefreshCw,
-  AlertCircle
-} from 'lucide-react';
-import { format } from 'date-fns';
+  AlertCircle,
+} from "lucide-react";
+import { format } from "date-fns";
 
 interface SessionData {
   id: number;
   name: string;
   session_date: string;
-  status: 'scheduled' | 'active' | 'completed' | 'cancelled';
-  type: 'live' | 'instant' | 'silent';
+  status: "scheduled" | "active" | "completed" | "cancelled";
+  type: "live" | "instant" | "silent";
   description: string;
   auctions_count: number;
   created_at: string;
@@ -36,15 +36,15 @@ export default function EditSessionPage() {
   const router = useRouter();
   const params = useParams();
   const sessionId = params.id as string;
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    session_date: '',
-    status: 'scheduled' as 'scheduled' | 'active' | 'completed' | 'cancelled',
-    type: 'live' as 'live' | 'instant' | 'silent',
-    description: '',
+    name: "",
+    session_date: "",
+    status: "scheduled" as "scheduled" | "active" | "completed" | "cancelled",
+    type: "live" as "live" | "instant" | "silent",
+    description: "",
   });
 
   const [originalData, setOriginalData] = useState<SessionData | null>(null);
@@ -62,22 +62,29 @@ export default function EditSessionPage() {
         setOriginalData(session);
         setFormData({
           name: session.name,
-          session_date: format(new Date(session.session_date), "yyyy-MM-dd'T'HH:mm"),
+          session_date: format(
+            new Date(session.session_date),
+            "yyyy-MM-dd'T'HH:mm",
+          ),
           status: session.status,
           type: session.type,
-          description: session.description || '',
+          description: session.description || "",
         });
       }
     } catch (error) {
-      toast.error('حدث خطأ أثناء جلب بيانات الجلسة');
-      console.error('Error fetching session:', error);
-      router.push('/admin/sessions');
+      toast.error("حدث خطأ أثناء جلب بيانات الجلسة");
+      console.error("Error fetching session:", error);
+      router.replace("/admin/sessions");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -87,18 +94,21 @@ export default function EditSessionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.session_date) {
-      toast.error('يرجى ملء جميع الحقول المطلوبة');
+      toast.error("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
 
     setSaving(true);
     try {
-      const response = await api.put(`/api/admin/sessions/${sessionId}`, formData);
+      const response = await api.put(
+        `/api/admin/sessions/${sessionId}`,
+        formData,
+      );
       if (response.data.success) {
-        toast.success('تم تحديث الجلسة بنجاح');
-        router.push('/admin/sessions');
+        toast.success("تم تحديث الجلسة بنجاح");
+        router.replace("/admin/sessions");
       }
     } catch (error: any) {
       if (error.response?.data?.errors) {
@@ -108,7 +118,7 @@ export default function EditSessionPage() {
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error('حدث خطأ أثناء تحديث الجلسة');
+        toast.error("حدث خطأ أثناء تحديث الجلسة");
       }
     } finally {
       setSaving(false);
@@ -117,42 +127,63 @@ export default function EditSessionPage() {
 
   const sessionTypes = [
     {
-      value: 'live',
-      label: 'مباشر',
-      description: 'مزاد مباشر مع مزايدين متواجدين',
+      value: "live",
+      label: "مباشر",
+      description: "مزاد مباشر مع مزايدين متواجدين",
       icon: Volume2,
-      color: 'from-green-500 to-emerald-600'
+      color: "from-green-500 to-emerald-600",
     },
     {
-      value: 'instant',
-      label: 'فوري',
-      description: 'مزاد فوري بفترات زمنية قصيرة',
+      value: "instant",
+      label: "فوري",
+      description: "مزاد فوري بفترات زمنية قصيرة",
       icon: Zap,
-      color: 'from-amber-500 to-orange-600'
+      color: "from-amber-500 to-orange-600",
     },
     {
-      value: 'silent',
-      label: 'صامت',
-      description: 'مزاد صامت بمزايدات مغلقة',
+      value: "silent",
+      label: "صامت",
+      description: "مزاد صامت بمزايدات مغلقة",
       icon: Clock,
-      color: 'from-blue-500 to-cyan-600'
-    }
+      color: "from-blue-500 to-cyan-600",
+    },
   ];
 
   const statusOptions = [
-    { value: 'scheduled', label: 'مجدولة', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
-    { value: 'active', label: 'نشطة', color: 'text-green-400', bgColor: 'bg-green-500/20' },
-    { value: 'completed', label: 'مكتملة', color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
-    { value: 'cancelled', label: 'ملغاة', color: 'text-red-400', bgColor: 'bg-red-500/20' }
+    {
+      value: "scheduled",
+      label: "مجدولة",
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/20",
+    },
+    {
+      value: "active",
+      label: "نشطة",
+      color: "text-green-400",
+      bgColor: "bg-green-500/20",
+    },
+    {
+      value: "completed",
+      label: "مكتملة",
+      color: "text-gray-400",
+      bgColor: "bg-gray-500/20",
+    },
+    {
+      value: "cancelled",
+      label: "ملغاة",
+      color: "text-red-400",
+      bgColor: "bg-red-500/20",
+    },
   ];
 
-  const hasChanges = originalData && (
-    formData.name !== originalData.name ||
-    formData.session_date !== format(new Date(originalData.session_date), "yyyy-MM-dd'T'HH:mm") ||
-    formData.status !== originalData.status ||
-    formData.type !== originalData.type ||
-    formData.description !== (originalData.description || '')
-  );
+  const hasChanges =
+    originalData &&
+    (formData.name !== originalData.name ||
+      formData.session_date !==
+        format(new Date(originalData.session_date), "yyyy-MM-dd'T'HH:mm") ||
+      formData.status !== originalData.status ||
+      formData.type !== originalData.type ||
+      formData.description !== (originalData.description || ""));
 
   if (loading) {
     return (
@@ -187,7 +218,7 @@ export default function EditSessionPage() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
           {hasChanges && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
@@ -210,15 +241,20 @@ export default function EditSessionPage() {
                   <FileText className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground">{originalData.name}</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {originalData.name}
+                  </h3>
                   <p className="text-foreground/70 text-sm">
-                    تم الإنشاء في {format(new Date(originalData.created_at), 'dd MMMM yyyy', )}
+                    تم الإنشاء في{" "}
+                    {format(new Date(originalData.created_at), "dd MMMM yyyy")}
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-sm text-foreground/70">عدد المزادات</div>
-                <div className="text-2xl font-bold text-primary">{originalData.auctions_count}</div>
+                <div className="text-2xl font-bold text-primary">
+                  {originalData.auctions_count}
+                </div>
               </div>
             </div>
           </div>
@@ -232,7 +268,9 @@ export default function EditSessionPage() {
                 <Settings className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-foreground">تعديل بيانات الجلسة</h2>
+                <h2 className="text-xl font-semibold text-foreground">
+                  تعديل بيانات الجلسة
+                </h2>
                 <p className="text-foreground/70 text-sm mt-1">
                   قم بتعديل المعلومات المطلوبة ثم حفظ التغييرات
                 </p>
@@ -293,20 +331,31 @@ export default function EditSessionPage() {
                   return (
                     <div
                       key={type.value}
-                      onClick={() => setFormData(prev => ({ ...prev, type: type.value as any }))}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          type: type.value as any,
+                        }))
+                      }
                       className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${
                         formData.type === type.value
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border bg-card/30 hover:border-border/80'
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card/30 hover:border-border/80"
                       }`}
                     >
                       <div className="flex items-center space-x-3 space-x-reverse">
-                        <div className={`bg-gradient-to-r ${type.color} p-2 rounded-lg`}>
+                        <div
+                          className={`bg-gradient-to-r ${type.color} p-2 rounded-lg`}
+                        >
                           <Icon className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                          <div className="font-medium text-foreground">{type.label}</div>
-                          <div className="text-xs text-foreground/70 mt-1">{type.description}</div>
+                          <div className="font-medium text-foreground">
+                            {type.label}
+                          </div>
+                          <div className="text-xs text-foreground/70 mt-1">
+                            {type.description}
+                          </div>
                         </div>
                         {formData.type === type.value && (
                           <div className="w-3 h-3 bg-primary rounded-full"></div>
@@ -333,7 +382,11 @@ export default function EditSessionPage() {
                   required
                 >
                   {statusOptions.map((status) => (
-                    <option key={status.value} value={status.value} className="bg-card">
+                    <option
+                      key={status.value}
+                      value={status.value}
+                      className="bg-card"
+                    >
                       {status.label}
                     </option>
                   ))}
@@ -389,12 +442,16 @@ export default function EditSessionPage() {
         <div className="mt-6 bg-card rounded-2xl border border-border p-6">
           <div className="flex items-center space-x-3 space-x-reverse mb-4">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">ملاحظات هامة</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              ملاحظات هامة
+            </h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-foreground/70">
             <div className="flex items-center space-x-2 space-x-reverse">
               <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span>سيتم رفض التغييرات إذا كانت الجلسة تحتوي على مزادات نشطة</span>
+              <span>
+                سيتم رفض التغييرات إذا كانت الجلسة تحتوي على مزادات نشطة
+              </span>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
               <div className="w-2 h-2 bg-primary rounded-full"></div>

@@ -387,9 +387,9 @@ export default function MyWalletPage() {
   }, [transactions, searchTerm]);
 
   const handleDeposit = () =>
-    router.push("/dashboard/my-transfers?action=deposit");
+    router.replace("/dashboard/my-transfers?action=deposit");
   const handleWithdraw = () =>
-    router.push("/dashboard/my-transfers?action=withdraw");
+    router.replace("/dashboard/my-transfers?action=withdraw");
 
   const transactionStats = useMemo(() => {
     const total = pagination?.total ?? transactions.length;
