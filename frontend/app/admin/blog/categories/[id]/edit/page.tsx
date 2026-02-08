@@ -228,7 +228,7 @@ export default function AdminBlogCategoryEditPage() {
       await api.put(`/api/admin/blog/categories/${id}`, payload);
 
       toast.success("تم الحفظ");
-      router.push("/admin/blog/categories");
+      router.replace("/admin/blog/categories");
       router.refresh();
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.message || "تعذر الحفظ");

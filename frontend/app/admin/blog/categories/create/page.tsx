@@ -95,7 +95,7 @@ export default function AdminBlogCategoryCreatePage() {
       await api.post("/api/admin/blog/categories", payload);
 
       toast.success("تمت الإضافة");
-      router.push("/admin/blog/categories");
+      router.replace("/admin/blog/categories");
       router.refresh();
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.message || "تعذر الحفظ");

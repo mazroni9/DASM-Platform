@@ -50,11 +50,14 @@ interface AuthState {
   closeAuthModal: () => void;
 
   initializeFromStorage: () => Promise<boolean>;
-  fetchProfile: (opts?: { force?: boolean; silent?: boolean }) => Promise<boolean>;
+  fetchProfile: (opts?: {
+    force?: boolean;
+    silent?: boolean;
+  }) => Promise<boolean>;
 
   login: (
     email: string,
-    password: string
+    password: string,
   ) => Promise<{
     success: boolean;
     redirectTo?: string;
@@ -65,14 +68,17 @@ interface AuthState {
 
   verifyCode: (
     email: string,
-    code: string
+    code: string,
   ) => Promise<{
     success: boolean;
     redirectTo?: string;
     error?: string;
   }>;
 
-  logout: (opts?: { skipRequest?: boolean; redirectToLogin?: boolean }) => Promise<void>;
+  logout: (opts?: {
+    skipRequest?: boolean;
+    redirectToLogin?: boolean;
+  }) => Promise<void>;
   refreshToken: () => Promise<boolean>;
 }
 
@@ -161,7 +167,8 @@ export const useAuthStore = create<AuthState>()(
 
         setTokenCookie(token);
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        if (api.defaults)
+          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         set({ token, isLoggedIn: true });
 
@@ -215,7 +222,10 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {
             // eslint-disable-next-line no-console
-            console.error("fetchProfile error:", error?.response?.data || error);
+            console.error(
+              "fetchProfile error:",
+              error?.response?.data || error,
+            );
           }
 
           if (error?.response?.status === 401) {
@@ -226,7 +236,8 @@ export const useAuthStore = create<AuthState>()(
             setTokenCookie(null);
 
             delete axios.defaults.headers.common["Authorization"];
-            if (api.defaults) delete api.defaults.headers.common["Authorization"];
+            if (api.defaults)
+              delete api.defaults.headers.common["Authorization"];
 
             set({
               user: null,
@@ -258,7 +269,10 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.post(`/api/login`, { email, password });
           const data = response.data;
 
-          if (data.status === "error" && data.message === "Email not verified") {
+          if (
+            data.status === "error" &&
+            data.message === "Email not verified"
+          ) {
             set({ loading: false });
             return { success: false, needsVerification: true };
           }
@@ -271,7 +285,8 @@ export const useAuthStore = create<AuthState>()(
           if (token) {
             setTokenCookie(token);
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (api.defaults)
+              api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           }
 
           const loginUser = extractUser(data);
@@ -340,15 +355,18 @@ export const useAuthStore = create<AuthState>()(
 
             if (err.response.status === 422) {
               if (responseData.error) errorMessage = responseData.error;
-              else if (responseData.message) errorMessage = responseData.message;
-              else if (responseData.first_error) errorMessage = responseData.first_error;
+              else if (responseData.message)
+                errorMessage = responseData.message;
+              else if (responseData.first_error)
+                errorMessage = responseData.first_error;
             } else if (responseData.message) {
               errorMessage = responseData.message;
             } else if (responseData.error) {
               errorMessage = responseData.error;
             }
           } else if (err.request) {
-            errorMessage = "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
+            errorMessage =
+              "لا يمكن الوصول إلى الخادم، يرجى التحقق من اتصالك بالإنترنت";
           }
 
           set({ loading: false, error: errorMessage });
@@ -374,7 +392,8 @@ export const useAuthStore = create<AuthState>()(
           if (token) {
             setTokenCookie(token);
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            if (api.defaults)
+              api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           }
 
           const loginUser = extractUser(data);
@@ -412,7 +431,8 @@ export const useAuthStore = create<AuthState>()(
           return { success: true, redirectTo };
         } catch (err: any) {
           let errorMessage = "فشل التحقق من الرمز";
-          if (err.response?.data?.message) errorMessage = err.response.data.message;
+          if (err.response?.data?.message)
+            errorMessage = err.response.data.message;
 
           set({ loading: false, error: errorMessage });
           return { success: false, error: errorMessage };
@@ -451,7 +471,7 @@ export const useAuthStore = create<AuthState>()(
           });
 
           if (redirectToLogin && isBrowser()) {
-            window.location.href = "/auth/login";
+            window.location.replace("/auth/login");
           }
         }
       },
@@ -470,7 +490,7 @@ export const useAuthStore = create<AuthState>()(
             {
               withCredentials: true,
               headers: { Authorization: "" },
-            }
+            },
           );
 
           if (response.data && response.data.access_token) {
@@ -481,15 +501,21 @@ export const useAuthStore = create<AuthState>()(
             }
             setTokenCookie(access_token);
 
-            axios.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
-            if (api.defaults) api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
+            axios.defaults.headers.common["Authorization"] =
+              `Bearer ${access_token}`;
+            if (api.defaults)
+              api.defaults.headers.common["Authorization"] =
+                `Bearer ${access_token}`;
 
             set({ token: access_token, isLoggedIn: true });
             return true;
           }
 
           // eslint-disable-next-line no-console
-          console.error("Token refresh response missing access_token:", response.data);
+          console.error(
+            "Token refresh response missing access_token:",
+            response.data,
+          );
           return false;
         } catch (error: any) {
           // eslint-disable-next-line no-console
@@ -551,6 +577,6 @@ export const useAuthStore = create<AuthState>()(
           }
         };
       },
-    }
-  )
+    },
+  ),
 );

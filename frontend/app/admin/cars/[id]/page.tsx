@@ -94,8 +94,10 @@ function detectDarkMode(): boolean {
   if (attr === "dark") return true;
   if (attr === "light") return false;
 
-  if (el.classList.contains("dark") || body.classList.contains("dark")) return true;
-  if (el.classList.contains("light") || body.classList.contains("light")) return false;
+  if (el.classList.contains("dark") || body.classList.contains("dark"))
+    return true;
+  if (el.classList.contains("light") || body.classList.contains("light"))
+    return false;
 
   return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
 }
@@ -146,7 +148,7 @@ export default function CarDetailPage() {
 
   // ✅ Auth
   useEffect(() => {
-    if (!isLoggedIn) router.push("/auth/login");
+    if (!isLoggedIn) router.replace("/auth/login");
   }, [isLoggedIn, router]);
 
   // ✅ Fetch car
@@ -178,9 +180,9 @@ export default function CarDetailPage() {
         setIsOwner(
           Boolean(
             currentUserId &&
-              (String(currentUserId) === String(carUserId) ||
-                String(currentUserId) === String(dealerUserId))
-          )
+            (String(currentUserId) === String(carUserId) ||
+              String(currentUserId) === String(dealerUserId)),
+          ),
         );
       } catch (e) {
         console.error("error fetching car details", e);
@@ -222,12 +224,16 @@ export default function CarDetailPage() {
 
   const goToNextImage = () => {
     if (!hasImages) return;
-    setSelectedImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setSelectedImageIndex((prev) =>
+      prev === images.length - 1 ? 0 : prev + 1,
+    );
   };
 
   const goToPreviousImage = () => {
     if (!hasImages) return;
-    setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setSelectedImageIndex((prev) =>
+      prev === 0 ? images.length - 1 : prev - 1,
+    );
   };
 
   // ✅ Close modal by ESC + arrows
@@ -249,7 +255,11 @@ export default function CarDetailPage() {
   // ✅ Loading / Error / Empty
   if (loading) {
     return (
-      <div className={`${isDark ? "dark" : ""} min-h-screen`} dir="rtl" lang="ar">
+      <div
+        className={`${isDark ? "dark" : ""} min-h-screen`}
+        dir="rtl"
+        lang="ar"
+      >
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center px-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
             <div className="flex items-center gap-3">
@@ -259,7 +269,9 @@ export default function CarDetailPage() {
                 <div className="mt-2 h-3 w-56 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
               </div>
             </div>
-            <p className="mt-5 text-sm text-slate-600 dark:text-slate-300">جاري تحميل بيانات السيارة...</p>
+            <p className="mt-5 text-sm text-slate-600 dark:text-slate-300">
+              جاري تحميل بيانات السيارة...
+            </p>
           </div>
         </div>
       </div>
@@ -268,14 +280,18 @@ export default function CarDetailPage() {
 
   if (error) {
     return (
-      <div className={`${isDark ? "dark" : ""} min-h-screen`} dir="rtl" lang="ar">
+      <div
+        className={`${isDark ? "dark" : ""} min-h-screen`}
+        dir="rtl"
+        lang="ar"
+      >
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center px-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
             <p className="mt-4 text-base font-semibold">{error}</p>
             <div className="mt-6 flex justify-center gap-3">
               <button
-                onClick={() => router.push("/admin/cars")}
+                onClick={() => router.replace("/admin/cars")}
                 className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-2 text-sm hover:opacity-90 transition"
               >
                 الرجوع للقائمة
@@ -289,14 +305,20 @@ export default function CarDetailPage() {
 
   if (!item) {
     return (
-      <div className={`${isDark ? "dark" : ""} min-h-screen`} dir="rtl" lang="ar">
+      <div
+        className={`${isDark ? "dark" : ""} min-h-screen`}
+        dir="rtl"
+        lang="ar"
+      >
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center px-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-amber-500" />
-            <p className="mt-4 text-base font-semibold">لم يتم العثور على بيانات السيارة.</p>
+            <p className="mt-4 text-base font-semibold">
+              لم يتم العثور على بيانات السيارة.
+            </p>
             <div className="mt-6 flex justify-center gap-3">
               <button
-                onClick={() => router.push("/admin/cars")}
+                onClick={() => router.replace("/admin/cars")}
                 className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-2 text-sm hover:opacity-90 transition"
               >
                 الرجوع للقائمة
@@ -314,7 +336,11 @@ export default function CarDetailPage() {
   const currentBid = firstAuction?.current_bid ?? null;
   const minimumBid = firstAuction?.minimum_bid ?? null;
   const bidsCount =
-    auctions.reduce((acc: number, a: any) => acc + (Array.isArray(a?.bids) ? a.bids.length : 0), 0) || 0;
+    auctions.reduce(
+      (acc: number, a: any) =>
+        acc + (Array.isArray(a?.bids) ? a.bids.length : 0),
+      0,
+    ) || 0;
 
   return (
     <div className={`${isDark ? "dark" : ""} min-h-screen`} dir="rtl" lang="ar">
@@ -332,7 +358,10 @@ export default function CarDetailPage() {
             role="dialog"
             aria-modal="true"
           >
-            <div className="relative w-full max-w-5xl mx-auto" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="relative w-full max-w-5xl mx-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => setShowImageModal(false)}
                 className="absolute top-3 left-3 z-10 inline-flex items-center justify-center rounded-xl bg-white/80 hover:bg-white dark:bg-slate-900/70 dark:hover:bg-slate-900 text-slate-900 dark:text-white p-2 transition shadow"
@@ -425,7 +454,8 @@ export default function CarDetailPage() {
                     alt={carTitle}
                     className="w-full h-[420px] md:h-[480px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder-car.jpg";
+                      (e.target as HTMLImageElement).src =
+                        "/placeholder-car.jpg";
                     }}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition" />
@@ -480,14 +510,17 @@ export default function CarDetailPage() {
                             alt={`صورة ${idx + 1}`}
                             className="w-full h-20 object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/placeholder-car.jpg";
+                              (e.target as HTMLImageElement).src =
+                                "/placeholder-car.jpg";
                             }}
                           />
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-sm text-slate-600 dark:text-slate-300">لا توجد صور لهذه السيارة.</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-300">
+                      لا توجد صور لهذه السيارة.
+                    </div>
                   )}
                 </div>
               </div>
@@ -499,19 +532,29 @@ export default function CarDetailPage() {
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 {firstAuction ? (
                   <div>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">السعر الحالي</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">
+                      السعر الحالي
+                    </p>
                     <p className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
                       {formatSAR(currentBid)}
                     </p>
 
                     <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3">
-                        <p className="text-slate-500 dark:text-slate-400">سعر الإفتتاح</p>
-                        <p className="mt-1 font-semibold">{formatSAR(minimumBid)}</p>
+                        <p className="text-slate-500 dark:text-slate-400">
+                          سعر الإفتتاح
+                        </p>
+                        <p className="mt-1 font-semibold">
+                          {formatSAR(minimumBid)}
+                        </p>
                       </div>
                       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3">
-                        <p className="text-slate-500 dark:text-slate-400">عدد المزايدات</p>
-                        <p className="mt-1 font-semibold">{bidsCount.toLocaleString("ar-SA")}</p>
+                        <p className="text-slate-500 dark:text-slate-400">
+                          عدد المزايدات
+                        </p>
+                        <p className="mt-1 font-semibold">
+                          {bidsCount.toLocaleString("ar-SA")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -530,23 +573,42 @@ export default function CarDetailPage() {
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-2xl font-extrabold">{carTitle}</h2>
                   <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-1 text-xs text-slate-600 dark:text-slate-300">
-                    <CarIcon className="h-4 w-4" />
-                    #{item.id}
+                    <CarIcon className="h-4 w-4" />#{item.id}
                   </span>
                 </div>
 
                 <div className="mt-5 space-y-3">
                   <DetailRow icon={CarIcon} label="الماركة" value={item.make} />
                   <DetailRow icon={Tag} label="الموديل" value={item.model} />
-                  <DetailRow icon={Calendar} label="سنة الصنع" value={item.year} />
+                  <DetailRow
+                    icon={Calendar}
+                    label="سنة الصنع"
+                    value={item.year}
+                  />
                   <DetailRow
                     icon={Gauge}
                     label="رقم العداد"
-                    value={item.odometer != null ? `${Number(item.odometer).toLocaleString("ar-SA")} كم` : "—"}
+                    value={
+                      item.odometer != null
+                        ? `${Number(item.odometer).toLocaleString("ar-SA")} كم`
+                        : "—"
+                    }
                   />
-                  <DetailRow icon={Paintbrush} label="اللون" value={item.color} />
-                  <DetailRow icon={Fuel} label="نوع الوقود" value={item.engine} />
-                  <DetailRow icon={Wrench} label="حالة السيارة" value={normalizeLabel(item.condition)} />
+                  <DetailRow
+                    icon={Paintbrush}
+                    label="اللون"
+                    value={item.color}
+                  />
+                  <DetailRow
+                    icon={Fuel}
+                    label="نوع الوقود"
+                    value={item.engine}
+                  />
+                  <DetailRow
+                    icon={Wrench}
+                    label="حالة السيارة"
+                    value={normalizeLabel(item.condition)}
+                  />
                 </div>
               </div>
             </div>
@@ -566,15 +628,21 @@ type DetailRowProps = {
 function DetailRow({ icon, label, value }: DetailRowProps) {
   const Icon = icon;
   const display =
-    value === null || value === undefined || String(value).trim() === "" ? "—" : String(value);
+    value === null || value === undefined || String(value).trim() === ""
+      ? "—"
+      : String(value);
 
   return (
     <div className="flex items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-slate-800">
       <div className="flex items-center text-slate-600 dark:text-slate-300">
-        {Icon && <Icon className="h-4 w-4 ml-2 text-slate-400 dark:text-slate-500" />}
+        {Icon && (
+          <Icon className="h-4 w-4 ml-2 text-slate-400 dark:text-slate-500" />
+        )}
         <span className="text-sm">{label}</span>
       </div>
-      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 text-left">{display}</p>
+      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 text-left">
+        {display}
+      </p>
     </div>
   );
 }

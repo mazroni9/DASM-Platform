@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     if (!isAdmin && !isModerator) {
-      router.push("/auth/login?returnUrl=/admin");
+      router.replace("/auth/login?returnUrl=/admin");
     }
   }, [isAdmin, isModerator, router]);
 
@@ -163,7 +163,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "#",
       type: "header",
       icon: Calendar,
-      permissions: ["sessions.view", "live_streams.view", "youtube_channels.view"],
+      permissions: [
+        "sessions.view",
+        "live_streams.view",
+        "youtube_channels.view",
+      ],
     },
     {
       name: "إدارة الجلسات",
@@ -276,7 +280,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/auth/login");
+    router.replace("/auth/login");
   };
 
   return (
