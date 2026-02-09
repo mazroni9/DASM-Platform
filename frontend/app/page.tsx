@@ -1,6 +1,5 @@
 // =============================================================
 // 🏗️ الصفحة الرئيسية – DASMe | Digital Auctions Specialists Markets
-// ✨ تصميم احترافي عالمي – معالجة أخطاء runtime + حماية الهيدرِيشِن + قسم البث الاحترافي
 // =============================================================
 
 "use client";
@@ -33,7 +32,6 @@ function toEmbedUrl(url?: string | null): string | null {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./, "");
 
-    // YouTube
     if (host === "youtube.com" || host === "m.youtube.com") {
       const id = u.searchParams.get("v");
       if (id) return `https://www.youtube.com/embed/${id}?rel=0`;
@@ -44,7 +42,6 @@ function toEmbedUrl(url?: string | null): string | null {
       if (id) return `https://www.youtube.com/embed/${id}?rel=0`;
     }
 
-    // Vimeo (basic)
     if (host === "vimeo.com") {
       const id = u.pathname.split("/").filter(Boolean)[0];
       if (id) return `https://player.vimeo.com/video/${id}`;
@@ -151,7 +148,7 @@ const RotatingSentences = ({
 
   return (
     <p
-      className="text-foreground text-lg md:text-xl max-w-3xl mx-auto mt-6 leading-relaxed"
+      className="text-foreground text-lg md:text-xl max-w-3xl mx-auto mt-5 md:mt-6 leading-relaxed"
       suppressHydrationWarning
     >
       {text}
@@ -361,30 +358,10 @@ const LiveBroadcastSection = () => {
 
 const StatsSection = () => {
   const stats = [
-    {
-      value: "10,000+",
-      label: "سيارة مباعة",
-      icon: <Car className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "bg-primary",
-    },
-    {
-      value: "50,000+",
-      label: "مستخدم نشط",
-      icon: <Users className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "bg-primary",
-    },
-    {
-      value: "95%",
-      label: "رضا العملاء",
-      icon: <Award className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "bg-secondary",
-    },
-    {
-      value: "2.5B+",
-      label: "قيمة الصفقات",
-      icon: <TrendingUp className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "bg-secondary",
-    },
+    { value: "10,000+", label: "سيارة مباعة", icon: <Car className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-primary" },
+    { value: "50,000+", label: "مستخدم نشط", icon: <Users className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-primary" },
+    { value: "95%", label: "رضا العملاء", icon: <Award className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-secondary" },
+    { value: "2.5B+", label: "قيمة الصفقات", icon: <TrendingUp className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-secondary" },
   ];
 
   return (
@@ -435,26 +412,10 @@ const StatsSection = () => {
 
 const BenefitsSection = () => {
   const benefits = [
-    {
-      title: "مزادات متطورة على مدار الساعة",
-      description: "نظام مزادات حديث، ومتاح 24/7 لراحتك",
-      icon: <Shield className="w-7 h-7 md:w-8 md:h-8" />,
-    },
-    {
-      title: "فحص في ورش معتمدة",
-      description: "جميع السيارات تخضع لفحص دقيق في ورش معتمدة",
-      icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" />,
-    },
-    {
-      title: "شحن متميز ومتابعة مباشرة لحين الوصول",
-      description: "خدمة شحن موثوقة مع تتبع مباشر لشحنتك",
-      icon: <Clock className="w-7 h-7 md:w-8 md:h-8" />,
-    },
-    {
-      title: "أسعار متوازنة لصالح البائع والمشتري",
-      description: "نضمن أفضل الأسعار للطرفين من خلال نظام عادل",
-      icon: <Award className="w-7 h-7 md:w-8 md:h-8" />,
-    },
+    { title: "مزادات متطورة على مدار الساعة", description: "نظام مزادات حديث، ومتاح 24/7 لراحتك", icon: <Shield className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "فحص في ورش معتمدة", description: "جميع السيارات تخضع لفحص دقيق في ورش معتمدة", icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "شحن متميز ومتابعة مباشرة لحين الوصول", description: "خدمة شحن موثوقة مع تتبع مباشر لشحنتك", icon: <Clock className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "أسعار متوازنة لصالح البائع والمشتري", description: "نضمن أفضل الأسعار للطرفين من خلال نظام عادل", icon: <Award className="w-7 h-7 md:w-8 md:h-8" /> },
   ];
 
   return (
@@ -473,10 +434,7 @@ const BenefitsSection = () => {
             نقدم لك تجربة مزادات استثنائية بمعايير عالية من الجودة والموثوقية
           </p>
         </div>
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
-          dir="ltr"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8" dir="ltr">
           {benefits.map((benefit, index) => (
             <motion.div
               key={index}
@@ -517,9 +475,15 @@ export default function Page() {
     <>
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-secondary dark:bg-background">
-        <div className="container mx-auto px-4 sm:px-6 py-16 md:py-20 lg:py-24 relative z-10 text-center">
+        <div
+          className="
+            container mx-auto px-4 sm:px-6
+            py-14 md:py-18 lg:py-22
+            relative z-10 text-center
+          "
+        >
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 26 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
@@ -528,7 +492,9 @@ export default function Page() {
               speed={60}
               onDone={() => setTitleDone(true)}
             />
+
             <RotatingSentences start={mounted && titleDone} />
+
             <p className="text-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 md:mt-6 leading-relaxed px-4">
               منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات
               ذكية، شفافية مطلقة، ووصول عالمي.
@@ -537,7 +503,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/* ✅ اختر السوق المتخصص — نفس السكشن الصحيح بالظبط */}
+      {/* ✅ اختر السوق المتخصص */}
       <section className="py-8 md:py-12 bg-background border-y border-border">
         <div className="container mx-auto px-4 sm:px-6">
           <MarketTypeNav />

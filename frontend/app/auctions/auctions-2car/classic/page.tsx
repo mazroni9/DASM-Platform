@@ -288,7 +288,7 @@ export default function ClassicCarsAuctionPage() {
         {/* Top bar */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <LoadingLink
-            href="/auctions"
+            href="/auctions/auctions-2car"
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2 text-sm rounded-full border border-primary/20 bg-primary/10 hover:bg-primary/15"
           >
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />

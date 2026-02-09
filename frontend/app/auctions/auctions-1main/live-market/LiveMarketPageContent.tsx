@@ -297,7 +297,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
 
           {!sessionId && (
             <LoadingLink
-              href="/auctions"
+              href="/auctions/auctions-1main"
               className="inline-flex items-center text-primary hover:text-primary/80 transition-colors px-3 py-1 text-sm rounded-full border border-primary/20 hover:border-primary/30 bg-primary/10 hover:bg-primary/20"
             >
               <ChevronRight className="h-4 w-4 ml-1 rtl:rotate-180" />
