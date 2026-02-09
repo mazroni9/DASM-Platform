@@ -1,6 +1,9 @@
+"use client";
+
 import LoadingLink from "@/components/LoadingLink";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
   Instagram,
   Mail,
@@ -11,6 +14,9 @@ import {
   HelpCircle,
   BookOpen,
   LineChart,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 
 /** =========================
@@ -135,33 +141,105 @@ type Payment = { key: string; title: string; node: ReactNode };
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
+  // ✅ عدّل الـ URL ده حسب الدومين بتاع الباك اند
+  // لو شغال لوكال: http://localhost:8000/api
+  // لو ريندر: https://dasm-laravel.onrender.com/api
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
+    "http://localhost:8000/api";
+
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
+    "idle"
+  );
+  const [message, setMessage] = useState("");
+
   // ✅ Nav مع أيقونات
-  const navLinks = [
-    { href: "/", label: "الرئيسية", icon: Home },
-    { href: "/about", label: "من نحن", icon: Info },
-    { href: "/faq", label: "الأسئلة الشائعة", icon: HelpCircle },
-    { href: "/blog", label: "المدونة", icon: BookOpen },
-    { href: "/similar-price-analysis", label: "تحليل السيارات", icon: LineChart, active: true },
-  ];
+  const navLinks = useMemo(
+    () => [
+      { href: "/", label: "الرئيسية", icon: Home },
+      { href: "/about", label: "من نحن", icon: Info },
+      { href: "/faq", label: "الأسئلة الشائعة", icon: HelpCircle },
+      { href: "/blog", label: "المدونة", icon: BookOpen },
+      { href: "/similar-price-analysis", label: "تحليل السيارات", icon: LineChart, active: true },
+    ],
+    []
+  );
 
-  const socialLinks = [
-    { href: "mailto:mazroni@dasm.host", label: "البريد", icon: <Mail className="h-5 w-5" /> },
-    { href: "https://www.facebook.com/", label: "Facebook", icon: <Facebook className="h-5 w-5" /> },
-    {
-      href: "https://www.instagram.com/dasm_net?igsh=eW44aW5mcWFkcjkw&utm_source=qr",
-      label: "Instagram",
-      icon: <Instagram className="h-5 w-5" />,
-    },
-    { href: "https://x.com/DASM0909", label: "Twitter", icon: <TwitterBirdIcon className="h-5 w-5" /> },
-  ];
+  const socialLinks = useMemo(
+    () => [
+      { href: "mailto:mazroni@dasm.host", label: "البريد", icon: <Mail className="h-5 w-5" /> },
+      { href: "https://www.facebook.com/", label: "Facebook", icon: <Facebook className="h-5 w-5" /> },
+      {
+        href: "https://www.instagram.com/dasm_net?igsh=eW44aW5mcWFkcjkw&utm_source=qr",
+        label: "Instagram",
+        icon: <Instagram className="h-5 w-5" />,
+      },
+      { href: "https://x.com/DASM0909", label: "Twitter", icon: <TwitterBirdIcon className="h-5 w-5" /> },
+    ],
+    []
+  );
 
-  const payments: Payment[] = [
-    { key: "stc", title: "stc pay", node: <PaymentLogo src="/payments/stc-bank.png" alt="stc pay" /> },
-    { key: "apple", title: "Apple Pay", node: <PaymentLogo src="/payments/apple-pay.png" alt="Apple Pay" /> },
-    { key: "mc", title: "Mastercard", node: <PaymentLogo src="/payments/mastercard.png" alt="Mastercard" /> },
-    { key: "visa", title: "Visa", node: <PaymentLogo src="/payments/visa.png" alt="Visa" /> },
-    { key: "mada", title: "Mada", node: <PaymentLogo src="/payments/mada.png" alt="Mada" /> },
-  ];
+  const payments: Payment[] = useMemo(
+    () => [
+      { key: "stc", title: "stc pay", node: <PaymentLogo src="/payments/stc-bank.png" alt="stc pay" /> },
+      { key: "apple", title: "Apple Pay", node: <PaymentLogo src="/payments/apple-pay.png" alt="Apple Pay" /> },
+      { key: "mc", title: "Mastercard", node: <PaymentLogo src="/payments/mastercard.png" alt="Mastercard" /> },
+      { key: "visa", title: "Visa", node: <PaymentLogo src="/payments/visa.png" alt="Visa" /> },
+      { key: "mada", title: "Mada", node: <PaymentLogo src="/payments/mada.png" alt="Mada" /> },
+    ],
+    []
+  );
+
+  const onSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) {
+      setStatus("error");
+      setMessage("من فضلك اكتب البريد الإلكتروني.");
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const res = await fetch(`${API_BASE}/newsletter/subscribe`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: trimmed }),
+        // مهم: لو انت عامل supports_credentials=true في CORS وبتعتمد على كوكيز
+        // خليها include. لو مش محتاج كوكيز، سيبها omit.
+        credentials: "include",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg =
+          data?.message ||
+          (data?.errors?.email?.[0] as string | undefined) ||
+          "حصل خطأ أثناء الاشتراك. حاول مرة أخرى.";
+        setStatus("error");
+        setMessage(msg);
+        return;
+      }
+
+      setStatus("success");
+      setMessage(
+        data?.message ||
+          "تم تسجيل بريدك بنجاح ✅ شكرًا لاشتراكك في النشرة البريدية."
+      );
+      setEmail("");
+    } catch (err) {
+      setStatus("error");
+      setMessage("تعذر الاتصال بالخادم الآن. حاول مرة أخرى.");
+    }
+  };
 
   return (
     <footer
@@ -199,47 +277,82 @@ const Footer = () => {
            ======================= */}
         <div dir="ltr" className="py-7 flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* LEFT (Newsletter) */}
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="w-full lg:w-[520px] flex items-center gap-3"
-          >
-            <button
-              type="submit"
-              className="
-                shrink-0
-                h-12 px-8
-                rounded-full
-                bg-emerald-500
-                hover:bg-emerald-400
-                text-white font-extrabold
-                transition-colors
-                shadow-lg shadow-emerald-500/20
-              "
-            >
-              اشترك
-            </button>
-
-            <div
-              className="
-                flex-1 h-12
-                rounded-full
-                bg-white/5
-                border border-white/10
-                flex items-center
-                px-5
-              "
-            >
-              <input
-                type="email"
-                placeholder="النشرة البريدية"
+          <div className="w-full lg:w-[520px]">
+            <form onSubmit={onSubscribe} className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={status === "loading"}
                 className="
-                  w-full bg-transparent outline-none
-                  text-sm text-white/90
-                  placeholder:text-white/40
+                  shrink-0
+                  h-12 px-8
+                  rounded-full
+                  bg-emerald-500
+                  hover:bg-emerald-400
+                  disabled:opacity-70 disabled:cursor-not-allowed
+                  text-white font-extrabold
+                  transition-colors
+                  shadow-lg shadow-emerald-500/20
+                  inline-flex items-center gap-2
                 "
-              />
-            </div>
-          </form>
+              >
+                {status === "loading" ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    جاري الإرسال
+                  </>
+                ) : (
+                  "اشترك"
+                )}
+              </button>
+
+              <div
+                className="
+                  flex-1 h-12
+                  rounded-full
+                  bg-white/5
+                  border border-white/10
+                  flex items-center
+                  px-5
+                "
+              >
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="النشرة البريدية"
+                  className="
+                    w-full bg-transparent outline-none
+                    text-sm text-white/90
+                    placeholder:text-white/40
+                  "
+                />
+              </div>
+            </form>
+
+            {/* Message */}
+            {status !== "idle" && message && (
+              <div
+                dir="rtl"
+                className={[
+                  "mt-3 rounded-xl border px-4 py-3 text-sm flex items-start gap-2",
+                  status === "success"
+                    ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                    : status === "error"
+                    ? "border-amber-400/20 bg-amber-500/10 text-amber-50"
+                    : "border-white/10 bg-white/5 text-white/80",
+                ].join(" ")}
+              >
+                {status === "success" ? (
+                  <CheckCircle2 className="h-5 w-5 mt-0.5" />
+                ) : status === "error" ? (
+                  <AlertTriangle className="h-5 w-5 mt-0.5" />
+                ) : null}
+                <span className="leading-relaxed">{message}</span>
+              </div>
+            )}
+          </div>
 
           {/* RIGHT (Nav) */}
           <nav
@@ -285,9 +398,7 @@ const Footer = () => {
             dir="rtl"
             className="flex items-center gap-4 text-sm text-white/55 flex-wrap justify-center lg:justify-end"
           >
-            <span className="whitespace-nowrap">
-              © {currentYear} DASMe. جميع الحقوق محفوظة.
-            </span>
+            <span className="whitespace-nowrap">© {currentYear} DASMe. جميع الحقوق محفوظة.</span>
             <span className="text-white/25">•</span>
             <TeamLink />
           </div>

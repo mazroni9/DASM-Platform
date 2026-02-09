@@ -34,6 +34,10 @@ use App\Http\Controllers\ActivityLogController;
 // ✅ NEW: Home Stats Endpoint
 use App\Http\Controllers\HomeStatsController;
 
+// ✅ NEW: Newsletter (Public + Admin)
+use App\Http\Controllers\NewsletterSubscriptionController;
+use App\Http\Controllers\Admin\NewsletterSubscriberController as AdminNewsletterSubscriberController;
+
 // ========= Admin (namespaced) =========
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\BidEventController;
@@ -332,6 +336,10 @@ Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanControll
 
 // ✅ NEW (Public): Home Stats for landing page counters
 Route::get('/home-stats', HomeStatsController::class);
+
+// ✅ NEW (Public): Newsletter subscribe (Footer form)
+Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])
+    ->middleware('throttle:20,1');
 
 // ─────────────────────────────────────────────────────────────────────────
 // 2.7 Utilities
@@ -742,6 +750,14 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::put('/', [SettingsController::class, 'update']);
             Route::post('/', [SettingsController::class, 'update']); // Legacy
             Route::get('/{key}', [SettingsController::class, 'getSetting']);
+        });
+
+        // ✅ NEW: Newsletter Subscribers (Admin CRUD + Export CSV)
+        Route::prefix('newsletter-subscribers')->group(function () {
+            Route::get('/', [AdminNewsletterSubscriberController::class, 'index']);
+            Route::get('/export', [AdminNewsletterSubscriberController::class, 'export']);
+            Route::put('/{subscriber}', [AdminNewsletterSubscriberController::class, 'update'])->whereNumber('subscriber');
+            Route::delete('/{subscriber}', [AdminNewsletterSubscriberController::class, 'destroy'])->whereNumber('subscriber');
         });
 
         // ─────────────────────────────────────────────────────────────
