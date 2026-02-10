@@ -30,6 +30,7 @@ import {
   TestTube,
   BarChart3,
   ScrollText,
+  Mail, // ✅ NEW
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -188,7 +189,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       permission: "youtube_channels.view",
     },
 
-    // ✅ NEW: Blog Section
+    // ✅ Blog Section
     {
       name: "المدونة",
       href: "#",
@@ -207,6 +208,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/blog/categories",
       icon: Tags,
       // permission: "blog_categories.view",
+    },
+
+    // ✅ NEW: Newsletter Section
+    {
+      name: "النشرة البريدية",
+      href: "#",
+      type: "header",
+      icon: Mail,
+      // permissions: ["newsletter_subscribers.view"],
+    },
+    {
+      name: "إدارة الإيميلات",
+      href: "/admin/newsletter-subscribers",
+      icon: Mail,
+      // permission: "newsletter_subscribers.view",
     },
 
     {
@@ -249,13 +265,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       permissions: ["activity_logs.view", "users.view"],
     },
 
-    // ✅ NEW TAB: Similar Price Analysis
+    // ✅ Similar Price Analysis
     {
       name: "تحليل الأسعار المشابهة",
       href: "/similar-price-analysis",
       icon: BarChart3,
-      // لو عندك Permission لاحقاً:
-      // permission: "reports.view",
     },
 
     {
@@ -346,23 +360,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         <LoadingLink
                           href={item.href}
                           className={`group flex items-center p-3 rounded-xl transition-all border
-                            ${active
-                              ? "bg-primary/10 text-primary border-primary/30 shadow"
-                              : "bg-background/30 text-foreground/70 border-border hover:bg-border hover:text-foreground"
+                            ${
+                              active
+                                ? "bg-primary/10 text-primary border-primary/30 shadow"
+                                : "bg-background/30 text-foreground/70 border-border hover:bg-border hover:text-foreground"
                             }`}
                         >
                           <Icon
-                            className={`w-5 h-5 ms-2 ${active
+                            className={`w-5 h-5 ms-2 ${
+                              active
                                 ? "text-primary"
                                 : "text-foreground/70 group-hover:text-foreground"
-                              }`}
+                            }`}
                           />
                           <span className="ms-1 flex-1 text-sm font-medium">
                             {item.name}
                           </span>
                           <ChevronRight
-                            className={`w-4 h-4 ${active ? "text-primary" : "text-foreground/50"
-                              }`}
+                            className={`w-4 h-4 ${
+                              active
+                                ? "text-primary"
+                                : "text-foreground/50"
+                            }`}
                           />
                         </LoadingLink>
                       </li>
