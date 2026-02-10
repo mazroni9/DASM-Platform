@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ar";
@@ -53,6 +53,65 @@ function toEmbedUrl(url?: string | null): string | null {
     return null;
   }
 }
+
+// ========== CountUp (أنيميشن عداد) ==========
+
+const formatNumber = (n: number) => new Intl.NumberFormat("en-US").format(n);
+
+const CountUp = ({
+  value,
+  duration = 1200,
+}: {
+  value: number;
+  duration?: number;
+}) => {
+  const [display, setDisplay] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number | null>(null);
+  const fromRef = useRef(0);
+
+  useEffect(() => {
+    // ✅ reduce motion support
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+    if (prefersReduced) {
+      setDisplay(value);
+      return;
+    }
+
+    const from = fromRef.current;
+    const to = value;
+
+    startRef.current = null;
+
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const step = (ts: number) => {
+      if (startRef.current === null) startRef.current = ts;
+      const p = Math.min((ts - startRef.current) / duration, 1);
+      const eased = easeOutCubic(p);
+
+      const next = Math.round(from + (to - from) * eased);
+      setDisplay(next);
+
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        fromRef.current = to;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value, duration]);
+
+  return <span suppressHydrationWarning>{formatNumber(display)}</span>;
+};
 
 // ========== typing effect للعنوان الرئيسي (مرة واحدة) ==========
 
@@ -354,14 +413,51 @@ const LiveBroadcastSection = () => {
   );
 };
 
-// ========== قسم الإحصائيات ==========
+// ========== قسم الإحصائيات (Dynamic from Backend) ==========
+
+type HomeStats = {
+  cars_count: number;
+  active_users_count: number;
+};
 
 const StatsSection = () => {
-  const stats = [
-    { value: "10,000+", label: "سيارة مباعة", icon: <Car className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-primary" },
-    { value: "50,000+", label: "مستخدم نشط", icon: <Users className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-primary" },
-    { value: "95%", label: "رضا العملاء", icon: <Award className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-secondary" },
-    { value: "2.5B+", label: "قيمة الصفقات", icon: <TrendingUp className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-secondary" },
+  const [statsData, setStatsData] = useState<HomeStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const run = async () => {
+      try {
+        const res = await api.get("/api/home-stats");
+        const data = res?.data?.data ?? null;
+        if (mounted) setStatsData(data);
+      } catch {
+        if (mounted) setStatsData(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const cards = [
+    {
+      value: statsData?.cars_count ?? 0,
+      label: "السيارات",
+      icon: <Car className="w-6 h-6 md:w-8 md:h-8" />,
+      color: "bg-primary",
+    },
+    {
+      value: statsData?.active_users_count ?? 0,
+      label: "المستخدمين النشطين",
+      icon: <Users className="w-6 h-6 md:w-8 md:h-8" />,
+      color: "bg-primary",
+    },
   ];
 
   return (
@@ -381,14 +477,14 @@ const StatsSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {stats.map((stat, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto">
+          {cards.map((stat, index) => (
             <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.8 }}
+              key={stat.label}
+              initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.45, delay: index * 0.08 }}
               className="text-center"
             >
               <div
@@ -396,9 +492,15 @@ const StatsSection = () => {
               >
                 {stat.icon}
               </div>
+
               <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">
-                {stat.value}
+                {loading ? (
+                  <span className="inline-block h-8 w-28 rounded-lg bg-border/60 animate-pulse" />
+                ) : (
+                  <CountUp value={stat.value} />
+                )}
               </h3>
+
               <p className="text-foreground text-sm md:text-base">{stat.label}</p>
             </motion.div>
           ))}
@@ -513,7 +615,7 @@ export default function Page() {
       {/* قسم البث الاحترافي */}
       <LiveBroadcastSection />
 
-      {/* الأقسام */}
+      {/* ✅ Stats (Dynamic) */}
       <StatsSection />
 
       <BenefitsSection />
