@@ -514,26 +514,10 @@ const StatsSection = () => {
 
 const BenefitsSection = () => {
   const benefits = [
-    {
-      title: "مزادات متطورة على مدار الساعة",
-      description: "نظام مزادات حديث، ومتاح 24/7 لراحتك",
-      icon: <Shield className="w-7 h-7 md:w-8 md:h-8" />,
-    },
-    {
-      title: "فحص في ورش معتمدة",
-      description: "جميع السيارات تخضع لفحص دقيق في ورش معتمدة",
-      icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" />,
-    },
-    {
-      title: "شحن متميز ومتابعة مباشرة لحين الوصول",
-      description: "خدمة شحن موثوقة مع تتبع مباشر لشحنتك",
-      icon: <Clock className="w-7 h-7 md:w-8 md:h-8" />,
-    },
-    {
-      title: "أسعار متوازنة لصالح البائع والمشتري",
-      description: "نضمن أفضل الأسعار للطرفين من خلال نظام عادل",
-      icon: <Award className="w-7 h-7 md:w-8 md:h-8" />,
-    },
+    { title: "مزادات متطورة على مدار الساعة", description: "نظام مزادات حديث، ومتاح 24/7 لراحتك", icon: <Shield className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "فحص في ورش معتمدة", description: "جميع السيارات تخضع لفحص دقيق في ورش معتمدة", icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "شحن متميز ومتابعة مباشرة لحين الوصول", description: "خدمة شحن موثوقة مع تتبع مباشر لشحنتك", icon: <Clock className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "أسعار متوازنة لصالح البائع والمشتري", description: "نضمن أفضل الأسعار للطرفين من خلال نظام عادل", icon: <Award className="w-7 h-7 md:w-8 md:h-8" /> },
   ];
 
   return (
@@ -552,10 +536,7 @@ const BenefitsSection = () => {
             نقدم لك تجربة مزادات استثنائية بمعايير عالية من الجودة والموثوقية
           </p>
         </div>
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
-          dir="ltr"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8" dir="ltr">
           {benefits.map((benefit, index) => (
             <motion.div
               key={index}
