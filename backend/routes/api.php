@@ -49,6 +49,7 @@ use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW: Admin Blog Controller
 use App\Http\Controllers\Admin\AuctionActivityLogController;
+use App\Http\Controllers\Admin\AuctionTestingAnalyticsController;
 
 // ========= Admin Panel (New) =========
 use App\Http\Controllers\AdminPanel\UserController as AdminPanelUserController;
@@ -759,6 +760,9 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::get('/config', [AuctionActivityLogController::class, 'config']);
             Route::put('/config', [AuctionActivityLogController::class, 'updateConfig']);
         });
+
+        Route::get('/auction-testing-analytics', AuctionTestingAnalyticsController::class)
+            ->middleware('can:auctions.view');
 
         // ─────────────────────────────────────────────────────────────
         // 8.3 Users Management

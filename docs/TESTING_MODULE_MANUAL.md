@@ -138,6 +138,9 @@ GET /api/auction-tests/scenario-runs/{id}
 |---------|---------|
 | [TestingModule/README.md](../TestingModule/README.md) | نظرة عامة على الوحدة والتصنيف والتشغيل. |
 | [TestingModule/STRUCTURE.md](../TestingModule/STRUCTURE.md) | شجرة المجلدات والملفات. |
+| [AUCTION_TESTING_BRANCH_IMPROVEMENT_PLAN.md](AUCTION_TESTING_BRANCH_IMPROVEMENT_PLAN.md) | مراجعة فرع الاختبارات + السجل الفوري، Checklist قبل الدمج، خطة التحسين (تحليلات، retention، حماية production). |
+| [SCENARIOS_AND_LOGGING_POLICY.md](SCENARIOS_AND_LOGGING_POLICY.md) | كيف أضيف سيناريو، كيف أشغّل يدويًا/من CI، سياسة التسجيل (Activity Log) ومدة الاحتفاظ. |
+| [AUCTION_TESTING_BUSINESS_INTERPRETATION.md](AUCTION_TESTING_BUSINESS_INTERPRETATION.md) | تفسير نتائج السيناريوهات والسجل للأعمال: كيف نقرأ المؤشرات ونحوّلها إلى قرارات (جودة، أداء، تدقيق). |
 | [AUCTION_SCENARIO_TESTING_SETUP.md](AUCTION_SCENARIO_TESTING_SETUP.md) | إعداد وتشغيل سيناريوهات الاختبار خطوة بخطوة. |
 | [AUCTION_TRANSITION_TEST_MATRIX.md](AUCTION_TRANSITION_TEST_MATRIX.md) | مصفوفة حالات الانتقال و Test Cases. |
 | [AUCTION_PRICE_AND_STATE_STABILITY_MATRIX.md](AUCTION_PRICE_AND_STATE_STABILITY_MATRIX.md) | مصفوفة تحديث السعر واستقرار الحالة. |

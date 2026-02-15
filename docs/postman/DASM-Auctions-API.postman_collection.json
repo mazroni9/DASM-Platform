@@ -527,6 +527,15 @@
             "url": "{{base_url}}/api/auction-tests/scenario-runs/{{scenario_run_id}}",
             "description": "تفاصيل تشغيل سيناريو واحد"
           }
+        },
+        {
+          "name": "Admin – Auction Testing Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/admin/auction-testing-analytics?days=30",
+            "description": "لوحة تحليلية: KPIs من runs + events + activity_logs + test_results (يتطلب صلاحية auctions.view)"
+          }
         }
       ]
     }

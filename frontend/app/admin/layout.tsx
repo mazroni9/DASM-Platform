@@ -240,6 +240,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: ScrollText,
       permission: "auctions.view",
     },
+    {
+      name: "تحليلات اختبارات المزادات",
+      href: "/admin/auction-testing-analytics",
+      icon: BarChart3,
+      permission: "auctions.view",
+    },
 
     {
       name: "التقارير والإعدادات",
