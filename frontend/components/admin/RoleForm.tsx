@@ -47,7 +47,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
     setOpenModules((prev) => prev.filter((module) => module !== moduleName));
   const openModule = (moduleName: string) =>
     setOpenModules((prev) =>
-      prev.includes(moduleName) ? prev : [...prev, moduleName]
+      prev.includes(moduleName) ? prev : [...prev, moduleName],
     );
 
   const {
@@ -97,7 +97,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
   const handleModuleSelectAll = (
     moduleName: string,
     modulePermissionIds: number[],
-    checked: CheckedState
+    checked: CheckedState,
   ) => {
     const isChecked = checked === true;
     const currentPermissions = new Set(selectedPermissions);
@@ -128,7 +128,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
         await roleService.updateRole(roleId, payload);
         toast.success("تم تحديث الدور بنجاح");
       }
-      router.push("/admin/roles");
+      router.replace("/admin/roles");
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("حدث خطأ أثناء حفظ البيانات");
@@ -227,17 +227,17 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
               ([moduleName, permissions]) => {
                 const permissionIds = permissions.map((p) => p.id);
                 const allModulePermissionsSelected = permissionIds.every((p) =>
-                  selectedPermissions.includes(p)
+                  selectedPermissions.includes(p),
                 );
                 const someModulePermissionsSelected = permissionIds.some((p) =>
-                  selectedPermissions.includes(p)
+                  selectedPermissions.includes(p),
                 );
                 const moduleCheckboxState: CheckedState =
                   allModulePermissionsSelected
                     ? true
                     : someModulePermissionsSelected
-                    ? "indeterminate"
-                    : false;
+                      ? "indeterminate"
+                      : false;
 
                 return (
                   <AccordionItem key={moduleName} value={moduleName}>
@@ -249,7 +249,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
                             handleModuleSelectAll(
                               moduleName,
                               permissionIds,
-                              checked
+                              checked,
                             )
                           }
                           onClick={(e) => e.stopPropagation()} // Prevent accordion toggle when clicking checkbox
@@ -259,7 +259,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
                           (من {permissions.length} محددة{" "}
                           {
                             selectedPermissions.filter((p) =>
-                              permissionIds.includes(p)
+                              permissionIds.includes(p),
                             ).length
                           }
                           )
@@ -282,13 +282,13 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
                                     const newValue = checked
                                       ? [...(field.value || []), permission.id]
                                       : (field.value || []).filter(
-                                          (p: number) => p !== permission.id
+                                          (p: number) => p !== permission.id,
                                         );
                                     field.onChange(newValue);
 
                                     // After updating the form state, check if the module should be closed or opened.
                                     const allSelected = permissionIds.every(
-                                      (p) => newValue.includes(p)
+                                      (p) => newValue.includes(p),
                                     );
                                     if (allSelected) {
                                       closeModule(moduleName);
@@ -309,7 +309,7 @@ export function RoleForm({ mode, roleId }: RoleFormProps) {
                     </AccordionContent>
                   </AccordionItem>
                 );
-              }
+              },
             )}
           </Accordion>
         </CardContent>

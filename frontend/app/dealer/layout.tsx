@@ -36,11 +36,11 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/dealer");
+      router.replace("/auth/login?returnUrl=/dealer");
     }
-    // Check if user is dealer
+    // Check if user is dealer - redirect to correct dashboard using replace
     if (isLoggedIn && user && user.type !== "dealer") {
-      router.push("/dashboard");
+      router.replace("/dashboard");
     }
   }, [isLoggedIn, user, router]);
 
@@ -174,7 +174,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                         <div
                           className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110",
-                            action.color
+                            action.color,
                           )}
                         >
                           <Icon className="w-3 h-3" />
@@ -210,7 +210,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                           "group flex items-center gap-2 p-3 rounded-lg transition-all duration-300 border",
                           isActive
                             ? "bg-primary/10 border-primary/20 text-primary shadow-lg"
-                            : "bg-background/30 border-border text-foreground/70 hover:bg-border hover:border-border hover:text-foreground"
+                            : "bg-background/30 border-border text-foreground/70 hover:bg-border hover:border-border hover:text-foreground",
                         )}
                       >
                         <div
@@ -218,7 +218,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                             "p-1.5 rounded-md transition-all duration-300",
                             isActive
                               ? "bg-white/10"
-                              : "bg-border/30 group-hover:bg-background/10 group-hover:text-foreground"
+                              : "bg-border/30 group-hover:bg-background/10 group-hover:text-foreground",
                           )}
                         >
                           <Icon className="w-3 h-3" />

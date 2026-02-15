@@ -171,7 +171,7 @@ export default function AddStaffPage() {
 
       if (response.data && response.data.status === "success") {
         toast.success(response.data.message);
-        router.push("/admin/staff");
+        router.replace("/admin/staff");
       }
     } catch (error: any) {
       console.error("Error creating moderator:", error);
@@ -194,10 +194,10 @@ export default function AddStaffPage() {
       if (
         confirm("هل أنت متأكد من إلغاء العملية؟ ستفقد جميع البيانات المدخلة.")
       ) {
-        router.push("/admin/staff");
+        router.replace("/admin/staff");
       }
     } else {
-      router.push("/admin/staff");
+      router.replace("/admin/staff");
     }
   };
 

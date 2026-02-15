@@ -5,13 +5,7 @@ import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import Image from "next/image";
-import {
-  RefreshCw,
-  LogOut,
-  Menu,
-  TvMinimalPlay,
-  Layers,
-} from "lucide-react";
+import { RefreshCw, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { restartServers } from "@/utils/serverUtils";
@@ -22,12 +16,6 @@ import NotificationMenu from "@/components/NotificationMenu";
 import AdminNotificationsMenu from "@/components/admin/AdminNotificationsMenu";
 import { ThemeToggle } from "../ThemeToggle";
 
-interface NavigationItem {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
@@ -37,19 +25,6 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const isAdmin =
     user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN;
-
-  // ✅ Added new nav item pointing to /similar-price-analysis
-  const navigationItems: NavigationItem[] = [
-    { href: "/auctions", label: "الأسواق الرقمية", icon: TvMinimalPlay },
-    {
-      href: "/similar-price-analysis",
-      label: "تحليل الأسعار المشابهة",
-      icon: Layers,
-    },
-  ];
-
-  const isActive = (path: string) =>
-    pathname === path || pathname?.startsWith(path + "/");
 
   const handleRestartServers = async () => {
     if (!confirm("هل أنت متأكد من إعادة تشغيل الخوادم؟")) return;
@@ -135,27 +110,6 @@ const Navbar = () => {
             </LoadingLink>
           </div>
 
-          {/* Desktop Navigation */}
-          <div
-            className="hidden md:flex items-center gap-2 lg:gap-6 font-medium"
-            dir="rtl"
-          >
-            {navigationItems.map((item) => (
-              <LoadingLink
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 whitespace-nowrap ${
-                  isActive(item.href)
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-border hover:text-primary"
-                }`}
-              >
-                <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
-                <span>{item.label}</span>
-              </LoadingLink>
-            ))}
-          </div>
-
           {/* Desktop Auth & Actions */}
           <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
             {isAdmin && (
@@ -173,7 +127,9 @@ const Navbar = () => {
                 />
               </Button>
             )}
+
             <ThemeToggle />
+
             {user ? (
               <>
                 <div className={forceBright}>
@@ -203,7 +159,9 @@ const Navbar = () => {
                 <UserMenu />
               </div>
             )}
+
             <ThemeToggle />
+
             <button
               className="p-2 rounded-lg text-foreground hover:bg-border hover:text-primary transition-colors duration-200"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -228,22 +186,6 @@ const Navbar = () => {
           }`}
         >
           <div className="space-y-2 pt-3 border-t border-border">
-            {navigationItems.map((item) => (
-              <LoadingLink
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-all duration-200 ${
-                  isActive(item.href)
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "hover:bg-border hover:text-primary"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                <span className="text-base">{item.label}</span>
-              </LoadingLink>
-            ))}
-
             {isAdmin && (
               <button
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-secondary/10 text-secondary transition-all duration-200"

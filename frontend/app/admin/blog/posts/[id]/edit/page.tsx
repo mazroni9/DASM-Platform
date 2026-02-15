@@ -194,7 +194,7 @@ export default function AdminEditBlogPostPage() {
       });
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "تعذر تحميل المقال");
-      router.push("/admin/blog/posts");
+      router.replace("/admin/blog/posts");
     } finally {
       setLoadingPost(false);
     }
@@ -284,7 +284,7 @@ export default function AdminEditBlogPostPage() {
       await api.put(`/api/admin/blog/posts/${id}`, payload);
       toast.success("تم الحفظ");
 
-      router.push("/admin/blog/posts");
+      router.replace("/admin/blog/posts");
       router.refresh();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "تعذر الحفظ");
@@ -323,7 +323,7 @@ export default function AdminEditBlogPostPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <button
             type="button"
-            onClick={() => router.push("/admin/blog/posts")}
+            onClick={() => router.replace("/admin/blog/posts")}
             className="bg-card border border-border hover:bg-border/60 transition px-4 py-2 rounded-xl flex items-center"
           >
             <ArrowRight className="w-4 h-4 ml-2" />
@@ -756,7 +756,7 @@ export default function AdminEditBlogPostPage() {
 
                 <button
                   type="button"
-                  onClick={() => router.push("/admin/blog/posts")}
+                  onClick={() => router.replace("/admin/blog/posts")}
                   className="w-full bg-card border border-border hover:bg-border/60 transition px-4 py-3 rounded-xl flex items-center justify-center"
                 >
                   <ArrowRight className="w-4 h-4 ml-2" />

@@ -139,7 +139,7 @@ export default function EditModeratorPage({
       const errorMessage =
         error.response?.data?.message || "فشل في تحميل بيانات المشرف";
       toast.error(errorMessage);
-      router.push("/admin/staff");
+      router.replace("/admin/staff");
     } finally {
       setInitialLoading(false);
     }
@@ -243,7 +243,7 @@ export default function EditModeratorPage({
 
       if (response.data && response.data.status === "success") {
         toast.success(response.data.message);
-        router.push("/admin/staff");
+        router.replace("/admin/staff");
       }
     } catch (error: any) {
       console.error("Error updating moderator:", error);
@@ -272,13 +272,13 @@ export default function EditModeratorPage({
     ) {
       if (
         confirm(
-          "هل أنت متأكد من إلغاء العملية؟ ستفقد جميع التغييرات غير المحفوظة."
+          "هل أنت متأكد من إلغاء العملية؟ ستفقد جميع التغييرات غير المحفوظة.",
         )
       ) {
-        router.push("/admin/moderators");
+        router.replace("/admin/moderators");
       }
     } else {
-      router.push("/admin/moderators");
+      router.replace("/admin/moderators");
     }
   };
 
