@@ -217,6 +217,7 @@ export function TestDataTable({
                 <TableHead className="text-right min-w-[200px]">اسم الاختبار</TableHead>
                 <TableHead className="text-right min-w-[150px]">النوع</TableHead>
                 <TableHead className="text-right min-w-[100px]">الحالة</TableHead>
+                <TableHead className="text-right min-w-[80px]">الحالات</TableHead>
                 <TableHead className="text-right min-w-[250px]">الرسالة</TableHead>
                 <TableHead className="text-right min-w-[100px]">الوقت</TableHead>
                 <TableHead className="text-right min-w-[150px]">التاريخ</TableHead>
@@ -242,6 +243,21 @@ export function TestDataTable({
                     <Badge variant="outline" className={getStatusColor(test.status)}>
                       {getStatusLabel(test.status)}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {test.details?.cases_total != null ? (
+                      <span
+                        className={
+                          test.details?.cases_passed === test.details?.cases_total
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-amber-600 dark:text-amber-400'
+                        }
+                      >
+                        {test.details?.cases_passed ?? 0}/{test.details.cases_total}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell>
                     <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 max-w-xs">{test.message}</p>

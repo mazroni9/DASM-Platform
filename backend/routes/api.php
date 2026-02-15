@@ -755,6 +755,7 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         // ─────────────────────────────────────────────────────────────
         Route::prefix('auction-activity-log')->middleware('can:auctions.view')->group(function () {
             Route::get('/', [AuctionActivityLogController::class, 'index']);
+            Route::get('/analytics', [AuctionActivityLogController::class, 'analytics']);
             Route::get('/config', [AuctionActivityLogController::class, 'config']);
             Route::put('/config', [AuctionActivityLogController::class, 'updateConfig']);
         });

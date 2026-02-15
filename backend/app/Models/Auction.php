@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use App\Services\AuctionRealtimeLogService;
@@ -73,6 +74,7 @@ class Auction extends Model
         'status_label',
         'current_price',  // ✅ alias للفرونت
         'starting_bid',   // ✅ compatibility: used in jobs/events/logs
+        'bid_change_percentage', // نسبة التغير من سعر الافتتاح إلى السعر الحالي
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -96,6 +98,23 @@ class Auction extends Model
     public function getCurrentPriceAttribute(): float
     {
         return (float)($this->current_bid ?? 0);
+    }
+
+    /**
+     * نسبة التغير: من سعر الافتتاح (opening_price) إلى السعر الحالي (current_bid).
+     * تُرجع null إذا لم يكن هناك سعر افتتاح أو كان صفرًا.
+     */
+    public function getBidChangePercentageAttribute(): ?float
+    {
+        $opening = (float)($this->opening_price ?? 0);
+        if ($opening <= 0) {
+            return null;
+        }
+        $current = (float)($this->current_bid ?? 0);
+        if ($current <= 0) {
+            return 0.0;
+        }
+        return round((($current - $opening) / $opening) * 100, 2);
     }
 
     /**
@@ -357,22 +376,32 @@ class Auction extends Model
         $this->status = AuctionStatus::ENDED;
         $this->save();
 
-        if ($this->car) {
-            $this->car->auction_status = 'sold';
-            $this->car->save();
-        }
+        try {
+            if ($this->car) {
+                $this->car->auction_status = 'sold';
+                $this->car->save();
+            }
 
-        Settlement::create([
-            'auction_id' => $this->id,
-            'seller_id' => $this->car?->user_id,
-            'buyer_id' => $userId,
-            'car_id' => $this->car_id,
-            'final_price' => $amount,
-            'platform_fee' => $this->calculatePlatformFee($amount),
-            'tam_fee' => 0,
-            'net_amount' => $amount - $this->calculatePlatformFee($amount),
-            'status' => 'pending'
-        ]);
+            Settlement::create([
+                'auction_id' => $this->id,
+                'seller_id' => $this->car?->user_id,
+                'buyer_id' => $userId,
+                'car_id' => $this->car_id,
+                'final_price' => $amount,
+                'platform_fee' => $this->calculatePlatformFee($amount),
+                'tam_fee' => 0,
+                'net_amount' => $amount - $this->calculatePlatformFee($amount),
+                'status' => 'pending'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auction::acceptBid failed (car/settlement)', [
+                'auction_id' => $this->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
 
         AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
             'reason' => 'bid_accepted',
@@ -485,7 +514,10 @@ class Auction extends Model
 
             $endTime = $this->getEffectiveEndTime();
             if ($endTime && $now > $endTime) {
-                $this->end();
+                $isInstantType = in_array($this->auction_type, [AuctionType::LIVE_INSTANT, AuctionType::SILENT_INSTANT], true);
+                if (!$isInstantType) {
+                    $this->end();
+                }
             }
         }
 

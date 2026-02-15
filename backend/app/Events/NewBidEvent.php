@@ -31,7 +31,7 @@ class NewBidEvent implements ShouldBroadcastNow
         
         $this->data = [
             'active_auction' => $auction,
-            'total_bids' => $auction ? $auction->bids_count : 0
+            'total_bids' => $auction ? ($auction->bids_count ?? $auction->bids()->count()) : 0
         ];
 
 
@@ -44,14 +44,16 @@ class NewBidEvent implements ShouldBroadcastNow
     }
 
     /**
-     * Get the channels the event should broadcast on.
-     * https://laravel.com/docs/broadcasting#model-broadcasting-channel-conventions
-     *
      * @return \Illuminate\Broadcasting\Channel|array
      */
     public function broadcastOn()
     {
-        return [new Channel($this->channelName)];
+        $channels = [new Channel($this->channelName)];
+        $auctionIdChannel = 'auction.' . $this->auction->id;
+        if ($this->channelName !== $auctionIdChannel) {
+            $channels[] = new Channel($auctionIdChannel);
+        }
+        return $channels;
     }
 
     public function broadcastWith()

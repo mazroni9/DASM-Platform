@@ -115,7 +115,6 @@ export function useDealerSocket({
     };
   }, [userId, aiEnabled, setWallet, setConnectionStatus, addAiRecommendation]);
 
-  // Subscribe to auction channel
   const subscribeToAuction = useCallback(
     (auctionId: number) => {
       const pusher = pusherRef.current;
@@ -124,6 +123,14 @@ export function useDealerSocket({
       const channel = pusher.subscribe(`auction.${auctionId}`);
       channel.bind("price-updated", (data: any) => {
         updateAuctionPrice(data.auction_id, data.price, data.end_time);
+      });
+      channel.bind("NewBidEvent", (payload: any) => {
+        const d = payload?.data ?? payload;
+        const auction = d?.active_auction;
+        if (auction && (auction.id === auctionId || auction.id == auctionId)) {
+          const endTime = auction.extended_until ?? auction.end_time;
+          updateAuctionPrice(auction.id, auction.current_bid ?? auction.current_price, endTime);
+        }
       });
 
       return () => {
