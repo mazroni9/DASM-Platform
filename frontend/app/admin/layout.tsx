@@ -30,6 +30,7 @@ import {
   TestTube,
   BarChart3,
   ScrollText,
+  Mail, // ✅ NEW
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -207,6 +208,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/blog/categories",
       icon: Tags,
       // permission: "blog_categories.view",
+    },
+
+    // ✅ NEW: Newsletter Section
+    {
+      name: "النشرة البريدية",
+      href: "#",
+      type: "header",
+      icon: Mail,
+      // permissions: ["newsletter_subscribers.view"],
+    },
+    {
+      name: "إدارة الإيميلات",
+      href: "/admin/newsletter-subscribers",
+      icon: Mail,
+      // permission: "newsletter_subscribers.view",
     },
 
     {
