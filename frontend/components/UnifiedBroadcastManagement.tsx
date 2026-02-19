@@ -1,5 +1,4 @@
-// src/components/UnifiedBroadcastManagement.tsx
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -18,10 +17,10 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
-// ===== Types =====
 type Role = "admin" | "moderator";
 
 type CarBrief = {
+  id?: number;
   make: string;
   model: string;
   year: number;
@@ -32,8 +31,7 @@ type CarBrief = {
 type AuctionOption = {
   id: number;
   car: CarBrief;
-  broadcasts?: any[];
-  title?: string;
+  broadcasts?: unknown[];
 };
 
 type BroadcastItem = {
@@ -42,10 +40,9 @@ type BroadcastItem = {
   description?: string | null;
   stream_url?: string | null;
   youtube_embed_url?: string | null;
-  youtube_chat_embed_url?: string | null;
   is_live?: boolean;
-  scheduled_start_time?: string | null;
   auction?: { id: number; car?: CarBrief } | null;
+  current_auction?: { id: number } | null;
 };
 
 type BroadcastInfo = {
@@ -58,13 +55,6 @@ type BroadcastInfo = {
   current_auction_id?: number | null;
 };
 
-type OfflineBidForm = {
-  auction_id: string;
-  bidder_name: string;
-  amount: string;
-};
-
-// ===== Helpers =====
 const cn = (...xs: Array<string | false | undefined | null>) =>
   xs.filter(Boolean).join(" ");
 
@@ -72,33 +62,29 @@ const extractYoutubeId = (url?: string | null): string | undefined => {
   if (!url) return;
   try {
     const u = new URL(url);
-
     if (u.hostname.includes("youtube.com")) {
       const v = u.searchParams.get("v");
       if (v) return v;
-
       const parts = u.pathname.split("/");
       const embedIdx = parts.findIndex((p) => p === "embed");
       if (embedIdx >= 0 && parts[embedIdx + 1]) return parts[embedIdx + 1];
     }
-
     if (u.hostname === "youtu.be") {
       return u.pathname.replace("/", "") || undefined;
     }
   } catch {
-    // ignore
+    return;
   }
   return;
 };
 
 const friendlyCar = (car?: CarBrief) =>
-  car ? `${car.make} ${car.model} ${car.year}` : "—";
+  car ? `${car.make} ${car.model} ${car.year}` : "-";
 
-// ===== Validation Schemas =====
 const startBroadcastSchema = z.object({
   title: z.string().min(1, "عنوان البث مطلوب"),
   youtube_url: z.string().url("رابط يوتيوب غير صحيح"),
-  auction_id: z.string().min(1, "اختيار المزاد مطلوب"),
+  auction_id: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -108,23 +94,21 @@ const offlineBidSchema = z.object({
   amount: z.string().min(1, "مبلغ المزايدة مطلوب"),
 });
 
+type OfflineBidForm = z.infer<typeof offlineBidSchema>;
+
 interface Props {
-  role: Role; // ✅ fix (كان مكتوب type غلط)
+  role: Role;
 }
 
 export default function UnifiedBroadcastManagement({ role }: Props) {
   const isAdmin = role === "admin";
+  const isModerator = role === "moderator";
 
-  // endpoints (خليها واضحة)
-  const allBroadcastsEndpoint = "/api/admin/all-broadcasts"; // حتى للموديراتور لو له صلاحية قراءة
-  const createBroadcastEndpoint = "/api/admin/broadcast";
-  const updateBroadcastStatusEndpoint = "/api/admin/broadcast/status";
-
-  // UI/Data state
   const [loading, setLoading] = useState(false);
   const [loadingBroadcast, setLoadingBroadcast] = useState(false);
   const [loadingAuctions, setLoadingAuctions] = useState(false);
 
+  const [activeBroadcastId, setActiveBroadcastId] = useState<number | null>(null);
   const [info, setInfo] = useState<BroadcastInfo>({
     is_live: false,
     title: "",
@@ -134,10 +118,9 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
     viewers_count: 0,
     bidders_count: 0,
   });
-
   const [availableAuctions, setAvailableAuctions] = useState<AuctionOption[]>([]);
+  const [selectedLiveCarId, setSelectedLiveCarId] = useState<string>("");
 
-  // Forms
   const {
     register: registerStart,
     handleSubmit: handleSubmitStart,
@@ -159,73 +142,156 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
     defaultValues: { auction_id: "", bidder_name: "", amount: "" },
   });
 
-  // ===== Fetch: broadcasts =====
+  const resetBroadcastInfo = () => {
+    setInfo({
+      is_live: false,
+      title: "",
+      description: "",
+      youtube_video_id: undefined,
+      viewers_count: 0,
+      bidders_count: 0,
+      current_auction_id: null,
+    });
+    setActiveBroadcastId(null);
+    setSelectedLiveCarId("");
+  };
+
+  const mapModeratorAuctions = (dashboardData: any): AuctionOption[] => {
+    const activeAuctions = dashboardData?.active_auctions;
+    if (!Array.isArray(activeAuctions)) return [];
+
+    return activeAuctions
+      .filter((a: any) => a?.id && a?.car)
+      .map((a: any) => ({
+        id: Number(a.id),
+        car: {
+          id: Number(a.car.id),
+          make: a.car.make || "",
+          model: a.car.model || "",
+          year: Number(a.car.year || 0),
+          condition: a.car.condition,
+          evaluation_price: a.car.evaluation_price,
+        },
+      }));
+  };
+
+  const fetchModeratorDashboard = async () => {
+    const res = await api.get("/api/moderator/dashboard");
+    const dashboardData = res?.data?.data ?? {};
+
+    const broadcasts = Array.isArray(dashboardData?.active_broadcasts)
+      ? dashboardData.active_broadcasts
+      : [];
+    const active = broadcasts.find((b: any) => b?.is_live) ?? broadcasts[0];
+
+    setAvailableAuctions(mapModeratorAuctions(dashboardData));
+
+    if (!active) {
+      resetBroadcastInfo();
+      return;
+    }
+
+    const videoId =
+      extractYoutubeId(active.youtube_embed_url) || extractYoutubeId(active.stream_url);
+
+    setActiveBroadcastId(Number(active.id));
+    setInfo({
+      is_live: !!active.is_live,
+      title: active.title || "",
+      description: active.description || "",
+      youtube_video_id: videoId,
+      viewers_count: 0,
+      bidders_count: 0,
+      current_auction_id: active.current_auction?.id ?? null,
+    });
+  };
+
+  const fetchAdminBroadcasts = async () => {
+    const res = await api.get("/api/admin/all-broadcasts");
+    const payload =
+      res?.data?.data?.data ??
+      res?.data?.data?.items ??
+      res?.data?.data ??
+      res?.data ??
+      [];
+
+    const list: BroadcastItem[] = Array.isArray(payload) ? payload : [];
+    const active = list.find((b) => b.is_live) ?? list[0];
+
+    if (!active) {
+      resetBroadcastInfo();
+      return;
+    }
+
+    const videoId =
+      extractYoutubeId(active.youtube_embed_url) || extractYoutubeId(active.stream_url);
+
+    setActiveBroadcastId(active.id);
+    setInfo({
+      is_live: !!active.is_live,
+      title: active.title || "",
+      description: active.description || "",
+      youtube_video_id: videoId,
+      viewers_count: 0,
+      bidders_count: 0,
+      current_auction_id: active.auction?.id ?? active.current_auction?.id ?? null,
+    });
+  };
+
   const fetchBroadcastInfo = async () => {
     setLoadingBroadcast(true);
     try {
-      const res = await api.get(allBroadcastsEndpoint);
-      const payload: BroadcastItem[] =
-        res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? [];
-
-      const active =
-        (Array.isArray(payload) ? payload.find((b) => b.is_live) : undefined) ||
-        (Array.isArray(payload) ? payload[0] : undefined);
-
-      if (!active) {
-        setInfo({
-          is_live: false,
-          title: "",
-          description: "",
-          youtube_video_id: undefined,
-          viewers_count: 0,
-          bidders_count: 0,
-          current_auction_id: null,
-        });
-        return;
+      if (isModerator) {
+        await fetchModeratorDashboard();
+      } else {
+        await fetchAdminBroadcasts();
       }
-
-      const videoId =
-        extractYoutubeId(active.youtube_embed_url) || extractYoutubeId(active.stream_url);
-
-      setInfo({
-        is_live: !!active.is_live,
-        title: active.title || "",
-        description: active.description || "",
-        youtube_video_id: videoId,
-        viewers_count: 0,
-        bidders_count: 0,
-        current_auction_id: active.auction?.id ?? null,
-      });
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.response?.data?.message || "فشل جلب بيانات البث");
-      setInfo({
-        is_live: false,
-        title: "",
-        description: "",
-        youtube_video_id: undefined,
-        viewers_count: 0,
-        bidders_count: 0,
-        current_auction_id: null,
-      });
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "فشل جلب بيانات البث");
+      resetBroadcastInfo();
     } finally {
       setLoadingBroadcast(false);
     }
   };
 
-  // ===== Fetch: available auctions to broadcast =====
   const fetchAvailableAuctions = async () => {
     setLoadingAuctions(true);
     try {
-      const res = await api.get("/api/approved-auctions-ids");
-      const list: AuctionOption[] =
-        res?.data?.data?.data ?? res?.data?.data ?? res?.data ?? [];
+      if (isModerator) {
+        await fetchModeratorDashboard();
+        return;
+      }
 
-      // فقط المزادات اللي ما عليها بث
-      setAvailableAuctions(list.filter((a) => (a.broadcasts?.length ?? 0) === 0));
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.response?.data?.message || "فشل تحميل المزادات المتاحة");
+      const res = await api.get("/api/approved-auctions-ids");
+      const list =
+        res?.data?.data?.data ??
+        res?.data?.data?.items ??
+        res?.data?.data ??
+        res?.data ??
+        [];
+
+      const normalized = Array.isArray(list) ? list : [];
+      setAvailableAuctions(
+        normalized
+          .filter((a: any) => a?.id && a?.car)
+          .filter((a: any) => (a.broadcasts?.length ?? 0) === 0)
+          .map((a: any) => ({
+            id: Number(a.id),
+            broadcasts: a.broadcasts,
+            car: {
+              id: Number(a.car.id),
+              make: a.car.make || "",
+              model: a.car.model || "",
+              year: Number(a.car.year || 0),
+              condition: a.car.condition,
+              evaluation_price: a.car.evaluation_price,
+            },
+          }))
+      );
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "فشل تحميل المزادات");
       setAvailableAuctions([]);
     } finally {
       setLoadingAuctions(false);
@@ -234,9 +300,11 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
 
   useEffect(() => {
     fetchBroadcastInfo();
-    fetchAvailableAuctions();
+    if (!isModerator) {
+      fetchAvailableAuctions();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [role]);
 
   const selectedAuctionById = useMemo(
     () => (id: string) => availableAuctions.find((a) => a.id === Number(id)),
@@ -245,19 +313,35 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
 
   const pickedAuction = selectedAuctionById(watchStart("auction_id") || "");
 
-  // ===== Actions =====
   const onStart = async (values: z.infer<typeof startBroadcastSchema>) => {
-    if (!isAdmin) {
-      toast.error("هذه العملية للمشرف العام فقط");
-      return;
-    }
-
     setLoading(true);
     try {
+      if (isModerator) {
+        const res = await api.post("/api/moderator/broadcast/start", {
+          title: values.title.trim(),
+          description: values.description?.trim() || "",
+          youtube_url: values.youtube_url.trim(),
+        });
+
+        if (res?.data?.status === "success") {
+          toast.success(res?.data?.message || "تم بدء البث بنجاح");
+          resetStartForm();
+          await fetchBroadcastInfo();
+        } else {
+          toast.error(res?.data?.message || "تعذر بدء البث");
+        }
+        return;
+      }
+
+      if (!values.auction_id) {
+        toast.error("اختيار المزاد مطلوب");
+        return;
+      }
+
       const picked = selectedAuctionById(values.auction_id);
       const autoDesc = picked ? friendlyCar(picked.car) : "";
 
-      const res = await api.post(createBroadcastEndpoint, {
+      const res = await api.post("/api/admin/broadcast", {
         title: values.title.trim(),
         auction_id: Number(values.auction_id),
         stream_url: values.youtube_url.trim(),
@@ -271,40 +355,84 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
       } else {
         toast.error(res?.data?.message || "تعذر بدء البث");
       }
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.response?.data?.message || "فشل بدء البث");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "فشل بدء البث");
     } finally {
       setLoading(false);
     }
   };
 
   const onStop = async () => {
-    if (!isAdmin) {
-      toast.error("هذه العملية للمشرف العام فقط");
+    if (!activeBroadcastId) {
+      toast.error("لا يوجد بث نشط للإيقاف");
       return;
     }
+
     setLoading(true);
     try {
-      const res = await api.put(updateBroadcastStatusEndpoint, { is_live: false });
+      const res = isModerator
+        ? await api.post(`/api/moderator/broadcast/stop/${activeBroadcastId}`)
+        : await api.put("/api/admin/broadcast/status", {
+            id: activeBroadcastId,
+            is_live: false,
+          });
+
       if (res?.data?.status === "success") {
         toast.success(res?.data?.message || "تم إيقاف البث");
         await Promise.all([fetchBroadcastInfo(), fetchAvailableAuctions()]);
       } else {
         toast.error(res?.data?.message || "تعذر إيقاف البث");
       }
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.response?.data?.message || "فشل إيقاف البث");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "فشل إيقاف البث");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSwitchCurrentCar = async () => {
+    if (!isModerator) return;
+    if (!activeBroadcastId) {
+      toast.error("لا يوجد بث نشط");
+      return;
+    }
+    if (!selectedLiveCarId) {
+      toast.error("اختر سيارة أولًا");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.put(
+        `/api/moderator/broadcast/${activeBroadcastId}/current-car`,
+        { car_id: Number(selectedLiveCarId) }
+      );
+
+      if (res?.data?.status === "success") {
+        toast.success(res?.data?.message || "تم تغيير السيارة الحالية");
+        await fetchBroadcastInfo();
+      } else {
+        toast.error(res?.data?.message || "تعذر تغيير السيارة");
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "فشل تغيير السيارة");
     } finally {
       setLoading(false);
     }
   };
 
   const onAddOfflineBid = async (values: OfflineBidForm) => {
+    if (isAdmin) {
+      toast.error("إضافة مزايدة خارجية متاحة للمشرف فقط");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.post("/api/admin/bids/offline", {
+      const res = await api.post("/api/moderator/bids/offline", {
         auction_id: Number(values.auction_id),
         bid_amount: Number(values.amount),
         bidder_name: values.bidder_name.trim(),
@@ -316,15 +444,14 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
       } else {
         toast.error(res?.data?.message || "تعذر إضافة المزايدة");
       }
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.response?.data?.message || "فشل إضافة المزايدة");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "فشل إضافة المزايدة");
     } finally {
       setLoading(false);
     }
   };
 
-  // ===== UI =====
   const busy = loading || loadingBroadcast || loadingAuctions;
 
   const cardClass =
@@ -351,7 +478,6 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
 
   return (
     <div dir="rtl" className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 rounded-xl">
@@ -361,7 +487,7 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">إدارة البث</h2>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {isAdmin ? "لوحة تحكم المشرف العام" : "لوحة تحكم المشرف"}
+              {isAdmin ? "لوحة إدارة البث للإدارة" : "لوحة إدارة البث للمشرف"}
             </p>
           </div>
         </div>
@@ -369,7 +495,7 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
         <button
           onClick={() => {
             fetchBroadcastInfo();
-            fetchAvailableAuctions();
+            if (!isModerator) fetchAvailableAuctions();
           }}
           className={cn(
             "flex items-center gap-2 px-3 py-2 rounded-lg border transition",
@@ -382,7 +508,6 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
         </button>
       </div>
 
-      {/* If NO live broadcast: Start form */}
       {!info.is_live ? (
         <div className={cardClass}>
           <div className={sectionHeaderClass}>
@@ -393,37 +518,37 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white">بدء بث مباشر جديد</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  اختر المزاد وأدخل رابط يوتيوب
+                  {isModerator ? "أدخل عنوان البث ورابط يوتيوب" : "اختر المزاد وأدخل رابط يوتيوب"}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Preview selected auction (fix unused CarIcon + يساعد المستخدم) */}
-          <div className="px-6 pt-5">
-            <div
-              className={cn(
-                "rounded-xl border p-4 flex items-center gap-3",
-                "bg-white border-gray-200 text-gray-700",
-                "dark:bg-white/5 dark:border-white/10 dark:text-gray-200"
-              )}
-            >
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-white/5">
-                <CarIcon className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">المزاد المختار</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {pickedAuction ? `#${pickedAuction.id} — ${friendlyCar(pickedAuction.car)}` : "لم يتم اختيار مزاد بعد"}
-                </p>
+          {!isModerator && (
+            <div className="px-6 pt-5">
+              <div
+                className={cn(
+                  "rounded-xl border p-4 flex items-center gap-3",
+                  "bg-white border-gray-200 text-gray-700",
+                  "dark:bg-white/5 dark:border-white/10 dark:text-gray-200"
+                )}
+              >
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-white/5">
+                  <CarIcon className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">المزاد المختار</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {pickedAuction
+                      ? `#${pickedAuction.id} - ${friendlyCar(pickedAuction.car)}`
+                      : "لم يتم اختيار مزاد بعد"}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <form
-            onSubmit={handleSubmitStart(onStart)}
-            className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5"
-          >
+          <form onSubmit={handleSubmitStart(onStart)} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
                 عنوان البث <span className="text-red-500">*</span>
@@ -432,40 +557,35 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
                 type="text"
                 {...registerStart("title")}
                 className={inputClass}
-                placeholder="مثال: بث مزاد — تويوتا كامري 2021"
+                placeholder="مثال: بث مزاد مباشر"
                 disabled={loading}
               />
               {startErrors.title && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {startErrors.title.message}
-                </p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{startErrors.title.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
-                المزاد <span className="text-red-500">*</span>
-              </label>
-              <select
-                {...registerStart("auction_id")}
-                className={selectClass}
-                disabled={loading || loadingAuctions}
-              >
-                <option value="">
-                  {loadingAuctions ? "جاري تحميل المزادات..." : "اختر مزاداً جاهزاً للبث"}
-                </option>
-                {availableAuctions.map((a) => (
-                  <option key={a.id} value={String(a.id)}>
-                    #{a.id} — {friendlyCar(a.car)}
+            {!isModerator && (
+              <div>
+                <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
+                  المزاد <span className="text-red-500">*</span>
+                </label>
+                <select
+                  {...registerStart("auction_id")}
+                  className={selectClass}
+                  disabled={loading || loadingAuctions}
+                >
+                  <option value="">
+                    {loadingAuctions ? "جارٍ تحميل المزادات..." : "اختر مزادًا جاهزًا للبث"}
                   </option>
-                ))}
-              </select>
-              {startErrors.auction_id && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {startErrors.auction_id.message}
-                </p>
-              )}
-            </div>
+                  {availableAuctions.map((a) => (
+                    <option key={a.id} value={String(a.id)}>
+                      #{a.id} - {friendlyCar(a.car)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="md:col-span-2">
               <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
@@ -480,19 +600,12 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
                 disabled={loading}
               />
               {startErrors.youtube_url && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {startErrors.youtube_url.message}
-                </p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{startErrors.youtube_url.message}</p>
               )}
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                أدخل رابط فيديو يوتيوب مباشر أو عادي (نستخرج المعرّف تلقائياً).
-              </p>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
-                الوصف
-              </label>
+              <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">الوصف</label>
               <input
                 type="text"
                 {...registerStart("description")}
@@ -523,22 +636,20 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
                   "bg-blue-600 hover:bg-blue-700"
                 )}
               >
-                {loading ? "جاري البدء..." : "بدء البث"}
+                {loading ? "جارٍ البدء..." : "بدء البث"}
               </button>
             </div>
           </form>
         </div>
       ) : (
-        // ===== Live Section =====
         <div className="space-y-6">
-          {/* Header Live */}
           <div className="bg-gradient-to-r from-rose-600 to-pink-600 rounded-2xl p-5 border border-rose-500/30 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-white">
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 <span className="font-semibold">البث مباشر الآن</span>
               </div>
-              <h3 className="text-white text-lg mt-1 truncate">{info.title || "—"}</h3>
+              <h3 className="text-white text-lg mt-1 truncate">{info.title || "-"}</h3>
               <p className="text-rose-100 text-sm truncate">{info.description || ""}</p>
             </div>
 
@@ -565,20 +676,17 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
                 </a>
               ) : null}
 
-              {isAdmin && (
-                <button
-                  onClick={onStop}
-                  disabled={loading}
-                  className="bg-white/15 hover:bg-white/25 px-4 py-2 rounded-xl flex items-center gap-2"
-                >
-                  <Pause className="w-4 h-4" />
-                  {loading ? "جاري الإيقاف..." : "إيقاف البث"}
-                </button>
-              )}
+              <button
+                onClick={onStop}
+                disabled={loading}
+                className="bg-white/15 hover:bg-white/25 px-4 py-2 rounded-xl flex items-center gap-2"
+              >
+                <Pause className="w-4 h-4" />
+                {loading ? "جارٍ الإيقاف..." : "إيقاف البث"}
+              </button>
             </div>
           </div>
 
-          {/* Player */}
           {info.youtube_video_id ? (
             <div className={cardClass}>
               <div className="aspect-video">
@@ -601,108 +709,131 @@ export default function UnifiedBroadcastManagement({ role }: Props) {
                 "dark:bg-gray-900/40 dark:text-gray-300 dark:border-white/10"
               )}
             >
-              لا يوجد رابط يوتيوب صالح لعرضه (تحقّق من stream_url في الباك).
+              لا يوجد رابط يوتيوب صالح لعرضه.
             </div>
           )}
 
-          {/* Offline bid */}
-          <div className={cardClass}>
-            <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-3">
-                <div className="bg-emerald-500/10 p-2 rounded-xl">
-                  <Users className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
-                </div>
+          {isModerator && (
+            <div className={cardClass}>
+              <div className={sectionHeaderClass}>
+                <h4 className="font-semibold text-gray-900 dark:text-white">تغيير السيارة الحالية</h4>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">اختر سيارة من المزادات النشطة</p>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">إضافة مزايدة خارجية</h4>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    أدخل تفاصيل المزايد والمبلغ
-                  </p>
+                  <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">السيارة</label>
+                  <select
+                    value={selectedLiveCarId}
+                    onChange={(e) => setSelectedLiveCarId(e.target.value)}
+                    className={selectClass}
+                    disabled={loading}
+                  >
+                    <option value="">اختر سيارة</option>
+                    {availableAuctions.map((a) => (
+                      <option key={a.id} value={String(a.car.id || "")}>#{a.id} - {friendlyCar(a.car)}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-            </div>
-
-            <form
-              onSubmit={handleSubmitOffline(onAddOfflineBid)}
-              className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4"
-            >
-              <div>
-                <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
-                  المزاد <span className="text-red-500">*</span>
-                </label>
-                <select
-                  {...registerOffline("auction_id")}
-                  className={cn(selectClass, "focus:ring-2 focus:ring-emerald-500")}
-                  disabled={loading || loadingAuctions || availableAuctions.length === 0}
-                >
-                  <option value="">
-                    {loadingAuctions
-                      ? "جاري تحميل المزادات..."
-                      : availableAuctions.length
-                      ? "اختر مزاد"
-                      : "لا توجد مزادات متاحة"}
-                  </option>
-                  {availableAuctions.map((a) => (
-                    <option key={a.id} value={String(a.id)}>
-                      #{a.id} — {friendlyCar(a.car)}
-                    </option>
-                  ))}
-                </select>
-                {offlineErrors.auction_id && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {offlineErrors.auction_id.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
-                  اسم المزايد <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  {...registerOffline("bidder_name")}
-                  className={cn(inputClass, "focus:ring-2 focus:ring-emerald-500")}
-                  placeholder="اسم المزايد"
-                />
-                {offlineErrors.bidder_name && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {offlineErrors.bidder_name.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
-                  مبلغ المزايدة <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  step={100}
-                  {...registerOffline("amount")}
-                  className={cn(inputClass, "focus:ring-2 focus:ring-emerald-500")}
-                  placeholder="مثال: 1000"
-                />
-                {offlineErrors.amount && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                    {offlineErrors.amount.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="md:col-span-3 flex items-center justify-end">
                 <button
-                  type="submit"
-                  disabled={loading || availableAuctions.length === 0}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 transition"
+                  type="button"
+                  onClick={onSwitchCurrentCar}
+                  disabled={loading}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 transition"
                 >
-                  {loading ? "جاري الإضافة..." : "إضافة مزايدة"}
+                  {loading ? "جارٍ الحفظ..." : "تغيير السيارة"}
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          )}
+
+          {isModerator && (
+            <div className={cardClass}>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-500/10 p-2 rounded-xl">
+                    <Users className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">إضافة مزايدة خارجية</h4>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">أدخل تفاصيل المزايد والمبلغ</p>
+                  </div>
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleSubmitOffline(onAddOfflineBid)}
+                className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4"
+              >
+                <div>
+                  <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
+                    المزاد <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    {...registerOffline("auction_id")}
+                    className={cn(selectClass, "focus:ring-2 focus:ring-emerald-500")}
+                    disabled={loading || availableAuctions.length === 0}
+                  >
+                    <option value="">
+                      {availableAuctions.length ? "اختر مزاد" : "لا توجد مزادات نشطة"}
+                    </option>
+                    {availableAuctions.map((a) => (
+                      <option key={a.id} value={String(a.id)}>
+                        #{a.id} - {friendlyCar(a.car)}
+                      </option>
+                    ))}
+                  </select>
+                  {offlineErrors.auction_id && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{offlineErrors.auction_id.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
+                    اسم المزايد <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...registerOffline("bidder_name")}
+                    className={cn(inputClass, "focus:ring-2 focus:ring-emerald-500")}
+                    placeholder="اسم المزايد"
+                  />
+                  {offlineErrors.bidder_name && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{offlineErrors.bidder_name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-2 text-gray-700 dark:text-gray-300">
+                    مبلغ المزايدة <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={100}
+                    {...registerOffline("amount")}
+                    className={cn(inputClass, "focus:ring-2 focus:ring-emerald-500")}
+                    placeholder="مثال: 1000"
+                  />
+                  {offlineErrors.amount && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{offlineErrors.amount.message}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-3 flex items-center justify-end">
+                  <button
+                    type="submit"
+                    disabled={loading || availableAuctions.length === 0}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 transition"
+                  >
+                    {loading ? "جارٍ الإضافة..." : "إضافة مزايدة"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
+

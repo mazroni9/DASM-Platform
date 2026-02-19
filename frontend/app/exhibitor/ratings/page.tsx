@@ -10,7 +10,7 @@ import { ar } from "date-fns/locale";
 
 /** ================== إعدادات الاتصال ================== **/
 const API_ROOT = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  process.env.NEXT_PUBLIC_API_URL || ""
 ).replace(/\/+$/, "");
 const API_BASE = `${API_ROOT}/api`;
 const TOKEN_KEY = "token";

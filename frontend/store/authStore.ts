@@ -378,13 +378,17 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true, error: null });
 
         try {
-          const response = await api.post(`/api/verify-otp`, {
-            email,
-            otp: code,
+          const response = await api.post(`/api/verify-email`, {
+            token: code,
           });
 
           const data = response.data;
           const token = data.access_token;
+
+          if (!token) {
+            set({ loading: false, error: null });
+            return { success: true, redirectTo: "/auth/login" };
+          }
 
           if (isBrowser() && token) {
             localStorage.setItem("token", token);

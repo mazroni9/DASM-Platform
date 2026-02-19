@@ -11,7 +11,7 @@ class PerformanceHeaders
     public function handle(Request $request, Closure $next)
     {
         // شغّل/اقفل من ENV (خليه false في الإنتاج المستقر)
-        $enabled = filter_var(env('PERF_HEADERS', false), FILTER_VALIDATE_BOOLEAN);
+        $enabled = (bool) config('performance.logging.performance_metrics', false);
         if (!$enabled) {
             return $next($request);
         }

@@ -7,7 +7,6 @@ use App\Models\Auction;
 use App\Models\CommissionTier;
 use App\Models\Setting;
 use App\Models\Settlement;
-use App\Models\Transaction;
 use App\Services\Payment\ClickPayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -103,18 +102,17 @@ class ClickPayController extends Controller
      */
     public function handleReturn(Request $request)
     {
-        Log::info('Request ClickPay return callback', [$request->all()]);
         $tranRef = $request->input('tranRef');
         $respStatus = $request->input('respStatus');
         $respMessage = $request->input('respMessage');
         $cartId = $request->input('cartId');
-
 
         Log::info('ClickPay return callback', [
             'tranRef' => $tranRef,
             'respStatus' => $respStatus,
             'respMessage' => $respMessage,
             'cartId' => $cartId,
+            'ip' => $request->ip(),
         ]);
 
         // Find settlement by transaction reference
@@ -163,7 +161,11 @@ class ClickPayController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('ClickPay webhook received', $payload);
+        Log::info('ClickPay webhook received', [
+            'tran_ref' => $payload['tran_ref'] ?? null,
+            'response_status' => $payload['payment_result']['response_status'] ?? null,
+            'cart_id' => $payload['cart_id'] ?? null,
+        ]);
 
         $tranRef = $payload['tran_ref'] ?? null;
         $responseStatus = $payload['payment_result']['response_status'] ?? null;
@@ -189,7 +191,8 @@ class ClickPayController extends Controller
 
         Log::warning('ClickPay webhook: Payment not authorized', [
             'tran_ref' => $tranRef,
-            'verification' => $verification,
+            'response_status' => $verification['response_status'] ?? null,
+            'response_code' => $verification['response_code'] ?? null,
         ]);
 
         return response()->json(['status' => 'error', 'message' => 'Payment not authorized'], 400);
@@ -306,7 +309,8 @@ class ClickPayController extends Controller
         // Payment failed
         Log::warning('Moyasar callback: Payment not authorized', [
             'payment_id' => $paymentId,
-            'verification' => $verification,
+            'status' => $verification['status'] ?? null,
+            'authorized' => $verification['authorized'] ?? false,
         ]);
 
         return redirect("{$frontendUrl}/auctions/purchase-confirmation/{$settlement->auction_id}?status=failed&message=" . urlencode('Payment verification failed'));

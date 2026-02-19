@@ -50,6 +50,10 @@ class UpdateUserProfileRequest extends FormRequest
             ],
 
             'area_id' => ['sometimes', 'exists:areas,id'],
+            'avatar_url' => ['sometimes', 'nullable', 'string', 'max:2048'],
+            'two_factor_auth' => ['sometimes', 'boolean'],
+            'notification_email' => ['sometimes', 'boolean'],
+            'notification_sms' => ['sometimes', 'boolean'],
         ];
 
         // Dealer fields (اختياري)

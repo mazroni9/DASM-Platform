@@ -10,12 +10,22 @@ import React, {
 } from "react";
 import Pusher from "pusher-js";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || "";
 const PUSHER_CLUSTER =
   process.env.NEXT_PUBLIC_PUSHER_CLUSTER ||
   process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER ||
   "ap2";
+
+const buildApiUrl = (path: string) => {
+  if (!API_BASE_URL) return path;
+
+  const normalized = API_BASE_URL.replace(/\/$/, "");
+  if (normalized.endsWith("/api")) {
+    return `${normalized}${path.replace(/^\/api/, "")}`;
+  }
+  return `${normalized}${path}`;
+};
 
 export interface Car {
   id: number;
@@ -85,21 +95,20 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   // Fetch initial data
   const fetchLiveStatus = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/broadcast/live-status`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(buildApiUrl("/api/broadcast"), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.ok) {
         const data = await response.json();
 
         if (data.status === "success" && data.data) {
-          const { broadcast, car, auction, stats: liveStats } = data.data;
+          const broadcast = data.data;
+          const auction = data.data.auction;
+          const car = auction?.car;
 
           // Update current car from broadcast data
           if (car) {
@@ -108,9 +117,12 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
               make: car.make,
               model: car.model,
               year: car.year,
-              current_price: auction?.current_bid || car.starting_price || 0,
+              current_price:
+                auction?.current_bid || car.evaluation_price || 0,
               images: car.images || [],
             });
+          } else {
+            setCurrentCar(null);
           }
 
           // Update auction status
@@ -119,15 +131,9 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           } else {
             setAuctionStatus("ended");
           }
-
-          // Update stats if available
-          if (liveStats) {
-            setStats({
-              viewerCount: liveStats.viewerCount || 0,
-              bidderCount: liveStats.bidderCount || 0,
-              totalBids: liveStats.totalBids || 0,
-            });
-          }
+        } else {
+          setCurrentCar(null);
+          setAuctionStatus("ended");
         }
       } else {
         console.warn("Failed to fetch live status:", response.status);

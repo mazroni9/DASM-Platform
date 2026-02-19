@@ -39,7 +39,6 @@ class Auction extends Model
     protected $fillable = [
         'car_id',
         'session_id',
-        'is_test',
         'start_time',
         'end_time',
         'minimum_bid',
@@ -65,7 +64,6 @@ class Auction extends Model
         'last_bid_time' => 'datetime',
         'control_room_approved' => 'boolean',
         'approved_for_live' => 'boolean',
-        'is_test' => 'boolean',
     ];
 
     protected $appends = [

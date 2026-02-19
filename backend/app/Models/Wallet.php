@@ -25,10 +25,10 @@ class Wallet extends Model
         return $this->belongsTo(User::class);
     }
 
-    // A Wallet has many Transactions.
+    // A Wallet has many wallet transactions.
     public function transactions()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(WalletTransaction::class, 'wallet_id', 'id');
     }
     public function walletTransactions()
     {

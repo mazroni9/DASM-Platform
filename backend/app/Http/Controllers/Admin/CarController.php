@@ -352,4 +352,50 @@ class CarController extends Controller
             'data'   => $stats,
         ]);
     }
+
+    /**
+     * Update car auction status only.
+     * PUT /api/admin/cars/{id}/status
+     */
+    public function updateCarStatus(Request $request, $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'auction_status' => 'required|string|in:available,pending,in_auction,scheduled,sold,withdrawn,rejected,cancelled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $car = Car::findOrFail($id);
+            $car->auction_status = $request->auction_status;
+            $car->save();
+
+            Log::info('Car status updated by admin', [
+                'car_id' => $car->id,
+                'auction_status' => $car->auction_status,
+                'admin_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Car status updated successfully',
+                'data' => $car,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Car status update failed', [
+                'car_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update car status',
+            ], 500);
+        }
+    }
 }

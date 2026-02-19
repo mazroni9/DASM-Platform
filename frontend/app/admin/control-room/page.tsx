@@ -1,36 +1,30 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
-
-const CAR_TYPES = [
-  { value: "luxury", label: "سيارة فارهة" },
-  { value: "classic", label: "كلاسيكية" },
-  { value: "caravan", label: "كرافان" },
-  { value: "truck", label: "شاحنة" },
-  { value: "company", label: "سيارة شركة" },
-  { value: "government", label: "حكومية" },
-  { value: "individual", label: "فردية" },
-];
+import { toast } from "react-hot-toast";
 
 type Car = {
   id: number;
-  owner_name: string;
-  model: string;
-  status: string;
-  images: string[];
-  reports: string[];
-  market?: string;
-  type?: string;
-  selected?: boolean;
+  make?: string;
+  model?: string;
+  year?: number;
+  auction_status?: string;
+  evaluation_price?: number | null;
+  images?: string[];
+  user?: {
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+  };
 };
 
 export default function ControlRoomPage() {
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCars, setSelectedCars] = useState<number[]>([]);
-  const [carTypes, setCarTypes] = useState<{ [id: number]: string }>({});
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     fetchPendingCars();
@@ -38,114 +32,171 @@ export default function ControlRoomPage() {
 
   const fetchPendingCars = async () => {
     setLoading(true);
-    const res = await api.get("/api/admin/cars/pending");
-    setCars(res.data);
-    setLoading(false);
+    try {
+      const res = await api.get("/api/admin/cars", {
+        params: {
+          auction_status: "pending",
+          per_page: 100,
+        },
+      });
+
+      const payload = res?.data?.data;
+      const list = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload)
+          ? payload
+          : [];
+
+      setCars(list);
+    } catch (error: any) {
+      console.error("Error fetching pending cars:", error);
+      toast.error(error?.response?.data?.message || "فشل في تحميل السيارات المعلقة");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleApprove = async (carId: number) => {
-    const type = carTypes[carId] || "luxury";
-    await api.post("/api/admin/cars/approve", { id: carId, type, market: "instant" });
-    fetchPendingCars();
+  const handleApprove = async (car: Car) => {
+    setProcessing(true);
+    try {
+      await api.put("/api/admin/cars/bulk/approve-reject", {
+        ids: [car.id],
+        action: true,
+        price: Number(car.evaluation_price || 0),
+      });
+      toast.success("تم اعتماد السيارة بنجاح");
+      await fetchPendingCars();
+      setSelectedCars((prev) => prev.filter((id) => id !== car.id));
+    } catch (error: any) {
+      console.error("Error approving car:", error);
+      toast.error(error?.response?.data?.message || "فشل في اعتماد السيارة");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReject = async (carId: number) => {
+    setProcessing(true);
+    try {
+      await api.put("/api/admin/cars/bulk/approve-reject", {
+        ids: [carId],
+        action: false,
+      });
+      toast.success("تم رفض السيارة");
+      await fetchPendingCars();
+      setSelectedCars((prev) => prev.filter((id) => id !== carId));
+    } catch (error: any) {
+      console.error("Error rejecting car:", error);
+      toast.error(error?.response?.data?.message || "فشل في رفض السيارة");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleMoveToLiveMarket = async () => {
     if (selectedCars.length === 0) return;
-    await api.post("/api/admin/cars/move-to-live-market", { carIds: selectedCars });
-    fetchPendingCars();
-    setSelectedCars([]);
+
+    setProcessing(true);
+    try {
+      await api.put("/api/admin/auctions/bulk/move-to-status", {
+        ids: selectedCars,
+        status: "live",
+      });
+      toast.success("تم نقل السيارات المحددة إلى المزاد المباشر");
+      await fetchPendingCars();
+      setSelectedCars([]);
+    } catch (error: any) {
+      console.error("Error moving cars to live market:", error);
+      toast.error(error?.response?.data?.message || "فشل في نقل السيارات");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleSelectCar = (carId: number, checked: boolean) => {
     setSelectedCars((prev) =>
-      checked ? [...prev, carId] : prev.filter((id) => id !== carId)
+      checked ? [...prev, carId] : prev.filter((id) => id !== carId),
     );
   };
 
-  const handleTypeChange = (carId: number, value: string) => {
-    setCarTypes((prev) => ({ ...prev, [carId]: value }));
-  };
+  const ownerName = (car: Car) =>
+    car.user?.name || `${car.user?.first_name || ""} ${car.user?.last_name || ""}`.trim() || "غير محدد";
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">غرفة معالجة السيارات الجديدة</h1>
-      {loading && <div>جاري التحميل...</div>}
-      <Button
-        disabled={selectedCars.length === 0}
-        onClick={handleMoveToLiveMarket}
-        className="mb-4"
-      >
-        عرض السيارات المحددة في الحراج المباشر (Live Market)
-      </Button>
-      <table className="w-full border text-sm">
-        <thead>
-          <tr>
-            <th>اختيار</th>
-            <th>المالك</th>
-            <th>الموديل</th>
-            <th>الصور</th>
-            <th>التقارير</th>
-            <th>التصنيف</th>
-            <th>الإجراءات</th>
-            <th>السوق الحالي</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cars.map((car) => (
-            <tr key={car.id}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={selectedCars.includes(car.id)}
-                  onChange={(e) => handleSelectCar(car.id, e.target.checked)}
-                  title={`اختيار السيارة ${car.model}`}
-                  aria-label={`اختيار السيارة ${car.model}`}
-                />
-              </td>
-              <td>{car.owner_name}</td>
-              <td>{car.model}</td>
-              <td>
-                {car.images?.map((img, i) => (
-                  <img key={i} src={img} alt="car" className="w-16 h-16 inline-block" />
-                ))}
-              </td>
-              <td>
-                {car.reports?.map((rep, i) => (
-                  <a key={i} href={rep} target="_blank" rel="noopener noreferrer">تقرير {i + 1}</a>
-                ))}
-              </td>
-              <td>
-                <select
-                  value={carTypes[car.id] || ""}
-                  onChange={(e) => handleTypeChange(car.id, e.target.value)}
-                  title="اختر تصنيف السيارة"
-                  aria-label="اختر تصنيف السيارة"
-                >
-                  <option value="">اختر التصنيف</option>
-                  {CAR_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-              </td>
-              <td>
-                <Button
-                  color="success"
-                  onClick={() => handleApprove(car.id)}
-                  disabled={!carTypes[car.id]}
-                >
-                  اعتماد (للمزاد الفوري)
-                </Button>
-                {/* أزرار رفض/تعديل/حذف يمكن إضافتها هنا */}
-              </td>
-              <td>
-                {car.market === "instant" && "المزاد الفوري"}
-                {car.market === "live-market" && "الحراج المباشر"}
-                {!car.market && "بانتظار التصنيف"}
-              </td>
+    <div className="container mx-auto p-6 space-y-4" dir="rtl">
+      <h1 className="text-2xl font-bold">غرفة معالجة السيارات الجديدة</h1>
+
+      <div className="flex items-center gap-3">
+        <Button
+          disabled={selectedCars.length === 0 || processing}
+          onClick={handleMoveToLiveMarket}
+        >
+          نقل المحدد إلى المزاد المباشر
+        </Button>
+
+        <Button variant="outline" disabled={processing} onClick={fetchPendingCars}>
+          تحديث القائمة
+        </Button>
+      </div>
+
+      {loading ? <div>جاري التحميل...</div> : null}
+
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40">
+            <tr>
+              <th className="p-3 text-right">اختيار</th>
+              <th className="p-3 text-right">المالك</th>
+              <th className="p-3 text-right">السيارة</th>
+              <th className="p-3 text-right">الحالة</th>
+              <th className="p-3 text-right">السعر التقييمي</th>
+              <th className="p-3 text-right">الإجراءات</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {cars.map((car) => (
+              <tr key={car.id} className="border-t">
+                <td className="p-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedCars.includes(car.id)}
+                    onChange={(e) => handleSelectCar(car.id, e.target.checked)}
+                    title={`اختيار السيارة ${car.id}`}
+                    aria-label={`اختيار السيارة ${car.id}`}
+                  />
+                </td>
+                <td className="p-3">{ownerName(car)}</td>
+                <td className="p-3">{`${car.make || ""} ${car.model || ""} ${car.year || ""}`.trim()}</td>
+                <td className="p-3">{car.auction_status || "pending"}</td>
+                <td className="p-3">{Number(car.evaluation_price || 0).toLocaleString("ar-SA")}</td>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" disabled={processing} onClick={() => handleApprove(car)}>
+                      اعتماد
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={processing}
+                      onClick={() => handleReject(car.id)}
+                    >
+                      رفض
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {!loading && cars.length === 0 ? (
+              <tr>
+                <td className="p-6 text-center text-muted-foreground" colSpan={6}>
+                  لا توجد سيارات معلقة حالياً.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

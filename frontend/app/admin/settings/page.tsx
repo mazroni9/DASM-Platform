@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -61,7 +61,7 @@ const toBool = (v: any, fallback = false) => {
 };
 
 function mapSettingsFromApi(raw: any, fallback: SystemSettings): SystemSettings {
-  // يدعم camelCase أو snake_case
+  // ظٹط¯ط¹ظ… camelCase ط£ظˆ snake_case
   const d = raw ?? {};
   return {
     siteName: d.siteName ?? d.site_name ?? fallback.siteName,
@@ -216,7 +216,7 @@ function SwitchRow({
 
 export default function AdminSettingsPage() {
   const defaults: SystemSettings = {
-    siteName: "منصة أسواق المزادات الرقمية السعودية",
+    siteName: "ظ…ظ†طµط© ط£ط³ظˆط§ظ‚ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ط±ظ‚ظ…ظٹط© ط§ظ„ط³ط¹ظˆط¯ظٹط©",
     siteUrl: "https://mazbrothers.com",
     adminEmail: "admin@mazbrothers.com",
     supportEmail: "support@mazbrothers.com",
@@ -242,11 +242,11 @@ export default function AdminSettingsPage() {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const tabs = [
-    { id: "general", name: "عام", icon: Settings, color: "blue" },
-    { id: "notifications", name: "الإشعارات", icon: Bell, color: "purple" },
-    { id: "security", name: "الأمان", icon: Shield, color: "green" },
-    { id: "financial", name: "المالية", icon: CreditCard, color: "amber" },
-    { id: "system", name: "النظام", icon: Database, color: "red" },
+    { id: "general", name: "ط¹ط§ظ…", icon: Settings, color: "blue" },
+    { id: "notifications", name: "ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ", icon: Bell, color: "purple" },
+    { id: "security", name: "ط§ظ„ط£ظ…ط§ظ†", icon: Shield, color: "green" },
+    { id: "financial", name: "ط§ظ„ظ…ط§ظ„ظٹط©", icon: CreditCard, color: "amber" },
+    { id: "system", name: "ط§ظ„ظ†ط¸ط§ظ…", icon: Database, color: "red" },
   ] as const;
 
   useEffect(() => {
@@ -258,25 +258,8 @@ export default function AdminSettingsPage() {
     try {
       setLoading(true);
 
-      // جرّب كذا endpoint عشان اختلاف baseURL
-      const endpoints = [
-        "/admin/settings",
-        "/api/admin/settings",
-        "https://api.dasm.com.sa/api/admin/settings",
-      ];
-
-      let res: any = null;
-      let lastErr: any = null;
-
-      for (const url of endpoints) {
-        try {
-          res = await api.get<ApiResponse>(url);
-          if (res?.data) break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (!res?.data) throw lastErr || new Error("No response data");
+      const res = await api.get<ApiResponse>("/api/admin/settings");
+      if (!res?.data) throw new Error("No response data");
 
       const payload: ApiResponse = res.data;
       const ok = payload?.success === true || payload?.status === "success";
@@ -285,14 +268,14 @@ export default function AdminSettingsPage() {
       if (ok && data) {
         setSettings(mapSettingsFromApi(data, defaults));
       } else {
-        // لو الـ API رجع شكل مختلف، على الأقل ما نكسر الصفحة
+        // ظ„ظˆ ط§ظ„ظ€ API ط±ط¬ط¹ ط´ظƒظ„ ظ…ط®طھظ„ظپطŒ ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„ ظ…ط§ ظ†ظƒط³ط± ط§ظ„طµظپط­ط©
         setSettings((prev) => mapSettingsFromApi(data, prev));
       }
 
       setSettingsLoaded(true);
     } catch (error) {
       console.error("Error fetching settings:", error);
-      toast.error("تم تحميل الإعدادات الافتراضية");
+      toast.error("طھظ… طھط­ظ…ظٹظ„ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط§ظپطھط±ط§ط¶ظٹط©");
       setSettingsLoaded(true);
     } finally {
       setLoading(false);
@@ -303,33 +286,17 @@ export default function AdminSettingsPage() {
     try {
       setSaving(true);
 
-      const endpoints = [
-        "/admin/settings",
-        "/api/admin/settings",
-        "https://api.dasm.com.sa/api/admin/settings",
-      ];
-
-      let res: any = null;
-      let lastErr: any = null;
-
-      for (const url of endpoints) {
-        try {
-          res = await api.put<ApiResponse>(url, settings);
-          if (res?.data) break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (!res?.data) throw lastErr || new Error("No response data");
+      const res = await api.put<ApiResponse>("/api/admin/settings", settings);
+      if (!res?.data) throw new Error("No response data");
 
       const payload: ApiResponse = res.data;
       const ok = payload?.success === true || payload?.status === "success";
 
-      if (ok) toast.success(payload?.message || "تم حفظ الإعدادات بنجاح");
-      else toast.error(payload?.message || "فشل حفظ الإعدادات");
+      if (ok) toast.success(payload?.message || "طھظ… ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط¨ظ†ط¬ط§ط­");
+      else toast.error(payload?.message || "ظپط´ظ„ ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ");
     } catch (error: any) {
       console.error("Error saving settings:", error);
-      const errorMessage = error?.response?.data?.message || "حدث خطأ أثناء حفظ الإعدادات";
+      const errorMessage = error?.response?.data?.message || "ط­ط¯ط« ط®ط·ط£ ط£ط«ظ†ط§ط، ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ";
       toast.error(errorMessage);
 
       if (error?.response?.data?.errors) {
@@ -354,7 +321,7 @@ export default function AdminSettingsPage() {
       >
         <div className="text-center">
           <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-blue-500" />
-          <p className="text-lg text-gray-600 dark:text-gray-300">جاري تحميل الإعدادات...</p>
+          <p className="text-lg text-gray-600 dark:text-gray-300">ط¬ط§ط±ظٹ طھط­ظ…ظٹظ„ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ...</p>
         </div>
       </div>
     );
@@ -369,8 +336,8 @@ export default function AdminSettingsPage() {
       <div className="mb-8">
         <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">إعدادات النظام</h1>
-            <p className="text-gray-600 dark:text-gray-400">إدارة إعدادات المنصة والتكوينات المختلفة</p>
+            <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ†ط¸ط§ظ…</h1>
+            <p className="text-gray-600 dark:text-gray-400">ط¥ط¯ط§ط±ط© ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ…ظ†طµط© ظˆط§ظ„طھظƒظˆظٹظ†ط§طھ ط§ظ„ظ…ط®طھظ„ظپط©</p>
           </div>
 
           <button
@@ -383,7 +350,7 @@ export default function AdminSettingsPage() {
             )}
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-            {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+            {saving ? "ط¬ط§ط±ظٹ ط§ظ„ط­ظپط¸..." : "ط­ظپط¸ ط§ظ„طھط؛ظٹظٹط±ط§طھ"}
           </button>
         </div>
 
@@ -425,23 +392,23 @@ export default function AdminSettingsPage() {
                 <Globe className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">الإعدادات العامة</h3>
-                <p className="text-gray-600 dark:text-gray-400">إعدادات الموقع والمعلومات الأساسية</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¹ط§ظ…ط©</h3>
+                <p className="text-gray-600 dark:text-gray-400">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ…ظˆظ‚ط¹ ظˆط§ظ„ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„ط£ط³ط§ط³ظٹط©</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="space-y-4">
-                <Field label="اسم الموقع">
+                <Field label="ط§ط³ظ… ط§ظ„ظ…ظˆظ‚ط¹">
                   <TextInput
                     type="text"
                     value={settings.siteName}
                     onChange={(e) => handleInputChange("siteName", e.target.value)}
-                    placeholder="أدخل اسم الموقع"
+                    placeholder="ط£ط¯ط®ظ„ ط§ط³ظ… ط§ظ„ظ…ظˆظ‚ط¹"
                   />
                 </Field>
 
-                <Field label="بريد المدير الإلكتروني">
+                <Field label="ط¨ط±ظٹط¯ ط§ظ„ظ…ط¯ظٹط± ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ">
                   <TextInput
                     type="email"
                     value={settings.adminEmail}
@@ -452,7 +419,7 @@ export default function AdminSettingsPage() {
               </div>
 
               <div className="space-y-4">
-                <Field label="رابط الموقع">
+                <Field label="ط±ط§ط¨ط· ط§ظ„ظ…ظˆظ‚ط¹">
                   <TextInput
                     type="url"
                     value={settings.siteUrl}
@@ -461,7 +428,7 @@ export default function AdminSettingsPage() {
                   />
                 </Field>
 
-                <Field label="بريد الدعم الفني">
+                <Field label="ط¨ط±ظٹط¯ ط§ظ„ط¯ط¹ظ… ط§ظ„ظپظ†ظٹ">
                   <TextInput
                     type="email"
                     value={settings.supportEmail}
@@ -482,16 +449,16 @@ export default function AdminSettingsPage() {
                 <Bell className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">إعدادات الإشعارات</h3>
-                <p className="text-gray-600 dark:text-gray-400">إدارة تفضيلات الإشعارات والتنبيهات</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ</h3>
+                <p className="text-gray-600 dark:text-gray-400">ط¥ط¯ط§ط±ط© طھظپط¶ظٹظ„ط§طھ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ ظˆط§ظ„طھظ†ط¨ظٹظ‡ط§طھ</p>
               </div>
             </div>
 
             <div className="space-y-6">
               <SwitchRow
                 icon={Mail}
-                title="إشعارات البريد الإلكتروني"
-                description="إرسال إشعارات عبر البريد الإلكتروني للمستخدمين"
+                title="ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ"
+                description="ط¥ط±ط³ط§ظ„ ط¥ط´ط¹ط§ط±ط§طھ ط¹ط¨ط± ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ ظ„ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†"
                 checked={settings.emailNotifications}
                 onChange={(v) => handleInputChange("emailNotifications", v)}
                 activeColor="blue"
@@ -499,8 +466,8 @@ export default function AdminSettingsPage() {
 
               <SwitchRow
                 icon={MessageSquare}
-                title="إشعارات الرسائل النصية"
-                description="إرسال إشعارات عبر الرسائل النصية للمستخدمين"
+                title="ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ط±ط³ط§ط¦ظ„ ط§ظ„ظ†طµظٹط©"
+                description="ط¥ط±ط³ط§ظ„ ط¥ط´ط¹ط§ط±ط§طھ ط¹ط¨ط± ط§ظ„ط±ط³ط§ط¦ظ„ ط§ظ„ظ†طµظٹط© ظ„ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†"
                 checked={settings.smsNotifications}
                 onChange={(v) => handleInputChange("smsNotifications", v)}
                 activeColor="green"
@@ -517,23 +484,23 @@ export default function AdminSettingsPage() {
                 <Shield className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">إعدادات الأمان</h3>
-                <p className="text-gray-600 dark:text-gray-400">إعدادات الأمان والتحكم في الوصول</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط£ظ…ط§ظ†</h3>
+                <p className="text-gray-600 dark:text-gray-400">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط£ظ…ط§ظ† ظˆط§ظ„طھط­ظƒظ… ظپظٹ ط§ظ„ظˆطµظˆظ„</p>
               </div>
             </div>
 
             <div className="space-y-6">
               <SwitchRow
                 icon={Zap}
-                title="الموافقة التلقائية على المزادات"
-                description="السماح بالموافقة التلقائية على المزادات الجديدة"
+                title="ط§ظ„ظ…ظˆط§ظپظ‚ط© ط§ظ„طھظ„ظ‚ط§ط¦ظٹط© ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ"
+                description="ط§ظ„ط³ظ…ط§ط­ ط¨ط§ظ„ظ…ظˆط§ظپظ‚ط© ط§ظ„طھظ„ظ‚ط§ط¦ظٹط© ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ط¬ط¯ظٹط¯ط©"
                 checked={settings.autoApproveAuctions}
                 onChange={(v) => handleInputChange("autoApproveAuctions", v)}
                 activeColor="blue"
               />
 
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Field label="الحد الأقصى لمبلغ المزايدة (ريال)">
+                <Field label="ط§ظ„ط­ط¯ ط§ظ„ط£ظ‚طµظ‰ ظ„ظ…ط¨ظ„ط؛ ط§ظ„ظ…ط²ط§ظٹط¯ط© (ط±ظٹط§ظ„)">
                   <TextInput
                     type="number"
                     value={settings.maxBidAmount}
@@ -541,7 +508,7 @@ export default function AdminSettingsPage() {
                   />
                 </Field>
 
-                <Field label="الحد الأدنى لزيادة المزايدة (ريال)">
+                <Field label="ط§ظ„ط­ط¯ ط§ظ„ط£ط¯ظ†ظ‰ ظ„ط²ظٹط§ط¯ط© ط§ظ„ظ…ط²ط§ظٹط¯ط© (ط±ظٹط§ظ„)">
                   <TextInput
                     type="number"
                     value={settings.minBidIncrement}
@@ -563,13 +530,13 @@ export default function AdminSettingsPage() {
                 <CreditCard className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">الإعدادات المالية</h3>
-                <p className="text-gray-600 dark:text-gray-400">إدارة الرسوم والتكاليف المالية</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ…ط§ظ„ظٹط©</h3>
+                <p className="text-gray-600 dark:text-gray-400">ط¥ط¯ط§ط±ط© ط§ظ„ط±ط³ظˆظ… ظˆط§ظ„طھظƒط§ظ„ظٹظپ ط§ظ„ظ…ط§ظ„ظٹط©</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Field label="رسوم المنصة" hint="رسوم المنصة (إن وجدت)">
+              <Field label="ط±ط³ظˆظ… ط§ظ„ظ…ظ†طµط©" hint="ط±ط³ظˆظ… ط§ظ„ظ…ظ†طµط© (ط¥ظ† ظˆط¬ط¯طھ)">
                 <div className="relative">
                   <DollarSign className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <TextInput
@@ -582,7 +549,7 @@ export default function AdminSettingsPage() {
                 </div>
               </Field>
 
-              <Field label="رسوم تام" hint="رسوم تام من كل عملية بيع">
+              <Field label="ط±ط³ظˆظ… طھط§ظ…" hint="ط±ط³ظˆظ… طھط§ظ… ظ…ظ† ظƒظ„ ط¹ظ…ظ„ظٹط© ط¨ظٹط¹">
                 <div className="relative">
                   <Car className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <TextInput
@@ -595,7 +562,7 @@ export default function AdminSettingsPage() {
                 </div>
               </Field>
 
-              <Field label="رسوم إدارة المرور" hint="رسوم إدارة المرور من كل عملية بيع">
+              <Field label="ط±ط³ظˆظ… ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط±ظˆط±" hint="ط±ط³ظˆظ… ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط±ظˆط± ظ…ظ† ظƒظ„ ط¹ظ…ظ„ظٹط© ط¨ظٹط¹">
                 <div className="relative">
                   <TrafficCone className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <TextInput
@@ -608,7 +575,7 @@ export default function AdminSettingsPage() {
                 </div>
               </Field>
 
-              <Field label="رسوم إدخال السيارة للمزاد" hint="رسوم إدخال السيارة للمزاد يدفعها البائع">
+              <Field label="ط±ط³ظˆظ… ط¥ط¯ط®ط§ظ„ ط§ظ„ط³ظٹط§ط±ط© ظ„ظ„ظ…ط²ط§ط¯" hint="ط±ط³ظˆظ… ط¥ط¯ط®ط§ظ„ ط§ظ„ط³ظٹط§ط±ط© ظ„ظ„ظ…ط²ط§ط¯ ظٹط¯ظپط¹ظ‡ط§ ط§ظ„ط¨ط§ط¦ط¹">
                 <div className="relative">
                   <Car className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <TextInput
@@ -634,8 +601,8 @@ export default function AdminSettingsPage() {
                 <Server className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">إعدادات النظام</h3>
-                <p className="text-gray-600 dark:text-gray-400">إعدادات النظام والصيانة</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ†ط¸ط§ظ…</h3>
+                <p className="text-gray-600 dark:text-gray-400">ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ†ط¸ط§ظ… ظˆط§ظ„طµظٹط§ظ†ط©</p>
               </div>
             </div>
 
@@ -647,9 +614,9 @@ export default function AdminSettingsPage() {
                       <AlertTriangle className="h-5 w-5" />
                     </div>
                     <div>
-                      <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">وضع الصيانة</h4>
+                      <h4 className="mb-1 font-semibold text-gray-900 dark:text-white">ظˆط¶ط¹ ط§ظ„طµظٹط§ظ†ط©</h4>
                       <p className="text-sm text-gray-700 dark:text-gray-400">
-                        تفعيل وضع الصيانة لمنع الوصول للموقع مؤقتاً
+                        طھظپط¹ظٹظ„ ظˆط¶ط¹ ط§ظ„طµظٹط§ظ†ط© ظ„ظ…ظ†ط¹ ط§ظ„ظˆطµظˆظ„ ظ„ظ„ظ…ظˆظ‚ط¹ ظ…ط¤ظ‚طھط§ظ‹
                       </p>
                     </div>
                   </div>
@@ -681,8 +648,8 @@ export default function AdminSettingsPage() {
 
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Field
-                  label="مدة المزاد الافتراضية (ساعة)"
-                  hint="المدة الافتراضية للمزادات بالساعات"
+                  label="ظ…ط¯ط© ط§ظ„ظ…ط²ط§ط¯ ط§ظ„ط§ظپطھط±ط§ط¶ظٹط© (ط³ط§ط¹ط©)"
+                  hint="ط§ظ„ظ…ط¯ط© ط§ظ„ط§ظپطھط±ط§ط¶ظٹط© ظ„ظ„ظ…ط²ط§ط¯ط§طھ ط¨ط§ظ„ط³ط§ط¹ط§طھ"
                 >
                   <div className="relative">
                     <Calendar className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

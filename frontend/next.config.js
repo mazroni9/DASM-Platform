@@ -1,12 +1,26 @@
-/** @type {import('next').NextConfig} */
+﻿/** @type {import('next').NextConfig} */
+const apiProxyTarget = (
+  process.env.NEXT_PUBLIC_API_PROXY_TARGET ||
+  process.env.API_PROXY_TARGET ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  ""
+)
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
+
 const nextConfig = {
   reactStrictMode: false,
   compress: true,
+  poweredByHeader: false,
   async rewrites() {
+    if (!apiProxyTarget) {
+      return [];
+    }
+
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*",
+        destination: `${apiProxyTarget}/api/:path*`,
       },
     ];
   },
@@ -60,14 +74,15 @@ const nextConfig = {
     unoptimized: true,
     formats: ["image/webp", "image/avif"],
   },
-  turbopack: {},
+  turbopack: {
+    root: __dirname,
+  },
   output: "standalone",
   experimental: {
     optimizePackageImports: ["lucide-react", "react-icons"],
   },
   serverExternalPackages: ["sharp", "sqlite3"],
   webpack: (config, { dev, isServer }) => {
-    // Optimize bundle splitting
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: "all",
@@ -97,3 +112,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+

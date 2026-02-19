@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, {
   useEffect,
@@ -140,18 +140,18 @@ const normalizeCategory = (car: CarData) => {
 
 const safeDate = (v: string) => {
   const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "غير متوفر";
+  if (Number.isNaN(d.getTime())) return "ط؛ظٹط± ظ…طھظˆظپط±";
   return d.toLocaleDateString("ar-SA");
 };
 
 /**
- * ✅ يدعم:
- * 1) API الجديد:
+ * âœ… ظٹط¯ط¹ظ…:
+ * 1) API ط§ظ„ط¬ط¯ظٹط¯:
  *    { data: { data: [...] }, pagination: {...} }
  *
- * 2) API القديم:
+ * 2) API ط§ظ„ظ‚ط¯ظٹظ…:
  *    { status:"success", data:{ data:[...] }, pagination:{...} }
- *    أو { status:"success", data:{ data:{data:[...]} }, pagination:{...} }
+ *    ط£ظˆ { status:"success", data:{ data:{data:[...]} }, pagination:{...} }
  */
 function extractCarsResponse(raw: any): {
   list: CarData[];
@@ -184,16 +184,16 @@ function extractCarsResponse(raw: any): {
 }
 
 /**
- * ✅ Normalize لريبونس الإحصائيات مهما كان شكله:
- * ممكن ييجي:
+ * âœ… Normalize ظ„ط±ظٹط¨ظˆظ†ط³ ط§ظ„ط¥ط­طµط§ط¦ظٹط§طھ ظ…ظ‡ظ…ط§ ظƒط§ظ† ط´ظƒظ„ظ‡:
+ * ظ…ظ…ظƒظ† ظٹظٹط¬ظٹ:
  * - { status:"success", data:{ total:.. } }
  * - { data:{ total:.. } }
  * - { success:true, data:{...} }
  * - { data:{ data:{...} } }
  *
- * والمفاتيح ممكن تكون:
+ * ظˆط§ظ„ظ…ظپط§طھظٹط­ ظ…ظ…ظƒظ† طھظƒظˆظ†:
  * total / inAuction / pending / sold / available
- * أو snake_case: in_auction
+ * ط£ظˆ snake_case: in_auction
  */
 function extractStats(raw: any): Partial<StatsState> | null {
   if (!raw) return null;
@@ -327,7 +327,7 @@ export default function AdminCarsPage() {
 
   useEffect(() => {
     fetchEnumOptions();
-    fetchStats(); // ✅ شغّال
+    fetchStats(); // âœ… ط´ط؛ظ‘ط§ظ„
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -364,10 +364,10 @@ export default function AdminCarsPage() {
       if (pagination?.current_page !== undefined)
         setCurrentPage(asNumber(pagination.current_page));
 
-      // ✅ Fallback سريع للإحصائيات لو stats endpoint مش شغال/لسه محمّلتوش
+      // âœ… Fallback ط³ط±ظٹط¹ ظ„ظ„ط¥ط­طµط§ط¦ظٹط§طھ ظ„ظˆ stats endpoint ظ…ط´ ط´ط؛ط§ظ„/ظ„ط³ظ‡ ظ…ط­ظ…ظ‘ظ„طھظˆط´
       setStats((prev) => {
         const fb = calcStatsFallback(safeList, total > 0 ? total : undefined);
-        // لو prev.total لسه 0 أو الاحصائيات كلها 0، استبدل بـ fallback
+        // ظ„ظˆ prev.total ظ„ط³ظ‡ 0 ط£ظˆ ط§ظ„ط§ط­طµط§ط¦ظٹط§طھ ظƒظ„ظ‡ط§ 0طŒ ط§ط³طھط¨ط¯ظ„ ط¨ظ€ fallback
         const prevSum =
           prev.total +
           prev.inAuction +
@@ -377,13 +377,13 @@ export default function AdminCarsPage() {
         const fbSum =
           fb.total + fb.inAuction + fb.pending + fb.sold + fb.available;
         if (prevSum === 0 && fbSum > 0) return fb;
-        // otherwise على الأقل خلي total يتظبط من pagination
+        // otherwise ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„ ط®ظ„ظٹ total ظٹطھط¸ط¨ط· ظ…ظ† pagination
         if (total > 0 && prev.total !== total) return { ...prev, total };
         return prev;
       });
     } catch (error) {
       console.error("Error fetching cars:", error);
-      toast.error("فشل في تحميل السيارات");
+      toast.error("ظپط´ظ„ ظپظٹ طھط­ظ…ظٹظ„ ط§ظ„ط³ظٹط§ط±ط§طھ");
       setCars([]);
       setTotalCount(0);
     } finally {
@@ -409,13 +409,13 @@ export default function AdminCarsPage() {
         return;
       }
 
-      // لو مفيش Normalize، اعمل fallback
+      // ظ„ظˆ ظ…ظپظٹط´ NormalizeطŒ ط§ط¹ظ…ظ„ fallback
       setStats(
         calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined),
       );
     } catch (error) {
       console.error("Error fetching stats:", error);
-      // fallback بدل ما تفضل 0
+      // fallback ط¨ط¯ظ„ ظ…ط§ طھظپط¶ظ„ 0
       setStats(
         calcStatsFallback(cars, totalCount > 0 ? totalCount : undefined),
       );
@@ -475,23 +475,23 @@ export default function AdminCarsPage() {
       );
 
       if (response.data?.status === "success") {
-        toast.success("تم وضع السعر الافتراضي");
+        toast.success("طھظ… ظˆط¶ط¹ ط§ظ„ط³ط¹ط± ط§ظ„ط§ظپطھط±ط§ط¶ظٹ");
         setShowModal(false);
         fetchCars();
         fetchStats();
       } else {
-        toast.error(response.data?.message || "حصل خطأ ما");
+        toast.error(response.data?.message || "ط­طµظ„ ط®ط·ط£ ظ…ط§");
       }
     } catch (error: any) {
-      console.error("خطأ في حفظ البيانات:", error);
-      toast.error(error.response?.data?.message || "حصل خطأ ما");
+      console.error("ط®ط·ط£ ظپظٹ ط­ظپط¸ ط§ظ„ط¨ظٹط§ظ†ط§طھ:", error);
+      toast.error(error.response?.data?.message || "ط­طµظ„ ط®ط·ط£ ظ…ط§");
     }
   };
 
   const handleBulkAction = async (action: string, carId?: number) => {
     const carIds = carId ? [carId] : Array.from(selectedCars);
     if (carIds.length === 0) {
-      toast.error("يرجى اختيار سيارة واحدة على الأقل");
+      toast.error("ظٹط±ط¬ظ‰ ط§ط®طھظٹط§ط± ط³ظٹط§ط±ط© ظˆط§ط­ط¯ط© ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„");
       return;
     }
 
@@ -517,7 +517,7 @@ export default function AdminCarsPage() {
             ids: carIds,
             action: true,
           });
-          toast.success(res.data?.message || "تمت العملية");
+          toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
           break;
         }
 
@@ -526,7 +526,7 @@ export default function AdminCarsPage() {
             ids: carIds,
             action: false,
           });
-          toast.success(res.data?.message || "تمت العملية");
+          toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
           break;
         }
 
@@ -540,7 +540,7 @@ export default function AdminCarsPage() {
             ids: carIds,
             status: "active",
           });
-          toast.success(res.data?.message || "تمت العملية");
+          toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
           break;
         }
 
@@ -549,7 +549,7 @@ export default function AdminCarsPage() {
             ids: carIds,
             status: "instant",
           });
-          toast.success(res.data?.message || "تمت العملية");
+          toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
           break;
         }
 
@@ -558,7 +558,7 @@ export default function AdminCarsPage() {
             ids: carIds,
             status: "late",
           });
-          toast.success(res.data?.message || "تمت العملية");
+          toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
           break;
         }
 
@@ -567,12 +567,12 @@ export default function AdminCarsPage() {
             ids: carIds,
             status: "pending",
           });
-          toast.success(res.data?.message || "تمت العملية");
+          toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
           break;
         }
 
         case "archive":
-          toast.success("سيتم إضافة هذه الوظيفة قريباً");
+          toast.success("ط³ظٹطھظ… ط¥ط¶ط§ظپط© ظ‡ط°ظ‡ ط§ظ„ظˆط¸ظٹظپط© ظ‚ط±ظٹط¨ط§ظ‹");
           break;
       }
 
@@ -583,7 +583,7 @@ export default function AdminCarsPage() {
       setShowBulkActions(false);
     } catch (error: any) {
       console.error("Error performing bulk action:", error);
-      toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+      toast.error(error.response?.data?.message || "ظپط´ظ„ ظپظٹ طھظ†ظپظٹط° ط§ظ„ط¹ظ…ظ„ظٹط©");
     }
   };
 
@@ -596,7 +596,7 @@ export default function AdminCarsPage() {
         price: openingPrice,
       });
 
-      toast.success(res.data?.message || "تمت العملية");
+      toast.success(res.data?.message || "طھظ…طھ ط§ظ„ط¹ظ…ظ„ظٹط©");
       setShowApproveModal(false);
       setOpeningPrice("");
       setCarsToApprove([]);
@@ -609,13 +609,10 @@ export default function AdminCarsPage() {
       setShowBulkActions(false);
     } catch (error: any) {
       console.error("Error performing bulk action:", error);
-      toast.error(error.response?.data?.message || "فشل في تنفيذ العملية");
+      toast.error(error.response?.data?.message || "ظپط´ظ„ ظپظٹ طھظ†ظپظٹط° ط§ظ„ط¹ظ…ظ„ظٹط©");
     }
   };
 
-  const handleProcessAuction = (carId: number) => {
-    router.push(`/admin/cars/${carId}/process-auction`);
-  };
 
   const getStatusColor = (status: string) => {
     const s = (status || "").toLowerCase();
@@ -643,21 +640,21 @@ export default function AdminCarsPage() {
     const s = (status || "").toLowerCase();
     switch (s) {
       case "active":
-        return "نشط";
+        return "ظ†ط´ط·";
       case "pending":
-        return "في الانتظار";
+        return "ظپظٹ ط§ظ„ط§ظ†طھط¸ط§ط±";
       case "available":
-        return "متاح";
+        return "ظ…طھط§ط­";
       case "in_auction":
-        return "في المزاد";
+        return "ظپظٹ ط§ظ„ظ…ط²ط§ط¯";
       case "sold":
-        return "تم البيع";
+        return "طھظ… ط§ظ„ط¨ظٹط¹";
       case "completed":
-        return "مكتمل";
+        return "ظ…ظƒطھظ…ظ„";
       case "cancelled":
-        return "ملغي";
+        return "ظ…ظ„ط؛ظٹ";
       default:
-        return status || "غير معروف";
+        return status || "ط؛ظٹط± ظ…ط¹ط±ظˆظپ";
     }
   };
 
@@ -685,17 +682,17 @@ export default function AdminCarsPage() {
     switch (s) {
       case "pending":
       case "pending_approval":
-        return "في انتظار الموافقة";
+        return "ظپظٹ ط§ظ†طھط¸ط§ط± ط§ظ„ظ…ظˆط§ظپظ‚ط©";
       case "rejected":
-        return "مرفوضة";
+        return "ظ…ط±ظپظˆط¶ط©";
       case "in_auction":
       case "available":
       case "approved":
-        return "تمت الموافقة";
+        return "طھظ…طھ ط§ظ„ظ…ظˆط§ظپظ‚ط©";
       case "sold":
-        return "تم إغلاق الصفقة";
+        return "طھظ… ط¥ط؛ظ„ط§ظ‚ ط§ظ„طµظپظ‚ط©";
       default:
-        return "متاحة";
+        return "ظ…طھط§ط­ط©";
     }
   };
 
@@ -715,7 +712,7 @@ export default function AdminCarsPage() {
   const refreshAll = async () => {
     await fetchCars();
     await fetchStats();
-    toast.success("تم تحديث البيانات");
+    toast.success("طھظ… طھط­ط¯ظٹط« ط§ظ„ط¨ظٹط§ظ†ط§طھ");
   };
 
   return (
@@ -728,10 +725,10 @@ export default function AdminCarsPage() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-primary">
-            إدارة السيارات
+            ط¥ط¯ط§ط±ط© ط§ظ„ط³ظٹط§ط±ط§طھ
           </h1>
           <p className="text-foreground/70 mt-2">
-            إدارة وتنظيم جميع السيارات في النظام
+            ط¥ط¯ط§ط±ط© ظˆطھظ†ط¸ظٹظ… ط¬ظ…ظٹط¹ ط§ظ„ط³ظٹط§ط±ط§طھ ظپظٹ ط§ظ„ظ†ط¸ط§ظ…
           </p>
         </div>
 
@@ -746,7 +743,7 @@ export default function AdminCarsPage() {
                 loading || statsLoading ? "animate-spin" : ""
               }`}
             />
-            تحديث
+            طھط­ط¯ظٹط«
           </button>
 
           <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
@@ -758,31 +755,31 @@ export default function AdminCarsPage() {
       {/* Statistics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <StatCard
-          title="إجمالي السيارات"
+          title="ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط³ظٹط§ط±ط§طھ"
           value={stats.total}
           icon={<Car className="w-6 h-6 text-primary" />}
           box="bg-primary/10"
         />
         <StatCard
-          title="في المزاد"
+          title="ظپظٹ ط§ظ„ظ…ط²ط§ط¯"
           value={stats.inAuction}
           icon={<Play className="w-6 h-6 text-green-400" />}
           box="bg-green-500/10"
         />
         <StatCard
-          title="في انتظار الموافقة"
+          title="ظپظٹ ط§ظ†طھط¸ط§ط± ط§ظ„ظ…ظˆط§ظپظ‚ط©"
           value={stats.pending}
           icon={<Clock className="w-6 h-6 text-amber-400" />}
           box="bg-amber-500/10"
         />
         <StatCard
-          title="تم البيع"
+          title="طھظ… ط§ظ„ط¨ظٹط¹"
           value={stats.sold}
           icon={<CheckCircle className="w-6 h-6 text-emerald-400" />}
           box="bg-emerald-500/10"
         />
         <StatCard
-          title="متاحة"
+          title="ظ…طھط§ط­ط©"
           value={stats.available}
           icon={<TrendingUp className="w-6 h-6 text-cyan-400" />}
           box="bg-cyan-500/10"
@@ -799,7 +796,7 @@ export default function AdminCarsPage() {
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="البحث بالماركة، الموديل، أو رقم الشاصي..."
+                  placeholder="ط§ظ„ط¨ط­ط« ط¨ط§ظ„ظ…ط§ط±ظƒط©طŒ ط§ظ„ظ…ظˆط¯ظٹظ„طŒ ط£ظˆ ط±ظ‚ظ… ط§ظ„ط´ط§طµظٹ..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-background/50 border border-border rounded-xl py-2 pr-10 pl-4 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -811,7 +808,7 @@ export default function AdminCarsPage() {
                 className="bg-background border border-border text-foreground/80 hover:bg-border hover:text-foreground transition-all duration-300 px-4 py-2 rounded-xl flex items-center"
               >
                 <Filter className="w-4 h-4 ml-2" />
-                فلاتر
+                ظپظ„ط§طھط±
                 <ChevronDown
                   className={`w-4 h-4 mr-2 transition-transform ${
                     showFilters ? "rotate-180" : ""
@@ -823,7 +820,7 @@ export default function AdminCarsPage() {
             {selectedCars.size > 0 && (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-foreground/70">
-                  تم اختيار {selectedCars.size} سيارة
+                  طھظ… ط§ط®طھظٹط§ط± {selectedCars.size} ط³ظٹط§ط±ط©
                 </span>
 
                 <div className="relative">
@@ -831,7 +828,7 @@ export default function AdminCarsPage() {
                     onClick={() => setShowBulkActions(!showBulkActions)}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-xl transition-all duration-300 flex items-center"
                   >
-                    إجراءات جماعية
+                    ط¥ط¬ط±ط§ط،ط§طھ ط¬ظ…ط§ط¹ظٹط©
                     <ChevronDown
                       className={`w-4 h-4 mr-2 transition-transform ${
                         showBulkActions ? "rotate-180" : ""
@@ -847,7 +844,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <CheckSquare size={16} />
-                          الموافقة على المزادات
+                          ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ
                         </button>
 
                         <button
@@ -855,7 +852,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <X size={16} />
-                          رفض المزادات
+                          ط±ظپط¶ ط§ظ„ظ…ط²ط§ط¯ط§طھ
                         </button>
 
                         <button
@@ -863,7 +860,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <Play size={16} />
-                          نقل إلى الحراج المباشر
+                          ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ط­ط±ط§ط¬ ط§ظ„ظ…ط¨ط§ط´ط±
                         </button>
 
                         <button
@@ -871,7 +868,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <Clock size={16} />
-                          نقل الى المزادات الفورية
+                          ظ†ظ‚ظ„ ط§ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظپظˆط±ظٹط©
                         </button>
 
                         <button
@@ -879,7 +876,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <AlertTriangle size={16} />
-                          نقل إلى المزادات المتأخرة
+                          ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظ…طھط£ط®ط±ط©
                         </button>
 
                         <button
@@ -887,7 +884,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <CheckCircle size={16} />
-                          نقل إلى المزادات النشطة
+                          ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظ†ط´ط·ط©
                         </button>
 
                         <button
@@ -895,7 +892,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 transition-all duration-300"
                         >
                           <RotateCcw size={16} />
-                          نقل إلى المزادات المعلقة
+                          ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظ…ط¹ظ„ظ‚ط©
                         </button>
 
                         <button
@@ -903,7 +900,7 @@ export default function AdminCarsPage() {
                           className="w-full text-right px-4 py-2 hover:bg-border rounded-lg flex items-center gap-2 text-red-500 transition-all duration-300"
                         >
                           <Archive size={16} />
-                          أرشفة
+                          ط£ط±ط´ظپط©
                         </button>
                       </div>
                     </div>
@@ -923,13 +920,13 @@ export default function AdminCarsPage() {
                 }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="">كل الحالات</option>
-                <option value="available">متاح</option>
-                <option value="pending">في الانتظار</option>
-                <option value="in_auction">في المزاد</option>
-                <option value="sold">تم البيع</option>
-                <option value="completed">مكتمل</option>
-                <option value="cancelled">ملغي</option>
+                <option value="">ظƒظ„ ط§ظ„ط­ط§ظ„ط§طھ</option>
+                <option value="available">ظ…طھط§ط­</option>
+                <option value="pending">ظپظٹ ط§ظ„ط§ظ†طھط¸ط§ط±</option>
+                <option value="in_auction">ظپظٹ ط§ظ„ظ…ط²ط§ط¯</option>
+                <option value="sold">طھظ… ط§ظ„ط¨ظٹط¹</option>
+                <option value="completed">ظ…ظƒطھظ…ظ„</option>
+                <option value="cancelled">ظ…ظ„ط؛ظٹ</option>
               </select>
 
               <select
@@ -939,7 +936,7 @@ export default function AdminCarsPage() {
                 }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="">كل الفئات</option>
+                <option value="">ظƒظ„ ط§ظ„ظپط¦ط§طھ</option>
                 {enumOptions.categories?.map((category: any) => (
                   <option key={category.value} value={category.value}>
                     {category.label}
@@ -954,7 +951,7 @@ export default function AdminCarsPage() {
                 }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="">كل الحالات</option>
+                <option value="">ظƒظ„ ط§ظ„ط­ط§ظ„ط§طھ</option>
                 {enumOptions.conditions?.map((condition: any) => (
                   <option key={condition.value} value={condition.value}>
                     {condition.label}
@@ -972,7 +969,7 @@ export default function AdminCarsPage() {
                 }
                 className="bg-background border border-border rounded-xl py-2 px-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="">كل أنواع الناقل</option>
+                <option value="">ظƒظ„ ط£ظ†ظˆط§ط¹ ط§ظ„ظ†ط§ظ‚ظ„</option>
                 {enumOptions.transmissions?.map((transmission: any) => (
                   <option key={transmission.value} value={transmission.value}>
                     {transmission.label}
@@ -998,37 +995,37 @@ export default function AdminCarsPage() {
                     />
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    السيارة
+                    ط§ظ„ط³ظٹط§ط±ط©
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    المالك
+                    ط§ظ„ظ…ط§ظ„ظƒ
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    حالة المزاد
+                    ط­ط§ظ„ط© ط§ظ„ظ…ط²ط§ط¯
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    حالة الموافقة
+                    ط­ط§ظ„ط© ط§ظ„ظ…ظˆط§ظپظ‚ط©
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    سعر الأفتتاح
+                    ط³ط¹ط± ط§ظ„ط£ظپطھطھط§ط­
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    أقل سعر مرغوب
+                    ط£ظ‚ظ„ ط³ط¹ط± ظ…ط±ط؛ظˆط¨
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    أعلى سعر مرغوب
+                    ط£ط¹ظ„ظ‰ ط³ط¹ط± ظ…ط±ط؛ظˆط¨
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    أقل سعر في المزاد
+                    ط£ظ‚ظ„ ط³ط¹ط± ظپظٹ ط§ظ„ظ…ط²ط§ط¯
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    أعلى سعر في المزاد
+                    ط£ط¹ظ„ظ‰ ط³ط¹ط± ظپظٹ ط§ظ„ظ…ط²ط§ط¯
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    تاريخ الإضافة
+                    طھط§ط±ظٹط® ط§ظ„ط¥ط¶ط§ظپط©
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-foreground/70">
-                    الإجراءات
+                    ط§ظ„ط¥ط¬ط±ط§ط،ط§طھ
                   </th>
                 </tr>
               </thead>
@@ -1036,14 +1033,14 @@ export default function AdminCarsPage() {
               <tbody className="divide-y border-border">
                 {filteredCars.map((car) => {
                   const owner = car.dealer?.user
-                    ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (معرض)`
+                    ? `${car.dealer.user.first_name} ${car.dealer.user.last_name} (ظ…ط¹ط±ط¶)`
                     : car.user
                       ? car.user.name ||
                         `${car.user.first_name || ""} ${
                           car.user.last_name || ""
                         }`.trim() ||
-                        "غير محدد"
-                      : "غير محدد";
+                        "ط؛ظٹط± ظ…ط­ط¯ط¯"
+                      : "ط؛ظٹط± ظ…ط­ط¯ط¯";
 
                   return (
                     <tr
@@ -1074,11 +1071,11 @@ export default function AdminCarsPage() {
                                 router.push(`/carDetails/${car.id}`)
                               }
                             >
-                              {car.make || "—"} {car.model || "—"}
+                              {car.make || "â€”"} {car.model || "â€”"}
                             </div>
                             <div className="text-xs text-foreground/70 mt-1">
-                              {car.year ?? "—"} •{" "}
-                              {car.plate_number || "بدون لوحة"}
+                              {car.year ?? "â€”"} â€¢{" "}
+                              {car.plate_number || "ط¨ط¯ظˆظ† ظ„ظˆط­ط©"}
                             </div>
                           </div>
                         </div>
@@ -1157,18 +1154,18 @@ export default function AdminCarsPage() {
                           <button
                             onClick={() => router.push(`/admin/cars/${car.id}`)}
                             className="text-primary hover:text-primary/80 hover:bg-primary/10 p-2 rounded-lg transition-all duration-300"
-                            title="عرض التفاصيل"
+                            title="ط¹ط±ط¶ ط§ظ„طھظپط§طµظٹظ„"
                           >
                             <Eye size={16} />
                           </button>
 
                           {car.auction_status === "pending" && (
                             <button
-                              onClick={() => handleProcessAuction(car.id)}
+                              onClick={() => { setCarsToApprove([car.id]); setOpeningPrice(String(asNumber(car.evaluation_price) || "")); setShowApproveModal(true); }}
                               className="bg-secondary hover:bg-secondary/90 text-white px-3 py-1 rounded-lg text-xs transition-all duration-300"
-                              title="معالجة طلب المزاد"
+                              title="ظ…ط¹ط§ظ„ط¬ط© ط·ظ„ط¨ ط§ظ„ظ…ط²ط§ط¯"
                             >
-                              معالجة
+                              ظ…ط¹ط§ظ„ط¬ط©
                             </button>
                           )}
 
@@ -1184,9 +1181,9 @@ export default function AdminCarsPage() {
                                 setShowModal(true);
                               }}
                               className="bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg text-xs transition-all duration-300"
-                              title="تحديد السعر للمزاد"
+                              title="طھط­ط¯ظٹط¯ ط§ظ„ط³ط¹ط± ظ„ظ„ظ…ط²ط§ط¯"
                             >
-                              حدد السعر
+                              ط­ط¯ط¯ ط§ظ„ط³ط¹ط±
                             </button>
                           ) : null}
 
@@ -1206,10 +1203,10 @@ export default function AdminCarsPage() {
               <div className="text-center py-12">
                 <Car className="mx-auto h-12 w-12 text-foreground/50 mb-4" />
                 <h3 className="text-lg font-medium text-foreground/70">
-                  لا توجد سيارات
+                  ظ„ط§ طھظˆط¬ط¯ ط³ظٹط§ط±ط§طھ
                 </h3>
                 <p className="text-foreground/50 mt-1">
-                  لم يتم العثور على سيارات تطابق معايير البحث.
+                  ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط³ظٹط§ط±ط§طھ طھط·ط§ط¨ظ‚ ظ…ط¹ط§ظٹظٹط± ط§ظ„ط¨ط­ط«.
                 </p>
               </div>
             )}
@@ -1218,7 +1215,7 @@ export default function AdminCarsPage() {
               <div className="text-center py-10 text-muted-foreground">
                 <div className="inline-flex items-center gap-2 flex-row-reverse">
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  جاري التحميل...
+                  ط¬ط§ط±ظٹ ط§ظ„طھط­ظ…ظٹظ„...
                 </div>
               </div>
             )}
@@ -1241,7 +1238,7 @@ export default function AdminCarsPage() {
       <Modal
         show={showModal}
         onClose={() => setShowModal(false)}
-        title="حدد السعر للمزاد"
+        title="ط­ط¯ط¯ ط§ظ„ط³ط¹ط± ظ„ظ„ظ…ط²ط§ط¯"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           <input
@@ -1258,7 +1255,7 @@ export default function AdminCarsPage() {
               htmlFor="price"
               className="block text-sm font-medium text-foreground mb-1"
             >
-              سعر بدأ المزاد
+              ط³ط¹ط± ط¨ط¯ط£ ط§ظ„ظ…ط²ط§ط¯
             </label>
             <input
               type="text"
@@ -1267,7 +1264,7 @@ export default function AdminCarsPage() {
               value={formData.price}
               onChange={handleInputChange}
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
-              placeholder="سعر بدأ المزاد"
+              placeholder="ط³ط¹ط± ط¨ط¯ط£ ط§ظ„ظ…ط²ط§ط¯"
               required
             />
           </div>
@@ -1277,14 +1274,14 @@ export default function AdminCarsPage() {
               type="submit"
               className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300"
             >
-              حفظ
+              ط­ظپط¸
             </button>
             <button
               type="button"
               onClick={() => setShowModal(false)}
               className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300"
             >
-              إغلاق
+              ط¥ط؛ظ„ط§ظ‚
             </button>
           </div>
         </form>
@@ -1294,7 +1291,7 @@ export default function AdminCarsPage() {
       <Modal
         show={showApproveModal}
         onClose={() => setShowApproveModal(false)}
-        title="الموافقة على المزاد وتحديد سعر البداية"
+        title="ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ ظˆطھط­ط¯ظٹط¯ ط³ط¹ط± ط§ظ„ط¨ط¯ط§ظٹط©"
       >
         <form onSubmit={handleApproveWithPrice} className="space-y-6">
           <div>
@@ -1302,7 +1299,7 @@ export default function AdminCarsPage() {
               htmlFor="openingPrice"
               className="block text-sm font-medium text-foreground mb-1"
             >
-              سعر بدأ المزاد
+              ط³ط¹ط± ط¨ط¯ط£ ط§ظ„ظ…ط²ط§ط¯
             </label>
             <input
               type="number"
@@ -1311,7 +1308,7 @@ export default function AdminCarsPage() {
               value={openingPrice}
               onChange={(e) => setOpeningPrice(e.target.value)}
               className="w-full p-3 border border-border rounded-md focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
-              placeholder="سعر بدأ المزاد"
+              placeholder="ط³ط¹ط± ط¨ط¯ط£ ط§ظ„ظ…ط²ط§ط¯"
               required
             />
           </div>
@@ -1321,14 +1318,14 @@ export default function AdminCarsPage() {
               type="submit"
               className="flex-1 bg-secondary hover:bg-secondary/90 text-white py-2 px-4 rounded-md transition-all duration-300"
             >
-              موافق
+              ظ…ظˆط§ظپظ‚
             </button>
             <button
               type="button"
               onClick={() => setShowApproveModal(false)}
               className="flex-1 bg-border hover:bg-border/80 text-foreground py-2 px-4 rounded-md transition-all duration-300"
             >
-              إغلاق
+              ط¥ط؛ظ„ط§ظ‚
             </button>
           </div>
         </form>
@@ -1428,7 +1425,7 @@ export function ActionsMenu({
         onClick={handleClick}
         className="text-foreground/70 hover:text-foreground hover:bg-border p-2 rounded-lg transition-all duration-300"
       >
-        <span className="inline-block">⋮</span>
+        <span className="inline-block">â‹®</span>
       </button>
 
       <Menu
@@ -1443,16 +1440,16 @@ export function ActionsMenu({
       >
         {actionItem(
           "approve-auctions-with-price",
-          "الموافقة على المزادات",
+          "ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ",
           CheckSquare,
         )}
-        {actionItem("reject-auctions", "رفض المزادات", X)}
-        {actionItem("move-to-live", "نقل إلى الحراج المباشر", Play)}
-        {actionItem("move-to-instant", "نقل الى المزادات الفورية", Clock)}
-        {actionItem("move-to-late", "نقل إلى المزادات المتأخرة", AlertTriangle)}
-        {actionItem("move-to-active", "نقل إلى المزادات النشطة", CheckCircle)}
-        {actionItem("move-to-pending", "نقل إلى المزادات المعلقة", RotateCcw)}
-        {actionItem("archive", "أرشفة", Archive, true)}
+        {actionItem("reject-auctions", "ط±ظپط¶ ط§ظ„ظ…ط²ط§ط¯ط§طھ", X)}
+        {actionItem("move-to-live", "ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ط­ط±ط§ط¬ ط§ظ„ظ…ط¨ط§ط´ط±", Play)}
+        {actionItem("move-to-instant", "ظ†ظ‚ظ„ ط§ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظپظˆط±ظٹط©", Clock)}
+        {actionItem("move-to-late", "ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظ…طھط£ط®ط±ط©", AlertTriangle)}
+        {actionItem("move-to-active", "ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظ†ط´ط·ط©", CheckCircle)}
+        {actionItem("move-to-pending", "ظ†ظ‚ظ„ ط¥ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظ…ط¹ظ„ظ‚ط©", RotateCcw)}
+        {actionItem("archive", "ط£ط±ط´ظپط©", Archive, true)}
       </Menu>
     </div>
   );

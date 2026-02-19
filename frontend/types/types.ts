@@ -8,7 +8,7 @@ export enum UserRole {
   USER = "user",
 }
 
-export const UserRoleHelpers = {
+const UserRoleHelpers = {
   getLabel: (role: UserRole): string => {
     switch (role) {
       case UserRole.SUPER_ADMIN:
@@ -110,7 +110,7 @@ export const UserRoleHelpers = {
   },
 };
 
-export interface User {
+interface User {
   id: number;
   first_name: string;
   last_name: string;
@@ -146,7 +146,7 @@ export interface Car {
   updated_at: string;
 }
 
-export interface Auction {
+interface Auction {
   id: number;
   car_id: number;
   start_time: string;

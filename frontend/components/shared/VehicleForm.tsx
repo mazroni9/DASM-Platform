@@ -85,7 +85,7 @@ const carColors = [
   { name: "أزرق رالي العالم", value: "World Rally Blue" },
 ];
 
-export interface CarFormData {
+interface CarFormData {
   id?: number;
   make: string;
   model: string;

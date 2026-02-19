@@ -42,6 +42,3 @@ export function useAuth() {
     error,
   };
 }
-
-export default useAuth;
-export { useStoreAuth as useAuthStore };

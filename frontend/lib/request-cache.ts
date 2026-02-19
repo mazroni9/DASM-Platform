@@ -186,14 +186,14 @@ class RequestCache {
 }
 
 // Global cache instance - DISABLED by default to prevent unwanted API caching
-export const requestCache = new RequestCache({
+const requestCache = new RequestCache({
   ttl: 5 * 60 * 1000,
   maxSize: 100,
   staleWhileRevalidate: true,
   enabled: false,
 });
 
-export function useCachedRequest<T>(
+function useCachedRequest<T>(
   url: string | null,
   options?: RequestInit,
   ttl?: number
@@ -246,7 +246,7 @@ export async function cachedApiRequest<T>(
   return requestCache.get<T>(url, options, ttl);
 }
 
-export async function batchApiRequests<T>(
+async function batchApiRequests<T>(
   requests: Array<{ endpoint: string; options?: RequestInit; ttl?: number }>
 ): Promise<T[]> {
   const formattedRequests = requests.map((req) => ({
@@ -260,11 +260,11 @@ export async function batchApiRequests<T>(
   return requestCache.batch<T>(formattedRequests);
 }
 
-export function clearRequestCache(): void {
+function clearRequestCache(): void {
   requestCache.clear();
 }
 
-export function preloadCriticalData(): void {
+function preloadCriticalData(): void {
   // ✅ only preload if cache is enabled (otherwise it's just extra requests)
   if (!requestCache.isEnabled()) return;
 

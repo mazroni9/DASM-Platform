@@ -55,7 +55,7 @@ class WalletController extends Controller
     }
 
     /**
-     * Add funds to the user's wallet (simulated)
+     * Add funds to the user's wallet.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -96,19 +96,19 @@ class WalletController extends Controller
             $transaction->wallet_id = $wallet->id;
             $transaction->amount = $request->amount;
             $transaction->type = 'deposit';
-            $transaction->status = 'completed';
+            $transaction->status = 'pending';
             $transaction->reference = 'DEP-'.Str::random(10);
             $transaction->payment_method = $request->payment_method;
-            //$transaction->payment_gateway_invoice_id = $request->payment_gateway_invoice_id;
             $transaction->save();
         }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Deposit successful',
+            'message' => 'Deposit request submitted and pending verification',
             'data' => [
                 'transaction_id' => $transaction->id,
                 'amount' => $request->amount,
+                'status' => $transaction->status,
                 'new_balance' => [
                     'available_balance' => $wallet->available_balance,
                     'funded_balance' => $wallet->funded_balance,
@@ -116,6 +116,89 @@ class WalletController extends Controller
                 ]
             ]
         ]);
+    }
+
+    /**
+     * Submit a withdrawal request.
+     *
+     * Note: amount is not deducted instantly.
+     * It stays pending until finance/admin approval workflow is applied.
+     */
+    public function withdraw(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:1',
+            'bank_name' => 'nullable|string|max:120',
+            'account_number' => 'nullable|string|max:120',
+            'account_name' => 'nullable|string|max:120',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $wallet = Auth::user()?->wallet;
+        if (!$wallet) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Wallet not found',
+            ], 404);
+        }
+
+        $amount = (float) $request->amount;
+        if ($amount > (float) $wallet->available_balance) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Insufficient wallet balance',
+            ], 422);
+        }
+
+        try {
+            $transaction = WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'amount' => $amount,
+                'type' => 'withdrawal',
+                'status' => 'pending',
+                'reference' => 'WDR-' . Str::upper(Str::random(12)),
+                'payment_method' => 'bank_transfer',
+            ]);
+
+            Log::info('Wallet withdrawal request created', [
+                'wallet_id' => $wallet->id,
+                'user_id' => Auth::id(),
+                'transaction_id' => $transaction->id,
+                'amount' => $amount,
+                'bank_name' => $request->input('bank_name'),
+                'account_name' => $request->input('account_name'),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Withdrawal request submitted successfully',
+                'transaction_id' => $transaction->id,
+                'data' => [
+                    'id' => $transaction->id,
+                    'amount' => (float) $transaction->amount,
+                    'status' => $transaction->status,
+                    'reference' => $transaction->reference,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Wallet withdrawal request failed', [
+                'user_id' => Auth::id(),
+                'wallet_id' => $wallet->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to submit withdrawal request',
+            ], 500);
+        }
     }
 
     public function recharge(Request $request)

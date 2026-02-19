@@ -15,13 +15,10 @@ class MoyasarService
     public function __construct()
     {
         $this->baseUrl = 'https://api.moyasar.com/v1';
-        // Use test keys as fallback if not configured
         $this->secretKey = config('services.moyasar.secret_key')
-            ?? env('MOYASAR_SECRET_KEY')
-            ?? 'sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxx';
+            ?? env('MOYASAR_SECRET_KEY');
         $this->publishableKey = config('services.moyasar.publishable_key')
-            ?? env('MOYASAR_PUBLISHABLE_KEY')
-            ?? 'pk_test_bxFciAH9vKLjHFwuNaCvB32RrtQNEautni7LBMsy';
+            ?? env('MOYASAR_PUBLISHABLE_KEY');
     }
 
     /**
@@ -36,12 +33,21 @@ class MoyasarService
     public function verifyPayment(string $paymentId, float $expectedAmount = 0, string $currency = 'SAR'): array
     {
         try {
+            if (empty($this->secretKey)) {
+                return [
+                    'success' => false,
+                    'authorized' => false,
+                    'error' => 'Moyasar secret key is not configured',
+                ];
+            }
+
             Log::info('Moyasar: Verifying payment', [
                 'payment_id' => $paymentId,
                 'expected_amount' => $expectedAmount,
             ]);
 
-            $response = Http::withBasicAuth($this->secretKey, '')
+            $response = Http::timeout(15)
+                ->withBasicAuth($this->secretKey, '')
                 ->get("{$this->baseUrl}/payments/{$paymentId}");
             
 
@@ -50,7 +56,6 @@ class MoyasarService
                     'payment_id' => $paymentId,
                     'status' => $response->status(),
                     'body' => $response->body(),
-                    'secretKey' => $this->secretKey
                 ]);
 
                 return [

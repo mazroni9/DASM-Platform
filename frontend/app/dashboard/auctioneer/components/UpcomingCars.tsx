@@ -45,7 +45,7 @@ export default function UpcomingCars({ cars }: UpcomingCarsProps) {
                                 <img
                                     src={
                                         car.images[0] ||
-                                        "/api/placeholder/50/50"
+                                        "/placeholder-car.jpg"
                                     }
                                     alt={`${car.make} ${car.model}`}
                                     className="w-full h-full object-cover"

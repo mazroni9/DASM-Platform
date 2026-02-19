@@ -10,7 +10,7 @@ class PaymentGatewayFactory
 
         return match ($provider) {
             'myfatoorah' => new MyFatoorahGateway(),
-            default => new MyFatoorahGateway(),
+            default => throw new \InvalidArgumentException("Unsupported payment provider: {$provider}"),
         };
     }
 }

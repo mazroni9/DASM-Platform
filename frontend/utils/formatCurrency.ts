@@ -57,7 +57,7 @@ export function formatCurrency(
 /**
  * Format a bid amount with appropriate highlighting for bid differences
  */
-export function formatBidAmount(
+function formatBidAmount(
     amount: number | string | null | undefined,
     previousAmount?: number | null
 ): {
@@ -99,7 +99,7 @@ export function formatBidAmount(
 /**
  * Format large numbers with abbreviations (K, M, B)
  */
-export function formatCompactNumber(
+function formatCompactNumber(
     num: number | string | null | undefined
 ): string {
     if (num === null || num === undefined || num === "") {

@@ -182,8 +182,7 @@ class BidController extends Controller
             }
 
             DB::commit();
-            Cache::flush();
-            $user = $auction->car->owner;
+            $this->clearAuctionCaches($auction->id);
 
             return response()->json([
                 'status' => 'success',
@@ -678,7 +677,7 @@ class BidController extends Controller
                 ProcessAuctionSaleJob::dispatch($auction->id, $bid->id);
 
                 DB::commit();
-                Cache::flush();
+                $this->clearAuctionCaches($auction->id);
 
                 // Return a special status for the frontend
                 return response()->json([
@@ -698,7 +697,7 @@ class BidController extends Controller
                     ProcessAuctionSaleJob::dispatch($auction->id, $bid->id);
 
                     DB::commit();
-                    Cache::flush();
+                    $this->clearAuctionCaches($auction->id);
 
                     // Return a special status for the frontend indicating instant win
                     return response()->json([
@@ -715,7 +714,7 @@ class BidController extends Controller
             // --- NEW LOGIC ENDS HERE ---
 
             DB::commit();
-            Cache::flush();
+            $this->clearAuctionCaches($auction->id);
             return response()->json([
                 'status' => 'success',
                 'message' => 'تم تقديم العرض بنجاح',
@@ -814,5 +813,14 @@ class BidController extends Controller
                 'time_remaining' => $auction->time_remaining
             ]
         ]);
+    }
+
+    private function clearAuctionCaches(int $auctionId): void
+    {
+        Cache::forget('admin_dashboard_stats');
+        Cache::forget('admin_auction_stats');
+        Cache::forget('active_scheduled_sessions');
+        Cache::forget("auction_status_{$auctionId}");
+        Cache::forget("auction_{$auctionId}");
     }
 }

@@ -145,8 +145,7 @@ const Footer = () => {
   // لو شغال لوكال: http://localhost:8000/api
   // لو ريندر: https://dasm-laravel.onrender.com/api
   const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-    "http://localhost:8000/api";
+    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") || "/api";
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(

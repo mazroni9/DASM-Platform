@@ -34,7 +34,7 @@ const iconMap: Record<string, LucideIcon> = {
  * Get the Lucide icon component by name
  * Falls back to Bell if icon name is unknown
  */
-export function getNotificationIcon(iconName?: string): LucideIcon {
+function getNotificationIcon(iconName?: string): LucideIcon {
   if (!iconName) return Bell;
   return iconMap[iconName] || Bell;
 }
@@ -43,7 +43,7 @@ export function getNotificationIcon(iconName?: string): LucideIcon {
  * Color variants with full Tailwind class strings
  * This approach prevents Tailwind from purging dynamic classes
  */
-export const colorVariants: Record<
+const colorVariants: Record<
   string,
   { bg: string; text: string; border: string }
 > = {

@@ -117,5 +117,4 @@ export {
   SelectContent,
   SelectLabel,
   SelectItem,
-  SelectSeparator,
 } 

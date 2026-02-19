@@ -103,7 +103,7 @@ export function GatewayIcon({
 }
 
 // Simple badge version for compact display
-export function GatewayBadge({
+function GatewayBadge({
   gateway,
 }: {
   gateway: string | null | undefined;
@@ -128,4 +128,3 @@ export function GatewayBadge({
   );
 }
 
-export default GatewayIcon;

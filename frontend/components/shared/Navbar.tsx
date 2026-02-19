@@ -8,7 +8,6 @@ import Image from "next/image";
 import { RefreshCw, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
-import { restartServers } from "@/utils/serverUtils";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
@@ -18,27 +17,12 @@ import { ThemeToggle } from "../ThemeToggle";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isRestarting, setIsRestarting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
   const router = useLoadingRouter();
   const { user, logout } = useAuth();
   const isAdmin =
     user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN;
-
-  const handleRestartServers = async () => {
-    if (!confirm("هل أنت متأكد من إعادة تشغيل الخوادم؟")) return;
-    try {
-      setIsRestarting(true);
-      const result = await restartServers();
-      toast[result.success ? "success" : "error"](result.message);
-    } catch (error) {
-      console.error("Error restarting servers:", error);
-      toast.error("حدث خطأ أثناء إعادة تشغيل الخوادم");
-    } finally {
-      setIsRestarting(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -143,22 +127,6 @@ const Navbar = () => {
 
           {/* Desktop Auth & Actions */}
           <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-secondary hover:bg-secondary/10 hover:text-secondary transition-all duration-200"
-                onClick={handleRestartServers}
-                disabled={isRestarting}
-                title="إعادة تشغيل الخوادم"
-                aria-label="إعادة تشغيل الخوادم"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${isRestarting ? "animate-spin" : ""}`}
-                />
-              </Button>
-            )}
-
             <ThemeToggle />
 
             {user ? (
@@ -234,22 +202,6 @@ const Navbar = () => {
               <span className="text-base font-semibold">المدونة</span>
             </LoadingLink>
 
-            {isAdmin && (
-              <button
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-secondary/10 text-secondary transition-all duration-200"
-                onClick={() => {
-                  handleRestartServers();
-                  setMobileMenuOpen(false);
-                }}
-                disabled={isRestarting}
-              >
-                <RefreshCw
-                  className={`h-5 w-5 ${isRestarting ? "animate-spin" : ""}`}
-                />
-                <span className="text-base">إعادة تشغيل الخوادم</span>
-              </button>
-            )}
-
             {user ? (
               <button
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
@@ -292,3 +244,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+

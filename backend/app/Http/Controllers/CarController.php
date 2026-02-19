@@ -717,7 +717,9 @@ class CarController extends Controller
         // تحديث خصائص الكرفان إن وُجدت
         $this->syncCaravanAttributes($request, $car);
 
-        Cache::flush();
+        Cache::forget('admin_dashboard_stats');
+        Cache::forget('admin_auction_stats');
+        Cache::forget('active_scheduled_sessions');
 
         // Notification to Admins
         try {

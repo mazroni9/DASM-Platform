@@ -1,7 +1,7 @@
 // store/dealerStore.ts
 import { create } from "zustand";
 
-export interface WalletState {
+interface WalletState {
   availableBalance: number;
   fundedBalance: number;
   onHold: number;
@@ -36,7 +36,7 @@ export interface AiRecommendation {
   timestamp: string;
 }
 
-export interface DealerState {
+interface DealerState {
   // Connection
   isConnected: boolean;
   latencyMs: number;

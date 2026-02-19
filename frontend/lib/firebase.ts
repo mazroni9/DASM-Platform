@@ -23,4 +23,4 @@ const getMessagingInstance = () => {
   return null;
 };
 
-export { app, getMessagingInstance };
+export { getMessagingInstance };

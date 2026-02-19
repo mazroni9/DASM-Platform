@@ -1,4 +1,4 @@
-// app/dashboard/layout.tsx
+﻿// app/dashboard/layout.tsx
 "use client";
 
 import { useEffect, useMemo } from "react";
@@ -9,7 +9,6 @@ import {
   User,
   ShoppingCart,
   ShoppingBag,
-  Truck,
   BarChart3,
   Eye,
   Car,
@@ -72,67 +71,55 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const tabs = useMemo(
     () => [
       {
-        name: "لوحة التحكم",
+        name: "ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ…",
         href: "/dashboard",
         icon: BarChart3,
-        description: "نظرة عامة على إحصائياتك",
+        description: "ظ†ط¸ط±ط© ط¹ط§ظ…ط© ط¹ظ„ظ‰ ط¥ط­طµط§ط¦ظٹط§طھظƒ",
       },
       {
-        name: "سيارتي",
+        name: "ط³ظٹط§ط±طھظٹ",
         href: "/dashboard/mycars",
         icon: Car,
-        description: "إدارة سياراتك المعروضة",
+        description: "ط¥ط¯ط§ط±ط© ط³ظٹط§ط±ط§طھظƒ ط§ظ„ظ…ط¹ط±ظˆط¶ط©",
       },
       {
-        name: "المزايدات",
+        name: "ط§ظ„ظ…ط²ط§ظٹط¯ط§طھ",
         href: "/dashboard/bids-history",
         icon: SaudiRiyal,
-        description: "سجل المزايدات",
+        description: "ط³ط¬ظ„ ط§ظ„ظ…ط²ط§ظٹط¯ط§طھ",
       },
       {
-        name: "مشترياتي",
+        name: "ظ…ط´طھط±ظٹط§طھظٹ",
         href: "/dashboard/my-purchases",
         icon: ShoppingCart,
-        description: "تتبع مشترياتك النشطة",
+        description: "طھطھط¨ط¹ ظ…ط´طھط±ظٹط§طھظƒ ط§ظ„ظ†ط´ط·ط©",
       },
-      {
-        name: "مبيعاتي",
-        href: "/dashboard/my-sales",
-        icon: ShoppingBag,
-        description: "عرض وتتبع مبيعاتك",
-      },
-      {
-        name: "محفظتي",
+            {
+        name: "ظ…ط­ظپط¸طھظٹ",
         href: "/dashboard/my-wallet",
         icon: Wallet,
-        description: "إدارة رصيدك المالي",
+        description: "ط¥ط¯ط§ط±ط© ط±طµظٹط¯ظƒ ط§ظ„ظ…ط§ظ„ظٹ",
       },
       {
-        name: "تحويلاتي",
+        name: "طھط­ظˆظٹظ„ط§طھظٹ",
         href: "/dashboard/my-transfers",
         icon: ArrowRight,
-        description: "سجل التحويلات المالية",
+        description: "ط³ط¬ظ„ ط§ظ„طھط­ظˆظٹظ„ط§طھ ط§ظ„ظ…ط§ظ„ظٹط©",
       },
 
-      // ✅ NEW TAB
+      // âœ… NEW TAB
       {
-        name: "تحليل الأسعار المشابهة",
+        name: "طھط­ظ„ظٹظ„ ط§ظ„ط£ط³ط¹ط§ط± ط§ظ„ظ…ط´ط§ط¨ظ‡ط©",
         href: "/similar-price-analysis",
         icon: TrendingUp,
-        description: "تحليل الأسعار المشابهة المشابهة",
+        description: "طھط­ظ„ظٹظ„ ط§ظ„ط£ط³ط¹ط§ط± ط§ظ„ظ…ط´ط§ط¨ظ‡ط© ط§ظ„ظ…ط´ط§ط¨ظ‡ط©",
       },
 
       {
-        name: "خدمات الشحن",
-        href: "/dashboard/shipping",
-        icon: Truck,
-        description: "إدارة خدمات الشحن",
-      },
-      {
-        name: "الملف الشخصي",
+        name: "ط§ظ„ظ…ظ„ظپ ط§ظ„ط´ط®طµظٹ",
         href: "/dashboard/profile",
         icon: User,
-        description: "تعديل بياناتك الشخصية",
+        description: "طھط¹ط¯ظٹظ„ ط¨ظٹط§ظ†ط§طھظƒ ط§ظ„ط´ط®طµظٹط©",
       },
     ],
     []
@@ -141,15 +128,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const quickActions = useMemo(
     () => [
       {
-        name: "إضافة سيارة",
+        name: "ط¥ط¶ط§ظپط© ط³ظٹط§ط±ط©",
         icon: Plus,
         href: "/add/Car",
         color: "bg-secondary hover:bg-secondary/90 text-white",
       },
       {
-        name: "عرض المزادات",
+        name: "ط¹ط±ط¶ ط§ظ„ظ…ط²ط§ط¯ط§طھ",
         icon: Eye,
-        // ✅ no fixed href here — we route on click based on KSA time
+        // âœ… no fixed href here â€” we route on click based on KSA time
         onClick: () => {
           const href = getAuctionHrefByKsaTime();
           router.push(href);
@@ -157,13 +144,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         color: "bg-primary hover:bg-primary/90 text-primary-foreground",
       },
       {
-        name: "التقارير",
+        name: "ط§ظ„طھظ‚ط§ط±ظٹط±",
         icon: BarChart3,
         href: "/dashboard/reports",
         color: "bg-primary hover:bg-primary/90 text-primary-foreground",
       },
       {
-        name: "الدعم",
+        name: "ط§ظ„ط¯ط¹ظ…",
         icon: MessageCircle,
         href: "/support",
         color: "bg-primary hover:bg-primary/90 text-primary-foreground",
@@ -174,24 +161,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* لا يوجد هيدر */}
+      {/* ظ„ط§ ظٹظˆط¬ط¯ ظ‡ظٹط¯ط± */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* نقلنا الـpadding العلوي هنا لضبط محاذاة السايدبار مع المحتوى */}
+        {/* ظ†ظ‚ظ„ظ†ط§ ط§ظ„ظ€padding ط§ظ„ط¹ظ„ظˆظٹ ظ‡ظ†ط§ ظ„ط¶ط¨ط· ظ…ط­ط§ط°ط§ط© ط§ظ„ط³ط§ظٹط¯ط¨ط§ط± ظ…ط¹ ط§ظ„ظ…ط­طھظˆظ‰ */}
         <div className="flex flex-col lg:flex-row gap-6 pt-4 lg:pt-6 items-start">
-          {/* الشريط الجانبي (يظهر على الشاشات الكبيرة فقط) */}
+          {/* ط§ظ„ط´ط±ظٹط· ط§ظ„ط¬ط§ظ†ط¨ظٹ (ظٹط¸ظ‡ط± ط¹ظ„ظ‰ ط§ظ„ط´ط§ط´ط§طھ ط§ظ„ظƒط¨ظٹط±ط© ظپظ‚ط·) */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-6 space-y-4">
-              {/* إجراءات سريعة */}
+              {/* ط¥ط¬ط±ط§ط،ط§طھ ط³ط±ظٹط¹ط© */}
               <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
                 <h3 className="text-sm font-bold text-foreground mb-3">
-                  إجراءات سريعة
+                  ط¥ط¬ط±ط§ط،ط§طھ ط³ط±ظٹط¹ط©
                 </h3>
 
                 <div className="space-y-2">
                   {quickActions.map((action) => {
                     const Icon = action.icon;
 
-                    // ✅ Special case: auctions button uses onClick (dynamic route)
+                    // âœ… Special case: auctions button uses onClick (dynamic route)
                     if ("onClick" in action && typeof action.onClick === "function") {
                       return (
                         <button
@@ -215,7 +202,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       );
                     }
 
-                    // ✅ Normal links
+                    // âœ… Normal links
                     return (
                       <LoadingLink
                         key={action.name}
@@ -239,10 +226,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </div>
 
-              {/* القائمة الرئيسية */}
+              {/* ط§ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط±ط¦ظٹط³ظٹط© */}
               <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
                 <h3 className="text-sm font-bold text-foreground mb-3">
-                  القائمة الرئيسية
+                  ط§ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط±ط¦ظٹط³ظٹط©
                 </h3>
                 <div className="space-y-1">
                   {tabs.map((tab) => {
@@ -288,10 +275,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </aside>
 
-          {/* مساحة المحتوى */}
+          {/* ظ…ط³ط§ط­ط© ط§ظ„ظ…ط­طھظˆظ‰ */}
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>
     </div>
   );
 }
+

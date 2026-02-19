@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export function formatDateTime(date: Date) {
+function formatDateTime(date: Date) {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
@@ -23,12 +23,12 @@ export function formatDateTime(date: Date) {
  * @param email البريد الإلكتروني للتحقق
  * @returns إذا كان البريد صالحاً
  */
-export function isValidEmail(email: string): boolean {
+function isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
 
-export function formatCurrency (
+function formatCurrency (
     value: number | string | null | undefined,
     currency: string = "ريال"
 ): string {
@@ -61,7 +61,7 @@ export function formatCurrency (
  * @param locale The locale to use (default: ar-SA)
  * @returns Formatted date string
  */
-export function formatDate(
+function formatDate(
     date: Date | string | number,
     locale: string = "ar-SA"
 ): string {
@@ -90,7 +90,7 @@ export function formatDate(
  * @param locale The locale to use (default: ar-SA)
  * @returns Formatted time string
  */
-export function formatTime(
+function formatTime(
     date: Date | string | number,
     locale: string = "ar-SA"
 ): string {
@@ -118,7 +118,7 @@ export function formatTime(
  * @param decimals Number of decimal places
  * @returns Formatted percentage string
  */
-export function formatPercentage(
+function formatPercentage(
     value: number | string | null | undefined,
     decimals: number = 1
 ): string {
@@ -140,7 +140,7 @@ export function formatPercentage(
  * @param value The number to format
  * @returns Abbreviated number as string
  */
-export function formatCompactNumber(
+function formatCompactNumber(
     value: number | string | null | undefined
 ): string {
     if (value === null || value === undefined || value === "") {

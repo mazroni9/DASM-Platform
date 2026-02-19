@@ -570,6 +570,222 @@ class AuctionController extends Controller
     }
 
     /**
+     * Reject a single auction.
+     * POST /api/admin/auctions/{id}/reject
+     */
+    public function reject(Request $request, $id): JsonResponse
+    {
+        try {
+            $auction = Auction::with('car')->findOrFail($id);
+            $auction->status = AuctionStatus::CANCELED->value;
+            $auction->control_room_approved = false;
+            $auction->approved_for_live = false;
+            $auction->save();
+
+            if ($auction->car) {
+                $auction->car->auction_status = 'available';
+                $auction->car->save();
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Auction rejected successfully',
+                'data' => $auction->fresh(['car']),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auction reject failed', [
+                'auction_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to reject auction',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a single auction status.
+     * PUT /api/admin/auctions/{id}/status
+     */
+    public function updateStatus(Request $request, $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|string|in:' . implode(',', AuctionStatus::values()),
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $auction = Auction::with('car')->findOrFail($id);
+            $oldStatus = $auction->statusValue();
+            $auction->status = AuctionStatus::normalize($request->status);
+            $auction->save();
+
+            if ($auction->car) {
+                $this->syncCarStatus($auction);
+            }
+
+            if ($oldStatus !== $auction->statusValue() && $auction->car) {
+                event(new AuctionStatusChangedEvent($auction, $oldStatus, $auction->statusValue(), $auction->car));
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Auction status updated successfully',
+                'data' => $auction->fresh(['car']),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auction status update failed', [
+                'auction_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update auction status',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a single auction type.
+     * PUT /api/admin/auctions/{id}/auction-type
+     */
+    public function updateType(Request $request, $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'auction_type' => 'required|string|in:' . implode(',', AuctionType::values()),
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $auction = Auction::findOrFail($id);
+            $auction->auction_type = $request->auction_type;
+            $auction->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Auction type updated successfully',
+                'data' => $auction,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auction type update failed', [
+                'auction_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update auction type',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update auction opening price.
+     * PUT /api/admin/auctions/{id}/set-open-price
+     */
+    public function setOpeningPrice(Request $request, $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'opening_price' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $auction = Auction::findOrFail($id);
+            $auction->opening_price = $request->opening_price;
+            if (!$auction->minimum_bid) {
+                $auction->minimum_bid = $request->opening_price;
+            }
+            $auction->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Opening price updated successfully',
+                'data' => $auction,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auction opening price update failed', [
+                'auction_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update opening price',
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk approve auctions.
+     * POST /api/admin/auctions/bulk-approve
+     */
+    public function bulkApprove(Request $request): JsonResponse
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids) && is_array($request->input('auction_ids'))) {
+            $ids = Auction::whereIn('id', $request->input('auction_ids'))
+                ->pluck('car_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        $request->merge([
+            'action' => true,
+            'ids' => $ids,
+        ]);
+
+        return $this->approveRejectAuctionBulk($request);
+    }
+
+    /**
+     * Bulk reject auctions.
+     * POST /api/admin/auctions/bulk-reject
+     */
+    public function bulkReject(Request $request): JsonResponse
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids) && is_array($request->input('auction_ids'))) {
+            $ids = Auction::whereIn('id', $request->input('auction_ids'))
+                ->pluck('car_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        $request->merge([
+            'action' => false,
+            'ids' => $ids,
+        ]);
+
+        return $this->approveRejectAuctionBulk($request);
+    }
+
+    /**
      * Sync car auction_status based on auction status.
      */
     private function syncCarStatus(Auction $auction): void

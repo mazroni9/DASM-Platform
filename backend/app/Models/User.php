@@ -60,7 +60,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'status',
         'area_id',
         'user_code',
-        'organization_id'
+        'organization_id',
+        'avatar_url',
+        'two_factor_auth',
+        'notification_email',
+        'notification_sms'
     ];
 
     public function getAuthPassword()
@@ -71,6 +75,9 @@ class User extends Authenticatable implements MustVerifyEmail
     // Casts for automatic type conversion
     protected $casts = [
         'is_active' => 'boolean',
+        'two_factor_auth' => 'boolean',
+        'notification_email' => 'boolean',
+        'notification_sms' => 'boolean',
         'email_verified_at' => 'datetime',
         'password_reset_expires_at' => 'datetime',
         'status' => UserStatus::class,

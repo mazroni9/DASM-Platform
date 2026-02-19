@@ -135,7 +135,8 @@ export default function AdminAuctionsPage() {
       const params = new URLSearchParams();
       if (searchTerm) params.append("search", searchTerm);
 
-      const response = await api.get(`/api/admin/auctions/pending?${params}`);
+      params.append("control_room_approved", "0");
+      const response = await api.get(`/api/admin/auctions?${params.toString()}`);
       if (response.data.status === "success") {
         setPendingAuctions(response.data.data.data || response.data.data);
       }

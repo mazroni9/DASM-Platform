@@ -161,27 +161,12 @@ export default function MyPurchasesPage() {
     };
   }, [purchases]);
 
-  const handlePayNow = (purchaseId: string) => {
-    // Simulate payment process
-    setPurchases(
-      purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "paid_pending_delivery" } : p,
-      ),
-    );
+  const handleConfirmReceipt = (_purchaseId: string) => {
+    router.push("/support");
   };
 
-  const handleConfirmReceipt = (purchaseId: string) => {
-    // Simulate receipt confirmation
-    setPurchases(
-      purchases.map((p: any) =>
-        p.id === purchaseId ? { ...p, status: "completed" } : p,
-      ),
-    );
-  };
-
-  const handleOpenDispute = (purchaseId: string) => {
-    // Simulate opening dispute
-    alert("سيتم فتح صفحة النزاع (محاكاة).");
+  const handleOpenDispute = (_purchaseId: string) => {
+    router.push("/support");
   };
 
   const getCategories = () => {
@@ -537,3 +522,4 @@ export default function MyPurchasesPage() {
     </div>
   );
 }
+

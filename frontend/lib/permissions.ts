@@ -1,4 +1,4 @@
-export type PermissionModule = {
+type PermissionModule = {
   module: string;
   permissions: string[];
 };

@@ -1,4 +1,4 @@
-// app/dealer/layout.tsx
+﻿// app/dealer/layout.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -9,7 +9,6 @@ import {
   User,
   ShoppingCart,
   ShoppingBag,
-  Truck,
   BarChart3,
   Eye,
   Car,
@@ -46,91 +45,79 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
 
   const tabs = [
     {
-      name: "لوحة التاجر",
+      name: "ظ„ظˆط­ط© ط§ظ„طھط§ط¬ط±",
       href: "/dealer/dashboard",
       icon: Crown,
-      description: "لوحة التاجر المحترف",
+      description: "ظ„ظˆط­ط© ط§ظ„طھط§ط¬ط± ط§ظ„ظ…ط­طھط±ظپ",
     },
     {
-      name: "سياراتي",
+      name: "ط³ظٹط§ط±ط§طھظٹ",
       href: "/dealer/mycars",
       icon: Car,
-      description: "إدارة سياراتك المعروضة",
+      description: "ط¥ط¯ط§ط±ط© ط³ظٹط§ط±ط§طھظƒ ط§ظ„ظ…ط¹ط±ظˆط¶ط©",
     },
     {
-      name: "المزايدات",
+      name: "ط§ظ„ظ…ط²ط§ظٹط¯ط§طھ",
       href: "/dealer/bids-history",
       icon: SaudiRiyal,
-      description: "سجل المزايدات",
+      description: "ط³ط¬ظ„ ط§ظ„ظ…ط²ط§ظٹط¯ط§طھ",
     },
     {
-      name: "مشترياتي",
+      name: "ظ…ط´طھط±ظٹط§طھظٹ",
       href: "/dealer/my-purchases",
       icon: ShoppingCart,
-      description: "تتبع مشترياتك النشطة",
+      description: "طھطھط¨ط¹ ظ…ط´طھط±ظٹط§طھظƒ ط§ظ„ظ†ط´ط·ط©",
     },
-    {
-      name: "مبيعاتي",
-      href: "/dealer/my-sales",
-      icon: ShoppingBag,
-      description: "عرض وتتبع مبيعاتك",
-    },
-    {
-      name: "محفظتي",
+        {
+      name: "ظ…ط­ظپط¸طھظٹ",
       href: "/dealer/my-wallet",
       icon: Wallet,
-      description: "إدارة رصيدك المالي",
+      description: "ط¥ط¯ط§ط±ط© ط±طµظٹط¯ظƒ ط§ظ„ظ…ط§ظ„ظٹ",
     },
     {
-      name: "تحويلاتي",
+      name: "طھط­ظˆظٹظ„ط§طھظٹ",
       href: "/dealer/my-transfers",
       icon: ArrowRight,
-      description: "سجل التحويلات المالية",
+      description: "ط³ط¬ظ„ ط§ظ„طھط­ظˆظٹظ„ط§طھ ط§ظ„ظ…ط§ظ„ظٹط©",
     },
 
-    // ✅ NEW TAB
+    // âœ… NEW TAB
     {
-      name: "تحليل الأسعار المشابهة",
+      name: "طھط­ظ„ظٹظ„ ط§ظ„ط£ط³ط¹ط§ط± ط§ظ„ظ…ط´ط§ط¨ظ‡ط©",
       href: "/similar-price-analysis",
       icon: TrendingUp,
-      description: "تحليل الأسعار المشابهة المشابهة",
+      description: "طھط­ظ„ظٹظ„ ط§ظ„ط£ط³ط¹ط§ط± ط§ظ„ظ…ط´ط§ط¨ظ‡ط© ط§ظ„ظ…ط´ط§ط¨ظ‡ط©",
     },
 
     {
-      name: "خدمات الشحن",
-      href: "/dealer/shipping",
-      icon: Truck,
-      description: "إدارة خدمات الشحن",
-    },
-    {
-      name: "الملف الشخصي",
+      name: "ط§ظ„ظ…ظ„ظپ ط§ظ„ط´ط®طµظٹ",
       href: "/dealer/profile",
       icon: User,
-      description: "تعديل بياناتك الشخصية",
+      description: "طھط¹ط¯ظٹظ„ ط¨ظٹط§ظ†ط§طھظƒ ط§ظ„ط´ط®طµظٹط©",
     },
   ];
 
   const quickActions = [
     {
-      name: "إضافة سيارة",
+      name: "ط¥ط¶ط§ظپط© ط³ظٹط§ط±ط©",
       icon: Plus,
       href: "/add/Car",
       color: "bg-secondary hover:bg-secondary/90 text-white",
     },
     {
-      name: "عرض المزادات",
+      name: "ط¹ط±ط¶ ط§ظ„ظ…ط²ط§ط¯ط§طھ",
       icon: Eye,
       href: "/auctions",
       color: "bg-primary hover:bg-primary/90 text-primary-foreground",
     },
     {
-      name: "نشاط التاجر",
+      name: "ظ†ط´ط§ط· ط§ظ„طھط§ط¬ط±",
       icon: Activity,
       href: "/dealer/dashboard",
       color: "bg-amber-600 hover:bg-amber-700 text-white",
     },
     {
-      name: "الدعم",
+      name: "ط§ظ„ط¯ط¹ظ…",
       icon: MessageCircle,
       href: "/support",
       color: "bg-primary hover:bg-primary/90 text-primary-foreground",
@@ -141,7 +128,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto px-3 sm:px-6  pb-8">
         <div className="flex flex-col lg:flex-row gap-6 pt-4 lg:pt-6 items-start">
-          {/* الشريط الجانبي */}
+          {/* ط§ظ„ط´ط±ظٹط· ط§ظ„ط¬ط§ظ†ط¨ظٹ */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-6 space-y-4">
               {/* Dealer Badge */}
@@ -149,18 +136,18 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                 <div className="flex items-center gap-2">
                   <Crown className="w-5 h-5 text-amber-500" />
                   <span className="font-bold text-foreground">
-                    التاجر المحترف
+                    ط§ظ„طھط§ط¬ط± ط§ظ„ظ…ط­طھط±ظپ
                   </span>
                 </div>
                 <p className="text-xs text-foreground/50 mt-1">
-                  حساب تاجر معتمد
+                  ط­ط³ط§ط¨ طھط§ط¬ط± ظ…ط¹طھظ…ط¯
                 </p>
               </div>
 
-              {/* إجراءات سريعة */}
+              {/* ط¥ط¬ط±ط§ط،ط§طھ ط³ط±ظٹط¹ط© */}
               <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
                 <h3 className="text-sm font-bold text-foreground mb-3">
-                  إجراءات سريعة
+                  ط¥ط¬ط±ط§ط،ط§طھ ط³ط±ظٹط¹ط©
                 </h3>
                 <div className="space-y-2">
                   {quickActions.map((action) => {
@@ -188,10 +175,10 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                 </div>
               </div>
 
-              {/* القائمة الرئيسية */}
+              {/* ط§ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط±ط¦ظٹط³ظٹط© */}
               <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4">
                 <h3 className="text-sm font-bold text-foreground mb-3">
-                  القائمة الرئيسية
+                  ط§ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط±ط¦ظٹط³ظٹط©
                 </h3>
                 <div className="space-y-1">
                   {tabs.map((tab) => {
@@ -237,10 +224,11 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
             </div>
           </aside>
 
-          {/* مساحة المحتوى */}
+          {/* ظ…ط³ط§ط­ط© ط§ظ„ظ…ط­طھظˆظ‰ */}
           <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>
     </div>
   );
 }
+

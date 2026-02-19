@@ -1,4 +1,4 @@
-// Admin layout provides a consistent structure for all admin pages
+﻿// Admin layout provides a consistent structure for all admin pages
 // No top header / no mobile overlay. Fixed-width sidebar + fluid content using CSS Grid.
 
 "use client";
@@ -27,10 +27,9 @@ import {
   UserCog,
   DollarSign,
   Tags,
-  TestTube,
   BarChart3,
   ScrollText,
-  Mail, // ✅ NEW
+  Mail, // âœ… NEW
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -53,11 +52,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, [isAdmin, isModerator, router]);
 
   const navigation = [
-    { name: "الرئيسية", href: "/", icon: Home },
-    { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
+    { name: "ط§ظ„ط±ط¦ظٹط³ظٹط©", href: "/", icon: Home },
+    { name: "ظ„ظˆط­ط© ط§ظ„ظ‚ظٹط§ط¯ط©", href: "/admin", icon: LayoutDashboard },
 
     {
-      name: "المستخدمين والصلاحيات",
+      name: "ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ† ظˆط§ظ„طµظ„ط§ط­ظٹط§طھ",
       href: "#",
       type: "header",
       icon: Users,
@@ -71,96 +70,96 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       ],
     },
     {
-      name: "إدارة المستخدمين",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†",
       href: "/admin/users",
       icon: Users,
       permission: "users.view",
     },
     {
-      name: "ملاك المعارض",
+      name: "ظ…ظ„ط§ظƒ ط§ظ„ظ…ط¹ط§ط±ط¶",
       href: "/admin/venue-owners",
       icon: Building,
       permission: "exhibitors.view",
     },
     {
-      name: "إدارة الموظفين",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظˆط¸ظپظٹظ†",
       href: "/admin/staff",
       icon: Shield,
       permission: "staff.view",
     },
     {
-      name: "إدارة الأدوار",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ط£ط¯ظˆط§ط±",
       href: "/admin/roles",
       icon: UserCog,
       permission: "roles.view",
     },
     {
-      name: "شجرة الصلاحيات",
+      name: "ط´ط¬ط±ط© ط§ظ„طµظ„ط§ط­ظٹط§طھ",
       href: "/admin/permissions",
       icon: Shield,
       permission: "permissions.view",
     },
     {
-      name: "إدارة القروبات",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ظ‚ط±ظˆط¨ط§طھ",
       href: "/admin/groups",
       icon: Users,
       permission: "groups.view",
     },
     {
-      name: "إدارة المنظمات",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظ†ط¸ظ…ط§طھ",
       href: "/admin/organizations",
       icon: Building,
       permission: "organizations.view",
     },
 
     {
-      name: "العمولات والخطط",
+      name: "ط§ظ„ط¹ظ…ظˆظ„ط§طھ ظˆط§ظ„ط®ط·ط·",
       href: "#",
       type: "header",
       icon: HandCoins,
       permissions: ["commissions.view", "subscription_plans.view"],
     },
     {
-      name: "إدارة العمولات",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ط¹ظ…ظˆظ„ط§طھ",
       href: "/admin/commission-tiers",
       icon: HandCoins,
       permission: "commissions.view",
     },
     {
-      name: "خطط الاشتراك",
+      name: "ط®ط·ط· ط§ظ„ط§ط´طھط±ط§ظƒ",
       href: "/admin/subscription-plans",
       icon: CreditCard,
       permission: "subscription_plans.view",
     },
     {
-      name: "إدارة المبيعات",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط¨ظٹط¹ط§طھ",
       href: "/admin/sales",
       icon: DollarSign,
       permission: "commissions.view",
     },
 
     {
-      name: "السيارات والمزادات",
+      name: "ط§ظ„ط³ظٹط§ط±ط§طھ ظˆط§ظ„ظ…ط²ط§ط¯ط§طھ",
       href: "#",
       type: "header",
       icon: Car,
       permissions: ["cars.view", "auctions.view"],
     },
     {
-      name: "السيارات",
+      name: "ط§ظ„ط³ظٹط§ط±ط§طھ",
       href: "/admin/cars",
       icon: Car,
       permission: "cars.view",
     },
     {
-      name: "المزادات",
+      name: "ط§ظ„ظ…ط²ط§ط¯ط§طھ",
       href: "/admin/auctions",
       icon: Car,
       permission: "auctions.view",
     },
 
     {
-      name: "الجلسات والبث",
+      name: "ط§ظ„ط¬ظ„ط³ط§طھ ظˆط§ظ„ط¨ط«",
       href: "#",
       type: "header",
       icon: Calendar,
@@ -171,115 +170,109 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       ],
     },
     {
-      name: "إدارة الجلسات",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ط¬ظ„ط³ط§طھ",
       href: "/admin/sessions",
       icon: Calendar,
       permission: "sessions.view",
     },
     {
-      name: "إدارة البث",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ط¨ط«",
       href: "/admin/live-stream",
       icon: Youtube,
       permission: "live_streams.view",
     },
     {
-      name: "قنوات YouTube",
+      name: "ظ‚ظ†ظˆط§طھ YouTube",
       href: "/admin/youtube-channels",
       icon: Radio,
       permission: "youtube_channels.view",
     },
 
-    // ✅ Blog Section
+    // âœ… Blog Section
     {
-      name: "المدونة",
+      name: "ط§ظ„ظ…ط¯ظˆظ†ط©",
       href: "#",
       type: "header",
       icon: FileText,
       // permissions: ["blog_posts.view", "blog_categories.view"],
     },
     {
-      name: "المقالات",
+      name: "ط§ظ„ظ…ظ‚ط§ظ„ط§طھ",
       href: "/admin/blog/posts",
       icon: FileText,
       // permission: "blog_posts.view",
     },
     {
-      name: "التصنيفات",
+      name: "ط§ظ„طھطµظ†ظٹظپط§طھ",
       href: "/admin/blog/categories",
       icon: Tags,
       // permission: "blog_categories.view",
     },
 
-    // ✅ NEW: Newsletter Section
+    // âœ… NEW: Newsletter Section
     {
-      name: "النشرة البريدية",
+      name: "ط§ظ„ظ†ط´ط±ط© ط§ظ„ط¨ط±ظٹط¯ظٹط©",
       href: "#",
       type: "header",
       icon: Mail,
       // permissions: ["newsletter_subscribers.view"],
     },
     {
-      name: "إدارة الإيميلات",
+      name: "ط¥ط¯ط§ط±ط© ط§ظ„ط¥ظٹظ…ظٹظ„ط§طھ",
       href: "/admin/newsletter-subscribers",
       icon: Mail,
       // permission: "newsletter_subscribers.view",
     },
 
     {
-      name: "السجلات",
+      name: "ط§ظ„ط³ط¬ظ„ط§طھ",
       href: "#",
       type: "header",
       icon: FileText,
       permissions: ["auction_logs.view", "activity_logs.view"],
     },
     {
-      name: "سجلات المزايدات",
+      name: "ط³ط¬ظ„ط§طھ ط§ظ„ظ…ط²ط§ظٹط¯ط§طھ",
       href: "/admin/bids-logs",
       icon: FileText,
       permission: "auction_logs.view",
     },
     {
-      name: "سجلات النشاط",
+      name: "ط³ط¬ظ„ط§طھ ط§ظ„ظ†ط´ط§ط·",
       href: "/admin/activity-logs",
       icon: FileText,
       permission: "activity_logs.view",
     },
-    {
-      name: "اختبارات المزادات",
-      href: "/admin/auction-tests",
-      icon: TestTube,
-      permission: "auction_tests.view",
-    },
-    {
-      name: "سجل المزادات الفوري",
+        {
+      name: "ط³ط¬ظ„ ط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ظپظˆط±ظٹ",
       href: "/admin/auction-activity-log",
       icon: ScrollText,
       permission: "auctions.view",
     },
 
     {
-      name: "التقارير والإعدادات",
+      name: "ط§ظ„طھظ‚ط§ط±ظٹط± ظˆط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ",
       href: "#",
       type: "header",
       icon: BarChart,
       permissions: ["activity_logs.view", "users.view"],
     },
 
-    // ✅ Similar Price Analysis
+    // âœ… Similar Price Analysis
     {
-      name: "تحليل الأسعار المشابهة",
+      name: "طھط­ظ„ظٹظ„ ط§ظ„ط£ط³ط¹ط§ط± ط§ظ„ظ…ط´ط§ط¨ظ‡ط©",
       href: "/similar-price-analysis",
       icon: BarChart3,
     },
 
     {
-      name: "التقارير",
+      name: "ط§ظ„طھظ‚ط§ط±ظٹط±",
       href: "/admin/reports",
       icon: BarChart,
       permission: "activity_logs.view",
     },
     {
-      name: "الإعدادات",
+      name: "ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ",
       href: "/admin/settings",
       icon: Settings,
       permission: "users.view",
@@ -302,9 +295,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       className="min-h-screen bg-background text-foreground overflow-x-hidden"
       dir="rtl"
     >
-      {/* حاوية واسعة ومريحة: لا تضغط المحتوى أفقيًا */}
+      {/* ط­ط§ظˆظٹط© ظˆط§ط³ط¹ط© ظˆظ…ط±ظٹط­ط©: ظ„ط§ طھط¶ط؛ط· ط§ظ„ظ…ط­طھظˆظ‰ ط£ظپظ‚ظٹظ‹ط§ */}
       <div className="w-full max-w-screen-2xl mx-auto px-1 pb-8">
-        {/* Grid: سايدبار ثابت 20rem + محتوى مرن */}
+        {/* Grid: ط³ط§ظٹط¯ط¨ط§ط± ط«ط§ط¨طھ 20rem + ظ…ط­طھظˆظ‰ ظ…ط±ظ† */}
         <div className="grid lg:grid-cols-[20rem,1fr] pt-4 lg:pt-6 items-start">
           {/* Sidebar (Desktop only) */}
           <aside className="hidden lg:block">
@@ -316,9 +309,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <Building className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg">لوحة الإدارة</h2>
+                    <h2 className="font-bold text-lg">ظ„ظˆط­ط© ط§ظ„ط¥ط¯ط§ط±ط©</h2>
                     <p className="text-xs text-foreground/70">
-                      نظام إدارة المزادات
+                      ظ†ط¸ط§ظ… ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط²ط§ط¯ط§طھ
                     </p>
                   </div>
                 </div>
@@ -326,7 +319,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
               {/* Navigation */}
               <nav className="bg-card border border-border rounded-2xl p-4">
-                <h3 className="text-sm font-bold mb-3">القائمة الرئيسية</h3>
+                <h3 className="text-sm font-bold mb-3">ط§ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط±ط¦ظٹط³ظٹط©</h3>
                 <ul className="space-y-2">
                   {navigation.map((item) => {
                     // Check permission
@@ -398,7 +391,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   className="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-red-500 border border-red-500/30 hover:bg-red-500/10 transition"
                 >
                   <LogOut className="w-5 h-5" />
-                  <span className="text-sm font-medium">تسجيل الخروج</span>
+                  <span className="text-sm font-medium">طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬</span>
                 </button>
               </div>
             </div>
@@ -411,3 +404,4 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     </div>
   );
 }
+

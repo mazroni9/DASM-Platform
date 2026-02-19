@@ -284,8 +284,7 @@ export default function MyPurchasesPage() {
   };
 
   const handleOpenDispute = (_auctionId: number) => {
-    // مفيش Endpoint للنزاعات هنا، فهنسيبها Placeholder
-    alert("سيتم فتح صفحة النزاع قريباً (محاكاة).");
+    router.push("/support");
   };
 
   const changePage = (p: any) => {
@@ -660,3 +659,4 @@ export default function MyPurchasesPage() {
     </div>
   );
 }
+

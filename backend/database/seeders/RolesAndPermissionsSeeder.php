@@ -11,6 +11,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -26,123 +27,115 @@ class RolesAndPermissionsSeeder extends Seeder
         $permissionsByModule = [
             // ** Core Permissions **
             'permissions' => [
-                ['name' => 'permissions.view', 'display_name' => 'عرض الصلاحيات'],
-                ['name' => 'permissions.create', 'display_name' => 'إنشاء الصلاحيات'],
-                ['name' => 'permissions.update', 'display_name' => 'تحديث الصلاحيات'],
-                ['name' => 'permissions.delete', 'display_name' => 'حذف الصلاحيات'],
+                ['name' => 'permissions.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„طµظ„ط§ط­ظٹط§طھ'],
+                ['name' => 'permissions.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„طµظ„ط§ط­ظٹط§طھ'],
+                ['name' => 'permissions.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„طµظ„ط§ط­ظٹط§طھ'],
+                ['name' => 'permissions.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„طµظ„ط§ط­ظٹط§طھ'],
             ],
 
             // ** Users & Roles Management **
             'users' => [
-                ['name' => 'users.view', 'display_name' => 'عرض المستخدمين'],
-                ['name' => 'users.view_details', 'display_name' => 'عرض تفاصيل المستخدمين'],
-                ['name' => 'users.create', 'display_name' => 'إنشاء المستخدمين'],
-                ['name' => 'users.update', 'display_name' => 'تحديث المستخدمين'],
-                ['name' => 'users.delete', 'display_name' => 'حذف المستخدمين'],
-                ['name' => 'users.manage_roles', 'display_name' => 'إدارة أدوار المستخدمين'],
+                ['name' => 'users.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'],
+                ['name' => 'users.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'],
+                ['name' => 'users.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'],
+                ['name' => 'users.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'],
+                ['name' => 'users.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'],
+                ['name' => 'users.manage_roles', 'display_name' => 'ط¥ط¯ط§ط±ط© ط£ط¯ظˆط§ط± ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'],
             ],
             'staff' => [
-                ['name' => 'staff.view', 'display_name' => 'عرض الموظفين'],
-                ['name' => 'staff.view_details', 'display_name' => 'عرض تفاصيل الموظفين'],
-                ['name' => 'staff.create', 'display_name' => 'إنشاء الموظفين'],
-                ['name' => 'staff.update', 'display_name' => 'تحديث الموظفين'],
-                ['name' => 'staff.delete', 'display_name' => 'حذف الموظفين'],
-                ['name' => 'staff.assign_roles', 'display_name' => 'تعيين أدوار الموظفين'],
+                ['name' => 'staff.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ظ…ظˆط¸ظپظٹظ†'],
+                ['name' => 'staff.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ظ…ظˆط¸ظپظٹظ†'],
+                ['name' => 'staff.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ظ…ظˆط¸ظپظٹظ†'],
+                ['name' => 'staff.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ظ…ظˆط¸ظپظٹظ†'],
+                ['name' => 'staff.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ظ…ظˆط¸ظپظٹظ†'],
+                ['name' => 'staff.assign_roles', 'display_name' => 'طھط¹ظٹظٹظ† ط£ط¯ظˆط§ط± ط§ظ„ظ…ظˆط¸ظپظٹظ†'],
             ],
             'exhibitors' => [
-                ['name' => 'exhibitors.view', 'display_name' => 'عرض العارضين'],
-                ['name' => 'exhibitors.view_details', 'display_name' => 'عرض تفاصيل العارضين'],
-                ['name' => 'exhibitors.approve', 'display_name' => 'الموافقة على العارضين'],
-                ['name' => 'exhibitors.update', 'display_name' => 'تحديث العارضين'],
-                ['name' => 'exhibitors.delete', 'display_name' => 'حذف العارضين'],
+                ['name' => 'exhibitors.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ط¹ط§ط±ط¶ظٹظ†'],
+                ['name' => 'exhibitors.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ط¹ط§ط±ط¶ظٹظ†'],
+                ['name' => 'exhibitors.approve', 'display_name' => 'ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ط¹ط§ط±ط¶ظٹظ†'],
+                ['name' => 'exhibitors.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ط¹ط§ط±ط¶ظٹظ†'],
+                ['name' => 'exhibitors.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ط¹ط§ط±ط¶ظٹظ†'],
             ],
             'roles' => [
-                ['name' => 'roles.view', 'display_name' => 'عرض الأدوار'],
-                ['name' => 'roles.create', 'display_name' => 'إنشاء الأدوار'],
-                ['name' => 'roles.update', 'display_name' => 'تحديث الأدوار'],
-                ['name' => 'roles.delete', 'display_name' => 'حذف الأدوار'],
+                ['name' => 'roles.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ط£ط¯ظˆط§ط±'],
+                ['name' => 'roles.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ط£ط¯ظˆط§ط±'],
+                ['name' => 'roles.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ط£ط¯ظˆط§ط±'],
+                ['name' => 'roles.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ط£ط¯ظˆط§ط±'],
             ],
             'groups' => [
-                ['name' => 'groups.view', 'display_name' => 'عرض المجموعات'],
-                ['name' => 'groups.create', 'display_name' => 'إنشاء المجموعات'],
-                ['name' => 'groups.update', 'display_name' => 'تحديث المجموعات'],
-                ['name' => 'groups.delete', 'display_name' => 'حذف المجموعات'],
-                ['name' => 'groups.assign_users', 'display_name' => 'تعيين المستخدمين للمجموعات'],
+                ['name' => 'groups.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ'],
+                ['name' => 'groups.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ'],
+                ['name' => 'groups.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ'],
+                ['name' => 'groups.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ'],
+                ['name' => 'groups.assign_users', 'display_name' => 'طھط¹ظٹظٹظ† ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ† ظ„ظ„ظ…ط¬ظ…ظˆط¹ط§طھ'],
             ],
             'organizations' => [
-                ['name' => 'organizations.view', 'display_name' => 'عرض المنظمات'],
-                ['name' => 'organizations.view_details', 'display_name' => 'عرض تفاصيل المنظمات'],
-                ['name' => 'organizations.create', 'display_name' => 'إنشاء المنظمات'],
-                ['name' => 'organizations.update', 'display_name' => 'تحديث المنظمات'],
-                ['name' => 'organizations.delete', 'display_name' => 'حذف المنظمات'],
+                ['name' => 'organizations.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ظ…ظ†ط¸ظ…ط§طھ'],
+                ['name' => 'organizations.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ظ…ظ†ط¸ظ…ط§طھ'],
+                ['name' => 'organizations.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ظ…ظ†ط¸ظ…ط§طھ'],
+                ['name' => 'organizations.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ظ…ظ†ط¸ظ…ط§طھ'],
+                ['name' => 'organizations.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ظ…ظ†ط¸ظ…ط§طھ'],
             ],
 
             // ** Cars & Auctions Management **
             'cars' => [
-                ['name' => 'cars.view', 'display_name' => 'عرض السيارات'],
-                ['name' => 'cars.view_details', 'display_name' => 'عرض تفاصيل السيارات'],
-                ['name' => 'cars.create', 'display_name' => 'إنشاء السيارات'],
-                ['name' => 'cars.update', 'display_name' => 'تحديث السيارات'],
-                ['name' => 'cars.delete', 'display_name' => 'حذف السيارات'],
+                ['name' => 'cars.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ط³ظٹط§ط±ط§طھ'],
+                ['name' => 'cars.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ط³ظٹط§ط±ط§طھ'],
+                ['name' => 'cars.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ط³ظٹط§ط±ط§طھ'],
+                ['name' => 'cars.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ط³ظٹط§ط±ط§طھ'],
+                ['name' => 'cars.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ط³ظٹط§ط±ط§طھ'],
             ],
             'auctions' => [
-                ['name' => 'auctions.view', 'display_name' => 'عرض المزادات'],
-                ['name' => 'auctions.view_details', 'display_name' => 'عرض تفاصيل المزادات'],
-                ['name' => 'auctions.create', 'display_name' => 'إنشاء المزادات'],
-                ['name' => 'auctions.update', 'display_name' => 'تحديث المزادات'],
-                ['name' => 'auctions.delete', 'display_name' => 'حذف المزادات'],
-                ['name' => 'auctions.approve', 'display_name' => 'الموافقة على المزادات'],
-                ['name' => 'auctions.reject', 'display_name' => 'رفض المزادات'],
-                ['name' => 'auctions.archive', 'display_name' => 'أرشفة المزادات'],
-                ['name' => 'auctions.manage_status', 'display_name' => 'إدارة حالة المزادات'],
+                ['name' => 'auctions.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.approve', 'display_name' => 'ط§ظ„ظ…ظˆط§ظپظ‚ط© ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.reject', 'display_name' => 'ط±ظپط¶ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.archive', 'display_name' => 'ط£ط±ط´ظپط© ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auctions.manage_status', 'display_name' => 'ط¥ط¯ط§ط±ط© ط­ط§ظ„ط© ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
             ],
-            'auction_tests' => [
-                ['name' => 'auction_tests.view', 'display_name' => 'عرض اختبارات المزادات'],
-                ['name' => 'auction_tests.view_details', 'display_name' => 'عرض تفاصيل اختبارات المزادات'],
-                ['name' => 'auction_tests.run', 'display_name' => 'تشغيل اختبارات المزادات'],
-                ['name' => 'auction_tests.run_all', 'display_name' => 'تشغيل جميع اختبارات المزادات'],
-                ['name' => 'auction_tests.delete', 'display_name' => 'حذف نتائج اختبارات المزادات'],
-            ],
-
             // ** Sessions & Live Streaming **
             'sessions' => [
-                ['name' => 'sessions.view', 'display_name' => 'عرض الجلسات'],
-                ['name' => 'sessions.view_details', 'display_name' => 'عرض تفاصيل الجلسات'],
-                ['name' => 'sessions.create', 'display_name' => 'إنشاء الجلسات'],
-                ['name' => 'sessions.update', 'display_name' => 'تحديث الجلسات'],
-                ['name' => 'sessions.delete', 'display_name' => 'حذف الجلسات'],
-                ['name' => 'sessions.start_live', 'display_name' => 'بدء البث المباشر للجلسات'],
-                ['name' => 'sessions.end_live', 'display_name' => 'إنهاء البث المباشر للجلسات'],
-                ['name' => 'sessions.cancel', 'display_name' => 'إلغاء الجلسات'],
-                ['name' => 'sessions.end', 'display_name' => 'إنهاء الجلسات'],
+                ['name' => 'sessions.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.view_details', 'display_name' => 'ط¹ط±ط¶ طھظپط§طµظٹظ„ ط§ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.create', 'display_name' => 'ط¥ظ†ط´ط§ط، ط§ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.update', 'display_name' => 'طھط­ط¯ظٹط« ط§ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.delete', 'display_name' => 'ط­ط°ظپ ط§ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.start_live', 'display_name' => 'ط¨ط¯ط، ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط± ظ„ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.end_live', 'display_name' => 'ط¥ظ†ظ‡ط§ط، ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط± ظ„ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.cancel', 'display_name' => 'ط¥ظ„ط؛ط§ط، ط§ظ„ط¬ظ„ط³ط§طھ'],
+                ['name' => 'sessions.end', 'display_name' => 'ط¥ظ†ظ‡ط§ط، ط§ظ„ط¬ظ„ط³ط§طھ'],
             ],
             'live_streams' => [
-                ['name' => 'live_streams.view', 'display_name' => 'عرض البث المباشر'],
-                ['name' => 'live_streams.manage', 'display_name' => 'إدارة البث المباشر'],
+                ['name' => 'live_streams.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط±'],
+                ['name' => 'live_streams.manage', 'display_name' => 'ط¥ط¯ط§ط±ط© ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط±'],
             ],
             'youtube_channels' => [
-                ['name' => 'youtube_channels.view', 'display_name' => 'عرض قنوات يوتيوب'],
-                ['name' => 'youtube_channels.manage', 'display_name' => 'إدارة قنوات يوتيوب'],
+                ['name' => 'youtube_channels.view', 'display_name' => 'ط¹ط±ط¶ ظ‚ظ†ظˆط§طھ ظٹظˆطھظٹظˆط¨'],
+                ['name' => 'youtube_channels.manage', 'display_name' => 'ط¥ط¯ط§ط±ط© ظ‚ظ†ظˆط§طھ ظٹظˆطھظٹظˆط¨'],
             ],
 
             // ** Logs & Reports **
             'auction_logs' => [
-                ['name' => 'auction_logs.view', 'display_name' => 'عرض سجلات المزادات'],
-                ['name' => 'auction_logs.delete', 'display_name' => 'حذف سجلات المزادات'],
+                ['name' => 'auction_logs.view', 'display_name' => 'ط¹ط±ط¶ ط³ط¬ظ„ط§طھ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
+                ['name' => 'auction_logs.delete', 'display_name' => 'ط­ط°ظپ ط³ط¬ظ„ط§طھ ط§ظ„ظ…ط²ط§ط¯ط§طھ'],
             ],
             'activity_logs' => [
-                ['name' => 'activity_logs.view', 'display_name' => 'عرض سجلات النشاط'],
-                ['name' => 'activity_logs.delete', 'display_name' => 'حذف سجلات النشاط'],
+                ['name' => 'activity_logs.view', 'display_name' => 'ط¹ط±ط¶ ط³ط¬ظ„ط§طھ ط§ظ„ظ†ط´ط§ط·'],
+                ['name' => 'activity_logs.delete', 'display_name' => 'ط­ط°ظپ ط³ط¬ظ„ط§طھ ط§ظ„ظ†ط´ط§ط·'],
             ],
 
             // ** Commissions & Plans **
             'commissions' => [
-                ['name' => 'commissions.view', 'display_name' => 'عرض العمولات'],
-                ['name' => 'commissions.manage', 'display_name' => 'إدارة العمولات'],
+                ['name' => 'commissions.view', 'display_name' => 'ط¹ط±ط¶ ط§ظ„ط¹ظ…ظˆظ„ط§طھ'],
+                ['name' => 'commissions.manage', 'display_name' => 'ط¥ط¯ط§ط±ط© ط§ظ„ط¹ظ…ظˆظ„ط§طھ'],
             ],
             'subscription_plans' => [
-                ['name' => 'subscription_plans.view', 'display_name' => 'عرض خطط الاشتراك'],
-                ['name' => 'subscription_plans.manage', 'display_name' => 'إدارة خطط الاشتراك'],
+                ['name' => 'subscription_plans.view', 'display_name' => 'ط¹ط±ط¶ ط®ط·ط· ط§ظ„ط§ط´طھط±ط§ظƒ'],
+                ['name' => 'subscription_plans.manage', 'display_name' => 'ط¥ط¯ط§ط±ط© ط®ط·ط· ط§ظ„ط§ط´طھط±ط§ظƒ'],
             ],
         ];
 
@@ -159,7 +152,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'last_name' => 'Admin',
                 'email' => 'superadmin@dasm.platform',
                 'phone' => '0000000000',
-                'password_hash' => Hash::make('superadmin123'), // Temporary password - should be changed
+                'password_hash' => $this->seedPasswordHash('SEED_SUPER_ADMIN_PASSWORD'),
                 $columnName => 'super_admin',
             ];
 
@@ -218,8 +211,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdminRole = Role::updateOrCreate(
             ['name' => 'super_admin', 'guard_name' => 'sanctum'],
             [
-                'display_name' => 'مدير النظام الرئيسي',
-                'description' => 'لديه صلاحيات كاملة على جميع أجزاء النظام'
+                'display_name' => 'ظ…ط¯ظٹط± ط§ظ„ظ†ط¸ط§ظ… ط§ظ„ط±ط¦ظٹط³ظٹ',
+                'description' => 'ظ„ط¯ظٹظ‡ طµظ„ط§ط­ظٹط§طھ ظƒط§ظ…ظ„ط© ط¹ظ„ظ‰ ط¬ظ…ظٹط¹ ط£ط¬ط²ط§ط، ط§ظ„ظ†ط¸ط§ظ…'
             ]
         );
         // No need to assign permissions, handled by Gate::before in AppServiceProvider
@@ -229,8 +222,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $adminRole = Role::updateOrCreate(
             ['name' => 'admin', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
             [
-                'display_name' => 'مدير',
-                'description' => 'مدير النظام مع صلاحيات محدودة'
+                'display_name' => 'ظ…ط¯ظٹط±',
+                'description' => 'ظ…ط¯ظٹط± ط§ظ„ظ†ط¸ط§ظ… ظ…ط¹ طµظ„ط§ط­ظٹط§طھ ظ…ط­ط¯ظˆط¯ط©'
             ]
         );
         $adminRole->givePermissionTo([
@@ -246,12 +239,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'sessions.view_details',
             'organizations.view',
             'organizations.view_details',
-            // Auction tests permissions
-            'auction_tests.view',
-            'auction_tests.view_details',
-            'auction_tests.run',
-            'auction_tests.run_all',
-            'auction_tests.delete',
         ]);
 
         // Create admin user for testing
@@ -262,7 +249,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'last_name' => 'User',
                 'email' => 'admin@dasm.platform',
                 'phone' => '0000000001',
-                'password_hash' => Hash::make('admin123'),
+                'password_hash' => $this->seedPasswordHash('SEED_ADMIN_PASSWORD'),
                 $columnName => 'admin',
             ];
 
@@ -295,8 +282,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $moderatorRole = Role::updateOrCreate(
             ['name' => 'moderator', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
             [
-                'display_name' => 'مشرف',
-                'description' => 'مشرف على المزادات والمستخدمين'
+                'display_name' => 'ظ…ط´ط±ظپ',
+                'description' => 'ظ…ط´ط±ظپ ط¹ظ„ظ‰ ط§ظ„ظ…ط²ط§ط¯ط§طھ ظˆط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†'
             ]
         );
         $moderatorRole->givePermissionTo([
@@ -313,8 +300,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $userRole = Role::updateOrCreate(
             ['name' => 'user', 'guard_name' => 'sanctum'],
             [
-                'display_name' => 'مستخدم',
-                'description' => 'مستخدم عادي للنظام'
+                'display_name' => 'ظ…ط³طھط®ط¯ظ…',
+                'description' => 'ظ…ط³طھط®ط¯ظ… ط¹ط§ط¯ظٹ ظ„ظ„ظ†ط¸ط§ظ…'
             ]
         );
         $userRole->givePermissionTo([
@@ -323,7 +310,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'cars.view',
             'cars.view_details',
         ]);
+    }
 
+    private function seedPasswordHash(string $envKey): string
+    {
+        $configuredPassword = trim((string) env($envKey, ''));
 
+        if ($configuredPassword !== '') {
+            return Hash::make($configuredPassword);
+        }
+
+        if (app()->environment('production')) {
+            throw new \RuntimeException("Missing {$envKey} in production environment.");
+        }
+
+        // Avoid predictable seeded passwords in non-production environments.
+        return Hash::make(Str::random(32));
     }
 }
+

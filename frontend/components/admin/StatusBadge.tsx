@@ -122,7 +122,7 @@ const statusConfig: Record<
   },
 };
 
-export function StatusBadge({
+function StatusBadge({
   status,
   type = "general",
   size = "md",

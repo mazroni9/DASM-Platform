@@ -18,15 +18,18 @@ class QueryOptimizationMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        // Enable query logging for API requests in development
-        if (config('app.debug') && $request->is('api/*')) {
+        $enableQueryLog = config('app.debug')
+            && config('performance.database.query_logging', false)
+            && $request->is('api/*');
+
+        if ($enableQueryLog) {
             DB::enableQueryLog();
         }
 
         $response = $next($request);
 
         // Log slow queries
-        if (config('app.debug') && $request->is('api/*')) {
+        if ($enableQueryLog) {
             $queries = DB::getQueryLog();
             $slowQueries = array_filter($queries, function ($query) {
                 return $query['time'] > config('performance.database.slow_query_threshold', 1000);

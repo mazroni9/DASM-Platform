@@ -4,7 +4,7 @@ import React, { ComponentType } from 'react';
 import GlobalLoader from '@/components/GlobalLoader';
 
 // Higher-order component for dynamic imports with loading fallback
-export function createDynamicComponent<T = {}>(
+function createDynamicComponent<T = {}>(
   importFn: () => Promise<{ default: ComponentType<T> }>,
   fallback?: ComponentType
 ) {
@@ -13,14 +13,6 @@ export function createDynamicComponent<T = {}>(
     ssr: false, // Disable SSR for better performance
   });
 }
-
-// Pre-configured dynamic imports for common components
-export const DynamicModal = createDynamicComponent(() => import('@/components/Modal'));
-export const DynamicToast = createDynamicComponent(() => import('react-hot-toast').then(m => ({ default: m.Toaster })));
-
-// Dynamic imports for heavy libraries (not React components)
-export const loadPusher = () => import('pusher-js');
-export const loadFramerMotion = () => import('framer-motion');
 
 // Dynamic imports for heavy components (only the ones actually used)
 export const DynamicComponents = {
@@ -33,13 +25,6 @@ export const DynamicComponents = {
   UserMenu: createDynamicComponent(() => import('@/components/UserMenu')),
   NotificationMenu: createDynamicComponent(() => import('@/components/NotificationMenu')),
 };
-
-// Utility to preload components on hover/focus
-export function preloadComponent(importFn: () => Promise<any>) {
-  return () => {
-    importFn();
-  };
-}
 
 // Preload critical components on user interaction
 export const preloadCriticalComponents = () => {

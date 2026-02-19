@@ -240,7 +240,7 @@ class AuctionController extends Controller
             'status' => 'success',
             'data' => $auctions,
             'brands' => $brands,
-            'total' => $auctions
+            'total' => $total
         ]);
     }
 
@@ -706,10 +706,14 @@ class AuctionController extends Controller
     }
 
 
-    public function getAllAuctions()
+    public function getAllAuctions(Request $request)
     {
-        // Update to include both dealer and user relationship
-        $auction = Auction::all();
+        $perPage = min(100, max(1, (int) $request->get('per_page', 20)));
+        $auction = Auction::query()
+            ->with(['car'])
+            ->latest()
+            ->paginate($perPage);
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -720,13 +724,56 @@ class AuctionController extends Controller
 
     public function getAuctionsByType($type)
     {
-        // Update to include both dealer and user relationship
-        $auction = Auction::where('type', $type);
+        $auction = Auction::query()
+            ->with(['car'])
+            ->where('auction_type', $type)
+            ->latest()
+            ->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
                 'auction' => $auction
             ]
+        ]);
+    }
+
+    /**
+     * Leave auction room endpoint (idempotent no-op for client flow compatibility).
+     */
+    public function leave($auctionId)
+    {
+        $auction = Auction::findOrFail($auctionId);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Left auction successfully',
+            'data' => [
+                'auction_id' => $auction->id,
+                'auction_status' => $auction->statusValue(),
+            ],
+        ]);
+    }
+
+    /**
+     * Lightweight auction status endpoint used by polling clients.
+     */
+    public function status($auctionId)
+    {
+        $auction = Auction::with('car:id,auction_status')
+            ->findOrFail($auctionId);
+
+        $auction->updateStatusBasedOnTime();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'auction_id' => $auction->id,
+                'status' => $auction->statusValue(),
+                'time_remaining' => $auction->time_remaining,
+                'current_bid' => $auction->current_bid,
+                'car_status' => $auction->car?->auction_status,
+            ],
         ]);
     }
 

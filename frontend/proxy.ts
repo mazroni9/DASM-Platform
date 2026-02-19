@@ -7,7 +7,7 @@ const API_BASE_URL =
 const ROLE_DASHBOARD_PATHS: Record<string, string> = {
   admin: "/admin",
   super_admin: "/admin",
-  moderator: "/admin",
+  moderator: "/moderator/dashboard",
   employee: "/admin",
   venue_owner: "/exhibitor",
   dealer: "/dealer",
@@ -30,10 +30,18 @@ function isPublicAssetOrInternal(pathname: string): boolean {
 }
 
 function buildApiUrl(request: NextRequest, path: string): string {
-  const origin = API_BASE_URL
-    ? API_BASE_URL.replace(/\/$/, "")
-    : request.nextUrl.origin; // will use rewrites when hitting /api/*
-  return `${origin}${path}`;
+  if (!API_BASE_URL) {
+    return `${request.nextUrl.origin}${path}`;
+  }
+
+  const normalized = API_BASE_URL.replace(/\/$/, "");
+
+  if (normalized.endsWith("/api")) {
+    const suffix = path.replace(/^\/api/, "");
+    return `${normalized}${suffix}`;
+  }
+
+  return `${normalized}${path}`;
 }
 
 function safeReturnUrl(request: NextRequest): string {

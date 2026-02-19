@@ -24,14 +24,14 @@ export interface GroupedPermissions {
   [module: string]: Permission[];
 }
 
-export interface CreateRoleData {
+interface CreateRoleData {
   name: string;
   display_name: string;
   description?: string;
   permission_ids: number[];
 }
 
-export interface UpdateRoleData {
+interface UpdateRoleData {
   name: string;
   display_name: string;
   description?: string;

@@ -2,22 +2,14 @@
 
 namespace App\Http\Controllers\Dealer;
 
-use App\Models\Auction;
 use App\Enums\AuctionStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Auction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AiController extends Controller
 {
-    /**
-     * POST /api/dealer/ai/toggle
-     * Saves user preference for AI recommendations.
-     * 
-     * Note: AI recommendations feature was tied to dealer records.
-     * This endpoint is kept for API compatibility but returns a success response.
-     * TODO: If AI feature is needed, add ai_recommendations_enabled column to users table.
-     */
     public function toggle(Request $request)
     {
         $request->validate([
@@ -25,9 +17,8 @@ class AiController extends Controller
         ]);
 
         $user = Auth::user();
-        $enabled = $request->input('enabled');
+        $enabled = $request->boolean('enabled');
 
-        // Persist the AI enabled state to user record
         $user->ai_enabled = $enabled;
         $user->save();
 
@@ -40,18 +31,10 @@ class AiController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/dealer/ai/recommendations
-     * Returns AI-generated recommendations for sniping opportunities.
-     * 
-     * Currently generates mock recommendations based on active auctions.
-     * In production, this would integrate with an actual AI/ML service.
-     */
     public function recommendations()
     {
         $user = Auth::user();
 
-        // Check if AI is enabled for this user
         if (!$user->ai_enabled) {
             return response()->json([
                 'status' => 'error',
@@ -60,8 +43,8 @@ class AiController extends Controller
             ], 400);
         }
 
-        // Get active auctions with cars
-        $activeAuctions = Auction::with(['car:id,make,model,year,images'])
+        $activeAuctions = Auction::with(['car:id,make,model,year,images,min_price,max_price'])
+            ->withCount('bids')
             ->where('status', AuctionStatus::ACTIVE)
             ->whereNotNull('current_bid')
             ->where('current_bid', '>', 0)
@@ -70,28 +53,29 @@ class AiController extends Controller
             ->get();
 
         $recommendations = [];
-        $reasons = [
-            'السعر أقل من متوسط السوق بشكل ملحوظ',
-            'المزاد على وشك الانتهاء مع عدد مزايدين قليل',
-            'السيارة من فئة مطلوبة بسعر منافس',
-            'فرصة شراء نادرة - الموديل مميز',
-            'السعر الحالي أقل من التقييم السوقي',
-        ];
 
-        foreach ($activeAuctions as $index => $auction) {
-            if (!$auction->car) continue;
+        foreach ($activeAuctions as $auction) {
+            if (!$auction->car) {
+                continue;
+            }
 
-            // Generate mock market price (15-35% higher than current bid)
-            $discountPercentage = rand(10, 30);
-            $currentPrice = (int) $auction->current_bid;
-            $marketPrice = (int) ($currentPrice * (100 / (100 - $discountPercentage)));
+            $currentPrice = (int) round((float) $auction->current_bid);
+            $marketPrice = $this->resolveMarketPrice($auction, $currentPrice);
+
+            $discountPercentage = $marketPrice > 0
+                ? max(0, min(90, (int) round((($marketPrice - $currentPrice) / $marketPrice) * 100)))
+                : 0;
+
+            $timeRemainingSeconds = (int) ($auction->time_remaining ?? 0);
+            $bidsCount = (int) ($auction->bids_count ?? 0);
+            $confidenceScore = $this->calculateConfidenceScore($bidsCount, $timeRemainingSeconds, $discountPercentage);
 
             $recommendations[] = [
                 'vehicle_id' => $auction->car->id,
                 'name' => "{$auction->car->make} {$auction->car->model} {$auction->car->year}",
                 'discount_percentage' => $discountPercentage,
-                'reason' => $reasons[$index % count($reasons)],
-                'confidence_score' => round(rand(70, 95) / 100, 2),
+                'reason' => $this->buildReason($discountPercentage, $timeRemainingSeconds, $bidsCount),
+                'confidence_score' => $confidenceScore,
                 'current_price' => $currentPrice,
                 'market_price' => $marketPrice,
                 'timestamp' => now()->toIso8601String(),
@@ -105,5 +89,64 @@ class AiController extends Controller
                 'recommendations' => $recommendations,
             ],
         ]);
+    }
+
+    private function resolveMarketPrice(Auction $auction, int $currentPrice): int
+    {
+        $car = $auction->car;
+        $minPrice = (int) max(0, (float) ($car->min_price ?? 0));
+        $maxPrice = (int) max(0, (float) ($car->max_price ?? 0));
+
+        if ($maxPrice > 0) {
+            return max($maxPrice, $currentPrice);
+        }
+
+        if ($minPrice > 0) {
+            return max((int) round($minPrice * 1.10), $currentPrice);
+        }
+
+        return (int) round($currentPrice * 1.15);
+    }
+
+    private function calculateConfidenceScore(int $bidsCount, int $timeRemainingSeconds, int $discountPercentage): float
+    {
+        $score = 0.50;
+
+        if ($discountPercentage >= 20) {
+            $score += 0.20;
+        } elseif ($discountPercentage >= 10) {
+            $score += 0.10;
+        }
+
+        if ($timeRemainingSeconds > 0 && $timeRemainingSeconds <= 900) {
+            $score += 0.15;
+        } elseif ($timeRemainingSeconds > 0 && $timeRemainingSeconds <= 3600) {
+            $score += 0.05;
+        }
+
+        if ($bidsCount >= 10) {
+            $score += 0.10;
+        } elseif ($bidsCount >= 5) {
+            $score += 0.05;
+        }
+
+        return round(min(0.95, max(0.55, $score)), 2);
+    }
+
+    private function buildReason(int $discountPercentage, int $timeRemainingSeconds, int $bidsCount): string
+    {
+        if ($discountPercentage >= 20) {
+            return 'السعر الحالي أقل من نطاق السوق المتوقع';
+        }
+
+        if ($timeRemainingSeconds > 0 && $timeRemainingSeconds <= 900) {
+            return 'المزاد على وشك الانتهاء وقد تكون فرصة مناسبة';
+        }
+
+        if ($bidsCount >= 8) {
+            return 'نشاط المزايدة مرتفع على هذه السيارة';
+        }
+
+        return 'تم ترشيح السيارة بناء على السعر الحالي وحركة المزايدة';
     }
 }

@@ -143,6 +143,14 @@ class Car extends Model
         return $this->hasMany(CarReportImage::class);
     }
 
+    /**
+     * Backward-compatible alias used by older eager-loading paths.
+     */
+    public function images()
+    {
+        return $this->reportImages();
+    }
+
     public function activeAuctionBids()
     {
         return $this->hasManyThrough(Bid::class, Auction::class)

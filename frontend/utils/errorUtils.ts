@@ -20,7 +20,7 @@ interface AxiosErrorShape {
 /**
  * Type guard to check if error is an axios-like error with response
  */
-export function isAxiosError(error: unknown): error is AxiosErrorShape {
+function isAxiosError(error: unknown): error is AxiosErrorShape {
   return error !== null && typeof error === "object" && "response" in error;
 }
 
@@ -45,7 +45,7 @@ export function getAxiosErrorMessage(
  * @param error - The caught error
  * @returns The status code or undefined
  */
-export function getAxiosErrorStatus(error: unknown): number | undefined {
+function getAxiosErrorStatus(error: unknown): number | undefined {
   if (isAxiosError(error)) {
     return error.response?.status;
   }
@@ -57,7 +57,7 @@ export function getAxiosErrorStatus(error: unknown): number | undefined {
  * @param error - The caught error
  * @returns Record of field errors or undefined
  */
-export function getAxiosValidationErrors(
+function getAxiosValidationErrors(
   error: unknown
 ): Record<string, string[]> | undefined {
   if (isAxiosError(error) && error.response?.data?.errors) {
@@ -98,7 +98,7 @@ export function getErrorMessage(
  * @param error - The value to check
  * @returns True if error is an Error instance
  */
-export function isError(error: unknown): error is Error {
+function isError(error: unknown): error is Error {
   return error instanceof Error;
 }
 
@@ -107,7 +107,7 @@ export function isError(error: unknown): error is Error {
  * @param error - The value to check
  * @returns True if error has a message property
  */
-export function hasMessage(error: unknown): error is { message: string } {
+function hasMessage(error: unknown): error is { message: string } {
   return (
     error !== null &&
     typeof error === "object" &&

@@ -386,6 +386,110 @@ class UserController extends Controller
     }
 
     /**
+     * List owner-type users.
+     * GET /api/admin/users/owners
+     */
+    public function getOwners(Request $request): JsonResponse
+    {
+        $query = User::query()
+            ->whereIn('type', [UserRole::DEALER, UserRole::VENUE_OWNER, UserRole::INVESTOR])
+            ->with(['venueOwner:id,user_id,venue_name,status']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        $owners = $query->orderByDesc('created_at')->paginate(
+            min(50, max(1, (int) $request->get('per_page', 15)))
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $owners,
+        ]);
+    }
+
+    /**
+     * List pending business verifications.
+     * GET /api/admin/pending-verifications
+     */
+    public function getPendingVerifications(Request $request): JsonResponse
+    {
+        $pending = User::query()
+            ->whereIn('type', [UserRole::DEALER, UserRole::VENUE_OWNER, UserRole::INVESTOR])
+            ->where(function ($q) {
+                $q->where('status', UserStatus::PENDING)
+                    ->orWhere('is_active', false);
+            })
+            ->with(['venueOwner:id,user_id,venue_name,status'])
+            ->orderByDesc('created_at')
+            ->paginate(min(50, max(1, (int) $request->get('per_page', 15))));
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $pending,
+        ]);
+    }
+
+    /**
+     * Activate user account.
+     * POST /api/admin/users/{userId}/activate
+     */
+    public function approveUser($userId): JsonResponse
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->type === UserRole::SUPER_ADMIN) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot change super admin status'
+            ], 403);
+        }
+
+        $user->is_active = true;
+        $user->status = UserStatus::ACTIVE;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User activated successfully',
+            'data' => $user,
+        ]);
+    }
+
+    /**
+     * Reject user account verification.
+     * POST /api/admin/users/{userId}/reject
+     */
+    public function rejectUser($userId, Request $request): JsonResponse
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->type === UserRole::SUPER_ADMIN) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot change super admin status'
+            ], 403);
+        }
+
+        $user->is_active = false;
+        $user->status = UserStatus::REJECTED;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User rejected successfully',
+            'data' => $user,
+        ]);
+    }
+
+    /**
      * Approve a dealer verification request
      *
      * @param int $userId

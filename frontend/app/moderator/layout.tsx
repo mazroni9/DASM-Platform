@@ -1,20 +1,10 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
-import {
-  LayoutDashboard,
-  Video,
-  Radio,
-  Car,
-  Users,
-  LogOut,
-  Loader,
-  Home,
-  DollarSign,
-} from "lucide-react";
+import { LayoutDashboard, LogOut, Loader, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ModeratorLayoutProps {
@@ -25,24 +15,14 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
   const pathname = usePathname();
   const { user, isModerator, logout, isLoading, isLoggedIn } = useAuth();
   const router = useLoadingRouter();
-
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Simplified auth check - let ProtectedRoute handle the main logic
-  useEffect(() => {
-    if (!isLoading && (!isLoggedIn || !isModerator)) {
-      // This will be handled by ProtectedRoute
-      return;
-    }
-  }, [isLoading, isLoggedIn, isModerator]);
-
-  // Show loading state while checking authentication
   if (isLoading || !isLoggedIn || !isModerator) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
           <Loader className="h-10 w-10 animate-spin text-green-600 mx-auto mb-4" />
-          <p className="text-gray-600">جاري التحقق من الصلاحيات...</p>
+          <p className="text-gray-600">جارٍ التحقق من الصلاحيات...</p>
         </div>
       </div>
     );
@@ -55,32 +35,13 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
 
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
-    {
-      name: "لوحة المشرف",
-      href: "/moderator/dashboard",
-      icon: LayoutDashboard,
-    },
-    { name: "المزادات", href: "/moderator/auctions", icon: Car },
-    { name: "السيارات", href: "/moderator/cars", icon: Car },
-    { name: "المزايدات", href: "/moderator/bids", icon: DollarSign },
+    { name: "لوحة المشرف", href: "/moderator/dashboard", icon: LayoutDashboard },
   ];
 
-  const isActive = (path: string) => {
-    // For exact matches like the dashboard
-    if (path === "/moderator/dashboard" && pathname === "/moderator/dashboard")
-      return true;
-
-    // For sub-routes, make sure we're not matching partial paths
-    if (path !== "/moderator/dashboard" && pathname?.startsWith(`${path}/`))
-      return true;
-
-    // For exact sub-route matches
-    return pathname === path;
-  };
+  const isActive = (path: string) => pathname === path;
 
   return (
     <div className="min-h-screen flex bg-gray-100" dir="rtl">
-      {/* Sidebar */}
       <aside
         className={`bg-white shadow-md transition-all ${
           isCollapsed ? "w-20" : "w-64"
@@ -145,17 +106,15 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto">
         <header className="bg-white shadow-sm border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-gray-800">
-              {navigation.find((item) => isActive(item.href))?.name ||
-                "لوحة المشرف"}
+              {navigation.find((item) => isActive(item.href))?.name || "لوحة المشرف"}
             </h1>
             <div className="flex items-center space-x-4 space-x-reverse">
               <span className="text-sm text-gray-600">
-                مرحباً، {user?.first_name || "المشرف"}
+                مرحبًا، {user?.first_name || "المشرف"}
               </span>
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                 <span className="text-green-600 font-semibold text-sm">
@@ -171,3 +130,4 @@ export default function ModeratorLayout({ children }: ModeratorLayoutProps) {
     </div>
   );
 }
+

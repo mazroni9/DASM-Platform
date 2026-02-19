@@ -32,7 +32,7 @@ export default function CurrentCar({ car }: CurrentCarProps) {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="relative">
                 <img
-                    src={car.images[0] || "/api/placeholder/400/300"}
+                    src={car.images[0] || "/placeholder-car.jpg"}
                     alt={`${car.make} ${car.model}`}
                     className="w-full h-48 object-cover"
                 />

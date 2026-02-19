@@ -20,7 +20,7 @@ class AdminMiddleware
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        if (!$user->isAdmin() && !$user->isModerator()) {
+        if (!$user->isAdmin()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Access denied. Admin privileges required.'

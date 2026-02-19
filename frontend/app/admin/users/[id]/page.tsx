@@ -132,7 +132,7 @@ export default function UserDetailPage({}: { params: { id: string } }) {
     setProcessingAction("verify");
     try {
       const response = await api.post(
-        `/api/admin/users/${params.id}/approve-verification`,
+        `/api/admin/dealers/${params.id}/approve-verification`,
       );
 
       if (response.data && response.data.status === "success") {

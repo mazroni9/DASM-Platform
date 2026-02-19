@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
@@ -82,39 +82,22 @@ export default function LiveStreamManagementPage() {
 
   const fetchStats = async () => {
     try {
-      // عشان اختلاف baseURL في axios
-      const endpoints = [
-        "/admin/all-broadcasts",
-        "/api/admin/all-broadcasts",
-        "https://api.dasm.com.sa/api/admin/all-broadcasts",
-      ];
-
-      let res: any = null;
-      let lastErr: any = null;
-
-      for (const url of endpoints) {
-        try {
-          res = await api.get(url);
-          if (res?.data) break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (!res?.data) throw lastErr || new Error("No response data");
+      const res = await api.get("/api/admin/all-broadcasts");
+      if (!res?.data) throw new Error("No response data");
 
       const data = res.data?.data;
       const rows: Broadcast[] = data?.data || data || [];
       setStats(calcStats(rows));
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.response?.data?.message || "تعذر تحميل إحصائيات البث");
+      toast.error(e?.response?.data?.message || "طھط¹ط°ط± طھط­ظ…ظٹظ„ ط¥ط­طµط§ط¦ظٹط§طھ ط§ظ„ط¨ط«");
     }
   };
 
-  // Redirect لو مش أدمن بعد التحميل (وكمان عشان router مايبقاش unused)
+  // Redirect ظ„ظˆ ظ…ط´ ط£ط¯ظ…ظ† ط¨ط¹ط¯ ط§ظ„طھط­ظ…ظٹظ„ (ظˆظƒظ…ط§ظ† ط¹ط´ط§ظ† router ظ…ط§ظٹط¨ظ‚ط§ط´ unused)
   useEffect(() => {
     if (!isLoading && (!isLoggedIn || !isAdmin)) {
-      router.push("/"); // غيّرها لصفحة تسجيل الدخول لو عندك
+      router.push("/"); // ط؛ظٹظ‘ط±ظ‡ط§ ظ„طµظپط­ط© طھط³ط¬ظٹظ„ ط§ظ„ط¯ط®ظˆظ„ ظ„ظˆ ط¹ظ†ط¯ظƒ
     }
   }, [isLoading, isLoggedIn, isAdmin, router]);
 
@@ -134,8 +117,8 @@ export default function LiveStreamManagementPage() {
       >
         <div className="text-center">
           <Loader className="h-12 w-12 animate-spin text-cyan-500 dark:text-cyan-400 mx-auto mb-4" />
-          <p className="text-gray-700 dark:text-gray-300">جاري التحقق من الصلاحيات...</p>
-          <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">إدارة البث المباشر</p>
+          <p className="text-gray-700 dark:text-gray-300">ط¬ط§ط±ظٹ ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ط§ظ„طµظ„ط§ط­ظٹط§طھ...</p>
+          <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">ط¥ط¯ط§ط±ط© ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط±</p>
         </div>
       </div>
     );
@@ -150,10 +133,10 @@ export default function LiveStreamManagementPage() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-500 bg-clip-text text-transparent">
-            إدارة البث المباشر
+            ط¥ط¯ط§ط±ط© ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط±
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            إدارة وتنظيم جلسات البث المباشر والمزادات الحية
+            ط¥ط¯ط§ط±ط© ظˆطھظ†ط¸ظٹظ… ط¬ظ„ط³ط§طھ ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط± ظˆط§ظ„ظ…ط²ط§ط¯ط§طھ ط§ظ„ط­ظٹط©
           </p>
         </div>
 
@@ -165,10 +148,10 @@ export default function LiveStreamManagementPage() {
               "bg-white/70 hover:bg-white text-gray-700 border-gray-200 shadow-sm",
               "dark:bg-gray-900/40 dark:hover:bg-white/5 dark:text-gray-200 dark:border-white/10"
             )}
-            title="تحديث الإحصائيات"
+            title="طھط­ط¯ظٹط« ط§ظ„ط¥ط­طµط§ط¦ظٹط§طھ"
           >
             <RefreshCw className="w-4 h-4 ml-2" />
-            تحديث
+            طھط­ط¯ظٹط«
           </button>
 
           <div className="bg-gradient-to-r from-purple-500/10 to-pink-600/10 border border-purple-500/20 dark:border-purple-500/20 rounded-xl p-3">
@@ -183,7 +166,7 @@ export default function LiveStreamManagementPage() {
         <div className="rounded-xl p-6 border shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">إجمالي البثوث</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط¨ط«ظˆط«</p>
               <p className="text-2xl font-bold mt-1">{stats.total}</p>
             </div>
             <div className="bg-purple-500/10 p-3 rounded-xl">
@@ -196,7 +179,7 @@ export default function LiveStreamManagementPage() {
         <div className="rounded-xl p-6 border shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">بثوث مباشرة الآن</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">ط¨ط«ظˆط« ظ…ط¨ط§ط´ط±ط© ط§ظ„ط¢ظ†</p>
               <p className="text-2xl font-bold mt-1">{stats.live}</p>
             </div>
             <div className="bg-rose-500/10 p-3 rounded-xl">
@@ -209,7 +192,7 @@ export default function LiveStreamManagementPage() {
         <div className="rounded-xl p-6 border shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">بثوث مجدولة</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">ط¨ط«ظˆط« ظ…ط¬ط¯ظˆظ„ط©</p>
               <p className="text-2xl font-bold mt-1">{stats.scheduled}</p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
@@ -222,7 +205,7 @@ export default function LiveStreamManagementPage() {
         <div className="rounded-xl p-6 border shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">بثوث مكتملة</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">ط¨ط«ظˆط« ظ…ظƒطھظ…ظ„ط©</p>
               <p className="text-2xl font-bold mt-1">{stats.completed}</p>
             </div>
             <div className="bg-emerald-500/10 p-3 rounded-xl">
@@ -235,7 +218,7 @@ export default function LiveStreamManagementPage() {
         <div className="rounded-xl p-6 border shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">مشاهدين نشطين</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">ظ…ط´ط§ظ‡ط¯ظٹظ† ظ†ط´ط·ظٹظ†</p>
               <p className="text-2xl font-bold mt-1">{stats.viewers}</p>
             </div>
             <div className="bg-cyan-500/10 p-3 rounded-xl">
@@ -256,9 +239,9 @@ export default function LiveStreamManagementPage() {
                   <Settings className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold">إنشاء بث جديد</h2>
+                  <h2 className="text-xl font-semibold">ط¥ظ†ط´ط§ط، ط¨ط« ط¬ط¯ظٹط¯</h2>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                    إعداد بث مباشر جديد للمزادات أو العروض
+                    ط¥ط¹ط¯ط§ط¯ ط¨ط« ظ…ط¨ط§ط´ط± ط¬ط¯ظٹط¯ ظ„ظ„ظ…ط²ط§ط¯ط§طھ ط£ظˆ ط§ظ„ط¹ط±ظˆط¶
                   </p>
                 </div>
               </div>
@@ -276,7 +259,7 @@ export default function LiveStreamManagementPage() {
           <div className="rounded-2xl border p-6 shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
             <div className="flex items-center gap-3 mb-6">
               <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              <h3 className="text-lg font-semibold">إجراءات سريعة</h3>
+              <h3 className="text-lg font-semibold">ط¥ط¬ط±ط§ط،ط§طھ ط³ط±ظٹط¹ط©</h3>
             </div>
 
             <div className="space-y-3">
@@ -288,7 +271,7 @@ export default function LiveStreamManagementPage() {
                   "dark:bg-gradient-to-r dark:from-purple-500/10 dark:to-pink-600/10 dark:text-purple-300 dark:border-purple-500/20 dark:hover:bg-purple-500/20 dark:hover:text-white"
                 )}
               >
-                <span>البثوث النشطة</span>
+                <span>ط§ظ„ط¨ط«ظˆط« ط§ظ„ظ†ط´ط·ط©</span>
                 <Radio className="w-4 h-4" />
               </button>
 
@@ -300,7 +283,7 @@ export default function LiveStreamManagementPage() {
                   "dark:bg-gradient-to-r dark:from-amber-500/10 dark:to-orange-600/10 dark:text-amber-300 dark:border-amber-500/20 dark:hover:bg-amber-500/20 dark:hover:text-white"
                 )}
               >
-                <span>الجداول الزمنية</span>
+                <span>ط§ظ„ط¬ط¯ط§ظˆظ„ ط§ظ„ط²ظ…ظ†ظٹط©</span>
                 <Calendar className="w-4 h-4" />
               </button>
 
@@ -312,7 +295,7 @@ export default function LiveStreamManagementPage() {
                   "dark:bg-gradient-to-r dark:from-cyan-500/10 dark:to-blue-600/10 dark:text-cyan-300 dark:border-cyan-500/20 dark:hover:bg-cyan-500/20 dark:hover:text-white"
                 )}
               >
-                <span>إحصائيات المشاهدين</span>
+                <span>ط¥ط­طµط§ط¦ظٹط§طھ ط§ظ„ظ…ط´ط§ظ‡ط¯ظٹظ†</span>
                 <Users className="w-4 h-4" />
               </button>
             </div>
@@ -322,31 +305,31 @@ export default function LiveStreamManagementPage() {
           <div className="rounded-2xl border p-6 shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-green-400" />
-              <h3 className="text-lg font-semibold">حالة النظام</h3>
+              <h3 className="text-lg font-semibold">ط­ط§ظ„ط© ط§ظ„ظ†ط¸ط§ظ…</h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">خوادم البث</span>
+                <span className="text-gray-600 dark:text-gray-400">ط®ظˆط§ط¯ظ… ط§ظ„ط¨ط«</span>
                 <span className="text-emerald-700 dark:text-green-400 flex items-center">
                   <div className="w-2 h-2 bg-emerald-600 dark:bg-green-400 rounded-full ml-2"></div>
-                  نشطة
+                  ظ†ط´ط·ط©
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">جودة البث</span>
-                <span className="text-emerald-700 dark:text-green-400">ممتازة</span>
+                <span className="text-gray-600 dark:text-gray-400">ط¬ظˆط¯ط© ط§ظ„ط¨ط«</span>
+                <span className="text-emerald-700 dark:text-green-400">ظ…ظ…طھط§ط²ط©</span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">الإتصال</span>
-                <span className="text-emerald-700 dark:text-green-400">مستقر</span>
+                <span className="text-gray-600 dark:text-gray-400">ط§ظ„ط¥طھطµط§ظ„</span>
+                <span className="text-emerald-700 dark:text-green-400">ظ…ط³طھظ‚ط±</span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">المهلة</span>
-                <span className="text-amber-700 dark:text-amber-400">منخفضة</span>
+                <span className="text-gray-600 dark:text-gray-400">ط§ظ„ظ…ظ‡ظ„ط©</span>
+                <span className="text-amber-700 dark:text-amber-400">ظ…ظ†ط®ظپط¶ط©</span>
               </div>
             </div>
           </div>
@@ -355,25 +338,25 @@ export default function LiveStreamManagementPage() {
           <div className="rounded-2xl border p-6 shadow-sm bg-white/70 border-gray-200 dark:bg-gray-900/40 dark:border-white/10">
             <div className="flex items-center gap-3 mb-6">
               <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <h3 className="text-lg font-semibold">نصائح مهمة</h3>
+              <h3 className="text-lg font-semibold">ظ†طµط§ط¦ط­ ظ…ظ‡ظ…ط©</h3>
             </div>
 
             <div className="space-y-3 text-sm text-gray-700 dark:text-gray-400">
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-amber-500 dark:bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>تأكد من جودة الإنترنت قبل البدء بالبث</span>
+                <span>طھط£ظƒط¯ ظ…ظ† ط¬ظˆط¯ط© ط§ظ„ط¥ظ†طھط±ظ†طھ ظ‚ط¨ظ„ ط§ظ„ط¨ط¯ط، ط¨ط§ظ„ط¨ط«</span>
               </div>
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-amber-500 dark:bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>اختر وقتاً مناسباً لجمهورك المستهدف</span>
+                <span>ط§ط®طھط± ظˆظ‚طھط§ظ‹ ظ…ظ†ط§ط³ط¨ط§ظ‹ ظ„ط¬ظ…ظ‡ظˆط±ظƒ ط§ظ„ظ…ط³طھظ‡ط¯ظپ</span>
               </div>
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-amber-500 dark:bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>جهز محتوى البث مسبقاً لتجنب الأخطاء</span>
+                <span>ط¬ظ‡ط² ظ…ط­طھظˆظ‰ ط§ظ„ط¨ط« ظ…ط³ط¨ظ‚ط§ظ‹ ظ„طھط¬ظ†ط¨ ط§ظ„ط£ط®ط·ط§ط،</span>
               </div>
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-amber-500 dark:bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>اختبر البث قبل البدء بالبث المباشر</span>
+                <span>ط§ط®طھط¨ط± ط§ظ„ط¨ط« ظ‚ط¨ظ„ ط§ظ„ط¨ط¯ط، ط¨ط§ظ„ط¨ط« ط§ظ„ظ…ط¨ط§ط´ط±</span>
               </div>
             </div>
           </div>
@@ -389,9 +372,9 @@ export default function LiveStreamManagementPage() {
                 <Video className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">إدارة البثوث</h2>
+                <h2 className="text-xl font-semibold">ط¥ط¯ط§ط±ط© ط§ظ„ط¨ط«ظˆط«</h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                  عرض وإدارة جميع البثوث المباشرة والمجدولة
+                  ط¹ط±ط¶ ظˆط¥ط¯ط§ط±ط© ط¬ظ…ظٹط¹ ط§ظ„ط¨ط«ظˆط« ط§ظ„ظ…ط¨ط§ط´ط±ط© ظˆط§ظ„ظ…ط¬ط¯ظˆظ„ط©
                 </p>
               </div>
             </div>

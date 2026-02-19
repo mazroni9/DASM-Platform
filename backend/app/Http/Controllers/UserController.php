@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -44,6 +46,10 @@ class UserController extends Controller
             'status'      => $this->enumValue($user->status),
             'area_id'     => $user->area_id,
             'organization_id' => $user->organization_id,
+            'avatar_url'  => $user->avatar_url,
+            'two_factor_auth' => (bool) ($user->two_factor_auth ?? false),
+            'notification_email' => (bool) ($user->notification_email ?? true),
+            'notification_sms' => (bool) ($user->notification_sms ?? false),
             'created_at'  => $user->created_at,
             'updated_at'  => $user->updated_at,
 
@@ -93,7 +99,11 @@ class UserController extends Controller
                     'last_name',
                     'email',
                     'phone',
-                    'area_id'
+                    'area_id',
+                    'avatar_url',
+                    'two_factor_auth',
+                    'notification_email',
+                    'notification_sms',
                 ]));
 
                 if ($emailChanged) {
@@ -152,6 +162,10 @@ class UserController extends Controller
                 'kyc_status' => $user->kyc_status,
                 'area_id' => $user->area_id,
                 'organization_id' => $user->organization_id,
+                'avatar_url' => $user->avatar_url,
+                'two_factor_auth' => (bool) ($user->two_factor_auth ?? false),
+                'notification_email' => (bool) ($user->notification_email ?? true),
+                'notification_sms' => (bool) ($user->notification_sms ?? false),
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ];
@@ -181,6 +195,141 @@ class UserController extends Controller
                 'message' => 'فشل تحديث الملف الشخصي، حاول مرة أخرى لاحقاً.',
             ], 500);
         }
+    }
+
+    /**
+     * PUT /user/password
+     */
+    public function updatePassword(Request $request)
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'two_factor_auth' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            $passwordColumn = $this->resolvePasswordColumn();
+            $storedHash = (string) ($user->{$passwordColumn} ?? '');
+
+            if ($storedHash === '' || !Hash::check((string) $validated['current_password'], $storedHash)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Current password is incorrect',
+                ], 422);
+            }
+
+            $hashed = Hash::make((string) $validated['password']);
+
+            $update = [$passwordColumn => $hashed];
+            if ($passwordColumn === 'password_hash' && Schema::hasColumn('users', 'password')) {
+                $update['password'] = $hashed;
+            }
+            if ($passwordColumn === 'password' && Schema::hasColumn('users', 'password_hash')) {
+                $update['password_hash'] = $hashed;
+            }
+
+            if (array_key_exists('two_factor_auth', $validated)) {
+                $update['two_factor_auth'] = (bool) $validated['two_factor_auth'];
+            }
+
+            $user->update($update);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password updated successfully',
+                'data' => [
+                    'two_factor_auth' => (bool) ($user->fresh()->two_factor_auth ?? false),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error updating password', [
+                'message' => $e->getMessage(),
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update password',
+            ], 500);
+        }
+    }
+
+    /**
+     * PUT /user/security-settings
+     */
+    public function updateSecuritySettings(Request $request)
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'two_factor_auth' => ['required', 'boolean'],
+        ]);
+
+        $user->update([
+            'two_factor_auth' => (bool) $validated['two_factor_auth'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Security settings updated successfully',
+            'data' => [
+                'two_factor_auth' => (bool) $user->fresh()->two_factor_auth,
+            ],
+        ]);
+    }
+
+    /**
+     * PUT /user/notification-settings
+     */
+    public function updateNotificationSettings(Request $request)
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'notification_email' => ['required', 'boolean'],
+            'notification_sms' => ['required', 'boolean'],
+        ]);
+
+        $user->update([
+            'notification_email' => (bool) $validated['notification_email'],
+            'notification_sms' => (bool) $validated['notification_sms'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification settings updated successfully',
+            'data' => [
+                'notification_email' => (bool) $user->fresh()->notification_email,
+                'notification_sms' => (bool) $user->notification_sms,
+            ],
+        ]);
     }
 
     /**
@@ -235,6 +384,17 @@ class UserController extends Controller
             return $value->value;
         }
         return $value;
+    }
+
+    private function resolvePasswordColumn(): string
+    {
+        if (Schema::hasColumn('users', 'password_hash')) {
+            return 'password_hash';
+        }
+        if (Schema::hasColumn('users', 'password')) {
+            return 'password';
+        }
+        throw new \RuntimeException('No password column found on users table.');
     }
 
     private function sendVerificationEmail(User $user): void

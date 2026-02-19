@@ -42,11 +42,14 @@ class ClickPayService
             $response = Http::withHeaders([
                 'Authorization' => $this->serverKey,
                 'Content-Type' => 'application/json',
-            ])->post("{$this->baseUrl}/payment/request", $payload);
+            ])->timeout(20)->post("{$this->baseUrl}/payment/request", $payload);
 
             $data = $response->json();
-            Log::info('ClickPay: data payment', [
-                $data
+            Log::info('ClickPay: payment initiation response', [
+                'settlement_id' => $settlement->id,
+                'http_status' => $response->status(),
+                'has_redirect_url' => isset($data['redirect_url']),
+                'tran_ref' => $data['tran_ref'] ?? null,
             ]);
 
             if ($response->successful() && isset($data['redirect_url'])) {
@@ -70,7 +73,9 @@ class ClickPayService
 
             Log::error('ClickPay: Payment initiation failed', [
                 'settlement_id' => $settlement->id,
-                'response' => $data,
+                'http_status' => $response->status(),
+                'error_code' => $data['error_code'] ?? null,
+                'message' => $data['message'] ?? null,
             ]);
 
             return [
@@ -106,7 +111,7 @@ class ClickPayService
             $response = Http::withHeaders([
                 'Authorization' => $this->serverKey,
                 'Content-Type' => 'application/json',
-            ])->post("{$this->baseUrl}/payment/query", [
+            ])->timeout(20)->post("{$this->baseUrl}/payment/query", [
                 'profile_id' => $this->profileId,
                 'tran_ref' => $tranRef,
             ]);

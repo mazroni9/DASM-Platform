@@ -1,371 +1,364 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import LoadingLink from "@/components/LoadingLink";
-import { 
-    Youtube, 
-    Settings, 
-    Save, 
-    ExternalLink, 
-    Eye, 
-    Users, 
-    Video,
-    CheckCircle,
-    AlertTriangle,
-    Info,
-    Shield,
-    RefreshCw,
-    Sparkles,
-    Link2,
-    QrCode
-} from 'lucide-react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import api from "@/lib/axios";
+import { RefreshCw, Plus, Save, Trash2, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import toast from "react-hot-toast";
 
-const MAIN_CHANNEL_ID = 'UCxiLyu5z-T0FanDNotwTJcg';
+type Channel = {
+  id: number;
+  name: string;
+  channel_id: string;
+  is_active?: boolean | number;
+  subscriber_count?: number | null;
+  video_count?: number | null;
+  last_video_date?: string | null;
+  updated_at?: string;
+};
+
+type ChannelForm = {
+  name: string;
+  channel_id: string;
+  is_active: boolean;
+};
+
+const INITIAL_FORM: ChannelForm = {
+  name: "",
+  channel_id: "",
+  is_active: true,
+};
+
+function toChannels(payload: any): Channel[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.channels)) return payload.channels;
+  return [];
+}
+
+function formatNumber(value?: number | null): string {
+  if (value == null) return "-";
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleDateString("en-GB");
+}
 
 export default function YoutubeChannelManagementPage() {
-  const [channelId, setChannelId] = useState(MAIN_CHANNEL_ID);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [channelInfo, setChannelInfo] = useState({
-    name: 'القناة الرئيسية',
-    subscribers: '1.2M',
-    videos: '245',
-    status: 'active'
-  });
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [form, setForm] = useState<ChannelForm>(INITIAL_FORM);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-  const handleSave = async () => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [syncingId, setSyncingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadChannels = useCallback(async () => {
     try {
       setLoading(true);
-      setSuccessMessage(null);
       setError(null);
-      
-      // التحقق من تنسيق معرّف القناة
-      if (!channelId.startsWith('UC') || channelId.length !== 24) {
-        setError('تنسيق معرّف القناة غير صحيح. يجب أن يبدأ بـ UC ويتكون من 24 حرفًا');
-        return;
-      }
-      
-      // محاكاة عملية الحفظ
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setSuccessMessage('تم تحديث معرّف قناة اليوتيوب بنجاح');
-      
-      // تحديث معلومات القناة (محاكاة)
-      setChannelInfo({
-        name: 'قناة المزادات الراقية',
-        subscribers: '1.3M',
-        videos: '256',
-        status: 'active'
-      });
-      
-    } catch (err) {
-      setError('حدث خطأ أثناء حفظ معرّف القناة');
+
+      const res = await api.get("/api/admin/youtube-channels");
+      setChannels(toChannels(res?.data));
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to load YouTube channels.";
+      setError(msg);
+      setChannels([]);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadChannels();
+  }, [loadChannels]);
+
+  const activeCount = useMemo(
+    () => channels.filter((c) => Boolean(Number(c.is_active ?? 0))).length,
+    [channels]
+  );
+
+  const resetForm = () => {
+    setForm(INITIAL_FORM);
+    setEditingId(null);
   };
 
-  const validateChannelId = (id: string) => {
-    return id.startsWith('UC') && id.length === 24;
+  const startEdit = (channel: Channel) => {
+    setEditingId(channel.id);
+    setForm({
+      name: channel.name || "",
+      channel_id: channel.channel_id || "",
+      is_active: Boolean(Number(channel.is_active ?? 0)),
+    });
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const name = form.name.trim();
+    const channelId = form.channel_id.trim();
+
+    if (!name || !channelId) {
+      toast.error("Name and Channel ID are required.");
+      return;
+    }
+
+    if (!channelId.startsWith("UC") || channelId.length !== 24) {
+      toast.error("Channel ID must start with UC and contain 24 characters.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const payload = {
+        name,
+        channel_id: channelId,
+        is_active: form.is_active,
+      };
+
+      if (editingId != null) {
+        await api.put(`/api/admin/youtube-channels/${editingId}`, payload);
+        toast.success("Channel updated.");
+      } else {
+        await api.post("/api/admin/youtube-channels", payload);
+        toast.success("Channel added.");
+      }
+
+      resetForm();
+      await loadChannels();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to save channel.";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const syncChannel = async (id: number) => {
+    try {
+      setSyncingId(id);
+      await api.post(`/api/admin/youtube-channels/${id}/sync`);
+      toast.success("Channel synced from YouTube API.");
+      await loadChannels();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to sync channel.";
+      toast.error(msg);
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
+  const deleteChannel = async (id: number) => {
+    if (!confirm("Delete this channel?")) return;
+
+    try {
+      setDeletingId(id);
+      await api.delete(`/api/admin/youtube-channels/${id}`);
+      toast.success("Channel deleted.");
+
+      if (editingId === id) resetForm();
+      await loadChannels();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to delete channel.";
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950 text-white p-2 rtl">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-            إدارة قنوات اليوتيوب
-          </h1>
-          <p className="text-gray-400 mt-2">
-            إدارة وتكوين قنوات البث المباشر على اليوتيوب
-          </p>
-        </div>
-        
-        <div className="flex items-center space-x-3 space-x-reverse mt-4 lg:mt-0">
-          <div className="bg-gradient-to-r from-red-500/10 to-red-600/10 border border-red-500/20 rounded-xl p-3">
-            <Youtube className="w-6 h-6 text-red-400" />
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">YouTube Channels</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Connected with backend API. No simulation mode.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg border border-border px-3 py-1 text-sm text-foreground">
+              Total: {channels.length}
+            </span>
+            <span className="rounded-lg border border-border px-3 py-1 text-sm text-foreground">
+              Active: {activeCount}
+            </span>
+            <button
+              type="button"
+              onClick={loadChannels}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-accent"
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto">
-        {/* Statistics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">حالة القناة</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">نشطة</p>
-              </div>
-              <div className="bg-green-500/10 p-3 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-400" />
-              </div>
-            </div>
+      <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
+          {editingId != null ? "Edit Channel" : "Add Channel"}
+        </h2>
+
+        <form onSubmit={submit} className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-1">
+            <label className="text-sm text-muted-foreground">Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+              placeholder="Main channel"
+            />
           </div>
 
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">المشتركين</p>
-                <p className="text-2xl font-bold text-white mt-1">{channelInfo.subscribers}</p>
-              </div>
-              <div className="bg-red-500/10 p-3 rounded-xl">
-                <Users className="w-6 h-6 text-red-400" />
-              </div>
-            </div>
+          <div className="space-y-1">
+            <label className="text-sm text-muted-foreground">Channel ID</label>
+            <input
+              value={form.channel_id}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, channel_id: e.target.value.trim() }))
+              }
+              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+              placeholder="UCxxxxxxxxxxxxxxxxxxxxxx"
+            />
           </div>
 
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">الفيديوهات</p>
-                <p className="text-2xl font-bold text-white mt-1">{channelInfo.videos}</p>
-              </div>
-              <div className="bg-blue-500/10 p-3 rounded-xl">
-                <Video className="w-6 h-6 text-blue-400" />
-              </div>
-            </div>
-          </div>
+          <div className="flex items-end justify-between gap-3">
+            <label className="inline-flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, is_active: e.target.checked }))
+                }
+                className="h-4 w-4 rounded border-border"
+              />
+              Active
+            </label>
 
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700/50 shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">البثوث المباشرة</p>
-                <p className="text-2xl font-bold text-cyan-400 mt-1">12</p>
-              </div>
-              <div className="bg-cyan-500/10 p-3 rounded-xl">
-                <Eye className="w-6 h-6 text-cyan-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Main Configuration Section */}
-          <div className="xl:col-span-2">
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
-              {/* Form Header */}
-              <div className="border-b border-gray-700/50 p-6 bg-gradient-to-r from-gray-800 to-gray-900">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="bg-gradient-to-r from-red-500 to-red-600 p-2 rounded-xl">
-                    <Settings className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-white">إعدادات القناة الرئيسية</h2>
-                    <p className="text-gray-400 text-sm mt-1">
-                      تكوين قناة اليوتيوب الرئيسية للبث المباشر
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 space-y-6">
-                {/* Success/Error Messages */}
-                {successMessage && (
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                      <p className="text-green-400">{successMessage}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <AlertTriangle className="w-5 h-5 text-red-400" />
-                      <p className="text-red-400">{error}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Channel ID Input */}
-                <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-200">
-                    معرّف قناة اليوتيوب <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={channelId}
-                      onChange={(e) => setChannelId(e.target.value)}
-                      className={`w-full bg-gray-700/50 border ${
-                        validateChannelId(channelId) 
-                          ? 'border-green-500/50' 
-                          : 'border-gray-600'
-                      } rounded-xl py-4 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
-                      placeholder="UCxiLyu5z-T0FanDNotwTJcg"
-                      dir="ltr"
-                    />
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                      <Link2 className="w-5 h-5 text-gray-400" />
-                    </div>
-                    {validateChannelId(channelId) && (
-                      <div className="absolute left-10 top-1/2 transform -translate-y-1/2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    يجب أن يبدأ المعرّف بـ <code className="bg-gray-700 px-1 rounded">UC</code> ويتكون من 24 حرفاً
-                  </p>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <a 
-                    href={`https://www.youtube.com/channel/${channelId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-gradient-to-r from-gray-700 to-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white transition-all duration-300 py-3 px-4 rounded-xl text-center flex items-center justify-center space-x-2 space-x-reverse"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>فتح القناة على اليوتيوب</span>
-                  </a>
-                  
-                  <button
-                    onClick={handleSave}
-                    disabled={loading || !validateChannelId(channelId)}
-                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 space-x-reverse disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>جاري الحفظ...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        <span>حفظ التغييرات</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Information Card */}
-            <div className="mt-6 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center space-x-3 space-x-reverse mb-4">
-                <Info className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-semibold text-white">كيفية العثور على معرّف القناة</h3>
-              </div>
-              <div className="space-y-3 text-sm text-gray-400">
-                <div className="flex items-start space-x-2 space-x-reverse">
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>اذهب إلى صفحة القناة على يوتيوب</span>
-                </div>
-                <div className="flex items-start space-x-2 space-x-reverse">
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>انقر على &quot;حول&quot; ثم &quot;مشاركة القناة&quot;</span>
-                </div>
-                <div className="flex items-start space-x-2 space-x-reverse">
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>ستجد المعرّف في عنوان URL يبدأ بـ UC</span>
-                </div>
-                <div className="flex items-start space-x-2 space-x-reverse">
-                  <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <span>مثال: <code className="bg-gray-700 px-1 rounded">UCxiLyu5z-T0FanDNotwTJcg</code></span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar Section */}
-          <div className="space-y-6">
-            {/* Channel Preview */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 p-6 shadow-2xl">
-              <div className="flex items-center space-x-3 space-x-reverse mb-6">
-                <Eye className="w-5 h-5 text-purple-400" />
-                <h3 className="text-lg font-semibold text-white">معاينة القناة</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="bg-gray-700/30 rounded-xl p-4 text-center">
-                  <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Youtube className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="text-white font-medium">{channelInfo.name}</div>
-                  <div className="text-gray-400 text-sm mt-1">{channelInfo.subscribers} مشترك</div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-gray-700/30 rounded-lg p-3 text-center">
-                    <div className="text-cyan-400 font-bold">{channelInfo.videos}</div>
-                    <div className="text-gray-400">فيديو</div>
-                  </div>
-                  <div className="bg-gray-700/30 rounded-lg p-3 text-center">
-                    <div className="text-green-400 font-bold">12</div>
-                    <div className="text-gray-400">بث مباشر</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Security Status */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 p-6 shadow-2xl">
-              <div className="flex items-center space-x-3 space-x-reverse mb-6">
-                <Shield className="w-5 h-5 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">الحالة الأمنية</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">التوثيق</span>
-                  <span className="text-green-400 flex items-center">
-                    <CheckCircle className="w-4 h-4 ml-1" />
-                    نشط
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">البث المباشر</span>
-                  <span className="text-green-400 flex items-center">
-                    <CheckCircle className="w-4 h-4 ml-1" />
-                    مفعل
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">API متصل</span>
-                  <span className="text-green-400 flex items-center">
-                    <CheckCircle className="w-4 h-4 ml-1" />
-                    متصل
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700/50 p-6 shadow-2xl">
-              <div className="flex items-center space-x-3 space-x-reverse mb-6">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <h3 className="text-lg font-semibold text-white">إجراءات سريعة</h3>
-              </div>
-              <div className="space-y-3">
-                <button className="w-full bg-gradient-to-r from-blue-500/10 to-cyan-600/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 hover:text-white transition-all duration-300 py-3 px-4 rounded-xl text-right flex items-center justify-between">
-                  <span>إدارة البثوث</span>
-                  <Video className="w-4 h-4" />
+            <div className="flex items-center gap-2">
+              {editingId != null && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-accent"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Cancel
                 </button>
-                <button className="w-full bg-gradient-to-r from-purple-500/10 to-pink-600/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 hover:text-white transition-all duration-300 py-3 px-4 rounded-xl text-right flex items-center justify-between">
-                  <span>إحصائيات القناة</span>
-                  <QrCode className="w-4 h-4" />
-                </button>
-                <button className="w-full bg-gradient-to-r from-green-500/10 to-emerald-600/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 hover:text-white transition-all duration-300 py-3 px-4 rounded-xl text-right flex items-center justify-between">
-                  <span>الإعدادات المتقدمة</span>
-                  <Settings className="w-4 h-4" />
-                </button>
-              </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              >
+                {editingId != null ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                {saving ? "Saving..." : editingId != null ? "Update" : "Add"}
+              </button>
             </div>
           </div>
-        </div>
+        </form>
+      </div>
 
-        {/* Back Link */}
-        <div className="mt-8 text-center">
-          <LoadingLink
-            href="/admin"
-            className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 inline-flex items-center space-x-2 space-x-reverse"
-          >
-            <span>العودة إلى لوحة التحكم</span>
-          </LoadingLink>
-        </div>
+      <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Channels List</h2>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-400/40 bg-red-500/10 p-3 text-sm text-red-500">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">Loading...</div>
+        ) : channels.length === 0 ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">No channels found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-separate border-spacing-y-2">
+              <thead>
+                <tr className="text-left text-xs uppercase text-muted-foreground">
+                  <th className="px-3 py-2">Name</th>
+                  <th className="px-3 py-2">Channel ID</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Subscribers</th>
+                  <th className="px-3 py-2">Videos</th>
+                  <th className="px-3 py-2">Last Video</th>
+                  <th className="px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {channels.map((channel) => {
+                  const isActive = Boolean(Number(channel.is_active ?? 0));
+                  const isSyncing = syncingId === channel.id;
+                  const isDeleting = deletingId === channel.id;
+
+                  return (
+                    <tr key={channel.id} className="rounded-xl border border-border bg-background/60">
+                      <td className="px-3 py-3 text-sm text-foreground">{channel.name}</td>
+                      <td className="px-3 py-3 font-mono text-xs text-foreground/80">{channel.channel_id}</td>
+                      <td className="px-3 py-3 text-sm">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
+                            isActive
+                              ? "bg-emerald-500/15 text-emerald-500"
+                              : "bg-rose-500/15 text-rose-500"
+                          }`}
+                        >
+                          {isActive ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                          {isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-sm text-foreground">{formatNumber(channel.subscriber_count)}</td>
+                      <td className="px-3 py-3 text-sm text-foreground">{formatNumber(channel.video_count)}</td>
+                      <td className="px-3 py-3 text-sm text-foreground">{formatDate(channel.last_video_date)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(channel)}
+                            className="rounded-md border border-border px-2.5 py-1.5 text-xs text-foreground hover:bg-accent"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => syncChannel(channel.id)}
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs text-foreground hover:bg-accent"
+                            disabled={isSyncing}
+                          >
+                            <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+                            {isSyncing ? "Syncing" : "Sync"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => deleteChannel(channel.id)}
+                            className="inline-flex items-center gap-1 rounded-md border border-red-400/40 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/10"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {isDeleting ? "Deleting" : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

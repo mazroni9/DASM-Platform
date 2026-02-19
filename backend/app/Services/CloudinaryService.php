@@ -58,11 +58,10 @@ class CloudinaryService
                 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
             ]);
 
-            // Build upload options with SSL verification disabled for development
+            // Build upload options with strict TLS verification.
             $uploadOptions = [
                 'folder' => $folder,
                 'resource_type' => $isDocument ? 'raw' : 'image',
-                'verify' => false // Disable SSL verification as per StackOverflow solution
             ];
 
 
@@ -89,9 +88,9 @@ class CloudinaryService
                 $uploadOptions['public_id'] = $publicId;
             }
 
-            // Configure HTTP client to handle SSL issues in development
+            // Configure HTTP client with strict TLS verification
             $httpOptions = [
-                'verify' => false, // Disable SSL verification for development
+                'verify' => true,
                 'timeout' => 30,
                 'connect_timeout' => 10
             ];
@@ -109,7 +108,7 @@ class CloudinaryService
                 'http' => $httpOptions
             ]);
 
-            // Upload using the configured instance with verify=false
+            // Upload using the configured instance
             $result = $cloudinary->uploadApi()->upload($file->getRealPath(), $uploadOptions);
 
             // Log successful upload

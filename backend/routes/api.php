@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Artisan;
 
 // ========= Public / Common Controllers =========
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CarController;
 use App\Http\Controllers\AuctionController;
@@ -167,11 +167,8 @@ Route::prefix('_diag')->group(function () {
 
         $totalMs = (microtime(true) - $started) * 1000;
 
-        return response()->json([
+        $response = [
             'ok'      => $dbOk && $cacheOk,
-            'php'     => PHP_VERSION,
-            'laravel' => app()->version(),
-            'env'     => app()->environment(),
             'metrics' => [
                 'db_ms'     => round($dbMs, 1),
                 'cache_ms'  => round($cacheMs, 1),
@@ -185,7 +182,17 @@ Route::prefix('_diag')->group(function () {
                 'redis' => $redisOk,
                 'disk'  => $diskOk,
             ],
-        ], 200)->header('Cache-Control', 'no-store');
+        ];
+
+        if (app()->environment(['local', 'testing'])) {
+            $response['meta'] = [
+                'php'     => PHP_VERSION,
+                'laravel' => app()->version(),
+                'env'     => app()->environment(),
+            ];
+        }
+
+        return response()->json($response, 200)->header('Cache-Control', 'no-store');
     })->middleware('throttle:10,1');
 
     // Protected diagnostics - require DIAG_TOKEN
@@ -230,6 +237,7 @@ Route::prefix('_diag')->group(function () {
         })->middleware('throttle:10,1');
 
         Route::post('/reload', function () {
+            abort_unless(app()->environment(['local', 'testing']), 404);
             Artisan::call('config:clear');
             Artisan::call('cache:clear');
             Artisan::call('route:clear');
@@ -384,7 +392,7 @@ Route::get('/check-time', function (Request $request) {
     return response()->json([
         'page'              => $page,
         'current_time'      => $now->format('H:i:s'),
-        'allowed'           => true, // TODO: Change to $isAllowed in production
+        'allowed'           => $isAllowed,
         'remaining_seconds' => $remainingSeconds,
         'remaining_time'    => $remainingSeconds ? gmdate("H:i:s", $remainingSeconds) : null,
         'timezone'          => 'GMT+3',
@@ -435,6 +443,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [UserController::class, 'profile']);
         Route::get('/profile', [UserController::class, 'profile'])->middleware('set.organization');
         Route::put('/profile', [UserController::class, 'updateProfile']);
+        Route::put('/password', [UserController::class, 'updatePassword']);
+        Route::put('/security-settings', [UserController::class, 'updateSecuritySettings']);
+        Route::put('/notification-settings', [UserController::class, 'updateNotificationSettings']);
         Route::get('/permissions', [UserController::class, 'getPermissions']);
     });
 
@@ -471,7 +482,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{auction}/leave', [AuctionController::class, 'leave'])->whereNumber('auction');
         Route::get('/{auction}/status', [AuctionController::class, 'status'])->whereNumber('auction');
         Route::get('/purchase-confirmation/{auction_id}', [AuctionController::class, 'purchaseConfirmation'])->whereNumber('auction_id');
-        Route::post('/test-bid', [AuctionController::class, 'testBid']); // TODO: Remove in production
     });
 
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
@@ -512,6 +522,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('wallet')->group(function () {
         Route::get('/', [UserWalletController::class, 'show']);
         Route::post('/deposit', [UserWalletController::class, 'deposit']);
+        Route::post('/withdraw', [UserWalletController::class, 'withdraw']);
         Route::get('/transactions', [UserWalletController::class, 'transactions']);
         Route::post('/recharge', [UserWalletController::class, 'recharge']);
     });
@@ -830,6 +841,7 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         // ─────────────────────────────────────────────────────────────
         Route::prefix('auctions')->group(function () {
             Route::get('/', [AdminAuctionController::class, 'index'])->middleware('can:auctions.view');
+            Route::get('/stats', [AdminAuctionController::class, 'stats'])->middleware('can:auctions.view');
             Route::get('/{id}', [AdminAuctionController::class, 'show'])->whereNumber('id')->middleware('can:auctions.view_details');
             Route::put('/{id}', [AdminAuctionController::class, 'update'])->whereNumber('id')->middleware('can:auctions.update');
             Route::post('/{id}/approve', [AdminAuctionController::class, 'approve'])->whereNumber('id')->middleware('can:auctions.approve');

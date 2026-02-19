@@ -134,7 +134,7 @@ export function usePusher() {
 }
 
 // Hook for subscribing to a specific channel
-export function useChannel(channelName: string) {
+function useChannel(channelName: string) {
   const { subscribe, unsubscribe, isConnected } = usePusher();
   const [channel, setChannel] = useState<Channel | null>(null);
 
@@ -154,7 +154,7 @@ export function useChannel(channelName: string) {
 }
 
 // Hook for listening to events on a channel
-export function useChannelEvent<T = unknown>(
+function useChannelEvent<T = unknown>(
   channelName: string,
   eventName: string,
   callback: (data: T) => void

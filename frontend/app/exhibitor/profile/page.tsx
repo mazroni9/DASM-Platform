@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Header } from "../../../components/exhibitor/Header";
@@ -121,7 +121,7 @@ function normalizeReview(raw: any): Review {
 }
 
 function formatDate(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "â€”";
   try {
     return new Date(iso).toLocaleDateString("ar-SA");
   } catch {
@@ -131,10 +131,10 @@ function formatDate(iso?: string | null) {
 
 function roleLabel(type?: any) {
   const t = String(type ?? "").toLowerCase();
-  if (t === "venue_owner" || t === "exhibitor") return "صاحب معرض";
-  if (t === "admin") return "مشرف";
-  if (t === "user") return "مستخدم";
-  return type ? String(type) : "مستخدم";
+  if (t === "venue_owner" || t === "exhibitor") return "طµط§ط­ط¨ ظ…ط¹ط±ط¶";
+  if (t === "admin") return "ظ…ط´ط±ظپ";
+  if (t === "user") return "ظ…ط³طھط®ط¯ظ…";
+  return type ? String(type) : "ظ…ط³طھط®ط¯ظ…";
 }
 
 /* =========================
@@ -184,7 +184,7 @@ export default function ExhibitorProfilePage() {
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/60"
               onClick={() => setIsSidebarOpen(false)}
-              aria-label="إغلاق القائمة"
+              aria-label="ط¥ط؛ظ„ط§ظ‚ ط§ظ„ظ‚ط§ط¦ظ…ط©"
             />
             <motion.div className="relative w-72 ml-auto h-full bg-background border-l border-border shadow-2xl">
               <Sidebar />
@@ -207,8 +207,8 @@ export default function ExhibitorProfilePage() {
       <button
         onClick={() => setIsSidebarOpen(true)}
         className="md:hidden fixed bottom-6 right-6 bg-primary text-primary-foreground p-4 rounded-full shadow-xl z-40 hover:bg-primary/90 transition-all duration-200 flex items-center justify-center"
-        aria-label="القائمة"
-        title="القائمة"
+        aria-label="ط§ظ„ظ‚ط§ط¦ظ…ط©"
+        title="ط§ظ„ظ‚ط§ط¦ظ…ط©"
       >
         <FiMenu size={22} />
       </button>
@@ -250,7 +250,7 @@ function ProfileSection() {
 
   const fullName = useMemo(() => {
     const n = `${profile.first_name} ${profile.last_name}`.trim();
-    return n || "—";
+    return n || "â€”";
   }, [profile.first_name, profile.last_name]);
 
   const averageStars = useMemo(
@@ -259,7 +259,7 @@ function ProfileSection() {
   );
 
   const fetchProfile = useCallback(async () => {
-    const endpoints = ["/api/exhibitor/profile", "/api/user/profile", "/api/profile"];
+    const endpoints = ["/api/user/profile"];
     for (const url of endpoints) {
       try {
         const res = await api.get(url);
@@ -332,7 +332,7 @@ function ProfileSection() {
         description: profile.description,
       };
 
-      const endpoints = ["/api/exhibitor/profile", "/api/user/profile", "/api/profile"];
+      const endpoints = ["/api/user/profile"];
       let updated: any = null;
 
       for (const url of endpoints) {
@@ -355,7 +355,7 @@ function ProfileSection() {
         lastProfileFetch: Date.now(),
       });
 
-      toast.success("تم حفظ البيانات بنجاح ✅");
+      toast.success("طھظ… ط­ظپط¸ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط¨ظ†ط¬ط§ط­ âœ…");
       setEditMode(false);
     } catch (err: any) {
       // eslint-disable-next-line no-console
@@ -363,7 +363,7 @@ function ProfileSection() {
       toast.error(
         err?.response?.data?.message ||
           err?.response?.data?.first_error ||
-          "فشل في حفظ البيانات ❌"
+          "ظپط´ظ„ ظپظٹ ط­ظپط¸ ط§ظ„ط¨ظٹط§ظ†ط§طھ â‌Œ"
       );
     } finally {
       setSaving(false);
@@ -376,52 +376,29 @@ function ProfileSection() {
       setPasswordError("");
 
       if (!passwords.old || !passwords.new || !passwords.confirm) {
-        setPasswordError("جميع الحقول مطلوبة");
+        setPasswordError("ط¬ظ…ظٹط¹ ط§ظ„ط­ظ‚ظˆظ„ ظ…ط·ظ„ظˆط¨ط©");
         return;
       }
       if (passwords.new.length < 8) {
-        setPasswordError("كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف");
+        setPasswordError("ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط¬ط¯ظٹط¯ط© ظٹط¬ط¨ ط£ظ„ط§ طھظ‚ظ„ ط¹ظ† 8 ط£ط­ط±ظپ");
         return;
       }
       if (passwords.new !== passwords.confirm) {
-        setPasswordError("كلمتا المرور غير متطابقتين");
+        setPasswordError("ظƒظ„ظ…طھط§ ط§ظ„ظ…ط±ظˆط± ط؛ظٹط± ظ…طھط·ط§ط¨ظ‚طھظٹظ†");
         return;
       }
 
-      const endpoints = ["/api/user/change-password", "/api/change-password", "/api/reset-password"];
-      const payloads = [
-        {
+      try {
+        await api.put("/api/user/password", {
           current_password: passwords.old,
           password: passwords.new,
           password_confirmation: passwords.confirm,
-        },
-        {
-          old_password: passwords.old,
-          new_password: passwords.new,
-          new_password_confirmation: passwords.confirm,
-        },
-      ];
+        });
 
-      try {
-        let done = false;
-        for (const url of endpoints) {
-          for (const body of payloads) {
-            try {
-              await api.post(url, body);
-              done = true;
-              break;
-            } catch {
-              // next
-            }
-          }
-          if (done) break;
-        }
-        if (!done) throw new Error("NO_ENDPOINT");
-
-        toast.success("تم تغيير كلمة المرور ✅");
+        toast.success("طھظ… طھط؛ظٹظٹط± ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± âœ…");
         setPasswords({ old: "", new: "", confirm: "" });
       } catch (err: any) {
-        toast.error(err?.response?.data?.message || "تغيير كلمة المرور غير متاح حاليًا على الخادم");
+        toast.error(err?.response?.data?.message || "طھط¹ط°ط± طھط؛ظٹظٹط± ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±");
       }
     },
     [passwords]
@@ -437,35 +414,21 @@ function ProfileSection() {
     try {
       const form = new FormData();
       form.append("image", file);
-      form.append("file", file);
 
-      const endpoints = ["/api/upload-image", "/api/user/avatar", "/api/exhibitor/avatar"];
-      let uploadedUrl: string | null = null;
+      const res = await api.post("/api/upload-image", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      for (const url of endpoints) {
-        try {
-          const res = await api.post(url, form, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-
-          uploadedUrl =
-            res?.data?.url ||
-            res?.data?.data?.url ||
-            res?.data?.path ||
-            res?.data?.data?.path ||
-            res?.data?.image_url ||
-            res?.data?.data?.image_url ||
-            null;
-
-          if (uploadedUrl) break;
-        } catch {
-          // next
-        }
-      }
+      const uploadedUrl =
+        res?.data?.secure_url ||
+        res?.data?.url ||
+        res?.data?.data?.secure_url ||
+        res?.data?.data?.url ||
+        null;
 
       if (uploadedUrl) {
         setProfile((p) => ({ ...p, avatar: uploadedUrl! }));
-        toast.success("تم تحديث الصورة ✅");
+        toast.success("طھظ… طھط­ط¯ظٹط« ط§ظ„طµظˆط±ط© âœ…");
 
         try {
           await api.put("/api/user/profile", { avatar_url: uploadedUrl });
@@ -473,10 +436,10 @@ function ProfileSection() {
           // ignore
         }
       } else {
-        toast("تم الرفع لكن لم يصلنا رابط الصورة من الخادم", { icon: "ℹ️" });
+        toast("طھظ… ط§ظ„ط±ظپط¹ ظ„ظƒظ† ظ„ظ… ظٹطµظ„ظ†ط§ ط±ط§ط¨ط· ط§ظ„طµظˆط±ط© ظ…ظ† ط§ظ„ط®ط§ط¯ظ…", { icon: "â„¹ï¸ڈ" });
       }
     } catch {
-      toast.error("فشل رفع الصورة");
+      toast.error("ظپط´ظ„ ط±ظپط¹ ط§ظ„طµظˆط±ط©");
     }
   }, []);
 
@@ -490,9 +453,9 @@ function ProfileSection() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-4 mb-6">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground">ملف المعرض</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">ظ…ظ„ظپ ط§ظ„ظ…ط¹ط±ط¶</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            تحكم كامل في بياناتك + نظرة سريعة على تقييم المعرض.
+            طھط­ظƒظ… ظƒط§ظ…ظ„ ظپظٹ ط¨ظٹط§ظ†ط§طھظƒ + ظ†ط¸ط±ط© ط³ط±ظٹط¹ط© ط¹ظ„ظ‰ طھظ‚ظٹظٹظ… ط§ظ„ظ…ط¹ط±ط¶.
           </p>
         </div>
 
@@ -502,7 +465,7 @@ function ProfileSection() {
             className="inline-flex items-center gap-2 px-4 h-11 rounded-lg border border-border text-foreground hover:bg-muted"
           >
             <FiEdit2 />
-            تعديل البيانات
+            طھط¹ط¯ظٹظ„ ط§ظ„ط¨ظٹط§ظ†ط§طھ
           </button>
         ) : (
           <button
@@ -511,7 +474,7 @@ function ProfileSection() {
             className="inline-flex items-center gap-2 px-4 h-11 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
           >
             <FiSave />
-            {saving ? "جارِ الحفظ…" : "حفظ التعديلات"}
+            {saving ? "ط¬ط§ط±ظگ ط§ظ„ط­ظپط¸â€¦" : "ط­ظپط¸ ط§ظ„طھط¹ط¯ظٹظ„ط§طھ"}
           </button>
         )}
       </div>
@@ -524,7 +487,7 @@ function ProfileSection() {
             <div className="relative group">
               <img
                 src={profile.avatar || DEFAULT_AVATAR}
-                alt="الصورة الشخصية"
+                alt="ط§ظ„طµظˆط±ط© ط§ظ„ط´ط®طµظٹط©"
                 className="w-32 h-32 rounded-full border border-border object-cover shadow-sm"
               />
               {editMode && (
@@ -533,7 +496,7 @@ function ProfileSection() {
                     type="button"
                     className="absolute bottom-2 left-2 bg-background text-foreground p-2 rounded-full shadow-lg border border-border hover:bg-muted transition"
                     onClick={() => fileInputRef.current?.click()}
-                    aria-label="تغيير الصورة"
+                    aria-label="طھط؛ظٹظٹط± ط§ظ„طµظˆط±ط©"
                   >
                     <FiCamera size={18} />
                   </button>
@@ -555,7 +518,7 @@ function ProfileSection() {
               </div>
               {profile.rating !== "" && (
                 <div className="mt-3 text-foreground text-sm">
-                  التقييم: <span className="font-semibold">{profile.rating}</span>
+                  ط§ظ„طھظ‚ظٹظٹظ…: <span className="font-semibold">{profile.rating}</span>
                 </div>
               )}
             </div>
@@ -564,7 +527,7 @@ function ProfileSection() {
           {/* Ratings summary */}
           <div className="mt-6 rounded-lg border border-border bg-card p-3 overflow-hidden">
             <div className="flex items-center justify-between">
-              <div className="text-foreground font-semibold">ملخص التقييم</div>
+              <div className="text-foreground font-semibold">ظ…ظ„ط®طµ ط§ظ„طھظ‚ظٹظٹظ…</div>
               <div className="flex items-center gap-1">
                 <FaStar className="text-amber-500" />
                 <span className="text-foreground">{Math.round((averageStars || 0) * 10) / 10}</span>
@@ -572,7 +535,7 @@ function ProfileSection() {
             </div>
 
             <div className="mt-2 text-muted-foreground text-sm">
-              إجمالي المراجعات: <span className="text-foreground">{summary?.count ?? 0}</span>
+              ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط±ط§ط¬ط¹ط§طھ: <span className="text-foreground">{summary?.count ?? 0}</span>
             </div>
 
             {loadingRatings ? (
@@ -603,10 +566,10 @@ function ProfileSection() {
           {/* Tabs */}
           <div className="flex items-center gap-2 p-2 border-b border-border overflow-x-auto">
             <TabButton active={tab === "info"} onClick={() => setTab("info")}>
-              المعلومات الشخصية
+              ط§ظ„ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„ط´ط®طµظٹط©
             </TabButton>
             <TabButton active={tab === "password"} onClick={() => setTab("password")}>
-              تغيير كلمة المرور
+              طھط؛ظٹظٹط± ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±
             </TabButton>
           </div>
 
@@ -624,14 +587,14 @@ function ProfileSection() {
                   <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field
-                        label="الاسم الأول"
+                        label="ط§ظ„ط§ط³ظ… ط§ظ„ط£ظˆظ„"
                         value={profile.first_name}
                         onChange={(v) => setProfile((p) => ({ ...p, first_name: v }))}
                         disabled={!editMode}
                         iconRight={<FiUser className="text-muted-foreground" />}
                       />
                       <Field
-                        label="الاسم الأخير"
+                        label="ط§ظ„ط§ط³ظ… ط§ظ„ط£ط®ظٹط±"
                         value={profile.last_name}
                         onChange={(v) => setProfile((p) => ({ ...p, last_name: v }))}
                         disabled={!editMode}
@@ -639,9 +602,9 @@ function ProfileSection() {
                       />
                     </div>
 
-                    {/* ✅ إصلاح التداخل: أيقونة داخل حاوية يسار + padding-left أكبر + LTR للإيميل */}
+                    {/* âœ… ط¥طµظ„ط§ط­ ط§ظ„طھط¯ط§ط®ظ„: ط£ظٹظ‚ظˆظ†ط© ط¯ط§ط®ظ„ ط­ط§ظˆظٹط© ظٹط³ط§ط± + padding-left ط£ظƒط¨ط± + LTR ظ„ظ„ط¥ظٹظ…ظٹظ„ */}
                     <Field
-                      label="البريد الإلكتروني"
+                      label="ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ"
                       value={profile.email}
                       onChange={(v) => setProfile((p) => ({ ...p, email: v }))}
                       disabled={!editMode}
@@ -649,9 +612,9 @@ function ProfileSection() {
                       iconRight={<FiMail className="text-muted-foreground" />}
                     />
 
-                    {/* ✅ نفس الفكرة للموبايل */}
+                    {/* âœ… ظ†ظپط³ ط§ظ„ظپظƒط±ط© ظ„ظ„ظ…ظˆط¨ط§ظٹظ„ */}
                     <Field
-                      label="رقم الجوال"
+                      label="ط±ظ‚ظ… ط§ظ„ط¬ظˆط§ظ„"
                       value={profile.phone}
                       onChange={(v) => setProfile((p) => ({ ...p, phone: v }))}
                       disabled={!editMode}
@@ -660,21 +623,21 @@ function ProfileSection() {
                     />
 
                     <Field
-                      label="اسم المعرض"
+                      label="ط§ط³ظ… ط§ظ„ظ…ط¹ط±ط¶"
                       value={profile.venue_name}
                       onChange={(v) => setProfile((p) => ({ ...p, venue_name: v }))}
                       disabled={!editMode}
                       iconRight={<FiUser className="text-muted-foreground" />}
                     />
                     <Field
-                      label="عنوان المعرض"
+                      label="ط¹ظ†ظˆط§ظ† ط§ظ„ظ…ط¹ط±ط¶"
                       value={profile.venue_address}
                       onChange={(v) => setProfile((p) => ({ ...p, venue_address: v }))}
                       disabled={!editMode}
                     />
 
                     <div>
-                      <label className="block text-muted-foreground mb-1">وصف المعرض</label>
+                      <label className="block text-muted-foreground mb-1">ظˆطµظپ ط§ظ„ظ…ط¹ط±ط¶</label>
                       <textarea
                         rows={3}
                         disabled={!editMode}
@@ -693,7 +656,7 @@ function ProfileSection() {
                           className="inline-flex items-center gap-2 px-5 h-11 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
                         >
                           <FiSave />
-                          {saving ? "جارِ الحفظ…" : "حفظ التعديلات"}
+                          {saving ? "ط¬ط§ط±ظگ ط§ظ„ط­ظپط¸â€¦" : "ط­ظپط¸ ط§ظ„طھط¹ط¯ظٹظ„ط§طھ"}
                         </button>
                       </div>
                     )}
@@ -711,19 +674,19 @@ function ProfileSection() {
                 >
                   <form className="space-y-5" onSubmit={handleChangePassword}>
                     <PasswordField
-                      label="كلمة المرور الحالية"
+                      label="ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط­ط§ظ„ظٹط©"
                       value={passwords.old}
                       onChange={(v) => setPasswords((p) => ({ ...p, old: v }))}
                       show={showPassword}
                       toggleShow={() => setShowPassword((s) => !s)}
                     />
                     <PasswordField
-                      label="كلمة المرور الجديدة"
+                      label="ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط¬ط¯ظٹط¯ط©"
                       value={passwords.new}
                       onChange={(v) => setPasswords((p) => ({ ...p, new: v }))}
                     />
                     <PasswordField
-                      label="تأكيد كلمة المرور الجديدة"
+                      label="طھط£ظƒظٹط¯ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط¬ط¯ظٹط¯ط©"
                       value={passwords.confirm}
                       onChange={(v) => setPasswords((p) => ({ ...p, confirm: v }))}
                     />
@@ -736,7 +699,7 @@ function ProfileSection() {
                         className="inline-flex items-center gap-2 px-5 h-11 rounded-lg border border-border hover:bg-muted text-foreground"
                       >
                         <FiLock />
-                        تغيير كلمة المرور
+                        طھط؛ظٹظٹط± ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±
                       </button>
                     </div>
                   </form>
@@ -750,7 +713,7 @@ function ProfileSection() {
       {/* Recent reviews */}
       <div className="mt-6 rounded-xl border border-border bg-card p-4 overflow-hidden">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-foreground font-semibold">آخر المراجعات</div>
+          <div className="text-foreground font-semibold">ط¢ط®ط± ط§ظ„ظ…ط±ط§ط¬ط¹ط§طھ</div>
         </div>
 
         {loadingRatings ? (
@@ -762,11 +725,11 @@ function ProfileSection() {
                 <FaStar className="text-amber-500 mt-1 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-foreground min-w-0">
-                    <span className="font-semibold truncate">{rev.user_name || "مستخدم"}</span>
+                    <span className="font-semibold truncate">{rev.user_name || "ظ…ط³طھط®ط¯ظ…"}</span>
                     <span className="text-xs text-muted-foreground shrink-0">{formatDate(rev.created_at)}</span>
                   </div>
                   <div className="text-sm text-foreground mt-1 break-words">
-                    {rev.comment || "بدون تعليق"}
+                    {rev.comment || "ط¨ط¯ظˆظ† طھط¹ظ„ظٹظ‚"}
                   </div>
                 </div>
                 <div className="shrink-0 text-muted-foreground">{rev.rating}/5</div>
@@ -774,7 +737,7 @@ function ProfileSection() {
             ))}
           </ul>
         ) : (
-          <div className="text-muted-foreground text-sm">لا توجد مراجعات بعد.</div>
+          <div className="text-muted-foreground text-sm">ظ„ط§ طھظˆط¬ط¯ ظ…ط±ط§ط¬ط¹ط§طھ ط¨ط¹ط¯.</div>
         )}
       </div>
     </motion.div>
@@ -809,10 +772,10 @@ function TabButton({
 }
 
 /**
- * ✅ إصلاح التداخل:
- * - أيقونة ثابتة داخل container على اليسار
- * - input يأخذ padding-left كبير (pl-11) عشان ما يخبطش في الأيقونة
- * - وبالنسبة لحقول LTR (email/phone) هيشتغل كويس بدون ما يرجّع المحتوى تحت الأيقونة
+ * âœ… ط¥طµظ„ط§ط­ ط§ظ„طھط¯ط§ط®ظ„:
+ * - ط£ظٹظ‚ظˆظ†ط© ط«ط§ط¨طھط© ط¯ط§ط®ظ„ container ط¹ظ„ظ‰ ط§ظ„ظٹط³ط§ط±
+ * - input ظٹط£ط®ط° padding-left ظƒط¨ظٹط± (pl-11) ط¹ط´ط§ظ† ظ…ط§ ظٹط®ط¨ط·ط´ ظپظٹ ط§ظ„ط£ظٹظ‚ظˆظ†ط©
+ * - ظˆط¨ط§ظ„ظ†ط³ط¨ط© ظ„ط­ظ‚ظˆظ„ LTR (email/phone) ظ‡ظٹط´طھط؛ظ„ ظƒظˆظٹط³ ط¨ط¯ظˆظ† ظ…ط§ ظٹط±ط¬ظ‘ط¹ ط§ظ„ظ…ط­طھظˆظ‰ طھط­طھ ط§ظ„ط£ظٹظ‚ظˆظ†ط©
  */
 function Field({
   label,
@@ -845,7 +808,7 @@ function Field({
             "w-full h-11 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground",
             "focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-70",
             "px-3",
-            hasIcon ? "pl-11" : "", // ✅ مساحة للأيقونة (يسار)
+            hasIcon ? "pl-11" : "", // âœ… ظ…ط³ط§ط­ط© ظ„ظ„ط£ظٹظ‚ظˆظ†ط© (ظٹط³ط§ط±)
           ].join(" ")}
         />
 
@@ -891,7 +854,7 @@ function PasswordField({
             className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             onClick={toggleShow}
             tabIndex={-1}
-            aria-label="إظهار/إخفاء كلمة المرور"
+            aria-label="ط¥ط¸ظ‡ط§ط±/ط¥ط®ظپط§ط، ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±"
           >
             {show ? <FiEyeOff /> : <FiEye />}
           </button>
