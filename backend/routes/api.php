@@ -31,6 +31,13 @@ use App\Http\Controllers\CarSimilarityController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\ActivityLogController;
 
+// ✅ NEW: Home Stats Endpoint
+use App\Http\Controllers\HomeStatsController;
+
+// ✅ NEW: Newsletter (Public + Admin)
+use App\Http\Controllers\NewsletterSubscriptionController;
+use App\Http\Controllers\Admin\NewsletterSubscriberController as AdminNewsletterSubscriberController;
+
 // ========= Admin (namespaced) =========
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\BidEventController;
@@ -86,9 +93,9 @@ use App\Http\Controllers\Market\PublicCarExplorerController;
 use App\Http\Controllers\Payment\ClickPayController;
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 1: DIAGNOSTICS & HEALTH CHECK
-|==========================================================================
+|--------------------------------------------------------------------------
 | ⚠️ Security Note: Protected endpoints require DIAG_TOKEN in .env
 */
 
@@ -233,9 +240,9 @@ Route::prefix('_diag')->group(function () {
 });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 2: PUBLIC ROUTES (No Authentication Required)
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -304,8 +311,6 @@ Route::prefix('market')->group(function () {
 // ─────────────────────────────────────────────────────────────────────────
 // 2.X Public Similar Price Analysis (Explorer) ✅ PUBLIC ✅ FIXED
 // ─────────────────────────────────────────────────────────────────────────
-// ✅ مهم: دي هي الوحيدة اللي لازم تفضل لـ /api/market/explorer/*
-// ✅ ممنوع يكون فيه نسخة تانية جوه auth:sanctum لنفس المسار
 Route::prefix('market/explorer')
     ->group(function () {
         Route::get('/cars', [PublicCarExplorerController::class, 'index']);
@@ -329,6 +334,13 @@ Route::prefix('blog')->group(function () {
 // ─────────────────────────────────────────────────────────────────────────
 Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
 Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
+
+// ✅ NEW (Public): Home Stats for landing page counters
+Route::get('/home-stats', HomeStatsController::class);
+
+// ✅ NEW (Public): Newsletter subscribe (Footer form)
+Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])
+    ->middleware('throttle:20,1');
 
 // ─────────────────────────────────────────────────────────────────────────
 // 2.7 Utilities
@@ -381,9 +393,9 @@ Route::get('/check-time', function (Request $request) {
 });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 3: PAYMENT WEBHOOKS (No Authentication - Called by Payment Gateway)
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 // User Wallet Webhooks
@@ -405,9 +417,9 @@ Route::post('/exhibitor/wallet/deposit/webhook', [ExhibitorWalletDepositControll
     ->name('exhibitor.wallet.deposit.webhook');
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 4: AUTHENTICATED USER ROUTES
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -449,10 +461,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─────────────────────────────────────────────────────────────────
     // ✅ 4.15 Market Explorer (REMOVED)
     // ─────────────────────────────────────────────────────────────────
-    // ❌ كان هنا Routes بتعمل Collision مع Public:
-    // /api/market/explorer/cars
-    // /api/market/explorer/cars/stats
-    // ✅ النسخة العامة موجودة في Section 2.X (PublicCarExplorerController)
 
     // ─────────────────────────────────────────────────────────────────
     // 4.5 Auctions Management
@@ -553,9 +561,9 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 5: DEALER ROUTES
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])
@@ -606,9 +614,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class]
     });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 6: MODERATOR ROUTES
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::class])
@@ -622,9 +630,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::cla
     });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 7: EXHIBITOR ROUTES
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 Route::middleware('auth:sanctum')
@@ -724,9 +732,9 @@ Route::middleware('auth:sanctum')
     });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 8: ADMIN ROUTES
-|==========================================================================
+|--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class])
@@ -743,6 +751,14 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::put('/', [SettingsController::class, 'update']);
             Route::post('/', [SettingsController::class, 'update']); // Legacy
             Route::get('/{key}', [SettingsController::class, 'getSetting']);
+        });
+
+        // ✅ NEW: Newsletter Subscribers (Admin CRUD + Export CSV)
+        Route::prefix('newsletter-subscribers')->group(function () {
+            Route::get('/', [AdminNewsletterSubscriberController::class, 'index']);
+            Route::get('/export', [AdminNewsletterSubscriberController::class, 'export']);
+            Route::put('/{subscriber}', [AdminNewsletterSubscriberController::class, 'update'])->whereNumber('subscriber');
+            Route::delete('/{subscriber}', [AdminNewsletterSubscriberController::class, 'destroy'])->whereNumber('subscriber');
         });
 
         // ─────────────────────────────────────────────────────────────
@@ -1013,9 +1029,9 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
     });
 
 /*
-|==========================================================================
+|--------------------------------------------------------------------------
 | SECTION 9: ADMIN PANEL ROUTES (NEW - AdminPanel\UserController)
-|==========================================================================
+|--------------------------------------------------------------------------
 | ✅ Endpoints:
 |   GET  /api/admin-panel/users?q=&per_page=
 |   GET  /api/admin-panel/users/{userId}

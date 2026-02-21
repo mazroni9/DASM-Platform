@@ -96,17 +96,48 @@ const Navbar = () => {
 
               <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
                 <span>المزادات الرقمية</span>
+
                 <span
                   dir="ltr"
                   className="inline-flex items-baseline leading-none text-xl"
                 >
-                  <span style={{ color: "#003b70" }}>D</span>
-                  <span style={{ color: "#009345" }}>A</span>
-                  <span style={{ color: "#003b70" }}>S</span>
-                  <span style={{ color: "#003b70" }}>M</span>
-                  <span style={{ color: "#009345" }}>e</span>
+                  {/* ✅ D / S / M: أبيض في الدارك */}
+                  <span className="text-[#003b70] dark:text-white">D</span>
+                  <span className="text-[#009345] dark:text-[#009345]">A</span>
+                  <span className="text-[#003b70] dark:text-white">S</span>
+                  <span className="text-[#003b70] dark:text-white">M</span>
+                  <span className="text-[#009345] dark:text-[#009345]">e</span>
                 </span>
               </span>
+            </LoadingLink>
+          </div>
+
+          {/* ✅ Center Links (Desktop) */}
+          <div className="hidden lg:flex items-center justify-center gap-2 flex-1 px-6">
+            <LoadingLink
+              href="/about"
+              className="
+                px-4 py-2 rounded-full
+                text-sm font-bold
+                text-foreground/80 hover:text-foreground
+                hover:bg-border/60
+                transition-colors
+              "
+            >
+              لماذا داسم؟
+            </LoadingLink>
+
+            <LoadingLink
+              href="/blog"
+              className="
+                px-4 py-2 rounded-full
+                text-sm font-bold
+                text-foreground/80 hover:text-foreground
+                hover:bg-border/60
+                transition-colors
+              "
+            >
+              المدونة
             </LoadingLink>
           </div>
 
@@ -181,11 +212,28 @@ const Navbar = () => {
         <div
           className={`lg:hidden mobile-menu-container overflow-hidden transition-all duration-300 ease-in-out ${
             mobileMenuOpen
-              ? "max-h-[520px] opacity-100 mt-4 pb-4"
+              ? "max-h-[560px] opacity-100 mt-4 pb-4"
               : "max-h-0 opacity-0"
           }`}
         >
           <div className="space-y-2 pt-3 border-t border-border">
+            {/* ✅ Links in mobile menu too */}
+            <LoadingLink
+              href="/about"
+              className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="text-base font-semibold">لماذا داسم؟</span>
+            </LoadingLink>
+
+            <LoadingLink
+              href="/blog"
+              className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="text-base font-semibold">المدونة</span>
+            </LoadingLink>
+
             {isAdmin && (
               <button
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-secondary/10 text-secondary transition-all duration-200"

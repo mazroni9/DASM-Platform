@@ -410,6 +410,13 @@ class Auction extends Model
             'final_price' => (float) $amount,
         ]);
 
+        AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
+            'reason' => 'bid_accepted',
+            'status' => 'ended',
+            'winner_id' => $userId,
+            'final_price' => (float) $amount,
+        ]);
+
         return $this;
     }
 

@@ -189,7 +189,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       permission: "youtube_channels.view",
     },
 
-    // ✅ NEW: Blog Section
+    // ✅ Blog Section
     {
       name: "المدونة",
       href: "#",
@@ -271,13 +271,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       permissions: ["activity_logs.view", "users.view"],
     },
 
-    // ✅ NEW TAB: Similar Price Analysis
+    // ✅ Similar Price Analysis
     {
       name: "تحليل الأسعار المشابهة",
       href: "/similar-price-analysis",
       icon: BarChart3,
-      // لو عندك Permission لاحقاً:
-      // permission: "reports.view",
     },
 
     {
@@ -383,8 +381,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             {item.name}
                           </span>
                           <ChevronRight
-                            className={`w-4 h-4 ${active ? "text-primary" : "text-foreground/50"
-                              }`}
+                            className={`w-4 h-4 ${
+                              active
+                                ? "text-primary"
+                                : "text-foreground/50"
+                            }`}
                           />
                         </LoadingLink>
                       </li>

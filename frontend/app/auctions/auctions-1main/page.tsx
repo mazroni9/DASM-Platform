@@ -401,7 +401,7 @@ export default function AuctionsMainPage() {
 
                 {/* الزر المصحّح: العودة لجميع الأسواق */}
                 <Link
-                  href="/auctions"
+                  href="/"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/50 text-foreground hover:bg-border border border-border font-semibold text-sm"
                 >
                   العودة لجميع الأسواق
