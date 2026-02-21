@@ -24,3 +24,10 @@ Schedule::command('auction:activate-scheduled')
     ->withoutOverlapping()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/scheduled-auctions.log'));
+
+// Prune old auction activity logs (retention from config auction_log.keep_days)
+Schedule::command('auction-log:prune')
+    ->daily()
+    ->at('03:00')
+    ->timezone('Asia/Riyadh')
+    ->appendOutputTo(storage_path('logs/auction-log-prune.log'));

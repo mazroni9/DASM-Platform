@@ -26,6 +26,8 @@ use App\Services\AuctionLoggingService;
 use App\Notifications\NewBidNotification;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\PlaceBidRequest;
+use App\Http\Requests\StoreBidRequest;
 use App\Http\Resources\UserBidLogResource;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
@@ -76,19 +78,8 @@ class BidController extends Controller
      * @param int $auctionId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request, $auctionId)
+    public function store(StoreBidRequest $request, $auctionId)
     {
-        $validator = Validator::make($request->all(), [
-            'bid_amount' => 'required|numeric|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         $auction = Auction::find($auctionId);
 
         if (!$auction) {
@@ -98,26 +89,16 @@ class BidController extends Controller
             ], 404);
         }
 
-        // Check if auction is active
-        if ($auction->status !== AuctionStatus::ACTIVE) {
+        $auction->updateStatusBasedOnTime();
+
+        if (!$auction->isActive()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Bids can only be placed on active auctions'
             ], 400);
         }
 
-        // Update auction time status if needed
-        $auction->updateStatusBasedOnTime();
-
-        // Double check it's still active after potential status update
-        if ($auction->status !== AuctionStatus::ACTIVE) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'This auction has already ended'
-            ], 400);
-        }
-
-        $bidAmount = $request->bid_amount;
+        $bidAmount = (float) $request->validated('bid_amount');
 
         // Check if bid is higher than current bid
         if ($bidAmount <= $auction->current_bid) {
@@ -156,8 +137,9 @@ class BidController extends Controller
             $bid->bid_amount = $bidAmount;
             $bid->save();
 
-            // Update auction with new current bid
+            // Update auction with new current bid and last_bid_time
             $auction->current_bid = $bidAmount;
+            $auction->last_bid_time = Carbon::now();
             $auction->save();
 
             // Reserve the funds in wallet (Move from available to funded)
@@ -183,7 +165,20 @@ class BidController extends Controller
 
             DB::commit();
             Cache::flush();
+            Log::info('BidController::store success', [
+                'bid_id' => $bid->id,
+                'auction_id' => $auctionId,
+                'user_id' => Auth::id(),
+                'bid_amount' => $bidAmount,
+            ]);
             $user = $auction->car->owner;
+
+            try {
+                $auction->loadCount('bids');
+                broadcast(new NewBidEvent($auction));
+            } catch (\Throwable $e) {
+                Log::warning('BidController::store broadcast failed', ['error' => $e->getMessage()]);
+            }
 
             return response()->json([
                 'status' => 'success',
@@ -197,12 +192,25 @@ class BidController extends Controller
                     ]
                 ]
             ], 201);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error placing bid: ' . $e->getMessage()
+                'message' => 'بيانات غير صالحة',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('BidController::store failed', [
+                'auction_id' => $auctionId,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => $request->ip(),
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء تقديم المزايدة. يرجى المحاولة مرة أخرى'
             ], 500);
         }
     }
@@ -393,34 +401,12 @@ class BidController extends Controller
      * @param  \App\Services\BidEventService  $bidEventService
      * @return \Illuminate\Http\JsonResponse
      */
-    public function placeBid(Request $request, BidEventService $bidEventService)
+    public function placeBid(PlaceBidRequest $request, BidEventService $bidEventService)
     {
         DB::beginTransaction();
         try {
             $user = Auth::user();
-
-            // Enhanced validation rules
-            $data = $request->validate([
-                'auction_id' => 'required|integer|exists:auctions,id',
-                'bid_amount' => [
-                    'required',
-                    'numeric',
-                    'min:1',
-                    'max:999999999.99',
-                    'regex:/^\d+(\.\d{1,2})?$/'
-                ],
-                'user_id' => 'required|numeric|exists:users,id'
-            ], [
-                'auction_id.required' => 'معرف المزاد مطلوب',
-                'auction_id.exists' => 'المزاد غير موجود',
-                'bid_amount.required' => 'مبلغ المزايدة مطلوب',
-                'bid_amount.numeric' => 'مبلغ المزايدة يجب أن يكون رقماً',
-                'bid_amount.min' => 'مبلغ المزايدة يجب أن يكون أكبر من صفر',
-                'bid_amount.max' => 'مبلغ المزايدة كبير جداً',
-                'bid_amount.regex' => 'تنسيق مبلغ المزايدة غير صحيح',
-                'user_id.required' => 'معرف المستخدم مطلوب',
-                'user_id.exists' => 'المستخدم غير موجود'
-            ]);
+            $data = $request->validated();
 
             $auction = Auction::select(
                 'id',
@@ -450,16 +436,20 @@ class BidController extends Controller
                 ], 404);
             }
 
-            // Check if auction is active
-            if ($auction->status !== AuctionStatus::ACTIVE) {
+            if (!$auction->isActive()) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'المزاد غير نشط حالياً'
                 ], 400);
             }
 
-            // Validate user authorization
-            if ($user->id != $data['user_id']) {
+            if ((int) $user->id !== (int) $data['user_id']) {
+                Log::warning('Bid rejected: user_id does not match authenticated user', [
+                    'auth_user_id' => $user->id,
+                    'request_user_id' => $data['user_id'],
+                    'auction_id' => $data['auction_id'],
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'status' => 'error',
                     'message' => 'غير مصرح لك بالمزايدة نيابة عن مستخدم آخر'
@@ -470,6 +460,11 @@ class BidController extends Controller
             $isOwner = $auction->car->user_id === $user->id;
 
             if ($isOwner) {
+                Log::warning('Bid rejected: user tried to bid on own auction', [
+                    'user_id' => $user->id,
+                    'auction_id' => $auction->id,
+                    'ip' => $request->ip(),
+                ]);
                 return response()->json([
                     'status' => 'error',
                     'message' => 'لا يمكنك المزايدة على مزاد خاص بك'
@@ -484,23 +479,15 @@ class BidController extends Controller
                 ], 400);
             }
 
-            // Enhanced bid amount validation
-            $minBidAmount = max($auction->current_bid, $auction->minimum_bid, $auction->starting_bid);
+            $minBidAmount = max((float)($auction->current_bid ?? 0), (float)($auction->minimum_bid ?? 0), $auction->starting_bid);
+            $auctionTypeValue = $auction->auction_type instanceof AuctionType ? $auction->auction_type->value : (string) $auction->auction_type;
+            $isInstantType = in_array($auctionTypeValue, [AuctionType::LIVE_INSTANT->value, AuctionType::SILENT_INSTANT->value], true);
 
-            if ($auction->auction_type != AuctionType::SILENT_INSTANT->value) {
-                if ($data['bid_amount'] <= $minBidAmount) {
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'يجب أن يكون مبلغ المزايدة أعلى من ' . number_format($minBidAmount, 2) . ' ريال'
-                    ], 400);
-                }
-
-                // Validate bid amount for instant auctions
-                if (in_array($auction->auction_type, ['live_instant', 'silent_instant'])) {
-                    $openingPrice = $auction->opening_price ?? $auction->starting_bid;
-                    $minAllowed = $openingPrice * 0.9; // -10%
-                    $maxAllowed = $openingPrice * 1.3; // +30%
-
+            if ($isInstantType) {
+                $openingPrice = (float)($auction->opening_price ?? $auction->starting_bid ?? 0);
+                if ($openingPrice > 0) {
+                    $minAllowed = $openingPrice * 0.9;
+                    $maxAllowed = $openingPrice * 1.3;
                     if ($data['bid_amount'] < $minAllowed || $data['bid_amount'] > $maxAllowed) {
                         return response()->json([
                             'status' => 'error',
@@ -508,10 +495,18 @@ class BidController extends Controller
                         ], 400);
                     }
                 }
+            }
 
-                // Check for reasonable bid increment (minimum 1% of current bid)
-                $minIncrement = max($auction->current_bid * 0.01, 100);
-                if ($data['bid_amount'] - $auction->current_bid < $minIncrement) {
+            if ($data['bid_amount'] <= $minBidAmount) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'يجب أن يكون مبلغ المزايدة أعلى من ' . number_format($minBidAmount, 2) . ' ريال'
+                ], 400);
+            }
+
+            if (!$isInstantType) {
+                $minIncrement = max((float)($auction->current_bid ?? 0) * 0.01, 100);
+                if ($data['bid_amount'] - (float)($auction->current_bid ?? 0) < $minIncrement) {
                     return response()->json([
                         'status' => 'error',
                         'message' => 'الزيادة في المزايدة يجب أن تكون على الأقل ' . number_format($minIncrement, 2) . ' ريال'

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Events\AuctionActivityLogged;
+use App\Models\Auction;
 use App\Models\AuctionActivityLog;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -26,6 +27,13 @@ class ProcessAuctionActivityLogJob implements ShouldQueue
 
     public function handle(): void
     {
+        if (config('auction_log.enable_for_test_only', false) && $this->subjectType === 'auction' && $this->subjectId) {
+            $auction = Auction::find($this->subjectId);
+            if (! $auction || ! $auction->is_test) {
+                return;
+            }
+        }
+
         $occurredAt = $this->occurredAt ?? now()->toIso8601String();
 
         $log = AuctionActivityLog::create([

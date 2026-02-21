@@ -7,9 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { TestResult } from '../types';
+import type { TestResult, TestCaseResult } from '../types';
 
 interface TestDetailsModalProps {
   test: TestResult | null;
@@ -74,10 +74,53 @@ export function TestDetailsModal({ test, open, onClose }: TestDetailsModalProps)
             </p>
           </div>
 
+          {test.details?.cases && Array.isArray(test.details.cases) && test.details.cases.length > 0 && (
+            <div>
+              <h3 className="font-semibold mb-2 text-foreground">
+                مصفوفة الاختبار (Test Cases)
+                {(test.details.cases_passed != null || test.details.cases_total != null) && (
+                  <span className="mr-2 text-sm font-normal text-muted-foreground">
+                    ({test.details.cases_passed ?? '-'}/{test.details.cases_total ?? '-'})
+                  </span>
+                )}
+              </h3>
+              <ul className="space-y-2">
+                {(test.details.cases as TestCaseResult[]).map((c) => (
+                  <li
+                    key={c.id}
+                    className={`flex items-start gap-2 p-2 rounded-lg border ${
+                      c.passed
+                        ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                    }`}
+                  >
+                    {c.passed ? (
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400 mt-0.5" />
+                    ) : (
+                      <XCircle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-foreground">{c.name}</span>
+                      {c.message && (
+                        <p className="text-sm text-muted-foreground mt-0.5">{c.message}</p>
+                      )}
+                    </div>
+                    <Badge
+                      variant={c.passed ? 'default' : 'destructive'}
+                      className="shrink-0"
+                    >
+                      {c.passed ? 'نجح' : 'فشل'}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {test.details && Object.keys(test.details).length > 0 && (
             <div>
-              <h3 className="font-semibold mb-2 text-foreground">التفاصيل</h3>
-              <pre className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-xs overflow-x-auto text-gray-800 dark:text-gray-200 border border-border">
+              <h3 className="font-semibold mb-2 text-foreground">التفاصيل (خام)</h3>
+              <pre className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-xs overflow-x-auto text-gray-800 dark:text-gray-200 border border-border max-h-48 overflow-y-auto">
                 {JSON.stringify(test.details, null, 2)}
               </pre>
             </div>
