@@ -290,7 +290,7 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         <div className="relative z-10 p-4 lg:p-5 flex flex-col h-full">
           <div className="flex items-center justify-center gap-3 mb-3">
             <h3 className={`text-base md:text-lg font-bold ${auction.accent}`}>
-              lassName="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
+              <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
             {auction.description}
           </p>
           <div className="flex items-center justify-center gap-2 text-foreground/90 text-xs md:text-sm mb-3">
