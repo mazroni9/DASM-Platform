@@ -130,24 +130,15 @@ export default function AuctionsMainPage() {
               className={`group flex flex-col border rounded-xl shadow hover:shadow-lg p-4 ${auction.bgColor} hover:bg-white transition-all duration-300 h-auto relative overflow-hidden`}
             >
               {/* إضافة صورة الخلفية حسب نوع المزاد */}
-              {auction.slug === 'live-market' && (
-                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/showroom.jpg')` }}></div>
-              )}
               {auction.slug === 'instant' && (
                 <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/grok auctioneer.jpg')` }}></div>
-              )}
-              {auction.slug === 'silent' && (
-                <div className="absolute inset-0 opacity-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('/showroom.jpg')` }}></div>
               )}
               
               {/* العنوان والأيقونة بجانب بعضهما */}
               <div className="flex justify-center items-center mb-3 relative z-10">
                 <h3 className={`text-xl font-bold ${auction.color} text-center ml-2`}>{auction.name}</h3>
-                <div className={`p-2 rounded-full ${auction.color} bg-white`}>
-                  <Icon size={20} />
-                </div>
-              </div>
-              
+                          </div>
+                
               <p className="text-gray-600 text-sm text-center mb-4 flex-grow relative z-10">{auction.description}</p>
               
               {/* إضافة الفيديو للحراج المباشر - تصغير الحجم */}
@@ -188,4 +179,5 @@ export default function AuctionsMainPage() {
       </div>
     </main>
   );
+
 } 
