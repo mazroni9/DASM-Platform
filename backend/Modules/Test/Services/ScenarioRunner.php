@@ -25,9 +25,14 @@ class ScenarioRunner
 
     /**
      * تشغيل سيناريو: إنشاء مزاد تجريبي + مستخدمين افتراضيين + ضخ مزايدات وحفظ الـ metrics.
+     * في production لا يُسمح إلا إذا test.scenario_runs_allowed_in_production = true.
      */
-    public function runScenario(string $scenarioKey, int $userCount = null, int $durationSeconds = null): AuctionTestRun
+    public function runScenario(string $scenarioKey, ?int $userCount = null, ?int $durationSeconds = null): AuctionTestRun
     {
+        if (app()->environment('production') && ! config('test.scenario_runs_allowed_in_production', false)) {
+            throw new \RuntimeException('Scenario runs are disabled in production. Set TEST_SCENARIO_RUNS_IN_PRODUCTION=true to allow.');
+        }
+
         $scenarios = $this->getScenariosList();
         if (!isset($scenarios[$scenarioKey])) {
             throw new \InvalidArgumentException("Unknown scenario: {$scenarioKey}");
@@ -40,11 +45,15 @@ class ScenarioRunner
         $run = AuctionTestRun::create([
             'scenario_key' => $scenarioKey,
             'status' => 'running',
-            'user_count' => $userCount,
-            'duration_seconds' => $durationSeconds,
+            'user_count' => $userCount ?? 0,
+            'duration_seconds' => $durationSeconds ?? 0,
             'started_at' => now(),
             'options' => ['scenario' => $scenario],
         ]);
+
+        if (($scenario['type'] ?? null) === 'test_suite') {
+            return $this->runTestSuiteScenario($run, $scenario);
+        }
 
         try {
             DB::beginTransaction();
@@ -127,6 +136,53 @@ class ScenarioRunner
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * تشغيل سيناريو من نوع test_suite (logic، transitions، price_updates، state_consistency).
+     * يستدعي الخدمة المناظرة ويُسجّل النتيجة في نفس جدول الـ runs.
+     */
+    protected function runTestSuiteScenario(AuctionTestRun $run, array $scenario): AuctionTestRun
+    {
+        $category = $scenario['category'] ?? $run->scenario_key;
+        if (! $category) {
+            $run->update(['status' => 'failed', 'error_message' => 'Missing category', 'completed_at' => now()]);
+            return $run->fresh();
+        }
+
+        try {
+            $runner = app(AuctionTestRunner::class);
+            $result = $runner->runTestByCategory($category);
+
+            $run->update([
+                'status' => $result->status->value,
+                'total_bids' => 0,
+                'successful_bids' => 0,
+                'failed_bids' => 0,
+                'options' => array_merge($run->options ?? [], [
+                    'test_result_id' => $result->id,
+                    'message' => $result->message,
+                    'details' => $result->details,
+                    'errors' => $result->errors,
+                    'execution_time_ms' => $result->execution_time_ms,
+                    'cases_passed' => $result->details['cases_passed'] ?? null,
+                    'cases_total' => $result->details['cases_total'] ?? null,
+                ]),
+                'completed_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ScenarioRunner test_suite failed: ' . $e->getMessage(), [
+                'run_id' => $run->id,
+                'category' => $category,
+            ]);
+            $run->update([
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+                'completed_at' => now(),
+            ]);
+        }
+
+        return $run->fresh();
     }
 
     protected function createTestUser(int $runId, string $role, int $index): User

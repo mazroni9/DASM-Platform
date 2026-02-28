@@ -65,6 +65,40 @@ return [
             'bids_per_minute_min' => 10,
             'bids_per_minute_max' => 30,
         ],
+
+        // ─── اختبارات المنطق (test_suite): تشغيل من نفس pipeline السيناريوهات
+        'logic' => [
+            'type' => 'test_suite',
+            'key' => 'logic',
+            'name_ar' => 'منطق المزادات',
+            'name_en' => 'Auction Logic',
+            'description' => 'تشغيل اختبارات المنطق (الحالات، الأسعار، القواعد)',
+            'category' => 'logic',
+        ],
+        'transitions' => [
+            'type' => 'test_suite',
+            'key' => 'transitions',
+            'name_ar' => 'الانتقال بين الأنواع',
+            'name_en' => 'Type Transitions',
+            'description' => 'تشغيل اختبارات الانتقال التلقائي بين أنواع المزاد',
+            'category' => 'transitions',
+        ],
+        'price_updates' => [
+            'type' => 'test_suite',
+            'key' => 'price_updates',
+            'name_ar' => 'تحديثات الأسعار',
+            'name_en' => 'Price Updates',
+            'description' => 'تشغيل اختبارات تحديث السعر والمزايدات اللحظية',
+            'category' => 'price_updates',
+        ],
+        'state_consistency' => [
+            'type' => 'test_suite',
+            'key' => 'state_consistency',
+            'name_ar' => 'استقرار الحالات',
+            'name_en' => 'State Consistency',
+            'description' => 'تشغيل اختبارات استقرار الحالات وعدم التضارب',
+            'category' => 'state_consistency',
+        ],
     ],
 
     'bid_patterns' => [

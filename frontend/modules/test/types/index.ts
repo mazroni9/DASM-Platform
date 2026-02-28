@@ -12,13 +12,25 @@ export enum TestCategory {
   STATE_CONSISTENCY = 'state_consistency',
 }
 
+/** نتيجة حالة اختبار واحدة (من details.cases) */
+export interface TestCaseResult {
+  id: string;
+  name: string;
+  passed: boolean;
+  message: string;
+}
+
 export interface TestResult {
   id: number;
   test_name: string;
   test_category: TestCategory;
   status: TestStatus;
   message: string;
-  details: Record<string, any>;
+  details: Record<string, unknown> & {
+    cases?: TestCaseResult[];
+    cases_passed?: number;
+    cases_total?: number;
+  };
   errors: string[] | null;
   execution_time_ms: number;
   started_at: string | null;

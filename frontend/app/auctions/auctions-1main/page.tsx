@@ -58,13 +58,10 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-red-500",
     ring: "ring-red-600/40",
     bgGrad: "bg-card",
-    overlayImg: "/showroom.jpg",
-    overlayOpacity: "opacity-25",
-    overlayGradient: "bg-gradient-to-t from-black/80 via-black/50 to-black/10",
-  },
+      },
   {
     id: "instant_auction",
-    name: "السوق الفوري المباشر",
+    name: "السوق الفوري",
     slug: "instant",
     href: "/auctions/auctions-1main/instant",
     description:
@@ -92,16 +89,11 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-secondary",
     ring: "ring-secondary/40",
     bgGrad: "bg-card",
-    // 🔹 خلفية احترافية للسوق المتأخر
-    overlayImg: "/late_auction.webp",
-    overlayOpacity: "opacity-40",
-    overlayGradient:
-      "bg-gradient-to-t from-slate-950/80 via-slate-900/45 to-transparent",
-  },
+      },
   {
     id: "fixed_auction",
     name: "المزاد الثابت",
-    slug: "fixed",
+        slug: "fixed",
     href: "/auctions/auctions-1main/fixed",
     description:
       "سيارات لم تُبع في المزادات الأخرى تُعرض هنا كفرصة ثانية في مزاد تقليدي بسيط ومحدد بوقت، وعند انتهاء العداد يفوز أعلى مزايد تلقائيًا.",
@@ -304,14 +296,8 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         {/* محتوى */}
         <div className="relative z-10 p-4 lg:p-5 flex flex-col h-full">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="p-2.5 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/70">
-              <Icon className={`w-5 h-5 ${auction.accent}`} aria-hidden="true" />
-            </span>
             <h3 className={`text-base md:text-lg font-bold ${auction.accent}`}>
-              {auction.name}
-            </h3>
-          </div>
-          <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
+              <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
             {auction.description}
           </p>
           <div className="flex items-center justify-center gap-2 text-foreground/90 text-xs md:text-sm mb-3">
@@ -332,8 +318,7 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
                 preload="metadata"
               >
                 <source src="/live-auction.mp4" type="video/mp4" />
-                متصفحك لا يدعم عنصر الفيديو.
-              </video>
+            {/* يُفضّل ليُحم عصر الفيديو */}              </video>
             </div>
           ) : null}
 
@@ -410,12 +395,10 @@ export default function AuctionsMainPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <StatChip icon={Shield} label="أمان تام" />
               <StatChip icon={Users} label="+50K مشترك" />
               <StatChip icon={Clock} label="مباشر يوميًا" />
             </div>
-          </div>
-        </div>
+          div>
       </div>
 
       {/* Presenter Panel */}
@@ -451,4 +434,6 @@ export default function AuctionsMainPage() {
       </div>
     </main>
   );
+
 }
+

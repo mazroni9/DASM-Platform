@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuctionActivityLog;
 use App\Models\Setting;
+use App\Services\AuctionActivityAnalyticsService;
 use App\Services\AuctionRealtimeLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,6 +91,36 @@ class AuctionActivityLogController extends Controller
             'data' => [
                 'enabled' => AuctionRealtimeLogService::isEnabled(),
             ],
+        ]);
+    }
+
+    /**
+     * تقرير تحليلي Business-ready: حركة الأسعار وسلوك المزايدة من auction_activity_logs.
+     * مقاييس: عدد المزايدات، الزمن بين السومات، أنماط الأحداث، حركة السعر (أول/آخر مزايدة).
+     *
+     * Query: auction_id (optional), since (optional), until (optional), include_timeline (optional, default false), limit_auctions (optional, default 50)
+     */
+    public function analytics(Request $request): JsonResponse
+    {
+        $auctionId = $request->filled('auction_id')
+            ? (is_array($request->auction_id) ? $request->auction_id : [(int) $request->auction_id])
+            : null;
+        $since = $request->filled('since') ? $request->since : null;
+        $until = $request->filled('until') ? $request->until : null;
+        $includeTimeline = $request->boolean('include_timeline', false);
+        $limitAuctions = min(max((int) $request->get('limit_auctions', 50), 1), 200);
+
+        $result = AuctionActivityAnalyticsService::analyze($auctionId, $since, $until, $limitAuctions);
+
+        if (! $includeTimeline) {
+            foreach ($result['by_auction'] as &$row) {
+                unset($row['bid_timeline']);
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $result,
         ]);
     }
 }
