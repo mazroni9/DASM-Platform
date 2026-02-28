@@ -58,6 +58,10 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-red-500",
     ring: "ring-red-600/40",
     bgGrad: "bg-card",
+      },
+    {
+          id: "instant_auction",
+          name: "السوق الفوري",
     slug: "instant",
     href: "/auctions/auctions-1main/instant",
     description:
@@ -430,3 +434,4 @@ export default function AuctionsMainPage() {
   );
 
 }
+
