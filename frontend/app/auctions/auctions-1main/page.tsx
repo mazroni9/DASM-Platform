@@ -58,6 +58,10 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-red-500",
     ring: "ring-red-600/40",
     bgGrad: "bg-card",
+      },
+  {
+    id: "instant_auction",
+    name: "السوق الفوري",
     slug: "instant",
     href: "/auctions/auctions-1main/instant",
     description:
@@ -85,8 +89,11 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-secondary",
     ring: "ring-secondary/40",
     bgGrad: "bg-card",
-      me: "المزاد الثابت",
-    slug: "fixed",
+      },
+  {
+    id: "fixed_auction",
+    name: "المزاد الثابت",
+        slug: "fixed",
     href: "/auctions/auctions-1main/fixed",
     description:
       "سيارات لم تُبع في المزادات الأخرى تُعرض هنا كفرصة ثانية في مزاد تقليدي بسيط ومحدد بوقت، وعند انتهاء العداد يفوز أعلى مزايد تلقائيًا.",
@@ -311,8 +318,7 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
                 preload="metadata"
               >
                 <source src="/live-auction.mp4" type="video/mp4" />
-                متصفحك لا يدعم عنصر الفيديو.
-              </video>
+            {/* يُفضّل ليُحم عصر الفيديو */}              </video>
             </div>
           ) : null}
 
@@ -430,3 +436,4 @@ export default function AuctionsMainPage() {
   );
 
 }
+
