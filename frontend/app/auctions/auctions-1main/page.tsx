@@ -296,8 +296,13 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
         {/* محتوى */}
         <div className="relative z-10 p-4 lg:p-5 flex flex-col h-full">
           <div className="flex items-center justify-center gap-3 mb-3">
+            <Icon className={`w-6 h-6 ${auction.accent}`} aria-hidden="true" />
             <h3 className={`text-base md:text-lg font-bold ${auction.accent}`}>
-              <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
+              {auction.name}
+            </h3>
+          </div>
+
+          <p className="text-foreground/80 text-xs md:text-sm leading-relaxed text-center mb-3">
             {auction.description}
           </p>
           <div className="flex items-center justify-center gap-2 text-foreground/90 text-xs md:text-sm mb-3">
@@ -398,7 +403,8 @@ export default function AuctionsMainPage() {
               <StatChip icon={Users} label="+50K مشترك" />
               <StatChip icon={Clock} label="مباشر يوميًا" />
             </div>
-          div>
+          </div>
+        </div>
       </div>
 
       {/* Presenter Panel */}
