@@ -40,9 +40,6 @@ type AuctionMain = {
   accent: string; // لون النص
   ring: string; // لون الإطار
   bgGrad: string; // خلفية البطاقة
-  overlayImg?: string; // صورة خلفية اختيارية
-  overlayOpacity?: string; // شفافية الخلفية
-  overlayGradient?: string; // جريدينت إضافي فوق الصورة لاحترافية أعلى
 };
 
 const AUCTIONS_MAIN: AuctionMain[] = [
@@ -71,11 +68,6 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-primary",
     ring: "ring-primary/40",
     bgGrad: "bg-card",
-    // 🔹 استخدام احترافي لصورة grok auctioneer في السوق الفوري
-    overlayImg: "/grok auctioneer.jpg",
-    overlayOpacity: "opacity-40",
-    overlayGradient:
-      "bg-gradient-to-t from-slate-950/80 via-slate-950/50 to-slate-950/10",
   },
   {
     id: "late_auction",
@@ -103,11 +95,6 @@ const AUCTIONS_MAIN: AuctionMain[] = [
     accent: "text-emerald-500",
     ring: "ring-emerald-500/40",
     bgGrad: "bg-card",
-    // 🔹 خلفية احترافية للمزاد الثابت
-    overlayImg: "/fixed_auction.jpg",
-    overlayOpacity: "opacity-40",
-    overlayGradient:
-      "bg-gradient-to-t from-emerald-950/80 via-emerald-900/50 to-transparent",
   },
 ];
 
@@ -257,8 +244,6 @@ const PresenterPanel = ({
 
 const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }) => {
   const Icon = auction.icon;
-  const isLive = auction.slug === "live-market";
-  const hasOverlay = Boolean(auction.overlayImg);
 
   return (
     <motion.div
@@ -270,31 +255,11 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
     >
       <LoadingLink
         href={auction.href}
-        className={`block h-full max-w-sm mx-auto rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
+        className={`block h-full w-full rounded-2xl border border-border/70 ${auction.bgGrad} ring-1 ${auction.ring} overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/60`}
         aria-label={`الدخول إلى ${auction.name}`}
       >
-        {/* 🔹 خلفية صورة ديناميكية لكل نوع مزاد */}
-        {hasOverlay && (
-          <>
-            <div
-              className={`absolute inset-0 bg-center bg-no-repeat bg-cover pointer-events-none ${
-                auction.overlayOpacity ?? "opacity-20"
-              }`}
-              style={{ backgroundImage: `url('${auction.overlayImg}')` }}
-              aria-hidden="true"
-            />
-            <div
-              className={`absolute inset-0 pointer-events-none ${
-                auction.overlayGradient ??
-                "bg-gradient-to-t from-black/50 via-black/30 to-transparent"
-              }`}
-              aria-hidden="true"
-            />
-          </>
-        )}
-
         {/* محتوى */}
-        <div className="relative z-10 p-4 lg:p-5 flex flex-col h-full">
+        <div className="relative z-10 p-5 lg:p-6 flex flex-col min-h-[320px] h-full">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Icon className={`w-6 h-6 ${auction.accent}`} aria-hidden="true" />
             <h3 className={`text-base md:text-lg font-bold ${auction.accent}`}>
@@ -310,22 +275,6 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
             <span>{auction.time}</span>
           </div>
 
-          {/* فيديو صغير للحراج المباشر فقط */}
-          {isLive ? (
-            <div className="w-full max-w-[200px] mx-auto mb-4">
-              <video
-                className="w-full rounded-xl border border-border/80 shadow-sm"
-                poster="/showroom.jpg"
-                muted
-                loop
-                autoPlay
-                playsInline
-                preload="metadata"
-              >
-                <source src="/live-auction.mp4" type="video/mp4" />
-            {/* يُفضّل ليُحم عصر الفيديو */}              </video>
-            </div>
-          ) : null}
 
           <div className="mt-auto text-center">
             <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-card/60 text-foreground text-xs md:text-sm font-semibold border border-border group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-colors">
@@ -422,7 +371,7 @@ export default function AuctionsMainPage() {
 
       {/* Cards */}
       <div className="container mx-auto px-4 pb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
           {cards.map((a, i) => (
             <AuctionCard key={a.slug} auction={a} index={i} />
           ))}
