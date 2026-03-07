@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, ShieldCheck } from 'lucide-react';
+import { Building2, ShieldCheck, FileCheck } from 'lucide-react';
 
 const AboutPage = () => {
   return (
@@ -11,6 +11,52 @@ const AboutPage = () => {
       </h1>
 
       <div className="prose prose-lg max-w-none text-right space-y-6" dir="rtl">
+        {/* بيانات المؤسسة */}
+        <section className="mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <FileCheck className="w-6 h-6 text-primary" />
+            <h2 className="text-2xl font-bold text-foreground">البيانات الرسمية</h2>
+          </div>
+
+          {/* مؤسسة داسم-اي */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">مؤسسة داسم-اي</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="rounded-xl border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-background/50 px-5 py-4">
+                <p className="text-sm text-foreground/70 mb-1">الرقم الوطني الموحد</p>
+                <p className="text-xl font-bold text-foreground font-mono tracking-wide" dir="ltr">
+                  ٧٠٥١١١٥٦١١
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-background/50 px-5 py-4">
+                <p className="text-sm text-foreground/70 mb-1">تاريخ الإصدار</p>
+                <p className="text-xl font-bold text-foreground font-mono tracking-wide" dir="ltr">
+                  ٠٩/٠٨/٢٠٢٥
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-background/50 px-5 py-4">
+                <p className="text-sm text-foreground/70 mb-1">رقم التوثيق</p>
+                <p className="text-xl font-bold text-foreground font-mono tracking-wide" dir="ltr">
+                  ٠٠٠٠٢٠٦٢١٨
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-background/50 px-5 py-4">
+                <p className="text-sm text-foreground/70 mb-1">تاريخ انتهاء الشهادة</p>
+                <p className="text-xl font-bold text-foreground font-mono tracking-wide" dir="ltr">
+                  ١١/٠٣/٢٠٢٨
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 dark:border-border bg-slate-50/50 dark:bg-background/50 px-5 py-4">
+                <p className="text-sm text-foreground/70 mb-1">رقم التسجيل الضريبي</p>
+                <p className="text-xl font-bold text-foreground font-mono tracking-wide" dir="ltr">
+                  ٣١٠٨٠٥٣٤٥٨٠٠٠٠٣
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground/60 mt-2">حالة السجل: نشط</p>
+          </div>
+        </section>
+
         <section className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-6 h-6 text-primary" />
@@ -19,23 +65,15 @@ const AboutPage = () => {
           
           <div className="space-y-4 text-foreground">
             <p className="leading-relaxed">
-              منصة DASMe هي منصة إلكترونية متخصصة في تقديم خدمات المزادات الرقمية المباشرة، انطلاقًا من النشاط التجاري الرسمي لمعرض محمد أحمد الزهراني وإخوانه لتجارة السيارات.
+              منصة DASM هي منصة إلكترونية متخصصة في الإعلانات الرقمية وتنظيم وإدارة المزادات المباشرة، وتركز في مرحلتها الحالية على قطاع السيارات.
             </p>
 
             <p className="leading-relaxed">
-              لا تُعد المنصة جهة مالية، ولا تُقدم خدمات الدفع الإلكتروني، أو التمويل البنكي، أو الإقراض النقدي.
+              تقتصر خدمات المنصة على عرض المركبات، وإدارة عمليات الإعلان والمزايدة، وتنظيم الرسوم والاشتراكات والخدمات المرتبطة بالمنصة.
             </p>
 
             <p className="leading-relaxed">
-              جميع الأرصدة الظاهرة في حسابات المستخدمين تُعبّر عن "رصيد داخلي" يُستخدم حصريًا داخل نظام المزادات، ولا يُعتبر وديعة مالية، ولا يخضع لتنظيمات البنوك أو مزودي خدمات المدفوعات.
-            </p>
-
-            <p className="leading-relaxed">
-              المنصة تلتزم بربط كل محفظة داخلية برقم حساب بنكي (آيبان) وهوية وطنية موثقة، ويتم تحويل الأرصدة بناءً على طلب المستخدم عبر شركاء التحويل المعتمدين فقط.
-            </p>
-
-            <p className="leading-relaxed">
-              باستخدامك المنصة، فأنت تقر وتوافق أن جميع عملياتك المالية تتم في نطاق الاشتراك في خدمات المزادات، دون أي التزام تعاقدي من المنصة بتقديم تمويل أو أرباح أو تحويلات مالية خارجة عن هذا الإطار.
+              وتتم عمليات السداد والتحصيل المرتبطة بخدمات المنصة عبر القنوات ووسائل الدفع النظامية المعتمدة، وذلك وفق الأنظمة والتعليمات المعمول بها.
             </p>
           </div>
         </section>
@@ -44,4 +82,4 @@ const AboutPage = () => {
   );
 };
 
-export default AboutPage; 
+export default AboutPage;

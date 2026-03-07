@@ -18,7 +18,8 @@ import {
   Play,
   Tag,
 } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import AuctionsFinished from "@components/AuctionsFinished"; // تأكد من المسار الصحيح
 
@@ -298,11 +299,16 @@ const AuctionCard = ({ auction, index }: { auction: AuctionMain; index: number }
 // الصفحة
 // =====================
 export default function AuctionsMainPage() {
+  const searchParams = useSearchParams();
   const [showPresenter, setShowPresenter] = useState(false);
   const [currentAuction, setCurrentAuction] = useState<string>("");
 
   const cards = useMemo(() => AUCTIONS_MAIN, []);
   const handlePrevToggle = useCallback(() => setShowPresenter((s) => !s), []);
+
+  useEffect(() => {
+    if (searchParams.get("presenter") === "1") setShowPresenter(true);
+  }, [searchParams]);
 
   return (
     <main
@@ -328,22 +334,12 @@ export default function AuctionsMainPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={handlePrevToggle}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold shadow-lg transition-colors"
-                  aria-pressed={showPresenter}
-                  aria-label="فتح/إغلاق شاشة المعلق"
-                >
-                  <Tv className="h-5 w-5" aria-hidden="true" />
-                  شاشة المعلق
-                </button>
-
-                {/* الزر المصحّح: العودة لجميع الأسواق */}
+                {/* شاشة المعلق مخفية مؤقتاً — موجودة في الفوتر */}
                 <Link
                   href="/"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/50 text-foreground hover:bg-border border border-border font-semibold text-sm"
                 >
-                  العودة لجميع الأسواق
+                  العودة للرئيسيه
                 </Link>
               </div>
             </div>

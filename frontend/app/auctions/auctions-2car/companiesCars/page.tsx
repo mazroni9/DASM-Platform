@@ -231,7 +231,7 @@ export default function CompaniesCarsPage() {
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2 text-sm rounded-full border border-primary/20 bg-primary/10 hover:bg-primary/15"
           >
             <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-            العودة إلى المزادات
+            العودة إلى سوق السيارات المتخصص
           </LoadingLink>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -320,12 +320,7 @@ export default function CompaniesCarsPage() {
           <div className="absolute inset-0 opacity-30 pointer-events-none [background:radial-gradient(60%_60%_at_20%_10%,hsl(var(--primary)/0.25),transparent_65%)]" />
 
           <div className="relative">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 text-xs font-semibold w-fit">
-              <Building2 className="w-4 h-4" />
-              سيارات الشركات
-            </div>
-
-            <h1 className="mt-3 text-2xl md:text-3xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               سوق سيارات الشركات
             </h1>
 
