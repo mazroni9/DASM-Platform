@@ -270,7 +270,7 @@ export default function LuxuryCarsPage() {
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2 text-sm rounded-full border border-primary/20 bg-primary/10 hover:bg-primary/15"
           >
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-            العودة إلى المزادات
+            العودة إلى سوق السيارات المتخصص
           </LoadingLink>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -359,11 +359,6 @@ export default function LuxuryCarsPage() {
         <div className="bg-card/70 backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 text-xs font-semibold w-fit">
-                <Crown className="w-4 h-4" />
-                {pageTitle}
-              </div>
-
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 {pageTitle}
               </h1>

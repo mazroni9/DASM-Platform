@@ -292,7 +292,7 @@ export default function ClassicCarsAuctionPage() {
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2 text-sm rounded-full border border-primary/20 bg-primary/10 hover:bg-primary/15"
           >
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-            العودة إلى المزادات
+            العودة لسوق السيارات المتخصص
           </LoadingLink>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -379,12 +379,7 @@ export default function ClassicCarsAuctionPage() {
           <div className="absolute inset-0 opacity-30 pointer-events-none [background:radial-gradient(60%_60%_at_20%_10%,hsl(var(--primary)/0.25),transparent_65%)]" />
 
           <div className="relative">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 text-xs font-semibold w-fit">
-              <Star className="w-4 h-4" />
-              سوق السيارات الكلاسيكية
-            </div>
-
-            <h1 className="mt-3 text-2xl md:text-3xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               سوق السيارات الكلاسيكية
             </h1>
 
@@ -440,7 +435,7 @@ export default function ClassicCarsAuctionPage() {
         )}
 
         {/* Video */}
-        <SectionShell title="متحف السيارات السلطانية" subtitle="لقطة تعريفية — اضغط لمشاهدة الفيديو.">
+        <SectionShell title="متحف الصور والفديو للسيارات الكلاسيكيه وسوف نضيف بداخل المتحف كل ماهو نادر وجميل" subtitle="لقطة تعريفية — اضغط لمشاهدة الفيديو.">
           {showVideo ? (
             <div className="relative pt-[56.25%] rounded-2xl overflow-hidden border border-border bg-black">
               <video
@@ -471,94 +466,8 @@ export default function ClassicCarsAuctionPage() {
                   <Play size={36} className="text-primary mr-1" />
                 </div>
               </div>
-
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur border-t border-border">
-                <h3 className="text-base md:text-lg font-bold text-foreground">
-                  متحف السيارات السلطانية
-                </h3>
-                <p className="text-sm text-muted-foreground">اضغط للمشاهدة</p>
-              </div>
             </div>
           )}
-        </SectionShell>
-
-        {/* Gallery */}
-        <SectionShell title="معرض الصور" subtitle="نماذج مختارة من سيارات الكلاسيك.">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              {
-                src: "/auctionsPIC/car-classicPIC/1969 Pontiac Grand Prix SJ.png",
-                label: "بونتياك جراند بريكس SJ 1969",
-              },
-              {
-                src: "/auctionsPIC/car-classicPIC/GpdqKuZXMAArNyp.jpg",
-                label: "سيارة كلاسيكية",
-              },
-            ].map((it, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl overflow-hidden border border-border bg-background/50 shadow-sm aspect-video relative group"
-              >
-                <Image
-                  src={it.src}
-                  alt={it.label}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/35" />
-                <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="inline-flex px-3 py-1.5 rounded-full bg-card/85 backdrop-blur border border-border text-xs font-semibold">
-                    {it.label}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionShell>
-
-        {/* Features */}
-        <SectionShell
-          title="لماذا تشارك في سوق السيارات الكلاسيكية؟"
-          subtitle="ندرة + أصالة + شفافية + مجتمع مهتم."
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              {
-                icon: Award,
-                title: "سيارات نادرة ومعتمدة",
-                desc: "جميع السيارات مُدققة ومعتمدة من خبراء السيارات الكلاسيكية.",
-              },
-              {
-                icon: Shield,
-                title: "ضمان الأصالة",
-                desc: "توثيق كامل لتاريخ السيارة وأوراقها وقطعها الأساسية.",
-              },
-              {
-                icon: Star,
-                title: "تقييم عادل",
-                desc: "تقييم دقيق من مختصين لضمان شفافية التسعير.",
-              },
-              {
-                icon: Users,
-                title: "مجتمع المهتمين",
-                desc: "انضم لعشاق السيارات الكلاسيكية وشارك شغفك بثقة.",
-              },
-            ].map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div
-                  key={i}
-                  className="bg-background/60 border border-border rounded-2xl p-5 hover:bg-muted/40 transition shadow-sm"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-base font-bold text-foreground">{f.title}</div>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{f.desc}</p>
-                </div>
-              );
-            })}
-          </div>
         </SectionShell>
 
         {/* Cars list */}

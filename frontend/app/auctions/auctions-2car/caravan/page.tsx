@@ -269,7 +269,7 @@ export default function CaravanAuctionsPage() {
             className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-4 py-2 text-sm rounded-full border border-primary/20 bg-primary/10 hover:bg-primary/15"
           >
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-            العودة إلى المزادات
+            العودة إلى سوق السيارات المتخصص
           </LoadingLink>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -351,12 +351,7 @@ export default function CaravanAuctionsPage() {
         <div className="bg-card/70 backdrop-blur-xl border border-border rounded-3xl p-6 md:p-8 shadow-sm overflow-hidden relative">
           <div className="absolute inset-0 opacity-30 pointer-events-none [background:radial-gradient(60%_60%_at_20%_10%,hsl(var(--primary)/0.25),transparent_65%)]" />
           <div className="relative">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 text-xs font-semibold w-fit">
-              <Caravan className="w-4 h-4" />
-              سوق الكرفانات
-            </div>
-
-            <h1 className="mt-3 text-2xl md:text-3xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               سوق الكرفانات
             </h1>
 
@@ -410,15 +405,6 @@ export default function CaravanAuctionsPage() {
             </div>
           </div>
         )}
-
-        {/* شرح مختصر */}
-        <SectionShell title="كيف يعمل السوق؟" subtitle="شرح مختصر لطريقة البيع والمزايدة.">
-          <div className="rounded-2xl border border-border bg-background/60 p-5 text-sm text-muted-foreground leading-relaxed">
-            نلغي لعبة التقييمات الجائرة عبر مزايدة عادلة بسعر بائع مخفي. المنافسة تعتمد
-            على العرض والطلب الطبيعي، مع تدخلنا كوسيط لموازنة التوقعات وضمان بيئة موثوقة
-            لكل الأطراف.
-          </div>
-        </SectionShell>
 
         {/* القائمة */}
         <SectionShell title="الكرفانات المتاحة" subtitle="تصفح أحدث الكرفانات المعروضة.">
