@@ -5,21 +5,17 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import "dayjs/locale/ar";
 import {
   Car,
   Shield,
-  TrendingUp,
   Users,
   Award,
-  Radio,
   PlayCircle,
   Clock,
   DollarSign,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
 import Footer from "@/components/shared/Footer";
 import MarketTypeNav from "@/components/shared/MarketTypeNav";
 import api from "@/lib/axios";
@@ -113,145 +109,6 @@ const CountUp = ({
   return <span suppressHydrationWarning>{formatNumber(display)}</span>;
 };
 
-// ========== typing effect للعنوان الرئيسي (مرة واحدة) ==========
-
-const TypingMainTitle = ({
-  text,
-  speed = 60,
-  onDone,
-}: {
-  text: string;
-  speed?: number;
-  onDone: () => void;
-}) => {
-  const [charIndex, setCharIndex] = useState(0);
-
-  useEffect(() => {
-    if (charIndex < text.length) {
-      const id = setTimeout(() => setCharIndex((i) => i + 1), speed);
-      return () => clearTimeout(id);
-    } else {
-      onDone?.();
-    }
-  }, [charIndex, text, speed, onDone]);
-
-  const displayed = text.slice(0, charIndex);
-
-  return (
-    <h1
-      className="text-3xl md:text-5xl lg:text-6xl font-bold text-primary leading-tight"
-      suppressHydrationWarning
-    >
-      {displayed}
-      {charIndex < text.length ? (
-        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-primary" />
-      ) : null}
-    </h1>
-  );
-};
-
-// ========== typing & deleting loop للجمل الدوّارة ==========
-
-const RotatingSentences = ({
-  start,
-  sentences = [
-    "اخترنا لك نخبة من الأسواق الرقمية التي تلبي احتياجاتك.",
-    "نمنحك فرصًا لا تجدها في مكان آخر.",
-    "كل ما تبحث عنه من أصول ومنتجات مستعملة ومجددة.",
-  ],
-}: {
-  start: boolean;
-  sentences?: string[];
-}) => {
-  const [sentenceIndex, setSentenceIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    if (!start) return;
-    setSentenceIndex(0);
-    setCharIndex(0);
-    setIsDeleting(false);
-  }, [start]);
-
-  useEffect(() => {
-    if (!start) return;
-
-    const current = sentences[sentenceIndex];
-    const typingSpeed = 50;
-    const deletingSpeed = 40;
-    const pauseAtEnd = 1400;
-
-    const delay = isDeleting ? deletingSpeed : typingSpeed;
-
-    const timer = setTimeout(() => {
-      if (!isDeleting) {
-        if (charIndex < current.length) setCharIndex((i) => i + 1);
-        else setTimeout(() => setIsDeleting(true), pauseAtEnd);
-      } else {
-        if (charIndex > 0) setCharIndex((i) => i - 1);
-        else {
-          setIsDeleting(false);
-          setSentenceIndex((i) => (i + 1) % sentences.length);
-        }
-      }
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [start, charIndex, isDeleting, sentenceIndex, sentences]);
-
-  if (!start) return null;
-
-  const current = sentences[sentenceIndex];
-  const text = current.slice(0, charIndex);
-
-  return (
-    <p
-      className="text-foreground text-lg md:text-xl max-w-3xl mx-auto mt-5 md:mt-6 leading-relaxed"
-      suppressHydrationWarning
-    >
-      {text}
-      {!isDeleting && charIndex === current.length ? (
-        <span className="inline-block w-[2px] h-[0.9em] align-[-0.12em] ml-1 animate-pulse bg-primary" />
-      ) : null}
-    </p>
-  );
-};
-
-// ========== عدّ تنازلي بسيط للمزادات ==========
-
-const AuctionCountdown = ({ endTime }: { endTime?: string }) => {
-  dayjs.extend(relativeTime);
-  dayjs.locale("ar");
-  const [timeLeft, setTimeLeft] = useState<string>("");
-
-  useEffect(() => {
-    if (!endTime) {
-      setTimeLeft("");
-      return;
-    }
-    const updateCountdown = () => {
-      const now = dayjs();
-      const end = dayjs(endTime);
-      if (!end.isValid()) return setTimeLeft("");
-      const diff = end.diff(now);
-
-      if (diff <= 0) return setTimeLeft("انتهى المزاد");
-      setTimeLeft(end.fromNow(true));
-    };
-
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 60 * 1000);
-    return () => clearInterval(timer);
-  }, [endTime]);
-
-  return (
-    <span suppressHydrationWarning>
-      {timeLeft ? `ينتهي خلال ${timeLeft}` : "—"}
-    </span>
-  );
-};
-
 // ========== قسم البث الاحترافي ==========
 
 type Broadcast = {
@@ -276,7 +133,6 @@ const LiveBadge = ({ label = "مباشر" }) => (
 const LiveBroadcastSection = () => {
   const [data, setData] = useState<Broadcast | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -310,20 +166,13 @@ const LiveBroadcastSection = () => {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 relative">
-        <div className="flex flex-col items-center gap-4 mb-8 md:mb-10 text-center">
-          <div className="flex items-center justify-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-              <Radio className="w-5 h-5 md:w-6 md:h-6" />
-            </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-foreground">
-                القناة الرئيسية – بث مباشر
-              </h2>
-              <p className="text-sm md:text-base mt-1 font-medium text-emerald-700 dark:text-emerald-300">
-                ترفيه + بزنس جاد + مزادات رقمية لحظية + بودكاست أعمال
-              </p>
-            </div>
-          </div>
+        <div className="flex flex-col items-center gap-3 mb-6 md:mb-8 text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+            البث المباشر
+          </h2>
+          <p className="text-sm text-foreground/70 max-w-xl">
+            بث مباشر للمزادات والبرامج
+          </p>
           {data?.is_live ? <LiveBadge /> : null}
         </div>
 
@@ -332,29 +181,8 @@ const LiveBroadcastSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className={`bg-card/60 backdrop-blur border border-border rounded-2xl overflow-hidden shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)] mx-auto w-full transition-all duration-300 ${
-            expanded ? "max-w-5xl" : "max-w-3xl"
-          }`}
+          className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-xl overflow-hidden shadow-sm mx-auto w-full max-w-3xl"
         >
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <PlayCircle className="w-5 h-5 text-primary" />
-              <span className="text-foreground font-semibold text-sm md:text-base line-clamp-1">
-                {data?.title || "البث المباشر من DASM"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {data?.is_live ? <LiveBadge /> : null}
-              <button
-                type="button"
-                onClick={() => setExpanded((v) => !v)}
-                className="hidden sm:inline-flex items-center justify-center rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground hover:bg-border/60 transition"
-              >
-                {expanded ? "تصغير البث" : "تكبير مساحة البث"}
-              </button>
-            </div>
-          </div>
-
           <div className="relative aspect-video bg-black">
             {loading ? (
               <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-zinc-800 via-zinc-900 to-black" />
@@ -383,14 +211,15 @@ const LiveBroadcastSection = () => {
           </div>
 
           <div className="px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <p className="text-foreground/80 text-sm md:text-base max-w-3xl">
-              {data?.description ||
-                "في قناتنا خيط رفيع يفصل بين الترفيه والمتعة... وبين البزنس الجاد والمزادات الرقمية الدقيقة."}
-            </p>
-            <div className="flex items-center gap-3">
+            {data?.description ? (
+              <p className="text-foreground/80 text-sm max-w-2xl">
+                {data.description}
+              </p>
+            ) : null}
+            <div className="flex items-center gap-3 flex-shrink-0">
               <a
                 href="/broadcast"
-                className="inline-flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-border/60 transition"
+                className="inline-flex items-center justify-center rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
               >
                 أرشيف البثوث
               </a>
@@ -423,6 +252,7 @@ type HomeStats = {
 const StatsSection = () => {
   const [statsData, setStatsData] = useState<HomeStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     let mounted = true;
@@ -445,23 +275,20 @@ const StatsSection = () => {
     };
   }, []);
 
+  const carsCount = statsData?.cars_count ?? 0;
+  const usersCount = statsData?.active_users_count ?? 0;
+  const hasMeaningfulData = carsCount > 0 || usersCount > 0;
+  const hideInLight =
+    resolvedTheme === "light" && !loading && (!statsData || !hasMeaningfulData);
+  if (hideInLight) return null;
+
   const cards = [
-    {
-      value: statsData?.cars_count ?? 0,
-      label: "السيارات",
-      icon: <Car className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "bg-primary",
-    },
-    {
-      value: statsData?.active_users_count ?? 0,
-      label: "المستخدمين النشطين",
-      icon: <Users className="w-6 h-6 md:w-8 md:h-8" />,
-      color: "bg-primary",
-    },
+    { value: carsCount, label: "السيارات", icon: <Car className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-primary" },
+    { value: usersCount, label: "المستخدمين النشطين", icon: <Users className="w-6 h-6 md:w-8 md:h-8" />, color: "bg-primary" },
   ];
 
   return (
-    <section className="py-16 md:py-20 bg-background">
+    <section className="py-16 md:py-20 bg-white dark:bg-background border-t border-slate-200 dark:border-border">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 md:mb-16">
           <motion.h2
@@ -514,26 +341,26 @@ const StatsSection = () => {
 
 const BenefitsSection = () => {
   const benefits = [
-    { title: "مزادات متطورة على مدار الساعة", description: "نظام مزادات حديث، ومتاح 24/7 لراحتك", icon: <Shield className="w-7 h-7 md:w-8 md:h-8" /> },
-    { title: "فحص في ورش معتمدة", description: "جميع السيارات تخضع لفحص دقيق في ورش معتمدة", icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" /> },
-    { title: "شحن متميز ومتابعة مباشرة لحين الوصول", description: "خدمة شحن موثوقة مع تتبع مباشر لشحنتك", icon: <Clock className="w-7 h-7 md:w-8 md:h-8" /> },
-    { title: "أسعار متوازنة لصالح البائع والمشتري", description: "نضمن أفضل الأسعار للطرفين من خلال نظام عادل", icon: <Award className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "مزادات متاحة 24/7", description: "نظام مزادات يعمل على مدار الساعة", icon: <Shield className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "فحص في ورش معتمدة", description: "السيارات تخضع لفحص قبل المزاد", icon: <DollarSign className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "شحن مع تتبع", description: "خدمة شحن مع إمكانية متابعة الشحنة", icon: <Clock className="w-7 h-7 md:w-8 md:h-8" /> },
+    { title: "نظام تسعير واضح", description: "شفافية في الأسعار والعمولات", icon: <Award className="w-7 h-7 md:w-8 md:h-8" /> },
   ];
 
   return (
-    <section className="py-16 md:py-20 bg-background">
+    <section className="py-16 md:py-20 bg-white dark:bg-background border-t border-slate-200 dark:border-border">
       <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
         <div className="text-center mb-10 md:mb-14">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4"
           >
-            لماذا تختار داسم-اي؟
+            ما يميز داسم
           </motion.h2>
           <p className="text-sm md:text-base text-foreground/70 max-w-2xl mx-auto">
-            نقدم لك تجربة مزادات استثنائية بمعايير عالية من الجودة والموثوقية
+            تجربة مزادات واضحة وموثوقة
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8" dir="ltr">
@@ -544,7 +371,7 @@ const BenefitsSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
-              className="bg-card rounded-[24px] border border-border/60 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col items-center text-center px-6 py-8 md:px-7 md:py-9"
+              className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col items-center text-center px-6 py-8 md:px-7 md:py-9"
             >
               <div className="mb-4">
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary flex items-center justify-center text-white">
@@ -568,45 +395,28 @@ const BenefitsSection = () => {
 // ========== الصفحة الرئيسية ==========
 
 export default function Page() {
-  const [titleDone, setTitleDone] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
   return (
-    <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-secondary dark:bg-background">
-        <div
-          className="
-            container mx-auto px-4 sm:px-6
-            py-14 md:py-18 lg:py-22
-            relative z-10 text-center
-          "
-        >
+    <div className="min-h-screen flex flex-col bg-[#F7FAFC] dark:bg-background">
+      {/* Hero Section - Arabic-first, honest, focused */}
+      <section className="relative overflow-hidden bg-[#F7FAFC] dark:bg-background">
+        <div className="container mx-auto px-4 sm:px-6 py-14 md:py-18 lg:py-22 relative z-10 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 26 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
           >
-            <TypingMainTitle
-              text="Digital Auctions Specialists Markets"
-              speed={60}
-              onDone={() => setTitleDone(true)}
-            />
-
-            <RotatingSentences start={mounted && titleDone} />
-
-            <p className="text-foreground text-base md:text-lg lg:text-xl max-w-3xl mx-auto mt-4 md:mt-6 leading-relaxed px-4">
-              منصة وطنية رقمية شاملة تُعيد تعريف تجربة المزادات عبر تقنيات
-              ذكية، شفافية مطلقة، ووصول عالمي.
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary leading-tight">
+              منصة للأسواق الرقمية المتخصصة
+            </h1>
+            <p className="text-secondary text-base md:text-lg max-w-2xl mx-auto mt-4 leading-relaxed">
+              منصة وطنية رقمية شاملة تعيد تعريف تجربة المزادات عبر تقنيات ذكية
             </p>
           </motion.div>
         </div>
       </section>
 
       {/* ✅ اختر السوق المتخصص */}
-      <section className="py-8 md:py-12 bg-background border-y border-border">
+      <section className="py-8 md:py-12 bg-white dark:bg-background border-y border-slate-200 dark:border-border shadow-sm">
         <div className="container mx-auto px-4 sm:px-6">
           <MarketTypeNav />
         </div>
@@ -620,7 +430,10 @@ export default function Page() {
 
       <BenefitsSection />
 
-      <Footer />
-    </>
+      {/* Footer wrapper: extends navy to bottom of viewport in light mode */}
+      <div className="mt-auto flex-1 min-h-0 bg-[#06162a] dark:bg-transparent">
+        <Footer />
+      </div>
+    </div>
   );
 }

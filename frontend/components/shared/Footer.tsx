@@ -9,15 +9,11 @@ import {
   Mail,
   Users,
   Facebook,
-  Home,
-  Info,
-  HelpCircle,
-  BookOpen,
-  LineChart,
   Loader2,
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
+import { FOOTER_NAV_LINKS } from "@/lib/siteConfig";
 
 /** =========================
  *  Payment Logo Card
@@ -154,17 +150,8 @@ const Footer = () => {
   );
   const [message, setMessage] = useState("");
 
-  // ✅ Nav مع أيقونات
-  const navLinks = useMemo(
-    () => [
-      { href: "/", label: "الرئيسية", icon: Home },
-      { href: "/about", label: "من نحن", icon: Info },
-      { href: "/faq", label: "الأسئلة الشائعة", icon: HelpCircle },
-      { href: "/blog", label: "المدونة", icon: BookOpen },
-      { href: "/similar-price-analysis", label: "تحليل السيارات", icon: LineChart, active: true },
-    ],
-    []
-  );
+  // ✅ مصدر موحد من siteConfig
+  const navLinks = FOOTER_NAV_LINKS;
 
   const socialLinks = useMemo(
     () => [
@@ -357,7 +344,7 @@ const Footer = () => {
           {/* RIGHT (Nav) */}
           <nav
             dir="rtl"
-            className="w-full lg:w-auto flex items-center justify-center lg:justify-end gap-6 flex-wrap"
+            className="w-full lg:w-auto flex items-center justify-start gap-6 flex-wrap"
           >
             {navLinks.map((l) => {
               const Icon = l.icon;

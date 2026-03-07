@@ -10,10 +10,11 @@
     --color-card-background: 248 250 252; /* e.g., slate-50 */
     --color-border: 226 232 240; /* e.g., slate-200 */
 
-    /* Brand Colors (Solid) */
-    --color-primary: 0 45 91; /* DASM Blue: #002D5B */
+    /* Brand Colors (Solid) - موحدة مع الهيدر والهيرو */
+    --navbar-bg: #1A4270;
+    --color-primary: 31 75 122; /* DASM Blue: #1F4B7A */
     --color-primary-foreground: 255 255 255; /* White text on primary */
-    --color-secondary: 0 169 92; /* DASM Green: #00A95C */
+    --color-secondary: 0 147 69; /* DASM Green: #009345 */
     --radius: 0.5rem;
   }
 
@@ -30,12 +31,30 @@
     --color-secondary: 0 169 92; /* DASM Green: #00A95C */
   }
 
+  html {
+    min-height: 100%;
+  }
+
+  /* Light mode: navy fallback so footer area never shows white */
+  html:not(.dark) {
+    background-color: #06162a;
+  }
+
   body {
-    background-color: rgb(var(--color-background));
     color: rgb(var(--color-foreground));
     font-family: var(--font-almarai), var(--font-lama), sans-serif;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
+  }
+
+  /* Light mode: navy body so footer area never shows white */
+  html:not(.dark) body {
+    background-color: #06162a;
+  }
+
+  html.dark body {
+    background-color: rgb(var(--color-background));
   }
 
   * {
@@ -65,18 +84,11 @@
     @apply transition-colors;
   }
   a:hover {
-    color: rgb(34 211 238 / var(--tw-text-opacity, 1));
+    color: rgb(var(--color-primary));
   }
 }
 
-@layer components {
-  .bg-background {
-    @apply bg-white;
-  }
-  .text-foreground {
-    @apply text-gray-900;
-  }
-}
+/* إزالة overrides التي كانت تكسر الوضع الداكن - الاعتماد على theme tokens */
 
 /* ---------------- Pagination styles (كما هي مع تحسين RTL) ---------------- */
 .pagination-container {

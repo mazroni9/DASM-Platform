@@ -76,68 +76,52 @@ const Navbar = () => {
 
   return (
     <nav
-      className="bg-background text-foreground py-3 shadow-lg border-b border-border relative z-50"
+      className="py-3 shadow-lg border-b border-white/10 dark:border-border relative z-50 bg-[var(--navbar-bg)] dark:bg-background"
       role="navigation"
       aria-label="التنقل الرئيسي"
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between min-h-[64px]">
-          {/* Logo */}
-          <div className="flex items-center flex-shrink-0">
+          {/* العلامة التجارية — Light: نص يندمج مع الخلفية، الشعار أقصى اليمين */}
+          <div className="flex items-center flex-shrink-0 gap-3">
             <LoadingLink href="/" className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-primary/30">
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-white/30 dark:border-primary/30 flex-shrink-0">
                 <Image
                   src="/logo.jpg"
-                  alt="منصة DASMe - المزادات الرقمية المتخصصة"
+                  alt="منصة DASMe - الأسواق الرقمية المتخصصة"
                   fill
                   className="object-cover"
                 />
               </div>
 
-              <span className="font-bold text-lg tracking-tight text-foreground flex items-baseline gap-2">
-                <span>المزادات الرقمية</span>
-
+              <div className="flex flex-col items-center text-center">
                 <span
                   dir="ltr"
-                  className="inline-flex items-baseline leading-none text-xl"
+                  className="font-bold text-lg leading-tight flex items-baseline justify-center gap-0.5 text-white dark:text-foreground"
                 >
-                  {/* ✅ D / S / M: أبيض في الدارك */}
-                  <span className="text-[#003b70] dark:text-white">D</span>
-                  <span className="text-[#009345] dark:text-[#009345]">A</span>
-                  <span className="text-[#003b70] dark:text-white">S</span>
-                  <span className="text-[#003b70] dark:text-white">M</span>
+                  <span>DASM</span>
                   <span className="text-[#009345] dark:text-[#009345]">e</span>
                 </span>
-              </span>
+                <span className="text-sm text-white/80 dark:text-foreground/80">
+                  الأسواق الرقمية المتخصصة والتجارة الإلكترونية
+                </span>
+              </div>
             </LoadingLink>
           </div>
 
           {/* ✅ Center Links (Desktop) */}
           <div className="hidden lg:flex items-center justify-center gap-2 flex-1 px-6">
             <LoadingLink
-              href="/about"
+              href="/why-dasm"
               className="
                 px-4 py-2 rounded-full
                 text-sm font-bold
-                text-foreground/80 hover:text-foreground
-                hover:bg-border/60
+                text-white/90 dark:text-foreground/80 hover:text-[#009345] dark:hover:text-foreground
+                hover:bg-white/10 dark:hover:bg-border/60
                 transition-colors
               "
             >
               لماذا داسم؟
-            </LoadingLink>
-
-            <LoadingLink
-              href="/blog"
-              className="
-                px-4 py-2 rounded-full
-                text-sm font-bold
-                text-foreground/80 hover:text-foreground
-                hover:bg-border/60
-                transition-colors
-              "
-            >
-              المدونة
             </LoadingLink>
           </div>
 
@@ -175,7 +159,7 @@ const Navbar = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-transparent border-primary text-primary hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                  className="!bg-transparent border-white text-white hover:!bg-white/10 hover:text-white dark:!bg-transparent dark:border-primary dark:text-primary dark:hover:!bg-primary/10 dark:hover:text-primary transition-all duration-200"
                 >
                   تسجيل الدخول
                 </Button>
@@ -194,10 +178,10 @@ const Navbar = () => {
             <ThemeToggle />
 
             <button
-              className="p-2 rounded-lg text-foreground hover:bg-border hover:text-primary transition-colors duration-200"
+              className="p-2 rounded-lg text-white dark:text-foreground hover:bg-white/10 dark:hover:bg-border hover:text-primary transition-colors duration-200"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
-              aria-expanded={mobileMenuOpen}
+              {...(mobileMenuOpen ? { "aria-expanded": "true" as const } : { "aria-expanded": "false" as const })}
             >
               <Menu
                 className={`h-5 w-5 transition-transform ${
@@ -216,22 +200,14 @@ const Navbar = () => {
               : "max-h-0 opacity-0"
           }`}
         >
-          <div className="space-y-2 pt-3 border-t border-border">
+          <div className="space-y-2 pt-3 border-t border-white/10 dark:border-border">
             {/* ✅ Links in mobile menu too */}
             <LoadingLink
-              href="/about"
-              className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
+              href="/why-dasm"
+              className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-white/10 dark:hover:bg-border text-white dark:text-foreground transition-all duration-200"
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="text-base font-semibold">لماذا داسم؟</span>
-            </LoadingLink>
-
-            <LoadingLink
-              href="/blog"
-              className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="text-base font-semibold">المدونة</span>
             </LoadingLink>
 
             {isAdmin && (
@@ -252,7 +228,7 @@ const Navbar = () => {
 
             {user ? (
               <button
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-border text-foreground transition-all duration-200"
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-white/10 dark:hover:bg-border text-white dark:text-foreground transition-all duration-200"
                 onClick={() => {
                   handleLogout();
                   setMobileMenuOpen(false);
@@ -269,7 +245,7 @@ const Navbar = () => {
             ) : (
               <LoadingLink
                 href="/auth/login"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-primary/10 text-primary transition-all duration-200"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-right hover:bg-white/10 dark:hover:bg-primary/10 text-white dark:text-primary transition-all duration-200"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span className="text-base">تسجيل الدخول</span>
@@ -292,3 +268,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
