@@ -13,6 +13,8 @@ import {
   PlayCircle,
   Clock,
   DollarSign,
+  FileText,
+  ArrowLeft,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -337,6 +339,131 @@ const StatsSection = () => {
   );
 };
 
+// ========== قسم مجلس السوق (معاينة المقالات) ==========
+
+type MarketArticlePreview = {
+  id: number | string;
+  title_ar: string;
+  excerpt_ar?: string | null;
+  slug: string;
+  read_time?: number;
+  category?: { name_ar: string } | null;
+};
+
+const MarketCouncilPreviewSection = () => {
+  const [articles, setArticles] = useState<MarketArticlePreview[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        const res = await api.get("/api/market-council/articles", {
+          params: { per_page: 3 },
+        });
+        const data = res?.data?.data ?? res?.data;
+        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        if (mounted) setArticles(list.slice(0, 3));
+      } catch {
+        if (mounted) setArticles([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    run();
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading && articles.length === 0) {
+    return (
+      <section className="py-16 md:py-20 bg-white dark:bg-background border-t border-slate-200 dark:border-border">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4">من مجلس السوق</h2>
+            <p className="text-foreground/70 max-w-xl mx-auto">ثقافة التاجر المحترف</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-2xl p-6 h-48 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (articles.length === 0) return null;
+
+  return (
+    <section className="py-16 md:py-20 bg-white dark:bg-background border-t border-slate-200 dark:border-border">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center mb-10 md:mb-14">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4"
+          >
+            من مجلس السوق
+          </motion.h2>
+          <p className="text-sm md:text-base text-foreground/70 max-w-xl mx-auto">
+            ثقافة التاجر المحترف — قصص السوق وعلم المزاد
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+          {articles.map((art, index) => (
+            <motion.div
+              key={art.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.08 }}
+            >
+              <a
+                href={`/market-council/${art.slug}`}
+                className="block bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group h-full"
+              >
+                <div className="p-6 flex flex-col h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">
+                      {art.category?.name_ar || "—"}
+                    </span>
+                    <span className="text-xs text-foreground/50 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {art.read_time ?? 1} د
+                    </span>
+                  </div>
+                  <h3 className="text-base md:text-lg font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                    {art.title_ar}
+                  </h3>
+                  <p className="text-sm text-foreground/70 line-clamp-2 flex-1">
+                    {(art.excerpt_ar || "").trim() || "—"}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-primary font-bold text-sm">
+                    اقرأ المزيد
+                    <ArrowLeft className="w-4 h-4 transition group-hover:-translate-x-0.5" />
+                  </span>
+                </div>
+              </a>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <a
+            href="/market-council"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-primary px-6 py-3 text-primary font-bold hover:bg-primary/5 transition-all"
+          >
+            <FileText className="w-5 h-5" />
+            عرض كل المقالات
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ========== قسم المزايا ==========
 
 const BenefitsSection = () => {
@@ -429,6 +556,8 @@ export default function Page() {
       <StatsSection />
 
       <BenefitsSection />
+
+      <MarketCouncilPreviewSection />
 
       {/* Footer wrapper: extends navy to bottom of viewport in light mode */}
       <div className="mt-auto flex-1 min-h-0 bg-[#06162a] dark:bg-transparent">

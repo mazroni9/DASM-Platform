@@ -262,6 +262,93 @@ const MarketStatusBanner = ({
   );
 };
 
+// ========== ويدجت مجلس السوق (صفحة تفاصيل السيارة) ==========
+type MarketArticleItem = {
+  id: number | string;
+  title_ar: string;
+  excerpt_ar?: string | null;
+  slug: string;
+  read_time?: number;
+  category?: { name_ar: string } | null;
+};
+
+const MarketCouncilWidget = () => {
+  const [articles, setArticles] = useState<MarketArticleItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const run = async () => {
+      try {
+        const res = await api.get("/api/market-council/recommended", {
+          params: { context_type: "car_detail", limit: 3, strict_context: 1 },
+        });
+        const data = res?.data?.data ?? res?.data;
+        const list = Array.isArray(data) ? data : [];
+        if (mounted) setArticles(list.slice(0, 3));
+      } catch {
+        if (mounted) setArticles([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    run();
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading || articles.length === 0) return null;
+
+  return (
+    <section className="bg-background py-16 mt-8 border-t border-border/40">
+      <div className="container mx-auto px-4 sm:px-6">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-right text-2xl sm:text-3xl font-bold text-foreground mb-10 flex items-center gap-3"
+        >
+          <Award className="w-8 h-8 text-primary" />
+          من مجلس السوق
+        </motion.h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {articles.map((art, index) => (
+            <LoadingLink key={art.id} href={`/market-council/${art.slug}`}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.08 }}
+                className="block group rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-card border border-border/50 hover:border-primary/20 p-6 cursor-pointer"
+              >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">
+                  {art.category?.name_ar || "—"}
+                </span>
+                <span className="text-xs text-foreground/50 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {art.read_time ?? 1} د
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-2">
+                {art.title_ar}
+              </h3>
+              <p className="text-sm text-foreground/70 line-clamp-2">
+                {(art.excerpt_ar || "").trim() || "—"}
+              </p>
+              <span className="mt-3 inline-flex items-center gap-2 text-primary font-bold text-sm">
+                اقرأ المزيد
+                <ArrowUpRight className="w-4 h-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </span>
+              </motion.div>
+            </LoadingLink>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 // ========== قسم السيارات المشابهة ==========
 const FeaturedCars = ({ cars }: { cars: any[] }) => {
   if (!cars || cars.length === 0) return null;
@@ -983,6 +1070,9 @@ export default function CarDetailPage() {
 
           {/* Similar Cars - Outside the grid, full width */}
           <FeaturedCars cars={item?.similar_cars} />
+
+          {/* Market Council Widget - Contextual articles for car_detail */}
+          <MarketCouncilWidget />
         </div>
       </div>
     </>

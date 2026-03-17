@@ -19,6 +19,9 @@ use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\BlogController; // ✅ Public Blog Controller
+use App\Http\Controllers\MarketCouncilController;
+use App\Http\Controllers\MarketReactionController;
+use App\Http\Controllers\MarketCommentController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ModeratorController;
 use App\Http\Controllers\BroadcastController;
@@ -55,6 +58,8 @@ use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW: Admin Blog Controller
+use App\Http\Controllers\Admin\MarketCouncilController as AdminMarketCouncilController;
+use App\Http\Controllers\Admin\MarketCouncilCommentsController as AdminMarketCouncilCommentsController;
 use App\Http\Controllers\Admin\AuctionActivityLogController;
 use App\Http\Controllers\Admin\AuctionTestingAnalyticsController;
 
@@ -330,6 +335,20 @@ Route::prefix('blog')->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// 2.5.1 Public Market Council (مجلس السوق)
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('market-council')->group(function () {
+    Route::get('/categories', [MarketCouncilController::class, 'categories']);
+    Route::get('/recommended', [MarketCouncilController::class, 'recommended']);
+    Route::get('/articles', [MarketCouncilController::class, 'articles']);
+    Route::get('/articles/{id}/comments', [MarketCommentController::class, 'index'])->whereNumber('id');
+    Route::get('/articles/{slug}', [MarketCouncilController::class, 'showArticle']);
+    Route::post('/articles/{id}/comments', [MarketCommentController::class, 'store'])
+        ->whereNumber('id')
+        ->middleware(['auth:sanctum', 'throttle:10,1']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 // 2.6 Public Broadcast & Subscription Plans
 // ─────────────────────────────────────────────────────────────────────────
 Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
@@ -488,6 +507,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/bids', [BidController::class, 'index']);
         Route::post('/bids', [BidController::class, 'store'])->middleware('bid.rate.limit');
         Route::get('/leaderboard', [BidController::class, 'leaderboard']);
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.x Market Council Reactions (إعجاب، حفظ، مفيد)
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('market-council')->group(function () {
+        Route::post('/articles/{id}/react', [MarketReactionController::class, 'store'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1');
+        Route::delete('/articles/{id}/react', [MarketReactionController::class, 'destroy'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1');
     });
 
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
@@ -911,6 +942,34 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
                 Route::post('/', [AdminBlogController::class, 'tagsStore']);
                 Route::put('/{id}', [AdminBlogController::class, 'tagsUpdate'])->whereNumber('id');
                 Route::delete('/{id}', [AdminBlogController::class, 'tagsDestroy'])->whereNumber('id');
+            });
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.9.1 Market Council (مجلس السوق)
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('market-council')->group(function () {
+            Route::prefix('articles')->group(function () {
+                Route::get('/', [AdminMarketCouncilController::class, 'articlesIndex']);
+                Route::get('/{id}', [AdminMarketCouncilController::class, 'articlesShow'])->whereNumber('id');
+                Route::post('/', [AdminMarketCouncilController::class, 'storeArticle']);
+                Route::put('/{id}', [AdminMarketCouncilController::class, 'updateArticle'])->whereNumber('id');
+                Route::delete('/{id}', [AdminMarketCouncilController::class, 'destroyArticle'])->whereNumber('id');
+                Route::post('/{id}/status', [AdminMarketCouncilController::class, 'articlesToggleStatus'])->whereNumber('id');
+            });
+
+            Route::prefix('categories')->group(function () {
+                Route::get('/', [AdminMarketCouncilController::class, 'categoriesIndex']);
+                Route::get('/{id}', [AdminMarketCouncilController::class, 'categoriesShow'])->whereNumber('id');
+                Route::post('/', [AdminMarketCouncilController::class, 'categoriesStore']);
+                Route::put('/{id}', [AdminMarketCouncilController::class, 'categoriesUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminMarketCouncilController::class, 'categoriesDestroy'])->whereNumber('id');
+            });
+
+            Route::prefix('comments')->group(function () {
+                Route::get('/', [AdminMarketCouncilCommentsController::class, 'index']);
+                Route::put('/{id}', [AdminMarketCouncilCommentsController::class, 'update'])->whereNumber('id');
+                Route::delete('/{id}', [AdminMarketCouncilCommentsController::class, 'destroy'])->whereNumber('id');
             });
         });
 
