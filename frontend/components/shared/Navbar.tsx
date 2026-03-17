@@ -112,6 +112,18 @@ const Navbar = () => {
           {/* ✅ Center Links (Desktop) */}
           <div className="hidden lg:flex items-center justify-center gap-2 flex-1 px-6">
             <LoadingLink
+              href="/market-council"
+              className="
+                px-4 py-2 rounded-full
+                text-sm font-bold
+                text-white/90 dark:text-foreground/80 hover:text-[#009345] dark:hover:text-foreground
+                hover:bg-white/10 dark:hover:bg-border/60
+                transition-colors
+              "
+            >
+              مجلس السوق
+            </LoadingLink>
+            <LoadingLink
               href="/why-dasm"
               className="
                 px-4 py-2 rounded-full
@@ -202,6 +214,13 @@ const Navbar = () => {
         >
           <div className="space-y-2 pt-3 border-t border-white/10 dark:border-border">
             {/* ✅ Links in mobile menu too */}
+            <LoadingLink
+              href="/market-council"
+              className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-white/10 dark:hover:bg-border text-white dark:text-foreground transition-all duration-200"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="text-base font-semibold">مجلس السوق</span>
+            </LoadingLink>
             <LoadingLink
               href="/why-dasm"
               className="flex items-center justify-between gap-3 w-full px-4 py-3 rounded-lg text-right hover:bg-white/10 dark:hover:bg-border text-white dark:text-foreground transition-all duration-200"

@@ -30,7 +30,8 @@ import {
   TestTube,
   BarChart3,
   ScrollText,
-  Mail, // ✅ NEW
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -208,6 +209,29 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/blog/categories",
       icon: Tags,
       // permission: "blog_categories.view",
+    },
+
+    // ✅ Market Council (مجلس السوق)
+    {
+      name: "مجلس السوق",
+      href: "#",
+      type: "header",
+      icon: FileText,
+    },
+    {
+      name: "مقالات مجلس السوق",
+      href: "/admin/market-council/articles",
+      icon: FileText,
+    },
+    {
+      name: "تصنيفات مجلس السوق",
+      href: "/admin/market-council/categories",
+      icon: Tags,
+    },
+    {
+      name: "تعليقات مجلس السوق",
+      href: "/admin/market-council/comments",
+      icon: MessageSquare,
     },
 
     // ✅ NEW: Newsletter Section

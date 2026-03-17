@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             SubscriptionPlanSeeder::class,
             AreaSeeder::class,
             AuctionTestDataSeeder::class, // بيانات الاختبار
+            MarketCouncilCategorySeeder::class,
         ]);
     }
 }
