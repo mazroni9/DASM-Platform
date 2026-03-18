@@ -12,8 +12,6 @@ import {
   DollarSign,
   Package,
   Activity,
-  Clock,
-  Calendar,
   Loader2,
   Sparkles,
   Rocket,
@@ -29,13 +27,6 @@ type ProfileResponse = {
   status?: string;
   data?: any;
   message?: string;
-};
-
-type ActivityItem = {
-  id: number | string;
-  title: string;
-  date: string;
-  type: string;
 };
 
 export default function DashboardPage() {
@@ -54,8 +45,6 @@ export default function DashboardPage() {
     walletBalance: 0,
     activeOrders: 0,
   });
-
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
 
   const userName = useMemo(() => {
     const src = profile || user;
@@ -112,15 +101,12 @@ export default function DashboardPage() {
         walletBalance: Number(data.wallet_balance ?? 0),
         activeOrders: Number(data.active_orders_count ?? 0),
       });
-
-      setActivities(Array.isArray(data.activities) ? data.activities : []);
     } catch (error) {
       console.error("Error fetching dashboard:", error);
       toast.error("تعذر تحميل بيانات لوحة التحكم. يرجى المحاولة لاحقًا.");
 
       setProfile(null);
       setStats({ purchases: 0, sales: 0, walletBalance: 0, activeOrders: 0 });
-      setActivities([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -135,34 +121,6 @@ export default function DashboardPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchUserData();
-  };
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "purchase":
-        return <ShoppingCart className="w-3 h-3 text-sky-400" />;
-      case "sale":
-        return <Package className="w-3 h-3 text-emerald-400" />;
-      case "deposit":
-      case "withdrawal":
-        return <DollarSign className="w-3 h-3 text-amber-400" />;
-      default:
-        return <Activity className="w-3 h-3 text-gray-400" />;
-    }
-  };
-
-  const getActivityBgColor = (type: string) => {
-    switch (type) {
-      case "purchase":
-        return "bg-primary/10";
-      case "sale":
-        return "bg-secondary/10";
-      case "deposit":
-      case "withdrawal":
-        return "bg-amber-500/10";
-      default:
-        return "bg-border";
-    }
   };
 
   const statItems = [
@@ -209,16 +167,6 @@ export default function DashboardPage() {
       trend: "+3%",
     },
   ];
-
-  // بيانات افتراضية للنشاطات إذا لم توجد بيانات
-  const defaultActivities: ActivityItem[] = [
-    { id: 1, title: "مرحباً بك في منصة داسم", date: "الآن", type: "welcome" },
-    { id: 2, title: "ابدأ بإضافة سياراتك الأولى", date: "اليوم", type: "info" },
-    { id: 3, title: "استكشف المزادات المتاحة", date: "اليوم", type: "info" },
-  ];
-
-  const displayActivities =
-    activities.length > 0 ? activities : defaultActivities;
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -286,110 +234,59 @@ export default function DashboardPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Stats Cards */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
-                  <Activity className="w-4 h-4" />
-                </div>
-                إحصائيات سريعة
-              </h2>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all duration-300 disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
-                />
-                <span className="text-xs">تحديث</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {statItems.map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className={cn(
-                      "p-4 rounded-xl border backdrop-blur-sm shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl",
-                      item.bg,
-                      item.border,
-                      item.glow,
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-white/10">
-                        <Icon className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded border border-green-500/30">
-                        {item.trend}
-                      </span>
-                    </div>
-                    <p className="text-xs text-foreground/80 mb-1">
-                      {item.label}
-                    </p>
-                    <p className={cn("text-lg font-bold", item.text)}>
-                      {item.value}
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                <Activity className="w-4 h-4" />
+              </div>
+              إحصائيات سريعة
+            </h2>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all duration-300 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
+              />
+              <span className="text-xs">تحديث</span>
+            </button>
           </div>
 
-          {/* Recent Activities */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
-                  <Clock className="w-4 h-4" />
-                </div>
-                آخر النشاطات
-              </h2>
-              <button className="text-xs text-foreground/70 hover:text-foreground transition-colors">
-                عرض الكل
-              </button>
-            </div>
-
-            <div className="bg-card backdrop-blur-xl border border-border rounded-xl p-4">
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                {displayActivities.map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-background/50 hover:bg-border transition-all duration-300 border border-border/70 hover:border-border group"
-                  >
-                    <div
-                      className={cn(
-                        "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
-                        getActivityBgColor(activity.type),
-                      )}
-                    >
-                      {getActivityIcon(activity.type)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {statItems.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className={cn(
+                    "p-4 rounded-xl border backdrop-blur-sm shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl",
+                    item.bg,
+                    item.border,
+                    item.glow,
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-white/10">
+                      <Icon className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground group-hover:text-foreground/80 transition-colors leading-tight">
-                        {activity.title}
-                      </p>
-                      <p className="text-xs text-foreground/50 mt-1 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {activity.date}
-                      </p>
-                    </div>
-                    <div className="w-1.5 h-1.5 bg-border rounded-full group-hover:bg-current transition-colors duration-300"></div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
+                    <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded border border-green-500/30">
+                      {item.trend}
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/80 mb-1">
+                    {item.label}
+                  </p>
+                  <p className={cn("text-lg font-bold", item.text)}>
+                    {item.value}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

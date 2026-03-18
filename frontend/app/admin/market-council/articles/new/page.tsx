@@ -15,6 +15,7 @@ import {
   Save,
   Star,
 } from "lucide-react";
+import { generateSlug, sanitizeSlugForSubmit, isValidSlug } from "@/lib/marketCouncilSlug";
 
 type MarketCategory = {
   id: number | string;
@@ -41,18 +42,6 @@ const CONTEXT_OPTIONS: { value: string; label: string }[] = [
   { value: "buyer", label: "المشتري" },
   { value: "trader", label: "التاجر" },
 ];
-
-function slugify(input: string) {
-  const s = (input || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/[^\p{L}\p{N}-]+/gu, "")
-    .replace(/^-+|-+$/g, "");
-  return s;
-}
 
 export default function AdminMarketCouncilArticleCreatePage() {
   const router = useRouter();
@@ -103,13 +92,13 @@ export default function AdminMarketCouncilArticleCreatePage() {
 
   useEffect(() => {
     if (!autoSlug || slugTouchedRef.current || !form.title_ar.trim()) return;
-    setForm((p) => ({ ...p, slug: slugify(p.title_ar) }));
-  }, [form.title_ar, autoSlug]);
+    setForm((p) => ({ ...p, slug: generateSlug(p.title_ar, p.title_en) }));
+  }, [form.title_ar, form.title_en, autoSlug]);
 
   const linkHelp = useMemo(() => {
     const s = form.slug.trim();
     if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
-    if (s.includes(" ")) return { type: "warn" as const, text: "بدون مسافات" };
+    if (!isValidSlug(s)) return { type: "warn" as const, text: "استخدم حروف إنجليزية وأرقام وشرطات فقط" };
     return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
@@ -117,7 +106,8 @@ export default function AdminMarketCouncilArticleCreatePage() {
     if (!categories.length) return "لا توجد تصنيفات";
     if (!form.category_id) return "اختر تصنيف";
     if (!form.title_ar.trim()) return "العنوان بالعربية مطلوب";
-    if (!form.slug.trim()) return "الرابط مطلوب";
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
+    if (!slug) return "الرابط مطلوب (حروف إنجليزية وأرقام فقط)";
     if (!form.content_ar.trim()) return "المحتوى بالعربية مطلوب";
     return "";
   };
@@ -129,12 +119,13 @@ export default function AdminMarketCouncilArticleCreatePage() {
       toast.error(msg);
       return;
     }
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
     try {
       setSaving(true);
       await api.post("/api/admin/market-council/articles", {
         title_ar: form.title_ar.trim(),
         title_en: form.title_en.trim() || null,
-        slug: form.slug.trim(),
+        slug,
         category_id: Number(form.category_id),
         excerpt_ar: form.excerpt_ar.trim() || null,
         excerpt_en: form.excerpt_en.trim() || null,
@@ -150,8 +141,13 @@ export default function AdminMarketCouncilArticleCreatePage() {
       toast.success("تم إنشاء المقال");
       router.replace("/admin/market-council/articles");
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message || "تعذر الحفظ");
+      const e = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const data = e?.response?.data;
+      const msg =
+        data?.message ||
+        (data?.errors && Object.values(data.errors).flat()[0]) ||
+        "تعذر الحفظ";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -240,10 +236,18 @@ export default function AdminMarketCouncilArticleCreatePage() {
                   disabled={loadingCats || !categories.length}
                   required
                 >
+                  <option value="">
+                    {loadingCats ? "..." : categories.length ? "— اختر تصنيفاً —" : "— لا توجد تصنيفات —"}
+                  </option>
                   {categories.map((c) => (
                     <option key={c.id} value={String(c.id)}>{c.name_ar}</option>
                   ))}
                 </select>
+                {!loadingCats && !categories.length ? (
+                  <p className="mt-1 text-xs text-amber-600">
+                    أضف تصنيفاً من صفحة التصنيفات أولاً
+                  </p>
+                ) : null}
               </div>
               <div>
                 <label className="block text-sm font-bold mb-1">الحالة</label>

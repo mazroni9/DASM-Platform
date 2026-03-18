@@ -19,8 +19,10 @@ import {
   SaudiRiyal,
   ArrowRight,
   TrendingUp,
+  FileEdit,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermission } from "@/hooks/usePermission";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 
 interface DashboardLayoutProps {
@@ -58,10 +60,19 @@ function getAuctionHrefByKsaTime(): string {
   return "/auctions/auctions-1main/silent";
 }
 
+const COUNCIL_PERMISSIONS = [
+  "council.studio.access", "council.article.create", "council.article.edit_own",
+  "council.article.edit_any", "council.article.submit_review", "council.article.review",
+  "council.article.publish", "council.article.unpublish", "council.article.feature",
+  "council.comment.review", "council.reply.review", "council.category.manage",
+];
+
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { isLoggedIn } = useAuth();
+  const { canAny } = usePermission();
   const router = useLoadingRouter();
+  const canAccessCouncilStudio = canAny(COUNCIL_PERMISSIONS);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -128,6 +139,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         icon: Truck,
         description: "إدارة خدمات الشحن",
       },
+      ...(canAccessCouncilStudio
+        ? [{
+            name: "استوديو مجلس السوق",
+            href: "/dashboard/council",
+            icon: FileEdit,
+            description: "التحرير والمراجعة والإشراف",
+          }]
+        : []),
       {
         name: "الملف الشخصي",
         href: "/dashboard/profile",
@@ -135,7 +154,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         description: "تعديل بياناتك الشخصية",
       },
     ],
-    []
+    [canAccessCouncilStudio]
   );
 
   const quickActions = useMemo(
