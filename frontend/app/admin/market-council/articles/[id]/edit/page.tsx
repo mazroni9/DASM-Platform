@@ -15,6 +15,7 @@ import {
   Save,
   Star,
 } from "lucide-react";
+import { generateSlug, sanitizeSlugForSubmit, isValidSlug } from "@/lib/marketCouncilSlug";
 
 type MarketCategory = {
   id: number | string;
@@ -54,18 +55,6 @@ function normalizeList<T>(resData: unknown): { list: T[] } {
   const d = root?.data as { data?: T[] } | undefined;
   if (d && Array.isArray(d?.data)) return { list: d.data };
   return { list: [] };
-}
-
-function slugify(input: string) {
-  const s = (input || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/[^\p{L}\p{N}-]+/gu, "")
-    .replace(/^-+|-+$/g, "");
-  return s;
 }
 
 const CONTEXT_OPTIONS: { value: string; label: string }[] = [
@@ -170,20 +159,21 @@ export default function AdminMarketCouncilArticleEditPage() {
 
   useEffect(() => {
     if (!autoSlug || slugTouchedRef.current || !form.title_ar.trim()) return;
-    setForm((p) => ({ ...p, slug: slugify(p.title_ar) }));
-  }, [form.title_ar, autoSlug]);
+    setForm((p) => ({ ...p, slug: generateSlug(p.title_ar, p.title_en) }));
+  }, [form.title_ar, form.title_en, autoSlug]);
 
   const linkHelp = useMemo(() => {
     const s = form.slug.trim();
     if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
-    if (s.includes(" ")) return { type: "warn" as const, text: "بدون مسافات" };
+    if (!isValidSlug(s)) return { type: "warn" as const, text: "استخدم حروف إنجليزية وأرقام وشرطات فقط" };
     return { type: "ok" as const, text: "تمام" };
   }, [form.slug]);
 
   const validate = () => {
     if (!form.category_id) return "اختر تصنيف";
     if (!form.title_ar.trim()) return "العنوان بالعربية مطلوب";
-    if (!form.slug.trim()) return "الرابط مطلوب";
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
+    if (!slug) return "الرابط مطلوب (حروف إنجليزية وأرقام فقط)";
     if (!form.content_ar.trim()) return "المحتوى بالعربية مطلوب";
     return "";
   };
@@ -195,12 +185,13 @@ export default function AdminMarketCouncilArticleEditPage() {
       toast.error(msg);
       return;
     }
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
     try {
       setSaving(true);
       await api.put(`/api/admin/market-council/articles/${id}`, {
         title_ar: form.title_ar.trim(),
         title_en: form.title_en.trim() || null,
-        slug: form.slug.trim(),
+        slug,
         category_id: Number(form.category_id),
         excerpt_ar: form.excerpt_ar.trim() || null,
         excerpt_en: form.excerpt_en.trim() || null,
@@ -226,8 +217,9 @@ export default function AdminMarketCouncilArticleEditPage() {
 
   if (loadingArticle) {
     return (
-      <div className="min-h-screen bg-background p-8 flex items-center justify-center">
-        <p className="text-foreground/60">جاري التحميل...</p>
+      <div className="min-h-screen bg-background p-8 flex items-center justify-center gap-3">
+        <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-foreground/60 text-sm">...</span>
       </div>
     );
   }

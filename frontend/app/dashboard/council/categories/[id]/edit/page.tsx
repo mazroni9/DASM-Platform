@@ -6,9 +6,10 @@ import { toast } from "react-hot-toast";
 import LoadingLink from "@/components/LoadingLink";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, AlertTriangle, Save } from "lucide-react";
+import { usePermission } from "@/hooks/usePermission";
 
 function slugify(input: string) {
-  const s = (input || "")
+  return (input || "")
     .trim()
     .toLowerCase()
     .normalize("NFKD")
@@ -16,19 +17,18 @@ function slugify(input: string) {
     .replace(/-+/g, "-")
     .replace(/[^\p{L}\p{N}-]+/gu, "")
     .replace(/^-+|-+$/g, "");
-  return s;
 }
 
-export default function AdminMarketCouncilCategoryEditPage() {
+export default function CouncilCategoryEditPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = params?.id;
+  const { can } = usePermission();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [autoSlug, setAutoSlug] = useState(false);
   const slugTouchedRef = useRef(true);
-  const [errorMsg, setErrorMsg] = useState("");
 
   const [form, setForm] = useState({
     name_ar: "",
@@ -39,15 +39,21 @@ export default function AdminMarketCouncilCategoryEditPage() {
     is_active: true,
   });
 
+  useEffect(() => {
+    if (!can("council.category.manage")) {
+      router.replace("/dashboard/council");
+    }
+  }, [can, router]);
+
   const fetchCategory = async () => {
     if (!id) return;
     try {
       setLoading(true);
-      const res = await api.get(`/api/admin/market-council/categories/${id}`);
+      const res = await api.get(`/api/council-studio/categories/${id}`);
       const cat = res?.data?.data ?? res?.data;
       if (!cat?.name_ar) {
         toast.error("التصنيف غير موجود");
-        router.replace("/admin/market-council/categories");
+        router.replace("/dashboard/council/categories");
         return;
       }
       setForm({
@@ -65,16 +71,16 @@ export default function AdminMarketCouncilCategoryEditPage() {
       } else {
         toast.error("تعذر تحميل التصنيف");
       }
-      router.replace("/admin/market-council/categories");
+      router.replace("/dashboard/council/categories");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !can("council.category.manage")) return;
     fetchCategory();
-  }, [id]);
+  }, [id, can]);
 
   useEffect(() => {
     if (!autoSlug || slugTouchedRef.current || !form.name_ar.trim()) return;
@@ -98,13 +104,12 @@ export default function AdminMarketCouncilCategoryEditPage() {
     e.preventDefault();
     const msg = validate();
     if (msg) {
-      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
     try {
-      setErrorMsg("");
       setSaving(true);
-      await api.put(`/api/admin/market-council/categories/${id}`, {
+      await api.put(`/api/council-studio/categories/${id}`, {
         name_ar: form.name_ar.trim(),
         name_en: form.name_en.trim() || null,
         slug: form.slug.trim(),
@@ -113,18 +118,26 @@ export default function AdminMarketCouncilCategoryEditPage() {
         is_active: form.is_active,
       });
       toast.success("تم حفظ التعديلات");
-      router.replace("/admin/market-council/categories");
+      router.replace("/dashboard/council/categories");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setErrorMsg(e?.response?.data?.message || "تعذر الحفظ");
+      toast.error(e?.response?.data?.message || "تعذر الحفظ");
     } finally {
       setSaving(false);
     }
   };
 
+  if (!can("council.category.manage")) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-8 flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center min-h-[200px] gap-3">
         <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         <span className="text-foreground/60 text-sm">...</span>
       </div>
@@ -132,21 +145,17 @@ export default function AdminMarketCouncilCategoryEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-2 rtl">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+    <div className="space-y-6 rtl">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary">تعديل تصنيف</h1>
-          <p className="text-foreground/60 mt-2">تعديل تصنيف مجلس السوق</p>
+          <h1 className="text-2xl font-bold text-primary">تعديل تصنيف</h1>
+          <p className="text-foreground/60 text-sm mt-1">تعديل تصنيف مجلس السوق</p>
         </div>
-        <LoadingLink href="/admin/market-council/categories" className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2">
+        <LoadingLink href="/dashboard/council/categories" className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2">
           <ArrowRight className="w-4 h-4" />
           رجوع
         </LoadingLink>
       </div>
-
-      {errorMsg ? (
-        <div className="mb-5 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-500 px-4 py-3">{errorMsg}</div>
-      ) : null}
 
       <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6 max-w-2xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -198,7 +207,7 @@ export default function AdminMarketCouncilCategoryEditPage() {
             <Save className="w-4 h-4" />
             {saving ? "جارٍ الحفظ..." : "حفظ"}
           </button>
-          <LoadingLink href="/admin/market-council/categories" className="flex-1 bg-border hover:bg-border/80 py-2 rounded-xl font-bold text-center">إلغاء</LoadingLink>
+          <LoadingLink href="/dashboard/council/categories" className="flex-1 bg-border hover:bg-border/80 py-2 rounded-xl font-bold text-center">إلغاء</LoadingLink>
         </div>
       </form>
     </div>

@@ -250,8 +250,11 @@ export default function MarketCouncilPage() {
       <section className="bg-background border-b border-border rtl">
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <div className="text-sm font-bold text-foreground/70">
-              {loading ? "..." : `${total} مقالة`} • {activeCategoryName}
+            <div className="text-sm font-bold text-foreground/70 flex items-center gap-2">
+              {loading ? (
+                <span className="inline-block w-3.5 h-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin shrink-0" />
+              ) : null}
+              <span>{loading ? "—" : total} مقالة • {activeCategoryName}</span>
             </div>
             <button
               onClick={() => setFeaturedOnly((v) => !v)}
@@ -422,9 +425,16 @@ export default function MarketCouncilPage() {
                   <button
                     onClick={loadMore}
                     disabled={loadingMore}
-                    className="bg-card border border-border hover:bg-border/60 transition px-6 py-3 rounded-2xl font-extrabold disabled:opacity-60"
+                    className="bg-card border border-border hover:bg-border/60 transition px-6 py-3 rounded-2xl font-extrabold disabled:opacity-60 flex items-center gap-2 justify-center"
                   >
-                    {loadingMore ? "جارٍ التحميل..." : "تحميل المزيد"}
+                    {loadingMore ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span>تحميل...</span>
+                      </>
+                    ) : (
+                      "تحميل المزيد"
+                    )}
                   </button>
                 ) : null}
               </div>

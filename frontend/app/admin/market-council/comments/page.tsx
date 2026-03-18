@@ -31,16 +31,19 @@ function normalizePaginated<T>(resData: unknown): {
   last_page?: number;
 } {
   const root = resData as { success?: boolean; data?: unknown };
-  if (root?.success && root?.data) {
-    const d = root.data as { data?: T[]; total?: number; current_page?: number; last_page?: number };
-    if (Array.isArray(d?.data)) {
-      return {
-        list: d.data,
-        total: d.total,
-        current_page: d.current_page,
-        last_page: d.last_page,
-      };
-    }
+  if (!root?.data) return { list: [] };
+  const d = root.data as { data?: T[]; total?: number; current_page?: number; last_page?: number };
+  if (Array.isArray(d?.data)) {
+    return {
+      list: d.data,
+      total: d.total,
+      current_page: d.current_page,
+      last_page: d.last_page,
+    };
+  }
+  if (Array.isArray(root.data)) {
+    const arr = root.data as T[];
+    return { list: arr, total: arr.length, current_page: 1, last_page: 1 };
   }
   return { list: [] };
 }

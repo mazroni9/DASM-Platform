@@ -12,6 +12,7 @@ class MarketArticle extends Model
 
     protected $fillable = [
         'category_id',
+        'created_by_user_id',
         'title_ar',
         'title_en',
         'slug',
@@ -42,6 +43,11 @@ class MarketArticle extends Model
         'is_featured'   => 'boolean',
         'published_at'  => 'datetime',
     ];
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
 
     public function category(): BelongsTo
     {

@@ -20,6 +20,9 @@ use App\Http\Controllers\AutoBidController;
 use App\Http\Controllers\BidController;
 use App\Http\Controllers\BlogController; // ✅ Public Blog Controller
 use App\Http\Controllers\MarketCouncilController;
+use App\Http\Controllers\CouncilCategoryStudioController;
+use App\Http\Controllers\CouncilCommentStudioController;
+use App\Http\Controllers\CouncilStudioController;
 use App\Http\Controllers\MarketReactionController;
 use App\Http\Controllers\MarketCommentController;
 use App\Http\Controllers\AdminController;
@@ -519,6 +522,26 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/articles/{id}/react', [MarketReactionController::class, 'destroy'])
             ->whereNumber('id')
             ->middleware('throttle:30,1');
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.x Council Studio (استوديو مجلس السوق) — permission-gated
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('council-studio')->middleware('can:council.studio.access')->group(function () {
+        Route::get('/dashboard', [CouncilStudioController::class, 'dashboard']);
+        Route::get('/articles', [CouncilStudioController::class, 'articles']);
+        Route::get('/reviews', [CouncilStudioController::class, 'reviews']);
+        Route::post('/articles', [CouncilStudioController::class, 'store']);
+        Route::get('/articles/{id}', [CouncilStudioController::class, 'show'])->whereNumber('id');
+        Route::put('/articles/{id}', [CouncilStudioController::class, 'update'])->whereNumber('id');
+        Route::get('/categories', [CouncilStudioController::class, 'categories']);
+        Route::get('/categories/{id}', [CouncilCategoryStudioController::class, 'show'])->whereNumber('id');
+        Route::post('/categories', [CouncilCategoryStudioController::class, 'store']);
+        Route::put('/categories/{id}', [CouncilCategoryStudioController::class, 'update'])->whereNumber('id');
+        Route::delete('/categories/{id}', [CouncilCategoryStudioController::class, 'destroy'])->whereNumber('id');
+        Route::get('/comments', [CouncilCommentStudioController::class, 'index']);
+        Route::get('/comments/{id}', [CouncilCommentStudioController::class, 'show'])->whereNumber('id');
+        Route::patch('/comments/{id}', [CouncilCommentStudioController::class, 'update'])->whereNumber('id');
     });
 
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);

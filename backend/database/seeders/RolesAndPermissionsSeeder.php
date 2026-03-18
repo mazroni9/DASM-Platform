@@ -144,6 +144,22 @@ class RolesAndPermissionsSeeder extends Seeder
                 ['name' => 'subscription_plans.view', 'display_name' => 'عرض خطط الاشتراك'],
                 ['name' => 'subscription_plans.manage', 'display_name' => 'إدارة خطط الاشتراك'],
             ],
+
+            // ** Council Studio (استوديو مجلس السوق) **
+            'council' => [
+                ['name' => 'council.studio.access', 'display_name' => 'الدخول لاستوديو مجلس السوق'],
+                ['name' => 'council.article.create', 'display_name' => 'إنشاء مقالات مجلس السوق'],
+                ['name' => 'council.article.edit_own', 'display_name' => 'تعديل مقالاتي'],
+                ['name' => 'council.article.edit_any', 'display_name' => 'تعديل أي مقال'],
+                ['name' => 'council.article.submit_review', 'display_name' => 'إرسال للمراجعة'],
+                ['name' => 'council.article.review', 'display_name' => 'مراجعة المقالات'],
+                ['name' => 'council.article.publish', 'display_name' => 'نشر المقالات'],
+                ['name' => 'council.article.unpublish', 'display_name' => 'إلغاء نشر المقالات'],
+                ['name' => 'council.article.feature', 'display_name' => 'تعيين المقال مميزاً'],
+                ['name' => 'council.comment.review', 'display_name' => 'مراجعة التعليقات'],
+                ['name' => 'council.reply.review', 'display_name' => 'مراجعة الردود'],
+                ['name' => 'council.category.manage', 'display_name' => 'إدارة تصنيفات مجلس السوق'],
+            ],
         ];
 
         // Create permissions
@@ -324,6 +340,93 @@ class RolesAndPermissionsSeeder extends Seeder
             'cars.view_details',
         ]);
 
+        // Council Studio roles (استوديو مجلس السوق)
+        $councilWriter = Role::updateOrCreate(
+            ['name' => 'council_writer', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
+            [
+                'display_name' => 'كاتب مجلس السوق',
+                'description' => 'إنشاء وتحرير مقالاته وإرسالها للمراجعة',
+            ]
+        );
+        $councilWriter->syncPermissions([
+            'council.studio.access',
+            'council.article.create',
+            'council.article.edit_own',
+            'council.article.submit_review',
+        ]);
 
+        $councilEditor = Role::updateOrCreate(
+            ['name' => 'council_editor', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
+            [
+                'display_name' => 'محرر مجلس السوق',
+                'description' => 'مراجعة وتعديل المقالات',
+            ]
+        );
+        $councilEditor->syncPermissions([
+            'council.studio.access',
+            'council.article.create',
+            'council.article.edit_own',
+            'council.article.edit_any',
+            'council.article.review',
+        ]);
+
+        $councilPublisher = Role::updateOrCreate(
+            ['name' => 'council_publisher', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
+            [
+                'display_name' => 'ناشر مجلس السوق',
+                'description' => 'نشر المقالات وإدارتها',
+            ]
+        );
+        $councilPublisher->syncPermissions([
+            'council.studio.access',
+            'council.article.edit_any',
+            'council.article.review',
+            'council.article.publish',
+            'council.article.unpublish',
+            'council.article.feature',
+        ]);
+
+        $councilModerator = Role::updateOrCreate(
+            ['name' => 'council_moderator', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
+            [
+                'display_name' => 'مشرف تعليقات مجلس السوق',
+                'description' => 'مراجعة التعليقات والردود',
+            ]
+        );
+        $councilModerator->syncPermissions([
+            'council.studio.access',
+            'council.comment.review',
+            'council.reply.review',
+        ]);
+
+        $councilManager = Role::updateOrCreate(
+            ['name' => 'council_manager', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
+            [
+                'display_name' => 'مدير مجلس السوق',
+                'description' => 'صلاحيات كاملة على استوديو مجلس السوق',
+            ]
+        );
+        $councilManager->syncPermissions([
+            'council.studio.access',
+            'council.article.create',
+            'council.article.edit_own',
+            'council.article.edit_any',
+            'council.article.submit_review',
+            'council.article.review',
+            'council.article.publish',
+            'council.article.unpublish',
+            'council.article.feature',
+            'council.comment.review',
+            'council.reply.review',
+            'council.category.manage',
+        ]);
+
+        // Optional: assign Council Manager to mazroni@gmail.com (idempotent)
+        $mazroni = User::where('email', 'mazroni@gmail.com')->first();
+        if ($mazroni && !$mazroni->hasRole('council_manager')) {
+            $teamId = $mazroni->organization_id ?? $platform_org->id;
+            app()[PermissionRegistrar::class]->setPermissionsTeamId($teamId);
+            $mazroni->assignRole($councilManager);
+        }
     }
 }

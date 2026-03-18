@@ -1,0 +1,442 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import api from "@/lib/axios";
+import { toast } from "react-hot-toast";
+import LoadingLink from "@/components/LoadingLink";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  Image as ImageIcon,
+  FileText,
+  Eye,
+  Save,
+  Star,
+  Send,
+  XCircle,
+  CheckCircle,
+} from "lucide-react";
+import { generateSlug, sanitizeSlugForSubmit, isValidSlug } from "@/lib/marketCouncilSlug";
+import { usePermission } from "@/hooks/usePermission";
+
+type MarketCategory = {
+  id: number | string;
+  name_ar: string;
+  slug: string;
+};
+
+type MarketArticleContext = {
+  id?: number | string;
+  context_type: string;
+  context_key?: string | null;
+};
+
+type MarketArticleApi = {
+  id: number | string;
+  title_ar: string;
+  title_en?: string | null;
+  slug: string;
+  excerpt_ar?: string | null;
+  excerpt_en?: string | null;
+  content_ar?: string | null;
+  content_en?: string | null;
+  cover_image?: string | null;
+  author_name?: string | null;
+  read_time?: number;
+  status?: string;
+  is_featured?: boolean;
+  published_at?: string | null;
+  created_by_user_id?: number | string | null;
+  category?: MarketCategory | null;
+  category_id?: number | string;
+  contexts?: MarketArticleContext[];
+};
+
+function normalizeList<T>(resData: unknown): { list: T[] } {
+  const root = resData as { success?: boolean; data?: unknown };
+  if (root?.success && Array.isArray(root?.data)) return { list: root.data as T[] };
+  const d = root?.data as { data?: T[] } | undefined;
+  if (d && Array.isArray(d?.data)) return { list: d.data };
+  return { list: [] };
+}
+
+const CONTEXT_OPTIONS: { value: string; label: string }[] = [
+  { value: "car_detail", label: "تفاصيل السيارة" },
+  { value: "auction_live", label: "مزاد مباشر" },
+  { value: "auction_instant", label: "مزاد فوري" },
+  { value: "auction_delayed", label: "مزاد متأخر" },
+  { value: "finance", label: "التمويل" },
+  { value: "seller", label: "البائع" },
+  { value: "buyer", label: "المشتري" },
+  { value: "trader", label: "التاجر" },
+];
+
+function toDateTimeLocal(v?: string | null) {
+  if (!v) return "";
+  const s = String(v).replace(" ", "T");
+  return s.length >= 16 ? s.slice(0, 16) : s;
+}
+
+export default function CouncilArticleEditPage() {
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  const { can } = usePermission();
+
+  const [categories, setCategories] = useState<MarketCategory[]>([]);
+  const [loadingCats, setLoadingCats] = useState(false);
+  const [loadingArticle, setLoadingArticle] = useState(false);
+  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [autoSlug, setAutoSlug] = useState(false);
+  const slugTouchedRef = useRef(true);
+  const [saving, setSaving] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    title_ar: "",
+    title_en: "",
+    slug: "",
+    category_id: "",
+    excerpt_ar: "",
+    excerpt_en: "",
+    content_ar: "",
+    content_en: "",
+    cover_image: "",
+    author_name: "",
+    read_time: 1,
+    status: "draft" as "draft" | "pending_review" | "published" | "rejected",
+    is_featured: false,
+    published_at: "",
+    contexts: [] as string[],
+  });
+
+  const canEditAny = can("council.article.edit_any") || can("council.article.review");
+  const canPublish = can("council.article.publish");
+
+  const fetchCategories = async () => {
+    try {
+      setLoadingCats(true);
+      const res = await api.get("/api/council-studio/categories");
+      const { list } = normalizeList<MarketCategory>(res?.data);
+      setCategories(list);
+    } catch {
+      setCategories([]);
+    } finally {
+      setLoadingCats(false);
+    }
+  };
+
+  const fetchArticle = async () => {
+    if (!id) return;
+    try {
+      setLoadingArticle(true);
+      const res = await api.get(`/api/council-studio/articles/${id}`);
+      const p: MarketArticleApi = res?.data?.data ?? res?.data;
+      const status = (p?.status || "draft") as typeof form.status;
+      const ctxList = (p?.contexts || []).map((c: MarketArticleContext) => c.context_type).filter(Boolean);
+      setForm({
+        title_ar: p?.title_ar || "",
+        title_en: p?.title_en || "",
+        slug: p?.slug || "",
+        category_id: String(p?.category_id ?? p?.category?.id ?? ""),
+        excerpt_ar: p?.excerpt_ar || "",
+        excerpt_en: p?.excerpt_en || "",
+        content_ar: p?.content_ar || "",
+        content_en: p?.content_en || "",
+        cover_image: (p?.cover_image || "").trim(),
+        author_name: p?.author_name || "",
+        read_time: p?.read_time ?? 1,
+        status: status,
+        is_featured: !!p?.is_featured,
+        published_at: toDateTimeLocal(p?.published_at),
+        contexts: ctxList,
+      });
+    } catch {
+      toast.error("تعذر تحميل المقال");
+      router.replace("/dashboard/council/articles");
+    } finally {
+      setLoadingArticle(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!id) return;
+    fetchCategories();
+    fetchArticle();
+  }, [id]);
+
+  useEffect(() => {
+    if (!autoSlug || slugTouchedRef.current || !form.title_ar.trim()) return;
+    setForm((p) => ({ ...p, slug: generateSlug(p.title_ar, p.title_en) }));
+  }, [form.title_ar, form.title_en, autoSlug]);
+
+  const linkHelp = useMemo(() => {
+    const s = form.slug.trim();
+    if (!s) return { type: "warn" as const, text: "الرابط مطلوب" };
+    if (!isValidSlug(s)) return { type: "warn" as const, text: "استخدم حروف إنجليزية وأرقام وشرطات فقط" };
+    return { type: "ok" as const, text: "تمام" };
+  }, [form.slug]);
+
+  const validate = () => {
+    if (!form.category_id) return "اختر تصنيف";
+    if (!form.title_ar.trim()) return "العنوان بالعربية مطلوب";
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
+    if (!slug) return "الرابط مطلوب (حروف إنجليزية وأرقام فقط)";
+    if (!form.content_ar.trim()) return "المحتوى بالعربية مطلوب";
+    return "";
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const msg = validate();
+    if (msg) {
+      toast.error(msg);
+      return;
+    }
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
+    try {
+      setSaving(true);
+      await api.put(`/api/council-studio/articles/${id}`, {
+        title_ar: form.title_ar.trim(),
+        title_en: form.title_en.trim() || null,
+        slug,
+        category_id: Number(form.category_id),
+        excerpt_ar: form.excerpt_ar.trim() || null,
+        excerpt_en: form.excerpt_en.trim() || null,
+        content_ar: form.content_ar.trim(),
+        content_en: form.content_en.trim() || null,
+        cover_image: form.cover_image.trim() || null,
+        author_name: form.author_name.trim() || null,
+        read_time: form.read_time,
+        status: form.status,
+        is_featured: form.is_featured,
+        published_at: form.published_at || null,
+        contexts: form.contexts.map((t) => ({ context_type: t, context_key: null })),
+      });
+      toast.success("تم حفظ التعديلات");
+      fetchArticle();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || "تعذر الحفظ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const runStatusAction = async (newStatus: string) => {
+    const msg = validate();
+    if (msg) {
+      toast.error(msg);
+      return;
+    }
+    const slug = sanitizeSlugForSubmit(form.slug, form.title_ar, form.title_en);
+    try {
+      setActionLoading(true);
+      await api.put(`/api/council-studio/articles/${id}`, {
+        title_ar: form.title_ar.trim(),
+        title_en: form.title_en.trim() || null,
+        slug,
+        category_id: Number(form.category_id),
+        excerpt_ar: form.excerpt_ar.trim() || null,
+        excerpt_en: form.excerpt_en.trim() || null,
+        content_ar: form.content_ar.trim(),
+        content_en: form.content_en.trim() || null,
+        cover_image: form.cover_image.trim() || null,
+        author_name: form.author_name.trim() || null,
+        read_time: form.read_time,
+        status: newStatus,
+        is_featured: form.is_featured,
+        published_at: newStatus === "published" ? new Date().toISOString().slice(0, 19) : null,
+        contexts: form.contexts.map((t) => ({ context_type: t, context_key: null })),
+      });
+      setForm((p) => ({ ...p, status: newStatus as typeof form.status }));
+      toast.success(newStatus === "published" ? "تم النشر" : newStatus === "rejected" ? "تم الرفض" : "تم إرسال المقال للمراجعة");
+      fetchArticle();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e?.response?.data?.message || "تعذر تنفيذ الإجراء");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loadingArticle) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px] gap-3">
+        <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span className="text-foreground/60 text-sm">...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 rtl">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">تعديل مقال</h1>
+          <p className="text-foreground/60 text-sm mt-1">الحالة: {form.status}</p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <LoadingLink href="/dashboard/council/articles" className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2">
+            <ArrowRight className="w-4 h-4" />
+            رجوع
+          </LoadingLink>
+          <button type="button" onClick={() => setActiveTab((t) => (t === "edit" ? "preview" : "edit"))} className="bg-card border border-border hover:bg-border/60 px-4 py-2 rounded-xl flex items-center gap-2">
+            {activeTab === "edit" ? <Eye className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+            {activeTab === "edit" ? "معاينة" : "تحرير"}
+          </button>
+          {(form.status === "draft" || form.status === "rejected") && can("council.article.submit_review") && (
+            <button type="button" onClick={() => runStatusAction("pending_review")} disabled={actionLoading} className="px-4 py-2 rounded-xl flex items-center gap-2 bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-500/30">
+              <Send className="w-4 h-4" />
+              إرسال للمراجعة
+            </button>
+          )}
+          {form.status === "pending_review" && canEditAny && (
+            <>
+              <button type="button" onClick={() => runStatusAction("published")} disabled={actionLoading} className="px-4 py-2 rounded-xl flex items-center gap-2 bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/30">
+                <CheckCircle className="w-4 h-4" />
+                اعتماد ونشر
+              </button>
+              <button type="button" onClick={() => runStatusAction("rejected")} disabled={actionLoading} className="px-4 py-2 rounded-xl flex items-center gap-2 bg-red-500/20 text-red-700 dark:text-red-400 hover:bg-red-500/30">
+                <XCircle className="w-4 h-4" />
+                رفض
+              </button>
+            </>
+          )}
+          {form.status === "published" && canPublish && (
+            <button type="button" onClick={() => runStatusAction("draft")} disabled={actionLoading} className="px-4 py-2 rounded-xl flex items-center gap-2 bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-500/30">
+              إلغاء النشر
+            </button>
+          )}
+        </div>
+      </div>
+
+      {activeTab === "preview" ? (
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+          <h2 className="text-2xl font-bold text-primary">{form.title_ar || "عنوان المقال"}</h2>
+          <p className="text-sm text-foreground/60">/market-council/{form.slug || "..."}</p>
+          {form.excerpt_ar ? <p className="text-foreground/80">{form.excerpt_ar}</p> : null}
+          <div className="prose max-w-none text-foreground/90 whitespace-pre-wrap">{form.content_ar || "—"}</div>
+          <button type="button" onClick={() => setActiveTab("edit")} className="bg-border hover:bg-border/80 py-2 px-4 rounded-xl font-bold">رجوع للتحرير</button>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="bg-card border border-border rounded-2xl p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold mb-1">العنوان (عربي) *</label>
+              <input value={form.title_ar} onChange={(e) => setForm((p) => ({ ...p, title_ar: e.target.value }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" required />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-bold">الرابط</label>
+                <label className="flex items-center gap-2 text-xs select-none">
+                  <input type="checkbox" checked={autoSlug} onChange={(e) => { setAutoSlug(e.target.checked); if (e.target.checked) slugTouchedRef.current = false; }} className="accent-primary" />
+                  توليد تلقائي
+                </label>
+              </div>
+              <input value={form.slug} onChange={(e) => { slugTouchedRef.current = true; setForm((p) => ({ ...p, slug: e.target.value })); }} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" />
+              <div className="mt-1 flex items-center gap-2 text-xs">
+                {linkHelp.type === "ok" ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                <span className={linkHelp.type === "ok" ? "text-emerald-500" : "text-amber-500"}>{linkHelp.text}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-bold mb-1">التصنيف *</label>
+              <select value={form.category_id} onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" disabled={loadingCats || !categories.length} required>
+                <option value="">— اختر —</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={String(c.id)}>{c.name_ar}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">الحالة</label>
+              <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as typeof form.status }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary">
+                <option value="draft">مسودة</option>
+                <option value="pending_review">بانتظار المراجعة</option>
+                <option value="rejected">مرفوض</option>
+                {canPublish && <option value="published">منشور</option>}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-1">وقت القراءة (دقيقة)</label>
+              <input type="number" min={1} max={999} value={form.read_time} onChange={(e) => setForm((p) => ({ ...p, read_time: Math.max(1, parseInt(e.target.value, 10) || 1) }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.is_featured} onChange={(e) => setForm((p) => ({ ...p, is_featured: e.target.checked }))} className="accent-primary" />
+                <Star className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-bold">مميز</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-1">صورة الغلاف (رابط)</label>
+            <div className="flex gap-4 items-start">
+              <input value={form.cover_image} onChange={(e) => setForm((p) => ({ ...p, cover_image: e.target.value }))} className="flex-1 p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" placeholder="https://..." />
+              {form.cover_image.trim() ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.cover_image.trim()} alt="" className="w-20 h-20 object-cover rounded-xl border" onError={(e) => {(e.currentTarget as HTMLImageElement).style.display = "none";}} />
+              ) : (
+                <div className="w-20 h-20 rounded-xl bg-border/60 flex items-center justify-center"><ImageIcon className="w-6 h-6 text-foreground/50" /></div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-background/40 p-4">
+            <label className="block text-sm font-bold mb-2">سياقات المقال</label>
+            <div className="flex flex-wrap gap-4">
+              {CONTEXT_OPTIONS.map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.contexts.includes(opt.value)}
+                    onChange={(e) => {
+                      setForm((p) => ({
+                        ...p,
+                        contexts: e.target.checked
+                          ? [...p.contexts, opt.value]
+                          : p.contexts.filter((c) => c !== opt.value),
+                      }));
+                    }}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-1">اسم الكاتب</label>
+            <input value={form.author_name} onChange={(e) => setForm((p) => ({ ...p, author_name: e.target.value }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-1">نبذة (عربي)</label>
+            <textarea value={form.excerpt_ar} onChange={(e) => setForm((p) => ({ ...p, excerpt_ar: e.target.value }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" rows={2} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold mb-1">المحتوى (عربي) *</label>
+            <textarea value={form.content_ar} onChange={(e) => setForm((p) => ({ ...p, content_ar: e.target.value }))} className="w-full p-3 border border-border rounded-xl bg-background focus:ring-2 focus:ring-primary" rows={12} required />
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button type="submit" disabled={saving} className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground py-2 rounded-xl font-bold flex items-center justify-center gap-2">
+              <Save className="w-4 h-4" />
+              {saving ? "جارٍ الحفظ..." : "حفظ"}
+            </button>
+            <LoadingLink href="/dashboard/council/articles" className="flex-1 bg-border hover:bg-border/80 py-2 rounded-xl font-bold text-center">إلغاء</LoadingLink>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}

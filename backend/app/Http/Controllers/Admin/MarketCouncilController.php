@@ -85,6 +85,24 @@ class MarketCouncilController extends Controller
     }
 
     /**
+     * Sanitize slug to ASCII-only (a-z, 0-9, hyphen). Fallback when empty.
+     */
+    private function sanitizeSlug(string $input, string $titleAr, ?string $titleEn = null): string
+    {
+        $s = preg_replace('/[^a-z0-9-]/', '-', strtolower(trim($input)));
+        $s = preg_replace('/-+/', '-', trim($s, '-'));
+        if ($s !== '') {
+            return $s;
+        }
+        $fromEn = preg_replace('/[^a-z0-9-]/', '-', strtolower(trim($titleEn ?? '')));
+        $fromEn = preg_replace('/-+/', '-', trim($fromEn, '-'));
+        $fromAr = preg_replace('/[^a-z0-9-]/', '-', strtolower(Str::slug($titleAr)));
+        $fromAr = preg_replace('/-+/', '-', trim($fromAr, '-'));
+        $candidate = $fromEn ?: $fromAr;
+        return $candidate !== '' ? $candidate : 'article-' . uniqid('', false);
+    }
+
+    /**
      * POST /api/admin/market-council/articles
      */
     public function storeArticle(Request $request): JsonResponse
@@ -92,7 +110,7 @@ class MarketCouncilController extends Controller
         $validator = Validator::make($request->all(), [
             'title_ar'     => 'required|string|max:255',
             'title_en'     => 'nullable|string|max:255',
-            'slug'         => 'nullable|string|max:255',
+            'slug'         => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'category_id'  => 'required|integer|exists:market_categories,id',
             'excerpt_ar'   => 'nullable|string|max:1000',
             'excerpt_en'   => 'nullable|string|max:1000',
@@ -101,22 +119,26 @@ class MarketCouncilController extends Controller
             'cover_image'  => 'nullable|string|max:2048',
             'author_name'  => 'nullable|string|max:255',
             'read_time'    => 'nullable|integer|min:0|max:999',
-            'status'       => 'required|in:draft,published,archived',
+            'status'       => 'required|in:draft,pending_review,published,rejected,archived',
             'published_at' => 'nullable|date',
             'is_featured'  => 'nullable|boolean',
             'contexts'     => 'nullable|array',
             'contexts.*'   => 'array',
             'contexts.*.context_type' => 'required|string|in:' . implode(',', self::ALLOWED_CONTEXT_TYPES),
             'contexts.*.context_key'  => 'nullable|string|max:255',
+        ], [
+            'slug.regex' => 'الرابط يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط (مثال: my-article-title)',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $slugBase = $request->filled('slug')
-            ? Str::slug($request->slug)
-            : Str::slug($request->title_ar);
+        $slugBase = $this->sanitizeSlug(
+            $request->filled('slug') ? $request->slug : '',
+            $request->title_ar,
+            $request->title_en
+        );
         $slug = $slugBase;
         $i = 1;
         while (MarketArticle::where('slug', $slug)->exists()) {
@@ -171,7 +193,7 @@ class MarketCouncilController extends Controller
         $validator = Validator::make($request->all(), [
             'title_ar'     => 'sometimes|required|string|max:255',
             'title_en'     => 'nullable|string|max:255',
-            'slug'         => 'nullable|string|max:255',
+            'slug'         => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'category_id'  => 'sometimes|required|integer|exists:market_categories,id',
             'excerpt_ar'   => 'nullable|string|max:1000',
             'excerpt_en'   => 'nullable|string|max:1000',
@@ -180,13 +202,15 @@ class MarketCouncilController extends Controller
             'cover_image'  => 'nullable|string|max:2048',
             'author_name'  => 'nullable|string|max:255',
             'read_time'    => 'nullable|integer|min:0|max:999',
-            'status'       => 'sometimes|required|in:draft,published,archived',
+            'status'       => 'sometimes|required|in:draft,pending_review,published,rejected,archived',
             'published_at' => 'nullable|date',
             'is_featured'  => 'nullable|boolean',
             'contexts'     => 'nullable|array',
             'contexts.*'   => 'array',
             'contexts.*.context_type' => 'required|string|in:' . implode(',', self::ALLOWED_CONTEXT_TYPES),
             'contexts.*.context_key'  => 'nullable|string|max:255',
+        ], [
+            'slug.regex' => 'الرابط يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط (مثال: my-article-title)',
         ]);
 
         if ($validator->fails()) {
@@ -243,7 +267,7 @@ class MarketCouncilController extends Controller
         }
 
         if ($request->filled('slug')) {
-            $slugBase = Str::slug($request->slug);
+            $slugBase = $this->sanitizeSlug($request->slug, $article->title_ar, $article->title_en);
             $slug = $slugBase;
             $i = 1;
             while (MarketArticle::where('slug', $slug)->where('id', '!=', $id)->exists()) {
