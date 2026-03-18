@@ -8,6 +8,7 @@ import Navbar from "@/components/shared/Navbar";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import { PusherProvider } from "@/contexts/PusherContext";
 import ClientProviders from "@/components/ClientProviders";
+import { ConnectionQualityProvider } from "@/contexts/ConnectionQualityContext";
 import GlobalLoader from "@/components/GlobalLoader";
 import AuthModal from "@/components/AuthModal";
 import AppChrome from "@/components/AppChrome";
@@ -55,13 +56,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PusherProvider>
             <Providers>
               <ClientProviders>
-                {/* ✅ الهيدر هنا فقط مرة واحدة (هيظهر في dashboards أكيد) */}
-                <Navbar />
+                <ConnectionQualityProvider>
+                  {/* ✅ الهيدر هنا فقط مرة واحدة (هيظهر في dashboards أكيد) */}
+                  <Navbar />
 
-                {/* ✅ AppChrome بقت للحماية/المودال فقط */}
-                <AppChrome authModal={<AuthModal />}>
-                  {children}
-                </AppChrome>
+                  {/* ✅ AppChrome بقت للحماية/المودال فقط */}
+                  <AppChrome authModal={<AuthModal />}>
+                    {children}
+                  </AppChrome>
+                </ConnectionQualityProvider>
               </ClientProviders>
 
               <GlobalLoader />

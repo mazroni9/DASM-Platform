@@ -7,6 +7,7 @@ import BidTimer from "@/components/BidTimer";
 import BidForm from "@/components/BidForm";
 import LiveBidding from "@/components/LiveBidding";
 import BidNotifications from "@/components/BidNotifications";
+import ConnectionBidWarning from "@/components/ConnectionBidWarning";
 import { formatCurrency } from "@/utils/formatCurrency";
 import LiveYouTubeEmbed from "@/components/LiveYouTubeEmbed";
 
@@ -564,6 +565,7 @@ export default function LiveMarketPageContent({ sessionId }: LiveMarketPageConte
                         </div>
                       </div>
 
+                      <ConnectionBidWarning />
                       {!showBid ? (
                         <button
                           hidden={isOwner}

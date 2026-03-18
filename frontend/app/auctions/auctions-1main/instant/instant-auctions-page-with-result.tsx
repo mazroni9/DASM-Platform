@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingLink from '@/components/LoadingLink';
+import ConnectionBidWarning from '@/components/ConnectionBidWarning';
 import {
   Car as CarIcon,
   Calendar,
@@ -322,6 +323,7 @@ export default function InstantAuctionCarDetailsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-card/5 border border-border rounded-2xl p-4"
               >
+                <ConnectionBidWarning />
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-bold">قدّم مزايدتك الآن</h3>
                   <span className="text-sm text-foreground/70">أدنى مزايدة: {sar.format(minBid)}</span>
