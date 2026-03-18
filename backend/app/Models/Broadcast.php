@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AuctionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,16 +10,13 @@ class Broadcast extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'title',
         'description',
-        'venue_id',
         'is_live',
+        'auction_id',
+        'stream_url',
+        'status',
         'youtube_stream_id',
         'youtube_embed_url',
         'youtube_chat_embed_url',
@@ -27,13 +25,12 @@ class Broadcast extends Model
         'end_time',
         'created_by',
         'updated_by',
+        'current_car_id',
+        'moderator_id',
+        'started_at',
+        'ended_at',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'is_live' => 'boolean',
         'scheduled_start_time' => 'datetime',
@@ -41,48 +38,60 @@ class Broadcast extends Model
         'end_time' => 'datetime',
     ];
 
-    /**
-     * Get the venue associated with the broadcast.
-     */
-    public function venue()
-    {
-        return $this->belongsTo(Venue::class);
-    }
-
-    /**
-     * Get the user who created the broadcast.
-     */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Get the active auction associated with this broadcast.
-     */
-    public function activeAuction()
+    public function moderator()
     {
-        return $this->hasOne(Auction::class, 'broadcast_id')
-            ->where('status', 'active');
+        return $this->belongsTo(User::class, 'moderator_id');
+    }
+
+    public function currentCar()
+    {
+        return $this->belongsTo(Car::class, 'current_car_id');
     }
 
     /**
-     * Get formatted YouTube embed URL with parameters.
-     *
-     * @return string|null
+     * ✅ Current auction for current car (supports live + active legacy)
      */
+    public function currentAuction()
+    {
+        return $this->hasOneThrough(
+            Auction::class,
+            Car::class,
+            'id',
+            'car_id',
+            'current_car_id',
+            'id'
+        )->whereIn('status', AuctionStatus::activeValues());
+    }
+
+    /**
+     * ✅ Active auction for this broadcast via auction_id
+     */
+    public function activeAuction()
+    {
+        return $this->belongsTo(Auction::class, 'auction_id', 'id')
+            ->whereIn('status', AuctionStatus::activeValues());
+    }
+
+    public function auction()
+    {
+        return $this->belongsTo(Auction::class, 'auction_id', 'id');
+    }
+
     public function getFormattedEmbedUrlAttribute()
     {
         if (!$this->youtube_embed_url) {
             return null;
         }
 
-        // Parse URL to add required parameters
         $baseUrl = $this->youtube_embed_url;
         $separator = strpos($baseUrl, '?') !== false ? '&' : '?';
-        
-        // Add parameters for better embedding experience
-        return $baseUrl . $separator . 'autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=' . 
-               urlencode(config('app.frontend_url'));
+
+        return $baseUrl . $separator . 'autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=' .
+            urlencode(config('app.frontend_url'));
     }
 }

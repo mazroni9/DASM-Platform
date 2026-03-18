@@ -12,7 +12,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { Clock, Globe, User, CheckCircle, XCircle } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { Bid } from "@/app/lib/websocket-provider";
 
 interface OnlineBidsProps {
@@ -118,7 +118,7 @@ export default function OnlineBids({ bids }: OnlineBidsProps) {
                                 </div>
 
                                 <div className="text-lg font-bold text-green-600">
-                                    {formatMoney(bid.amount)} ريال
+                                    {formatCurrency (bid.amount)} ريال
                                 </div>
 
                                 <div className="mt-1 flex justify-end space-x-2 rtl:space-x-reverse">

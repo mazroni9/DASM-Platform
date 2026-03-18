@@ -1,497 +1,261 @@
-/**
- * 🧩 نموذج المزايدة
- * 📁 المسار: Frontend-local/components/BidForm.tsx
- *
- * ✅ الوظيفة:
- * - عرض نموذج لتقديم مزايدة على سيارة
- * - أزرار سريعة للمبالغ الشائعة
- * - إمكانية إدخال مبلغ مخصص
- * - ارسال المزايدة إلى API
- * - نظام المزايدة التلقائية
- */
-
 "use client";
-
-import React, { useState, useEffect } from "react";
-import { formatMoney } from "@/lib/utils";
-import { useAuthStore } from "@/store/authStore";
+import React, { useState } from "react";
+import { formatCurrency } from "@/utils/formatCurrency";
+import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
 import toast from "react-hot-toast";
+import { PriceWithIcon } from "@/components/ui/priceWithIcon";
+import {
+  AlertCircle,
+  CheckCircle2,
+  TrendingUp,
+  Loader2,
+  AlertTriangle,
+  Gavel,
+  Plus,
+  SaudiRiyal,
+} from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 interface BidFormProps {
-    itemId: number;
-    currentPrice: number;
-    onSuccess?: () => void;
+  auction_id: number;
+  bid_amount: number; // السعر الحالي
+  auction_type: string;
+  onSuccess?: () => void;
 }
 
 export default function BidForm({
-    itemId,
-    currentPrice,
-    onSuccess,
+  auction_id,
+  bid_amount,
+  auction_type,
+  onSuccess,
 }: BidFormProps) {
-    const [bidAmount, setBidAmount] = useState<number | string>(
-        currentPrice + 1000
-    );
-    const [customAmount, setCustomAmount] = useState<string>("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
+  const [bidAmount, setBidAmount] = useState<number | string>(bid_amount);
+  const [customAmount, setCustomAmount] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const { isLoggedIn, user } = useAuth();
 
-    // إعدادات المزايدة التلقائية
-    const [showAutoBid, setShowAutoBid] = useState(false);
-    const [isAutoBidEnabled, setIsAutoBidEnabled] = useState(false);
-    const [autoBidIncrement, setAutoBidIncrement] = useState(200);
-    const [autoBidMaximum, setAutoBidMaximum] = useState(currentPrice + 5000);
+  // خيارات المزايدة السريعة
+  let BidOptions = [];
+  if (bid_amount > 100000) {
+    BidOptions = [100, 300, 1000];
+  } else {
+    BidOptions = [100, 300, 500];
+  }
+  const quickBidOptions = BidOptions.map((increment) => ({
+    value: increment,
+    label: `+${increment}`,
+  }));
 
-    // استخدام متجر الهوية للتحقق من تسجيل الدخول والحصول على معلومات المستخدم
-    const { isLoggedIn, token, user } = useAuthStore();
+  const roundToNearest5 = (number: number): number => {
+    return Math.round(number / 5) * 5;
+  };
 
-    // التحقق من حالة المزايدة التلقائية عند التحميل
-    useEffect(() => {
-        if (isLoggedIn && token && itemId) {
-            checkAutoBidStatus();
-        }
-    }, [isLoggedIn, token, itemId]);
+  const selectQuickBid = (increment: number) => {
+    const newBid = roundToNearest5(bid_amount + increment);
+    setBidAmount(newBid);
+    setCustomAmount(newBid.toString());
+  };
 
-    // التحقق مما إذا كان المستخدم قد قام بتفعيل المزايدة التلقائية مسبقًا
-    const checkAutoBidStatus = async () => {
-        try {
-            const response = await api.get(
-                `/api/auctions/auto-bid/status/${itemId}`
-            );
-            if (response.data.active) {
-                setIsAutoBidEnabled(true);
-                setAutoBidIncrement(response.data.increment || 200);
-                setAutoBidMaximum(response.data.maximum || currentPrice + 5000);
-            }
-        } catch (err) {
-            // لا داعي لعرض خطأ هنا، فقط اعتبر أن المزايدة التلقائية غير مفعلة
-            console.error("Error checking auto bid status:", err);
-        }
-    };
+  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === "") {
+      setCustomAmount("");
+      setBidAmount("");
+      return;
+    }
+    const cleanValue = value.replace(/[^0-9]/g, "");
+    if (cleanValue) {
+      const numValue = parseInt(cleanValue);
+      setCustomAmount(numValue.toString());
+      setBidAmount(numValue);
+    }
+  };
 
-    const quickBidOptions = [
-        { label: "+100", value: 100 },
-        { label: "+300", value: 300 },
-        { label: "+500", value: 500 },
-        { label: "+750", value: 750 },
-        { label: "+1000", value: 1000 },
-    ];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      toast.error("يرجى تسجيل الدخول أولاً للمزايدة");
+      return;
+    }
 
-    const selectQuickBid = (increment: number) => {
-        const newBid = currentPrice + increment;
-        setBidAmount(newBid);
-        setCustomAmount(newBid.toString());
-    };
+    const numericBid =
+      typeof bidAmount === "string"
+        ? parseInt(bidAmount.replace(/,/g, ""))
+        : bidAmount;
 
-    const handleCustomAmountChange = (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const value = e.target.value;
+    if (!numericBid || isNaN(numericBid)) {
+      setError("الرجاء إدخال مبلغ صحيح");
+      return;
+    }
 
-        if (value === "") {
-            setCustomAmount("");
-            setBidAmount("");
-            return;
-        }
+    if (auction_type !== "silent_instant") {
+      if (numericBid <= bid_amount) {
+        setError("يجب أن يكون المبلغ أعلى من السعر الحالي");
+        return;
+      }
+    }
 
-        // تنظيف الإدخال من الفواصل والأحرف غير الرقمية
-        const cleanValue = value.replace(/[^0-9]/g, "");
+    setError(null);
+    setIsSubmitting(true);
+    const client_ts = new Date().toISOString();
 
-        if (cleanValue) {
-            const numValue = parseInt(cleanValue);
-            setCustomAmount(formatMoney(numValue));
-            setBidAmount(numValue);
-        }
-    };
+    try {
+      const response = await api.post("/api/auctions/bid", {
+        auction_id,
+        user_id: user?.id,
+        bid_amount: numericBid,
+        client_ts,
+      });
 
-    // معالجة تغيير قيمة الزيادة التلقائية
-    const handleAutoBidIncrementChange = (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value)) {
-            // التأكد من أن قيمة الزيادة لا تقل عن 200 ريال
-            setAutoBidIncrement(Math.max(200, value));
-        }
-    };
+      if (response.data.status === "success") {
+        setSuccess("تم تقديم العرض بنجاح!");
+        toast.success("تم تقديم العرض بنجاح!");
+        setBidAmount(bid_amount);
+        setCustomAmount("");
+        if (onSuccess) onSuccess();
+      } else if (response.data.status === "success_sold") {
+        setSuccess(response.data.message);
+        toast.success(response.data.message);
+        setTimeout(() => window.location.reload(), 1500);
+        if (onSuccess) onSuccess();
+      } else {
+        throw new Error(response.data.message || "حدث خطأ أثناء تقديم العرض");
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        "حدث خطأ في الاتصال بالخادم - يرجى المحاولة مرة أخرى لاحقًا";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    // معالجة تغيير الحد الأقصى للمزايدة التلقائية
-    const handleAutoBidMaximumChange = (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const value = parseInt(e.target.value);
-        if (!isNaN(value)) {
-            setAutoBidMaximum(value);
-        }
-    };
-
-    // تفعيل/إلغاء تفعيل المزايدة التلقائية
-    const toggleAutoBid = () => {
-        // التحقق من تسجيل الدخول
-        if (!isLoggedIn) {
-            toast.error("يرجى تسجيل الدخول أولاً للمزايدة");
-            return;
-        }
-
-        // إذا كان المستخدم يرغب في تفعيل المزايدة التلقائية
-        if (!isAutoBidEnabled) {
-            // التحقق من أن الإعدادات صحيحة
-            if (autoBidIncrement < 200) {
-                setError("يجب أن تكون الزيادة التلقائية 200 ريال على الأقل");
-                return;
-            }
-
-            if (autoBidMaximum <= currentPrice) {
-                setError("يجب أن يكون الحد الأقصى أكبر من السعر الحالي");
-                return;
-            }
-
-            // تفعيل المزايدة التلقائية
-            saveAutoBidSettings();
-        } else {
-            // إلغاء تفعيل المزايدة التلقائية
-            deleteAutoBidSettings();
-        }
-    };
-
-    // حفظ إعدادات المزايدة التلقائية
-    const saveAutoBidSettings = async () => {
-        setIsSubmitting(true);
-        try {
-            const response = await api.post("/api/auctions/auto-bid", {
-                itemId,
-                increment: autoBidIncrement,
-                maximum: autoBidMaximum,
-            });
-
-            if (response.data.status === "success") {
-                setIsAutoBidEnabled(true);
-                setSuccess("تم تفعيل المزايدة التلقائية بنجاح");
-                toast.success("تم تفعيل المزايدة التلقائية بنجاح");
-            } else {
-                throw new Error(
-                    response.data.message ||
-                        "لم يتم حفظ إعدادات المزايدة التلقائية"
-                );
-            }
-        } catch (err: any) {
-            setError(
-                err.response?.data?.message ||
-                    "تعذر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى."
-            );
-            setIsAutoBidEnabled(false);
-            toast.error("فشل تفعيل المزايدة التلقائية");
-            console.error("خطأ في حفظ إعدادات المزايدة التلقائية:", err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    // حذف إعدادات المزايدة التلقائية
-    const deleteAutoBidSettings = async () => {
-        setIsSubmitting(true);
-        try {
-            const response = await api.delete(
-                `/api/auctions/auto-bid/${itemId}`
-            );
-
-            if (response.data.status === "success") {
-                setIsAutoBidEnabled(false);
-                setSuccess("تم إلغاء تفعيل المزايدة التلقائية");
-                toast.success("تم إلغاء تفعيل المزايدة التلقائية");
-            } else {
-                throw new Error(
-                    response.data.message ||
-                        "حدث خطأ أثناء إلغاء المزايدة التلقائية"
-                );
-            }
-        } catch (err: any) {
-            setError(
-                err.response?.data?.message || "حدث خطأ في الاتصال بالخادم"
-            );
-            toast.error("فشل إلغاء المزايدة التلقائية");
-            console.error("خطأ في إلغاء المزايدة التلقائية:", err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // التحقق من تسجيل الدخول
-        if (!isLoggedIn) {
-            toast.error("يرجى تسجيل الدخول أولاً للمزايدة");
-            return;
-        }
-
-        const numericBid =
-            typeof bidAmount === "string"
-                ? parseInt(bidAmount.replace(/,/g, ""))
-                : bidAmount;
-
-        // التحقق من المبلغ
-        if (!numericBid || isNaN(numericBid)) {
-            setError("الرجاء إدخال مبلغ صحيح");
-            return;
-        }
-
-        if (numericBid <= currentPrice) {
-            setError(
-                `يجب أن يكون المبلغ أكبر من ${formatMoney(currentPrice)} ريال`
-            );
-            return;
-        }
-
-        // مسح أي أخطاء سابقة
-        setError(null);
-        setIsSubmitting(true);
-
-        try {
-            const response = await api.post("/api/auctions/bid", {
-                itemId,
-                amount: numericBid,
-            });
-
-            if (response.data.status === "success") {
-                setSuccess("تم تقديم العرض بنجاح!");
-                toast.success("تم تقديم العرض بنجاح!");
-
-                // إعادة تعيين النموذج
-                setBidAmount(currentPrice + 1000);
-                setCustomAmount("");
-
-                // استدعاء callback النجاح إن وجد
-                if (onSuccess) {
-                    onSuccess();
-                }
-            } else {
-                throw new Error(
-                    response.data.message || "حدث خطأ أثناء تقديم العرض"
-                );
-            }
-        } catch (err: any) {
-            const errorMessage =
-                err.response?.data?.message ||
-                "حدث خطأ في الاتصال بالخادم - يرجى المحاولة مرة أخرى لاحقًا";
-            setError(errorMessage);
-            toast.error(errorMessage);
-            console.error("خطأ في تقديم العرض:", err);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
+  // حالة عدم تسجيل الدخول
+  if (!isLoggedIn) {
     return (
-        <div className="bg-white rounded shadow-sm border border-gray-200">
-            <div className="p-4">
-                <h3 className="text-center font-semibold mb-3">قدم عرضك</h3>
-
-                <form onSubmit={handleSubmit}>
-                    {/* أزرار المزايدة السريعة */}
-                    <div className="flex justify-between mb-3 gap-1">
-                        {quickBidOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => selectQuickBid(option.value)}
-                                className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-1 px-2 rounded-md flex-1 border border-gray-300"
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* التصميم الجديد: مربعان متساويان */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                        {/* حقل إدخال المبلغ - مربع أول متساوي */}
-                        <div className="col-span-1">
-                            <input
-                                type="text"
-                                value={customAmount}
-                                onChange={handleCustomAmountChange}
-                                placeholder={`أدخل مبلغ أعلى من ${formatMoney(
-                                    currentPrice
-                                )} ريال`}
-                                className="w-full border border-gray-300 p-2.5 rounded text-center text-gray-600 h-full"
-                            />
-                        </div>
-
-                        {/* زر تأكيد المزايدة - مربع ثاني متساوي */}
-                        <button
-                            type="submit"
-                            disabled={
-                                isSubmitting ||
-                                !bidAmount ||
-                                Number(bidAmount) <= currentPrice
-                            }
-                            className={`h-full py-2.5 rounded text-white font-medium ${
-                                isSubmitting ||
-                                !bidAmount ||
-                                Number(bidAmount) <= currentPrice
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-500 hover:bg-blue-600"
-                            }`}
-                        >
-                            تأكيد
-                        </button>
-                    </div>
-
-                    {error && (
-                        <div className="mb-3 p-2.5 bg-red-50 border border-red-200 text-red-600 rounded text-sm flex items-center justify-center">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 mr-1.5 flex-shrink-0"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-                            <span>{error}</span>
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className="mb-3 p-2 bg-green-50 border border-green-200 text-green-600 rounded text-sm">
-                            {success}
-                        </div>
-                    )}
-
-                    {/* زر عرض/إخفاء إعدادات المزايدة التلقائية */}
-                    <div className="mt-4 mb-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowAutoBid(!showAutoBid)}
-                            className="w-full text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-sm py-2 rounded-md flex items-center justify-center"
-                        >
-                            <span>
-                                {showAutoBid ? "إخفاء" : "عرض"} إعدادات المزايدة
-                                التلقائية
-                            </span>
-                            <svg
-                                className={`w-4 h-4 mr-1 transition-transform duration-200 ${
-                                    showAutoBid ? "transform rotate-180" : ""
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 9l-7 7-7-7"
-                                />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {/* قسم المزايدة التلقائية (يظهر عند النقر على الزر) */}
-                    {showAutoBid && (
-                        <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mt-1 mb-2">
-                            {!isAutoBidEnabled ? (
-                                <>
-                                    <h4 className="text-blue-900 font-semibold text-sm mb-3">
-                                        إعدادات المزايدة التلقائية
-                                    </h4>
-
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs text-blue-900 mb-1">
-                                                    مقدار الزيادة التلقائية
-                                                    (ريال)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="200"
-                                                    step="50"
-                                                    value={autoBidIncrement}
-                                                    onChange={
-                                                        handleAutoBidIncrementChange
-                                                    }
-                                                    className="w-full p-2 text-sm border border-blue-200 rounded"
-                                                    disabled={isAutoBidEnabled}
-                                                />
-                                                <p className="text-xs text-blue-700 mt-1">
-                                                    الحد الأدنى 200 ريال
-                                                </p>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-xs text-blue-900 mb-1">
-                                                    الحد الأقصى للمزايدة (ريال)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min={currentPrice + 1}
-                                                    step="1000"
-                                                    value={autoBidMaximum}
-                                                    onChange={
-                                                        handleAutoBidMaximumChange
-                                                    }
-                                                    className="w-full p-2 text-sm border border-blue-200 rounded"
-                                                    disabled={isAutoBidEnabled}
-                                                />
-                                                <p className="text-xs text-blue-700 mt-1">
-                                                    يجب أن يكون أكبر من السعر
-                                                    الحالي
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-xs text-blue-800 leading-relaxed">
-                                            <p>
-                                                سيقوم النظام بالمزايدة تلقائياً
-                                                لصالحك عند وصول سعر المزاد إلى
-                                                سعر معين بزيادة{" "}
-                                                {formatMoney(autoBidIncrement)}{" "}
-                                                ريال لكل مزايدة، حتى الوصول للحد
-                                                الأقصى{" "}
-                                                {formatMoney(autoBidMaximum)}{" "}
-                                                ريال.
-                                            </p>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={toggleAutoBid}
-                                            className="w-full py-2 rounded text-white mt-2 bg-blue-500 hover:bg-blue-600"
-                                        >
-                                            تفعيل المزايدة التلقائية
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                // عرض مختصر بعد تفعيل المزايدة التلقائية
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <div className="h-3 w-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                        <span className="text-sm font-medium text-blue-900">
-                                            المزايدة التلقائية تعمل حالياً
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={toggleAutoBid}
-                                        className="text-sm text-white bg-red-500 hover:bg-red-600 py-1.5 px-3 rounded"
-                                    >
-                                        إيقاف
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </form>
-            </div>
+      <div className="text-center py-6 bg-primary/5 rounded-2xl border border-primary/10">
+        <div className="bg-white p-3 rounded-full w-14 h-14 mx-auto mb-4 shadow-sm flex items-center justify-center">
+          <TrendingUp className="w-6 h-6 text-primary" />
         </div>
+        <h3 className="text-lg font-bold text-foreground mb-2">
+          ترغب في المزايدة؟
+        </h3>
+        <p className="text-foreground/60 text-sm mb-5 px-4">
+          قم بتسجيل الدخول للبدء في المزايدة على هذه السيارة
+        </p>
+        <button
+          type="button"
+          onClick={() => useAuthStore.getState().openAuthModal("login")}
+          className="w-[90%] mx-auto py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+        >
+          تسجيل الدخول
+        </button>
+      </div>
     );
+  }
+
+  return (
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* أزرار المزايدة السريعة */}
+        <div className="grid grid-cols-3 gap-3">
+          {quickBidOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => selectQuickBid(option.value)}
+              className="group relative flex flex-col items-center justify-center py-3 px-2 rounded-xl border border-border/60 bg-background dark:bg-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-200 active:scale-95"
+            >
+              <span className="text-xs text-foreground/50 mb-0.5 group-hover:text-primary/70">
+                زيادة
+              </span>
+              <span className="font-bold text-foreground text-lg group-hover:text-primary flex items-center gap-0.5">
+                {option.value}+
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* مربع إدخال المبلغ المخصص */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-foreground/50 pr-1">
+            أو أدخل مبلغاً مخصصاً
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={customAmount}
+              onChange={handleCustomAmountChange}
+              placeholder={bid_amount.toLocaleString()}
+              className="w-full bg-background border-2 border-border/50 rounded-xl px-4 py-4 pl-16 text-foreground text-lg font-bold placeholder-foreground/30 focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all outline-none"
+            />
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-primary">
+              <span className="text-sm font-bold bg-primary/10 px-2 py-1 rounded-md">
+                ر.س
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* رسائل التنبيه والخطأ */}
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 border border-red-100 animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-bold">{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="p-4 bg-green-50 text-green-600 rounded-xl flex items-center gap-3 border border-green-100 animate-in fade-in slide-in-from-top-1">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-bold">{success}</span>
+          </div>
+        )}
+
+        {/* التحذير الإلزامي */}
+        <div className="p-4 bg-amber-50 rounded-xl border border-amber-100/50">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-amber-700">
+                تنبيه قبل التأكيد
+              </p>
+              <p className="text-xs text-amber-600/80 leading-relaxed">
+                تأكد من أن المبلغ المدخل أعلى من السعر الحالي بحد أدنى 100 ريال.
+                المزايدة ملزمة قانونياً.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* زر الإرسال */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center gap-2 text-lg shadow-lg ${
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-600/30 hover:-translate-y-0.5"
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              جاري التنفيذ...
+            </>
+          ) : (
+            <>
+              <Gavel className="w-5 h-5" />
+              إرسال العرض
+            </>
+          )}
+        </button>
+      </form>
+    </div>
+  );
 }

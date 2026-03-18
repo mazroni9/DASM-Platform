@@ -12,7 +12,7 @@
 
 import React from "react";
 import { Car, Clock, Calendar } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 import { Car as CarType } from "@/app/lib/websocket-provider";
 
 interface UpcomingCarsProps {
@@ -84,7 +84,7 @@ export default function UpcomingCars({ cars }: UpcomingCarsProps) {
                                                 {car.condition}
                                             </span>
                                             <span className="text-xs font-bold text-green-700">
-                                                {formatMoney(car.min_price)}{" "}
+                                                {formatCurrency (car.min_price)}{" "}
                                                 ريال
                                             </span>
                                         </div>

@@ -1,0 +1,543 @@
+{
+  "info": {
+    "name": "DASM Auctions API",
+    "description": "مجموعة Endpoints خاصة بالمزادات والمزايدات في منصة DASM. التوثيق الكامل: docs/AUCTION_LOGIC_AND_ENDPOINTS.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "auction_id", "value": "1" },
+    { "key": "auction_type", "value": "live" },
+    { "key": "bid_id", "value": "1" },
+    { "key": "car_id", "value": "1" },
+    { "key": "test_run_id", "value": "1" },
+    { "key": "scenario_run_id", "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": "{{base_url}}/api/login",
+            "description": "تسجيل الدخول للحصول على Bearer token (للمستخدم/التاجر)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Auctions",
+      "item": [
+        {
+          "name": "List Auctions",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions",
+            "description": "قائمة المزادات (عام)"
+          }
+        },
+        {
+          "name": "Auctions by Type",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/by-type/{{auction_type}}",
+            "description": "مزادات حسب النوع: live, live_instant, silent_instant, fixed"
+          }
+        },
+        {
+          "name": "Approved Auctions by Type",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/approved-auctions/{{auction_type}}",
+            "description": "مزادات معتمدة حسب النوع"
+          }
+        },
+        {
+          "name": "Approved Live Auctions",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/approved-live-auctions",
+            "description": "مزادات مباشرة معتمدة"
+          }
+        },
+        {
+          "name": "Finished Auctions",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions-finished",
+            "description": "مزادات منتهية"
+          }
+        },
+        {
+          "name": "Show Auction",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/{{auction_id}}",
+            "description": "تفاصيل مزاد واحد"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dealer / Authenticated",
+      "item": [
+        {
+          "name": "Approved Auctions (Index)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/approved-auctions",
+            "description": "قائمة المزادات المعتمدة (يتطلب مصادقة)"
+          }
+        },
+        {
+          "name": "My Auctions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/my-auctions",
+            "description": "مزاداتي"
+          }
+        },
+        {
+          "name": "Create Auction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"car_id\": 1,\n  \"opening_price\": 10000,\n  \"reserve_price\": 15000,\n  \"start_time\": \"2025-02-01 10:00:00\",\n  \"end_time\": \"2025-02-02 18:00:00\"\n}"
+            },
+            "url": "{{base_url}}/api/auctions",
+            "description": "إنشاء مزاد جديد"
+          }
+        },
+        {
+          "name": "Update Auction",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/api/auctions/{{auction_id}}",
+            "description": "تحديث مزاد"
+          }
+        },
+        {
+          "name": "Cancel Auction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/{{auction_id}}/cancel",
+            "description": "إلغاء مزاد"
+          }
+        },
+        {
+          "name": "Auction Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/{{auction_id}}/status",
+            "description": "حالة مزاد"
+          }
+        },
+        {
+          "name": "Place Bid (Unified)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auction_id\": 1,\n  \"bid_amount\": 50000,\n  \"user_id\": 1\n}"
+            },
+            "url": "{{base_url}}/api/auctions/bid",
+            "description": "وضع مزايدة (موحّد)"
+          }
+        },
+        {
+          "name": "Place Bid (per Auction)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bid_amount\": 50000\n}"
+            },
+            "url": "{{base_url}}/api/auctions/{{auction_id}}/bids",
+            "description": "وضع مزايدة لمزاد معيّن"
+          }
+        },
+        {
+          "name": "Auction Bids List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/{{auction_id}}/bids",
+            "description": "قائمة مزايدات مزاد"
+          }
+        },
+        {
+          "name": "Latest Bids (by Auction ID)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/bids/{{auction_id}}",
+            "description": "آخر المزايدات لمزاد (id = auction id)"
+          }
+        },
+        {
+          "name": "Auction Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/{{auction_id}}/leaderboard",
+            "description": "لوحة المتصدرين لمزاد"
+          }
+        },
+        {
+          "name": "My Bids",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/my-bids",
+            "description": "سجل مزايداتي"
+          }
+        },
+        {
+          "name": "Bids History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/bids-history",
+            "description": "تاريخ المزايدات"
+          }
+        },
+        {
+          "name": "Bid Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/bids/{{bid_id}}/status",
+            "description": "حالة مزايدة (هل لا تزال الأعلى)"
+          }
+        },
+        {
+          "name": "Calculate Settlement",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auctions/calculate-settlement/{{car_id}}",
+            "description": "حساب التسوية لسيارة"
+          }
+        },
+        {
+          "name": "Confirm Sale",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"car_id\": 1,\n  \"bid_id\": 1\n}" },
+            "url": "{{base_url}}/api/auctions/confirm-sale",
+            "description": "تأكيد البيع"
+          }
+        },
+        {
+          "name": "Settlements",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/settlements",
+            "description": "قائمة التسويات"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Admin List Auctions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/admin/auctions",
+            "description": "قائمة كل المزادات (أدمن)"
+          }
+        },
+        {
+          "name": "Admin Show Auction",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}",
+            "description": "تفاصيل مزاد (أدمن)"
+          }
+        },
+        {
+          "name": "Admin Update Auction",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}",
+            "description": "تحديث مزاد (أدمن)"
+          }
+        },
+        {
+          "name": "Admin Approve Auction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}/approve",
+            "description": "اعتماد مزاد"
+          }
+        },
+        {
+          "name": "Admin Reject Auction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}/reject",
+            "description": "رفض مزاد"
+          }
+        },
+        {
+          "name": "Admin Update Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"live\"\n}" },
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}/status",
+            "description": "تحديث حالة المزاد"
+          }
+        },
+        {
+          "name": "Admin Update Auction Type",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"auction_type\": \"live\"\n}" },
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}/auction-type",
+            "description": "تغيير نوع المزاد"
+          }
+        },
+        {
+          "name": "Admin Set Open Price",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"opening_price\": 20000\n}" },
+            "url": "{{base_url}}/api/admin/auctions/{{auction_id}}/set-open-price",
+            "description": "تعيين سعر الافتتاح"
+          }
+        },
+        {
+          "name": "Admin Bulk Approve",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"auction_ids\": [1, 2, 3]\n}" },
+            "url": "{{base_url}}/api/admin/auctions/bulk-approve",
+            "description": "اعتماد جماعي"
+          }
+        },
+        {
+          "name": "Admin Bulk Reject",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"auction_ids\": [1, 2, 3]\n}" },
+            "url": "{{base_url}}/api/admin/auctions/bulk-reject",
+            "description": "رفض جماعي"
+          }
+        },
+        {
+          "name": "Admin Bulk Move to Status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"auction_ids\": [1, 2],\n  \"status\": \"live\"\n}" },
+            "url": "{{base_url}}/api/admin/auctions/bulk/move-to-status",
+            "description": "نقل جماعي بين الحالات"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auction Tests (Admin)",
+      "description": "Endpoints وحدة اختبارات المزاد. يتطلب مصادقة أدمن. التوثيق: docs/TEST_ENDPOINTS_AND_BROADCAST_CHANNELS.md",
+      "item": [
+        {
+          "name": "Tests – List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests?category=logic&page=1&per_page=15",
+            "description": "قائمة تشغيلات الاختبارات (اختياري: category, page, per_page)"
+          }
+        },
+        {
+          "name": "Tests – Latest",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/latest",
+            "description": "آخر نتائج تشغيل لكل فئة"
+          }
+        },
+        {
+          "name": "Tests – Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/categories",
+            "description": "قائمة فئات الاختبار"
+          }
+        },
+        {
+          "name": "Tests – Show",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/{{test_run_id}}",
+            "description": "تفاصيل تشغيل اختبار واحد (مع cases)"
+          }
+        },
+        {
+          "name": "Tests – Run All",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/run-all",
+            "description": "تشغيل كل الاختبارات (كل الفئات)"
+          }
+        },
+        {
+          "name": "Tests – Run logic",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/run/logic",
+            "description": "تشغيل فئة logic فقط"
+          }
+        },
+        {
+          "name": "Tests – Run transitions",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/run/transitions",
+            "description": "تشغيل فئة transitions فقط"
+          }
+        },
+        {
+          "name": "Tests – Run price_updates",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/run/price_updates",
+            "description": "تشغيل فئة price_updates فقط"
+          }
+        },
+        {
+          "name": "Tests – Run state_consistency",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/run/state_consistency",
+            "description": "تشغيل فئة state_consistency فقط"
+          }
+        },
+        {
+          "name": "Tests – Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/{{test_run_id}}",
+            "description": "حذف تشغيل اختبار واحد"
+          }
+        },
+        {
+          "name": "Tests – Bulk Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"ids\": [1, 2, 3]\n}" },
+            "url": "{{base_url}}/api/auction-tests/bulk",
+            "description": "حذف جماعي لتشغيلات الاختبارات"
+          }
+        },
+        {
+          "name": "Scenarios – List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/scenarios",
+            "description": "قائمة السيناريوهات المعرّفة"
+          }
+        },
+        {
+          "name": "Scenarios – Runs List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/scenario-runs",
+            "description": "قائمة تشغيلات السيناريوهات"
+          }
+        },
+        {
+          "name": "Scenarios – Run",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"scenario_key\": \"your_scenario_key\"\n}" },
+            "url": "{{base_url}}/api/auction-tests/scenario-runs",
+            "description": "تشغيل سيناريو (body حسب السيناريو)"
+          }
+        },
+        {
+          "name": "Scenarios – Show Run",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/auction-tests/scenario-runs/{{scenario_run_id}}",
+            "description": "تفاصيل تشغيل سيناريو واحد"
+          }
+        },
+        {
+          "name": "Admin – Auction Testing Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/api/admin/auction-testing-analytics?days=30",
+            "description": "لوحة تحليلية: KPIs من runs + events + activity_logs + test_results (يتطلب صلاحية auctions.view)"
+          }
+        }
+      ]
+    }
+  ]
+}

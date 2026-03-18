@@ -20,7 +20,7 @@ import {
     ChevronRight,
     ChevronLeft,
 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // نوع بيانات السيارة نفس ما تم تعريفه في الصفحة الرئيسية
 interface Car {
@@ -183,11 +183,11 @@ export default function CurrentCar({ car }: CurrentCarProps) {
                 <div className="bg-teal-50 p-3 rounded-lg mb-4 text-center border border-teal-200">
                     <p className="text-sm text-teal-700 mb-1">السعر الحالي</p>
                     <p className="text-3xl font-bold text-teal-800">
-                        {formatMoney(car.current_price)} ريال
+                        {formatCurrency (car.current_price)} ريال
                     </p>
                     <div className="mt-1 flex justify-between text-xs text-teal-600">
-                        <span>الحد الأدنى: {formatMoney(car.min_price)}</span>
-                        <span>الحد الأقصى: {formatMoney(car.max_price)}</span>
+                        <span>الحد الأدنى: {formatCurrency (car.min_price)}</span>
+                        <span>الحد الأقصى: {formatCurrency (car.max_price)}</span>
                     </div>
                 </div>
 

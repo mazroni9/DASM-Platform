@@ -130,7 +130,7 @@ const LiveYouTubeEmbed: React.FC<LiveYouTubeEmbedProps> = ({
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: '#f8f8f8',
+            backgroundColor: 'var(--color-card-background)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -143,9 +143,9 @@ const LiveYouTubeEmbed: React.FC<LiveYouTubeEmbedProps> = ({
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-gray-700">{error}</p>
+            <p className="text-foreground">{error}</p>
             <button 
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
               onClick={() => {
                 setError(null);
                 setIsLoaded(false);
@@ -161,22 +161,22 @@ const LiveYouTubeEmbed: React.FC<LiveYouTubeEmbedProps> = ({
       )}
       
       {useRtmp && !usePublicStream ? (
-        <div className="flex flex-col items-center justify-center h-full w-full bg-black text-white">
-          <div className="bg-gray-800 p-4 rounded-lg text-center max-w-md">
+        <div className="flex flex-col items-center justify-center h-full w-full bg-background text-foreground">
+          <div className="bg-card p-4 rounded-lg text-center max-w-md">
             <div className="font-bold text-xl mb-2">جاري البث المباشر</div>
             <div className="mb-3">
               <div className="text-sm mb-1">رابط البث:</div>
-              <div className="bg-gray-700 p-2 rounded text-green-400 font-mono text-xs overflow-auto whitespace-nowrap">
+              <div className="bg-border p-2 rounded text-green-400 font-mono text-xs overflow-auto whitespace-nowrap">
                 {rtmpUrl}
               </div>
             </div>
             <div>
               <div className="text-sm mb-1">مفتاح الإستريم:</div>
-              <div className="bg-gray-700 p-2 rounded text-green-400 font-mono text-xs overflow-auto whitespace-nowrap">
+              <div className="bg-border p-2 rounded text-green-400 font-mono text-xs overflow-auto whitespace-nowrap">
                 {streamKey}
               </div>
             </div>
-            <div className="mt-4 text-sm text-gray-400">
+            <div className="mt-4 text-sm text-foreground/70">
               يتم استخدام هذه المعلومات لإعداد البث المباشر على منصات البث مثل OBS Studio
             </div>
           </div>

@@ -117,7 +117,6 @@ export default function VenueScheduler({ className }: VenueSchedulerProps) {
     
     try {
       // في التطبيق الحقيقي، سنرسل البيانات إلى الخادم
-      console.log('Saving schedules:', schedules);
       
       // محاكاة طلب الحفظ
       await new Promise(resolve => setTimeout(resolve, 1000));

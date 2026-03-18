@@ -1,55 +1,74 @@
-
+// app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
-import { Tajawal } from "next/font/google";
-import { Toaster } from "react-hot-toast";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Providers from "./providers";
-import { createInertiaApp } from "@inertiajs/react";
+import localFont from "next/font/local";
 
-const tajawal = Tajawal({
-    subsets: ["arabic", "latin"],
-    weight: ["300", "400", "500", "700", "800"],
-    variable: "--font-tajawal",
+import Providers from "./providers";
+import Navbar from "@/components/shared/Navbar";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import { PusherProvider } from "@/contexts/PusherContext";
+import ClientProviders from "@/components/ClientProviders";
+import GlobalLoader from "@/components/GlobalLoader";
+import AuthModal from "@/components/AuthModal";
+import AppChrome from "@/components/AppChrome";
+
+const lamaSans = localFont({
+  src: [
+    { path: "../public/fonts/lama-sans/LamaSans-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/lama-sans/LamaSans-Bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-lama",
+  display: "swap",
+});
+
+const almarai = localFont({
+  src: [
+    { path: "../public/fonts/almarai/Almarai-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../public/fonts/almarai/Almarai-Bold.ttf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-almarai",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-    title: "DASM - منصة المزادات الرقمية للأسواق",
-    description: "منصة رقمية للمزادات المباشرة والفورية والصامتة",
+  title: "DASM - منصة المزادات الرقمية للأسواق",
+  description: "منصة رقمية للمزادات المباشرة والفورية والمتأخرة",
 };
 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${lamaSans.variable} ${almarai.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+      </head>
 
-export default function RootLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <html lang="ar" dir="rtl">
-            <head>
-                <link rel="icon" href="/favicon.ico" />
-            </head>
-            <body className={`${tajawal.className} min-h-screen bg-gray-50`}>
-                <Providers>
-                    <Toaster
-                        position="top-center"
-                        toastOptions={{
-                            duration: 5000,
-                            style: {
-                                background: "#363636",
-                                color: "#fff",
-                            },
-                        }}
-                    />
-                    <ProtectedRoute>
-                        <div className="min-h-screen bg-gray-50">
-                            <main>{children}</main>
-                        </div>
-                    </ProtectedRoute>
-                </Providers>
-            </body>
-        </html>
-    );
+      <body
+        className={`${lamaSans.className} ${almarai.className} min-h-screen flex flex-col`}
+        suppressHydrationWarning
+      >
+        <LoadingProvider>
+          <PusherProvider>
+            <Providers>
+              <ClientProviders>
+                {/* ✅ الهيدر هنا فقط مرة واحدة (هيظهر في dashboards أكيد) */}
+                <Navbar />
+
+                {/* ✅ AppChrome بقت للحماية/المودال فقط */}
+                <AppChrome authModal={<AuthModal />}>
+                  {children}
+                </AppChrome>
+              </ClientProviders>
+
+              <GlobalLoader />
+            </Providers>
+          </PusherProvider>
+        </LoadingProvider>
+      </body>
+    </html>
+  );
 }
-
-

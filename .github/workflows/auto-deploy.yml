@@ -1,0 +1,59 @@
+# name: Auto Deploy
+
+# on:
+#   schedule:
+#     # تحديث كل 15 دقيقة
+#     - cron: '*/15 * * * *'
+#   workflow_dispatch:  # للتشغيل اليدوي أيضًا
+
+# jobs:
+#   deploy-to-vercel:
+#     name: Deploy to Vercel
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+#         with:
+#           ref: development
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: '18'
+
+#       - name: Install Vercel CLI
+#         run: npm install -g vercel
+
+#       - name: Deploy to Vercel
+#         run: |
+#           cd frontend
+#           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --confirm
+#         env:
+#           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+#   commit-to-github:
+#     name: Auto Commit to GitHub
+#     runs-on: ubuntu-latest
+#     # تشغيل كل ساعة فقط (لاحظ أننا سنتحقق من الوقت)
+#     if: github.event_name == 'schedule' && github.event.schedule == '0 * * * *'
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+#         with:
+#           ref: development
+          
+#       - name: Setup Git Identity
+#         run: |
+#           git config --global user.name "GitHub Actions Bot"
+#           git config --global user.email "actions@github.com"
+          
+#       - name: Create Timestamp File
+#         run: |
+#           echo "Auto update at $(date)" > .github/timestamps/last-update.txt
+#           mkdir -p .github/timestamps/
+          
+#       - name: Commit and Push
+#         run: |
+#           git add .github/timestamps/last-update.txt
+#           git commit -m "تحديث تلقائي - $(date)"
+#           git push origin development 

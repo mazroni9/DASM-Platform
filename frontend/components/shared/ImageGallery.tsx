@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 
@@ -12,6 +12,15 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ images, title, aspectRatio = '16:9' }: ImageGalleryProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  useEffect(() => {
+  if (isZoomed) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+}, [isZoomed]);
 
   if (!images || images.length === 0) {
     return <div className="bg-gray-200 w-full h-80 flex items-center justify-center">لا توجد صور</div>;
@@ -43,14 +52,15 @@ export default function ImageGallery({ images, title, aspectRatio = '16:9' }: Im
       )}
 
       {/* الصورة الرئيسية مع أزرار التنقل */}
-      <div className={`relative ${aspectRatioClass} mb-2 overflow-hidden rounded-lg bg-gray-100`}>
-        <Image
-          src={images[currentImageIndex]}
-          alt={title || `صورة ${currentImageIndex + 1}`}
-          fill
-          className="object-cover"
-          unoptimized
-        />
+    <div className={`relative ${aspectRatioClass} mb-2 overflow-hidden rounded-lg bg-gray-100 cursor-zoom-in`}
+    onClick={() => setIsZoomed(true)}>
+    <Image
+      src={images[currentImageIndex]}
+      alt={title || `صورة ${currentImageIndex + 1}`}
+      fill
+      className="object-cover transition duration-300"
+      unoptimized
+    />
         
         {/* زر السابق */}
         {images.length > 1 && (
@@ -83,6 +93,7 @@ export default function ImageGallery({ images, title, aspectRatio = '16:9' }: Im
       </div>
 
       {/* الصور المصغرة */}
+      
       {images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
           {images.map((image, index) => (
@@ -105,6 +116,30 @@ export default function ImageGallery({ images, title, aspectRatio = '16:9' }: Im
           ))}
         </div>
       )}
+      {isZoomed && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+            onClick={() => setIsZoomed(false)}
+          >
+            <div className="relative w-full max-w-4xl max-h-full">
+              <Image
+                src={images[currentImageIndex]}
+                alt={`تكبير ${currentImageIndex + 1}`}
+                width={1200}
+                height={800}
+                className="w-full h-auto rounded-lg object-contain"
+                unoptimized
+              />
+              <button
+                onClick={() => setIsZoomed(false)}
+                className="absolute top-4 right-4 text-white text-2xl bg-black/50 hover:bg-black/70 p-2 rounded-full"
+                aria-label="إغلاق التكبير"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 } 

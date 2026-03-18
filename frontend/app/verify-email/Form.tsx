@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import axios from "axios";
 
 interface VerifyEmailResponse {
@@ -24,7 +26,8 @@ const verifyEmailSchema = z.object({
 type VerifyEmailFormValues = z.infer<typeof verifyEmailSchema>;
 
 export default function VerifyEmailForm() {
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
     const searchParams = useSearchParams();
     const token = searchParams.get("token");
     const [isLoading, setIsLoading] = useState(false);

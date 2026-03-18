@@ -19,13 +19,13 @@
  * 🧩 المكونات المستخدمة:
  * - lucide-react: للأيقونات
  * - next/image: لعرض صور المزادات
- * - formatMoney, formatDate: لتنسيق البيانات
+ * - formatCurrency , formatDate: لتنسيق البيانات
  */
 
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import Image from "next/image";
 import {
     Calendar,
@@ -38,7 +38,7 @@ import {
     Car,
     Tag,
 } from "lucide-react";
-import { formatMoney, formatDate, formatTime } from "@/lib/utils";
+import { formatCurrency , formatDate, formatTime } from "@/lib/utils";
 
 // واجهة بيانات السيارة المباعة في المزاد
 interface AuctionCar {
@@ -148,12 +148,12 @@ export default function AuctionHistoryRecord({
                 {/* محتوى البطاقة */}
                 <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-2 hover:text-teal-600 transition-colors">
-                        <Link
+                        <LoadingLink
                             href={`/auction-archive/${auction.id}`}
                             className="hover:underline"
                         >
                             {auction.title}
-                        </Link>
+                        </LoadingLink>
                     </h3>
 
                     <div className="text-sm text-gray-600 mb-3">
@@ -169,7 +169,7 @@ export default function AuctionHistoryRecord({
                                 إجمالي المبيعات
                             </div>
                             <div className="text-lg font-semibold text-teal-600">
-                                {formatMoney(auction.totalSales)} ريال
+                                {formatCurrency (auction.totalSales)} ريال
                             </div>
                         </div>
                         <div className="bg-gray-50 p-2 rounded">
@@ -208,7 +208,7 @@ export default function AuctionHistoryRecord({
                                 <div className="flex items-center">
                                     <Tag className="h-4 w-4 text-gray-400 ml-1" />
                                     <span className="text-gray-600">
-                                        متوسط {formatMoney(averageSalePrice)}
+                                        متوسط {formatCurrency (averageSalePrice)}
                                     </span>
                                 </div>
                             </div>
@@ -217,13 +217,13 @@ export default function AuctionHistoryRecord({
 
                     {/* زر الإجراء */}
                     <div className="mt-4 flex justify-between">
-                        <Link
+                        <LoadingLink
                             href={`/auction-archive/${auction.id}`}
                             className="flex items-center text-teal-600 hover:text-teal-700 text-sm font-medium transition-colors"
                         >
                             عرض التفاصيل
                             <ChevronLeft className="h-4 w-4 mr-1" />
-                        </Link>
+                        </LoadingLink>
 
                         <button
                             title="حفظ في المفضلة"
@@ -263,12 +263,12 @@ export default function AuctionHistoryRecord({
                 {/* المعلومات الأساسية */}
                 <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-800 mb-1 hover:text-teal-600 transition-colors">
-                        <Link
+                        <LoadingLink
                             href={`/auction-archive/${auction.id}`}
                             className="hover:underline"
                         >
                             {auction.title}
-                        </Link>
+                        </LoadingLink>
                     </h3>
 
                     <div className="flex flex-wrap items-center text-sm text-gray-600 mb-3 gap-x-4">
@@ -290,7 +290,7 @@ export default function AuctionHistoryRecord({
                         <div className="flex items-center">
                             <Tag className="h-4 w-4 text-teal-500 ml-1" />
                             <span className="text-teal-600 font-semibold">
-                                {formatMoney(auction.totalSales)} ريال
+                                {formatCurrency (auction.totalSales)} ريال
                             </span>
                         </div>
                         <div className="flex items-center">
@@ -308,13 +308,13 @@ export default function AuctionHistoryRecord({
 
                 {/* زر الإجراء */}
                 <div className="flex justify-end mt-4 md:mt-0">
-                    <Link
+                    <LoadingLink
                         href={`/auction-archive/${auction.id}`}
                         className="bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors px-4 py-2 rounded-lg flex items-center"
                     >
                         عرض التفاصيل
                         <ChevronLeft className="h-4 w-4 mr-1" />
-                    </Link>
+                    </LoadingLink>
                 </div>
             </div>
         </div>

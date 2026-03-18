@@ -1,527 +1,689 @@
+// app/auth/register/Form.tsx
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-    AlertCircle,
-    User,
-    Mail,
-    Phone,
-    Lock,
-    Building,
-    FileText,
-    ClipboardList,
+  AlertCircle,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Building,
+  ClipboardList,
+  MapPin,
+  Map,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import axios from "axios";
-import Link from "next/link";
+import axios, { AxiosError } from "axios";
 
-interface RegisterResponse {
-    status: string;
-    message: string;
-}
-
+// ✅ أضفنا area_label اختيارية لتخزين اسم المنطقة/الدولة للعرض فقط
 const registerSchema = z
-    .object({
-        first_name: z
-            .string()
-            .min(2, { message: "الاسم الأول يجب أن يكون على الأقل حرفين" })
-            .max(50, { message: "الاسم الأول يجب ألا يتجاوز 50 حرفًا" })
-            .refine((value) => /^[\u0600-\u06FFa-zA-Z\s]+$/.test(value), {
-                message: "الاسم الأول يجب أن يحتوي على أحرف فقط",
-            }),
-        last_name: z
-            .string()
-            .min(2, { message: "الاسم الأخير يجب أن يكون على الأقل حرفين" })
-            .max(50, { message: "الاسم الأخير يجب ألا يتجاوز 50 حرفًا" })
-            .refine((value) => /^[\u0600-\u06FFa-zA-Z\s]+$/.test(value), {
-                message: "الاسم الأخير يجب أن يحتوي على أحرف فقط",
-            }),
-        email: z
-            .string()
-            .email({ message: "يرجى إدخال بريد إلكتروني صالح" })
-            .refine((value) => value.includes("@") && value.includes("."), {
-                message: "يرجى إدخال بريد إلكتروني صالح مع وجود @ ونقطة",
-            }),
-        phone: z
-            .string()
-            .min(10, {
-                message: "يرجى إدخال رقم هاتف صالح (10 أرقام على الأقل)",
-            })
-            .max(15, { message: "رقم الهاتف لا يجب أن يتجاوز 15 رقم" })
-            .refine((value) => /^[0-9+\s]+$/.test(value), {
-                message: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
-            }),
-        password: z
-            .string()
-            .min(8, { message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف" })
-            .max(72, { message: "كلمة المرور يجب ألا تتجاوز 72 حرفًا" })
-            .refine((value) => /[A-Z]/.test(value), {
-                message: "كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل",
-            })
-            .refine((value) => /[0-9]/.test(value), {
-                message: "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل",
-            })
-            .refine((value) => /[^A-Za-z0-9]/.test(value), {
-                message: "كلمة المرور يجب أن تحتوي على رمز خاص واحد على الأقل",
-            }),
-        password_confirmation: z.string(),
-        account_type: z.enum(["user", "dealer"]),
-        company_name: z.string().optional(),
-        commercial_registry: z.string().optional(),
-        description: z.string().optional(),
-    })
-    .refine(
-        (data) => {
-            if (data.account_type === "dealer") {
-                return !!data.company_name && data.company_name.length >= 3;
-            }
-            return true;
-        },
-        {
-            message: "اسم الشركة مطلوب ويجب أن يكون 3 أحرف على الأقل",
-            path: ["company_name"],
-        }
-    )
-    .refine(
-        (data) => {
-            if (data.account_type === "dealer") {
-                return (
-                    !!data.commercial_registry &&
-                    data.commercial_registry.length >= 5
-                );
-            }
-            return true;
-        },
-        {
-            message: "رقم السجل التجاري مطلوب ويجب أن يكون 5 أحرف على الأقل",
-            path: ["commercial_registry"],
-        }
-    )
-    .refine((data) => data.password === data.password_confirmation, {
-        message: "كلمات المرور غير متطابقة",
-        path: ["password_confirmation"],
-    });
+  .object({
+    first_name: z
+      .string()
+      .min(2, { message: "الاسم الأول يجب أن يكون على الأقل حرفين" })
+      .max(50, { message: "الاسم الأول يجب ألا يتجاوز 50 حرفًا" })
+      .refine((value) => /^[\u0600-\u06FFa-zA-Z\s]+$/.test(value), {
+        message: "الاسم الأول يجب أن يحتوي على أحرف فقط",
+      }),
+    last_name: z
+      .string()
+      .min(2, { message: "الاسم الأخير يجب أن يكون على الأقل حرفين" })
+      .max(50, { message: "الاسم الأخير يجب ألا يتجاوز 50 حرفًا" })
+      .refine((value) => /^[\u0600-\u06FFa-zA-Z\s]+$/.test(value), {
+        message: "الاسم الأخير يجب أن يحتوي على أحرف فقط",
+      }),
+    email: z
+      .string()
+      .email({ message: "يرجى إدخال بريد إلكتروني صالح" })
+      .refine((value) => value.includes("@") && value.includes("."), {
+        message: "يرجى إدخال بريد إلكتروني صالح مع وجود @ ونقطة",
+      }),
+    phone: z
+      .string()
+      .min(10, { message: "يرجى إدخال رقم هاتف صالح (10 أرقام على الأقل)" })
+      .max(15, { message: "رقم الهاتف لا يجب أن يتجاوز 15 رقم" })
+      .refine((value) => /^[0-9+\s\-()]+$/.test(value), {
+        message: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
+      }),
+    password: z
+      .string()
+      .min(8, { message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف" })
+      .max(72, { message: "كلمة المرور يجب ألا تتجاوز 72 حرفًا" })
+      .refine((value) => /[A-Z]/.test(value), {
+        message: "كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل",
+      })
+      .refine((value) => /[0-9]/.test(value), {
+        message: "كلمة المرور يجب أن تحتوي على رقم واحد على الأقل",
+      })
+      .refine((value) => /[^A-Za-z0-9]/.test(value), {
+        message: "كلمة المرور يجب أن تحتوي على رمز خاص واحد على الأقل",
+      }),
+    password_confirmation: z.string(),
+    account_type: z.enum(["user", "dealer", "venue_owner", "investor"]),
+    company_name: z.string().optional(),
+    commercial_registry: z.string().optional(),
+    description: z.string().optional(),
+    address: z.string().optional(),
+    area_id: z.string().optional(), // ⬅️ يُرسل فقط عند وجود ID حقيقي من DB
+    area_label: z.string().optional(), // ⬅️ اسم معروض فقط
+  })
+  .refine(
+    (data) => {
+      if (
+        data.account_type === "venue_owner" ||
+        data.account_type === "investor"
+      ) {
+        return !!data.company_name && data.company_name.length >= 3;
+      }
+      return true;
+    },
+    {
+      message: "اسم الشركة/المعرض مطلوب ويجب أن يكون 3 أحرف على الأقل",
+      path: ["company_name"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (
+        data.account_type === "venue_owner" ||
+        data.account_type === "investor"
+      ) {
+        return (
+          !!data.commercial_registry && data.commercial_registry.length >= 5
+        );
+      }
+      return true;
+    },
+    {
+      message: "رقم السجل التجاري مطلوب ويجب أن يكون 5 أحرف على الأقل",
+      path: ["commercial_registry"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.account_type === "venue_owner") {
+        return !!data.address && data.address.trim().length >= 5;
+      }
+      return true;
+    },
+    {
+      message: "العنوان مطلوب ويجب أن يكون 5 أحرف على الأقل",
+      path: ["address"],
+    }
+  )
+  .refine((data) => data.password === data.password_confirmation, {
+    message: "كلمات المرور غير متطابقة",
+    path: ["password_confirmation"],
+  });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const [accountType, setAccountType] = useState<"user" | "dealer">("user");
+  const router = useLoadingRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [accountType, setAccountType] = useState<
+    "user" | "dealer" | "venue_owner" | "investor"
+  >("user");
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        setValue,
-        watch,
-    } = useForm<RegisterFormValues>({
-        resolver: zodResolver(registerSchema),
-        defaultValues: {
-            account_type: "user",
-        },
-    });
+  // قيمة الـSelect: "region:<code>" أو "country:<code>"
+  const [areaValue, setAreaValue] = useState<string | undefined>(undefined);
 
-    const onSubmit = async (data: RegisterFormValues) => {
-        setIsLoading(true);
-        setError("");
-        setSuccess("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      account_type: "user",
+    },
+  });
 
-        try {
-            const response = await axios.post<RegisterResponse>(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/register`,
-                data
-            );
+  const onSubmit = async (data: RegisterFormValues) => {
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
 
-            // Check if the response contains a message that indicates success
-            // This handles cases where the API returns status "error" but with a success message
-            if (
-                response.data.status === "success" ||
-                (response.data.message &&
-                    response.data.message.toLowerCase().includes("success"))
-            ) {
-                // Show success message
-                setSuccess(
-                    "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
-                );
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
 
-                // Redirect after a short delay
-                setTimeout(() => {
-                    router.push("/verify-email");
-                }, 1500);
-            } else {
-                setError(response.data.message || "حدث خطأ أثناء التسجيل");
+    try {
+      const payload: Record<string, any> = {
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.replace(/\s+/g, ""),
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+        account_type: data.account_type,
+        company_name: data.company_name?.trim() || undefined,
+        commercial_registry: data.commercial_registry?.trim() || undefined,
+        description: data.description?.trim() || undefined,
+        address: data.address?.trim() || undefined,
+        area_label: data.area_label || undefined,
+      };
+
+      const response = await axios.post(url, payload, {
+        timeout: 15000,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.data.status === "success") {
+        setSuccess(
+          "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
+        );
+        setTimeout(() => {
+          router.push("/verify-email");
+        }, 1500);
+      } else {
+        setError(response.data.message || "حدث خطأ أثناء التسجيل");
+      }
+    } catch (err: any) {
+      let errorMessage = "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
+
+      if (axios.isAxiosError(err)) {
+        const axErr = err as AxiosError<any>;
+        const resp = axErr.response;
+
+        if (resp?.status === 422 && resp.data?.errors) {
+          const errs = resp.data.errors as Record<string, string[]>;
+          const errorPriority = [
+            "email",
+            "phone",
+            "first_name",
+            "last_name",
+            "password",
+            "company_name",
+            "commercial_registry",
+            "address",
+            "area_id",
+          ];
+          for (const field of errorPriority) {
+            if (errs[field]?.length > 0) {
+              errorMessage = errs[field][0];
+              break;
             }
-        } catch (error: any) {
-            // Log detailed error in development only
-            if (process.env.NODE_ENV !== "production") {
-                console.error("Registration error details:", error);
+          }
+          if (errorMessage === "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى") {
+            const firstField = Object.keys(errs)[0];
+            if (firstField && errs[firstField].length > 0) {
+              errorMessage = errs[firstField][0];
             }
-
-            // Check if the error response contains a success message
-            if (
-                error.response?.data?.message &&
-                error.response.data.message.toLowerCase().includes("success")
-            ) {
-                setSuccess(
-                    "تم التسجيل بنجاح، جاري التحويل إلى صفحة التحقق من البريد الإلكتروني"
-                );
-
-                setTimeout(() => {
-                    router.push("/verify-email");
-                }, 1500);
-            } else {
-                // Get a user-friendly error message
-                let errorMessage =
-                    "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
-
-                if (error.response?.data?.message) {
-                    const serverMessage = error.response.data.message;
-
-                    // Check for common errors and provide specific messages
-                    if (
-                        serverMessage.includes("email") &&
-                        serverMessage.includes("taken")
-                    ) {
-                        errorMessage = "البريد الإلكتروني مستخدم بالفعل";
-                    } else if (
-                        serverMessage.includes("phone") &&
-                        serverMessage.includes("taken")
-                    ) {
-                        errorMessage = "رقم الهاتف مستخدم بالفعل";
-                    } else if (
-                        !serverMessage.includes("SQLSTATE") &&
-                        !serverMessage.includes("relation") &&
-                        serverMessage.length < 100
-                    ) {
-                        // Only use server message if it's not a detailed tech error
-                        errorMessage = serverMessage;
-                    }
-                }
-
-                setError(errorMessage);
-            }
-        } finally {
-            setIsLoading(false);
+          }
+        } else if (resp?.data?.message) {
+          errorMessage = resp.data.message;
+        } else if (axErr.message) {
+          errorMessage = axErr.message;
         }
+      }
+
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ عند تغيير القيمة: نحفظ الاسم في area_label فقط
+  const handleAreaChange = (value: string) => {
+    setAreaValue(value);
+
+    const labelMap: Record<string, string> = {
+      "region:riyadh": "منطقة الرياض",
+      "region:makkah": "منطقة مكة المكرمة",
+      "region:sharqiyah": "المنطقة الشرقية",
+      "region:tabuk": "منطقة تبوك",
+      "region:madinah": "منطقة المدينة المنورة",
+      "region:northern-borders": "منطقة الحدود الشمالية",
+      "region:qassim": "منطقة القصيم",
+      "region:almujammah": "منطقة المجمعة",
+      "region:hail": "منطقة حائل",
+      "region:asir": "منطقة عسير",
+
+      "country:eg": "مصر",
+      "country:sy": "سوريا",
+      "country:ps": "فلسطين",
+      "country:jo": "الأردن",
+      "country:iq": "العراق",
+      "country:kw": "الكويت",
+      "country:bh": "البحرين",
+      "country:qa": "قطر",
+      "country:ae": "الإمارات",
+      "country:om": "عُمان",
+      "country:ye": "اليمن",
     };
 
-    return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid gap-6">
-                {error && (
-                    <Alert
-                        variant="destructive"
-                        className="bg-red-50 text-red-700 border border-red-200"
-                    >
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
+    // لا نرسل area_id إطلاقًا هنا (لأن القيمة ليست ID من قاعدة البيانات)
+    setValue("area_id", undefined as unknown as string, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
 
-                {success && (
-                    <Alert
-                        variant="success"
-                        className="bg-green-50 text-green-700 border border-green-200"
-                    >
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{success}</AlertDescription>
-                    </Alert>
-                )}
+    setValue("area_label", labelMap[value] || undefined, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+  };
 
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="first_name"
-                        className="text-gray-700 font-medium"
-                    >
-                        الاسم الأول
-                    </Label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <User className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <Input
-                            id="first_name"
-                            className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                            {...register("first_name")}
-                            disabled={isLoading}
-                        />
-                    </div>
-                    {errors.first_name && (
-                        <p className="text-sm text-red-500">
-                            {errors.first_name.message}
-                        </p>
-                    )}
-                </div>
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 w-full">
+      {/* حقول خفية لضمان تسجيلها داخل RHF */}
+      <input type="hidden" {...register("area_id")} />
+      <input type="hidden" {...register("area_label")} />
 
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="last_name"
-                        className="text-gray-700 font-medium"
-                    >
-                        الاسم الأخير
-                    </Label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <User className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <Input
-                            id="last_name"
-                            className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                            {...register("last_name")}
-                            disabled={isLoading}
-                        />
-                    </div>
-                    {errors.last_name && (
-                        <p className="text-sm text-red-500">
-                            {errors.last_name.message}
-                        </p>
-                    )}
-                </div>
+      <div className="space-y-4">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="email"
-                        className="text-gray-700 font-medium"
-                    >
-                        البريد الإلكتروني
-                    </Label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <Mail className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <Input
-                            id="email"
-                            type="email"
-                            className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                            {...register("email")}
-                            disabled={isLoading}
-                            dir="ltr"
-                        />
-                    </div>
-                    {errors.email && (
-                        <p className="text-sm text-red-500">
-                            {errors.email.message}
-                        </p>
-                    )}
-                </div>
+        {success && (
+          <Alert variant="success">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
 
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="phone"
-                        className="text-gray-700 font-medium"
-                    >
-                        رقم الهاتف
-                    </Label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <Phone className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <Input
-                            id="phone"
-                            type="tel"
-                            className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                            {...register("phone")}
-                            disabled={isLoading}
-                            dir="ltr"
-                        />
-                    </div>
-                    {errors.phone && (
-                        <p className="text-sm text-red-500">
-                            {errors.phone.message}
-                        </p>
-                    )}
-                </div>
-
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="password"
-                        className="text-gray-700 font-medium"
-                    >
-                        كلمة المرور
-                    </Label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <Lock className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                            {...register("password")}
-                            disabled={isLoading}
-                            dir="ltr"
-                        />
-                    </div>
-                    {errors.password && (
-                        <p className="text-sm text-red-500">
-                            {errors.password.message}
-                        </p>
-                    )}
-                </div>
-
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="password_confirmation"
-                        className="text-gray-700 font-medium"
-                    >
-                        تأكيد كلمة المرور
-                    </Label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <Lock className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <Input
-                            id="password_confirmation"
-                            type="password"
-                            className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                            {...register("password_confirmation")}
-                            disabled={isLoading}
-                            dir="ltr"
-                        />
-                    </div>
-                    {errors.password_confirmation && (
-                        <p className="text-sm text-red-500">
-                            {errors.password_confirmation.message}
-                        </p>
-                    )}
-                </div>
-
-                <div className="grid gap-2">
-                    <Label
-                        htmlFor="account_type"
-                        className="text-gray-700 font-medium"
-                    >
-                        نوع الحساب
-                    </Label>
-                    <Select
-                        onValueChange={(value: "user" | "dealer") => {
-                            setAccountType(value);
-                            setValue("account_type", value);
-                        }}
-                        defaultValue="user"
-                    >
-                        <SelectTrigger className="border-gray-300 focus:ring-indigo-500 focus:border-indigo-500">
-                            <SelectValue placeholder="اختر نوع الحساب" />
-                        </SelectTrigger>
-                        <SelectContent className="z-50 bg-white">
-                            <SelectItem value="user">مستخدم</SelectItem>
-                            <SelectItem value="dealer">تاجر</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {accountType === "dealer" && (
-                    <>
-                        <div className="grid gap-2">
-                            <Label
-                                htmlFor="company_name"
-                                className="text-gray-700 font-medium"
-                            >
-                                اسم الشركة
-                            </Label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <Building className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Input
-                                    id="company_name"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                    {...register("company_name")}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {errors.company_name && (
-                                <p className="text-sm text-red-500">
-                                    {errors.company_name.message}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label
-                                htmlFor="commercial_registry"
-                                className="text-gray-700 font-medium"
-                            >
-                                السجل التجاري
-                            </Label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                    <ClipboardList className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Input
-                                    id="commercial_registry"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                    {...register("commercial_registry")}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {errors.commercial_registry && (
-                                <p className="text-sm text-red-500">
-                                    {errors.commercial_registry.message}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label
-                                htmlFor="description"
-                                className="text-gray-700 font-medium"
-                            >
-                                وصف الشركة
-                            </Label>
-                            <div className="relative">
-                                <div className="absolute top-2 right-0 flex items-start pr-3 pointer-events-none">
-                                    <FileText className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <Textarea
-                                    id="description"
-                                    className="pr-10 pl-3 py-2 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 min-h-[100px]"
-                                    {...register("description")}
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {errors.description && (
-                                <p className="text-sm text-red-500">
-                                    {errors.description.message}
-                                </p>
-                            )}
-                        </div>
-                    </>
-                )}
-
-                <Button
-                    type="submit"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <div className="flex items-center justify-center">
-                            <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin ml-2"></div>
-                            جاري التسجيل...
-                        </div>
-                    ) : (
-                        "إنشاء حساب"
-                    )}
-                </Button>
+        {/* الاسم الأول */}
+        <div className="space-y-2">
+          <Label htmlFor="first_name" className="text-foreground font-medium">
+            الاسم الأول
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-foreground/50" />
             </div>
-        </form>
-    );
+            <Input
+              id="first_name"
+              {...register("first_name")}
+              disabled={isLoading}
+              className="pl-3 pr-10"
+            />
+          </div>
+          {errors.first_name && (
+            <p className="text-sm text-red-500">{errors.first_name.message}</p>
+          )}
+        </div>
+
+        {/* الاسم الأخير */}
+        <div className="space-y-2">
+          <Label htmlFor="last_name" className="text-foreground font-medium">
+            الاسم الأخير
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-foreground/50" />
+            </div>
+            <Input
+              id="last_name"
+              {...register("last_name")}
+              disabled={isLoading}
+              className="pl-3 pr-10"
+            />
+          </div>
+          {errors.last_name && (
+            <p className="text-sm text-red-500">{errors.last_name.message}</p>
+          )}
+        </div>
+
+        {/* البريد الإلكتروني */}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-foreground font-medium">
+            البريد الإلكتروني
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Mail className="h-5 w-5 text-foreground/50" />
+            </div>
+            <Input
+              id="email"
+              type="email"
+              dir="ltr"
+              {...register("email")}
+              disabled={isLoading}
+              className="pl-3 pr-10"
+            />
+          </div>
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email.message}</p>
+          )}
+        </div>
+
+        {/* رقم الهاتف */}
+        <div className="space-y-2">
+          <Label htmlFor="phone" className="text-foreground font-medium">
+            رقم الهاتف
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Phone className="h-5 w-5 text-foreground/50" />
+            </div>
+            <Input
+              id="phone"
+              type="tel"
+              dir="ltr"
+              {...register("phone")}
+              disabled={isLoading}
+              className="pl-3 pr-10"
+            />
+          </div>
+          {errors.phone && (
+            <p className="text-sm text-red-500">{errors.phone.message}</p>
+          )}
+        </div>
+
+        {/* المنطقة / الدولة */}
+        <div className="space-y-2">
+          <Label htmlFor="area_id" className="text-foreground font-medium">
+            المنطقة / الدولة
+          </Label>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Map className="h-5 w-5 text-foreground/50" />
+            </div>
+
+            <Select onValueChange={handleAreaChange} value={areaValue}>
+              <SelectTrigger id="area_id" type="button" className="pl-3 pr-10 h-10">
+                <SelectValue placeholder="اختر المنطقة أو الدولة" />
+              </SelectTrigger>
+
+              {/* ✅ FIX: Scroll + collision-safe */}
+              <SelectContent
+                position="popper"
+                side="bottom"
+                align="end"
+                sideOffset={6}
+                collisionPadding={12}
+                className="z-[60] max-h-72 overflow-y-auto overscroll-contain touch-pan-y"
+                dir="rtl"
+              >
+                <SelectGroup>
+                  <SelectLabel>مناطق المملكة (ثابتة)</SelectLabel>
+                  <SelectItem value="region:riyadh">منطقة الرياض</SelectItem>
+                  <SelectItem value="region:makkah">منطقة مكة المكرمة</SelectItem>
+                  <SelectItem value="region:sharqiyah">المنطقة الشرقية</SelectItem>
+                  <SelectItem value="region:tabuk">منطقة تبوك</SelectItem>
+                  <SelectItem value="region:madinah">منطقة المدينة المنورة</SelectItem>
+                  <SelectItem value="region:northern-borders">منطقة الحدود الشمالية</SelectItem>
+                  <SelectItem value="region:qassim">منطقة القصيم</SelectItem>
+                  <SelectItem value="region:almujammah">منطقة المجمعة</SelectItem>
+                  <SelectItem value="region:hail">منطقة حائل</SelectItem>
+                  <SelectItem value="region:asir">منطقة عسير</SelectItem>
+                </SelectGroup>
+
+                <SelectGroup>
+                  <SelectLabel>الدول</SelectLabel>
+                  <SelectItem value="country:eg">مصر</SelectItem>
+                  <SelectItem value="country:sy">سوريا</SelectItem>
+                  <SelectItem value="country:ps">فلسطين</SelectItem>
+                  <SelectItem value="country:jo">الأردن</SelectItem>
+                  <SelectItem value="country:iq">العراق</SelectItem>
+                  <SelectItem value="country:kw">الكويت</SelectItem>
+                  <SelectItem value="country:bh">البحرين</SelectItem>
+                  <SelectItem value="country:qa">قطر</SelectItem>
+                  <SelectItem value="country:ae">الإمارات</SelectItem>
+                  <SelectItem value="country:om">عُمان</SelectItem>
+                  <SelectItem value="country:ye">اليمن</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* كلمة المرور */}
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-foreground font-medium">
+            كلمة المرور
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-foreground/50" />
+            </div>
+            <Input
+              id="password"
+              type="password"
+              dir="ltr"
+              {...register("password")}
+              disabled={isLoading}
+              className="pl-3 pr-10"
+            />
+          </div>
+          {errors.password && (
+            <p className="text-sm text-red-500">{errors.password.message}</p>
+          )}
+        </div>
+
+        {/* تأكيد كلمة المرور */}
+        <div className="space-y-2">
+          <Label
+            htmlFor="password_confirmation"
+            className="text-foreground font-medium"
+          >
+            تأكيد كلمة المرور
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-foreground/50" />
+            </div>
+            <Input
+              id="password_confirmation"
+              type="password"
+              dir="ltr"
+              {...register("password_confirmation")}
+              disabled={isLoading}
+              className="pl-3 pr-10"
+            />
+          </div>
+          {errors.password_confirmation && (
+            <p className="text-sm text-red-500">
+              {errors.password_confirmation.message}
+            </p>
+          )}
+        </div>
+
+        {/* نوع الحساب */}
+        <div className="space-y-2">
+          <Label htmlFor="account_type" className="text-foreground font-medium">
+            نوع الحساب
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-foreground/50" />
+            </div>
+            <Select
+              onValueChange={(value) => {
+                const typedValue = value as
+                  | "user"
+                  | "dealer"
+                  | "venue_owner"
+                  | "investor";
+                setAccountType(typedValue);
+                setValue("account_type", typedValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+              value={accountType}
+            >
+              <SelectTrigger id="account_type" type="button" className="pl-3 pr-10 h-10">
+                <SelectValue placeholder="اختر نوع الحساب" />
+              </SelectTrigger>
+
+              {/* ✅ نفس إصلاح السكرول هنا */}
+              <SelectContent
+                position="popper"
+                side="bottom"
+                align="end"
+                sideOffset={6}
+                collisionPadding={12}
+                className="z-[60] max-h-72 overflow-y-auto overscroll-contain touch-pan-y"
+                dir="rtl"
+              >
+                <SelectItem value="user">مستخدم</SelectItem>
+                <SelectItem value="dealer">تاجر</SelectItem>
+                <SelectItem value="venue_owner">مالك المعرض</SelectItem>
+                <SelectItem value="investor">مستثمر</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* الحقول الديناميكية - venue_owner و investor فقط */}
+        {accountType === "venue_owner" && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="company_name" className="text-foreground font-medium">
+                اسم المعرض
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-foreground/50" />
+                </div>
+                <Input
+                  id="company_name"
+                  {...register("company_name")}
+                  disabled={isLoading}
+                  className="pl-3 pr-10"
+                />
+              </div>
+              {errors.company_name && (
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address" className="text-foreground font-medium">
+                عنوان المعرض
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <MapPin className="h-5 w-5 text-foreground/50" />
+                </div>
+                <Input
+                  id="address"
+                  {...register("address")}
+                  disabled={isLoading}
+                  className="pl-3 pr-10"
+                  placeholder="مثال: القاهرة، مدينة نصر..."
+                />
+              </div>
+              {errors.address && (
+                <p className="text-sm text-red-500">{errors.address.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="commercial_registry"
+                className="text-foreground font-medium"
+              >
+                السجل التجاري
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ClipboardList className="h-5 w-5 text-foreground/50" />
+                </div>
+                <Input
+                  id="commercial_registry"
+                  {...register("commercial_registry")}
+                  disabled={isLoading}
+                  className="pl-3 pr-10"
+                />
+              </div>
+              {errors.commercial_registry && (
+                <p className="text-sm text-red-500">
+                  {errors.commercial_registry.message}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        {accountType === "investor" && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="company_name" className="text-foreground font-medium">
+                اسم الشركة الاستثمارية
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <Building className="h-5 w-5 text-foreground/50" />
+                </div>
+                <Input
+                  id="company_name"
+                  {...register("company_name")}
+                  disabled={isLoading}
+                  className="pl-3 pr-10"
+                />
+              </div>
+              {errors.company_name && (
+                <p className="text-sm text-red-500">{errors.company_name.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="commercial_registry"
+                className="text-foreground font-medium"
+              >
+                السجل التجاري
+              </Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ClipboardList className="h-5 w-5 text-foreground/50" />
+                </div>
+                <Input
+                  id="commercial_registry"
+                  {...register("commercial_registry")}
+                  disabled={isLoading}
+                  className="pl-3 pr-10"
+                />
+              </div>
+              {errors.commercial_registry && (
+                <p className="text-sm text-red-500">
+                  {errors.commercial_registry.message}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-2.5 active:scale-[0.98]"
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center">
+              <span className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></span>
+              جاري التسجيل...
+            </span>
+          ) : (
+            "إنشاء حساب"
+          )}
+        </Button>
+      </div>
+    </form>
+  );
 }

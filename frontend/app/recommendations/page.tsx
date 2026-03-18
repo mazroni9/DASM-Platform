@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import LoadingLink from "@/components/LoadingLink";
 import {
     Car,
     Search,
@@ -15,7 +15,7 @@ import {
     ChevronDown,
     ArrowLeft,
 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // واجهة بيانات السيارة الموصى بها
 interface RecommendedCar {
@@ -45,134 +45,22 @@ export default function RecommendationsPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        // محاكاة جلب بيانات التوصيات
+        // جلب بيانات التوصيات من API
         async function fetchRecommendations() {
             try {
                 setLoading(true);
 
-                // محاكاة تأخير الشبكة
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-
-                // بيانات تجريبية للتوصيات
-                const mockRecommendations: RecommendedCar[] = [
-                    {
-                        id: 1001,
-                        title: "لكزس ES350",
-                        make: "لكزس",
-                        model: "ES350",
-                        year: 2020,
-                        image: "https://example.com/images/lexus-es350.jpg",
-                        price: 195000,
-                        isLiveNow: true,
-                        timeLeft: "35 دقيقة",
-                        match: 95,
-                        isWatched: true,
-                        category: "similar",
-                    },
-                    {
-                        id: 1002,
-                        title: "تويوتا أفالون",
-                        make: "تويوتا",
-                        model: "أفالون",
-                        year: 2021,
-                        image: "https://example.com/images/toyota-avalon.jpg",
-                        price: 185000,
-                        match: 88,
-                        isWatched: false,
-                        category: "similar",
-                    },
-                    {
-                        id: 1003,
-                        title: "نيسان ماكسيما",
-                        make: "نيسان",
-                        model: "ماكسيما",
-                        year: 2019,
-                        image: "https://example.com/images/nissan-maxima.jpg",
-                        price: 150000,
-                        match: 82,
-                        isWatched: false,
-                        category: "similar",
-                    },
-                    {
-                        id: 2001,
-                        title: "مرسيدس E200",
-                        make: "مرسيدس",
-                        model: "E200",
-                        year: 2020,
-                        image: "https://example.com/images/mercedes-e200.jpg",
-                        price: 220000,
-                        auctionDate: "2023-10-25T14:00:00",
-                        match: 92,
-                        isWatched: true,
-                        category: "upcoming",
-                    },
-                    {
-                        id: 2002,
-                        title: "بي إم دبليو 520i",
-                        make: "بي إم دبليو",
-                        model: "520i",
-                        year: 2019,
-                        image: "https://example.com/images/bmw-520i.jpg",
-                        price: 210000,
-                        auctionDate: "2023-10-26T16:00:00",
-                        match: 85,
-                        isWatched: false,
-                        category: "upcoming",
-                    },
-                    {
-                        id: 3001,
-                        title: "هيونداي سوناتا",
-                        make: "هيونداي",
-                        model: "سوناتا",
-                        year: 2020,
-                        image: "https://example.com/images/hyundai-sonata.jpg",
-                        price: 120000,
-                        valueScore: 92,
-                        isLiveNow: true,
-                        timeLeft: "50 دقيقة",
-                        isWatched: false,
-                        category: "value",
-                    },
-                    {
-                        id: 3002,
-                        title: "تويوتا كامري",
-                        make: "تويوتا",
-                        model: "كامري",
-                        year: 2019,
-                        image: "https://example.com/images/toyota-camry.jpg",
-                        price: 110000,
-                        valueScore: 89,
-                        auctionDate: "2023-10-25T15:30:00",
-                        isWatched: true,
-                        category: "value",
-                    },
-                    {
-                        id: 4001,
-                        title: "هوندا سيفيك",
-                        make: "هوندا",
-                        model: "سيفيك",
-                        year: 2022,
-                        image: "https://example.com/images/honda-civic.jpg",
-                        price: 105000,
-                        match: 79,
-                        valueScore: 82,
-                        category: "trending",
-                    },
-                    {
-                        id: 4002,
-                        title: "كيا K5",
-                        make: "كيا",
-                        model: "K5",
-                        year: 2022,
-                        image: "https://example.com/images/kia-k5.jpg",
-                        price: 120000,
-                        match: 81,
-                        valueScore: 84,
-                        category: "trending",
-                    },
-                ];
-
-                setRecommendations(mockRecommendations);
+                try {
+                    // محاولة استدعاء API الحقيقي
+                    const response = await fetch("/api/recommendations");
+                    if (!response.ok) throw new Error("فشل الاتصال بالخادم");
+                    const data = await response.json();
+                    setRecommendations(data);
+                } catch (apiError) {
+                    // في حالة الخطأ مع الاتصال بالـ API، نضع قائمة فارغة
+                    console.error("خطأ في استدعاء API التوصيات:", apiError);
+                    setRecommendations([]);
+                }
             } catch (err) {
                 console.error("فشل في جلب التوصيات:", err);
                 setError(
@@ -240,7 +128,6 @@ export default function RecommendationsPage() {
     });
 
     // عرض حالة التحميل
-    if (loading) {
         return (
             <div className="container mx-auto px-4 py-8 max-w-6xl">
                 <div className="animate-pulse">
@@ -262,7 +149,7 @@ export default function RecommendationsPage() {
                 </div>
             </div>
         );
-    }
+  
 
     // عرض حالة الخطأ
     if (error) {
@@ -289,13 +176,13 @@ export default function RecommendationsPage() {
                     <h1 className="text-3xl font-bold text-gray-900">
                         توصيات مخصصة لك
                     </h1>
-                    <Link
+                    <LoadingLink
                         href="/dashboard"
                         className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors gap-1 px-3 py-2 rounded-full border border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100"
                     >
                         <span>لوحة التحكم</span>
                         <ArrowLeft className="h-4 w-4" />
-                    </Link>
+                    </LoadingLink>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4">
@@ -484,7 +371,7 @@ export default function RecommendationsPage() {
                                 </div>
 
                                 <div className="mt-2 text-2xl font-bold text-gray-800">
-                                    {formatMoney(car.price)} ريال
+                                    {formatCurrency (car.price)} ريال
                                 </div>
 
                                 {car.timeLeft && (
@@ -495,12 +382,12 @@ export default function RecommendationsPage() {
                                 )}
 
                                 <div className="mt-4">
-                                    <Link
+                                    <LoadingLink
                                         href={`/car/${car.id}`}
                                         className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors"
                                     >
                                         عرض التفاصيل
-                                    </Link>
+                                    </LoadingLink>
                                 </div>
                             </div>
                         </div>

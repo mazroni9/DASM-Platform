@@ -3,542 +3,1100 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
-use App\Enums\AuctionStatus;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-
-use Inertia\Response;
- 
-// Add direct Cloudinary SDK import
-use Cloudinary\Cloudinary as CloudinarySDK;
-use Cloudinary\Configuration\Configuration;
+use App\Models\User;
 use Inertia\Inertia;
-
-    // Helper function
+use Inertia\Response;
+use App\Models\Auction;
+use App\Enums\AuctionType;
+use App\Enums\CarCondition;
+use App\Enums\AuctionStatus;
+use App\Models\CarAttribute;
+use Illuminate\Http\Request;
+use App\Enums\CarTransmission;
+use Illuminate\Validation\Rule;
+use App\Enums\CarsMarketsCategory;
+use Illuminate\Support\Facades\DB;
+use App\Services\CloudinaryService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\CarCollection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
+use App\Http\Resources\CarCardResource;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon; // ✅ مضاف لاستخدام الوقت
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewCarAddedNotification;
+use App\Notifications\CarDetailsUpdatedNotification;
 
 class CarController extends Controller
 {
     /**
-     * Display a listing of the user's cars
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @var CloudinaryService
+     */
+    protected $cloudinaryService;
+
+    public function __construct(CloudinaryService $cloudinaryService)
+    {
+        $this->cloudinaryService = $cloudinaryService;
+    }
+
+    /**
+     * سيارات المستخدم (محمي)
      */
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = null;
-        
-        // Handle both user types: dealer or regular user
-        if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
-        } else {
-            $query = Car::where('user_id', $user->id);
-        }
-        
-        // Filter by condition
-        if ($request->has('condition')) {
+
+        $query = Car::where('user_id', $user->id);
+
+        $query->with('auctions');
+
+        // فلاتر
+        if ($request->filled('condition')) {
             $query->where('condition', $request->condition);
         }
-        
-        // Filter by auction status
-        if ($request->has('auction_status')) {
+        if ($request->filled('auction_status')) {
             $query->where('auction_status', $request->auction_status);
         }
-        
-        // Filter by make
-        if ($request->has('make')) {
+        if ($request->filled('make')) {
             $query->where('make', 'like', '%' . $request->make . '%');
         }
-        
-        // Filter by model
-        if ($request->has('model')) {
+        if ($request->filled('model')) {
             $query->where('model', 'like', '%' . $request->model . '%');
         }
-        
-        // Filter by year
-        if ($request->has('year')) {
+        if ($request->filled('year')) {
             $query->where('year', $request->year);
         }
-        
-        // Sort options
+
+        // ترتيب
         $sortField = $request->input('sort_by', 'id');
         $sortDirection = $request->input('sort_dir', 'desc');
-        $allowedSortFields = ['id','created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
-        
-        if (in_array($sortField, $allowedSortFields)) {
+        $allowedSortFields = ['id', 'created_at', 'make', 'model', 'year', 'odometer', 'evaluation_price'];
+        if (in_array($sortField, $allowedSortFields, true)) {
             $query->orderBy($sortField, $sortDirection);
         }
-        $cars= $query->paginate(10);
-
-    
-        return response()->json([
-            'status' => 'success',
-            'data' => $cars
-        ]);
-   
- 
-    
-      
-    }
-
-
-
-    public function getAddedCars(Request $request)
-    {
-         $user = Auth::user();
-         // Handle both user types: dealer or regular user
-        if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
-        } 
 
         $cars = $query->paginate(10);
 
-        
         return response()->json([
             'status' => 'success',
-            'data' => $cars
+            'data'   => $cars,
         ]);
     }
 
     /**
-     * Store a newly created car
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * سيارات لها مزاد نشط (محمي)
+     */
+    public function CarsInAuction(Request $request)
+    {
+        $query = Car::with(['activeAuction'])->whereHas('activeAuction');
+
+        if ($request->filled('market_category')) {
+            $query->where('market_category', $request->market_category);
+        }
+
+        // only_approved يعمل فقط لو عندنا عمود status في cars
+        if ($request->boolean('only_approved') && Schema::hasColumn('cars', 'status')) {
+            $query->where('status', 'approved');
+        }
+
+        $cars = $query->paginate(10);
+        $carCollection = new CarCollection($cars);
+        $payload = $carCollection->toResponse(request())->getData(true);
+
+        return response()->json([
+            'status'     => 'success',
+            'data'       => $payload['data'],
+            'pagination' => $payload['pagination'],
+        ]);
+    }
+
+    /**
+     * سيارات مميزة (عام)
+     */
+    public function getFeaturedCars(Request $request)
+    {
+        $activeStatuses = ['active', 'live'];
+        try {
+            $activeStatuses[] = AuctionStatus::ACTIVE->value;
+        } catch (\Throwable $e) {
+        }
+
+        $cars = Car::with('activeAuction')
+            ->select('id', 'make', 'model', 'year', 'images', 'evaluation_price', 'market_category')
+            ->when(Schema::hasColumn('cars', 'status'), function ($q) {
+                $q->where('status', 'approved');
+            })
+            ->whereHas('activeAuction', function ($q) use ($activeStatuses) {
+                $q->whereIn('status', array_unique($activeStatuses));
+            })
+            ->withCount('activeAuctionBids as total_bids')
+            ->orderBy('total_bids', 'DESC')
+            ->limit(4)
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $cars,
+        ]);
+    }
+
+    /**
+     * سيارات أضافها التاجر (محمي)
+     */
+    public function getAddedCars(Request $request)
+    {
+        $user = Auth::user();
+        $query = Car::query();
+
+        // All users (including dealers) use user_id for ownership
+        $query->where('user_id', $user->id);
+
+        $cars = $query->paginate(10);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $cars,
+        ]);
+    }
+
+    /**
+     * إضافة سيارة (محمي)
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'make' => 'required|string|max:50',
-            'model' => 'required|string|max:50',
-            'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
-            'vin' => 'required|string|unique:cars,vin|max:17',
-            'odometer' => 'required|integer|min:0',
-            'condition' => 'required|string|in:excellent,good,fair,poor',
-            'evaluation_price' => 'required|numeric|min:0',
-            'color' => 'nullable|string|max:30',
-            'engine' => 'nullable|string|max:50',
-            'transmission' => 'nullable|string|in:automatic,manual,cvt',
-            'description' => 'nullable|string'
+        Log::info('Car store request data:', [
+            'all_data'          => $request->all(),
+            'files'             => $request->allFiles(),
+            'has_images_field'  => $request->has('images'),
+            'has_file_images'   => $request->hasFile('images'),
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
-            ], 422);
+        // تطبيع القيم العشرية
+        $normalized = $request->all();
+        foreach (['evaluation_price', 'min_price', 'max_price'] as $key) {
+            if (isset($normalized[$key]) && is_string($normalized[$key])) {
+                $normalized[$key] = str_replace(',', '.', $normalized[$key]);
+            }
         }
-        
-        $user = Auth::user();
-        
-        $car = new Car();
-        
-        // Associate car with dealer if user is dealer, otherwise with user directly
-        if ($user->role === 'dealer' && $user->dealer) {
-            $car->dealer_id = $user->dealer->id;
-        } else {
-            $car->user_id = $user->id;
-        }
-        
-        $car->make = $request->make;
-        $car->model = $request->model;
-        $car->year = $request->year;
-        $car->vin = $request->vin;
-        $car->odometer = $request->odometer;
-        $car->condition = $request->condition;
-        $car->evaluation_price = $request->evaluation_price;
-        $car->color = $request->color ?? null;
-        $car->engine = $request->engine ?? null;
-        $car->transmission = $request->transmission ?? null;
-        $car->description = $request->description ?? null;
-        $car->auction_status = 'available';
-        $car->save();
-        
-        // Handle car images upload if any
-        if ($request->hasFile('images')) {
-            $uploadedImages = [];
-            
-            foreach ($request->file('images') as $image) {
-                try {
-                    // Check if Cloudinary config is properly loaded
-                    $cloudName = config('cloudinary.cloud_name');
-                    $apiKey = config('cloudinary.api_key');
-                    $apiSecret = config('cloudinary.api_secret');
-                    
-                    // If config values are missing, log the issue
-                    if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
-                        \Log::error('Cloudinary configuration is missing: ', [
-                            'cloud_name' => $cloudName,
-                            'api_key' => $apiKey ? 'set' : 'not set',
-                            'api_secret' => $apiSecret ? 'set' : 'not set'
-                        ]);
-                        
-                        // Use a local fallback path for testing
-                        $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
-                        continue;
+        $request->merge($normalized);
+
+        // أسواق مسموح بها (من غير government)
+        $allowedMarkets = array_values(array_filter(CarsMarketsCategory::values(), fn($v) => $v !== 'government'));
+
+        $rules = [
+            'make'       => 'required|string|max:50',
+            'model'      => 'required|string|max:50',
+            'year'       => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'vin'        => 'required|string|unique:cars,vin|max:17',
+            'odometer'   => 'required|integer|min:0|max:2147483647',
+            'condition'  => ['required', 'string', Rule::in(CarCondition::values())],
+
+            // ✅ المدة الجديدة للمزاد: 10 أو 20 أو 30 يوم
+            'main_auction_duration' => 'nullable|integer|in:10,20,30',
+
+            // ✅ Auction Scheduling: Start Immediately or Select Future Date
+            'start_immediately'    => 'nullable|boolean',
+            'auction_start_date'   => 'nullable|date|after_or_equal:today',
+
+            'evaluation_price' => 'required|numeric|min:0|max:9999999999.99',
+            'min_price'        => 'required|numeric|min:0|max:9999999999.99',
+            'max_price'        => 'required|numeric|min:0|max:9999999999.99',
+
+            'color'        => 'nullable|string|max:30',
+            'province'     => 'nullable|string|max:100',
+            'city'         => 'nullable|string|max:100',
+            'engine'       => 'nullable|string|max:50',
+            'transmission' => ['nullable', 'string', Rule::in(CarTransmission::values())],
+            'market_category' => ['required', 'string', Rule::in($allowedMarkets)],
+            'description'  => 'nullable|string',
+
+            // حقول اختيارية خاصة بالكرفانات
+            'type'             => 'nullable|string|max:50',
+            'usage'            => 'nullable|string|max:50',
+            'year_built'       => 'nullable|integer|min:1970|max:' . date('Y'),
+            'length_m'         => 'nullable|numeric|min:0',
+            'width_m'          => 'nullable|numeric|min:0',
+            'weight_kg'        => 'nullable|numeric|min:0',
+            'capacity_persons' => 'nullable|integer|min:1',
+            'has_bathroom'     => 'nullable|boolean',
+            'has_kitchen'      => 'nullable|boolean',
+            'bedrooms_count'   => 'nullable|integer|min:0',
+            'solar_power_kw'   => 'nullable|numeric|min:0',
+            'license_required' => 'nullable|boolean',
+
+            'images'    => 'sometimes|array|max:10',
+        ];
+
+        [$messages, $attributes] = $this->arabicValidation();
+
+        $validator = Validator::make($request->all(), $rules, $messages, $attributes);
+        $validator->after(function ($v) use ($request) {
+            if ($request->filled(['min_price', 'max_price'])) {
+                $min = (float) $request->min_price;
+                $max = (float) $request->max_price;
+
+                if ($min > $max) {
+                    $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
+                } else {
+                    $limit = 0;
+                    if ($min >= 40000) {
+                        $limit = $min * 1.10; // Tier 1: 10%
+                    } else {
+                        $limit = $min * 1.15; // Tier 2: 15%
                     }
-                    
-                    // Initialize Cloudinary directly without using the Laravel facade
-                    $config = new Configuration();
-                    $config->cloud->cloudName = $cloudName;
-                    $config->cloud->apiKey = $apiKey;
-                    $config->cloud->apiSecret = $apiSecret;
-                    $config->url->secure = true;
-                    
-                    $cloudinary = new CloudinarySDK($config);
-                    
-                    // Upload the image to Cloudinary using the direct SDK
-                    $result = $cloudinary->uploadApi()->upload(
-                        $image->getRealPath(),
-                        [
-                            'folder' => 'cars',
-                            'public_id' => 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999)
-                        ]
-                    );
-                    
-                    // Get the secure URL from Cloudinary
-                    $imageUrl = $result['secure_url'];
-                    
-                    // Add the URL to the uploaded images array
-                    $uploadedImages[] = $imageUrl;
-                    
-                    \Log::info('Successfully uploaded image to Cloudinary', [
-                        'secure_url' => $imageUrl
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Error uploading image to Cloudinary: ' . $e->getMessage(), [
-                        'exception' => $e,
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine()
-                    ]);
-                    
-                    // Use a local fallback path for testing
-                    $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
+
+                    if ($max > $limit) {
+                        $formattedMin = number_format($min);
+                        $formattedLimit = number_format(floor($limit));
+                        $v->errors()->add('max_price', "بناءً على الحد الأدنى المدخل ({$formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي {$formattedLimit} ريال.");
+                    }
                 }
             }
-            
-            // Store the image URLs in the car record
-            $car->images = $uploadedImages;
-            $car->save();
+        });
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
         }
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Car added successfully',
-            'data' => $car
-        ], 201);
+
+        $user = Auth::user();
+        DB::beginTransaction();
+        try {
+            $car = new Car();
+
+            // All car ownership is tracked by user_id
+            $car->user_id = $user->id;
+
+            // حفظ القيم
+            $car->make = $request->make;
+            $car->province = $request->province;
+            $car->city = $request->city;
+            $car->model = $request->model;
+            $car->year = $request->year;
+            $car->vin = $request->vin;
+            $car->odometer = $request->odometer;
+            $car->condition = CarCondition::from($request->condition);
+            $car->evaluation_price = $request->evaluation_price;
+            $car->color = $request->color ?? null;
+            $car->engine = $request->engine ?? null;
+            $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
+            $car->description = $request->description ?? null;
+            $car->plate = $request->plate ?? null;
+            // هنعدل حالة السيارة لاحقاً بعد إنشاء المزاد
+            $car->auction_status = 'available';
+            $car->min_price = $request->min_price;
+            $car->max_price = $request->max_price;
+            $car->market_category = $request->market_category;
+            $car->main_auction_duration = $request->main_auction_duration; // 10 أو 20 أو 30
+            $car->save();
+
+            // صور السيارة
+            $this->logImageDebugInfo($request);
+            $uploadedImages = $this->handleCarImageUpload($request, $car);
+
+            Log::error('uploadedImages to create car ' . $car->id, [
+                $uploadedImages
+            ]);
+
+            if (!empty($uploadedImages)) {
+                $car->images = $uploadedImages;
+                $car->save();
+            }
+
+            // صور التقارير
+            $uploadedReportImages = $this->handleCarReportImageUpload($request, $car);
+            if (!empty($uploadedReportImages)) {
+                $car->reportImages()->createMany($uploadedReportImages);
+                $car->save();
+            }
+
+            // بطاقة التسجيل
+            if ($request->hasFile('registration_card_image')) {
+                $image = $request->file('registration_card_image');
+                $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+                $uploadedRegistrationCardImage = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
+                $car->registration_card_image = $uploadedRegistrationCardImage;
+                $car->save();
+            }
+
+            // خصائص إضافية للكرفانات (إن وجدت)
+            $this->syncCaravanAttributes($request, $car);
+
+            /**
+             * ✅ إنشاء المزاد مباشرة بعد إضافة السيارة
+             * - Auction Scheduling System:
+             *   - If start_immediately = true (or auction_start_date is null/today): start upon approval
+             *   - If auction_start_date is in the future: schedule for that date at 7 PM
+             */
+
+            // لو ما اختارش مدة، نخليها افتراضياً 10 أيام
+            $durationDays = (int)($car->main_auction_duration ?: 10);
+            $ksaTimezone = 'Asia/Riyadh';
+
+            // Determine start time based on user selection
+            $startImmediately = $request->boolean('start_immediately', true);
+            $auctionStartDate = $request->input('auction_start_date');
+
+            if ($startImmediately || empty($auctionStartDate)) {
+                // Start immediately upon approval - use now as start time
+                // End time will be calculated when admin approves
+                $startTime = Carbon::now($ksaTimezone);
+                $endTime = $startTime->copy()->addDays($durationDays);
+            } else {
+                // Schedule for a future date at 7:00 PM
+                $startTime = Carbon::parse($auctionStartDate, $ksaTimezone)->setTime(19, 0, 0);
+                // End time will be calculated when the auction is activated by cron
+                $endTime = null;
+            }
+
+            // تحديث حالة السيارة إلى pending (awaiting admin approval)
+            $car->auction_status = 'pending';
+            $car->save();
+
+            Auction::create([
+                'car_id'        => $car->id,
+                'start_time'    => $startTime,
+                'end_time'      => $endTime,
+                'minimum_bid'   => $car->min_price,
+                'maximum_bid'   => $car->max_price,
+                'reserve_price' => $car->min_price,
+                'current_bid'   => 0,
+                'status'        => AuctionStatus::SCHEDULED,
+                'auction_type'  => AuctionType::SILENT_INSTANT,
+                'control_room_approved' => false,
+                'approved_for_live'     => false,
+            ]);
+
+            $car->refresh();
+
+            $admins = User::whereIn('type', ['admin', 'super_admin'])->get();
+            Notification::send($admins, new NewCarAddedNotification($car->load('user')));
+
+            DB::commit();
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'تم إضافة السيارة بنجاح.',
+                'data'    => $car,
+            ], 201);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Failed to create car ' . $car->id, [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
-     * Display the specified car
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * عرض سيارة (محمي)
      */
     public function show($id)
     {
         $user = Auth::user();
-        $car = null;
-        
-        // Allow admins to view any car
-        if ($user->role === 'admin') {
-            $car = Car::find($id);
-        }
-        // Retrieve car based on user role
-        else if ($user->role === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)
-                ->where('dealer_id', $user->dealer->id)
-                ->first();
+
+        if ($user->type === 'admin') {
+            $car = Car::with('carAttributes')->find($id);
         } else {
+            // All users (including dealers) use user_id for ownership
             $car = Car::where('id', $id)
                 ->where('user_id', $user->id)
+                ->with('carAttributes')
                 ->first();
         }
-            
+
         if (!$car) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Car not found or you do not have permission to view it'
-            ], 404);
+            return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لعرضها.'], 404);
         }
-        
-        // Get active auction if exists
+
+        // Show hidden fields for the owner/admin
+        $car->makeVisible(['min_price', 'max_price', 'images']);
+
         $activeAuction = $car->auctions()
-            ->whereIn('status', [
-                AuctionStatus::SCHEDULED->value,
-                AuctionStatus::ACTIVE->value
-            ])
+            ->whereIn('status', [AuctionStatus::SCHEDULED->value, AuctionStatus::ACTIVE->value])
             ->first();
-        
+
+        $extraAttributes = [];
+        if ($this->carHasCaravanMarketCategory($car)) {
+            $extraAttributes = $car->carAttributes
+                ->pluck('value', 'key')
+                ->toArray();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'car'                  => $car,
+                'active_auction'       => $activeAuction,
+                'car_extra_attributes' => $extraAttributes,
+            ],
+        ]);
+    }
+
+    /**
+     * عرض سيارة (للعرض فقط) (محمي)
+     */
+    public function showOnly($id)
+    {
+        $user = Auth::user();
+        $car = Car::with('reportImages', 'activeAuction', 'carAttributes')->find($id);
+
+        if ($car) {
+            $car->load('user');
+        }
+
+        if (!$car) {
+            return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة.'], 404);
+        }
+
+        $activeAuction = $car->activeAuction()
+            ->withCount('bids')
+            ->first();
+        $total_bids = $activeAuction?->bids_count ?? 0;
+        if ($activeAuction && $activeAuction->auction_type != AuctionType::SILENT_INSTANT) {
+            $activeAuction->load(['bids' => function ($q) {
+                $q->select('id', 'bid_amount', 'created_at', 'user_id', 'auction_id')
+                    ->orderBy('created_at', 'desc');
+            }]);
+        }
+
+        $similar_cars = Car::where('make', $car->make)
+            ->where('id', '!=', $car->id)
+            ->whereHas('activeAuction')
+            ->with('activeAuction')
+            ->withCount('activeAuctionBids as total_bids')
+            ->orderByRaw('model = ? DESC', [$car->model])
+            ->orderBy('year', 'DESC')
+            ->limit(4)
+            ->get();
+
+        $extraAttributes = [];
+
+        if ($this->carHasCaravanMarketCategory($car)) {
+            $extraAttributes = $car->carAttributes
+                ->pluck('value', 'key')
+                ->toArray();
+        }
+
         return response()->json([
             'status' => 'success',
             'data' => [
-                'car' => $car,
-                'active_auction' => $activeAuction
+                'car'                  => $car,
+                'active_auction'       => $activeAuction,
+                'similar_cars'         => $similar_cars,
+                'total_bids'           => $total_bids,
+                'car_extra_attributes' => $extraAttributes,
             ]
         ]);
     }
 
     /**
-     * Update the specified car
-     *
-     * @param Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * تحديث سيارة (محمي)
      */
     public function update(Request $request, $id)
     {
         $user = Auth::user();
-        $car = null;
-        
-        // Retrieve car based on user role
-        if ($user->role === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)
-                ->where('dealer_id', $user->dealer->id)
-                ->first();
-        } else {
-            $car = Car::where('id', $id)
-                ->where('user_id', $user->id)
-                ->first();
-        }
-            
-        if (!$car) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Car not found or you do not have permission to update it'
-            ], 404);
-        }
-        
-        // Prevent updates if car is in active auction
-        if (in_array($car->auction_status, ['scheduled', 'active'])) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Cannot update car details while it is in an active or scheduled auction'
-            ], 400);
-        }
-        
-        $validator = Validator::make($request->all(), [
-            'make' => 'sometimes|string|max:50',
-            'model' => 'sometimes|string|max:50',
-            'year' => 'sometimes|integer|min:1900|max:' . (date('Y') + 1),
-            'vin' => 'sometimes|string|unique:cars,vin,' . $id . '|max:17',
-            'odometer' => 'sometimes|integer|min:0',
-            'condition' => 'sometimes|string|in:excellent,good,fair,poor',
-            'evaluation_price' => 'sometimes|numeric|min:0',
-            'color' => 'nullable|string|max:30',
-            'engine' => 'nullable|string|max:50',
-            'transmission' => 'nullable|string|in:automatic,manual,cvt',
-            'description' => 'nullable|string'
-        ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors()
-            ], 422);
+        // All users (including dealers) use user_id for ownership
+        $car = Car::where('id', $id)->where('user_id', $user->id)->first();
+
+        if (!$car) {
+            return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لتعديلها.'], 404);
         }
-        
-        // Update car fields that are allowed to be updated
-        if ($request->has('make')) $car->make = $request->make;
-        if ($request->has('model')) $car->model = $request->model;
-        if ($request->has('year')) $car->year = $request->year;
-        if ($request->has('vin')) $car->vin = $request->vin;
-        if ($request->has('odometer')) $car->odometer = $request->odometer;
-        if ($request->has('condition')) $car->condition = $request->condition;
-        if ($request->has('evaluation_price')) $car->evaluation_price = $request->evaluation_price;
-        if ($request->has('color')) $car->color = $request->color;
-        if ($request->has('engine')) $car->engine = $request->engine;
-        if ($request->has('transmission')) $car->transmission = $request->transmission;
-        if ($request->has('description')) $car->description = $request->description;
-        
-        // Handle car images upload if any
-        if ($request->hasFile('images')) {
-            $uploadedImages = [];
-            
-            foreach ($request->file('images') as $image) {
-                try {
-                    // Check if Cloudinary config is properly loaded
-                    $cloudName = config('cloudinary.cloud_name');
-                    $apiKey = config('cloudinary.api_key');
-                    $apiSecret = config('cloudinary.api_secret');
-                    
-                    // If config values are missing, log the issue
-                    if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
-                        \Log::error('Cloudinary configuration is missing: ', [
-                            'cloud_name' => $cloudName,
-                            'api_key' => $apiKey ? 'set' : 'not set',
-                            'api_secret' => $apiSecret ? 'set' : 'not set'
-                        ]);
-                        
-                        // Use a local fallback path for testing
-                        $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
-                        continue;
+
+        // Allow editing if auction status is pending/scheduled (which maps to car.auction_status = 'pending')
+        // Prevent editing if auction is active/live (car.auction_status = 'in_auction' or 'live')
+        // We check car.auction_status which is set to 'pending' for scheduled auctions.
+        // If it's 'live' or 'in_auction', we block.
+        if (in_array($car->auction_status, ['live', 'in_auction', 'active'], true)) {
+            return response()->json(['status' => 'error', 'message' => 'لا يمكن تعديل بيانات السيارة أثناء وجود مزاد نشط.'], 400);
+        }
+
+        // Security Check: Prevent modification if Control Room approved
+        $latestAuction = Auction::where('car_id', $car->id)
+            ->whereIn('status', [AuctionStatus::SCHEDULED, AuctionStatus::ACTIVE])
+            ->latest()
+            ->first();
+
+        if ($latestAuction && $latestAuction->control_room_approved) {
+            return response()->json(['status' => 'error', 'message' => 'Cannot edit vehicle details after admin approval.'], 403);
+        }
+
+        // تطبيع أرقام
+        $normalized = $request->all();
+        foreach (['evaluation_price', 'min_price', 'max_price'] as $key) {
+            if (isset($normalized[$key]) && is_string($normalized[$key])) {
+                $normalized[$key] = str_replace(',', '.', $normalized[$key]);
+            }
+        }
+        $request->merge($normalized);
+
+        $allowedMarkets = array_values(array_filter(CarsMarketsCategory::values(), fn($v) => $v !== 'government'));
+
+        $rules = [
+            'make'       => 'sometimes|string|max:50',
+            'model'      => 'sometimes|string|max:50',
+            'year'       => 'sometimes|integer|min:1900|max:' . (date('Y') + 1),
+            'vin'        => 'sometimes|string|unique:cars,vin,' . $id . '|max:17',
+            'odometer'   => 'sometimes|integer|min:0|max:2147483647',
+            'condition'  => ['sometimes', 'string', Rule::in(CarCondition::values())],
+
+            'evaluation_price' => 'sometimes|numeric|min:0|max:9999999999.99',
+            'min_price'        => 'sometimes|numeric|min:0|max:9999999999.99',
+            'max_price'        => 'sometimes|numeric|min:0|max:9999999999.99',
+
+            'color'        => 'nullable|string|max:30',
+            'engine'       => 'nullable|string|max:50',
+            'transmission' => ['nullable', 'string', Rule::in(CarTransmission::values())],
+            'description'  => 'nullable|string',
+            'province'     => 'nullable|string|max:100',
+            'city'         => 'nullable|string|max:100',
+            'plate'        => 'nullable|string|max:20',
+            'market_category' => ['sometimes', 'string', Rule::in($allowedMarkets)],
+
+            // حقول اختيارية خاصة بالكرفانات
+            'type'             => 'sometimes|string|max:50',
+            'usage'            => 'sometimes|string|max:50',
+            'year_built'       => 'sometimes|integer|min:1970|max:' . date('Y'),
+            'length_m'         => 'sometimes|numeric|min:0',
+            'width_m'          => 'sometimes|numeric|min:0',
+            'weight_kg'        => 'sometimes|numeric|min:0',
+            'capacity_persons' => 'sometimes|integer|min:1',
+            'has_bathroom'     => 'sometimes|boolean',
+            'has_kitchen'      => 'sometimes|boolean',
+            'bedrooms_count'   => 'sometimes|integer|min:0',
+            'solar_power_kw'   => 'sometimes|numeric|min:0',
+            'license_required' => 'sometimes|boolean',
+
+            // ✅ Auction Scheduling Updates
+            'main_auction_duration' => 'nullable|integer|in:10,20,30',
+            'start_immediately'    => 'nullable|boolean',
+            'auction_start_date'   => 'nullable|date|after_or_equal:today',
+        ];
+
+        [$messages, $attributes] = $this->arabicValidation();
+
+        $validator = Validator::make($request->all(), $rules, $messages, $attributes);
+        $validator->after(function ($v) use ($request) {
+            if ($request->filled(['min_price', 'max_price'])) {
+                $min = (float) $request->min_price;
+                $max = (float) $request->max_price;
+
+                if ($min > $max) {
+                    $v->errors()->add('min_price', 'الحد الأدنى يجب أن يكون أقل من أو يساوي الحد الأعلى.');
+                } else {
+                    $limit = 0;
+                    if ($min >= 40000) {
+                        $limit = $min * 1.10; // Tier 1: 10%
+                    } else {
+                        $limit = $min * 1.15; // Tier 2: 15%
                     }
-                    
-                    // Initialize Cloudinary directly without using the Laravel facade
-                    $config = new Configuration();
-                    $config->cloud->cloudName = $cloudName;
-                    $config->cloud->apiKey = $apiKey;
-                    $config->cloud->apiSecret = $apiSecret;
-                    $config->url->secure = true;
-                    
-                    $cloudinary = new CloudinarySDK($config);
-                    
-                    // Upload the image to Cloudinary using the direct SDK
-                    $result = $cloudinary->uploadApi()->upload(
-                        $image->getRealPath(),
-                        [
-                            'folder' => 'cars',
-                            'public_id' => 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999)
-                        ]
-                    );
-                    
-                    // Get the secure URL from Cloudinary
-                    $imageUrl = $result['secure_url'];
-                    
-                    // Add the URL to the uploaded images array
-                    $uploadedImages[] = $imageUrl;
-                    
-                    \Log::info('Successfully uploaded image to Cloudinary', [
-                        'secure_url' => $imageUrl
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Error uploading image to Cloudinary: ' . $e->getMessage(), [
-                        'exception' => $e,
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine()
-                    ]);
-                    
-                    // Use a local fallback path for testing
-                    $uploadedImages[] = '/temp/car_' . $car->id . '_' . time() . '_' . rand(1000, 9999) . '.jpg';
+
+                    if ($max > $limit) {
+                        $formattedMin = number_format($min);
+                        $formattedLimit = number_format(floor($limit));
+                        $v->errors()->add('max_price', "بناءً على الحد الأدنى المدخل ({$formattedMin})، القيمة القصوى المسموح بها للحد الأعلى هي {$formattedLimit} ريال.");
+                    }
                 }
             }
-            
-            // If existing images should be kept, merge with new ones
-            if ($request->has('keep_existing_images') && $request->keep_existing_images) {
-                $existingImages = $car->images ?? [];
-                $car->images = array_merge($existingImages, $uploadedImages);
+        });
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
+        }
+
+        // تحديث الحقول
+        foreach (
+            [
+                'make',
+                'model',
+                'year',
+                'vin',
+                'odometer',
+                'evaluation_price',
+                'color',
+                'engine',
+                'description',
+                'province',
+                'city',
+                'plate',
+                'min_price',
+                'max_price',
+                'market_category'
+            ] as $field
+        ) {
+            if ($request->has($field)) {
+                $car->{$field} = $request->{$field};
+            }
+        }
+        if ($request->has('condition')) {
+            $car->condition = CarCondition::from($request->condition);
+        }
+        if ($request->has('transmission')) {
+            $car->transmission = $request->transmission ? CarTransmission::from($request->transmission) : null;
+        }
+
+        // صور (اختياري)
+        if ($request->hasFile('images')) {
+            $uploadedImages = [];
+            foreach ($request->file('images') as $image) {
+                try {
+                    $publicId  = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+                    $imageUrl  = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
+                    $uploadedImages[] = $imageUrl;
+                } catch (\Exception $e) {
+                    Log::error('Error uploading image: ' . $e->getMessage());
+                }
+            }
+
+            if ($request->boolean('keep_existing_images', false)) {
+                $existing = $car->images ?? [];
+                $car->images = array_values(array_merge($existing, $uploadedImages));
             } else {
                 $car->images = $uploadedImages;
             }
         }
-        
+
         $car->save();
-        
+
+        // ✅ Handle Auction Schedule Updates
+        // Only if we have scheduling fields and an associated scheduled auction
+        if ($request->hasAny(['main_auction_duration', 'start_immediately', 'auction_start_date'])) {
+            $latestAuction = Auction::where('car_id', $car->id)
+                ->where('status', AuctionStatus::SCHEDULED->value)
+                ->latest()
+                ->first();
+
+            if ($latestAuction) {
+                // Prepare new values
+                $durationDays = (int) ($request->has('main_auction_duration') ? $request->main_auction_duration : ($car->main_auction_duration ?: 10));
+
+                // Determine new start/end times
+                $ksaTimezone = 'Asia/Riyadh';
+                $startImmediately = $request->input('start_immediately'); // nullable boolean
+                $auctionStartDate = $request->input('auction_start_date');
+
+                // If start_immediately is explicitly true OR (it's not set/false BUT we have no date provided AND original was immediate... tricky)
+                // Let's rely on what's sent. 
+                // If start_immediately is true: reset to NOW
+                // If auction_start_date is set: set to that date 7 PM
+
+                $shouldUpdateTimes = false;
+                $newStartTime = null;
+                $newEndTime = null;
+
+                if ($request->boolean('start_immediately')) {
+                    // Switch to immediate
+                    $newStartTime = Carbon::now($ksaTimezone);
+                    $newEndTime = $newStartTime->copy()->addDays($durationDays);
+                    $shouldUpdateTimes = true;
+                } elseif ($request->filled('auction_start_date')) {
+                    // Switch to future date
+                    $newStartTime = Carbon::parse($auctionStartDate, $ksaTimezone)->setTime(19, 0, 0);
+                    $newEndTime = null; // Will be calculated on activation
+                    $shouldUpdateTimes = true;
+                } elseif ($request->has('main_auction_duration') && $latestAuction->start_time) {
+                    // Only duration changed, but we need to check if we need to update end_time
+                    // If currently scheduled for future (end_time is null), no need to update end_time
+                    // If currently "immediate" (has end_time), need to recalculate end_time
+                    if ($latestAuction->end_time) {
+                        // It was "immediate" style (start_time set, end_time set)
+                        // But wait, if it's SCHEDULED, it might not be live yet.
+                        // If it has end_time, we updated it.
+                        $newStartTime = Carbon::parse($latestAuction->start_time);
+                        $newEndTime = $newStartTime->copy()->addDays($durationDays);
+                        $shouldUpdateTimes = true;
+                    }
+                }
+
+                if ($shouldUpdateTimes) {
+                    $latestAuction->start_time = $newStartTime;
+                    $latestAuction->end_time = $newEndTime;
+                    $latestAuction->save();
+                }
+            }
+        }
+
+        // تحديث خصائص الكرفان إن وُجدت
+        $this->syncCaravanAttributes($request, $car);
+
+        Cache::flush();
+
+        // Notification to Admins
+        try {
+            $admins = User::whereIn('type', ['admin', 'super_admin'])->get();
+            Notification::send($admins, new CarDetailsUpdatedNotification($car));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send update notification: ' . $e->getMessage());
+        }
+
         return response()->json([
-            'status' => 'success',
-            'message' => 'Car updated successfully',
-            'data' => $car
+            'status'  => 'success',
+            'message' => 'تم تحديث بيانات السيارة بنجاح.',
+            'data'    => $car,
         ]);
     }
 
     /**
-     * Remove the specified car
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * حذف سيارة (محمي)
      */
     public function destroy($id)
     {
         $user = Auth::user();
-        $car = null;
-        
-        // Retrieve car based on user role
-        if ($user->role === 'dealer' && $user->dealer) {
-            $car = Car::where('id', $id)
-                ->where('dealer_id', $user->dealer->id)
-                ->first();
-        } else {
-            $car = Car::where('id', $id)
-                ->where('user_id', $user->id)
-                ->first();
-        }
-            
+
+        // All users (including dealers) use user_id for ownership
+        $car = Car::where('id', $id)->where('user_id', $user->id)->first();
+
         if (!$car) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Car not found or you do not have permission to delete it'
-            ], 404);
+            return response()->json(['status' => 'error', 'message' => 'السيارة غير موجودة أو ليست لديك صلاحية لحذفها.'], 404);
         }
-        
-        // Check if car is in any active auctions
-        $activeAuction = $car->auctions()
-            ->whereIn('status', [
-                AuctionStatus::SCHEDULED->value,
-                AuctionStatus::ACTIVE->value
-            ])
+
+        $activeAuctionExists = $car->auctions()
+            ->whereIn('status', [AuctionStatus::SCHEDULED->value, AuctionStatus::ACTIVE->value])
             ->exists();
-            
-        if ($activeAuction) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'This car cannot be deleted as it is currently scheduled for or in an active auction'
-            ], 400);
+
+        if ($activeAuctionExists) {
+            return response()->json(['status' => 'error', 'message' => 'لا يمكن حذف السيارة لوجود مزاد نشط أو مجدول عليها.'], 400);
         }
-        
-        // Delete the car
+
         $car->delete();
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Car deleted successfully'
-        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'تم حذف السيارة بنجاح.']);
     }
-    
+
     /**
-     * Get car statistics/dashboard for the user
-     *
-     * @return \Illuminate\Http\JsonResponse
+     * إحصائيات (محمي)
      */
     public function statistics()
     {
         $user = Auth::user();
-        $query = null;
-        
-        // Get stats based on user role
-        if ($user->role === 'dealer' && $user->dealer) {
-            $query = Car::where('dealer_id', $user->dealer->id);
-        } else {
-            $query = Car::where('user_id', $user->id);
-        }
-        
-        // Total cars
+
+        // All users (including dealers) use user_id for ownership
+        $query = Car::where('user_id', $user->id);
+
         $totalCars = $query->count();
-        
-        // Cars by condition
+
         $carsByCondition = (clone $query)
             ->selectRaw('condition, COUNT(*) as count')
             ->groupBy('condition')
             ->get();
-            
-        // Cars by auction status
+
         $carsByAuctionStatus = (clone $query)
             ->selectRaw('auction_status, COUNT(*) as count')
             ->groupBy('auction_status')
             ->get();
-            
-        // Total inventory value
-        $inventoryValue = (clone $query)
-            ->sum('evaluation_price');
-            
-        // Recently added cars
-        $recentCars = (clone $query)
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
-            
+
+        $inventoryValue = (clone $query)->sum('evaluation_price');
+
+        $recentCars = (clone $query)->orderBy('created_at', 'desc')->take(5)->get();
+
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'total_cars' => $totalCars,
-                'cars_by_condition' => $carsByCondition,
+            'data'   => [
+                'total_cars'            => $totalCars,
+                'cars_by_condition'     => $carsByCondition,
                 'cars_by_auction_status' => $carsByAuctionStatus,
                 'total_inventory_value' => $inventoryValue,
-                'recent_cars' => $recentCars
+                'recent_cars'           => $recentCars,
             ]
         ]);
+    }
+
+    /**
+     * عام: قائمة سيارات لسوق محدد (Active Auction) + (اختياري approved لو العمود موجود)
+     * GET /api/market/cars?market=trucks|buses|...
+     */
+    public function publicMarketCars(Request $request)
+    {
+        try {
+            $perPage = max(1, min((int)$request->query('per_page', 12), 48));
+            $market  = $request->query('market', $request->route('market')); // يدعم defaults في الراوت
+
+            if (!$market) {
+                return response()->json(['status' => 'error', 'message' => 'باراميتر market مطلوب.'], 422);
+            }
+
+            $enumValues = CarsMarketsCategory::values();
+
+            // منع الحكومة
+            if (strtolower($market) === 'government') {
+                return response()->json([
+                    'status'     => 'success',
+                    'data'       => [],
+                    'pagination' => ['total' => 0, 'per_page' => $perPage, 'current_page' => 1, 'last_page' => 1],
+                    'filters'    => ['market' => 'government (blocked)'],
+                ], 200);
+            }
+
+            // تطبيع مع دعم الفصل القديم/الجديد
+            $normalize = function (string $m) use ($enumValues) {
+                $m = strtolower(trim($m));
+                if (in_array($m, $enumValues, true)) return $m;
+                $aliases = [
+                    'luxury'        => 'luxuryCars',
+                    'luxurycars'    => 'luxuryCars',
+                    'caravans'      => 'caravan',
+                    'companies'     => 'companiesCars',
+                    'companiescars' => 'companiesCars',
+                    'trucks'        => in_array('trucks', $enumValues, true) ? 'trucks' : (in_array('busesTrucks', $enumValues, true) ? 'busesTrucks' : null),
+                    'buses'         => in_array('buses',  $enumValues, true) ? 'buses'  : (in_array('busesTrucks', $enumValues, true) ? 'busesTrucks' : null),
+                ];
+                return $aliases[$m] ?? null;
+            };
+
+            $marketValue = $normalize($market);
+            if (!$marketValue) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'قيمة market غير صحيحة.',
+                    'allowed' => $enumValues,
+                ], 422);
+            }
+
+            $activeStatuses = ['active', 'live'];
+            try {
+                $activeStatuses[] = AuctionStatus::ACTIVE->value;
+            } catch (\Throwable $e) {
+            }
+
+            $query = Car::query()
+                ->select('id', 'make', 'model', 'year', 'images', 'evaluation_price', 'market_category')
+                ->where('market_category', $marketValue)
+                ->when(Schema::hasColumn('cars', 'status'), function ($q) {
+                    $q->where('status', 'approved');
+                })
+                ->whereHas('activeAuction', function ($q) use ($activeStatuses) {
+                    $q->whereIn('status', array_unique($activeStatuses));
+                })
+                ->with(['activeAuction' => function ($q) {
+                    $q->select('id', 'car_id', 'current_price', 'status');
+                }])
+                ->withCount('activeAuctionBids as total_bids')
+                ->orderByDesc('total_bids')
+                ->orderBy('year', 'desc');
+
+            $cars = $query->paginate($perPage);
+
+            $collection = new CarCollection($cars);
+            $payload = $collection->toResponse(request())->getData(true);
+
+            return response()->json([
+                'status'     => 'success',
+                'data'       => $payload['data'],
+                'pagination' => $payload['pagination'],
+                'filters'    => ['market' => $marketValue],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('publicMarketCars failed', [
+                'error' => $e->getMessage(),
+                'line'  => $e->getLine(),
+                'file'  => $e->getFile(),
+            ]);
+            return response()->json(['message' => 'Server Error'], 500);
+        }
+    }
+
+    /**
+     * enum options للفرونت (محمي)
+     */
+    public function enumOptions()
+    {
+        $allMarkets = CarsMarketsCategory::values();
+        $allowedForCreate = array_values(array_filter($allMarkets, fn($v) => $v !== 'government'));
+
+        $translations = [];
+        try {
+            if (method_exists(CarsMarketsCategory::class, 'getTranslations')) {
+                $translations = CarsMarketsCategory::getTranslations();
+                if (is_array($translations)) {
+                    $translations = array_filter($translations, fn($k) => $k !== 'government', ARRAY_FILTER_USE_KEY);
+                } else {
+                    $translations = [];
+                }
+            }
+        } catch (\Throwable $e) {
+            $translations = [];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'markets_all'          => $allMarkets,
+                'markets_allowed'      => $allowedForCreate,
+                'markets_translations' => $translations,
+                'conditions'           => CarCondition::values(),
+                'transmissions'        => CarTransmission::values(),
+            ]
+        ]);
+    }
+
+    /* ====== Helpers: Images & Validation & Caravan Attributes ====== */
+
+    private function logImageDebugInfo(Request $request)
+    {
+        Log::info('Image request information:', [
+            'has_images_field' => $request->has('images'),
+            'has_images_file' => $request->hasFile('images'),
+            'has_images_array_field' => $request->has('images[]'),
+            'has_images_array_file' => $request->hasFile('images[]'),
+            'request_has_files' => $request->hasFile('images') || $request->hasFile('images[]'),
+            'files_in_request' => array_keys($request->allFiles()),
+            'request_content_type' => $request->header('Content-Type')
+        ]);
+    }
+
+    private function handleCarImageUpload(Request $request, Car $car)
+    {
+        $uploadedImages = [];
+        if (!$request->hasFile('images')) return $uploadedImages;
+
+        foreach ($request->file('images') as $image) {
+            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+            $imageUrl = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
+            $uploadedImages[] = $imageUrl;
+        }
+        return $uploadedImages;
+    }
+
+    private function handleCarReportImageUpload(Request $request, Car $car)
+    {
+        $uploadedImages = [];
+        if (!$request->hasFile('reports_images')) return $uploadedImages;
+
+        foreach ($request->file('reports_images') as $image) {
+            $publicId = 'car_' . $car->id . '_' . time() . '_' . rand(1000, 9999);
+            $imageUrl = $this->cloudinaryService->uploadImage($image, 'cars', $publicId);
+            $uploadedImages[] = [
+                'car_id'     => $car->id,
+                'image_path' => $imageUrl,
+                'file_size'  => $image->getSize(),
+            ];
+        }
+        return $uploadedImages;
+    }
+
+    private function carHasCaravanMarketCategory(Car $car): bool
+    {
+        $marketCategory = $car->market_category;
+
+        if ($marketCategory instanceof CarsMarketsCategory) {
+            return $marketCategory === CarsMarketsCategory::CARAVAN;
+        }
+
+        if (is_string($marketCategory)) {
+            return $marketCategory === CarsMarketsCategory::CARAVAN->value;
+        }
+
+        return false;
+    }
+
+    /**
+     * تخزين/تحديث خصائص الكرفان في جدول car_attributes
+     * لا يلمس جدول cars نهائيًا.
+     */
+    private function syncCaravanAttributes(Request $request, Car $car): void
+    {
+        // نحدد هل هي كرفان عن طريق type أو market_category=caravan
+        $typeFromRequest = $request->input('type');
+        $marketCategory  = $request->input('market_category');
+        $isCaravan = ($typeFromRequest === 'caravan') || ($marketCategory === 'caravan');
+
+        if (!$isCaravan) {
+            return;
+        }
+
+        $length = $request->input('length_m');
+        $width  = $request->input('width_m');
+        $area   = null;
+
+        if (is_numeric($length) && is_numeric($width)) {
+            $area = (float)$length * (float)$width;
+        }
+
+        $attrs = [
+            'usage_type'       => $request->input('usage_type', $request->input('usage')),
+            'year_built'       => $request->input('year_built'),
+            'length_m'         => $length,
+            'width_m'          => $width,
+            'weight_kg'        => $request->input('weight_kg'),
+            'capacity_persons' => $request->input('capacity_persons'),
+            'has_bathroom'     => $request->has('has_bathroom') ? ($request->boolean('has_bathroom') ? '1' : '0') : null,
+            'has_kitchen'      => $request->has('has_kitchen') ? ($request->boolean('has_kitchen') ? '1' : '0') : null,
+            'bedrooms_count'   => $request->input('bedrooms_count'),
+            'solar_power_kw'   => $request->input('solar_power_kw'),
+            'license_required' => $request->has('license_required') ? ($request->boolean('license_required') ? '1' : '0') : null,
+        ];
+
+        if (!is_null($area)) {
+            $attrs['area_m2'] = $area;
+        }
+
+        foreach ($attrs as $key => $value) {
+            if ($value === null || $value === '') {
+                // لو مش حابب تخزن القيم الفاضية ما تعملش حاجة هنا
+                continue;
+            }
+
+            CarAttribute::updateOrCreate(
+                ['car_id' => $car->id, 'key' => $key],
+                ['value'  => (string)$value]
+            );
+        }
+    }
+
+    private function arabicValidation(): array
+    {
+        $messages = [
+            'required' => 'حقل :attribute مطلوب.',
+            'string'   => 'حقل :attribute يجب أن يكون نصًا.',
+            'integer'  => 'حقل :attribute يجب أن يكون رقمًا صحيحًا.',
+            'numeric'  => 'حقل :attribute يجب أن يكون رقمًا.',
+            'array'    => 'حقل :attribute يجب أن يكون مصفوفة.',
+            'max.numeric' => 'حقل :attribute يجب ألا يتجاوز :max.',
+            'max.string'  => 'حقل :attribute يجب ألا يزيد عن :max حرفًا.',
+            'min.numeric' => 'حقل :attribute يجب ألا يقل عن :min.',
+            'min.string'  => 'حقل :attribute يجب ألا يقل عن :min حروف.',
+            'in'       => 'القيمة المختارة لحقل :attribute غير صحيحة.',
+            'unique'   => 'قيمة :attribute مستخدمة من قبل.',
+            'mimes'    => 'نوع الملف في :attribute غير مدعوم. الأنواع المسموحة: :values.',
+            'image'    => 'الملف في :attribute يجب أن يكون صورة.',
+            'date'     => 'حقل :attribute يجب أن يكون تاريخًا صحيحًا.',
+        ];
+
+        $attributes = [
+            'make' => 'العلامة التجارية',
+            'model' => 'الموديل',
+            'year' => 'سنة الصنع',
+            'vin' => 'رقم الهيكل (VIN)',
+            'odometer' => 'عداد الكيلومترات',
+            'condition' => 'الحالة',
+            'evaluation_price' => 'سعر التقييم',
+            'min_price' => 'الحد الأدنى',
+            'max_price' => 'الحد الأعلى',
+            'color' => 'اللون',
+            'engine' => 'سعة المحرك',
+            'transmission' => 'ناقل الحركة',
+            'description' => 'الوصف',
+            'province' => 'المحافظة',
+            'city' => 'المدينة',
+            'plate' => 'رقم اللوحة',
+            'market_category' => 'فئة السوق',
+            'images' => 'الصور',
+            'images.*' => 'ملف الصورة',
+            'registration_card_image' => 'استمارة المركبة',
+
+            // أسماء عربية للحقول الجديدة الخاصة بالكرفان
+            'type'             => 'نوع المركبة',
+            'usage'            => 'نوع الاستخدام',
+            'year_built'       => 'سنة البناء',
+            'length_m'         => 'الطول (متر)',
+            'width_m'          => 'العرض (متر)',
+            'weight_kg'        => 'الوزن (كجم)',
+            'capacity_persons' => 'السعة (عدد الأشخاص)',
+            'has_bathroom'     => 'وجود حمام',
+            'has_kitchen'      => 'وجود مطبخ',
+            'bedrooms_count'   => 'عدد غرف النوم',
+            'solar_power_kw'   => 'قدرة الألواح الشمسية (كيلوواط)',
+            'license_required' => 'يتطلب ترخيص خاص',
+        ];
+
+        return [$messages, $attributes];
     }
 }

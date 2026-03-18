@@ -3,33 +3,58 @@
 namespace App\Models;
 
 use App\Enums\AuctionStatus;
-use App\Enums\AuctionType; // Add the new enum
+use App\Enums\AuctionType;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+use App\Services\AuctionRealtimeLogService;
 
 class Auction extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
+
+    public const EXTENSION_THRESHOLD_SECONDS = 60;
+    public const EXTENSION_DURATION_MINUTES = 5;
+
+    private static array $auctionsColumnCache = [];
+
+    private static function auctionsTableHas(string $column): bool
+    {
+        if (!array_key_exists($column, self::$auctionsColumnCache)) {
+            try {
+                self::$auctionsColumnCache[$column] = Schema::hasColumn('auctions', $column);
+            } catch (\Throwable $e) {
+                self::$auctionsColumnCache[$column] = false;
+            }
+        }
+        return (bool) self::$auctionsColumnCache[$column];
+    }
 
     protected $fillable = [
         'car_id',
+        'session_id',
+        'is_test',
         'start_time',
         'end_time',
         'minimum_bid',
-        'maximum_bid', // Renamed from max_price
+        'maximum_bid',
         'current_bid',
-        'reserve_price', // Renamed from min_price
+        'reserve_price',
         'status',
         'auction_type',
-        'opening_price', // Set by control room
-        'control_room_approved', // Approval status
-        'approved_for_live', // Can enter live auction
-        'extended_until', // For auction extensions
-        'last_bid_time', // Track when the last bid was placed
+        'opening_price',
+        'control_room_approved',
+        'approved_for_live',
+        'extended_until',
+        'last_bid_time',
+        // 'starting_bid' intentionally not mass-assignable (we support it via accessor/mutator safely)
     ];
 
     protected $casts = [
@@ -41,139 +66,260 @@ class Auction extends Model
         'last_bid_time' => 'datetime',
         'control_room_approved' => 'boolean',
         'approved_for_live' => 'boolean',
+        'is_test' => 'boolean',
     ];
 
     protected $appends = [
-        'time_remaining'
+        'time_remaining',
+        'status_label',
+        'current_price',  // ✅ alias للفرونت
+        'starting_bid',   // ✅ compatibility: used in jobs/events/logs
+        'bid_change_percentage', // نسبة التغير من سعر الافتتاح إلى السعر الحالي
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->setDescriptionForEvent(function (string $eventName) {
+                return match ($eventName) {
+                    'created' => "تم إنشاء المزاد رقم {$this->id}",
+                    'updated' => "تم تحديث المزاد رقم {$this->id}",
+                    'deleted' => "تم حذف المزاد رقم {$this->id}",
+                    default => "Auction {$eventName}",
+                };
+            })
+            ->logFillable()
+            ->useLogName('auction_log');
+    }
+
     /**
-     * Get the car associated with the auction.
+     * ✅ alias: current_price -> current_bid
      */
+    public function getCurrentPriceAttribute(): float
+    {
+        return (float)($this->current_bid ?? 0);
+    }
+
+    /**
+     * نسبة التغير: من سعر الافتتاح (opening_price) إلى السعر الحالي (current_bid).
+     * تُرجع null إذا لم يكن هناك سعر افتتاح أو كان صفرًا.
+     */
+    public function getBidChangePercentageAttribute(): ?float
+    {
+        $opening = (float)($this->opening_price ?? 0);
+        if ($opening <= 0) {
+            return null;
+        }
+        $current = (float)($this->current_bid ?? 0);
+        if ($current <= 0) {
+            return 0.0;
+        }
+        return round((($current - $opening) / $opening) * 100, 2);
+    }
+
+    /**
+     * ✅ Compatibility: starting_bid (لو موجود في DB هنقراه، لو مش موجود هنستخدم opening_price/minimum_bid)
+     */
+    public function getStartingBidAttribute(): float
+    {
+        if (self::auctionsTableHas('starting_bid')) {
+            $raw = $this->attributes['starting_bid'] ?? null;
+            if ($raw !== null && $raw !== '') return (float)$raw;
+        }
+
+        $opening = $this->attributes['opening_price'] ?? null;
+        if ($opening !== null && $opening !== '') return (float)$opening;
+
+        $min = $this->attributes['minimum_bid'] ?? null;
+        if ($min !== null && $min !== '') return (float)$min;
+
+        return 0.0;
+    }
+
+    /**
+     * ✅ لو حد بعت starting_bid (أو الكود القديم بيستخدمه) نطبعها صح
+     */
+    public function setStartingBidAttribute($value): void
+    {
+        if ($value === null || $value === '') return;
+
+        $v = (float)$value;
+
+        if (self::auctionsTableHas('starting_bid')) {
+            $this->attributes['starting_bid'] = $v;
+        }
+
+        // keep compatible fields
+        if (self::auctionsTableHas('opening_price') && empty($this->attributes['opening_price'])) {
+            $this->attributes['opening_price'] = $v;
+        }
+        if (self::auctionsTableHas('minimum_bid') && empty($this->attributes['minimum_bid'])) {
+            $this->attributes['minimum_bid'] = $v;
+        }
+    }
+
+    /**
+     * ✅ Safe normalize قبل الحفظ (يمنع كسر enum casting)
+     */
+    public function setStatusAttribute($value): void
+    {
+        if ($value instanceof AuctionStatus) {
+            $this->attributes['status'] = $value->value;
+            return;
+        }
+
+        $this->attributes['status'] = AuctionStatus::normalize((string)$value);
+    }
+
+    /**
+     * ✅ قيمة status دايمًا سترينج موحّد
+     */
+    public function statusValue(): string
+    {
+        $s = $this->status;
+        if ($s instanceof AuctionStatus) return $s->value;
+        return AuctionStatus::normalize((string)$s);
+    }
+
+    public function getEffectiveEndTime(): ?Carbon
+    {
+        return $this->extended_until ?? $this->end_time;
+    }
+
+    public function maybeExtendOnLastMinuteBid(?Carbon $bidTime = null): void
+    {
+        $bidTime = $bidTime ?? Carbon::now();
+
+        $endTime = $this->getEffectiveEndTime();
+        if (!$endTime) return;
+
+        if ($bidTime->greaterThanOrEqualTo($endTime)) return;
+
+        $remainingSeconds = $bidTime->diffInSeconds($endTime, false);
+        if ($remainingSeconds <= 0) return;
+
+        if ($remainingSeconds <= self::EXTENSION_THRESHOLD_SECONDS) {
+            $newEnd = $endTime->copy()->addMinutes(self::EXTENSION_DURATION_MINUTES);
+            $this->extended_until = $newEnd;
+            $this->save();
+        }
+    }
+
     public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
     }
 
-    /**
-     * Check if the auction is in the live auction period
-     */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(AuctionSession::class, 'session_id');
+    }
+
     public function isInLiveAuctionPeriod(): bool
     {
         $now = Carbon::now();
-        $hour = (int)$now->format('H');
-        
-        // Live Auction period is 16:00 - 19:00 (4PM - 7PM)
+        $hour = (int) $now->format('H');
         return $hour >= 16 && $hour < 19;
     }
-    
-    /**
-     * Check if the auction is in the live instant period
-     */
+
     public function isInLiveInstantPeriod(): bool
     {
         $now = Carbon::now();
-        $hour = (int)$now->format('H');
-        
-        // Live Instant period is 19:00 - 22:00 (7PM - 10PM)
+        $hour = (int) $now->format('H');
         return $hour >= 19 && $hour < 22;
     }
-    
-    /**
-     * Check if the auction is in the silent auction period
-     */
+
     public function isInSilentPeriod(): bool
     {
         $now = Carbon::now();
-        $hour = (int)$now->format('H');
-        
-        // Silent period is 22:00 - 16:00 next day (10PM - 4PM)
+        $hour = (int) $now->format('H');
         return $hour >= 22 || $hour < 16;
     }
 
-    /**
-     * Update the auction type based on current time
-     */
     public function updateAuctionTypeBasedOnTime(): self
     {
         $previousType = $this->auction_type;
-        $hadPreviousBids = $this->current_bid > 0;
-        
-        // Determine the new auction type
+        $hadPreviousBids = ((float)($this->current_bid ?? 0)) > 0;
+
         if ($this->isInLiveAuctionPeriod() && $this->approved_for_live) {
             $this->auction_type = AuctionType::LIVE;
         } elseif ($this->isInLiveInstantPeriod()) {
             $this->auction_type = AuctionType::LIVE_INSTANT;
-            
-            // If transitioning from LIVE to LIVE_INSTANT and we had bids, update opening price
+
             if ($previousType === AuctionType::LIVE && $hadPreviousBids) {
                 $this->opening_price = $this->current_bid;
             }
         } else {
             $this->auction_type = AuctionType::SILENT_INSTANT;
-            
-            // If transitioning from LIVE_INSTANT to SILENT_INSTANT and we had bids, update opening price
+
             if ($previousType === AuctionType::LIVE_INSTANT && $hadPreviousBids) {
                 $this->opening_price = $this->current_bid;
             }
         }
-        
+
         $this->save();
-        
         return $this;
     }
-    
-    /**
-     * Process a new bid based on auction type rules
-     */
+
     public function processBid($amount, $userId): array
     {
-        // Validation checks
         if (!$this->isActive()) {
-            return [
-                'success' => false,
-                'message' => 'This auction is not active'
-            ];
+            AuctionRealtimeLogService::log('bid_rejected', 'auction', (int) $this->id, [
+                'reason' => 'auction_not_active',
+                'message' => 'This auction is not active',
+                'user_id' => $userId,
+                'bid_amount' => (float) $amount,
+            ]);
+            return ['success' => false, 'message' => 'This auction is not active'];
         }
-        
-        if ($amount <= $this->current_bid) {
-            return [
-                'success' => false,
-                'message' => 'Bid must be higher than current bid'
-            ];
+
+        $current = (float) ($this->current_bid ?? 0);
+        if ((float)$amount <= $current) {
+            AuctionRealtimeLogService::log('bid_rejected', 'auction', (int) $this->id, [
+                'reason' => 'bid_not_higher',
+                'message' => 'Bid must be higher than current bid',
+                'user_id' => $userId,
+                'bid_amount' => (float) $amount,
+                'current_bid' => $current,
+            ]);
+            return ['success' => false, 'message' => 'Bid must be higher than current bid'];
         }
-        
-        // Apply auction type specific rules
+
+        // ✅ base price آمن (لو opening_price null)
+        $basePrice = (float)($this->opening_price ?? 0);
+        if ($basePrice <= 0) $basePrice = (float)($this->reserve_price ?? 0);
+        if ($basePrice <= 0) $basePrice = (float)($this->minimum_bid ?? 0);
+        if ($basePrice <= 0) $basePrice = max(1.0, $current);
+
         switch ($this->auction_type) {
             case AuctionType::LIVE:
-                // Live auction has standard rules
+                // standard rules
                 break;
-                
+
             case AuctionType::LIVE_INSTANT:
             case AuctionType::SILENT_INSTANT:
-                // Check if bid is within allowed range
-                $minAllowed = $this->opening_price * 0.9; // -10%
-                $maxAllowed = $this->opening_price * 1.3; // +30%
-                
-                if ($amount < $minAllowed || $amount > $maxAllowed) {
-                    return [
-                        'success' => false,
-                        'message' => 'Bid must be within the allowed range'
-                    ];
+                $minAllowed = $basePrice * 0.9; // -10%
+                $maxAllowed = $basePrice * 1.3; // +30%
+
+                if ((float)$amount < $minAllowed || (float)$amount > $maxAllowed) {
+                    AuctionRealtimeLogService::log('bid_rejected', 'auction', (int) $this->id, [
+                        'reason' => 'outside_range',
+                        'message' => 'Bid must be within the allowed range',
+                        'user_id' => $userId,
+                        'bid_amount' => (float) $amount,
+                        'min_allowed' => $minAllowed,
+                        'max_allowed' => $maxAllowed,
+                    ]);
+                    return ['success' => false, 'message' => 'Bid must be within the allowed range'];
                 }
-                
-                // For Live Instant, extend auction if reserve price is reached
-                if ($this->auction_type === AuctionType::LIVE_INSTANT && 
-                    $amount >= $this->reserve_price && 
-                    !$this->extended_until) {
-                    $this->extended_until = Carbon::now()->addMinutes(15);
-                    $this->save();
-                }
-                
-                // For Silent Instant, auto-accept if reserve price is reached
-                if ($this->auction_type === AuctionType::SILENT_INSTANT && 
-                    $amount >= $this->reserve_price) {
+
+                if ($this->auction_type === AuctionType::SILENT_INSTANT && (float)$amount >= (float)($this->reserve_price ?? 0)) {
                     $this->acceptBid($amount, $userId);
+                    AuctionRealtimeLogService::log('bid_auto_accepted', 'auction', (int) $this->id, [
+                        'user_id' => $userId,
+                        'bid_amount' => (float) $amount,
+                        'reserve_price' => (float)($this->reserve_price ?? 0),
+                    ]);
                     return [
                         'success' => true,
                         'message' => 'Bid accepted automatically',
@@ -181,209 +327,241 @@ class Auction extends Model
                     ];
                 }
                 break;
+
+            default:
+                break;
         }
-        
-        // Create the bid
+
+        $increment = (float)$amount - $current;
+
         $bid = Bid::create([
             'auction_id' => $this->id,
             'user_id' => $userId,
-            'bid_amount' => $amount
+            'bid_amount' => $amount,
+            'auction_type_at_bid' => ($this->auction_type instanceof AuctionType) ? $this->auction_type->value : (string)$this->auction_type,
+            'increment' => $increment,
         ]);
-        
-        // Update auction
+
+        $now = Carbon::now();
         $this->current_bid = $amount;
-        $this->last_bid_time = Carbon::now();
+        $this->last_bid_time = $now;
         $this->save();
-        
-        return [
-            'success' => true,
-            'message' => 'Bid placed successfully',
-            'bid' => $bid
-        ];
+
+        $this->maybeExtendOnLastMinuteBid($now);
+
+        AuctionRealtimeLogService::log('bid_placed', 'auction', (int) $this->id, [
+            'bid_id' => $bid->id,
+            'user_id' => $userId,
+            'bid_amount' => (float) $amount,
+            'previous_bid' => $current,
+            'increment' => $increment,
+            'auction_type' => $this->auction_type instanceof AuctionType ? $this->auction_type->value : (string) $this->auction_type,
+        ]);
+
+        return ['success' => true, 'message' => 'Bid placed successfully', 'bid' => $bid];
     }
-    
-    /**
-     * Accept a bid (for seller manual accepts or auto-accept)
-     */
+
     public function acceptBid($amount, $userId): self
     {
-        // Create final bid if it doesn't exist
-        $bid = Bid::firstOrCreate(
-            [
-                'auction_id' => $this->id,
-                'user_id' => $userId,
-                'bid_amount' => $amount
-            ]
-        );
-        
-        // Update auction
+        Bid::firstOrCreate([
+            'auction_id' => $this->id,
+            'user_id' => $userId,
+            'bid_amount' => $amount
+        ], [
+            'auction_type_at_bid' => ($this->auction_type instanceof AuctionType) ? $this->auction_type->value : (string)$this->auction_type,
+            'increment' => 0,
+        ]);
+
         $this->current_bid = $amount;
         $this->status = AuctionStatus::ENDED;
         $this->save();
-        
-        // Update car status
-        if ($this->car) {
-            $this->car->auction_status = 'sold';
-            $this->car->save();
+
+        try {
+            if ($this->car) {
+                $this->car->auction_status = 'sold';
+                $this->car->save();
+            }
+
+            Settlement::create([
+                'auction_id' => $this->id,
+                'seller_id' => $this->car?->user_id,
+                'buyer_id' => $userId,
+                'car_id' => $this->car_id,
+                'final_price' => $amount,
+                'platform_fee' => $this->calculatePlatformFee($amount),
+                'tam_fee' => 0,
+                'net_amount' => $amount - $this->calculatePlatformFee($amount),
+                'status' => 'pending'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Auction::acceptBid failed (car/settlement)', [
+                'auction_id' => $this->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         }
-        
-        // Create settlement
-        Settlement::create([
-            'auction_id' => $this->id,
-            'seller_id' => $this->car->dealer_id,
-            'buyer_id' => $userId,
-            'car_id' => $this->car_id,
-            'final_price' => $amount,
-            'platform_fee' => $this->calculatePlatformFee($amount),
-            'tam_fee' => 0, // Set appropriate value
-            'net_amount' => $amount - $this->calculatePlatformFee($amount),
-            'status' => 'pending'
+
+        AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
+            'reason' => 'bid_accepted',
+            'status' => 'ended',
+            'winner_id' => $userId,
+            'final_price' => (float) $amount,
         ]);
-        
+
+        AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
+            'reason' => 'bid_accepted',
+            'status' => 'ended',
+            'winner_id' => $userId,
+            'final_price' => (float) $amount,
+        ]);
+
         return $this;
     }
-    
-    /**
-     * Calculate platform fee based on final amount
-     */
+
     protected function calculatePlatformFee($amount): float
     {
-        // Implement your fee calculation logic
-        return $amount * 0.05; // Example: 5% fee
+        return (float)$amount * 0.05;
     }
-    
-    /**
-     * Control room approval
-     */
+
     public function approveByControlRoom($openingPrice, $approveForLive = false): self
     {
         $this->opening_price = $openingPrice;
-        // Set minimum_bid to match opening price if not already set
+
         if (!$this->minimum_bid) {
             $this->minimum_bid = $openingPrice;
         }
+
         $this->control_room_approved = true;
         $this->approved_for_live = $approveForLive;
         $this->save();
-        
+
         return $this;
     }
 
     /**
-     * Check if the auction is active
+     * ✅ Active = live OR active
      */
     public function isActive(): bool
     {
-        return $this->status === AuctionStatus::ACTIVE;
+        return in_array($this->statusValue(), AuctionStatus::activeValues(), true);
     }
-    
-    /**
-     * Start the auction if scheduled
-     */
+
     public function start(): self
     {
-        if ($this->status === AuctionStatus::SCHEDULED && $this->control_room_approved) {
-            $this->status = AuctionStatus::ACTIVE;
-            $this->updateAuctionTypeBasedOnTime(); // Set the proper auction type
+        if ($this->statusValue() === AuctionStatus::SCHEDULED->value && $this->control_room_approved) {
+            $this->status = AuctionStatus::ACTIVE; // live
+            $this->updateAuctionTypeBasedOnTime();
             $this->save();
-            
-            // Update car status
+
+            AuctionRealtimeLogService::log('auction_started', 'auction', (int) $this->id, [
+                'status' => 'active',
+                'auction_type' => $this->auction_type instanceof AuctionType ? $this->auction_type->value : (string) $this->auction_type,
+                'start_time' => $this->start_time?->toIso8601String(),
+                'end_time' => $this->end_time?->toIso8601String(),
+            ]);
+
             if ($this->car) {
-                $this->car->auction_status = 'active';
+                $this->car->auction_status = 'in_auction';
                 $this->car->save();
             }
-            
-            // If this is a live auction type that needs streaming, create session
-            if (in_array($this->auction_type, [AuctionType::LIVE, AuctionType::LIVE_INSTANT])) {
+
+            if (in_array($this->auction_type, [AuctionType::LIVE, AuctionType::LIVE_INSTANT], true)) {
                 $this->liveStreamingSession()->create([
                     'status' => 'pending',
                     'started_at' => Carbon::now()
                 ]);
             }
         }
-        
-        return $this;
-    }
-    
-    /**
-     * End the auction
-     */
-    public function end(): self
-    {
-        if ($this->status === AuctionStatus::ACTIVE) {
-            // If current bid meets or exceeds reserve price, consider auction successful
-            if ($this->current_bid >= $this->reserve_price) {
-                $this->status = AuctionStatus::ENDED;
-                // Car status should be updated to "sold" when accepted by seller or automatically
-            } else {
-                $this->status = AuctionStatus::FAILED;
-                if ($this->car) {
-                    $this->car->auction_status = 'failed';
-                    $this->car->save();
-                }
-            }
-            
-            $this->save();
-        }
-        
-        return $this;
-    }
-    
-    /**
-     * Check if auction needs status update based on current time
-     */
-    public function updateStatusBasedOnTime(): self
-    {
-        $now = Carbon::now();
-        
-        if ($this->status === AuctionStatus::SCHEDULED && $now >= $this->start_time && $this->control_room_approved) {
-            $this->start();
-        } elseif ($this->status === AuctionStatus::ACTIVE) {
-            // Check if auction type needs to change
-            $this->updateAuctionTypeBasedOnTime();
-            
-            // Check if auction has ended
-            $endTime = $this->extended_until ?? $this->end_time;
-            if ($now > $endTime) {
-                $this->end();
-            }
-        }
-        
+
         return $this;
     }
 
-    /**
-     * Get time remaining
-     */
-    public function getTimeRemainingAttribute()
+    public function end(): self
     {
-        if ($this->status !== AuctionStatus::ACTIVE) {
-            return 0;
+        if ($this->isActive()) {
+            if ((float)($this->current_bid ?? 0) >= (float)($this->reserve_price ?? 0)) {
+                $this->status = AuctionStatus::ENDED;
+                AuctionRealtimeLogService::log('auction_ended', 'auction', (int) $this->id, [
+                    'reason' => 'time_or_manual',
+                    'status' => 'ended',
+                    'current_bid' => (float)($this->current_bid ?? 0),
+                    'reserve_price' => (float)($this->reserve_price ?? 0),
+                ]);
+            } else {
+                $this->status = AuctionStatus::FAILED;
+                AuctionRealtimeLogService::log('auction_failed', 'auction', (int) $this->id, [
+                    'reason' => 'reserve_not_met',
+                    'status' => 'failed',
+                    'current_bid' => (float)($this->current_bid ?? 0),
+                    'reserve_price' => (float)($this->reserve_price ?? 0),
+                ]);
+
+                if ($this->car) {
+                    $this->car->auction_status = 'available';
+                    $this->car->save();
+                }
+            }
+
+            $this->save();
         }
-        
-        $endTime = $this->extended_until ?? $this->end_time;
+
+        return $this;
+    }
+
+    public function updateStatusBasedOnTime(): self
+    {
         $now = Carbon::now();
-        
-        if ($now > $endTime) {
-            return 0;
+
+        if ($this->statusValue() === AuctionStatus::SCHEDULED->value && $this->start_time && $now >= $this->start_time && $this->control_room_approved) {
+            $this->start();
+        } elseif ($this->isActive()) {
+            $this->updateAuctionTypeBasedOnTime();
+
+            $endTime = $this->getEffectiveEndTime();
+            if ($endTime && $now > $endTime) {
+                $isInstantType = in_array($this->auction_type, [AuctionType::LIVE_INSTANT, AuctionType::SILENT_INSTANT], true);
+                if (!$isInstantType) {
+                    $this->end();
+                }
+            }
         }
-        
+
+        return $this;
+    }
+
+    public function getTimeRemainingAttribute(): int
+    {
+        if (!$this->isActive()) return 0;
+
+        $endTime = $this->getEffectiveEndTime();
+        if (!$endTime) return 0;
+
+        $now = Carbon::now();
+        if ($now > $endTime) return 0;
+
         return $now->diffInSeconds($endTime);
     }
-    
-    /**
-     * Get the live streaming session for this auction
-     */
+
     public function liveStreamingSession(): HasOne
     {
         return $this->hasOne(LiveStreamingSession::class);
     }
-    
-    /**
-     * Get the bids for this auction
-     */
+
     public function bids(): HasMany
     {
         return $this->hasMany(Bid::class);
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        $s = $this->status;
+        return ($s instanceof AuctionStatus) ? $s->label() : '';
+    }
+
+    public function broadcasts()
+    {
+        return $this->hasMany(Broadcast::class, 'auction_id', 'id');
     }
 }

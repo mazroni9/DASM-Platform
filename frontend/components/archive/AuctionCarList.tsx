@@ -20,7 +20,7 @@
  * - lucide-react: للأيقونات
  * - next/image: لعرض صور السيارات
  * - React Hooks: لإدارة حالة التصفية والترتيب
- * - formatMoney: لتنسيق المبالغ المالية
+ * - formatCurrency : لتنسيق المبالغ المالية
  */
 
 "use client";
@@ -36,7 +36,7 @@ import {
     ChevronUp,
     Filter,
 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 // واجهة بيانات السيارة المباعة
 interface AuctionSoldCar {
@@ -169,7 +169,7 @@ export default function AuctionCarList({
 
                             <div className="text-right">
                                 <div className="font-semibold text-teal-600">
-                                    {formatMoney(car.finalPrice)} ريال
+                                    {formatCurrency (car.finalPrice)} ريال
                                 </div>
                                 <div className="text-xs text-gray-500">
                                     {car.bidCount} مزايدة
@@ -352,7 +352,7 @@ export default function AuctionCarList({
                                                 سعر البداية
                                             </div>
                                             <div className="text-sm font-medium">
-                                                {formatMoney(car.startPrice)}{" "}
+                                                {formatCurrency (car.startPrice)}{" "}
                                                 ريال
                                             </div>
                                         </div>
@@ -362,7 +362,7 @@ export default function AuctionCarList({
                                                 سعر البيع
                                             </div>
                                             <div className="text-sm font-semibold text-teal-600">
-                                                {formatMoney(car.finalPrice)}{" "}
+                                                {formatCurrency (car.finalPrice)}{" "}
                                                 ريال
                                             </div>
                                         </div>
@@ -460,7 +460,7 @@ export default function AuctionCarList({
                                                 متوسط الزيادة للمزايدة
                                             </div>
                                             <div className="text-sm">
-                                                {formatMoney(
+                                                {formatCurrency (
                                                     (car.finalPrice -
                                                         car.startPrice) /
                                                         (car.bidCount || 1)

@@ -28,8 +28,7 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
             $table->string('company_name');
-            $table->string('cr_number', 50)->unique();
-            $table->string('vat_number', 50)->unique();
+            $table->string('commercial_registry', 50)->unique();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 
@@ -72,9 +71,10 @@ return new class extends Migration {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('auction_id');
             $table->unsignedBigInteger('user_id');
+            $table->decimal('increment', 12, 2)->default(0);
             $table->decimal('bid_amount', 12, 2);
             $table->timestamp('created_at')->useCurrent();
-
+            $table->timestamp('updated_at')->useCurrent();
             $table->foreign('auction_id')->references('id')->on('auctions')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
@@ -114,7 +114,7 @@ return new class extends Migration {
             $table->decimal('platform_fee', 12, 2);
             $table->decimal('tam_fee', 12, 2);
             $table->decimal('net_amount', 12, 2);
-            $table->enum('status', ['pending', 'completed'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
             $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('auction_id')->references('id')->on('auctions')->onDelete('cascade');

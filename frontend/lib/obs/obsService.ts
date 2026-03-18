@@ -1,16 +1,20 @@
 // خدمة إدارة OBS Studio في منصة DASM
 // توفر واجهة سهلة الاستخدام للتفاعل مع OBS عبر WebSocket
 
-import { OBSWebSocket, getOBSInstance } from './obsWebSocket';
-import { CarInfoUpdater, TextSourceSettings, AuctionInfo } from './carInfoUpdater';
+import { OBSWebSocket, getOBSInstance } from "./obsWebSocket";
+import {
+  CarInfoUpdater,
+  TextSourceSettings,
+  AuctionInfo,
+} from "./carInfoUpdater";
 
 // أنواع المشاهد الشائعة
 export enum SceneType {
-  INTRO = 'المقدمة',
-  MAIN_AUCTION = 'المزاد الرئيسي',
-  CAR_DETAILS = 'تفاصيل السيارة',
-  PRICING = 'عرض السعر',
-  OUTRO = 'الختام'
+  INTRO = "المقدمة",
+  MAIN_AUCTION = "المزاد الرئيسي",
+  CAR_DETAILS = "تفاصيل السيارة",
+  PRICING = "عرض السعر",
+  OUTRO = "الختام",
 }
 
 // معلومات السيارة
@@ -57,18 +61,18 @@ export class OBSService {
    * @param password كلمة المرور
    */
   constructor(
-    ip: string = 'localhost',
+    ip: string = "localhost",
     port: number = 4455,
-    password: string = ''
+    password: string = ""
   ) {
     this.obs = getOBSInstance(ip, port, password);
-    
+
     // الاستماع لأحداث OBS
-    this.obs.on('connected', this.handleConnection.bind(this));
-    this.obs.on('disconnected', this.handleDisconnection.bind(this));
-    this.obs.on('StreamStarted', this.handleStreamStarted.bind(this));
-    this.obs.on('StreamStopped', this.handleStreamStopped.bind(this));
-    
+    this.obs.on("connected", this.handleConnection.bind(this));
+    this.obs.on("disconnected", this.handleDisconnection.bind(this));
+    this.obs.on("StreamStarted", this.handleStreamStarted.bind(this));
+    this.obs.on("StreamStopped", this.handleStreamStopped.bind(this));
+
     // إنشاء محدث معلومات السيارة
     this.carInfoUpdater = new CarInfoUpdater(this.updateTextSource.bind(this));
   }
@@ -80,14 +84,21 @@ export class OBSService {
     try {
       const result = await this.obs.connect();
       if (result) {
-        console.log('تم الاتصال بـ OBS Studio بنجاح');
+        console.log("تم الاتصال بـ OBS Studio بنجاح");
         await this.refreshSceneList();
       }
       return result;
     } catch (error) {
-      console.error('فشل الاتصال بـ OBS Studio:', error);
+      console.error("فشل الاتصال بـ OBS Studio:", error);
       return false;
     }
+  }
+
+  /**
+   * الحصول على مثيل OBSWebSocket للوصول المباشر
+   */
+  getOBSWebSocket(): OBSWebSocket {
+    return this.obs;
   }
 
   /**
@@ -96,13 +107,13 @@ export class OBSService {
   private async handleConnection(): Promise<void> {
     this.connected = true;
     await this.refreshSceneList();
-    
+
     // التحقق من حالة البث الحالية
     try {
       const status = await this.obs.getStreamingStatus();
       this.streamingActive = status.streaming;
     } catch (error) {
-      console.error('خطأ في الحصول على حالة البث:', error);
+      console.error("خطأ في الحصول على حالة البث:", error);
     }
   }
 
@@ -119,7 +130,7 @@ export class OBSService {
    */
   private handleStreamStarted(): void {
     this.streamingActive = true;
-    console.log('تم بدء البث بنجاح');
+    console.log("تم بدء البث بنجاح");
   }
 
   /**
@@ -127,7 +138,7 @@ export class OBSService {
    */
   private handleStreamStopped(): void {
     this.streamingActive = false;
-    console.log('تم إيقاف البث');
+    console.log("تم إيقاف البث");
   }
 
   /**
@@ -135,16 +146,16 @@ export class OBSService {
    */
   private async refreshSceneList(): Promise<string[]> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن تحديث قائمة المشاهد');
+      console.warn("غير متصل بـ OBS، لا يمكن تحديث قائمة المشاهد");
       return [];
     }
-    
+
     try {
       const response = await this.obs.getScenes();
       this.sceneNames = response.scenes.map((scene: any) => scene.name);
       return this.sceneNames;
     } catch (error) {
-      console.error('خطأ في الحصول على قائمة المشاهد:', error);
+      console.error("خطأ في الحصول على قائمة المشاهد:", error);
       return [];
     }
   }
@@ -162,10 +173,10 @@ export class OBSService {
    */
   async switchScene(sceneName: string): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن تغيير المشهد');
+      console.warn("غير متصل بـ OBS، لا يمكن تغيير المشهد");
       return false;
     }
-    
+
     try {
       await this.obs.setCurrentScene(sceneName);
       console.log(`تم التبديل إلى المشهد: ${sceneName}`);
@@ -182,10 +193,10 @@ export class OBSService {
    */
   async setCurrentVenue(venue: VenueInfo): Promise<boolean> {
     this.currentVenue = venue;
-    
+
     // هنا يمكن إضافة منطق لتحديث إعدادات البث في OBS
     // مثل تحديث عنوان RTMP ومفتاح البث
-    
+
     console.log(`تم تعيين المعرض الحالي: ${venue.name}`);
     return true;
   }
@@ -195,22 +206,22 @@ export class OBSService {
    */
   async startStreaming(): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن بدء البث');
+      console.warn("غير متصل بـ OBS، لا يمكن بدء البث");
       return false;
     }
-    
+
     if (!this.currentVenue) {
-      console.warn('لم يتم تعيين معرض حالي، لا يمكن بدء البث');
+      console.warn("لم يتم تعيين معرض حالي، لا يمكن بدء البث");
       return false;
     }
-    
+
     try {
       await this.obs.startStreaming();
       this.streamingActive = true;
       console.log(`تم بدء البث لمعرض: ${this.currentVenue.name}`);
       return true;
     } catch (error) {
-      console.error('خطأ في بدء البث:', error);
+      console.error("خطأ في بدء البث:", error);
       return false;
     }
   }
@@ -220,17 +231,17 @@ export class OBSService {
    */
   async stopStreaming(): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن إيقاف البث');
+      console.warn("غير متصل بـ OBS، لا يمكن إيقاف البث");
       return false;
     }
-    
+
     try {
       await this.obs.stopStreaming();
       this.streamingActive = false;
-      console.log('تم إيقاف البث');
+      console.log("تم إيقاف البث");
       return true;
     } catch (error) {
-      console.error('خطأ في إيقاف البث:', error);
+      console.error("خطأ في إيقاف البث:", error);
       return false;
     }
   }
@@ -254,12 +265,15 @@ export class OBSService {
    * @param carInfo معلومات السيارة
    * @param textSourceName اسم مصدر النص في OBS
    */
-  async updateCarInfo(carInfo: CarInfo, textSourceName: string = 'معلومات_السيارة'): Promise<boolean> {
+  async updateCarInfo(
+    carInfo: CarInfo,
+    textSourceName: string = "معلومات_السيارة"
+  ): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن تحديث معلومات السيارة');
+      console.warn("غير متصل بـ OBS، لا يمكن تحديث معلومات السيارة");
       return false;
     }
-    
+
     try {
       if (this.carInfoUpdater && this.currentAuction) {
         // إذا كان هناك مزاد نشط، قم بتحديث معلومات السيارة فقط
@@ -273,14 +287,22 @@ export class OBSService {
           السنة: ${carInfo.year}
           اللون: ${carInfo.color}
           السعر الحالي: ${carInfo.currentPrice.toLocaleString()} ريال
-          ${carInfo.highestBidder ? `صاحب أعلى مزايدة: ${carInfo.highestBidder}` : ''}
-          ${carInfo.timeRemaining ? `الوقت المتبقي: ${carInfo.timeRemaining} ثانية` : ''}
+          ${
+            carInfo.highestBidder
+              ? `صاحب أعلى مزايدة: ${carInfo.highestBidder}`
+              : ""
+          }
+          ${
+            carInfo.timeRemaining
+              ? `الوقت المتبقي: ${carInfo.timeRemaining} ثانية`
+              : ""
+          }
         `;
-        
+
         return this.updateTextSource(formattedText, textSourceName);
       }
     } catch (error) {
-      console.error('خطأ في تحديث معلومات السيارة:', error);
+      console.error("خطأ في تحديث معلومات السيارة:", error);
       return false;
     }
   }
@@ -292,7 +314,7 @@ export class OBSService {
    */
   async updateTextSource(text: string, sourceName: string): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن تحديث مصدر النص');
+      console.warn("غير متصل بـ OBS، لا يمكن تحديث مصدر النص");
       return false;
     }
 
@@ -312,13 +334,13 @@ export class OBSService {
    */
   startAuction(auctionInfo: AuctionInfo): boolean {
     if (!this.connected || !this.carInfoUpdater) {
-      console.warn('غير متصل بـ OBS، لا يمكن بدء المزاد');
+      console.warn("غير متصل بـ OBS، لا يمكن بدء المزاد");
       return false;
     }
 
     this.currentAuction = auctionInfo;
     this.carInfoUpdater.startAuctionUpdate(auctionInfo);
-    console.log('تم بدء المزاد وتحديث معلوماته');
+    console.log("تم بدء المزاد وتحديث معلوماته");
     return true;
   }
 
@@ -332,7 +354,7 @@ export class OBSService {
 
     this.carInfoUpdater.stopAuctionUpdate();
     this.currentAuction = null;
-    console.log('تم إيقاف المزاد');
+    console.log("تم إيقاف المزاد");
     return true;
   }
 
@@ -343,7 +365,7 @@ export class OBSService {
    */
   updateHighestBidder(bidderName: string, amount: number): boolean {
     if (!this.carInfoUpdater || !this.currentAuction) {
-      console.warn('لا يوجد مزاد نشط حالياً');
+      console.warn("لا يوجد مزاد نشط حالياً");
       return false;
     }
 
@@ -358,7 +380,7 @@ export class OBSService {
    */
   extendAuctionTime(additionalSeconds: number): boolean {
     if (!this.carInfoUpdater || !this.currentAuction) {
-      console.warn('لا يوجد مزاد نشط حالياً');
+      console.warn("لا يوجد مزاد نشط حالياً");
       return false;
     }
 
@@ -373,24 +395,29 @@ export class OBSService {
    */
   async configureTextSource(settings: TextSourceSettings): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن تكوين مصدر النص');
+      console.warn("غير متصل بـ OBS، لا يمكن تكوين مصدر النص");
       return false;
     }
 
     try {
       // قم بتحديث خصائص مصدر النص في OBS
-      await this.obs.send('SetTextGDIPlusProperties', {
-        'source': settings.sourceName,
-        'font': {
-          'face': settings.fontFamily,
-          'size': settings.fontSize
+      await this.obs.send("SetTextGDIPlusProperties", {
+        source: settings.sourceName,
+        font: {
+          face: settings.fontFamily,
+          size: settings.fontSize,
         },
-        'color': settings.color,
-        'bgcolor': settings.backgroundColor || 0,
-        'outline': settings.outline || false,
-        'outline_color': settings.outlineColor || 0,
-        'outline_size': settings.outlineSize || 0,
-        'alignment': settings.alignment === 'center' ? 1 : (settings.alignment === 'right' ? 2 : 0)
+        color: settings.color,
+        bgcolor: settings.backgroundColor || 0,
+        outline: settings.outline || false,
+        outline_color: settings.outlineColor || 0,
+        outline_size: settings.outlineSize || 0,
+        alignment:
+          settings.alignment === "center"
+            ? 1
+            : settings.alignment === "right"
+            ? 2
+            : 0,
       });
 
       console.log(`تم تكوين مصدر النص ${settings.sourceName}`);
@@ -406,34 +433,44 @@ export class OBSService {
    * @param sceneName اسم المشهد
    * @param settings إعدادات مصدر النص
    */
-  async createTextSource(sceneName: string, settings: TextSourceSettings): Promise<boolean> {
+  async createTextSource(
+    sceneName: string,
+    settings: TextSourceSettings
+  ): Promise<boolean> {
     if (!this.connected) {
-      console.warn('غير متصل بـ OBS، لا يمكن إنشاء مصدر النص');
+      console.warn("غير متصل بـ OBS، لا يمكن إنشاء مصدر النص");
       return false;
     }
 
     try {
       // إنشاء مصدر نص جديد في المشهد المحدد
-      await this.obs.send('CreateSource', {
-        'sourceName': settings.sourceName,
-        'sourceKind': 'text_gdiplus',
-        'sceneName': sceneName,
-        'sourceSettings': {
-          'font': {
-            'face': settings.fontFamily,
-            'size': settings.fontSize
+      await this.obs.send("CreateSource", {
+        sourceName: settings.sourceName,
+        sourceKind: "text_gdiplus",
+        sceneName: sceneName,
+        sourceSettings: {
+          font: {
+            face: settings.fontFamily,
+            size: settings.fontSize,
           },
-          'color': settings.color,
-          'bgcolor': settings.backgroundColor || 0,
-          'outline': settings.outline || false,
-          'outline_color': settings.outlineColor || 0,
-          'outline_size': settings.outlineSize || 0,
-          'alignment': settings.alignment === 'center' ? 1 : (settings.alignment === 'right' ? 2 : 0),
-          'text': 'معلومات المزاد ستظهر هنا'
-        }
+          color: settings.color,
+          bgcolor: settings.backgroundColor || 0,
+          outline: settings.outline || false,
+          outline_color: settings.outlineColor || 0,
+          outline_size: settings.outlineSize || 0,
+          alignment:
+            settings.alignment === "center"
+              ? 1
+              : settings.alignment === "right"
+              ? 2
+              : 0,
+          text: "معلومات المزاد ستظهر هنا",
+        },
       });
 
-      console.log(`تم إنشاء مصدر النص ${settings.sourceName} في المشهد ${sceneName}`);
+      console.log(
+        `تم إنشاء مصدر النص ${settings.sourceName} في المشهد ${sceneName}`
+      );
       return true;
     } catch (error) {
       console.error(`خطأ في إنشاء مصدر النص ${settings.sourceName}:`, error);
@@ -449,12 +486,12 @@ let obsServiceInstance: OBSService | null = null;
  * الحصول على مثيل خدمة OBS
  */
 export function getOBSService(
-  ip: string = 'localhost',
+  ip: string = "localhost",
   port: number = 4455,
-  password: string = ''
+  password: string = ""
 ): OBSService {
   if (!obsServiceInstance) {
     obsServiceInstance = new OBSService(ip, port, password);
   }
   return obsServiceInstance;
-} 
+}

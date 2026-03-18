@@ -21,9 +21,10 @@ import {
     Clock,
     Zap,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { formatMoney } from "@/lib/utils";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import LoadingLink from "@/components/LoadingLink";
+import { formatCurrency } from "@/utils/formatCurrency";
+
 
 // واجهة بيانات السيارة الموصى بها
 interface RecommendedCar {
@@ -62,7 +63,8 @@ export default function PersonalizedCarRecommendations({
     >("similar");
     const [error, setError] = useState<string | null>(null);
 
-    const router = useRouter();
+    const router = useLoadingRouter();
+    
 
     useEffect(() => {
         // محاكاة جلب البيانات من الخادم
@@ -276,7 +278,6 @@ export default function PersonalizedCarRecommendations({
     };
 
     // عرض حالة التحميل
-    if (loading) {
         return (
             <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
                 <div className="p-4 border-b">
@@ -298,7 +299,7 @@ export default function PersonalizedCarRecommendations({
                 </div>
             </div>
         );
-    }
+   
 
     // عرض حالة الخطأ
     if (error) {
@@ -406,7 +407,7 @@ export default function PersonalizedCarRecommendations({
                                             </h4>
                                             <p className="text-sm text-gray-500">
                                                 {car.year} •{" "}
-                                                {formatMoney(car.price)} ريال
+                                                {formatCurrency (car.price)} ريال
                                             </p>
                                         </div>
 
@@ -501,12 +502,12 @@ export default function PersonalizedCarRecommendations({
 
             {/* تذييل المكون */}
             <div className="bg-gray-50 p-3 text-center">
-                <Link
+                <LoadingLink
                     href="/recommendations"
                     className="text-blue-600 text-sm hover:underline"
                 >
                     عرض جميع التوصيات
-                </Link>
+                </LoadingLink>
             </div>
         </div>
     );

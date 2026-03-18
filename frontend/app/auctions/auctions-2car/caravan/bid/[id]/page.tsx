@@ -1,14 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { MapPin, Calendar, Users, DollarSign, ThumbsUp } from 'lucide-react';
+
 import Image from 'next/image';
-import Link from 'next/link';
+import LoadingLink from "@/components/LoadingLink";
 
 export default function CaravanBidPage() {
   const params = useParams();
-  const router = useRouter();
+  const router = useLoadingRouter();
+  
   const searchParams = useSearchParams();
   const caravanId = params.id as string;
   
@@ -201,13 +204,7 @@ export default function CaravanBidPage() {
     setCurrentImageIndex((prev) => (prev === 0 ? caravan.images.length - 1 : prev - 1));
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-      </div>
-    );
-  }
+
 
   if (!caravan) {
     return (
@@ -231,7 +228,7 @@ export default function CaravanBidPage() {
       <div className="bg-gradient-to-r from-orange-500 to-amber-600 py-6">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            <Link 
+            <LoadingLink 
               href={backUrl} 
               className="flex items-center text-white hover:text-white/90 transition"
             >
@@ -241,7 +238,7 @@ export default function CaravanBidPage() {
                 </svg>
               </span>
               <span>{getBackButtonText()}</span>
-            </Link>
+            </LoadingLink>
             
             <h1 className="text-2xl md:text-3xl font-bold text-white text-center flex-1">{caravan.title}</h1>
             

@@ -1,335 +1,295 @@
+// app/dashboard/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { usePathname, useRouter } from "next/navigation";
-import {
-    Home,
-    ArrowRight,
-    User,
-    ShoppingCart,
-    CreditCard,
-    ShoppingBag,
-    Truck,
-    Settings,
-    Loader2,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
+import {
+  ShoppingCart,
+  TrendingUp,
+  DollarSign,
+  Package,
+  Activity,
+  Loader2,
+  Sparkles,
+  Rocket,
+  Settings,
+  RefreshCw,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import LoadingLink from "@/components/LoadingLink";
 
-export default function DashboardTabs() {
-    const pathname = usePathname();
-    const router = useRouter();
-    const { user, isLoggedIn } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({
-        purchases: 0,
-        sales: 0,
-        walletBalance: 0,
-        activeOrders: 0,
-    });
-    const [activities, setActivities] = useState([]);
+type ProfileResponse = {
+  success?: boolean;
+  status?: string;
+  data?: any;
+  message?: string;
+};
 
-    // Tabs configuration
-    const tabs = [
-        
-        {
-            name: "سيارتي",
-            href: "/dashboard/mycars",
-            icon: <User className="w-4 h-4 ml-1.5" />,
-        },
-        {
-            name: "مشترياتي",
-            href: "/dashboard/my-purchases",
-            icon: <ShoppingCart className="w-4 h-4 ml-1.5" />,
-        },
-        {
-            name: "مبيعاتي",
-            href: "/dashboard/my-sales",
-            icon: <ShoppingBag className="w-4 h-4 ml-1.5" />,
-        },
-        {
-            name: "محفظتي",
-            href: "/dashboard/my-wallet",
-            icon: <CreditCard className="w-4 h-4 ml-1.5" />,
-        },
-        {
-            name: "تحويلاتي",
-            href: "/dashboard/my-transfers",
-            icon: <ArrowRight className="w-4 h-4 ml-1.5" />,
-        },
-        {
-            name: "خدمات الشحن",
-            href: "/dashboard/shipping",
-            icon: <Truck className="w-4 h-4 ml-1.5" />,
-        },
-        {
-            name: "الملف الشخصي",
-            href: "/dashboard/profile",
-            icon: <User className="w-4 h-4 ml-1.5" />,
-        },
-    ];
+export default function DashboardPage() {
+  const { user, isLoggedIn } = useAuth();
+  const router = useLoadingRouter();
 
-    // Get user display name
-    const userName = user
-        ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-        : "مستخدم";
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-    // Verify user is authenticated
-    useEffect(() => {
-        if (!isLoggedIn) {
-            router.push("/auth/login?returnUrl=/dashboard");
-        }
-    }, [isLoggedIn, router]);
+  // نخزن بروفايل من API عشان نقرأ الاسم/created_at حتى لو useAuth مش محمّل كل حاجة
+  const [profile, setProfile] = useState<any>(null);
 
-    // Fetch wallet balance and user stats
-    useEffect(() => {
-        async function fetchUserData() {
-            if (!isLoggedIn || !user) return;
+  const [stats, setStats] = useState({
+    purchases: 0,
+    sales: 0,
+    walletBalance: 0,
+    activeOrders: 0,
+  });
 
-            setLoading(true);
-            try {
-                // Get user profile data - using correct API path with /api prefix
-                const profileResponse = await api.get("/api/user/profile");
-                if (
-                    profileResponse.data &&
-                    profileResponse.data.status === "success"
-                ) {
-                    const profileData = profileResponse.data.data;
+  const userName = useMemo(() => {
+    const src = profile || user;
+    if (!src) return "مستخدم";
+    const n =
+      `${src.first_name || ""} ${src.last_name || ""}`.trim() ||
+      src.name ||
+      "مستخدم";
+    return n;
+  }, [profile, user]);
 
-                    // Set stats based on profile data (adjust if your backend structure is different)
-                    setStats({
-                        purchases: profileData.purchases_count || 0,
-                        sales: profileData.sales_count || 0,
-                        walletBalance: profileData.wallet_balance || 0,
-                        activeOrders: profileData.active_orders_count || 0,
-                    });
+  const memberSinceYear = useMemo(() => {
+    const createdAt = (profile?.created_at || user?.created_at) as
+      | string
+      | undefined;
+    if (!createdAt) return "";
+    const d = new Date(createdAt);
+    return Number.isNaN(d.getTime()) ? "" : String(d.getFullYear());
+  }, [profile, user]);
 
-                    // If activities exist in the profile data
-                    if (
-                        profileData.activities &&
-                        Array.isArray(profileData.activities)
-                    ) {
-                        setActivities(profileData.activities);
-                    } else {
-                        // Use empty activities array
-                        setActivities([]);
-                    }
-                }
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-                toast.error(
-                    "تعذر تحميل بيانات لوحة التحكم. يرجى المحاولة لاحقًا."
-                );
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/auth/login?returnUrl=/dashboard");
+    }
+  }, [isLoggedIn, router]);
 
-                // Initialize with empty data
-                setStats({
-                    purchases: 0,
-                    sales: 0,
-                    walletBalance: 0,
-                    activeOrders: 0,
-                });
-                setActivities([]);
-            } finally {
-                setLoading(false);
-            }
-        }
+  const fetchUserData = async () => {
+    if (!isLoggedIn) return;
 
-        fetchUserData();
-    }, [isLoggedIn, user]);
+    try {
+      const profileResponse =
+        await api.get<ProfileResponse>("/api/user/profile");
 
-    // Activity type to icon mapping
-    const getActivityIcon = (type) => {
-        switch (type) {
-            case "purchase":
-                return <ShoppingCart className="w-4 h-4 text-blue-600" />;
-            case "sale":
-                return <ShoppingBag className="w-4 h-4 text-green-600" />;
-            case "deposit":
-            case "withdrawal":
-                return <CreditCard className="w-4 h-4 text-amber-600" />;
-            default:
-                return <ArrowRight className="w-4 h-4 text-gray-600" />;
-        }
-    };
+      const ok =
+        profileResponse.data?.success === true ||
+        profileResponse.data?.status === "success";
 
-    // Activity type to background color mapping
-    const getActivityBgColor = (type) => {
-        switch (type) {
-            case "purchase":
-                return "bg-blue-100";
-            case "sale":
-                return "bg-green-100";
-            case "deposit":
-            case "withdrawal":
-                return "bg-amber-100";
-            default:
-                return "bg-gray-100";
-        }
-    };
+      if (!ok) {
+        // فشل/Unauthorized
+        throw new Error(
+          profileResponse.data?.message || "Failed to load profile",
+        );
+      }
 
-    return (
-        <div className="min-h-screen bg-gray-50" dir="rtl">
-            {/* زر العودة للصفحة الرئيسية + عنوان الصفحة */}
-            <div className="bg-white border-b shadow-sm">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex justify-between items-center">
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                        >
-                            <Home className="w-5 h-5" />
-                            <span>الرئيسية</span>
-                        </Link>
-                        <h1 className="text-2xl font-bold text-gray-800">
-                            لوحة التحكم
-                        </h1>
-                    </div>
-                </div>
+      const data = profileResponse.data.data || {};
+
+      // ✅ الباك الحالي بيرجع بيانات بروفايل فقط (مش stats)
+      setProfile(data);
+
+      // لو في المستقبل ضفتهم في الباك، الكود ده هيلتقطهم تلقائي
+      setStats({
+        purchases: Number(data.purchases_count ?? 0),
+        sales: Number(data.sales_count ?? 0),
+        walletBalance: Number(data.wallet_balance ?? 0),
+        activeOrders: Number(data.active_orders_count ?? 0),
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard:", error);
+      toast.error("تعذر تحميل بيانات لوحة التحكم. يرجى المحاولة لاحقًا.");
+
+      setProfile(null);
+      setStats({ purchases: 0, sales: 0, walletBalance: 0, activeOrders: 0 });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchUserData();
+  };
+
+  const statItems = [
+    {
+      label: "المشتريات",
+      value: stats.purchases,
+      bg: "bg-primary/10",
+      border: "border-primary/20",
+      glow: "shadow-primary/20",
+      text: "text-primary",
+      icon: ShoppingCart,
+      trend: "+12%",
+    },
+    {
+      label: "المبيعات",
+      value: stats.sales,
+      bg: "bg-secondary/10",
+      border: "border-secondary/20",
+      glow: "shadow-secondary/20",
+      text: "text-secondary",
+      icon: TrendingUp,
+      trend: "+8%",
+    },
+    {
+      label: "رصيد المحفظة",
+      value: stats.walletBalance
+        ? `${stats.walletBalance.toLocaleString()}`
+        : "0",
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/20",
+      glow: "shadow-amber-500/20",
+      text: "text-amber-500",
+      icon: DollarSign,
+      trend: "+5%",
+    },
+    {
+      label: "الطلبات النشطة",
+      value: stats.activeOrders,
+      bg: "bg-purple-500/10",
+      border: "border-purple-500/20",
+      glow: "shadow-purple-500/20",
+      text: "text-purple-500",
+      icon: Package,
+      trend: "+3%",
+    },
+  ];
+
+  return (
+    <div className="space-y-6" dir="rtl">
+      {/* Welcome Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
+      >
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">
+                مرحباً بك، <span className="text-primary">{userName}</span>
+              </h1>
             </div>
 
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {/* البطاقة الرئيسية */}
-                <div className="bg-white rounded-lg shadow-md border p-6 mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 className="text-xl font-semibold text-gray-800">
-                                مرحباً بك {userName} في DASM-e
-                            </h2>
-                            <p className="text-gray-500 mt-1">
-                                يمكنك إدارة حسابك ومشترياتك ومبيعاتك من هنا
-                            </p>
-                        </div>
-                        <div className="hidden sm:block">
-                            <Settings className="w-8 h-8 text-gray-400" />
-                        </div>
-                    </div>
-
-                    {/* شريط التنقل بين الأقسام */}
-                    <div className="flex overflow-x-auto pb-2 scrollbar-hide">
-                        <div className="flex gap-3 mx-auto">
-                            {tabs.map((tab) => (
-                                <Link
-                                    key={tab.href}
-                                    href={tab.href}
-                                    className={cn(
-                                        "min-w-[110px] flex flex-col items-center gap-2 px-4 py-3 rounded-lg transition-all border",
-                                        pathname === tab.href
-                                            ? "bg-blue-50 text-blue-600 border-blue-200 shadow-sm"
-                                            : "text-gray-600 hover:bg-gray-50 border-gray-100 hover:border-gray-200"
-                                    )}
-                                >
-                                    <div
-                                        className={cn(
-                                            "p-2 rounded-full",
-                                            pathname === tab.href
-                                                ? "bg-blue-100"
-                                                : "bg-gray-100"
-                                        )}
-                                    >
-                                        {tab.icon}
-                                    </div>
-                                    <span className="text-sm font-medium whitespace-nowrap">
-                                        {tab.name}
-                                    </span>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* المحتوى الإضافي */}
-                {loading ? (
-                    <div className="flex items-center justify-center p-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                        <span className="mr-2 text-gray-600">
-                            جاري تحميل البيانات...
-                        </span>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* إحصائيات سريعة */}
-                        <div className="bg-white rounded-lg shadow-md border p-6">
-                            <h3 className="text-lg font-medium mb-4 text-gray-800">
-                                إحصائيات سريعة
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                    <p className="text-sm text-gray-500">
-                                        المشتريات
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-800">
-                                        {stats.purchases}
-                                    </p>
-                                </div>
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                                    <p className="text-sm text-gray-500">
-                                        المبيعات
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-800">
-                                        {stats.sales}
-                                    </p>
-                                </div>
-                                <div className="bg-amber-50 p-4 rounded-lg border border-amber-100">
-                                    <p className="text-sm text-gray-500">
-                                        رصيد المحفظة
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-800">
-                                        {stats.walletBalance.toLocaleString()}
-                                    </p>
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                                    <p className="text-sm text-gray-500">
-                                        الطلبات النشطة
-                                    </p>
-                                    <p className="text-2xl font-bold text-gray-800">
-                                        {stats.activeOrders}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* آخر النشاطات */}
-                        <div className="bg-white rounded-lg shadow-md border p-6">
-                            <h3 className="text-lg font-medium mb-4 text-gray-800">
-                                آخر النشاطات
-                            </h3>
-                            <div className="space-y-3">
-                                {activities.length > 0 ? (
-                                    activities.map((activity) => (
-                                        <div
-                                            key={activity.id}
-                                            className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50"
-                                        >
-                                            <div
-                                                className={`p-2 ${getActivityBgColor(
-                                                    activity.type
-                                                )} rounded-full`}
-                                            >
-                                                {getActivityIcon(activity.type)}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">
-                                                    {activity.title}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {activity.date}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-6 text-gray-500">
-                                        لا توجد نشاطات حديثة
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
+                {(profile?.type || user?.type) === "user" ||
+                (profile?.type || user?.type) === "dealer"
+                  ? "الاشتراك: مجاني"
+                  : ""}
+              </span>
+              <span className="px-2 py-1 bg-primary/20 text-primary rounded-lg text-xs border border-primary/30">
+                عضو منذ {memberSinceYear}
+              </span>
             </div>
+
+            <p className="text-foreground/80 text-sm leading-relaxed">
+              أنت على بعد نقرة من إدارة حسابك بكل سهولة وأمان. استعرض بياناتك
+              وتابع نشاطك.
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <LoadingLink href="/dashboard/profile">
+              <button className="p-2 bg-border rounded-xl border border-border hover:bg-border/80 transition-all duration-300 hover:scale-105">
+                <Settings className="w-4 h-4 text-purple-400" />
+              </button>
+            </LoadingLink>
+
+            <LoadingLink
+              href="/auctions"
+              className="p-2 bg-primary rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
+            >
+              <Rocket className="w-4 h-4 text-primary-foreground" />
+            </LoadingLink>
+          </div>
         </div>
-    );
+      </motion.div>
+
+      {/* Stats & Activities */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="relative w-16 h-16">
+            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-primary" />
+            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-primary animate-spin opacity-60"></div>
+          </div>
+          <p className="mt-4 text-lg text-foreground/70 font-medium">
+            جاري تحميل لوحة التحكم...
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                <Activity className="w-4 h-4" />
+              </div>
+              إحصائيات سريعة
+            </h2>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all duration-300 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
+              />
+              <span className="text-xs">تحديث</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {statItems.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className={cn(
+                    "p-4 rounded-xl border backdrop-blur-sm shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl",
+                    item.bg,
+                    item.border,
+                    item.glow,
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-white/10">
+                      <Icon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded border border-green-500/30">
+                      {item.trend}
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/80 mb-1">
+                    {item.label}
+                  </p>
+                  <p className={cn("text-lg font-bold", item.text)}>
+                    {item.value}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -1,176 +1,1131 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// ========= Diagnostics & Infra =========
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Artisan;
+
+// ========= Public / Common Controllers =========
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\AuctionController;
-use App\Http\Controllers\BidController;
-use App\Http\Controllers\DealerController;
 use App\Http\Controllers\CarController;
-use App\Http\Controllers\BlogController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\BroadcastController;
-use App\Http\Controllers\VenueController;
+use App\Http\Controllers\AuctionController;
 use App\Http\Controllers\AutoBidController;
-use Inertia\Inertia;
-use App\Models\Car;
+use App\Http\Controllers\BidController;
+use App\Http\Controllers\BlogController; // ✅ Public Blog Controller
+use App\Http\Controllers\MarketCouncilController;
+use App\Http\Controllers\CouncilCategoryStudioController;
+use App\Http\Controllers\CouncilCommentStudioController;
+use App\Http\Controllers\CouncilStudioController;
+use App\Http\Controllers\MarketReactionController;
+use App\Http\Controllers\MarketCommentController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ModeratorController;
+use App\Http\Controllers\BroadcastController;
+use App\Http\Controllers\DealerController;
+use App\Http\Controllers\VenueController;
+use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\DeviceTokenController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\CarSimilarityController;
+use App\Http\Controllers\UploadController;
+use App\Http\Controllers\ActivityLogController;
 
-// Health check endpoint for Render.com
-Route::get('/health', function () {
-    return response()->json(['status' => 'ok']);
+// ✅ NEW: Home Stats Endpoint
+use App\Http\Controllers\HomeStatsController;
+
+// ✅ NEW: Newsletter (Public + Admin)
+use App\Http\Controllers\NewsletterSubscriptionController;
+use App\Http\Controllers\Admin\NewsletterSubscriberController as AdminNewsletterSubscriberController;
+
+// ========= Admin (namespaced) =========
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\BidEventController;
+use App\Http\Controllers\Admin\AuctionController as AdminAuctionController;
+use App\Http\Controllers\Admin\CommissionTierController;
+use App\Http\Controllers\Admin\SubscriptionPlanController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Admin\CarController as AdminCarController;
+use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\YouTubeChannelController;
+use App\Http\Controllers\Admin\SalesController;
+use App\Http\Controllers\Admin\AdminNotificationController;
+use App\Http\Controllers\Admin\OrganizationController;
+use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
+use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW: Admin Blog Controller
+use App\Http\Controllers\Admin\MarketCouncilController as AdminMarketCouncilController;
+use App\Http\Controllers\Admin\MarketCouncilCommentsController as AdminMarketCouncilCommentsController;
+use App\Http\Controllers\Admin\AuctionActivityLogController;
+use App\Http\Controllers\Admin\AuctionTestingAnalyticsController;
+
+// ========= Admin Panel (New) =========
+use App\Http\Controllers\AdminPanel\UserController as AdminPanelUserController;
+
+// ========= Auction Sessions =========
+use App\Http\Controllers\AuctionSessionController as PublicAuctionSessionController;
+use App\Http\Controllers\Admin\AuctionSessionController as AdminAuctionSessionController;
+use App\Http\Controllers\Exhibitor\AuctionSessionController as ExhibitorAuctionSessionController;
+
+// ========= Wallets =========
+use App\Http\Controllers\WalletController as UserWalletController;
+use App\Http\Controllers\Exhibitor\WalletController as ExhibitorWalletController;
+use App\Http\Controllers\Exhibitor\WalletDepositController as ExhibitorWalletDepositController;
+use App\Http\Controllers\Exhibitor\WalletWithdrawController as ExhibitorWalletWithdrawController;
+
+// ========= Exhibitor Modules =========
+use App\Http\Controllers\Exhibitor\VenueOwnerRatingController;
+use App\Http\Controllers\Exhibitor\ShipmentController as ExhibitorShipmentController;
+use App\Http\Controllers\Exhibitor\CommissionController as ExhibitorCommissionController;
+use App\Http\Controllers\Exhibitor\ExtraServiceController as ExhibitorExtraServiceController;
+use App\Http\Controllers\Exhibitor\ExtraServiceRequestController as ExhibitorExtraServiceRequestController;
+use App\Http\Controllers\Exhibitor\CarExplorerController;
+use App\Http\Controllers\Exhibitor\AnalyticsController as ExhibitorAnalyticsController;
+
+// ========= Dealer Controllers =========
+use App\Http\Controllers\Dealer\DashboardController as DealerDashboardController;
+use App\Http\Controllers\Dealer\WalletController as DealerWalletController;
+
+use App\Http\Controllers\Dealer\AiController as DealerAiController;
+use App\Http\Controllers\Dealer\WatchlistController as DealerWatchlistController;
+use App\Http\Controllers\Market\PublicCarExplorerController;
+
+// ========= Payment =========
+use App\Http\Controllers\Payment\ClickPayController;
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 1: DIAGNOSTICS & HEALTH CHECK
+|--------------------------------------------------------------------------
+| ⚠️ Security Note: Protected endpoints require DIAG_TOKEN in .env
+*/
+
+Route::prefix('_diag')->group(function () {
+
+    // Health check - lightweight (public)
+    Route::get('/health', function () {
+        return response()->json([
+            'ok'   => true,
+            'time' => now()->toIso8601String(),
+        ], 200)->header('Cache-Control', 'public, max-age=60');
+    })->middleware('throttle:20,1');
+
+    // Lite diagnostics - no sensitive info (public)
+    Route::get('/lite', function () {
+        $started = microtime(true);
+
+        // DB Check
+        $dbMs = -1;
+        $dbOk = false;
+        $t = microtime(true);
+        try {
+            DB::select('SELECT 1');
+            $dbMs = (microtime(true) - $t) * 1000;
+            $dbOk = true;
+        } catch (\Throwable $e) {
+            $dbMs = -1;
+        }
+
+        // Cache Check
+        $cacheMs = -1;
+        $cacheOk = false;
+        $t = microtime(true);
+        try {
+            Cache::put('diag_lite_key', '1', 60);
+            Cache::get('diag_lite_key');
+            $cacheMs = (microtime(true) - $t) * 1000;
+            $cacheOk = true;
+        } catch (\Throwable $e) {
+            $cacheMs = -1;
+        }
+
+        // Redis Check
+        $redisMs = -1;
+        $redisOk = false;
+        $redisPong = null;
+        $t = microtime(true);
+        try {
+            $raw = Redis::connection('default')->ping();
+            $redisMs = (microtime(true) - $t) * 1000;
+            $redisOk = is_string($raw) ? stripos($raw, 'PONG') !== false : (bool) $raw;
+            $redisPong = is_string($raw) ? $raw : 'PONG';
+        } catch (\Throwable $e) {
+            $redisMs = -1;
+        }
+
+        // Disk Check
+        $diskMs = -1;
+        $diskOk = false;
+        $t = microtime(true);
+        try {
+            $f = storage_path('app/diag_lite.tmp');
+            file_put_contents($f, str_repeat('x', 1024));
+            @unlink($f);
+            $diskMs = (microtime(true) - $t) * 1000;
+            $diskOk = true;
+        } catch (\Throwable $e) {
+            $diskMs = -1;
+        }
+
+        $totalMs = (microtime(true) - $started) * 1000;
+
+        return response()->json([
+            'ok'      => $dbOk && $cacheOk,
+            'php'     => PHP_VERSION,
+            'laravel' => app()->version(),
+            'env'     => app()->environment(),
+            'metrics' => [
+                'db_ms'     => round($dbMs, 1),
+                'cache_ms'  => round($cacheMs, 1),
+                'redis_ms'  => round($redisMs, 1),
+                'disk_ms'   => round($diskMs, 1),
+                'total_ms'  => round($totalMs, 1),
+            ],
+            'status' => [
+                'db'    => $dbOk,
+                'cache' => $cacheOk,
+                'redis' => $redisOk,
+                'disk'  => $diskOk,
+            ],
+        ], 200)->header('Cache-Control', 'no-store');
+    })->middleware('throttle:10,1');
+
+    // Protected diagnostics - require DIAG_TOKEN
+    Route::middleware('diag.token')->group(function () {
+
+        Route::get('/redis', function () {
+            $err = null;
+            $pong = null;
+            $ok = false;
+            $pingMs = -1;
+
+            try {
+                $t = microtime(true);
+                $raw = Redis::connection('default')->ping();
+                $pingMs = round((microtime(true) - $t) * 1000, 1);
+                $ok  = is_string($raw) ? stripos($raw, 'PONG') !== false : (bool) $raw;
+                $pong = is_string($raw) ? $raw : 'PONG';
+            } catch (\Throwable $e) {
+                $err = $e->getMessage();
+            }
+
+            $cacheMs = -1;
+            $cacheOk = false;
+            try {
+                $t = microtime(true);
+                Cache::store('redis')->put('diag_r_key', '1', 60);
+                $val = Cache::store('redis')->get('diag_r_key');
+                $cacheOk = ($val === '1');
+                $cacheMs = round((microtime(true) - $t) * 1000, 1);
+            } catch (\Throwable $e) {
+                $err = ($err ? $err . ' | ' : '') . $e->getMessage();
+            }
+
+            return response()->json([
+                'ok'       => $ok,
+                'pong'     => $pong,
+                'ping_ms'  => $pingMs,
+                'cache_ok' => $cacheOk,
+                'cache_ms' => $cacheMs,
+                'error'    => $err,
+            ], 200)->header('Cache-Control', 'no-store');
+        })->middleware('throttle:10,1');
+
+        Route::post('/reload', function () {
+            Artisan::call('config:clear');
+            Artisan::call('cache:clear');
+            Artisan::call('route:clear');
+            return response()->json(['ok' => true, 'message' => 'config/cache/routes cleared'], 200);
+        })->middleware('throttle:2,1');
+    });
 });
 
-// Public routes
+/*
+|--------------------------------------------------------------------------
+| SECTION 2: PUBLIC ROUTES (No Authentication Required)
+|--------------------------------------------------------------------------
+*/
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2.1 Authentication
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+    Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
+});
+
+// Legacy auth routes (backward compatibility)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/refresh', [AuthController::class, 'refresh']);
+Route::get('/middleware/user-role', [App\Http\Controllers\Auth\MiddlewareAuthController::class, 'getUserRole']);
 
-// Public auction browsing 
-Route::get('/auctions', [AuctionController::class, 'index']);
-Route::get('/auctions/{id}', [AuctionController::class, 'show']);
+// ─────────────────────────────────────────────────────────────────────────
+// 2.2 Public Auctions
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('auctions')->group(function () {
+    Route::get('/', [AuctionController::class, 'index']);
+    Route::get('/fixed', [AuctionController::class, 'getFixedAuctions']);
+    Route::get('/finished', [AuctionController::class, 'AuctionsFinished']);
+    Route::get('/live', [AuctionController::class, 'AuctionsLive']);
+    Route::get('/by-type/{auction_type}', [AuctionController::class, 'auctionByType']);
+    Route::get('/{id}', [AuctionController::class, 'show'])->whereNumber('id');
+});
 
-// Public blog routes
-Route::get('/blog', [BlogController::class, 'index']);
-Route::get('/blog/latest/{count?}', [BlogController::class, 'latest']);
-Route::get('/blog/tags', [BlogController::class, 'tags']);
-Route::get('/blog/{slug}', [BlogController::class, 'show']);
+// Legacy auction routes (backward compatibility)
+Route::get('/approved-auctions/{auction_type}', [AuctionController::class, 'auctionByType']);
+Route::get('/approved-live-auctions', [AuctionController::class, 'AuctionsLive']);
+Route::get('/auctions-finished', [AuctionController::class, 'AuctionsFinished']);
 
+// ─────────────────────────────────────────────────────────────────────────
+// 2.3 Public Sessions
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('sessions')->group(function () {
+    Route::get('/live', [PublicAuctionSessionController::class, 'getActiveLiveSessions']);
+    Route::get('/live/{id}', [PublicAuctionSessionController::class, 'getLiveSession'])->whereNumber('id');
+    Route::get('/active-scheduled', [PublicAuctionSessionController::class, 'getActiveAndScheduledSessions']);
+    Route::get('/{id}', [PublicAuctionSessionController::class, 'show'])->whereNumber('id');
+});
 
-// Protected routes - for all authenticated users
+// ─────────────────────────────────────────────────────────────────────────
+// 2.4 Public Cars & Market
+// ─────────────────────────────────────────────────────────────────────────
+Route::get('/featured-cars', [CarController::class, 'getFeaturedCars']);
+Route::get('/car/{id}', [CarController::class, 'showOnly'])->whereNumber('id');
+Route::get('/cars/similar', [CarSimilarityController::class, 'suggest']);
+
+Route::prefix('market')->group(function () {
+    Route::get('/cars', [CarController::class, 'publicMarketCars']);
+    Route::get('/trucks', [CarController::class, 'publicMarketCars'])->defaults('market', 'trucks');
+    Route::get('/buses', [CarController::class, 'publicMarketCars'])->defaults('market', 'buses');
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2.X Public Similar Price Analysis (Explorer) ✅ PUBLIC ✅ FIXED
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('market/explorer')
+    ->group(function () {
+        Route::get('/cars', [PublicCarExplorerController::class, 'index']);
+        Route::get('/cars/stats', [PublicCarExplorerController::class, 'stats']);
+        Route::get('/cars/{car}', [PublicCarExplorerController::class, 'show'])->whereNumber('car');
+    });
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2.5 Public Blog (✅ Clean Public Blog)
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('blog')->group(function () {
+    Route::get('/', [BlogController::class, 'index']);
+    Route::get('/latest/{count?}', [BlogController::class, 'latest'])->whereNumber('count');
+    Route::get('/tags', [BlogController::class, 'tags']);
+    Route::get('/categories', [BlogController::class, 'categories']); // ✅ NEW
+    Route::get('/{slug}', [BlogController::class, 'show']); // dynamic last
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2.5.1 Public Market Council (مجلس السوق)
+// ─────────────────────────────────────────────────────────────────────────
+Route::prefix('market-council')->group(function () {
+    Route::get('/categories', [MarketCouncilController::class, 'categories']);
+    Route::get('/recommended', [MarketCouncilController::class, 'recommended']);
+    Route::get('/articles', [MarketCouncilController::class, 'articles']);
+    Route::get('/articles/{id}/comments', [MarketCommentController::class, 'index'])->whereNumber('id');
+    Route::get('/articles/{slug}', [MarketCouncilController::class, 'showArticle']);
+    Route::post('/articles/{id}/comments', [MarketCommentController::class, 'store'])
+        ->whereNumber('id')
+        ->middleware(['auth:sanctum', 'throttle:10,1']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2.6 Public Broadcast & Subscription Plans
+// ─────────────────────────────────────────────────────────────────────────
+Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
+Route::get('/subscription-plans/user-type/{userType}', [SubscriptionPlanController::class, 'getByUserType']);
+
+// ✅ NEW (Public): Home Stats for landing page counters
+Route::get('/home-stats', HomeStatsController::class);
+
+// ✅ NEW (Public): Newsletter subscribe (Footer form)
+Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])
+    ->middleware('throttle:20,1');
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2.7 Utilities
+// ─────────────────────────────────────────────────────────────────────────
+Route::get('/check-time', function (Request $request) {
+    $page = $request->query('page');
+    $pageTimeRanges = [
+        'live_auction'    => [['start' => '16:00:00', 'end' => '18:59:59']],
+        'instant_auction' => [['start' => '19:00:00', 'end' => '21:59:59']],
+        'late_auction'    => [['start' => '22:00:00', 'end' => '15:59:59']],
+    ];
+
+    if (!isset($pageTimeRanges[$page])) {
+        return response()->json(['error' => 'Page not found', 'allowed' => false], 404);
+    }
+
+    $now = Carbon::now('GMT+3');
+    $isAllowed = false;
+    $remainingSeconds = null;
+
+    foreach ($pageTimeRanges[$page] as $range) {
+        $start = Carbon::createFromFormat('H:i:s', $range['start'], 'GMT+3')
+            ->setDate($now->year, $now->month, $now->day);
+        $end = Carbon::createFromFormat('H:i:s', $range['end'], 'GMT+3')
+            ->setDate($now->year, $now->month, $now->day);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            if ($now->lessThan($end)) {
+                $start->subDay();
+            } else {
+                $end->addDay();
+            }
+        }
+
+        if ($now->between($start, $end)) {
+            $isAllowed = true;
+            $remainingSeconds = $end->diffInSeconds($now);
+            break;
+        }
+    }
+
+    return response()->json([
+        'page'              => $page,
+        'current_time'      => $now->format('H:i:s'),
+        'allowed'           => true, // TODO: Change to $isAllowed in production
+        'remaining_seconds' => $remainingSeconds,
+        'remaining_time'    => $remainingSeconds ? gmdate("H:i:s", $remainingSeconds) : null,
+        'timezone'          => 'GMT+3',
+    ]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 3: PAYMENT WEBHOOKS (No Authentication - Called by Payment Gateway)
+|--------------------------------------------------------------------------
+*/
+
+// User Wallet Webhooks
+Route::prefix('wallet')->group(function () {
+    Route::post('/initiate-recharge', [UserWalletController::class, 'initiateRecharge'])->name('wallet.recharge');
+    Route::post('/callback', [UserWalletController::class, 'handleCallback'])->name('wallet.callback');
+    Route::get('/error', [UserWalletController::class, 'handleError'])->name('wallet.error');
+});
+
+// ClickPay / Moyasar Webhooks
+Route::prefix('payment')->group(function () {
+    Route::any('/return', [ClickPayController::class, 'handleReturn'])->name('payment.return');
+    Route::post('/webhook', [ClickPayController::class, 'handleWebhook'])->name('payment.webhook');
+    Route::get('/callback/moyasar', [ClickPayController::class, 'handleMoyasarCallback'])->name('payment.moyasar.callback');
+});
+
+// Exhibitor Wallet Webhook
+Route::post('/exhibitor/wallet/deposit/webhook', [ExhibitorWalletDepositController::class, 'webhook'])
+    ->name('exhibitor.wallet.deposit.webhook');
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 4: AUTHENTICATED USER ROUTES
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth:sanctum')->group(function () {
-    // Auth routes
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.1 Auth Actions
+    // ─────────────────────────────────────────────────────────────────
     Route::post('/logout', [AuthController::class, 'logout']);
-    
-    // User routes
-    Route::get('/user/profile', [UserController::class, 'profile']);
-    Route::put('/user/profile', [UserController::class, 'updateProfile']);
-    Route::post('/logout', [UserController::class, 'logout']);
-    Route::get('/user/permissions', [UserController::class, 'getPermissions']);
-    
-    // Dealer registration
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.2 User Profile
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('user')->group(function () {
+        Route::get('/', [UserController::class, 'profile']);
+        Route::get('/profile', [UserController::class, 'profile'])->middleware('set.organization');
+        Route::put('/profile', [UserController::class, 'updateProfile']);
+        Route::get('/permissions', [UserController::class, 'getPermissions']);
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.3 Dealer Application
+    // ─────────────────────────────────────────────────────────────────
     Route::post('/become-dealer', [DealerController::class, 'becomeDealer']);
-    
-    // Car management for all users
-    
-    Route::get('/cars', [CarController::class, 'index']);
-    Route::get('/cars?page={id}', [CarController::class, 'index']);
-    Route::post('/cars', [CarController::class, 'store']);
-    Route::get('/cars/{id}', [CarController::class, 'show']);
-    Route::put('/cars/{id}', [CarController::class, 'update']);
-    Route::delete('/cars/{id}', [CarController::class, 'destroy']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.4 Cars Management
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('cars')->group(function () {
+        Route::get('/', [CarController::class, 'index']);
+        Route::get('/in-auctions', [CarController::class, 'CarsInAuction']);
+        Route::get('/enum-options', [CarController::class, 'enumOptions']);
+        Route::post('/', [CarController::class, 'store']);
+        Route::get('/{id}', [CarController::class, 'show'])->whereNumber('id');
+        Route::put('/{id}', [CarController::class, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [CarController::class, 'destroy'])->whereNumber('id');
+    });
     Route::get('/car-statistics', [CarController::class, 'statistics']);
-    
-    // Auction management for all users
-    Route::post('/auctions', [AuctionController::class, 'store']);
-    Route::put('/auctions/{id}', [AuctionController::class, 'update']);
-    Route::post('/auctions/{id}/cancel', [AuctionController::class, 'cancel']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // ✅ 4.15 Market Explorer (REMOVED)
+    // ─────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.5 Auctions Management
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('auctions')->group(function () {
+        Route::post('/', [AuctionController::class, 'store']);
+        Route::put('/{id}', [AuctionController::class, 'update'])->whereNumber('id');
+        Route::post('/{id}/cancel', [AuctionController::class, 'cancel'])->whereNumber('id');
+        Route::post('/{auction}/leave', [AuctionController::class, 'leave'])->whereNumber('auction');
+        Route::get('/{auction}/status', [AuctionController::class, 'status'])->whereNumber('auction');
+        Route::get('/purchase-confirmation/{auction_id}', [AuctionController::class, 'purchaseConfirmation'])->whereNumber('auction_id');
+        Route::post('/test-bid', [AuctionController::class, 'testBid']); // TODO: Remove in production
+    });
+
     Route::get('/my-auctions', [AuctionController::class, 'myAuctions']);
-    Route::get('/auctions', [AuctionController::class, 'getAllAuctions']);
-    //Route::get('/auctions/{type}', [AuctionController::class, 'getAuctionsByType']);
+    Route::get('/auction', [AuctionController::class, 'addToAuction']);
+    Route::post('/auction', [AuctionController::class, 'addToAuction']);
+    Route::get('/approved-auctions', [AuctionController::class, 'index']);
+    Route::get('/approved-auctions-ids', [AuctionController::class, 'getAllAuctionsIds']);
 
-    // Bid routes for all users
-    Route::get('/auctions/{auction}/bids', [BidController::class, 'index']);
-    Route::post('/auctions/{auction}/bids', [BidController::class, 'store']);
-    Route::get('/auctions/{auction}/leaderboard', [BidController::class, 'leaderboard']);
+    // ─────────────────────────────────────────────────────────────────
+    // 4.6 Bids
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('auctions/{auction}')->whereNumber('auction')->group(function () {
+        Route::get('/bids', [BidController::class, 'index']);
+        Route::post('/bids', [BidController::class, 'store'])->middleware('bid.rate.limit');
+        Route::get('/leaderboard', [BidController::class, 'leaderboard']);
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.x Market Council Reactions (إعجاب، حفظ، مفيد)
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('market-council')->group(function () {
+        Route::post('/articles/{id}/react', [MarketReactionController::class, 'store'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1');
+        Route::delete('/articles/{id}/react', [MarketReactionController::class, 'destroy'])
+            ->whereNumber('id')
+            ->middleware('throttle:30,1');
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.x Council Studio (استوديو مجلس السوق) — permission-gated
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('council-studio')->middleware('can:council.studio.access')->group(function () {
+        Route::get('/dashboard', [CouncilStudioController::class, 'dashboard']);
+        Route::get('/articles', [CouncilStudioController::class, 'articles']);
+        Route::get('/reviews', [CouncilStudioController::class, 'reviews']);
+        Route::post('/articles', [CouncilStudioController::class, 'store']);
+        Route::get('/articles/{id}', [CouncilStudioController::class, 'show'])->whereNumber('id');
+        Route::put('/articles/{id}', [CouncilStudioController::class, 'update'])->whereNumber('id');
+        Route::get('/categories', [CouncilStudioController::class, 'categories']);
+        Route::get('/categories/{id}', [CouncilCategoryStudioController::class, 'show'])->whereNumber('id');
+        Route::post('/categories', [CouncilCategoryStudioController::class, 'store']);
+        Route::put('/categories/{id}', [CouncilCategoryStudioController::class, 'update'])->whereNumber('id');
+        Route::delete('/categories/{id}', [CouncilCategoryStudioController::class, 'destroy'])->whereNumber('id');
+        Route::get('/comments', [CouncilCommentStudioController::class, 'index']);
+        Route::get('/comments/{id}', [CouncilCommentStudioController::class, 'show'])->whereNumber('id');
+        Route::patch('/comments/{id}', [CouncilCommentStudioController::class, 'update'])->whereNumber('id');
+    });
+
     Route::get('/my-bids', [BidController::class, 'myBidHistory']);
-    Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus']);
-    
-    // New standardized bid API for the unified frontend
-    Route::post('/auctions/bid', [BidController::class, 'placeBid']);
-    
-    // Auto-bid routes
-    Route::post('/auctions/auto-bid', [AutoBidController::class, 'store']);
-    Route::get('/auctions/auto-bid/status/{itemId}', [AutoBidController::class, 'getStatus']);
-    Route::delete('/auctions/auto-bid/{itemId}', [AutoBidController::class, 'destroy']);
-    
-    // Public broadcast information (read-only)
-    Route::get('/broadcast', [BroadcastController::class, 'getCurrentBroadcast']);
+    Route::get('/bids/{bid}/status', [BidController::class, 'checkBidStatus'])->whereNumber('bid');
+    Route::get('/bids-history', [BidController::class, 'UserBidHistory']);
+
+    // Unified bid endpoints
+    Route::post('/auctions/bid', [BidController::class, 'placeBid'])->middleware('bid.rate.limit');
+    Route::get('/auctions/bids/{id}', [BidController::class, 'latestBids'])->whereNumber('id');
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.7 Auto-bid
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('auctions/auto-bid')->group(function () {
+        Route::post('/', [AutoBidController::class, 'store']);
+        Route::get('/status/{itemId}', [AutoBidController::class, 'getStatus'])->whereNumber('itemId');
+        Route::delete('/{itemId}', [AutoBidController::class, 'destroy'])->whereNumber('itemId');
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.8 User Wallet
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('wallet')->group(function () {
+        Route::get('/', [UserWalletController::class, 'show']);
+        Route::post('/deposit', [UserWalletController::class, 'deposit']);
+        Route::get('/transactions', [UserWalletController::class, 'transactions']);
+        Route::post('/recharge', [UserWalletController::class, 'recharge']);
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.9 Settlements
+    // ─────────────────────────────────────────────────────────────────
+    Route::get('/settlements', [SettlementController::class, 'index']);
+    Route::get('/auctions/calculate-settlement/{car_id}', [SettlementController::class, 'calculateSettlement'])->whereNumber('car_id');
+    Route::post('/auctions/confirm-sale', [SettlementController::class, 'confirmSale']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.10 Notifications
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    });
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.11 Broadcast
+    // ─────────────────────────────────────────────────────────────────
     Route::get('/broadcast/status', [BroadcastController::class, 'getStatus']);
-    
-    // Venue routes - read only for all authenticated users
-    Route::get('/venues', [VenueController::class, 'index']);
-    Route::get('/venues/{id}', [VenueController::class, 'show']);
-    
-    // Wallet routes
-    // Route::get('/wallet', [WalletController::class, 'show']);
-    // Route::post('/wallet/deposit', [WalletController::class, 'deposit']);
-    // Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.12 Upload
+    // ─────────────────────────────────────────────────────────────────
+    Route::post('/upload-image', [UploadController::class, 'store']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.13 Payment Initiation
+    // ─────────────────────────────────────────────────────────────────
+    Route::post('/payment/initiate', [ClickPayController::class, 'initiatePayment']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.14 Exhibitor Ratings (User Write)
+    // ─────────────────────────────────────────────────────────────────
+    Route::prefix('exhibitor/ratings')->group(function () {
+        Route::post('/', [VenueOwnerRatingController::class, 'store']);
+        Route::put('/{review}', [VenueOwnerRatingController::class, 'update'])->whereNumber('review');
+        Route::delete('/{review}', [VenueOwnerRatingController::class, 'destroy'])->whereNumber('review');
+    });
 });
 
-// Dealer-only routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])->group(function () {
-    // Dealer dashboard
-    Route::get('/dealer/dashboard', [DealerController::class, 'dashboard']);
-    
-    // Dealer-specific functionality
-    Route::get('/auctions/{id}/analytics', [AuctionController::class, 'analytics']);
-    
-    // Legacy routes - these duplicate the routes above but are kept for backward compatibility
-    // They should be removed in a future update
-    Route::get('/dealer/cars', [CarController::class, 'index']);
-    Route::post('/dealer/cars', [CarController::class, 'store']);
-    Route::get('/dealer/cars/{id}', [CarController::class, 'show']);
-    Route::put('/dealer/cars/{id}', [CarController::class, 'update']);
-    Route::delete('/dealer/cars/{id}', [CarController::class, 'destroy']);
-    Route::get('/dealer/car-statistics', [CarController::class, 'statistics']);
-});
+/*
+|--------------------------------------------------------------------------
+| SECTION 5: DEALER ROUTES
+|--------------------------------------------------------------------------
+*/
 
-// Admin routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\AdminMiddleware::class])->group(function () {
-    // Admin dashboard
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
-    
-    // Admin user management
-    Route::get('/admin/users', [AdminController::class, 'users']);
-    Route::get('/admin/users/{userId}', [AdminController::class, 'getUserDetails']);
-    Route::post('/admin/users/{userId}/activate', [AdminController::class, 'approveUser']);
-    Route::post('/admin/users/{userId}/deactivate', [AdminController::class, 'rejectUser']);
-    Route::get('/admin/pending-verifications', [AdminController::class, 'getPendingVerifications']);
-    Route::post('/admin/dealers/{userId}/approve-verification', [AdminController::class, 'approveVerification']);
-    Route::post('/admin/dealers/{userId}/reject-verification', [AdminController::class, 'rejectVerification']);
-    
-    // Admin auction management
-    Route::get('/admin/auctions', [AdminController::class, 'auctions']);
-    Route::get('/admin/auctions/{id}', [AdminController::class, 'getAuction']);
-    Route::put('/admin/auctions/{id}', [AdminController::class, 'updateAuction']);
-    Route::post('/admin/auctions/{id}/approve', [AdminController::class, 'approveAuction']);
-    Route::post('/admin/auctions/{id}/reject', [AdminController::class, 'rejectAuction']);
-    Route::put('/admin/auctions/{id}/status', [AdminController::class, 'updateAuctionStatus']);
-    
-    // Admin car management
-    Route::get('/admin/cars', [AdminController::class, 'getAllCars']);
-    Route::put('/admin/cars/{id}', [AdminController::class, 'updateCar']);
-    Route::put('/admin/cars/{id}/status', [AdminController::class, 'updateCarStatus']);
-    Route::delete('/admin/cars/{id}', [AdminController::class, 'deleteCar']);
-    
-    // Admin blog management
-    Route::get('/admin/blogs', [AdminController::class, 'blogs']);
-    Route::post('/admin/blogs/{id}/status', [AdminController::class, 'toggleBlogStatus']);
-    Route::post('/admin/blog-tags', [AdminController::class, 'manageTags']);
-    Route::get('/admin/blogs/tags', [AdminController::class, 'getBlogTags']);
-    
-    // Admin financial management
-    Route::get('/admin/transactions', [AdminController::class, 'getTransactions']);
-    Route::get('/admin/settlements', [AdminController::class, 'getSettlements']);
-    
-    // Blog CRUD operations (admin only)
-    Route::post('/blog', [BlogController::class, 'store']);
-    Route::put('/blog/{id}', [BlogController::class, 'update']);
-    Route::delete('/blog/{id}', [BlogController::class, 'destroy']);
-    
-    // Admin venue management
-    Route::post('/venues', [VenueController::class, 'store']);
-    Route::put('/venues/{id}', [VenueController::class, 'update']);
-    Route::delete('/venues/{id}', [VenueController::class, 'destroy']);
-    
-    // Admin broadcast management
-    Route::get('/admin/broadcast', [BroadcastController::class, 'show']);
-    Route::post('/admin/broadcast', [BroadcastController::class, 'store']);
-    Route::put('/admin/broadcast', [BroadcastController::class, 'update']);
-    Route::put('/admin/broadcast/status', [BroadcastController::class, 'updateStatus']);
-});
+Route::middleware(['auth:sanctum', \App\Http\Middleware\DealerMiddleware::class])
+    ->prefix('dealer')
+    ->group(function () {
+
+        // Dashboard
+        Route::get('/dashboard', [DealerController::class, 'dashboard']);
+        Route::get('/dashboard/init', [DealerDashboardController::class, 'init']);
+        Route::get('/dashboard/liquidity-stats', [DealerDashboardController::class, 'liquidityStats']);
+        Route::get('/dashboard/bidding-stats', [DealerDashboardController::class, 'biddingStats']);
+
+        // Wallet
+        Route::get('/wallet/transactions', [DealerWalletController::class, 'transactions']);
+
+        // AI Toggle
+        Route::post('/ai/toggle', [DealerAiController::class, 'toggle']);
+        Route::get('/ai/recommendations', [DealerAiController::class, 'recommendations']);
+
+        // Watchlists
+        Route::prefix('watchlists')->group(function () {
+            Route::get('/', [DealerWatchlistController::class, 'index']);
+            Route::post('/', [DealerWatchlistController::class, 'store']);
+            Route::post('/quick-add', [DealerWatchlistController::class, 'quickAdd']);
+            Route::post('/quick-remove', [DealerWatchlistController::class, 'quickRemove']);
+            Route::get('/all-items', [DealerWatchlistController::class, 'allItems']);
+            Route::put('/{id}', [DealerWatchlistController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [DealerWatchlistController::class, 'destroy'])->whereNumber('id');
+            Route::get('/{id}/items', [DealerWatchlistController::class, 'items'])->whereNumber('id');
+            Route::post('/{id}/items', [DealerWatchlistController::class, 'addItem'])->whereNumber('id');
+            Route::delete('/{menuId}/items/{carId}', [DealerWatchlistController::class, 'removeItem'])
+                ->whereNumber('menuId')
+                ->whereNumber('carId');
+        });
+
+        // Auction Analytics
+        Route::get('/auctions/{id}/analytics', [AuctionController::class, 'analytics'])->whereNumber('id');
+
+        // Cars (Legacy)
+        Route::prefix('cars')->group(function () {
+            Route::get('/', [CarController::class, 'index']);
+            Route::post('/', [CarController::class, 'store']);
+            Route::get('/{id}', [CarController::class, 'show'])->whereNumber('id');
+            Route::put('/{id}', [CarController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [CarController::class, 'destroy'])->whereNumber('id');
+        });
+        Route::get('/car-statistics', [CarController::class, 'statistics']);
+    });
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 6: MODERATOR ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth:sanctum', \App\Http\Middleware\ModeratorMiddleware::class])
+    ->prefix('moderator')
+    ->group(function () {
+        Route::get('/dashboard', [ModeratorController::class, 'dashboard']);
+        Route::post('/broadcast/start', [ModeratorController::class, 'startBroadcast']);
+        Route::post('/broadcast/stop/{broadcastId}', [ModeratorController::class, 'stopBroadcast'])->whereNumber('broadcastId');
+        Route::put('/broadcast/{broadcastId}/current-car', [ModeratorController::class, 'switchCar'])->whereNumber('broadcastId');
+        Route::post('/bids/offline', [ModeratorController::class, 'addOfflineBid']);
+    });
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 7: EXHIBITOR ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')
+    ->prefix('exhibitor')
+    ->group(function () {
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.1 Sessions (Restricted to venue owners/admins)
+        // ─────────────────────────────────────────────────────────────
+        Route::middleware('role:admin,venue_owner,dealer')
+            ->prefix('sessions')
+            ->group(function () {
+                Route::get('/', [ExhibitorAuctionSessionController::class, 'index']);
+                Route::post('/', [ExhibitorAuctionSessionController::class, 'store']);
+                Route::get('/stats', [ExhibitorAuctionSessionController::class, 'stats']);
+                Route::get('/{id}', [ExhibitorAuctionSessionController::class, 'show'])->whereNumber('id');
+                Route::put('/{id}', [ExhibitorAuctionSessionController::class, 'update'])->whereNumber('id');
+                Route::patch('/{id}/status', [ExhibitorAuctionSessionController::class, 'updateStatus'])->whereNumber('id');
+                Route::delete('/{id}', [ExhibitorAuctionSessionController::class, 'destroy'])->whereNumber('id');
+            });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.2 Ratings (Read only in exhibitor context)
+        // ─────────────────────────────────────────────────────────────
+        Route::middleware('role:admin,venue_owner,dealer')
+            ->prefix('ratings')
+            ->group(function () {
+                Route::get('/', [VenueOwnerRatingController::class, 'index']);
+                Route::get('/summary', [VenueOwnerRatingController::class, 'summary']);
+            });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.3 Wallet
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('wallet')->group(function () {
+            Route::get('/', [ExhibitorWalletController::class, 'show']);
+            Route::get('/transactions', [ExhibitorWalletController::class, 'transactions']);
+            Route::get('/transcations', [ExhibitorWalletController::class, 'transactions']); // Legacy typo support
+            Route::post('/deposit/initiate', [ExhibitorWalletDepositController::class, 'initiate']);
+            Route::post('/withdraw', [ExhibitorWalletWithdrawController::class, 'requestPayout']);
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.4 Shipments
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('shipments')->group(function () {
+            Route::get('/', [ExhibitorShipmentController::class, 'index']);
+            Route::post('/', [ExhibitorShipmentController::class, 'store']);
+            Route::get('/{shipment}', [ExhibitorShipmentController::class, 'show'])->whereNumber('shipment');
+            Route::patch('/{shipment}/status', [ExhibitorShipmentController::class, 'updateStatus'])->whereNumber('shipment');
+            Route::delete('/{shipment}', [ExhibitorShipmentController::class, 'destroy'])->whereNumber('shipment');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.5 Commission
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('commission')->group(function () {
+            Route::get('/summary', [ExhibitorCommissionController::class, 'summary']);
+            Route::put('/settings', [ExhibitorCommissionController::class, 'updateSettings']);
+            Route::get('/operations', [ExhibitorCommissionController::class, 'index']);
+            Route::post('/operations', [ExhibitorCommissionController::class, 'storeOperation']);
+            Route::get('/tiers', [ExhibitorCommissionController::class, 'tiers']);
+            Route::post('/estimate', [ExhibitorCommissionController::class, 'estimate']);
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.6 Extra Services
+        // ✅ FIXED: Static routes MUST come before dynamic routes
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('extra-services')->group(function () {
+            Route::get('/', [ExhibitorExtraServiceController::class, 'index']);
+            // Static routes first
+            Route::get('/requests', [ExhibitorExtraServiceRequestController::class, 'index']);
+            Route::post('/requests', [ExhibitorExtraServiceRequestController::class, 'store']);
+            // Dynamic route last
+            Route::get('/{extraService}', [ExhibitorExtraServiceController::class, 'show'])->whereNumber('extraService');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.7 Marketplace
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('market')->group(function () {
+            Route::get('/cars', [CarExplorerController::class, 'index']);
+            Route::get('/cars/stats', [CarExplorerController::class, 'stats']); // ✅ NEW
+            Route::get('/cars/{car}', [CarExplorerController::class, 'show'])->whereNumber('car');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 7.8 Analytics
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('analytics')->group(function () {
+            Route::get('/overview', [ExhibitorAnalyticsController::class, 'overview']);
+            Route::get('/timeseries', [ExhibitorAnalyticsController::class, 'timeseries']);
+            Route::get('/top-models', [ExhibitorAnalyticsController::class, 'topModels']);
+            Route::get('/bids-heatmap', [ExhibitorAnalyticsController::class, 'bidsHeatmap']);
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 8: ADMIN ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class])
+    ->prefix('admin')
+    ->group(function () {
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.1 Dashboard & Settings
+        // ─────────────────────────────────────────────────────────────
+        Route::get('/dashboard', [AdminController::class, 'dashboard']);
+
+        Route::prefix('settings')->group(function () {
+            Route::get('/', [SettingsController::class, 'index']);
+            Route::put('/', [SettingsController::class, 'update']);
+            Route::post('/', [SettingsController::class, 'update']); // Legacy
+            Route::get('/{key}', [SettingsController::class, 'getSetting']);
+        });
+
+        // ✅ NEW: Newsletter Subscribers (Admin CRUD + Export CSV)
+        Route::prefix('newsletter-subscribers')->group(function () {
+            Route::get('/', [AdminNewsletterSubscriberController::class, 'index']);
+            Route::get('/export', [AdminNewsletterSubscriberController::class, 'export']);
+            Route::put('/{subscriber}', [AdminNewsletterSubscriberController::class, 'update'])->whereNumber('subscriber');
+            Route::delete('/{subscriber}', [AdminNewsletterSubscriberController::class, 'destroy'])->whereNumber('subscriber');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.2 Activity Logs
+        // ─────────────────────────────────────────────────────────────
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+            ->middleware('can:activity_logs.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.2.1 Auction Activity Log (Real-time منطق المزادات)
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('auction-activity-log')->middleware('can:auctions.view')->group(function () {
+            Route::get('/', [AuctionActivityLogController::class, 'index']);
+            Route::get('/analytics', [AuctionActivityLogController::class, 'analytics']);
+            Route::get('/config', [AuctionActivityLogController::class, 'config']);
+            Route::put('/config', [AuctionActivityLogController::class, 'updateConfig']);
+        });
+
+        Route::get('/auction-testing-analytics', AuctionTestingAnalyticsController::class)
+            ->middleware('can:auctions.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.3 Users Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('users')->group(function () {
+            Route::get('/owners', [AdminUserController::class, 'getOwners'])->middleware('can:users.view');
+            Route::get('/', [AdminUserController::class, 'index'])->middleware('can:users.view');
+            Route::get('/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId')->middleware('can:users.view_details');
+            Route::put('/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId')->middleware('can:users.update');
+            Route::post('/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId')->middleware('can:users.update');
+            Route::post('/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId')->middleware('can:users.update');
+            Route::post('/{userId}/toggle-status', [AdminUserController::class, 'updateStatus'])->whereNumber('userId')->middleware('can:users.update');
+        });
+
+        Route::get('/pending-verifications', [AdminUserController::class, 'getPendingVerifications'])->middleware('can:users.view');
+
+        Route::prefix('dealers')->group(function () {
+            Route::post('/{userId}/approve-verification', [AdminUserController::class, 'approveVerification'])->whereNumber('userId')->middleware('can:users.update');
+            Route::post('/{userId}/reject-verification', [AdminUserController::class, 'rejectVerification'])->whereNumber('userId')->middleware('can:users.update');
+        });
+
+        Route::prefix('youtube-channels')->group(function () {
+            Route::get('/', [YouTubeChannelController::class, 'index']);
+            Route::post('/', [YouTubeChannelController::class, 'store']);
+            Route::get('/{id}', [YouTubeChannelController::class, 'show'])->whereNumber('id');
+            Route::put('/{id}', [YouTubeChannelController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [YouTubeChannelController::class, 'destroy'])->whereNumber('id');
+
+            // اختياري
+            Route::post('/{id}/sync', [YouTubeChannelController::class, 'sync'])->whereNumber('id');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.4 Roles & Permissions
+        // ─────────────────────────────────────────────────────────────
+        Route::get('/roles-list', [RoleController::class, 'list'])->middleware('can:roles.view');
+        Route::get('/permissions/tree', [RoleController::class, 'permissionsTree'])->middleware('can:roles.view');
+        Route::apiResource('roles', RoleController::class)->middleware('can:roles.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.5 Staff Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('staff')->group(function () {
+            Route::get('/', [AdminStaffController::class, 'index'])->middleware('can:staff.view');
+            Route::post('/', [AdminStaffController::class, 'store'])->middleware('can:staff.create');
+            Route::get('/{id}', [AdminStaffController::class, 'show'])->whereNumber('id')->middleware('can:staff.view_details');
+            Route::put('/{id}', [AdminStaffController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
+            Route::delete('/{id}', [AdminStaffController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
+            Route::patch('/{id}/status', [AdminStaffController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.6 Auctions Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('auctions')->group(function () {
+            Route::get('/', [AdminAuctionController::class, 'index'])->middleware('can:auctions.view');
+            Route::get('/{id}', [AdminAuctionController::class, 'show'])->whereNumber('id')->middleware('can:auctions.view_details');
+            Route::put('/{id}', [AdminAuctionController::class, 'update'])->whereNumber('id')->middleware('can:auctions.update');
+            Route::post('/{id}/approve', [AdminAuctionController::class, 'approve'])->whereNumber('id')->middleware('can:auctions.approve');
+            Route::post('/{id}/reject', [AdminAuctionController::class, 'reject'])->whereNumber('id')->middleware('can:auctions.reject');
+            Route::put('/{id}/status', [AdminAuctionController::class, 'updateStatus'])->whereNumber('id')->middleware('can:auctions.manage_status');
+            Route::put('/{id}/auction-type', [AdminAuctionController::class, 'updateType'])->whereNumber('id')->middleware('can:auctions.update');
+            Route::put('/{id}/set-open-price', [AdminAuctionController::class, 'setOpeningPrice'])->whereNumber('id')->middleware('can:auctions.update');
+            Route::post('/bulk-status', [AuctionController::class, 'bulkUpdateStatus'])->middleware('can:auctions.manage_status');
+            Route::post('/bulk-approve', [AdminAuctionController::class, 'bulkApprove'])->middleware('can:auctions.approve');
+            Route::post('/bulk-reject', [AdminAuctionController::class, 'bulkReject'])->middleware('can:auctions.reject');
+        });
+
+        Route::put('/cars/bulk/approve-reject', [AdminAuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
+        Route::put('/auctions/bulk/move-to-status', [AdminAuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.xx Employees Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('employees')->group(function () {
+            Route::get('/', [AdminEmployeeController::class, 'index'])->middleware('can:staff.view');
+            Route::post('/', [AdminEmployeeController::class, 'store'])->middleware('can:staff.create');
+            Route::get('/{id}', [AdminEmployeeController::class, 'show'])->whereNumber('id')->middleware('can:staff.view_details');
+            Route::put('/{id}', [AdminEmployeeController::class, 'update'])->whereNumber('id')->middleware('can:staff.update');
+            Route::patch('/{id}/status', [AdminEmployeeController::class, 'updateStatus'])->whereNumber('id')->middleware('can:staff.update');
+            Route::delete('/{id}', [AdminEmployeeController::class, 'destroy'])->whereNumber('id')->middleware('can:staff.delete');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.7 Bid Events
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('bids/events')->group(function () {
+            Route::get('/', [BidEventController::class, 'index']);
+            Route::get('/{id}', [BidEventController::class, 'show'])->whereNumber('id');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.8 Cars Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('cars')->group(function () {
+            Route::get('/', [AdminCarController::class, 'index'])->middleware('can:cars.view');
+            Route::get('/stats', [AdminCarController::class, 'stats']);
+            Route::get('/{id}', [AdminCarController::class, 'show'])->whereNumber('id')->middleware('can:cars.view_details');
+            Route::put('/{id}', [AdminCarController::class, 'update'])->whereNumber('id')->middleware('can:cars.update');
+            Route::put('/{id}/status', [AdminCarController::class, 'updateCarStatus'])->whereNumber('id')->middleware('can:cars.update');
+            Route::delete('/{id}', [AdminCarController::class, 'destroy'])->whereNumber('id')->middleware('can:cars.delete');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.9 Blog Management (✅ NEW CLEAN ADMIN BLOG)
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('blog')->group(function () {
+
+            // Posts
+            Route::prefix('posts')->group(function () {
+                Route::get('/', [AdminBlogController::class, 'postsIndex']);
+                Route::get('/{id}', [AdminBlogController::class, 'postsShow'])->whereNumber('id');
+                Route::post('/', [AdminBlogController::class, 'postsStore']);
+                Route::put('/{id}', [AdminBlogController::class, 'postsUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminBlogController::class, 'postsDestroy'])->whereNumber('id');
+                Route::post('/{id}/status', [AdminBlogController::class, 'postsToggleStatus'])->whereNumber('id');
+            });
+
+            // Categories
+            Route::prefix('categories')->group(function () {
+                Route::get('/', [AdminBlogController::class, 'categoriesIndex']);
+                Route::post('/', [AdminBlogController::class, 'categoriesStore']);
+                Route::put('/{id}', [AdminBlogController::class, 'categoriesUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminBlogController::class, 'categoriesDestroy'])->whereNumber('id');
+            });
+
+            // Tags
+            Route::prefix('tags')->group(function () {
+                Route::get('/', [AdminBlogController::class, 'tagsIndex']);
+                Route::post('/', [AdminBlogController::class, 'tagsStore']);
+                Route::put('/{id}', [AdminBlogController::class, 'tagsUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminBlogController::class, 'tagsDestroy'])->whereNumber('id');
+            });
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.9.1 Market Council (مجلس السوق)
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('market-council')->group(function () {
+            Route::prefix('articles')->group(function () {
+                Route::get('/', [AdminMarketCouncilController::class, 'articlesIndex']);
+                Route::get('/{id}', [AdminMarketCouncilController::class, 'articlesShow'])->whereNumber('id');
+                Route::post('/', [AdminMarketCouncilController::class, 'storeArticle']);
+                Route::put('/{id}', [AdminMarketCouncilController::class, 'updateArticle'])->whereNumber('id');
+                Route::delete('/{id}', [AdminMarketCouncilController::class, 'destroyArticle'])->whereNumber('id');
+                Route::post('/{id}/status', [AdminMarketCouncilController::class, 'articlesToggleStatus'])->whereNumber('id');
+            });
+
+            Route::prefix('categories')->group(function () {
+                Route::get('/', [AdminMarketCouncilController::class, 'categoriesIndex']);
+                Route::get('/{id}', [AdminMarketCouncilController::class, 'categoriesShow'])->whereNumber('id');
+                Route::post('/', [AdminMarketCouncilController::class, 'categoriesStore']);
+                Route::put('/{id}', [AdminMarketCouncilController::class, 'categoriesUpdate'])->whereNumber('id');
+                Route::delete('/{id}', [AdminMarketCouncilController::class, 'categoriesDestroy'])->whereNumber('id');
+            });
+
+            Route::prefix('comments')->group(function () {
+                Route::get('/', [AdminMarketCouncilCommentsController::class, 'index']);
+                Route::put('/{id}', [AdminMarketCouncilCommentsController::class, 'update'])->whereNumber('id');
+                Route::delete('/{id}', [AdminMarketCouncilCommentsController::class, 'destroy'])->whereNumber('id');
+            });
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.10 Finance & Transactions
+        // ─────────────────────────────────────────────────────────────
+        Route::get('/transactions', [AdminController::class, 'getTransactions'])->middleware('can:commissions.view');
+        Route::get('/settlements', [AdminController::class, 'getSettlements'])->middleware('can:commissions.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.11 Sales Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('sales')->group(function () {
+            Route::get('/', [SalesController::class, 'index'])->middleware('can:commissions.view');
+            Route::get('/{id}', [SalesController::class, 'show'])->whereNumber('id')->middleware('can:commissions.view');
+            Route::post('/{id}/release-funds', [SalesController::class, 'releaseFunds'])->whereNumber('id')->middleware('can:commissions.manage');
+            Route::post('/{id}/refund', [SalesController::class, 'refundBuyer'])->whereNumber('id')->middleware('can:commissions.manage');
+            Route::post('/{id}/verify-transfer', [SalesController::class, 'verifyBankTransfer'])->whereNumber('id')->middleware('can:commissions.manage');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.12 Admin Notifications
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [AdminNotificationController::class, 'index']);
+            Route::get('/unread-count', [AdminNotificationController::class, 'unreadCount']);
+            Route::post('/{id}/read', [AdminNotificationController::class, 'markAsRead'])->whereNumber('id');
+            Route::post('/mark-all-read', [AdminNotificationController::class, 'markAllAsRead']);
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.13 Broadcast Management
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('broadcast')->group(function () {
+            Route::get('/', [BroadcastController::class, 'show'])->middleware('can:live_streams.view');
+            Route::post('/', [BroadcastController::class, 'store'])->middleware('can:live_streams.manage');
+            Route::put('/', [BroadcastController::class, 'update'])->middleware('can:live_streams.manage');
+            Route::put('/status', [BroadcastController::class, 'updateStatus'])->middleware('can:live_streams.manage');
+            Route::delete('/{id}', [BroadcastController::class, 'destroy'])->whereNumber('id')->middleware('can:live_streams.manage');
+        });
+        Route::get('/all-broadcasts', [BroadcastController::class, 'getAllBroadcasts'])->middleware('can:live_streams.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.14 Commission Tiers
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('commission-tiers')->group(function () {
+            Route::get('/', [CommissionTierController::class, 'index'])->middleware('can:commissions.view');
+            Route::post('/', [CommissionTierController::class, 'store'])->middleware('can:commissions.manage');
+            Route::get('/{id}', [CommissionTierController::class, 'show'])->whereNumber('id')->middleware('can:commissions.view');
+            Route::put('/{id}', [CommissionTierController::class, 'update'])->whereNumber('id')->middleware('can:commissions.manage');
+            Route::delete('/{id}', [CommissionTierController::class, 'destroy'])->whereNumber('id')->middleware('can:commissions.manage');
+            Route::post('/calculate', [CommissionTierController::class, 'calculateCommission'])->middleware('can:commissions.view');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.15 Subscription Plans
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('subscription-plans')->group(function () {
+            Route::get('/', [SubscriptionPlanController::class, 'index'])->middleware('can:subscription_plans.view');
+            Route::post('/', [SubscriptionPlanController::class, 'store'])->middleware('can:subscription_plans.manage');
+            Route::get('/{id}', [SubscriptionPlanController::class, 'show'])->whereNumber('id')->middleware('can:subscription_plans.view');
+            Route::put('/{id}', [SubscriptionPlanController::class, 'update'])->whereNumber('id')->middleware('can:subscription_plans.manage');
+            Route::delete('/{id}', [SubscriptionPlanController::class, 'destroy'])->whereNumber('id')->middleware('can:subscription_plans.manage');
+            Route::post('/{id}/toggle-status', [SubscriptionPlanController::class, 'toggleStatus'])->whereNumber('id')->middleware('can:subscription_plans.manage');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.16 Auction Sessions
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('sessions')->group(function () {
+            Route::get('/', [AdminAuctionSessionController::class, 'index'])->middleware('can:sessions.view');
+            Route::get('/stats', [AdminAuctionSessionController::class, 'stats'])->middleware('can:sessions.view');
+            Route::get('/active-scheduled', [AdminAuctionSessionController::class, 'getActiveAndScheduledSessions'])->middleware('can:sessions.view');
+            Route::post('/', [AdminAuctionSessionController::class, 'store'])->middleware('can:sessions.create');
+            Route::get('/{id}', [AdminAuctionSessionController::class, 'show'])->whereNumber('id')->middleware('can:sessions.view_details');
+            Route::put('/{id}', [AdminAuctionSessionController::class, 'update'])->whereNumber('id')->middleware('can:sessions.update');
+            Route::patch('/{id}/status', [AdminAuctionSessionController::class, 'updateStatus'])->whereNumber('id')->middleware('can:sessions.update');
+            Route::delete('/{id}', [AdminAuctionSessionController::class, 'destroy'])->whereNumber('id')->middleware('can:sessions.delete');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.17 Venue Owners
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('venue-owners')->group(function () {
+            Route::get('/', [AdminVenueOwnerController::class, 'index'])->middleware('can:exhibitors.view');
+            Route::get('/{id}', [AdminVenueOwnerController::class, 'show'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+            Route::get('/{id}/cars', [AdminVenueOwnerController::class, 'cars'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+            Route::get('/{id}/wallet', [AdminVenueOwnerController::class, 'wallet'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+            Route::get('/{id}/wallet/transactions', [AdminVenueOwnerController::class, 'walletTransactions'])->whereNumber('id')->middleware('can:exhibitors.view_details');
+            Route::post('/{id}/approve', [AdminVenueOwnerController::class, 'approve'])->whereNumber('id')->middleware('can:exhibitors.approve');
+            Route::post('/{id}/reject', [AdminVenueOwnerController::class, 'reject'])->whereNumber('id')->middleware('can:exhibitors.approve');
+            Route::post('/{id}/toggle-status', [AdminVenueOwnerController::class, 'toggleStatus'])->whereNumber('id')->middleware('can:exhibitors.update');
+        });
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.18 Organizations
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('organizations')->group(function () {
+            Route::get('/{id}/members', [OrganizationController::class, 'getMembers'])->whereNumber('id')->middleware('can:organizations.view');
+            Route::post('/{id}/members', [OrganizationController::class, 'addMember'])->whereNumber('id')->middleware('can:organizations.update');
+            Route::delete('/{id}/members/{userId}', [OrganizationController::class, 'removeMember'])
+                ->whereNumber('id')
+                ->whereNumber('userId')
+                ->middleware('can:organizations.update');
+        });
+        Route::apiResource('organizations', OrganizationController::class)->middleware('can:organizations.view');
+
+        // ─────────────────────────────────────────────────────────────
+        // 8.19 Venues
+        // ─────────────────────────────────────────────────────────────
+        Route::prefix('venues')->group(function () {
+            Route::post('/', [VenueController::class, 'store']);
+            Route::put('/{id}', [VenueController::class, 'update'])->whereNumber('id');
+            Route::delete('/{id}', [VenueController::class, 'destroy'])->whereNumber('id');
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| SECTION 9: ADMIN PANEL ROUTES (NEW - AdminPanel\UserController)
+|--------------------------------------------------------------------------
+| ✅ Endpoints:
+|   GET  /api/admin-panel/users?q=&per_page=
+|   GET  /api/admin-panel/users/{userId}
+|   PUT  /api/admin-panel/users/{userId}
+*/
+
+Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\AdminMiddleware::class])
+    ->prefix('admin-panel')
+    ->group(function () {
+        Route::prefix('users')->group(function () {
+            Route::get('/', [AdminPanelUserController::class, 'index']);
+            Route::get('/{userId}', [AdminPanelUserController::class, 'show'])->whereNumber('userId');
+            Route::put('/{userId}', [AdminPanelUserController::class, 'update'])->whereNumber('userId');
+        });
+    });

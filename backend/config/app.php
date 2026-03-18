@@ -53,6 +53,7 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
     /*
     |--------------------------------------------------------------------------
@@ -160,10 +161,15 @@ return [
         Illuminate\View\ViewServiceProvider::class,
 
         // Package Service Providers...
-        CloudinaryLabs\CloudinaryLaravel\CloudinaryServiceProvider::class,
+        // Use our custom CloudinaryServiceProvider instead of the package one
+        App\Providers\CloudinaryServiceProvider::class,
 
         // Application Service Providers...
         App\Providers\AppServiceProvider::class,
+        // App\Providers\AuthServiceProvider::class,
+        //App\Providers\BroadcastServiceProvider::class,
+        // App\Providers\EventServiceProvider::class,
+        // App\Providers\RouteServiceProvider::class,
     ],
 
     /*

@@ -1,84 +1,93 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Watch, Car, Home, Paintbrush, Smartphone, Leaf, Star, Gem, Store } from 'lucide-react';
+import React from "react";
+import LoadingLink from "@/components/LoadingLink";
+import { Car, Star, Gem, Home, Store, Award } from "lucide-react";
+import { motion } from "framer-motion";
 
-// الألوان المستخدمة لمجموعات الأزرار
-const GROUP_COLORS = {
-  // مجموعة 1 (اليمين): أرجواني (بنفسجي)
-  right: {
-    bg: 'bg-purple-500',
-    hover: 'hover:bg-purple-600',
-    text: 'text-white',
-    hoverText: 'hover:text-white',
-    icon: 'text-white',
-  },
-  // مجموعة 2 (اليسار): أزرق
-  left: {
-    bg: 'bg-blue-500',
-    hover: 'hover:bg-blue-600',
-    text: 'text-white',
-    hoverText: 'hover:text-white',
-    icon: 'text-white',
-  },
-  // مجموعة 3 (أسفل): أحمر
-  bottom: {
-    bg: 'bg-red-500',
-    hover: 'hover:bg-red-600',
-    text: 'text-white',
-    hoverText: 'hover:text-white',
-    icon: 'text-white',
-  },
-};
-
-// تعريف أزرار التنقل
+// ========== عناصر الأسواق ==========
 const marketItems = [
-  // المجموعة الأولى (اليمين) - البنفسجية - تم إعادة الترتيب
-  { name: 'السوق الرئيسي', icon: Car, href: '/auctions/auctions-1main', group: 'right' },
-  { name: 'قطاع السيارات', icon: Car, href: '/auctions/auctions-2car', group: 'right' },
-  { name: 'السوق النوعي', icon: Star, href: '/auctions/auctions-3quality', group: 'right' },
-
-  // المجموعة الثانية (اليسار) - الزرقاء
-  { name: 'السوق الفريد', icon: Gem, href: '/auctions/auctions-4special', group: 'left' },
-  { name: 'الأسواق العامة', icon: Home, href: '/auctions/auctions-5general', group: 'left' },
-  { name: 'السوق الكبير', icon: Store, href: '/auctions/auctions-6big', group: 'left' },
-
-  // المجموعة الثالثة (أسفل)
+  {
+    name: "سوق معارض السيارات",
+    description: "مزادات سيارات من معارض معتمدة",
+    icon: Car,
+    href: "/auctions/auctions-1main",
+    isHidden: false,
+  },
+  {
+    name: "سوق السيارات المتخصص",
+    description: "مزادات سيارات متخصصة ومراجعة",
+    icon: Award,
+    href: "/auctions/auctions-2car",
+    isHidden: false,
+  },
+  { name: "سوق الاجهزة النوعية", description: "", icon: Star, href: "/auctions/auctions-3quality", isHidden: true },
+  { name: "السوق الفريد", description: "", icon: Gem, href: "/auctions/auctions-4special", isHidden: true },
+  { name: "الأسواق العامة", description: "", icon: Home, href: "/auctions/auctions-5general", isHidden: true },
+  { name: "السوق الكبير", description: "", icon: Store, href: "/auctions/auctions-6big", isHidden: true },
 ];
 
-export default function MarketTypeNav() {
-  // تجميع العناصر بناءً على المجموعة
-  const rightItems = marketItems.filter(item => item.group === 'right');
-  const leftItems = marketItems.filter(item => item.group === 'left');
-  const bottomItems = marketItems.filter(item => item.group === 'bottom');
-  
-  // ترتيب العناصر: اليمين أولاً، ثم اليسار، ثم أسفل
-  const orderedItems = [...rightItems, ...leftItems, ...bottomItems];
-  
+// ========== بطاقة سوق واحد ==========
+const MarketCard = ({ item, index }: any) => {
   return (
-    <div className="py-4 mb-6">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="flex justify-center gap-2 mb-2 overflow-x-auto no-scrollbar">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            {orderedItems.map((item) => {
-              const colorScheme = GROUP_COLORS[item.group];
-              const Icon = item.icon;
-              
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`inline-flex items-center px-4 py-2 rounded-full ${colorScheme.bg} ${colorScheme.hover} ${colorScheme.text} transition-colors duration-200 whitespace-nowrap`}
-                >
-                  <Icon className={`h-5 w-5 ${item.group !== 'right' ? 'ml-2' : 'mr-2'}`} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.5, delay: index * 0.06 }}
+      className="w-full max-w-sm"
+    >
+      <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm hover:shadow-md hover:ring-2 hover:ring-[#009345]/20 dark:hover:ring-0 transition-all duration-300 overflow-hidden h-full flex flex-col items-center text-center p-6">
+        <h3 className="text-[#009345] dark:text-[#009345] font-semibold text-lg leading-snug mb-2">
+          {item.name}
+        </h3>
+        {item.description ? (
+          <p className="text-[#475569] dark:text-foreground/70 text-sm mb-4 flex-1">
+            {item.description}
+          </p>
+        ) : (
+          <div className="flex-1" />
+        )}
+        <LoadingLink
+          href={item.href}
+          className="inline-flex items-center justify-center rounded-lg bg-[#1F4B7A] dark:bg-primary text-white px-4 py-2.5 text-sm font-semibold hover:opacity-90 transition w-full"
+        >
+          ادخل السوق
+        </LoadingLink>
+      </div>
+    </motion.div>
+  );
+};
+
+// ========== شريط تنقل الأسواق ==========
+export default function MarketTypeNav() {
+  const visibleItems = marketItems.filter((item) => !item.isHidden);
+
+  return (
+    <div className="w-full py-8 md:py-10">
+      <div className="max-w-6xl mx-auto">
+        {/* العنوان الرئيسي للسكيشن */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-8 md:mb-10"
+        >
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1F4B7A] dark:text-primary mb-3">
+            اختر سوقك المتخصص
+          </h2>
+          <p className="text-sm md:text-base max-w-xl mx-auto text-[#009345] dark:text-[#009345]">
+            كل سوق مصمم ليلبي احتياجات فئة محددة من البائعين والمشترين
+          </p>
+        </motion.div>
+
+        {/* العناصر (مُتوسّطة) */}
+        <div className="flex flex-wrap justify-center gap-6 md:gap-10">
+          {visibleItems.map((item, index) => (
+            <MarketCard key={item.href} item={item} index={index} />
+          ))}
         </div>
       </div>
     </div>
   );
-} 
+}

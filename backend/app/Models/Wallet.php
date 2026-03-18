@@ -10,10 +10,14 @@ class Wallet extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 
-        'available_balance', 
+        'user_id',
+        'available_balance',
         'funded_balance'
     ];
+
+
+    public $timestamps = false;
+    const CREATED_AT = 'created_at';
 
     // A Wallet belongs to a User.
     public function user()
@@ -25,5 +29,9 @@ class Wallet extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class, 'wallet_id', 'id');
     }
 }

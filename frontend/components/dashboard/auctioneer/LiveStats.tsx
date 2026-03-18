@@ -12,7 +12,7 @@
 
 import React from "react";
 import { Eye, Users, Gavel, BarChart2 } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface LiveStatsProps {
     viewerCount: number;
@@ -70,7 +70,7 @@ export default function LiveStats({
                             <Gavel className="h-4 w-4 text-amber-600" />
                         </div>
                         <div className="text-xl font-bold text-amber-900">
-                            {formatMoney(highestBid)} ريال
+                            {formatCurrency (highestBid)} ريال
                         </div>
                     </div>
 

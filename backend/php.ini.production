@@ -1,0 +1,48 @@
+; PHP Production Configuration for Laravel
+; Copy these settings to your php.ini file for optimal performance
+
+; OPcache Configuration - Critical for Laravel performance
+opcache.enable=1
+opcache.enable_cli=1
+opcache.memory_consumption=256
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=0
+opcache.save_comments=1
+opcache.fast_shutdown=1
+opcache.enable_file_override=1
+
+; Memory and Execution Limits
+memory_limit=512M
+max_execution_time=300
+max_input_time=300
+
+; File Upload Limits
+upload_max_filesize=50M
+post_max_size=50M
+max_file_uploads=20
+
+; Session Configuration
+session.gc_maxlifetime=7200
+session.cookie_lifetime=0
+session.use_strict_mode=1
+
+; Error Reporting (Production)
+display_errors=Off
+display_startup_errors=Off
+log_errors=On
+error_log=/var/log/php_errors.log
+
+; Date and Timezone
+date.timezone=UTC
+
+; Realpath Cache (Improves file system performance)
+realpath_cache_size=4096K
+realpath_cache_ttl=600
+
+; Output Buffering
+output_buffering=4096
+
+; Gzip Compression
+zlib.output_compression=On
+zlib.output_compression_level=6

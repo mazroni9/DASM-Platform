@@ -1,173 +1,441 @@
 // Admin layout provides a consistent structure for all admin pages
-// including navigation to various admin functions
+// No top header / no mobile overlay. Fixed-width sidebar + fluid content using CSS Grid.
 
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import LoadingLink from "@/components/LoadingLink";
+import { usePathname } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import {
-    LayoutDashboard,
-    Users,
-    Youtube,
-    Car,
-    FileText,
-    Settings,
-    Radio,
-    BarChart,
-    LogOut,
-    Loader,
-    Home,
+  LayoutDashboard,
+  Users,
+  Youtube,
+  Car,
+  FileText,
+  Settings,
+  Radio,
+  BarChart,
+  LogOut,
+  Home,
+  HandCoins,
+  CreditCard,
+  Shield,
+  Calendar,
+  ChevronRight,
+  Building,
+  UserCog,
+  DollarSign,
+  Tags,
+  TestTube,
+  BarChart3,
+  ScrollText,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermission } from "@/hooks/usePermission";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AdminLayoutProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-    const pathname = usePathname();
-    const { user, isAdmin, logout, isLoading, isLoggedIn } = useAuth();
-    const router = useRouter();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+  const pathname = usePathname();
+  const { isAdmin, isModerator, logout } = useAuth();
+  const { can, canAny } = usePermission();
+  const router = useLoadingRouter();
 
-    // Admin route protection
-    useEffect(() => {
-        if (!isLoading) {
-            // If not logged in, redirect to login
-            if (!isLoggedIn) {
-                router.push(
-                    `/auth/login?returnUrl=${encodeURIComponent(
-                        pathname || "/admin"
-                    )}`
-                );
-                return;
-            }
-
-            // If logged in but not admin, redirect to dashboard
-            if (isLoggedIn && !isAdmin) {
-                router.push("/dashboard");
-                return;
-            }
-        }
-    }, [isLoading, isLoggedIn, isAdmin, router, pathname]);
-
-    // Show loading state while checking authentication
-    if (isLoading || !isLoggedIn || !isAdmin) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <div className="text-center">
-                    <Loader className="h-10 w-10 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">جاري التحقق من الصلاحيات...</p>
-                </div>
-            </div>
-        );
+  useEffect(() => {
+    if (!isAdmin && !isModerator) {
+      router.replace("/auth/login?returnUrl=/admin");
     }
+  }, [isAdmin, isModerator, router]);
 
-    const handleLogout = async () => {
-        await logout();
-        router.push("/auth/login");
-    };
+  const navigation = [
+    { name: "الرئيسية", href: "/", icon: Home },
+    { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
 
-    const navigation = [
-        { name: "الرئيسية", href: "/", icon: Home },
-        { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
-        { name: "إدارة المستخدمين", href: "/admin/users", icon: Users },
-        { name: "إدارة البث", href: "/admin/live-stream", icon: Youtube },
-        { name: "قنوات YouTube", href: "/admin/youtube-channels", icon: Radio },
-        { name: "المزادات", href: "/admin/auctions", icon: Car },
-        { name: "التقارير", href: "/admin/reports", icon: BarChart },
-        { name: "الإعدادات", href: "/admin/settings", icon: Settings },
-    ];
+    {
+      name: "المستخدمين والصلاحيات",
+      href: "#",
+      type: "header",
+      icon: Users,
+      permissions: [
+        "users.view",
+        "exhibitors.view",
+        "staff.view",
+        "roles.view",
+        "groups.view",
+        "organizations.view",
+      ],
+    },
+    {
+      name: "إدارة المستخدمين",
+      href: "/admin/users",
+      icon: Users,
+      permission: "users.view",
+    },
+    {
+      name: "ملاك المعارض",
+      href: "/admin/venue-owners",
+      icon: Building,
+      permission: "exhibitors.view",
+    },
+    {
+      name: "إدارة الموظفين",
+      href: "/admin/staff",
+      icon: Shield,
+      permission: "staff.view",
+    },
+    {
+      name: "إدارة الأدوار",
+      href: "/admin/roles",
+      icon: UserCog,
+      permission: "roles.view",
+    },
+    {
+      name: "شجرة الصلاحيات",
+      href: "/admin/permissions",
+      icon: Shield,
+      permission: "permissions.view",
+    },
+    {
+      name: "إدارة القروبات",
+      href: "/admin/groups",
+      icon: Users,
+      permission: "groups.view",
+    },
+    {
+      name: "إدارة المنظمات",
+      href: "/admin/organizations",
+      icon: Building,
+      permission: "organizations.view",
+    },
 
-    const isActive = (path: string) => {
-        // For exact matches like the dashboard
-        if (path === "/admin" && pathname === "/admin") return true;
+    {
+      name: "العمولات والخطط",
+      href: "#",
+      type: "header",
+      icon: HandCoins,
+      permissions: ["commissions.view", "subscription_plans.view"],
+    },
+    {
+      name: "إدارة العمولات",
+      href: "/admin/commission-tiers",
+      icon: HandCoins,
+      permission: "commissions.view",
+    },
+    {
+      name: "خطط الاشتراك",
+      href: "/admin/subscription-plans",
+      icon: CreditCard,
+      permission: "subscription_plans.view",
+    },
+    {
+      name: "إدارة المبيعات",
+      href: "/admin/sales",
+      icon: DollarSign,
+      permission: "commissions.view",
+    },
 
-        // For sub-routes, make sure we're not matching partial paths
-        if (path !== "/admin" && pathname?.startsWith(`${path}/`)) return true;
+    {
+      name: "السيارات والمزادات",
+      href: "#",
+      type: "header",
+      icon: Car,
+      permissions: ["cars.view", "auctions.view"],
+    },
+    {
+      name: "السيارات",
+      href: "/admin/cars",
+      icon: Car,
+      permission: "cars.view",
+    },
+    {
+      name: "المزادات",
+      href: "/admin/auctions",
+      icon: Car,
+      permission: "auctions.view",
+    },
 
-        // For exact sub-route matches
-        return pathname === path;
-    };
+    {
+      name: "الجلسات والبث",
+      href: "#",
+      type: "header",
+      icon: Calendar,
+      permissions: [
+        "sessions.view",
+        "live_streams.view",
+        "youtube_channels.view",
+      ],
+    },
+    {
+      name: "إدارة الجلسات",
+      href: "/admin/sessions",
+      icon: Calendar,
+      permission: "sessions.view",
+    },
+    {
+      name: "إدارة البث",
+      href: "/admin/live-stream",
+      icon: Youtube,
+      permission: "live_streams.view",
+    },
+    {
+      name: "قنوات YouTube",
+      href: "/admin/youtube-channels",
+      icon: Radio,
+      permission: "youtube_channels.view",
+    },
 
-    return (
-        <div className="min-h-screen flex bg-gray-100" dir="rtl">
-            {/* Sidebar */}
-            <aside
-                className={`bg-white shadow-md transition-all ${
-                    isCollapsed ? "w-20" : "w-64"
-                }`}
-            >
-                <div className="p-6 flex justify-between items-center border-b">
-                    <h2
-                        className={`font-bold text-xl text-gray-800 ${
-                            isCollapsed ? "hidden" : "block"
-                        }`}
-                    >
-                        لوحة الإدارة
-                    </h2>
-                    <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="text-gray-500 hover:text-gray-700"
-                    >
-                        {isCollapsed ? "→" : "←"}
-                    </button>
+    // ✅ Blog Section
+    {
+      name: "المدونة",
+      href: "#",
+      type: "header",
+      icon: FileText,
+      // permissions: ["blog_posts.view", "blog_categories.view"],
+    },
+    {
+      name: "المقالات",
+      href: "/admin/blog/posts",
+      icon: FileText,
+      // permission: "blog_posts.view",
+    },
+    {
+      name: "التصنيفات",
+      href: "/admin/blog/categories",
+      icon: Tags,
+      // permission: "blog_categories.view",
+    },
+
+    // ✅ Market Council (مجلس السوق)
+    {
+      name: "مجلس السوق",
+      href: "#",
+      type: "header",
+      icon: FileText,
+    },
+    {
+      name: "مقالات مجلس السوق",
+      href: "/admin/market-council/articles",
+      icon: FileText,
+    },
+    {
+      name: "تصنيفات مجلس السوق",
+      href: "/admin/market-council/categories",
+      icon: Tags,
+    },
+    {
+      name: "تعليقات مجلس السوق",
+      href: "/admin/market-council/comments",
+      icon: MessageSquare,
+    },
+
+    // ✅ NEW: Newsletter Section
+    {
+      name: "النشرة البريدية",
+      href: "#",
+      type: "header",
+      icon: Mail,
+      // permissions: ["newsletter_subscribers.view"],
+    },
+    {
+      name: "إدارة الإيميلات",
+      href: "/admin/newsletter-subscribers",
+      icon: Mail,
+      // permission: "newsletter_subscribers.view",
+    },
+
+    {
+      name: "السجلات",
+      href: "#",
+      type: "header",
+      icon: FileText,
+      permissions: ["auction_logs.view", "activity_logs.view"],
+    },
+    {
+      name: "سجلات المزايدات",
+      href: "/admin/bids-logs",
+      icon: FileText,
+      permission: "auction_logs.view",
+    },
+    {
+      name: "سجلات النشاط",
+      href: "/admin/activity-logs",
+      icon: FileText,
+      permission: "activity_logs.view",
+    },
+    {
+      name: "اختبارات المزادات",
+      href: "/admin/auction-tests",
+      icon: TestTube,
+      permission: "auction_tests.view",
+    },
+    {
+      name: "سجل المزادات الفوري",
+      href: "/admin/auction-activity-log",
+      icon: ScrollText,
+      permission: "auctions.view",
+    },
+    {
+      name: "تحليلات اختبارات المزادات",
+      href: "/admin/auction-testing-analytics",
+      icon: BarChart3,
+      permission: "auctions.view",
+    },
+
+    {
+      name: "التقارير والإعدادات",
+      href: "#",
+      type: "header",
+      icon: BarChart,
+      permissions: ["activity_logs.view", "users.view"],
+    },
+
+    // ✅ Similar Price Analysis
+    {
+      name: "تحليل الأسعار المشابهة",
+      href: "/similar-price-analysis",
+      icon: BarChart3,
+    },
+
+    {
+      name: "التقارير",
+      href: "/admin/reports",
+      icon: BarChart,
+      permission: "activity_logs.view",
+    },
+    {
+      name: "الإعدادات",
+      href: "/admin/settings",
+      icon: Settings,
+      permission: "users.view",
+    },
+  ];
+
+  const isActive = (path: string) => {
+    if (path === "/admin" && pathname === "/admin") return true;
+    if (path !== "/admin" && pathname?.startsWith(`${path}/`)) return true;
+    return pathname === path;
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace("/auth/login");
+  };
+
+  return (
+    <div
+      className="min-h-screen bg-background text-foreground overflow-x-hidden"
+      dir="rtl"
+    >
+      {/* حاوية واسعة ومريحة: لا تضغط المحتوى أفقيًا */}
+      <div className="w-full max-w-screen-2xl mx-auto px-1 pb-8">
+        {/* Grid: سايدبار ثابت 20rem + محتوى مرن */}
+        <div className="grid lg:grid-cols-[20rem,1fr] pt-4 lg:pt-6 items-start">
+          {/* Sidebar (Desktop only) */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-6 space-y-4">
+              {/* Sidebar Header */}
+              <div className="bg-card border border-border rounded-2xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary text-primary-foreground p-2 rounded-xl">
+                    <Building className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg">لوحة الإدارة</h2>
+                    <p className="text-xs text-foreground/70">
+                      نظام إدارة المزادات
+                    </p>
+                  </div>
                 </div>
-                <nav className="mt-6 px-4">
-                    <ul className="space-y-2">
-                        {navigation.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <li key={item.name}>
-                                    <Link
-                                        href={item.href}
-                                        className={`flex items-center p-3 rounded-lg transition-colors ${
-                                            isActive(item.href)
-                                                ? "bg-blue-50 text-blue-600"
-                                                : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        <Icon
-                                            className={`h-5 w-5 ${
-                                                isCollapsed ? "mx-auto" : "ml-3"
-                                            }`}
-                                        />
-                                        <span
-                                            className={`${
-                                                isCollapsed ? "hidden" : "block"
-                                            }`}
-                                        >
-                                            {item.name}
-                                        </span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                    <div className="border-t my-6"></div>
-                    <button
-                        onClick={handleLogout}
-                        className={`flex items-center p-3 rounded-lg text-red-600 hover:bg-red-50 w-full transition-colors ${
-                            isCollapsed ? "justify-center" : ""
-                        }`}
-                    >
-                        <LogOut
-                            className={`h-5 w-5 ${
-                                isCollapsed ? "mx-auto" : "ml-3"
-                            }`}
-                        />
-                        <span className={`${isCollapsed ? "hidden" : "block"}`}>
-                            تسجيل الخروج
-                        </span>
-                    </button>
-                </nav>
-            </aside>
+              </div>
 
-            {/* Main content */}
-            <main className="flex-1 overflow-x-auto">
-                <div className="container mx-auto py-6 px-4">{children}</div>
-            </main>
+              {/* Navigation */}
+              <nav className="bg-card border border-border rounded-2xl p-4">
+                <h3 className="text-sm font-bold mb-3">القائمة الرئيسية</h3>
+                <ul className="space-y-2">
+                  {navigation.map((item) => {
+                    // Check permission
+                    if (item.type === "header") {
+                      if (item.permissions && !canAny(item.permissions))
+                        return null;
+                    } else if ((item as any).permission) {
+                      if (!can((item as any).permission)) return null;
+                    }
+
+                    const Icon = item.icon as any;
+                    const active = isActive(item.href);
+
+                    if (item.type && item.type === "header") {
+                      return (
+                        <h3
+                          key={item.name}
+                          className="text-sm text-primary font-bold pb-1 pt-3 flex items-center"
+                        >
+                          <Icon
+                            style={{ width: "1em", height: "1em" }}
+                            className="ms-2 me-1"
+                          />
+                          {item.name}
+                        </h3>
+                      );
+                    }
+
+                    return (
+                      <li key={item.name}>
+                        <LoadingLink
+                          href={item.href}
+                          className={`group flex items-center p-3 rounded-xl transition-all border
+                            ${active
+                              ? "bg-primary/10 text-primary border-primary/30 shadow"
+                              : "bg-background/30 text-foreground/70 border-border hover:bg-border hover:text-foreground"
+                            }`}
+                        >
+                          <Icon
+                            className={`w-5 h-5 ms-2 ${active
+                                ? "text-primary"
+                                : "text-foreground/70 group-hover:text-foreground"
+                              }`}
+                          />
+                          <span className="ms-1 flex-1 text-sm font-medium">
+                            {item.name}
+                          </span>
+                          <ChevronRight
+                            className={`w-4 h-4 ${
+                              active
+                                ? "text-primary"
+                                : "text-foreground/50"
+                            }`}
+                          />
+                        </LoadingLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+
+              {/* Sidebar Footer */}
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+                <ThemeToggle />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-red-500 border border-red-500/30 hover:bg-red-500/10 transition"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="text-sm font-medium">تسجيل الخروج</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="min-w-0 w-full">{children}</main>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

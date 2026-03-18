@@ -1,0 +1,310 @@
+# 📋 وحدة اختبارات المزادات (Auction Tests Module)
+
+> **نقطة الدخول الموحّدة للـ Testing Module:** من جذر المشروع انظر [TestingModule/README.md](../../../TestingModule/README.md) (هيكل كامل، تشغيل، إضافة اختبارات).
+
+## 📖 نظرة عامة
+
+هذه الوحدة تحتوي على مجموعة شاملة من الاختبارات البرمجية (Functional Tests) التي تتحقق من صحة منطق المزادات في منصة DASM-e. جميع الاختبارات مصممة للتحقق من سلامة البيانات والمنطق دون إجراء أي تغييرات دائمة على قاعدة البيانات (يتم استخدام `DB::rollBack()`).
+
+### 🏗️ البنية المعيارية (Modular Architecture)
+
+تم تنفيذ هذه الوحدة كـ **Laravel Module** منفصل باستخدام `nwidart/laravel-modules` لفصل منطق الاختبارات عن منطق المشروع الأساسي بشكل كامل. هذا النهج المعياري يوفر عدة مزايا:
+
+- ✅ **الفصل الكامل:** منطق الاختبارات منفصل تماماً عن منطق المشروع الأساسي، مما يسهل الصيانة والتطوير
+- ✅ **المرونة:** يمكن إضافة اختبارات جديدة بسهولة دون التأثير على باقي أجزاء المشروع
+- ✅ **التنظيم:** كل ما يتعلق بالاختبارات (Controllers, Services, Models, Routes, Migrations) موجود في مكان واحد منظم
+- ✅ **القابلية للتوسع:** نظراً لأن المشروع كبير جداً، هذا النهج المعياري يسهل إضافة features جديدة كـ modules كاملة مستقبلاً
+- ✅ **سهولة الصيانة:** أي تعديلات أو إضافات على منطق الاختبارات تكون محصورة داخل الـ module فقط
+- ✅ **الاستقلالية:** الـ module يمكن تفعيله أو تعطيله بسهولة دون التأثير على باقي المشروع
+
+هذا النهج المعياري يجعل الكود أكثر تنظيماً وقابلية للصيانة، خاصة في المشاريع الكبيرة مثل DASM-e، حيث يمكن إضافة features جديدة كـ modules منفصلة تماماً.
+
+---
+
+## 🎯 أنواع الاختبارات
+
+### 1️⃣ اختبارات منطق المزادات (Logic Tests)
+**الملف:** `Services/Tests/LogicTestService.php`  
+**الفئة:** `logic`
+
+#### ما يفعله هذا الاختبار:
+يختبر **المنطق الأساسي** للمزادات النشطة والمجدولة للتأكد من صحة البيانات والقواعد الأساسية.
+
+#### الفحوصات التي يقوم بها:
+
+1. **فحص المزادات النشطة:**
+   - ✅ التحقق من أن المزادات المحددة كنشطة (`status` في `activeValues()`) ترجع `true` عند استدعاء `isActive()`
+   - ✅ التحقق من أن `current_bid` ليس سالباً
+   - ✅ التحقق من أن `current_bid` لا يقل عن `minimum_bid` (إن وُجد)
+   - ✅ التحقق من أن `current_bid` لا يتجاوز `maximum_bid` (إن وُجد)
+   - ✅ التحقق من أن `end_time` بعد `start_time` (النطاق الزمني صحيح)
+
+2. **فحص المزادات المجدولة:**
+   - ✅ التحقق من أن المزادات النشطة (`ACTIVE`) معتمدة من غرفة التحكم (`control_room_approved = true`)
+
+#### مثال على الأخطاء التي يكتشفها:
+- ❌ مزاد محدد كنشط لكن `isActive()` يرجع `false`
+- ❌ سعر مزايدة سالب
+- ❌ السعر الحالي أقل من الحد الأدنى
+- ❌ السعر الحالي يتجاوز الحد الأقصى
+- ❌ نطاق زمني غير صحيح (end_time <= start_time)
+- ❌ مزاد نشط غير معتمد من غرفة التحكم
+
+---
+
+### 2️⃣ اختبارات الانتقال بين الأنواع (Transitions Tests)
+**الملف:** `Services/Tests/TransitionsTestService.php`  
+**الفئة:** `transitions`
+
+#### ما يفعله هذا الاختبار:
+يختبر **الانتقال التلقائي** بين أنواع المزادات المختلفة حسب الوقت من اليوم. النظام يغير نوع المزاد تلقائياً بناءً على الساعة الحالية.
+
+#### قواعد الانتقال الزمنية:
+
+| الوقت | النوع المتوقع | الشرط |
+|------|--------------|--------|
+| **16:00 - 18:59** | `LIVE` | يجب أن يكون `approved_for_live = true` |
+| **19:00 - 21:59** | `LIVE_INSTANT` | - |
+| **22:00 - 15:59** | `SILENT_INSTANT` | - |
+
+#### الفحوصات التي يقوم بها:
+
+1. **فحص الانتقال التلقائي:**
+   - ✅ استدعاء `updateAuctionTypeBasedOnTime()` لكل مزاد نشط
+   - ✅ التحقق من أن النوع الجديد يطابق النوع المتوقع حسب الساعة الحالية
+   - ✅ التحقق من أن الانتقال من `LIVE` إلى `LIVE_INSTANT` يحافظ على `opening_price` (إن كان هناك مزايدات)
+   - ✅ التحقق من أن الانتقال من `LIVE_INSTANT` إلى `SILENT_INSTANT` يحافظ على `opening_price` (إن كان هناك مزايدات)
+
+#### مثال على الأخطاء التي يكتشفها:
+- ❌ مزاد في الساعة 17:00 لكن نوعه ليس `LIVE` (رغم أنه معتمد للبث المباشر)
+- ❌ مزاد في الساعة 20:00 لكن نوعه ليس `LIVE_INSTANT`
+- ❌ مزاد في الساعة 23:00 لكن نوعه ليس `SILENT_INSTANT`
+- ❌ انتقال من `LIVE` إلى `LIVE_INSTANT` لكن `opening_price` مفقود رغم وجود مزايدات
+
+---
+
+### 3️⃣ اختبارات تحديثات الأسعار (Price Updates Tests)
+**الملف:** `Services/Tests/PriceUpdatesTestService.php`  
+**الفئة:** `price_updates`
+
+#### ما يفعله هذا الاختبار:
+يختبر **تحديثات الأسعار والمزايدات** للتأكد من أن السعر الحالي للمزاد يطابق أعلى مزايدة، وأن جميع البيانات المتعلقة بالمزايدات صحيحة.
+
+#### الفحوصات التي يقوم بها:
+
+1. **فحص السعر الحالي:**
+   - ✅ التحقق من أن `current_bid` يطابق أعلى مزايدة في جدول `bids` (`bid_amount`)
+   - ✅ إذا لم توجد مزايدات، التحقق من أن `current_bid` إما `0` أو يطابق `opening_price`
+
+2. **فحص وقت آخر مزايدة:**
+   - ✅ التحقق من أن `last_bid_time` ليس في المستقبل
+   - ✅ التحقق من أن المزادات التي لديها مزايدات لديها `last_bid_time` محدد
+
+#### مثال على الأخطاء التي يكتشفها:
+- ❌ السعر الحالي (`current_bid = 5000`) لا يطابق أعلى مزايدة (`bid_amount = 5500`)
+- ❌ مزاد لديه سعر مزايدة حالي لكن لا توجد مزايدات ولا `opening_price`
+- ❌ `last_bid_time` في المستقبل (خطأ في البيانات)
+- ❌ مزاد لديه مزايدات لكن `last_bid_time` غير محدد
+
+---
+
+### 4️⃣ اختبارات استقرار الحالات (State Consistency Tests)
+**الملف:** `Services/Tests/StateConsistencyTestService.php`  
+**الفئة:** `state_consistency`
+
+#### ما يفعله هذا الاختبار:
+يختبر **استقرار وتناسق الحالات** بين المزاد والسيارة المرتبطة به، والتأكد من أن جميع الحالات متسقة مع بعضها البعض.
+
+#### الفحوصات التي يقوم بها:
+
+1. **فحص حالة المزاد:**
+   - ✅ التحقق من أن المزادات ذات الحالة `ACTIVE` ترجع `true` عند استدعاء `isActive()`
+
+2. **فحص تناسق حالة السيارة مع المزاد:**
+   - ✅ إذا كان المزاد `ACTIVE`، يجب أن تكون حالة السيارة `in_auction`
+   - ✅ إذا انتهى المزاد (`ENDED`) وكانت المزايدة >= `reserve_price`، يجب أن تكون حالة السيارة `sold`
+   - ✅ إذا فشل المزاد (`FAILED`) وكانت المزايدة < `reserve_price`، يجب أن تكون حالة السيارة `available`
+
+3. **فحص الموافقات:**
+   - ✅ إذا كان نوع المزاد `LIVE`، يجب أن يكون `approved_for_live = true`
+
+4. **فحص الأوقات:**
+   - ✅ التحقق من أن `extended_until` (إن وُجد) أو `end_time` بعد `start_time`
+
+#### مثال على الأخطاء التي يكتشفها:
+- ❌ مزاد `ACTIVE` لكن `isActive()` يرجع `false`
+- ❌ مزاد `ACTIVE` لكن حالة السيارة ليست `in_auction`
+- ❌ مزاد انتهى مع مزايدة >= السعر الاحتياطي لكن السيارة ليست `sold`
+- ❌ مزاد فشل لكن حالة السيارة ليست `available`
+- ❌ مزاد نوعه `LIVE` لكن غير معتمد للبث المباشر
+- ❌ وقت الانتهاء الفعلي قبل وقت البداية
+
+---
+
+## 🔧 كيفية الاستخدام
+
+### من Backend (Laravel):
+
+```php
+use Modules\Test\Services\AuctionTestRunner;
+
+$testRunner = app(AuctionTestRunner::class);
+
+// Run all tests
+$results = $testRunner->runAllTests();
+
+// Run a specific test
+$result = $testRunner->runTestByCategory('logic');
+```
+
+### من Frontend (Next.js):
+
+```typescript
+import { auctionTestsApi } from '@/modules/test/api/auctionTestsApi';
+
+// Run all tests
+const results = await auctionTestsApi.runAll();
+
+// Run a specific test
+const result = await auctionTestsApi.runCategory('logic');
+
+// Get test results
+const { data, summary } = await auctionTestsApi.getResults();
+```
+
+### من API:
+
+```bash
+# Run all tests
+POST /api/auction-tests/run-all
+
+# Run a specific test
+POST /api/auction-tests/run/logic
+POST /api/auction-tests/run/transitions
+POST /api/auction-tests/run/price_updates
+POST /api/auction-tests/run/state_consistency
+
+# Get test results
+GET /api/auction-tests?category=logic&page=1&per_page=15
+
+# Get a specific test result
+GET /api/auction-tests/{id}
+
+# Delete a test result
+DELETE /api/auction-tests/{id}
+
+# Bulk delete test results
+DELETE /api/auction-tests/bulk
+Body: { "ids": [1, 2, 3] }
+```
+
+---
+
+## 📊 بنية النتيجة (TestResult)
+
+كل اختبار يرجع كائن `AuctionTestResult` يحتوي على:
+
+```php
+[
+    'id' => 1,
+    'test_name' => 'اختبارات منطق المزادات',
+    'test_category' => 'logic',
+    'status' => 'passed', // or 'failed', 'pending', 'running'
+    'message' => 'نجحت جميع اختبارات منطق المزادات...',
+    'details' => [
+        'active_auctions_count' => 5,
+        'scheduled_auctions_count' => 2,
+    ],
+    'errors' => [], // List of errors if any
+    'execution_time_ms' => 125.5,
+    'started_at' => '2025-01-21 10:00:00',
+    'completed_at' => '2025-01-21 10:00:00',
+    'created_at' => '2025-01-21 10:00:00',
+]
+```
+
+---
+
+## 🔐 الأذونات (Permissions)
+
+جميع endpoints تتطلب:
+- ✅ المصادقة (`auth:sanctum`)
+- ✅ صلاحيات Admin أو Super Admin
+
+الأذونات المطلوبة:
+- `auction_tests.view` - عرض النتائج
+- `auction_tests.view_details` - عرض تفاصيل نتيجة محددة
+- `auction_tests.run` - تشغيل اختبار محدد
+- `auction_tests.run_all` - تشغيل جميع الاختبارات
+- `auction_tests.delete` - حذف النتائج
+
+---
+
+## ⚠️ ملاحظات مهمة
+
+1. **لا تغييرات دائمة:** جميع الاختبارات تستخدم `DB::beginTransaction()` و `DB::rollBack()` لضمان عدم إجراء أي تغييرات دائمة على قاعدة البيانات.
+
+2. **الأداء:** الاختبارات مصممة لتكون سريعة، لكن قد تستغرق وقتاً أطول مع عدد كبير من المزادات. يتم تسجيل `execution_time_ms` لكل اختبار.
+
+3. **Real-time Updates:** عند تشغيل الاختبارات، يتم بث النتائج عبر WebSocket على قناة `admin.auction-tests` لجميع المشرفين المتصلين.
+
+4. **التنفيذ المتزامن:** حالياً جميع الاختبارات تعمل بشكل متزامن (synchronous). يمكن تحسينها لتعمل بشكل غير متزامن (async) في المستقبل.
+
+---
+
+## 🚀 إضافة اختبارات جديدة
+
+لإضافة اختبار جديد:
+
+1. أنشئ ملف جديد في `Services/Tests/` مثل `NewTestService.php`
+2. نفذ `TestServiceInterface`:
+   ```php
+   class NewTestService implements TestServiceInterface
+   {
+       use TestResultTrait;
+       
+       public function run(): AuctionTestResult
+       {
+           // Test logic here
+       }
+   }
+   ```
+
+3. أضف الفئة الجديدة في `TestCategory` enum:
+   ```php
+   case NEW_TEST = 'new_test';
+   
+   public static function getServiceClass(string $category): string
+   {
+       return match($category) {
+           'new_test' => NewTestService::class,
+           // ...
+       };
+   }
+   ```
+
+4. سيعمل الاختبار تلقائياً مع `runAllTests()` ويمكن تشغيله بشكل منفصل عبر `runTestByCategory('new_test')`.
+
+---
+
+## 📝 السجلات والتوثيق
+
+- جميع النتائج تُحفظ في جدول `auction_test_results`
+- يمكن عرض النتائج من Dashboard في `/admin/auction-tests`
+- يمكن حذف النتائج القديمة يدوياً أو عبر Bulk Delete
+
+---
+
+## 🐛 استكشاف الأخطاء
+
+إذا فشل اختبار:
+
+1. راجع `errors` array في النتيجة
+2. راجع `details` object للمعلومات الإضافية
+3. تحقق من `execution_time_ms` للتأكد من عدم وجود timeout
+4. راجع سجلات Laravel (`storage/logs/laravel.log`)
+
+---
+
+**آخر تحديث:** 21 يناير 2026  
+**الإصدار:** 1.0.0

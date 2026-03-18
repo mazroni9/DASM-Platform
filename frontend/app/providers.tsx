@@ -2,47 +2,59 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter } from "next/navigation";
+import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { useLoading, setLoadingFunctions } from "@/contexts/LoadingContext";
+import { preloadCriticalComponents, preloadCriticalData } from "@/lib/dynamic-imports";
+import { ThemeProvider } from "next-themes";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
     const { initializeFromStorage } = useAuthStore();
     const [initialized, setInitialized] = useState(false);
-    const router = useRouter();
+    const router = useLoadingRouter();
+    const { startLoading, stopLoading } = useLoading();
 
     useEffect(() => {
+        // Set up loading functions for axios interceptors
+        setLoadingFunctions({ startLoading, stopLoading });
+
         const initAuth = async () => {
             try {
                 await initializeFromStorage();
+                // Preload critical data after auth
+                preloadCriticalData();
             } catch (error) {
                 console.error("Auth initialization error:", error);
             } finally {
-                // Always set initialized to true after a timeout
-                // This prevents infinite loading screen
-                setTimeout(() => {
-                    setInitialized(true);
-                }, 1500);
+                setInitialized(true);
             }
         };
 
-        initAuth();
-    }, [initializeFromStorage]);
+        // Defer auth initialization to avoid blocking first paint
+        const id = typeof requestIdleCallback !== 'undefined'
+            ? requestIdleCallback(initAuth)
+            : setTimeout(initAuth, 0) as unknown as number;
 
-    if (!initialized) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-                    <p className="text-gray-600">جاري تحميل المنصة...</p>
-                </div>
-            </div>
-        );
-    }
+        // Preload critical components on user interaction
+        preloadCriticalComponents();
 
+        return () => {
+            if (typeof cancelIdleCallback !== 'undefined') {
+                try { cancelIdleCallback(id as unknown as number); } catch {}
+            }
+        };
+    }, [initializeFromStorage, startLoading, stopLoading]);
+
+    // Always render children - the GlobalLoader will be shown/hidden automatically
+    // based on the loading state controlled by startLoading/stopLoading
     return <>{children}</>;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-    return <AuthInitializer>{children}</AuthInitializer>;
+    return (
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthInitializer>{children}</AuthInitializer>
+        </ThemeProvider>
+    );
 }
 
 export default Providers;
