@@ -15,6 +15,7 @@ import { UserRole } from "@/types/types";
 import NotificationMenu from "@/components/NotificationMenu";
 import AdminNotificationsMenu from "@/components/admin/AdminNotificationsMenu";
 import { ThemeToggle } from "../ThemeToggle";
+import ConnectionQualityIndicator from "../ConnectionQualityIndicator";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -155,6 +156,7 @@ const Navbar = () => {
               </Button>
             )}
 
+            <ConnectionQualityIndicator />
             <ThemeToggle />
 
             {user ? (
@@ -187,6 +189,7 @@ const Navbar = () => {
               </div>
             )}
 
+            <ConnectionQualityIndicator />
             <ThemeToggle />
 
             <button
