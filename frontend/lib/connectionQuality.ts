@@ -97,7 +97,6 @@ export function computeConnectionQuality(
     labelAr: LABELS[level],
     latencyMs: effectiveLatency >= 0 ? effectiveLatency : null,
     isOnline: true,
-    showBidWarning:
-      level === "poor" || level === "unsuitable" || level === "offline",
+    showBidWarning: level === "poor" || level === "unsuitable",
   };
 }
