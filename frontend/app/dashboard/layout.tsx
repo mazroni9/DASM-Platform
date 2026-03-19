@@ -19,6 +19,7 @@ import {
   ArrowRight,
   TrendingUp,
   FileEdit,
+  ClipboardCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -137,6 +138,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         href: "/dashboard/shipping",
         icon: Truck,
         description: "إدارة خدمات الشحن",
+      },
+      {
+        name: "الفحص الفني عبر الورش",
+        href: "/dashboard/technical-inspection",
+        icon: ClipboardCheck,
+        description: "الفحص الفني عبر الورش المعتمدة",
       },
       ...(canAccessCouncilStudio
         ? [{
