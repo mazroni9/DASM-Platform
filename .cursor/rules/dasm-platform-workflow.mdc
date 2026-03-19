@@ -1,0 +1,29 @@
+---
+description: DASM Platform workflow and operational source of truth
+alwaysApply: true
+---
+
+# DASM Platform Workflow
+
+اعتمد المرجع التشغيلي التالي بوصفه المصدر الأعلى لحالة المشروع:
+@docs/operations/DASM_PLATFORM_CONTROL_LOG.md
+
+القواعد الأساسية لهذا المشروع:
+
+- العمل دائمًا عبر branch ثم PR ثم merge إلى master
+- ممنوع push مباشر إلى master إلا بطلب صريح
+- لا تضف أي attribution إلى Cursor أو أي أداة داخل commit messages أو PR descriptions أو merge descriptions
+- عند وجود تعارض بين التقارير النصية والحالة الفعلية في المستودع، اعتبر المستودع وملف Control Log هما المرجع الأعلى
+- لا توسّع نطاق المهمة دون سبب واضح
+- إذا كانت المهمة إصلاحًا إنتاجيًا، فطبّق minimal safe production fix
+- لا تخلط بين الإصلاحات الإنتاجية والتجميل في PR واحد إلا إذا كان الربط مباشرًا وواضحًا
+
+عند إنهاء أي مهمة، قدّم تقريرًا مختصرًا يشمل:
+- ما الذي تغير
+- الملفات المعدلة
+- نتيجة البناء إن لزم
+- اسم الفرع
+- رقم الـ PR
+
+إذا كانت المهمة تتعلق بحالة المشروع الحالية أو الأولويات أو ما تم دمجه أو ما تأجل، فارجع أولًا إلى:
+@docs/operations/DASM_PLATFORM_CONTROL_LOG.md
