@@ -61,10 +61,9 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        mobileMenuOpen &&
-        !(e.target as Element).closest(".mobile-menu-container")
-      ) {
+      const target = e.target;
+      if (!target || !(target instanceof Element)) return;
+      if (mobileMenuOpen && !target.closest(".mobile-menu-container")) {
         setMobileMenuOpen(false);
       }
     };
