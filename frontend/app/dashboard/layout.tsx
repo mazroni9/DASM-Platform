@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const tabs = useMemo(
     () => [
       {
-        name: "لوحة التحكم",
+        name: "حسابي",
         href: "/dashboard",
         icon: BarChart3,
         description: "نظرة عامة على إحصائياتك",

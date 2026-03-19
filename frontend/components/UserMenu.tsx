@@ -155,9 +155,10 @@ export default function UserMenu() {
     const userProfilePath =
       roleKey === "dealer" ? "/dealer/profile" : "/dashboard/profile";
 
+    const dashboardLabel = userDashboardPath === "/dashboard" ? "حسابي" : "لوحة التحكم";
     const list: MenuItem[] = [
       {
-        label: "لوحة التحكم",
+        label: dashboardLabel,
         icon: <LayoutDashboard className="w-4 h-4" />,
         onClick: () => navigateTo(userDashboardPath),
         path: userDashboardPath,
@@ -362,12 +363,12 @@ export default function UserMenu() {
           )}
         </span>
 
-        {/* Name + Role (مخفية على الشاشات الصغيرة) */}
+        {/* Name + Role (مخفية على الشاشات الصغيرة) — contrast واضح في الوضع الفاتح */}
         <span className="hidden md:flex flex-col items-start leading-tight max-w-[12rem]">
-          <span className="text-sm font-semibold truncate text-foreground">
+          <span className="text-sm font-semibold truncate text-slate-800 dark:text-foreground">
             {user.first_name || user.email || "مستخدم"}
           </span>
-          <span className="text-[11px] text-primary/90 font-medium truncate">
+          <span className="text-[11px] text-slate-600 dark:text-primary/90 font-medium truncate">
             {roleLabel(role)}
           </span>
         </span>
@@ -422,14 +423,14 @@ export default function UserMenu() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-foreground truncate">
+                <span className="text-sm font-semibold text-slate-800 dark:text-foreground truncate">
                   {user.first_name || user.email || "مستخدم"}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
                   {roleLabel(role)}
                 </span>
               </div>
-              <div className="text-xs text-foreground/70 truncate">
+              <div className="text-xs text-slate-600 dark:text-foreground/70 truncate">
                 {user.email}
               </div>
             </div>

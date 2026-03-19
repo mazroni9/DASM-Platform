@@ -6,10 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
 import {
-  ShoppingCart,
-  TrendingUp,
-  DollarSign,
-  Package,
   Activity,
   Loader2,
   Sparkles,
@@ -108,7 +104,6 @@ export default function DashboardPage() {
               bg: "bg-primary/10",
               border: "border-primary/20",
               text: "text-primary",
-              icon: ShoppingCart,
             },
             {
               label: "المبيعات",
@@ -117,7 +112,6 @@ export default function DashboardPage() {
               bg: "bg-secondary/10",
               border: "border-secondary/20",
               text: "text-secondary",
-              icon: TrendingUp,
             },
             {
               label: "رصيد المحفظة",
@@ -126,7 +120,6 @@ export default function DashboardPage() {
               bg: "bg-amber-500/10",
               border: "border-amber-500/20",
               text: "text-amber-500",
-              icon: DollarSign,
             },
             {
               label: "الطلبات النشطة",
@@ -135,7 +128,6 @@ export default function DashboardPage() {
               bg: "bg-purple-500/10",
               border: "border-purple-500/20",
               text: "text-purple-500",
-              icon: Package,
             },
           ]
         : [],
@@ -216,40 +208,34 @@ export default function DashboardPage() {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {statItems.map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className={cn(
-                    "p-4 rounded-xl border-2 bg-card/80 backdrop-blur-sm",
-                    item.bg,
-                    item.border,
-                  )}
-                >
-                  <div className="flex justify-between items-center mb-3">
-                    <div className={cn("p-2 rounded-lg bg-black/10 dark:bg-white/15", item.text)}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <span
-                      className={cn(
-                        "text-sm font-semibold px-2 py-1 rounded-md border",
-                        parseFloat(item.trend) >= 0
-                          ? "bg-green-500/25 text-green-700 dark:text-green-300 border-green-500/40"
-                          : "bg-red-500/25 text-red-700 dark:text-red-300 border-red-500/40",
-                      )}
-                    >
-                      {item.trend}
-                    </span>
-                  </div>
-                  <p className="text-xs text-foreground/80 mb-1">{item.label}</p>
-                  <p className={cn("text-lg font-bold", item.text)}>{item.value}</p>
-                </motion.div>
-              );
-            })}
+            {statItems.map((item, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className={cn(
+                  "p-4 rounded-xl border-2 bg-card/80 backdrop-blur-sm",
+                  item.bg,
+                  item.border,
+                )}
+              >
+                <div className="flex justify-end items-center mb-2">
+                  <span
+                    className={cn(
+                      "text-sm font-semibold px-2 py-1 rounded-md border",
+                      parseFloat(item.trend) >= 0
+                        ? "bg-green-500/25 text-green-700 dark:text-green-300 border-green-500/40"
+                        : "bg-red-500/25 text-red-700 dark:text-red-300 border-red-500/40",
+                    )}
+                  >
+                    {item.trend}
+                  </span>
+                </div>
+                <p className="text-xs text-foreground/80 mb-1">{item.label}</p>
+                <p className={cn("text-lg font-bold", item.text)}>{item.value}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       )}
