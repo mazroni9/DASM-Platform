@@ -225,21 +225,21 @@ export default function DashboardPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   className={cn(
-                    "p-4 rounded-xl border",
+                    "p-4 rounded-xl border-2 bg-card/80 backdrop-blur-sm",
                     item.bg,
                     item.border,
                   )}
                 >
                   <div className="flex justify-between items-center mb-3">
-                    <div className="p-2 rounded-lg bg-white/10">
-                      <Icon className="w-4 h-4 text-white" />
+                    <div className={cn("p-2 rounded-lg bg-black/10 dark:bg-white/15", item.text)}>
+                      <Icon className="w-4 h-4" />
                     </div>
                     <span
                       className={cn(
-                        "text-xs px-1.5 py-0.5 rounded border",
+                        "text-sm font-semibold px-2 py-1 rounded-md border",
                         parseFloat(item.trend) >= 0
-                          ? "bg-green-500/20 text-green-300 border-green-500/30"
-                          : "bg-red-500/20 text-red-300 border-red-500/30",
+                          ? "bg-green-500/25 text-green-700 dark:text-green-300 border-green-500/40"
+                          : "bg-red-500/25 text-red-700 dark:text-red-300 border-red-500/40",
                       )}
                     >
                       {item.trend}
