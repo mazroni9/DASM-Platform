@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrganizationType;
+use App\Models\Organization;
 use App\Http\Requests\UpdateUserProfileRequest;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
@@ -210,10 +212,17 @@ class UserController extends Controller
     private function safePermissions(User $user): array
     {
         try {
-            // لو عندك نظام Teams في spatie وبتستخدم organization_id
-            if ($user->organization_id) {
+            $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+
+            // استخدام سياق الفريق: منظمة المستخدم أو منصة النظام (لأدوار مثل مجلس السوق)
+            $teamId = $user->organization_id;
+            if (!$teamId) {
+                $platformOrg = Organization::where('type', OrganizationType::PLATFORM)->first();
+                $teamId = $platformOrg?->id;
+            }
+            if ($teamId) {
                 try {
-                    app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($user->organization_id);
+                    $registrar->setPermissionsTeamId($teamId);
                 } catch (\Throwable $e) {
                     // ignore
                 }

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Investor;
+use App\Models\Organization;
+use App\Enums\OrganizationType;
 use App\Enums\UserStatus;
 use App\Models\VenueOwner;
 use Illuminate\Support\Str;
@@ -533,6 +535,8 @@ class AuthController extends Controller
             'None'
         );
 
+        $permissions = $this->getUserPermissions($user);
+
         return response()->json([
             'user' => [
                 'id' => $user->id,
@@ -540,7 +544,7 @@ class AuthController extends Controller
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'type' => $user->type,
-                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'permissions' => $permissions,
             ],
             'access_token' => $accessToken,
             'token_type' => 'Bearer',
@@ -646,6 +650,8 @@ class AuthController extends Controller
             'None'
         );
 
+        $permissions = $this->getUserPermissions($user);
+
         return response()->json([
             'access_token' => $newAccessToken,
             'token_type' => 'Bearer',
@@ -656,6 +662,7 @@ class AuthController extends Controller
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'type' => $user->type,
+                'permissions' => $permissions,
             ],
         ])->withCookie($cookie);
     }
@@ -904,6 +911,28 @@ class AuthController extends Controller
     private function str_contains_ci(string $haystack, string $needle): bool
     {
         return $needle !== '' && mb_stripos($haystack ?? '', $needle) !== false;
+    }
+
+    /** صلاحيات المستخدم مع سياق الفريق الصحيح (organization أو platform) */
+    private function getUserPermissions(User $user): array
+    {
+        try {
+            $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+            $teamId = $user->organization_id;
+            if (!$teamId) {
+                $platformOrg = Organization::where('type', OrganizationType::PLATFORM)->first();
+                $teamId = $platformOrg?->id;
+            }
+            if ($teamId) {
+                $registrar->setPermissionsTeamId($teamId);
+            }
+            if (method_exists($user, 'getAllPermissions')) {
+                return $user->getAllPermissions()->pluck('name')->values()->toArray();
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        return [];
     }
 
     /**
