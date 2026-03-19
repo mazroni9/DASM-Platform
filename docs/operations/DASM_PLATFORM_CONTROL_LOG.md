@@ -51,6 +51,7 @@
 | **My Sales** | حقيقية عبر `GET /api/settlements?seller=me` |
 | **API rewrites** | Production: `API_BACKEND_URL` = `https://api.dasm.com.sa`؛ قابلة للتكوين |
 | **/ping** | Route Handler محلي يعيد 200 |
+| **صلاحيات council.\*** | مُعرّفة في `RolesAndPermissionsSeeder`؛ `DatabaseSeeder` يستدعي هذا الـ seeder. الصفحة `/admin/market-council/permissions` تعمل بعد زرع الصلاحيات. حالة empty state السابقة كانت ناتجة عن غياب seed في البيئة وليست نقصًا في التعريف بالكود. |
 
 ---
 
@@ -58,6 +59,9 @@
 
 | التاريخ التقريبي | الدفعة | النتيجة |
 |-------------------|--------|---------|
+| 2026-03 | **PR #199** — إصلاح infinite loading في صفحة صلاحيات مجلس السوق | دمج: فصل loadingPermissions/loadingUsers، إنهاء التحميل دائمًا، حالات خطأ وempty واضحة |
+| 2026-03 | **PR #198** — قواعد .cursor/rules | دمج: تحديث أو إضافة قواعد للمشروع |
+| 2026-03 | **PR #197** — تحديث Control Log | دمج: توثيق الحالة التشغيلية |
 | 2026-03 | **PR #196** — Mobile dashboard priority actions | دمج: إجراءات سريعة فوق المحتوى على الجوال، ترتيب عملي |
 | 2026-03 | **PR #195** — Market Council permissions management | دمج: صفحة إدارة صلاحيات مجلس السوق في لوحة المسؤول |
 | 2026-03 | **PR #194** — Dashboard visual unification | دمج: توحيد ألوان البطاقات، شد بطاقة الترحيب |
@@ -89,6 +93,9 @@
 - [x] توحيد ألوان dashboard وشد بطاقة الترحيب
 - [x] إصلاح mobile client crash في iPhone/Safari
 - [x] إضافة صفحة وصلاحيات Market Council في لوحة المسؤول
+- [x] إصلاح spinner اللانهائي في صفحة صلاحيات مجلس السوق
+- [x] إثبات أن صلاحيات council.* وأدوار مجلس السوق مُعرّفة في RolesAndPermissionsSeeder
+- [x] استعادة عمل صفحة صلاحيات مجلس السوق بعد تشغيل seed
 - [x] إعادة ترتيب Dashboard على الجوال: الإجراءات الأساسية أولًا
 - [x] إصلاح شهادة www.dasm.com.sa (توثيق وتوجيه يدوي)
 - [x] تثبيت الباكند الإنتاجي عبر api.dasm.com.sa
@@ -102,6 +109,8 @@
 - التحقق من login والجوال بعد آخر تعديلات Vercel env
 - مراجعة نهائية لتجربة الجوال بعد PR #196
 - استخدام صفحة «صلاحيات مجلس السوق» الجديدة لتعيين الصلاحيات بدل الفحص اليدوي
+- مراقبة استقرار التنقل في `/admin/market-council/permissions` خصوصًا تحت الشبكات الضعيفة
+- مراجعة ودمج PR #201 إن تم اعتماد اتجاه «الحسابات المميزة فقط» افتراضيًا؛ الصفحة أداة للحسابات المميزة/الاستثناءات وليست بديلًا كاملًا لصفحة إدارة المستخدمين
 
 ---
 
@@ -125,6 +134,7 @@
 | الاعتماد المشترك على rewrites و envs | أي تغيير في `API_BACKEND_URL` أو rewrites يحتاج deploy |
 | بقاء بعض PRs المدموجة القديمة بوصف فيه attribution غير مرغوب | لا يؤثر تشغيليًا؛ عدم تكراره مستقبلًا |
 | خطورة التعديلات الإنتاجية السريعة من الجوال بدون توثيق | توثيق أي تعديل حرج قبل التنفيذ |
+| ظهور empty state في صفحة صلاحيات المجلس | غالبًا بسبب عدم تنفيذ seed في البيئة. الإجراء: `php artisan db:seed --class="Database\Seeders\RolesAndPermissionsSeeder"` ثم `php artisan permission:cache-reset` |
 
 ---
 
@@ -154,7 +164,8 @@
 - اختبار login على www.dasm.com.sa
 - اختبار الجوال / private mode
 - التحقق من https://api.dasm.com.sa
-- استخدام /admin/market-council/permissions
+- التحقق من استقرار `/admin/market-council/permissions` بعد seed وpagination
+- حسم قرار PR #201 قبل أي توسع إضافي في صفحة الصلاحيات
 - عدم فتح PRات تجميلية جديدة قبل تثبيت الاستقرار الإنتاجي
 
 ---
@@ -162,6 +173,8 @@
 ## 12. ملاحظة إدارية
 
 بعض PRs الأخيرة اندمجت مع attribution غير مرغوب داخل وصف الـ PR. ذلك لا يؤثر تشغيليًا على المنصة، ولكنه يخالف سياسة السجل (القسم 2.5) ويجب عدم تكراره مستقبلًا.
+
+PR #200 أُغلق لأنه أصبح redundant بعد دمج أصل إصلاح infinite loading في PR #199.
 
 ---
 
