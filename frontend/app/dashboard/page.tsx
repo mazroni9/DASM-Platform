@@ -139,11 +139,11 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-6 shadow-2xl"
+        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-4 md:p-5 shadow-2xl"
       >
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-primary text-primary-foreground rounded-xl">
                 <Sparkles className="w-5 h-5" />
               </div>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 مرحباً بك، <span className="text-primary">{userName}</span>
               </h1>
             </div>
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2">
               <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
                 {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer"
                   ? "الاشتراك: مجاني"
@@ -161,9 +161,6 @@ export default function DashboardPage() {
                 عضو منذ {memberSinceYear}
               </span>
             </div>
-            <p className="text-foreground/80 text-sm leading-relaxed">
-              أنت على بعد نقرة من إدارة حسابك بكل سهولة وأمان. استعرض بياناتك وتابع نشاطك.
-            </p>
           </div>
           <LoadingLink
             href="/auctions"
