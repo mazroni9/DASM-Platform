@@ -3,10 +3,15 @@ const nextConfig = {
   reactStrictMode: false,
   compress: true,
   async rewrites() {
+    const backendBase =
+      process.env.API_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000";
+    const base = String(backendBase).replace(/\/$/, "");
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/api/:path*",
+        destination: `${base}/api/:path*`,
       },
     ];
   },
