@@ -401,7 +401,7 @@ export default function UserMenu() {
             maxHeight: "min(70vh, calc(100vh - 16px))",
           }}
           className="mt-2 w-72 rounded-xl border border-border
-                     bg-card/95 backdrop-blur-md shadow-lg z-50
+                     bg-card shadow-md z-50
                      p-2 animate-in fade-in zoom-in-95"
           onKeyDown={(e) => {
             if (e.key === "Escape") closeMenu();
@@ -426,7 +426,7 @@ export default function UserMenu() {
                 <span className="text-sm font-semibold text-slate-800 dark:text-foreground truncate">
                   {user.first_name || user.email || "مستخدم"}
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
+                <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/15">
                   {roleLabel(role)}
                 </span>
               </div>
