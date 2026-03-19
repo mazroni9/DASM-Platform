@@ -2,18 +2,18 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Truck, ArrowLeft } from "lucide-react";
+import { ClipboardCheck, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import LoadingLink from "@/components/LoadingLink";
 
-export default function ShippingPage() {
+export default function TechnicalInspectionPage() {
   const router = useLoadingRouter();
   const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/dashboard/shipping");
+      router.push("/auth/login?returnUrl=/dashboard/technical-inspection");
     }
   }, [isLoggedIn, router]);
 
@@ -25,13 +25,14 @@ export default function ShippingPage() {
         className="bg-card backdrop-blur-xl border border-border rounded-2xl p-8 max-w-xl mx-auto text-center"
       >
         <div className="p-4 bg-primary/10 rounded-2xl inline-flex mb-6">
-          <Truck className="w-12 h-12 text-primary" />
+          <ClipboardCheck className="w-12 h-12 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground mb-4">خدمات الشحن</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-4">
+          الفحص الفني عبر الورش
+        </h1>
         <p className="text-foreground/80 leading-relaxed mb-6">
-          خدمات الشحن ستكون متاحة قريبًا بإذن الله.
-          <br />
-          ونعمل حاليًا على تطوير تجربة شحن أوضح وأدق داخل المنصة.
+          نعمل على تطوير خدمة الفحص الفني عبر الورش المعتمدة داخل المنصة،
+          وستكون متاحة قريبًا بإذن الله.
         </p>
         <LoadingLink
           href="/dashboard"
