@@ -89,23 +89,42 @@ export function ConnectionQualityProvider({ children }: { children: React.ReactN
     mountedRef.current = true;
     if (typeof window === "undefined") return;
 
-    const conn = (navigator as any).connection;
+    let conn: any = null;
+    try {
+      const nav = navigator as any;
+      if (nav && typeof nav === "object" && nav.connection) {
+        conn = nav.connection;
+      }
+    } catch {
+      conn = null;
+    }
+
     const updateNetworkInfo = () => {
-      if (conn && mountedRef.current) {
-        setNetworkInfo({
-          downlink: conn.downlink,
-          effectiveType: conn.effectiveType,
-          rtt: conn.rtt,
-        });
+      if (!mountedRef.current || !conn) return;
+      try {
+        const info: { downlink?: number; effectiveType?: string; rtt?: number } = {};
+        if (typeof conn.downlink === "number") info.downlink = conn.downlink;
+        if (typeof conn.effectiveType === "string") info.effectiveType = conn.effectiveType;
+        if (typeof conn.rtt === "number") info.rtt = conn.rtt;
+        setNetworkInfo(Object.keys(info).length ? info : null);
+      } catch {
+        setNetworkInfo(null);
       }
     };
-    updateNetworkInfo();
-    if (conn) conn.addEventListener("change", updateNetworkInfo);
+
+    try {
+      updateNetworkInfo();
+      if (conn && typeof conn.addEventListener === "function") {
+        conn.addEventListener("change", updateNetworkInfo);
+      }
+    } catch {
+      // ignore: Network Information API not fully supported
+    }
 
     const handleOnline = () => {
       if (!mountedRef.current) return;
       setIsOnline(true);
-      runCheck();
+      runCheck().catch(() => {});
     };
     const handleOffline = () => {
       if (!mountedRef.current) return;
@@ -113,34 +132,62 @@ export function ConnectionQualityProvider({ children }: { children: React.ReactN
       setLatencyMs(null);
     };
 
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    try {
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+    } catch {
+      // fallback: window events should always exist, but guard for exotic envs
+    }
 
-    // Defer first ping to avoid competing with initial page load
     const defer = (fn: () => void) => {
-      if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(() => fn(), { timeout: DEFER_FIRST_PING_MS });
-      } else {
+      try {
+        if (typeof requestIdleCallback === "function") {
+          requestIdleCallback(() => fn(), { timeout: DEFER_FIRST_PING_MS });
+        } else {
+          setTimeout(fn, DEFER_FIRST_PING_MS);
+        }
+      } catch {
         setTimeout(fn, DEFER_FIRST_PING_MS);
       }
     };
 
-    if (!navigator.onLine) {
-      setIsOnline(false);
-    } else {
-      defer(runCheck);
+    try {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setIsOnline(false);
+      } else {
+        defer(() => runCheck().catch(() => {}));
+      }
+    } catch {
+      setIsOnline(true);
+      defer(() => runCheck().catch(() => {}));
     }
 
     const interval = setInterval(() => {
-      if (navigator.onLine && mountedRef.current) runCheck();
+      try {
+        if (typeof navigator !== "undefined" && navigator.onLine && mountedRef.current) {
+          runCheck().catch(() => {});
+        }
+      } catch {
+        // non-fatal: skip this tick
+      }
     }, PING_INTERVAL_MS);
 
     return () => {
       mountedRef.current = false;
       clearInterval(interval);
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-      if (conn) conn.removeEventListener("change", updateNetworkInfo);
+      try {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      } catch {
+        // ignore
+      }
+      try {
+        if (conn && typeof conn.removeEventListener === "function") {
+          conn.removeEventListener("change", updateNetworkInfo);
+        }
+      } catch {
+        // ignore
+      }
     };
   }, [runCheck]);
 

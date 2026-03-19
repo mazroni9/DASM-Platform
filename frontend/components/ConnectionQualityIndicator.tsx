@@ -1,9 +1,26 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 import { cn } from "@/lib/utils";
 import type { ConnectionQualityLevel } from "@/lib/connectionQuality";
+
+class IndicatorErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch() {
+    // non-fatal: fail silently
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
 
 const LEVEL_COLORS: Record<ConnectionQualityLevel, string> = {
   excellent: "text-emerald-500",
@@ -54,7 +71,7 @@ function SignalBars({ level }: { level: ConnectionQualityLevel }) {
   );
 }
 
-export default function ConnectionQualityIndicator() {
+function ConnectionQualityIndicatorInner() {
   const { level, labelAr, latencyMs, isChecking, isOnline } =
     useConnectionQuality();
   const [showTooltip, setShowTooltip] = useState(false);
@@ -62,7 +79,9 @@ export default function ConnectionQualityIndicator() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target;
+      if (!target || !(target instanceof Node)) return;
+      if (ref.current && !ref.current.contains(target)) {
         setShowTooltip(false);
       }
     };
@@ -133,5 +152,13 @@ export default function ConnectionQualityIndicator() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConnectionQualityIndicator() {
+  return (
+    <IndicatorErrorBoundary>
+      <ConnectionQualityIndicatorInner />
+    </IndicatorErrorBoundary>
   );
 }
