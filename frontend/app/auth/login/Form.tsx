@@ -1,7 +1,7 @@
 // app/auth/login/Form.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
+  ArrowLeft,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import LoadingLink from "@/components/LoadingLink";
 import { useAuthStore } from "@/store/authStore";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getErrorMessage } from "@/utils/errorUtils";
 const loginSchema = z.object({
   email: z.string().email({ message: "يرجى إدخال بريد إلكتروني صالح" }),
@@ -33,18 +34,55 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const REDIRECT_FALLBACK_DELAY_MS = 3000;
+
+function isValidReturnUrl(url: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  return url.startsWith("/") && !url.startsWith("//") && !url.includes(":");
+}
+
 export default function LoginForm() {
   const router = useLoadingRouter();
+  const pathname = usePathname();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [intendedDestination, setIntendedDestination] = useState<string | null>(null);
+  const [showFallback, setShowFallback] = useState(false);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
 
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    return () => {
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!success || !intendedDestination || showVerification || pendingApproval) return;
+
+    fallbackTimerRef.current = setTimeout(() => {
+      if (pathname === "/auth/login") {
+        setShowFallback(true);
+      }
+      fallbackTimerRef.current = null;
+    }, REDIRECT_FALLBACK_DELAY_MS);
+
+    return () => {
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+    };
+  }, [success, intendedDestination, showVerification, pendingApproval, pathname]);
   const {
     register,
     handleSubmit,
@@ -63,6 +101,8 @@ export default function LoginForm() {
     setIsLoading(true);
     setError("");
     setSuccess("");
+    setIntendedDestination(null);
+    setShowFallback(false);
     setPendingApproval(false);
 
     try {
@@ -71,19 +111,11 @@ export default function LoginForm() {
       if (result.success) {
         setSuccess("تم تسجيل الدخول بنجاح");
         const returnUrl = searchParams.get("returnUrl");
-        if (returnUrl) {
-          router.push(returnUrl);
-        } else {
-          const user = useAuthStore.getState().user;
-          if (
-            user &&
-            ["admin", "super_admin", "moderator"].includes(user.type)
-          ) {
-            router.push("/admin");
-          } else {
-            router.push("/dashboard");
-          }
-        }
+        const destination = isValidReturnUrl(returnUrl)
+          ? returnUrl
+          : (result.redirectTo || "/dashboard");
+        setIntendedDestination(destination);
+        router.push(destination);
       } else {
         if (result.needsVerification) {
           setSuccess("يرجى إدخال رمز التحقق المرسل إلى بريدك الإلكتروني");
@@ -218,7 +250,29 @@ export default function LoginForm() {
         {success && (
           <Alert variant="success">
             <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>{success}</AlertDescription>
+            <AlertDescription>
+              {success}
+              {showFallback && intendedDestination && (
+                <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
+                  <p className="text-sm text-foreground/80">
+                    إذا لم يتم نقلك تلقائيًا، يمكنك المتابعة من هنا
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      router.replace(intendedDestination);
+                      setShowFallback(false);
+                    }}
+                  >
+                    <ArrowLeft className="h-4 w-4 ml-1" />
+                    الانتقال إلى صفحتي
+                  </Button>
+                </div>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 
