@@ -1,0 +1,20 @@
+---
+description: Production safety and deployment discipline for DASM Platform
+alwaysApply: true
+---
+
+# Production Safety
+
+في أي مهمة تمس الإنتاج أو تسجيل الدخول أو API أو النطاقات أو الجوال:
+
+- ابدأ أولًا بتحديد هل المشكلة في الكود أم في البيئة الخارجية
+- إذا كانت المشكلة في Vercel أو Cloudflare أو Render أو DNS أو Environment Variables، فاذكر ذلك صراحة
+- لا تقترح refactor كبيرًا إذا كان المطلوب إصلاحًا محدودًا
+- لا تغيّر env vars أو domains أو rewrites أو auth logic إلا عند الحاجة المباشرة
+- حافظ على أقل تعديل آمن ممكن
+- لا تفتح PR شكلي إذا كان الحل كله خارج المستودع
+- إذا كان التغيير توثيقيًا فقط، فلا حاجة لبناء المشروع إلا إذا كانت هناك فائدة فعلية من ذلك
+
+عند أي تغيير إنتاجي مؤثر، تأكد أن حالة المشروع الموثقة في:
+@docs/operations/DASM_PLATFORM_CONTROL_LOG.md
+ما زالت متوافقة مع الواقع بعد التغيير
