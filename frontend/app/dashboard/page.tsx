@@ -127,19 +127,19 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-2xl p-4 md:p-5 shadow-sm"
+        className="bg-card border border-border rounded-2xl shadow-sm p-3 md:p-5 lg:p-5"
       >
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2.5 mb-1.5">
-              <div className="p-1.5 bg-primary/10 text-primary rounded-lg shrink-0">
-                <Sparkles className="w-4 h-4" />
+            <div className="flex items-center gap-2 md:gap-2.5 mb-1 md:mb-1.5">
+              <div className="p-1 md:p-1.5 bg-primary/10 text-primary rounded-lg shrink-0">
+                <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </div>
-              <h1 className="text-xl font-bold text-foreground truncate">
+              <h1 className="text-base md:text-xl font-bold text-foreground truncate">
                 مرحباً بك، <span className="text-primary">{userName}</span>
               </h1>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 md:gap-1.5">
               {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer" ? (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
                   الاشتراك: مجاني
