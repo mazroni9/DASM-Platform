@@ -213,24 +213,39 @@ class UserController extends Controller
     {
         try {
             $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+            $platformOrg = Organization::where('type', OrganizationType::PLATFORM)->first();
+            $userOrgId = $user->organization_id;
 
-            // استخدام سياق الفريق: منظمة المستخدم أو منصة النظام (لأدوار مثل مجلس السوق)
-            $teamId = $user->organization_id;
-            if (!$teamId) {
-                $platformOrg = Organization::where('type', OrganizationType::PLATFORM)->first();
-                $teamId = $platformOrg?->id;
-            }
-            if ($teamId) {
+            $permissionNames = [];
+            $seen = [];
+
+            $addPermissions = function (?int $teamId) use ($user, $registrar, &$permissionNames, &$seen) {
+                if (!$teamId || !method_exists($user, 'getAllPermissions')) {
+                    return;
+                }
                 try {
                     $registrar->setPermissionsTeamId($teamId);
+                    foreach ($user->getAllPermissions()->pluck('name') as $name) {
+                        if (!isset($seen[$name])) {
+                            $seen[$name] = true;
+                            $permissionNames[] = $name;
+                        }
+                    }
                 } catch (\Throwable $e) {
                     // ignore
                 }
+            };
+
+            // Primary context: user's org or platform (for users without org)
+            $primaryTeamId = $userOrgId ?: ($platformOrg?->id);
+            $addPermissions($primaryTeamId);
+
+            // Platform context: always include so council roles (in platform org) are visible
+            if ($platformOrg && $primaryTeamId !== $platformOrg->id) {
+                $addPermissions($platformOrg->id);
             }
 
-            if (method_exists($user, 'getAllPermissions')) {
-                return $user->getAllPermissions()->pluck('name')->values()->toArray();
-            }
+            return $permissionNames;
         } catch (\Throwable $e) {
             // ignore
         }
