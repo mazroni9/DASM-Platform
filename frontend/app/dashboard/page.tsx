@@ -101,33 +101,21 @@ export default function DashboardPage() {
               label: "المشتريات",
               value: stats.purchases_count,
               trend: formatTrend(stats.purchases_trend),
-              bg: "bg-primary/10",
-              border: "border-primary/20",
-              text: "text-primary",
             },
             {
               label: "المبيعات",
               value: stats.sales_count,
               trend: formatTrend(stats.sales_trend),
-              bg: "bg-secondary/10",
-              border: "border-secondary/20",
-              text: "text-secondary",
             },
             {
               label: "رصيد المحفظة",
               value: stats.wallet_balance ? `${stats.wallet_balance.toLocaleString("ar-SA")}` : "0",
               trend: formatTrend(stats.wallet_trend),
-              bg: "bg-amber-500/10",
-              border: "border-amber-500/20",
-              text: "text-amber-500",
             },
             {
               label: "الطلبات النشطة",
               value: stats.active_orders_count,
               trend: formatTrend(stats.active_orders_trend),
-              bg: "bg-purple-500/10",
-              border: "border-purple-500/20",
-              text: "text-purple-500",
             },
           ]
         : [],
@@ -139,34 +127,36 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-4 md:p-5 shadow-2xl"
+        className="bg-card border border-border rounded-2xl p-4 md:p-5 shadow-sm"
       >
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-primary text-primary-foreground rounded-xl">
-                <Sparkles className="w-5 h-5" />
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <div className="p-1.5 bg-primary/10 text-primary rounded-lg shrink-0">
+                <Sparkles className="w-4 h-4" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground">
+              <h1 className="text-xl font-bold text-foreground truncate">
                 مرحباً بك، <span className="text-primary">{userName}</span>
               </h1>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
-                {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer"
-                  ? "الاشتراك: مجاني"
-                  : ""}
-              </span>
-              <span className="px-2 py-1 bg-primary/20 text-primary rounded-lg text-xs border border-primary/30">
-                عضو منذ {memberSinceYear}
-              </span>
+            <div className="flex flex-wrap gap-1.5">
+              {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer" ? (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
+                  الاشتراك: مجاني
+                </span>
+              ) : null}
+              {memberSinceYear ? (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
+                  عضو منذ {memberSinceYear}
+                </span>
+              ) : null}
             </div>
           </div>
           <LoadingLink
             href="/auctions"
-            className="p-2 bg-primary rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
+            className="shrink-0 p-2 rounded-lg border border-border bg-muted/40 hover:bg-muted transition-colors flex items-center justify-center"
           >
-            <Rocket className="w-4 h-4 text-primary-foreground" />
+            <Rocket className="w-4 h-4 text-primary" />
           </LoadingLink>
         </div>
       </motion.div>
@@ -189,9 +179,9 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
-                <Activity className="w-4 h-4" />
+            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <div className="p-1 bg-primary/10 text-primary rounded-md">
+                <Activity className="w-3.5 h-3.5" />
               </div>
               إحصائيات سريعة
             </h2>
@@ -211,26 +201,22 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className={cn(
-                  "p-4 rounded-xl border-2 bg-card/80 backdrop-blur-sm",
-                  item.bg,
-                  item.border,
-                )}
+                className="p-4 rounded-xl border border-border bg-card shadow-sm border-l-2 border-l-primary/30"
               >
-                <div className="flex justify-end items-center mb-2">
+                <div className="flex justify-end items-center mb-1.5">
                   <span
                     className={cn(
-                      "text-sm font-semibold px-2 py-1 rounded-md border",
+                      "text-xs font-medium px-2 py-0.5 rounded border",
                       parseFloat(item.trend) >= 0
-                        ? "bg-green-500/25 text-green-700 dark:text-green-300 border-green-500/40"
-                        : "bg-red-500/25 text-red-700 dark:text-red-300 border-red-500/40",
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400/90 border-emerald-500/25"
+                        : "bg-red-500/15 text-red-700 dark:text-red-400/90 border-red-500/25",
                     )}
                   >
                     {item.trend}
                   </span>
                 </div>
-                <p className="text-xs text-foreground/80 mb-1">{item.label}</p>
-                <p className={cn("text-lg font-bold", item.text)}>{item.value}</p>
+                <p className="text-xs text-muted-foreground mb-0.5">{item.label}</p>
+                <p className="text-lg font-bold text-foreground">{item.value}</p>
               </motion.div>
             ))}
           </div>
