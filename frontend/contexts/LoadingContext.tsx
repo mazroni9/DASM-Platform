@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useLayoutEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useLayoutEffect, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface LoadingContextType {
   loadingCount: number;
@@ -18,13 +19,11 @@ interface LoadingProviderProps {
 export function LoadingProvider({ children }: LoadingProviderProps) {
   const [loadingCount, setLoadingCount] = useState(0);
   const isMountedRef = useRef(false);
+  const pathname = usePathname();
 
-  // Track if component is mounted to prevent updates during unmount
   useLayoutEffect(() => {
     isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
+    return () => { isMountedRef.current = false; };
   }, []);
 
   const startLoading = useCallback(() => {
@@ -34,10 +33,13 @@ export function LoadingProvider({ children }: LoadingProviderProps) {
   }, []);
 
   const stopLoading = useCallback(() => {
-    // Always allow stopLoading to work, even during unmount
-    // This ensures loading states are properly cleaned up
-    setLoadingCount(prev => Math.max(0, prev - 1));
+    setLoadingCount((prev) => Math.max(0, prev - 1));
   }, []);
+
+  // إيقاف الـ loader عند تغيّر المسار (تنقل أسرع)
+  useEffect(() => {
+    stopLoading();
+  }, [pathname, stopLoading]);
 
   const isLoading = loadingCount > 0;
 

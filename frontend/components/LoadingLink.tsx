@@ -56,7 +56,7 @@ export default function LoadingLink({
               isNavigatingRef.current = false;
               stopLoading();
             }
-          }, 2000); // Fallback timeout
+          }, 1500); // Fallback - pathname effect يوقف عادةً قبل ذلك
         }
       }
     },
