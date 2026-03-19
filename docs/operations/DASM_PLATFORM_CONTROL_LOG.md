@@ -72,6 +72,7 @@
 - [x] إصلاح rewrite: دعم `API_BACKEND_URL` و `NEXT_PUBLIC_API_URL`
 - [x] تحويل صفحة خدمات الشحن إلى Coming Soon
 - [x] إضافة صفحة الفحص الفني عبر الورش (Coming Soon)
+- [x] تشخيص استوديو مجلس السوق: إصلاح fallback صلاحيات platform org لاستعادة ظهور الرابط
 
 ---
 
@@ -80,6 +81,7 @@
 - مراقبة سلوك Preview بعد دمج PR #185 وضبط `API_BACKEND_URL` في Vercel
 - التحقق من عمل login في Preview عند اكتمال الإعداد
 - متابعة PR #184 و PR #185 حتى الدمج
+- تشخيص استوديو مجلس السوق: تم تحديد السبب (team context) وتنفيذ إصلاح fallback لدمج صلاحيات platform org
 
 ---
 
