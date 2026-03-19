@@ -9,6 +9,7 @@ import {
   Search,
   RefreshCw,
   Save,
+  AlertCircle,
 } from "lucide-react";
 
 type CouncilPermission = { id: number; name: string; display_name: string };
@@ -54,28 +55,37 @@ function normalizePaginated<T>(resData: unknown): {
 export default function AdminCouncilPermissionsPage() {
   const [permissions, setPermissions] = useState<CouncilPermission[]>([]);
   const [users, setUsers] = useState<UserWithCouncilPerms[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [permissionsError, setPermissionsError] = useState(false);
+  const [usersError, setUsersError] = useState(false);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
   const [userSelections, setUserSelections] = useState<Record<number, number[]>>({});
 
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
+    setLoadingPermissions(true);
+    setPermissionsError(false);
     try {
       const res = await api.get("/api/admin/market-council/permissions/list");
       const data = res?.data?.data;
       setPermissions(Array.isArray(data) ? data : []);
     } catch {
       setPermissions([]);
+      setPermissionsError(true);
       toast.error("تعذر تحميل صلاحيات مجلس السوق");
+    } finally {
+      setLoadingPermissions(false);
     }
-  };
+  }, []);
 
   const fetchUsers = useCallback(
     async (page = 1) => {
+      setLoadingUsers(true);
+      setUsersError(false);
       try {
-        setLoading(true);
         const params: Record<string, string | number> = { page, per_page: 15 };
         if (search.trim()) params.search = search.trim();
         const res = await api.get("/api/admin/market-council/permissions/users", { params });
@@ -94,9 +104,10 @@ export default function AdminCouncilPermissionsPage() {
         });
       } catch {
         setUsers([]);
+        setUsersError(true);
         toast.error("تعذر تحميل المستخدمين");
       } finally {
-        setLoading(false);
+        setLoadingUsers(false);
       }
     },
     [permissions, search]
@@ -104,10 +115,10 @@ export default function AdminCouncilPermissionsPage() {
 
   useEffect(() => {
     fetchPermissions();
-  }, []);
+  }, [fetchPermissions]);
 
   useEffect(() => {
-    if (permissions.length) fetchUsers(currentPage);
+    if (permissions.length > 0) fetchUsers(currentPage);
   }, [permissions.length, currentPage, fetchUsers]);
 
   const handleToggle = (userId: number, permId: number, checked: boolean) => {
@@ -159,12 +170,12 @@ export default function AdminCouncilPermissionsPage() {
             />
           </div>
           <button
-            onClick={() => fetchUsers(currentPage)}
-            disabled={loading}
+            onClick={() => permissions.length > 0 && fetchUsers(currentPage)}
+            disabled={loadingPermissions || loadingUsers}
             className="p-2 rounded-lg border border-border hover:bg-muted transition-colors"
             aria-label="تحديث"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${loadingUsers ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -174,9 +185,43 @@ export default function AdminCouncilPermissionsPage() {
       </p>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        {loading && users.length === 0 ? (
+        {loadingPermissions ? (
           <div className="flex justify-center items-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : permissionsError ? (
+          <div className="py-12 px-4 text-center">
+            <AlertCircle className="w-10 h-10 mx-auto mb-3 text-destructive" />
+            <p className="text-destructive font-medium mb-2">تعذر تحميل صلاحيات مجلس السوق</p>
+            <p className="text-muted-foreground text-sm mb-4">حدث خطأ أثناء جلب البيانات. تأكد من اتصالك بالشبكة وحاول مجددًا.</p>
+            <button
+              onClick={fetchPermissions}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:opacity-90"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        ) : permissions.length === 0 ? (
+          <div className="py-12 px-4 text-center">
+            <Shield className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-muted-foreground font-medium mb-2">لا توجد صلاحيات مجلس السوق معرفة في النظام</p>
+            <p className="text-muted-foreground text-sm">يحتاج المسؤول للتأكد من وجود صلاحيات council.* في النظام قبل إدارة الصلاحيات.</p>
+          </div>
+        ) : loadingUsers && users.length === 0 ? (
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : usersError && users.length === 0 ? (
+          <div className="py-12 px-4 text-center">
+            <AlertCircle className="w-10 h-10 mx-auto mb-3 text-destructive" />
+            <p className="text-destructive font-medium mb-2">تعذر تحميل المستخدمين</p>
+            <p className="text-muted-foreground text-sm mb-4">حدث خطأ أثناء جلب قائمة المستخدمين. حاول مجددًا.</p>
+            <button
+              onClick={() => fetchUsers(currentPage)}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:opacity-90"
+            >
+              إعادة المحاولة
+            </button>
           </div>
         ) : users.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
