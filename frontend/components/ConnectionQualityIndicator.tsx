@@ -120,7 +120,7 @@ export default function ConnectionQualityIndicator() {
       {showTooltip && (
         <div
           className={cn(
-            "absolute bottom-full start-0 end-auto translate-x-0 mb-2 z-[9999]",
+            "absolute top-full start-0 end-auto translate-x-0 mt-2 z-[9999]",
             "px-3 py-2 rounded-lg shadow-xl",
             "bg-white dark:bg-slate-900",
             "text-slate-900 dark:text-white",
