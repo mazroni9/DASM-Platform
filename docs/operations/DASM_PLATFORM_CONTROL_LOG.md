@@ -47,7 +47,7 @@
 | **Backend** | Laravel على Render (`dasm-platform-backend`) |
 | **Dashboard stats** | حقيقية عبر `GET /api/dashboard/stats` |
 | **My Sales** | حقيقية عبر `GET /api/settlements?seller=me` |
-| **API rewrites** | قابلة للتكوين عبر `API_BACKEND_URL` أو `NEXT_PUBLIC_API_URL` |
+| **API rewrites** | Production: `API_BACKEND_URL` = `https://api.dasm.com.sa`؛ قابلة للتكوين |
 | **/ping** | Route Handler محلي يعيد 200 |
 
 ---
@@ -56,34 +56,50 @@
 
 | التاريخ التقريبي | الدفعة | النتيجة |
 |-------------------|--------|---------|
+| 2026-03 | **PR #196** — Mobile dashboard priority actions | دمج: إجراءات سريعة فوق المحتوى على الجوال، ترتيب عملي |
+| 2026-03 | **PR #195** — Market Council permissions management | دمج: صفحة إدارة صلاحيات مجلس السوق في لوحة المسؤول |
+| 2026-03 | **PR #194** — Dashboard visual unification | دمج: توحيد ألوان البطاقات، شد بطاقة الترحيب |
+| 2026-03 | **PR #193** — Mobile client crash fix | دمج: تقوية ConnectionQuality و Navbar ضد استثناءات iPhone/Safari |
+| 2026-03 | **PR #192** — Profile + header polish | دمج: تحسين contrast في UserMenu، تهذيب profile |
+| 2026-03 | **PR #191** — Header / Dashboard UX | دمج: تحسينات UX للهيدر والـ dashboard |
+| 2026-03 | **PR #190** — Login redirect fallback | دمج: fallback لتسجيل الدخول عند تأخر التحويل |
+| 2026-03 | **PR #189** — Council Studio access fix | دمج: إصلاح ظهور استوديو مجلس السوق |
+| 2026-03 | **PR #188** — Coming Soon (shipping + technical inspection) | دمج: صفحات Coming Soon |
+| 2026-03 | **PR #187** — سياسة Attribution | دمج: توثيق سياسة نسبة العمل |
+| 2026-03 | **PR #186** — إضافة Control Log | دمج: إنشاء هذا الملف |
+| 2026-03 | **PR #185** — إصلاح API rewrite | دمج: إعادة توجيه `/api/*` إلى backend مُكوّن |
 | 2026-03 | **PR #184** — إصلاح Dashboard للإنتاج | دمج: stats حقيقية، My Sales API، إزالة quick actions مكسورة، إزالة ازدواج الإعدادات |
-| 2026-03 | **PR #185** — إصلاح API rewrite | دمج: إعادة توجيه `/api/*` إلى backend مُكوّن بدلاً من localhost الثابت |
-| 2026-03 | **PR #183** — ping, connection quality | سابقاً |
 
 ---
 
 ## 5. المنجزات المؤرشفة
 
-- [x] Dashboard: إحصائيات حقيقية + اتجاهات محسوبة من الـ backend
-- [x] My Sales: استبدال mock بـ API مستقر مع pagination
-- [x] إزالة إجراءات التقارير والدعم المكسورة
+- [x] Dashboard stats حقيقية + trends
+- [x] My Sales API
+- [x] إزالة quick actions المكسورة
 - [x] إزالة زر الإعدادات المكرر
-- [x] تحسين وضوح شارات الإحصائيات وتباين البطاقات
 - [x] إصلاح rewrite: دعم `API_BACKEND_URL` و `NEXT_PUBLIC_API_URL`
-- [x] تحويل صفحة خدمات الشحن إلى Coming Soon
-- [x] إضافة صفحة الفحص الفني عبر الورش (Coming Soon)
-- [x] تشخيص استوديو مجلس السوق: إصلاح fallback صلاحيات platform org لاستعادة ظهور الرابط
-- [x] إضافة fallback UX لتسجيل الدخول عند تأخر التحويل التلقائي
-- [x] تحسينات Header/Dashboard UX: تموضع مؤشر جودة الاتصال، تباين هوية المستخدم في الوضع الفاتح، إزالة أيقونات بطاقات الإحصائيات، تسمية «حسابي» للتنقل
+- [x] shipping و technical inspection كـ Coming Soon
+- [x] إصلاح ظهور Council Studio
+- [x] login redirect fallback
+- [x] تحسينات Header / Dashboard UX
+- [x] تحسين contrast في UserMenu وتهذيب profile
+- [x] توحيد ألوان dashboard وشد بطاقة الترحيب
+- [x] إصلاح mobile client crash في iPhone/Safari
+- [x] إضافة صفحة وصلاحيات Market Council في لوحة المسؤول
+- [x] إعادة ترتيب Dashboard على الجوال: الإجراءات الأساسية أولًا
+- [x] إصلاح شهادة www.dasm.com.sa (توثيق وتوجيه يدوي)
+- [x] تثبيت الباكند الإنتاجي عبر api.dasm.com.sa
+- [x] اعتماد `API_BACKEND_URL = https://api.dasm.com.sa` في Production وعدم الاعتماد على `NEXT_PUBLIC_API_URL` في الإنتاج
 
 ---
 
 ## 6. المهام النشطة الحالية
 
-- مراقبة سلوك Preview بعد دمج PR #185 وضبط `API_BACKEND_URL` في Vercel
-- التحقق من عمل login في Preview عند اكتمال الإعداد
-- متابعة PR #184 و PR #185 حتى الدمج
-- تشخيص استوديو مجلس السوق: تم تحديد السبب (team context) وتنفيذ إصلاح fallback لدمج صلاحيات platform org
+- مراقبة استقرار Production بعد تحديث ربط API على api.dasm.com.sa
+- التحقق من login والجوال بعد آخر تعديلات Vercel env
+- مراجعة نهائية لتجربة الجوال بعد PR #196
+- استخدام صفحة «صلاحيات مجلس السوق» الجديدة لتعيين الصلاحيات بدل الفحص اليدوي
 
 ---
 
@@ -91,11 +107,11 @@
 
 | المهمة | السبب | الأولوية |
 |--------|-------|----------|
-| واجهة الشحن (shipping) تكامل | Coming Soon وُضِع؛ الباك إند لاحقًا | متوسطة |
-| الفحص الفني عبر الورش تكامل | Coming Soon وُضِع؛ التكامل لاحقًا | منخفضة |
-| استوديو مجلس السوق | ملف منفصل مخصص | منخفضة |
-| Wallet withdraw API | خارج نطاق PR #184 | متوسطة |
-| Sanctum/CORS للنطاقات الجديدة | خطوة تالية فقط إذا استمرت مشكلة login | مراقبة |
+| shipping integration | Coming Soon وُضِع؛ التكامل لاحقًا | متوسطة |
+| technical inspection integration | Coming Soon وُضِع؛ التكامل لاحقًا | منخفضة |
+| wallet withdraw API | خارج نطاق العمل الحالي | متوسطة |
+| تحسينات إضافية غير حرجة على الجوال | polish لاحق بعد استقرار الإنتاج | منخفضة |
+| تحسينات slug/loading لمجلس السوق المؤجلة سابقًا | غير حرجة | منخفضة |
 
 ---
 
@@ -103,18 +119,20 @@
 
 | المخاطر | التخفيف |
 |---------|---------|
-| عدم ضبط `API_BACKEND_URL` في Vercel | Preview/Production ستبقى تحاول الوصول إلى localhost. **الإجراء**: ضبط المتغير في Environment Variables. |
-| نطاقات Vercel Preview غير مضمنة في Sanctum | احتمال فشل الـ login في Preview حتى بعد إصلاح rewrite. **الإجراء**: إضافة النطاقات إلى `SANCTUM_STATEFUL_DOMAINS` عند اللزوم. |
-| تبعية متعدد البيئات | Frontend على Vercel، Backend على Render. أي خلل في التكوين يؤثر على الاتصال. |
+| احتمال تضارب envs بين Production و Preview | مراجعة Vercel Environment Variables وضبط قيم مختلفة إن لزم |
+| الاعتماد المشترك على rewrites و envs | أي تغيير في `API_BACKEND_URL` أو rewrites يحتاج deploy |
+| بقاء بعض PRs المدموجة القديمة بوصف فيه attribution غير مرغوب | لا يؤثر تشغيليًا؛ عدم تكراره مستقبلًا |
+| خطورة التعديلات الإنتاجية السريعة من الجوال بدون توثيق | توثيق أي تعديل حرج قبل التنفيذ |
 
 ---
 
 ## 9. ترتيب الأولويات
 
-1. **استقرار الوصول**: اكتمال إعداد rewrite و env (PR #185 + Vercel)
-2. **استقرار auth في Preview**: التحقق من login بعد الإعداد
-3. **دمج PR #184** إذا لم يُدمج بعد
-4. المهام المؤجلة حسب الحاجة (shipping، withdraw، إلخ)
+1. استقرار Production بعد api.dasm.com.sa
+2. التحقق العملي من login والجوال
+3. استخدام صفحة صلاحيات مجلس السوق بدل المعالجات اليدوية
+4. استكمال المؤجل حسب الحاجة (shipping، technical inspection، wallet withdraw)
+5. أي polish لاحق فقط بعد استقرار الإنتاج
 
 ---
 
@@ -131,14 +149,17 @@
 
 ## 11. الخطوة التالية المعتمدة
 
-**ضبط متغير البيئة في Vercel:**
+- اختبار login على www.dasm.com.sa
+- اختبار الجوال / private mode
+- التحقق من https://api.dasm.com.sa
+- استخدام /admin/market-council/permissions
+- عدم فتح PRات تجميلية جديدة قبل تثبيت الاستقرار الإنتاجي
 
-1. Vercel Dashboard → المشروع → Settings → Environment Variables
-2. Add: `API_BACKEND_URL` = `https://dasm-platform-backend.onrender.com`
-3. تطبيق على Preview و Production
-4. إعادة deploy أو انتظار rebuild الـ Preview عند دمج PR #185
+---
 
-بعد ذلك: التحقق من عمل login في Preview.
+## 12. ملاحظة إدارية
+
+بعض PRs الأخيرة اندمجت مع attribution غير مرغوب داخل وصف الـ PR. ذلك لا يؤثر تشغيليًا على المنصة، ولكنه يخالف سياسة السجل (القسم 2.5) ويجب عدم تكراره مستقبلًا.
 
 ---
 
