@@ -10,6 +10,7 @@ class MarketCouncilCategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
+            ['name_ar' => 'ثقافة التاجر المحترف', 'slug' => 'thaqafat-al-tajir-al-mhtarif', 'sort_order' => 0],
             ['name_ar' => 'قصص السوق',           'slug' => 'qisas-al-suq',        'sort_order' => 1],
             ['name_ar' => 'علم المزاد',           'slug' => 'ilm-al-muzad',       'sort_order' => 2],
             ['name_ar' => 'أخلاقيات التجارة',     'slug' => 'akhlaqiyat-al-tijara', 'sort_order' => 3],
