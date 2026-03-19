@@ -64,23 +64,8 @@ export default function MarketTypeNav() {
   const visibleItems = marketItems.filter((item) => !item.isHidden);
 
   return (
-    <div className="w-full py-8 md:py-10">
+    <div className="w-full pt-4 md:pt-6 pb-8 md:pb-10">
       <div className="max-w-6xl mx-auto">
-        {/* العنوان الرئيسي للسكيشن */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-8 md:mb-10"
-        >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1F4B7A] dark:text-primary mb-3">
-            اختر سوقك المتخصص
-          </h2>
-          <p className="text-sm md:text-base max-w-xl mx-auto text-[#009345] dark:text-[#009345]">
-            كل سوق مصمم ليلبي احتياجات فئة محددة من البائعين والمشترين
-          </p>
-        </motion.div>
-
         {/* العناصر (مُتوسّطة) */}
         <div className="flex flex-wrap justify-center gap-6 md:gap-10">
           {visibleItems.map((item, index) => (
