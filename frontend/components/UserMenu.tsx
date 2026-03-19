@@ -340,17 +340,17 @@ export default function UserMenu() {
         ref={triggerRef}
         onClick={() => setIsOpen((s) => !s)}
         onKeyDown={handleTriggerKeyDown}
-        className="group flex items-center gap-2 rounded-xl px-2.5 py-1.5
-                   text-foreground hover:text-primary
-                   hover:bg-border/60 focus:outline-none
-                   focus:ring-2 focus:ring-primary/40 transition-all"
+        className="group flex items-center gap-2.5 rounded-xl px-2.5 py-1.5
+                   !text-white hover:!text-white hover:bg-white/10
+                   focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/5
+                   dark:!text-foreground dark:hover:!text-primary dark:hover:bg-border/60 dark:focus:ring-primary/40 transition-all"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls="user-menu"
         title="قائمة المستخدم"
       >
-        {/* Avatar */}
-        <span className="relative inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden ring-1 ring-border bg-primary text-white text-sm font-semibold">
+        {/* Avatar — ring أنظف على الهيدر الفاتح */}
+        <span className="relative inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/30 dark:ring-border bg-primary text-white text-sm font-semibold shrink-0">
           {user?.avatar_url ? (
             <Image
               src={user.avatar_url}
@@ -363,19 +363,19 @@ export default function UserMenu() {
           )}
         </span>
 
-        {/* Name + Role (مخفية على الشاشات الصغيرة) — contrast واضح في الوضع الفاتح */}
-        <span className="hidden md:flex flex-col items-start leading-tight max-w-[12rem]">
-          <span className="text-sm font-semibold truncate text-slate-800 dark:text-foreground">
+        {/* Name + Role — مناسب للهيدر الأزرق في الوضع الفاتح */}
+        <span className="hidden md:flex flex-col items-start leading-tight max-w-[12rem] gap-0.5">
+          <span className="text-sm font-semibold truncate">
             {user.first_name || user.email || "مستخدم"}
           </span>
-          <span className="text-[11px] text-slate-600 dark:text-primary/90 font-medium truncate">
+          <span className="text-[11px] font-medium truncate opacity-85">
             {roleLabel(role)}
           </span>
         </span>
 
         {/* Chevron */}
         <ChevronDown
-          className={`w-4 h-4 transition-transform text-primary/90 ${
+          className={`w-4 h-4 transition-transform opacity-80 shrink-0 ${
             isOpen ? "rotate-180" : ""
           }`}
           aria-hidden="true"

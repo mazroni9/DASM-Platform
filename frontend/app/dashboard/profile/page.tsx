@@ -18,24 +18,16 @@ import {
 import {
   User,
   Phone,
-  MapPin,
   Shield,
   Bell,
   Loader2,
   CheckCircle,
   AlertCircle,
-  Building,
   Mail,
-  Calendar,
   Key,
   Eye,
   EyeOff,
-  Sparkles,
   ArrowLeft,
-  BadgeCheck,
-  Star,
-  Clock,
-  Map,
 } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
 import { UserRole } from "@/types/types";
@@ -101,76 +93,19 @@ const TABS: Array<{
   id: TabId;
   label: string;
   icon: typeof User;
-  active: { bg: string; border: string; text: string; icon: string };
 }> = [
-  {
-    id: "personal",
-    label: "المعلومات الشخصية",
-    icon: User,
-    active: {
-      bg: "bg-blue-500/20",
-      border: "border-blue-500/30",
-      text: "text-blue-300",
-      icon: "text-blue-400",
-    },
-  },
-  {
-    id: "security",
-    label: "الأمان",
-    icon: Shield,
-    active: {
-      bg: "bg-emerald-500/20",
-      border: "border-emerald-500/30",
-      text: "text-emerald-300",
-      icon: "text-emerald-400",
-    },
-  },
-  {
-    id: "notifications",
-    label: "الإشعارات",
-    icon: Bell,
-    active: {
-      bg: "bg-amber-500/20",
-      border: "border-amber-500/30",
-      text: "text-amber-300",
-      icon: "text-amber-400",
-    },
-  },
+  { id: "personal", label: "المعلومات الشخصية", icon: User },
+  { id: "security", label: "الأمان", icon: Shield },
+  { id: "notifications", label: "الإشعارات", icon: Bell },
 ];
 
-const getRoleConfig = (role: string) => {
-  const roleMap: Record<
-    string,
-    { name: string; color: string; bg: string; border: string }
-  > = {
-    [UserRole.DEALER]: {
-      name: "تاجر",
-      color: "text-purple-400",
-      bg: "bg-purple-500/20",
-      border: "border-purple-500/30",
-    },
-    [UserRole.ADMIN]: {
-      name: "مدير",
-      color: "text-red-400",
-      bg: "bg-red-500/20",
-      border: "border-red-500/30",
-    },
-    [UserRole.USER]: {
-      name: "مستخدم",
-      color: "text-blue-400",
-      bg: "bg-blue-500/20",
-      border: "border-blue-500/30",
-    },
+const getRoleLabel = (role: string) => {
+  const map: Record<string, string> = {
+    [UserRole.DEALER]: "تاجر",
+    [UserRole.ADMIN]: "مدير",
+    [UserRole.USER]: "مستخدم",
   };
-
-  return (
-    roleMap[role] || {
-      name: role,
-      color: "text-gray-400",
-      bg: "bg-gray-500/20",
-      border: "border-gray-500/30",
-    }
-  );
+  return map[role] || role;
 };
 
 // helper: extract backend validation errors nicely
@@ -520,101 +455,75 @@ export default function ProfilePage() {
     );
   }
 
-  const roleConfig = getRoleConfig(profile.type);
+  const roleLabel = getRoleLabel(profile.type);
 
   return (
     <div className="space-y-6 overflow-x-hidden" dir="rtl">
-      {/* Header */}
+      {/* Header — بطاقة هوية رئيسية + badges أنظف */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card backdrop-blur-2xl border border-border rounded-2xl p-4 sm:p-6 shadow-2xl"
+        className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 min-w-0">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 min-w-0">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary text-primary-foreground rounded-xl shrink-0">
-                <User className="w-6 h-6" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-background border border-border rounded-lg shrink-0">
+                <User className="w-5 h-5 text-foreground/80" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-xl font-bold text-foreground">
                   الملف الشخصي
                 </h1>
-                <p className="text-foreground/70 text-sm mt-1">
+                <p className="text-foreground/60 text-sm mt-0.5">
                   إدارة معلومات حسابك وإعداداته
                 </p>
               </div>
             </div>
 
-            {/* Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 backdrop-blur-sm min-w-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center shrink-0">
-                    <User className="w-7 h-7 sm:w-8 sm:h-8" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-foreground text-lg truncate">
-                      {profile.first_name} {profile.last_name}
-                    </h3>
-                    <p className="text-foreground/80 text-sm truncate">
-                      {profile.email}
-                    </p>
-                  </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 bg-background border border-border rounded-full flex items-center justify-center shrink-0">
+                  <User className="w-6 h-6 text-foreground/70" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground truncate">
+                    {profile.first_name} {profile.last_name}
+                  </h3>
+                  <p className="text-foreground/70 text-sm truncate">
+                    {profile.email}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20 backdrop-blur-sm min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <BadgeCheck className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span className="text-sm text-foreground/80">الحالة</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <div
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
-                      roleConfig.bg,
-                      roleConfig.border,
-                      roleConfig.color,
-                    )}
-                  >
-                    {roleConfig.name}
-                  </div>
-
-                  <div
-                    className={cn(
-                      "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
-                      profile.is_active === false
-                        ? "bg-rose-500/20 border-rose-500/30 text-rose-400"
-                        : "bg-emerald-500/20 border-emerald-500/30 text-emerald-400",
-                    )}
-                  >
-                    {profile.is_active === false ? "غير مفعل ❌" : "مفعل ✅"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/20 backdrop-blur-sm min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-sm text-foreground/80">
-                    تاريخ الانضمام
-                  </span>
-                </div>
-                <p className="text-amber-300 font-medium break-words">
-                  {formatDate(profile.created_at)}
-                </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-background border border-border text-foreground/80">
+                  {roleLabel}
+                </span>
+                <span
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-xs font-medium border",
+                    profile.is_active === false
+                      ? "bg-destructive/10 border-destructive/20 text-destructive"
+                      : "bg-muted border-border text-foreground/80",
+                  )}
+                >
+                  {profile.is_active === false ? "غير مفعل" : "مفعل"}
+                </span>
+                <span className="px-2.5 py-1 rounded-md text-xs text-foreground/70 border border-border bg-background">
+                  انضم {formatDate(profile.created_at)}
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+          <div className="shrink-0">
             <LoadingLink
               href="/dashboard"
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-card/50 text-foreground/80 rounded-xl border border-border hover:bg-border hover:scale-105 transition-all duration-300"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-background text-foreground/80 rounded-lg border border-border hover:bg-border/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="font-medium">العودة للرئيسية</span>
+              <span className="text-sm font-medium">العودة للرئيسية</span>
             </LoadingLink>
           </div>
         </div>
@@ -629,13 +538,12 @@ export default function ProfilePage() {
           transition={{ delay: 0.1 }}
           className="xl:col-span-1"
         >
-          <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-6">
-            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h2 className="text-sm font-semibold text-foreground/80 mb-3">
               الإعدادات
             </h2>
 
-            <div className="space-y-3">
+            <div className="space-y-1">
               {TABS.map((tab) => {
                 const TabIcon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -646,64 +554,35 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "w-full p-4 rounded-xl border transition-all duration-300 text-right flex items-center gap-3 group min-w-0",
+                      "w-full px-3 py-2.5 rounded-lg border text-right flex items-center gap-2.5 min-w-0 transition-colors",
                       isActive
-                        ? cn(
-                            tab.active.bg,
-                            tab.active.border,
-                            tab.active.text,
-                            "shadow-lg",
-                          )
-                        : "bg-border/30 border-border text-foreground/70 hover:bg-border/70 hover:border-border",
+                        ? "bg-primary/10 border-primary/30 text-primary"
+                        : "bg-background border-border text-foreground/70 hover:bg-border/50 hover:border-border",
                     )}
                   >
-                    <div
+                    <TabIcon
                       className={cn(
-                        "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110 shrink-0",
-                        isActive ? tab.active.bg : "bg-border/30",
+                        "w-4 h-4 shrink-0",
+                        isActive ? "text-primary" : "text-foreground/60",
                       )}
-                    >
-                      <TabIcon
-                        className={cn(
-                          "w-5 h-5",
-                          isActive ? tab.active.icon : "text-foreground/70",
-                        )}
-                      />
-                    </div>
-
-                    <div className="flex-1 text-right min-w-0">
-                      <div className="font-bold text-base sm:text-lg truncate">
-                        {tab.label}
-                      </div>
-                    </div>
+                    />
+                    <span className="text-sm font-medium truncate">
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Status cards */}
-            <div className="mt-6 space-y-3">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-blue-400 text-sm">
-                  <Star className="w-4 h-4 shrink-0" />
-                  <span className="font-medium">حالة الحساب</span>
-                </div>
-                <p className="text-blue-300 text-xs mt-1 break-words">
-                  {profile.email_verified_at
-                    ? "البريد الإلكتروني موثق"
-                    : "يرجى توثيق البريد الإلكتروني"}
-                </p>
-              </div>
-
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-emerald-400 text-sm">
-                  <Clock className="w-4 h-4 shrink-0" />
-                  <span className="font-medium">آخر تحديث</span>
-                </div>
-                <p className="text-emerald-300 text-xs mt-1 break-words">
-                  {formatDate(profile.updated_at)}
-                </p>
-              </div>
+            <div className="mt-4 pt-4 border-t border-border space-y-2">
+              <p className="text-xs text-foreground/60">
+                {profile.email_verified_at
+                  ? "البريد الإلكتروني موثق"
+                  : "يرجى توثيق البريد الإلكتروني"}
+              </p>
+              <p className="text-xs text-foreground/50">
+                آخر تحديث: {formatDate(profile.updated_at)}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -715,7 +594,7 @@ export default function ProfilePage() {
           transition={{ delay: 0.2 }}
           className="xl:col-span-3 min-w-0"
         >
-          <div className="bg-card backdrop-blur-xl border border-border rounded-2xl p-4 sm:p-6 min-w-0 overflow-hidden">
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-5 min-w-0 overflow-hidden">
             {/* PERSONAL */}
             {activeTab === "personal" && (
               <div className="space-y-6">
@@ -724,10 +603,10 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
-                      "p-4 rounded-xl border backdrop-blur-sm flex items-start gap-3 min-w-0",
+                      "p-3 rounded-lg border flex items-start gap-2.5 min-w-0 text-sm",
                       tabStatus.personal.status === "success"
-                        ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/20 border-rose-500/30 text-rose-300",
+                        ? "bg-muted border-border text-foreground"
+                        : "bg-destructive/10 border-destructive/20 text-destructive",
                     )}
                   >
                     {tabStatus.personal.status === "success" ? (
@@ -747,8 +626,7 @@ export default function ProfilePage() {
                   onSubmit={handlePersonalInfoSubmit}
                   className="space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-400" />
+                  <h2 className="text-base font-semibold text-foreground mb-3">
                     المعلومات الأساسية
                   </h2>
 
@@ -763,10 +641,9 @@ export default function ProfilePage() {
                           name="first_name"
                           value={formData.first_name}
                           onChange={handleInputChange}
-                          className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                           required
                         />
-                        <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                       </div>
                     </div>
 
@@ -780,10 +657,9 @@ export default function ProfilePage() {
                           name="last_name"
                           value={formData.last_name}
                           onChange={handleInputChange}
-                          className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                           required
                         />
-                        <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                       </div>
                     </div>
 
@@ -798,9 +674,8 @@ export default function ProfilePage() {
                           type="email"
                           value={formData.email}
                           disabled
-                          className="w-full bg-background/30 border border-border rounded-lg pr-10 pl-3 py-3 text-foreground/70 cursor-not-allowed truncate"
+                          className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-foreground/70 cursor-not-allowed truncate"
                         />
-                        <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
                       </div>
                       <p className="text-xs text-foreground/50 mt-1">
                         لا يمكن تغيير البريد الإلكتروني
@@ -817,10 +692,9 @@ export default function ProfilePage() {
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                           required
                         />
-                        <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                       </div>
                     </div>
 
@@ -833,10 +707,6 @@ export default function ProfilePage() {
                         المنطقة
                       </Label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                          <Map className="h-5 w-5 text-foreground/50" />
-                        </div>
-
                         <Select
                           onValueChange={(value) =>
                             setFormData((p) => ({ ...p, area_id: value }))
@@ -846,7 +716,7 @@ export default function ProfilePage() {
                         >
                           <SelectTrigger
                             id="area_id"
-                            className="w-full pr-10 pl-3 bg-background border-border text-foreground placeholder-foreground/50 h-12"
+                            className="w-full px-3 bg-background border-border text-foreground placeholder-foreground/50 h-11"
                           >
                             <SelectValue placeholder="اختر المنطقة" />
                           </SelectTrigger>
@@ -885,9 +755,8 @@ export default function ProfilePage() {
                           name="address"
                           value={formData.address}
                           onChange={handleInputChange}
-                          className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-3 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                         />
-                        <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                       </div>
                     </div>
                   </div>
@@ -901,8 +770,8 @@ export default function ProfilePage() {
                       className={cn(
                         "flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 w-full sm:w-auto",
                         submitting
-                          ? "bg-border text-foreground/70 cursor-not-allowed"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02]",
+                          ? "bg-muted text-foreground/60 cursor-not-allowed"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90",
                       )}
                     >
                       {submitting ? (
@@ -927,12 +796,12 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
-                      "p-4 rounded-xl border backdrop-blur-sm flex items-start gap-3 min-w-0",
+                      "p-3 rounded-lg border flex items-start gap-2.5 min-w-0 text-sm",
                       tabStatus.security.status === "success"
-                        ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+                        ? "bg-muted border-border text-foreground"
                         : tabStatus.security.status === "info"
-                          ? "bg-blue-500/20 border-blue-500/30 text-blue-300"
-                          : "bg-rose-500/20 border-rose-500/30 text-rose-300",
+                          ? "bg-muted border-border text-foreground/80"
+                          : "bg-destructive/10 border-destructive/20 text-destructive",
                     )}
                   >
                     {tabStatus.security.status === "success" ? (
@@ -971,7 +840,7 @@ export default function ProfilePage() {
                           value={formData.currentPassword}
                           onChange={handleInputChange}
                           placeholder="أدخل كلمة المرور الحالية"
-                          className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-2.5 pr-10 pl-10 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                         />
                         <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                         <button
@@ -1000,7 +869,7 @@ export default function ProfilePage() {
                             value={formData.password}
                             onChange={handleInputChange}
                             placeholder="أدخل كلمة المرور الجديدة"
-                            className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 pr-10 pl-10 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                           />
                           <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                           <button
@@ -1028,7 +897,7 @@ export default function ProfilePage() {
                             value={formData.confirmPassword}
                             onChange={handleInputChange}
                             placeholder="أعد إدخال كلمة المرور الجديدة"
-                            className="w-full bg-background/50 border border-border rounded-lg pr-10 pl-10 py-3 text-foreground placeholder-foreground/50 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 pr-10 pl-10 text-foreground placeholder-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50"
                           />
                           <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/70" />
                           <button
@@ -1046,7 +915,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3 p-4 bg-background/30 rounded-xl border border-border min-w-0">
+                    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-background min-w-0">
                       <input
                         type="checkbox"
                         id="twoFactorAuth"
@@ -1081,8 +950,8 @@ export default function ProfilePage() {
                       className={cn(
                         "flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 w-full sm:w-auto",
                         submitting
-                          ? "bg-border text-foreground/70 cursor-not-allowed"
-                          : "bg-secondary text-white hover:bg-secondary/90 hover:scale-[1.02]",
+                          ? "bg-muted text-foreground/60 cursor-not-allowed"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90",
                       )}
                     >
                       {submitting ? (
@@ -1107,10 +976,10 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
-                      "p-4 rounded-xl border backdrop-blur-sm flex items-start gap-3 min-w-0",
+                      "p-3 rounded-lg border flex items-start gap-2.5 min-w-0 text-sm",
                       tabStatus.notifications.status === "success"
-                        ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
-                        : "bg-rose-500/20 border-rose-500/30 text-rose-300",
+                        ? "bg-muted border-border text-foreground"
+                        : "bg-destructive/10 border-destructive/20 text-destructive",
                     )}
                   >
                     {tabStatus.notifications.status === "success" ? (
@@ -1130,13 +999,12 @@ export default function ProfilePage() {
                   onSubmit={handleNotificationsSubmit}
                   className="space-y-6"
                 >
-                  <h2 className="text-xl font-bold text-foreground mb-2 flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-base font-semibold text-foreground mb-3">
                     إعدادات الإشعارات
                   </h2>
 
                   <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-4 bg-background/30 rounded-xl border border-border min-w-0">
+                    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-background min-w-0">
                       <input
                         type="checkbox"
                         id="notifyEmail"
@@ -1160,7 +1028,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3 p-4 bg-background/30 rounded-xl border border-border min-w-0">
+                    <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-background min-w-0">
                       <input
                         type="checkbox"
                         id="notifySMS"
@@ -1192,8 +1060,8 @@ export default function ProfilePage() {
                       className={cn(
                         "flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 w-full sm:w-auto",
                         submitting
-                          ? "bg-border text-foreground/70 cursor-not-allowed"
-                          : "bg-secondary text-white hover:bg-secondary/90 hover:scale-[1.02]",
+                          ? "bg-muted text-foreground/60 cursor-not-allowed"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90",
                       )}
                     >
                       {submitting ? (
