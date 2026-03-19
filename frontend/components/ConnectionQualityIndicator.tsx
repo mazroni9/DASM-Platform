@@ -71,21 +71,21 @@ export default function ConnectionQualityIndicator() {
   }, [showTooltip]);
 
   const tooltipContent = (
-    <div className="text-xs text-right space-y-1">
-      <div className="font-semibold">جودة الاتصال</div>
+    <div className="text-sm font-medium leading-5 space-y-1.5 text-right">
+      <div>جودة الاتصال</div>
       <div>
         {isChecking ? (
-          <span className="text-muted-foreground">جاري فحص الاتصال...</span>
+          <span className="text-slate-500 dark:text-slate-400">جاري فحص الاتصال...</span>
         ) : (
           <>
             <span>{labelAr}</span>
             {latencyMs != null && (
-              <div className="text-muted-foreground mt-0.5">
+              <div className="text-slate-500 dark:text-slate-400 mt-1">
                 زمن الاستجابة: {latencyMs} ms
               </div>
             )}
             {!isOnline && (
-              <div className="text-red-400 mt-0.5">غير متصل</div>
+              <div className="text-red-500 dark:text-red-400 mt-1">غير متصل</div>
             )}
           </>
         )}
@@ -119,7 +119,14 @@ export default function ConnectionQualityIndicator() {
 
       {showTooltip && (
         <div
-          className="absolute top-full start-0 end-auto translate-x-0 mt-2 z-[100] p-3 rounded-lg bg-popover border border-border shadow-lg min-w-[180px] max-w-[90vw]"
+          className={cn(
+            "absolute bottom-full start-0 end-auto translate-x-0 mb-2 z-[9999]",
+            "px-3 py-2 rounded-lg shadow-xl",
+            "bg-white dark:bg-slate-900",
+            "text-slate-900 dark:text-white",
+            "border border-slate-200 dark:border-slate-700",
+            "min-w-[180px] max-w-[90vw]"
+          )}
           role="tooltip"
         >
           {tooltipContent}

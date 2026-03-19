@@ -5,7 +5,6 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 import { useAuthStore } from "@/store/authStore";
-import { getLoadingFunctions } from "@/contexts/LoadingContext";
 
 // Prefer same-origin relative API to leverage Next.js rewrites and avoid CORS
 // Fallback to explicit URL only if no rewrite environment is used
@@ -61,12 +60,10 @@ const isRefreshEndpoint = (url: string) =>
 const toAxiosHeaders = (h: InternalAxiosRequestConfig["headers"]) =>
   AxiosHeaders.from(h);
 
-// Request interceptor
+// Request interceptor - لا نفعّل GlobalLoader على كل طلب (سبب "جار التحميل..." المزعج)
+// الصفحات تعرض loading خاص بها عند الحاجة
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const loadingFunctions = getLoadingFunctions();
-    loadingFunctions?.startLoading();
-
     const authState = useAuthStore.getState();
     const token =
       authState.token ||
@@ -96,24 +93,13 @@ api.interceptors.request.use(
     config.headers = headers;
     return config;
   },
-  (error) => {
-    const loadingFunctions = getLoadingFunctions();
-    loadingFunctions?.stopLoading();
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    const loadingFunctions = getLoadingFunctions();
-    loadingFunctions?.stopLoading();
-    return response;
-  },
+  (response) => response,
   async (error: AxiosError) => {
-    const loadingFunctions = getLoadingFunctions();
-    loadingFunctions?.stopLoading();
-
     if (process.env.NODE_ENV !== "production" && error.response?.status !== 401) {
       // eslint-disable-next-line no-console
       console.log("API Error:", error.response?.status, error.config?.url);
