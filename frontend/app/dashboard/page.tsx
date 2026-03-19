@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
 import api from "@/lib/axios";
-import toast from "react-hot-toast";
 import {
   ShoppingCart,
   TrendingUp,
@@ -15,19 +14,28 @@ import {
   Loader2,
   Sparkles,
   Rocket,
-  Settings,
   RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
 
-type ProfileResponse = {
-  success?: boolean;
-  status?: string;
-  data?: any;
-  message?: string;
+type StatsResponse = {
+  purchases_count: number;
+  sales_count: number;
+  wallet_balance: number;
+  active_orders_count: number;
+  purchases_trend: number;
+  sales_trend: number;
+  wallet_trend: number;
+  active_orders_trend: number;
 };
+
+function formatTrend(t: number): string {
+  if (t > 0) return `+${t}%`;
+  if (t < 0) return `${t}%`;
+  return "0%";
+}
 
 export default function DashboardPage() {
   const { user, isLoggedIn } = useAuth();
@@ -35,16 +43,9 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // نخزن بروفايل من API عشان نقرأ الاسم/created_at حتى لو useAuth مش محمّل كل حاجة
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<StatsResponse | null>(null);
   const [profile, setProfile] = useState<any>(null);
-
-  const [stats, setStats] = useState({
-    purchases: 0,
-    sales: 0,
-    walletBalance: 0,
-    activeOrders: 0,
-  });
 
   const userName = useMemo(() => {
     const src = profile || user;
@@ -57,56 +58,35 @@ export default function DashboardPage() {
   }, [profile, user]);
 
   const memberSinceYear = useMemo(() => {
-    const createdAt = (profile?.created_at || user?.created_at) as
-      | string
-      | undefined;
+    const createdAt = (profile?.created_at || user?.created_at) as string | undefined;
     if (!createdAt) return "";
     const d = new Date(createdAt);
     return Number.isNaN(d.getTime()) ? "" : String(d.getFullYear());
   }, [profile, user]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.push("/auth/login?returnUrl=/dashboard");
-    }
+    if (!isLoggedIn) router.push("/auth/login?returnUrl=/dashboard");
   }, [isLoggedIn, router]);
 
-  const fetchUserData = async () => {
+  const fetchData = async () => {
     if (!isLoggedIn) return;
-
+    setError(null);
     try {
-      const profileResponse =
-        await api.get<ProfileResponse>("/api/user/profile");
+      setRefreshing(true);
+      const [statsRes, profileRes] = await Promise.all([
+        api.get("/api/dashboard/stats"),
+        api.get("/api/user/profile"),
+      ]);
 
-      const ok =
-        profileResponse.data?.success === true ||
-        profileResponse.data?.status === "success";
+      const ok = statsRes.data?.status === "success";
+      if (!ok) throw new Error(statsRes.data?.message || "فشل تحميل الإحصائيات");
+      setStats(statsRes.data.data);
 
-      if (!ok) {
-        // فشل/Unauthorized
-        throw new Error(
-          profileResponse.data?.message || "Failed to load profile",
-        );
-      }
-
-      const data = profileResponse.data.data || {};
-
-      // ✅ الباك الحالي بيرجع بيانات بروفايل فقط (مش stats)
-      setProfile(data);
-
-      // لو في المستقبل ضفتهم في الباك، الكود ده هيلتقطهم تلقائي
-      setStats({
-        purchases: Number(data.purchases_count ?? 0),
-        sales: Number(data.sales_count ?? 0),
-        walletBalance: Number(data.wallet_balance ?? 0),
-        activeOrders: Number(data.active_orders_count ?? 0),
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard:", error);
-      toast.error("تعذر تحميل بيانات لوحة التحكم. يرجى المحاولة لاحقًا.");
-
-      setProfile(null);
-      setStats({ purchases: 0, sales: 0, walletBalance: 0, activeOrders: 0 });
+      const profOk = profileRes.data?.success === true || profileRes.data?.status === "success";
+      if (profOk && profileRes.data?.data) setProfile(profileRes.data.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "تعذر تحميل بيانات لوحة التحكم");
+      setStats(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -114,63 +94,56 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchUserData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchData();
   }, [isLoggedIn]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchUserData();
-  };
-
-  const statItems = [
-    {
-      label: "المشتريات",
-      value: stats.purchases,
-      bg: "bg-primary/10",
-      border: "border-primary/20",
-      glow: "shadow-primary/20",
-      text: "text-primary",
-      icon: ShoppingCart,
-      trend: "+12%",
-    },
-    {
-      label: "المبيعات",
-      value: stats.sales,
-      bg: "bg-secondary/10",
-      border: "border-secondary/20",
-      glow: "shadow-secondary/20",
-      text: "text-secondary",
-      icon: TrendingUp,
-      trend: "+8%",
-    },
-    {
-      label: "رصيد المحفظة",
-      value: stats.walletBalance
-        ? `${stats.walletBalance.toLocaleString()}`
-        : "0",
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20",
-      glow: "shadow-amber-500/20",
-      text: "text-amber-500",
-      icon: DollarSign,
-      trend: "+5%",
-    },
-    {
-      label: "الطلبات النشطة",
-      value: stats.activeOrders,
-      bg: "bg-purple-500/10",
-      border: "border-purple-500/20",
-      glow: "shadow-purple-500/20",
-      text: "text-purple-500",
-      icon: Package,
-      trend: "+3%",
-    },
-  ];
+  const statItems = useMemo(
+    () =>
+      stats
+        ? [
+            {
+              label: "المشتريات",
+              value: stats.purchases_count,
+              trend: formatTrend(stats.purchases_trend),
+              bg: "bg-primary/10",
+              border: "border-primary/20",
+              text: "text-primary",
+              icon: ShoppingCart,
+            },
+            {
+              label: "المبيعات",
+              value: stats.sales_count,
+              trend: formatTrend(stats.sales_trend),
+              bg: "bg-secondary/10",
+              border: "border-secondary/20",
+              text: "text-secondary",
+              icon: TrendingUp,
+            },
+            {
+              label: "رصيد المحفظة",
+              value: stats.wallet_balance ? `${stats.wallet_balance.toLocaleString("ar-SA")}` : "0",
+              trend: formatTrend(stats.wallet_trend),
+              bg: "bg-amber-500/10",
+              border: "border-amber-500/20",
+              text: "text-amber-500",
+              icon: DollarSign,
+            },
+            {
+              label: "الطلبات النشطة",
+              value: stats.active_orders_count,
+              trend: formatTrend(stats.active_orders_trend),
+              bg: "bg-purple-500/10",
+              border: "border-purple-500/20",
+              text: "text-purple-500",
+              icon: Package,
+            },
+          ]
+        : [],
+    [stats]
+  );
 
   return (
     <div className="space-y-6" dir="rtl">
-      {/* Welcome Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -186,11 +159,9 @@ export default function DashboardPage() {
                 مرحباً بك، <span className="text-primary">{userName}</span>
               </h1>
             </div>
-
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="px-2 py-1 bg-secondary/20 text-secondary rounded-lg text-xs border border-secondary/30">
-                {(profile?.type || user?.type) === "user" ||
-                (profile?.type || user?.type) === "dealer"
+                {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer"
                   ? "الاشتراك: مجاني"
                   : ""}
               </span>
@@ -198,44 +169,37 @@ export default function DashboardPage() {
                 عضو منذ {memberSinceYear}
               </span>
             </div>
-
             <p className="text-foreground/80 text-sm leading-relaxed">
-              أنت على بعد نقرة من إدارة حسابك بكل سهولة وأمان. استعرض بياناتك
-              وتابع نشاطك.
+              أنت على بعد نقرة من إدارة حسابك بكل سهولة وأمان. استعرض بياناتك وتابع نشاطك.
             </p>
           </div>
-
-          <div className="flex gap-2">
-            <LoadingLink href="/dashboard/profile">
-              <button className="p-2 bg-border rounded-xl border border-border hover:bg-border/80 transition-all duration-300 hover:scale-105">
-                <Settings className="w-4 h-4 text-purple-400" />
-              </button>
-            </LoadingLink>
-
-            <LoadingLink
-              href="/auctions"
-              className="p-2 bg-primary rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
-            >
-              <Rocket className="w-4 h-4 text-primary-foreground" />
-            </LoadingLink>
-          </div>
+          <LoadingLink
+            href="/auctions"
+            className="p-2 bg-primary rounded-xl border border-primary/30 hover:scale-105 transition-all duration-300 flex items-center justify-center"
+          >
+            <Rocket className="w-4 h-4 text-primary-foreground" />
+          </LoadingLink>
         </div>
       </motion.div>
 
-      {/* Stats & Activities */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16">
-          <div className="relative w-16 h-16">
-            <Loader2 className="absolute inset-0 w-full h-full animate-spin text-primary" />
-            <div className="absolute inset-0 w-full h-full rounded-full border-4 border-transparent border-t-primary animate-spin opacity-60"></div>
-          </div>
-          <p className="mt-4 text-lg text-foreground/70 font-medium">
-            جاري تحميل لوحة التحكم...
-          </p>
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="mt-4 text-foreground/70">جاري تحميل لوحة التحكم...</p>
+        </div>
+      ) : error ? (
+        <div className="p-6 rounded-2xl border border-destructive/30 bg-destructive/10 text-center">
+          <p className="text-destructive font-medium mb-4">{error}</p>
+          <button
+            onClick={() => fetchData()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+          >
+            إعادة المحاولة
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
                 <Activity className="w-4 h-4" />
@@ -243,17 +207,14 @@ export default function DashboardPage() {
               إحصائيات سريعة
             </h2>
             <button
-              onClick={handleRefresh}
+              onClick={() => fetchData()}
               disabled={refreshing}
-              className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all duration-300 disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 bg-card border border-border rounded-lg hover:bg-border transition-all disabled:opacity-50"
             >
-              <RefreshCw
-                className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={cn("w-3 h-3", refreshing && "animate-spin")} />
               <span className="text-xs">تحديث</span>
             </button>
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {statItems.map((item, idx) => {
               const Icon = item.icon;
@@ -262,28 +223,30 @@ export default function DashboardPage() {
                   key={idx}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
+                  transition={{ delay: idx * 0.05 }}
                   className={cn(
-                    "p-4 rounded-xl border backdrop-blur-sm shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl",
+                    "p-4 rounded-xl border",
                     item.bg,
                     item.border,
-                    item.glow,
                   )}
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex justify-between items-center mb-3">
                     <div className="p-2 rounded-lg bg-white/10">
                       <Icon className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded border border-green-500/30">
+                    <span
+                      className={cn(
+                        "text-xs px-1.5 py-0.5 rounded border",
+                        parseFloat(item.trend) >= 0
+                          ? "bg-green-500/20 text-green-300 border-green-500/30"
+                          : "bg-red-500/20 text-red-300 border-red-500/30",
+                      )}
+                    >
                       {item.trend}
                     </span>
                   </div>
-                  <p className="text-xs text-foreground/80 mb-1">
-                    {item.label}
-                  </p>
-                  <p className={cn("text-lg font-bold", item.text)}>
-                    {item.value}
-                  </p>
+                  <p className="text-xs text-foreground/80 mb-1">{item.label}</p>
+                  <p className={cn("text-lg font-bold", item.text)}>{item.value}</p>
                 </motion.div>
               );
             })}

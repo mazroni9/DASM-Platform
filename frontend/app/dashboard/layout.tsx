@@ -14,7 +14,6 @@ import {
   Eye,
   Car,
   Wallet,
-  MessageCircle,
   Plus,
   SaudiRiyal,
   ArrowRight,
@@ -168,23 +167,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {
         name: "عرض المزادات",
         icon: Eye,
-        // ✅ no fixed href here — we route on click based on KSA time
         onClick: () => {
           const href = getAuctionHrefByKsaTime();
           router.push(href);
         },
-        color: "bg-primary hover:bg-primary/90 text-primary-foreground",
-      },
-      {
-        name: "التقارير",
-        icon: BarChart3,
-        href: "/dashboard/reports",
-        color: "bg-primary hover:bg-primary/90 text-primary-foreground",
-      },
-      {
-        name: "الدعم",
-        icon: MessageCircle,
-        href: "/support",
         color: "bg-primary hover:bg-primary/90 text-primary-foreground",
       },
     ],
