@@ -16,11 +16,17 @@ if (!getApps().length) {
   app = initializeApp(firebaseConfig);
 }
 
-const getMessagingInstance = () => {
-  if (typeof window !== 'undefined' && app) {
+/**
+ * Returns Firebase Messaging instance or null if unsupported (e.g. Safari, iOS).
+ * Never throws — Firebase Messaging is not supported in Safari and can crash the app.
+ */
+const getMessagingInstance = (): ReturnType<typeof getMessaging> | null => {
+  if (typeof window === 'undefined' || !app) return null;
+  try {
     return getMessaging(app);
+  } catch {
+    return null;
   }
-  return null;
 };
 
 export { app, getMessagingInstance };

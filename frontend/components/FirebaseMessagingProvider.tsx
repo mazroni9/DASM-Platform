@@ -25,11 +25,20 @@ const FirebaseMessagingProvider = ({ children }) => {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    const messaging = getMessagingInstance();
-    const audio = new Audio("/sounds/default.mp3");
+    let messaging: ReturnType<typeof getMessagingInstance> = null;
+    try {
+      messaging = getMessagingInstance();
+    } catch {
+      messaging = null;
+    }
 
-    //audio.muted = true;
-    audioRef.current = audio;
+    let audio: HTMLAudioElement | null = null;
+    try {
+      audio = new Audio("/sounds/default.mp3");
+      audioRef.current = audio;
+    } catch {
+      audioRef.current = null;
+    }
 
     const unlockAudio = () => {
       if (audioRef.current) {
@@ -38,13 +47,16 @@ const FirebaseMessagingProvider = ({ children }) => {
       window.removeEventListener("click", unlockAudio);
     };
 
-    window.addEventListener("click", unlockAudio);
+    try {
+      window.addEventListener("click", unlockAudio);
+    } catch {
+      // ignore: exotic env
+    }
 
-    let unsubscribeOnMessage;
+    let unsubscribeOnMessage: (() => void) | undefined;
     if (messaging) {
-      console.log("Messaging instance found");
-
-      unsubscribeOnMessage = onMessage(messaging, (payload) => {
+      try {
+        unsubscribeOnMessage = onMessage(messaging, (payload) => {
         console.log("Foreground message received: ", payload);
         if (audioRef.current) {
           audioRef.current.play().catch((error) => {
@@ -72,6 +84,9 @@ const FirebaseMessagingProvider = ({ children }) => {
         });
         setViewNotification(true);
       });
+      } catch {
+        unsubscribeOnMessage = undefined;
+      }
     }
 
     const requestPermission = async () => {
