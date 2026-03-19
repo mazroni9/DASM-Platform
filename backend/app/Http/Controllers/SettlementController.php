@@ -21,27 +21,26 @@ class SettlementController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * Query: seller=me (only as seller), buyer=me (only as buyer).
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
-        // Eager load relationships for efficiency
-        $settlements = Settlement::with(['car', 'auction', 'buyer', 'seller'])
-            ->select([
-                'auction_id',
-                'seller_id',
-                'buyer_id',
-                'car_id',
-                'buyer_net_amount',
-                'status'
-            ])
-            ->where('buyer_id', $user->id)
-            ->orWhere('seller_id', $user->id)
-            ->latest()
-            ->paginate(15);
+        $query = Settlement::with(['car', 'auction', 'buyer', 'seller'])
+            ->latest();
+
+        if ($request->query('seller') === 'me') {
+            $query->where('seller_id', $user->id);
+        } elseif ($request->query('buyer') === 'me') {
+            $query->where('buyer_id', $user->id);
+        } else {
+            $query->where(fn ($q) => $q->where('buyer_id', $user->id)->orWhere('seller_id', $user->id));
+        }
+
+        $settlements = $query->paginate($request->integer('per_page', 15));
 
         return response()->json([
             'status' => 'success',
