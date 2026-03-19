@@ -913,22 +913,42 @@ class AuthController extends Controller
         return $needle !== '' && mb_stripos($haystack ?? '', $needle) !== false;
     }
 
-    /** صلاحيات المستخدم مع سياق الفريق الصحيح (organization أو platform) */
+    /** صلاحيات المستخدم مع سياق الفريق الصحيح (organization + platform لأدوار مجلس السوق) */
     private function getUserPermissions(User $user): array
     {
         try {
             $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
-            $teamId = $user->organization_id;
-            if (!$teamId) {
-                $platformOrg = Organization::where('type', OrganizationType::PLATFORM)->first();
-                $teamId = $platformOrg?->id;
+            $platformOrg = Organization::where('type', OrganizationType::PLATFORM)->first();
+            $userOrgId = $user->organization_id;
+
+            $permissionNames = [];
+            $seen = [];
+
+            $addPermissions = function (?int $teamId) use ($user, $registrar, &$permissionNames, &$seen) {
+                if (!$teamId || !method_exists($user, 'getAllPermissions')) {
+                    return;
+                }
+                try {
+                    $registrar->setPermissionsTeamId($teamId);
+                    foreach ($user->getAllPermissions()->pluck('name') as $name) {
+                        if (!isset($seen[$name])) {
+                            $seen[$name] = true;
+                            $permissionNames[] = $name;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+            };
+
+            $primaryTeamId = $userOrgId ?: ($platformOrg?->id);
+            $addPermissions($primaryTeamId);
+
+            if ($platformOrg && $primaryTeamId !== $platformOrg->id) {
+                $addPermissions($platformOrg->id);
             }
-            if ($teamId) {
-                $registrar->setPermissionsTeamId($teamId);
-            }
-            if (method_exists($user, 'getAllPermissions')) {
-                return $user->getAllPermissions()->pluck('name')->values()->toArray();
-            }
+
+            return $permissionNames;
         } catch (\Throwable $e) {
             // ignore
         }
