@@ -31,6 +31,7 @@ use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CarSimilarityController;
@@ -450,6 +451,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // 4.1 Auth Actions
     // ─────────────────────────────────────────────────────────────────
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // ─────────────────────────────────────────────────────────────────
+    // 4.1.1 Dashboard Stats (real data)
+    // ─────────────────────────────────────────────────────────────────
+    Route::get('/dashboard/stats', [DashboardController::class, 'userStats']);
 
     // ─────────────────────────────────────────────────────────────────
     // 4.2 User Profile
