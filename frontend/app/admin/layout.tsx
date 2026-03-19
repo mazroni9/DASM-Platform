@@ -219,6 +219,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: FileText,
     },
     {
+      name: "صلاحيات مجلس السوق",
+      href: "/admin/market-council/permissions",
+      icon: Shield,
+    },
+    {
       name: "مقالات مجلس السوق",
       href: "/admin/market-council/articles",
       icon: FileText,

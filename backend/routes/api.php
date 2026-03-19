@@ -64,6 +64,7 @@ use App\Http\Controllers\Admin\EmployeeController as AdminEmployeeController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW: Admin Blog Controller
 use App\Http\Controllers\Admin\MarketCouncilController as AdminMarketCouncilController;
 use App\Http\Controllers\Admin\MarketCouncilCommentsController as AdminMarketCouncilCommentsController;
+use App\Http\Controllers\Admin\CouncilPermissionsController;
 use App\Http\Controllers\Admin\AuctionActivityLogController;
 use App\Http\Controllers\Admin\AuctionTestingAnalyticsController;
 
@@ -999,6 +1000,12 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
                 Route::get('/', [AdminMarketCouncilCommentsController::class, 'index']);
                 Route::put('/{id}', [AdminMarketCouncilCommentsController::class, 'update'])->whereNumber('id');
                 Route::delete('/{id}', [AdminMarketCouncilCommentsController::class, 'destroy'])->whereNumber('id');
+            });
+
+            Route::prefix('permissions')->middleware('can:users.view')->group(function () {
+                Route::get('/list', [CouncilPermissionsController::class, 'list']);
+                Route::get('/users', [CouncilPermissionsController::class, 'users']);
+                Route::put('/users/{userId}', [CouncilPermissionsController::class, 'updateUser'])->whereNumber('userId')->middleware('can:users.update');
             });
         });
 
