@@ -190,6 +190,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* نقلنا الـpadding العلوي هنا لضبط محاذاة السايدبار مع المحتوى */}
         <div className="flex flex-col lg:flex-row gap-6 pt-4 lg:pt-6 items-start">
+          {/* إجراءات سريعة للجوال فقط — فوق المحتوى */}
+          <div className="lg:hidden w-full order-first" dir="rtl">
+            <div className="grid grid-cols-2 gap-3">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                if ("onClick" in action && typeof action.onClick === "function") {
+                  return (
+                    <button
+                      key={action.name}
+                      type="button"
+                      onClick={action.onClick}
+                      className={cn(
+                        "flex items-center justify-center gap-2 p-4 rounded-xl font-semibold text-base min-h-[52px] touch-manipulation",
+                        action.color
+                      )}
+                    >
+                      <Icon className="w-5 h-5 shrink-0" />
+                      <span>{action.name}</span>
+                    </button>
+                  );
+                }
+                return (
+                  <LoadingLink
+                    key={action.name}
+                    href={action.href as string}
+                    className={cn(
+                      "flex items-center justify-center gap-2 p-4 rounded-xl font-semibold text-base min-h-[52px] touch-manipulation",
+                      action.color
+                    )}
+                  >
+                    <Icon className="w-5 h-5 shrink-0" />
+                    <span>{action.name}</span>
+                  </LoadingLink>
+                );
+              })}
+            </div>
+          </div>
+
           {/* الشريط الجانبي (يظهر على الشاشات الكبيرة فقط) */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-6 space-y-4">
