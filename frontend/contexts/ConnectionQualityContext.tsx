@@ -14,14 +14,13 @@ import {
 } from "@/lib/connectionQuality";
 
 const PING_INTERVAL_MS = 10_000;
+const PING_TIMEOUT_MS = 2_000;
+const DEFER_FIRST_PING_MS = 800;
 const MAX_RECENT = 6;
 
-const getPingUrl = () => {
-  if (typeof window === "undefined") return "/api/_diag/health";
-  const base = process.env.NEXT_PUBLIC_API_URL || "";
-  const basePath = base ? `${base.replace(/\/$/, "")}/api/_diag/health` : "/api/_diag/health";
-  return `${basePath}?t=${Date.now()}`;
-};
+// Same-origin /ping - outside /api, bypasses Laravel rewrite
+const getPingUrl = () =>
+  typeof window === "undefined" ? "/ping" : `/ping?t=${Date.now()}`;
 
 type ContextValue = ConnectionQualityResult & {
   isChecking: boolean;
@@ -44,13 +43,15 @@ export function ConnectionQualityProvider({ children }: { children: React.ReactN
   } | null>(null);
   const mountedRef = useRef(true);
 
+  const inFlightRef = useRef(false);
+
   const ping = useCallback(async () => {
     if (typeof window === "undefined" || !navigator.onLine) return -1;
     const start = Date.now();
     const url = getPingUrl();
     try {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
+      const t = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
       await fetch(url, { method: "GET", signal: ctrl.signal, cache: "no-store" });
       clearTimeout(t);
       return Date.now() - start;
@@ -62,15 +63,26 @@ export function ConnectionQualityProvider({ children }: { children: React.ReactN
   const runCheck = useCallback(async () => {
     if (typeof window === "undefined") return;
     if (!mountedRef.current) return;
+    if (!navigator.onLine) {
+      setIsOnline(false);
+      setLatencyMs(null);
+      return;
+    }
+    if (inFlightRef.current) return; // prevent overlap
+    inFlightRef.current = true;
     setIsChecking(true);
-    const ms = await ping();
-    if (!mountedRef.current) return;
-    setLatencyMs(ms >= 0 ? ms : null);
-    setRecentLatencies((prev) => {
-      const next = [...prev, ms];
-      return next.slice(-MAX_RECENT);
-    });
-    setIsChecking(false);
+    try {
+      const ms = await ping();
+      if (!mountedRef.current) return;
+      setLatencyMs(ms >= 0 ? ms : null);
+      setRecentLatencies((prev) => {
+        const next = [...prev, ms];
+        return next.slice(-MAX_RECENT);
+      });
+    } finally {
+      inFlightRef.current = false;
+      if (mountedRef.current) setIsChecking(false);
+    }
   }, [ping]);
 
   useEffect(() => {
@@ -104,8 +116,24 @@ export function ConnectionQualityProvider({ children }: { children: React.ReactN
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    runCheck();
-    const interval = setInterval(runCheck, PING_INTERVAL_MS);
+    // Defer first ping to avoid competing with initial page load
+    const defer = (fn: () => void) => {
+      if (typeof requestIdleCallback !== "undefined") {
+        requestIdleCallback(() => fn(), { timeout: DEFER_FIRST_PING_MS });
+      } else {
+        setTimeout(fn, DEFER_FIRST_PING_MS);
+      }
+    };
+
+    if (!navigator.onLine) {
+      setIsOnline(false);
+    } else {
+      defer(runCheck);
+    }
+
+    const interval = setInterval(() => {
+      if (navigator.onLine && mountedRef.current) runCheck();
+    }, PING_INTERVAL_MS);
 
     return () => {
       mountedRef.current = false;

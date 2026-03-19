@@ -81,7 +81,7 @@ const Navbar = () => {
       role="navigation"
       aria-label="التنقل الرئيسي"
     >
-      <div className="container mx-auto px-4">
+      <div className={`container mx-auto px-4 ${mobileMenuOpen ? "relative z-50" : ""}`}>
         <div className="flex items-center justify-between min-h-[64px]">
           {/* العلامة التجارية — Light: نص يندمج مع الخلفية، الشعار أقصى اليمين */}
           <div className="flex items-center flex-shrink-0 gap-3">
