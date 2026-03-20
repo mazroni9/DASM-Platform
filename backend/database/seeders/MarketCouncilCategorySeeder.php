@@ -10,11 +10,12 @@ class MarketCouncilCategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name_ar' => 'قصص السوق',           'slug' => 'qisas-al-suq',        'sort_order' => 1],
-            ['name_ar' => 'علم المزاد',           'slug' => 'ilm-al-muzad',       'sort_order' => 2],
-            ['name_ar' => 'أخلاقيات التجارة',     'slug' => 'akhlaqiyat-al-tijara', 'sort_order' => 3],
-            ['name_ar' => 'تجارب المستخدمين',     'slug' => 'tajribat-al-mustakhdimin', 'sort_order' => 4],
-            ['name_ar' => 'نقاشات',               'slug' => 'munqashaat',         'sort_order' => 5],
+            ['name_ar' => 'ثقافة التاجر المحترف', 'slug' => 'thaqafat-al-tajir-al-muhtaref', 'sort_order' => 1],
+            ['name_ar' => 'قصص السوق',           'slug' => 'qisas-al-suq',        'sort_order' => 2],
+            ['name_ar' => 'علم المزاد',           'slug' => 'ilm-al-muzad',       'sort_order' => 3],
+            ['name_ar' => 'أخلاقيات التجارة',     'slug' => 'akhlaqiyat-al-tijara', 'sort_order' => 4],
+            ['name_ar' => 'تجارب المستخدمين',     'slug' => 'tajribat-al-mustakhdimin', 'sort_order' => 5],
+            ['name_ar' => 'نقاشات',               'slug' => 'munqashaat',         'sort_order' => 6],
         ];
 
         foreach ($categories as $data) {
