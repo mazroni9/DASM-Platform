@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import LoadingLink from "@/components/LoadingLink";
 import Footer from "@/components/shared/Footer";
-import { Tags, FileText, Calendar, Image as ImageIcon, Eye, Clock, Star } from "lucide-react";
+import { Tags, Calendar, Image as ImageIcon, Eye, Clock, Star } from "lucide-react";
 
 type MarketCategory = {
   id: number | string;
@@ -224,31 +224,9 @@ export default function MarketCouncilPage() {
 
   return (
     <>
-      {/* Hero section */}
-      <section className="bg-background border-b border-border rtl">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-8 md:py-12">
-          <div className="rounded-3xl border border-border bg-gradient-to-b from-primary/10 via-background to-background p-6 md:p-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 text-primary border border-primary/25 mb-5">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm font-extrabold">مجلس السوق</span>
-            </div>
-
-            <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight">
-              مجلس السوق
-            </h1>
-            <p className="text-foreground/80 mt-3 text-lg md:text-xl">
-              ثقافة التاجر المحترف
-            </p>
-            <p className="text-foreground/60 mt-2 text-sm md:text-base max-w-2xl">
-              قصص السوق، علم المزاد، أخلاقيات التجارة وتجارب المستخدمين — محتوى مؤسسي ينقل المعرفة للمتداولين والمزايدين.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Categories & filters */}
       <section className="bg-background border-b border-border rtl">
-        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 py-6">
+        <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 pt-4 sm:pt-5 md:pt-6 pb-6">
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
             <div className="text-sm font-bold text-foreground/70 flex items-center gap-2">
               {loading ? (
