@@ -58,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password_reset_expires_at',
         'is_active',
         'status',
+        'approval_status',
         'area_id',
         'user_code',
         'organization_id'
