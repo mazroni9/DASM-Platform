@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
+import AIPricingWidget from "@/components/AIPricingWidget";
 
 type StatsResponse = {
   purchases_count: number;
@@ -220,6 +221,8 @@ export default function DashboardPage() {
               </motion.div>
             ))}
           </div>
+
+          <AIPricingWidget mode="manual" />
         </div>
       )}
     </div>
