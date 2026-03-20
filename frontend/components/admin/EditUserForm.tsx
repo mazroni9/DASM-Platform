@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "react-hot-toast";
 import { UserRole } from "@/types/types";
 import api from "@/lib/axios";
@@ -48,6 +49,7 @@ export default function EditUserForm({
   onClose,
   onUserUpdated,
 }: EditUserFormProps) {
+  const { isSuperAdmin } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState({
@@ -75,12 +77,8 @@ export default function EditUserForm({
       // Fetch user details from backend
       const response = await api.get(`/api/admin/users/${user_id}`);
       if (response.data && response.data.status === "success") {
-        let user = response.data.data;
-        //check if user role
-        if (user.type == "admin") {
-          response.data.data.type = "user";
-        }
-        setUser(response.data.data);
+        const user = response.data.data;
+        setUser(user);
         setFormData({
           first_name: user.first_name || "",
           last_name: user.last_name || "",
@@ -250,11 +248,11 @@ export default function EditUserForm({
                     <SelectItem value="moderator">مشرف</SelectItem>
                     <SelectItem value="venue_owner">مالك المعرض</SelectItem>
                     <SelectItem value="investor">مستثمر</SelectItem>
-                    {(user.type === UserRole.ADMIN ||
-                      user.type === UserRole.MODERATOR ||
-                      user.type === UserRole.USER) && (
-                      <SelectItem value="admin">مدير</SelectItem>
-                    )}
+                    <SelectItem value="admin">مدير</SelectItem>
+                    <SelectItem value="programmer">مبرمج</SelectItem>
+                    {isSuperAdmin ? (
+                      <SelectItem value="super_admin">مدير النظام الرئيسي</SelectItem>
+                    ) : null}
                   </SelectContent>
                 </Select>
               </div>
@@ -285,6 +283,8 @@ export default function EditUserForm({
                     handleInputChange("is_active", e.target.checked)
                   }
                   className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                  title="تفعيل الحساب"
+                  aria-label="حساب نشط"
                 />
                 <Label htmlFor="is_active" className="text-sm">
                   حساب نشط

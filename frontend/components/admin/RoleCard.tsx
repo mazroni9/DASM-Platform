@@ -28,8 +28,13 @@ interface RoleCardProps {
 }
 
 export function RoleCard({ role, onDelete }: RoleCardProps) {
+  const isSuperAdmin = role.name === "super_admin";
+
   return (
-    <Card className="flex flex-col" dir="rtl">
+    <Card
+      className={`flex flex-col ${isSuperAdmin ? "border-2 border-red-500/50 shadow-red-500/10" : ""}`}
+      dir="rtl"
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div className="flex items-center gap-2">
           <div className="bg-primary/10 p-2 rounded-lg">
@@ -38,7 +43,13 @@ export function RoleCard({ role, onDelete }: RoleCardProps) {
           <h3 className="text-lg font-bold text-primary">
             {role.display_name}
           </h3>
-          <span className="text-sm px-2 py-1 rounded-md border border-muted-foreground/30 bg-muted/50 text-muted-foreground">
+          <span
+            className={`text-sm px-2 py-1 rounded-md border text-muted-foreground ${
+              isSuperAdmin
+                ? "border-red-500/50 bg-red-500/10 text-red-200"
+                : "border-muted-foreground/30 bg-muted/50"
+            }`}
+          >
             {role.name}
           </span>
         </div>

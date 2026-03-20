@@ -27,6 +27,7 @@ import {
   AlertCircle,
   ChevronDown,
   UserPlus,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +38,7 @@ import Switch from "@mui/material/Switch";
 import EditUserForm from "@/components/admin/EditUserForm";
 import Pagination from "@components/Pagination";
 import PaginationItem from "@mui/material/PaginationItem";
-
-import { log } from "console";
+import { useAuth } from "@/hooks/useAuth";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
@@ -87,6 +87,7 @@ interface UserData {
 }
 
 export default function UsersManagementPage() {
+  const { user: authUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,7 +165,9 @@ export default function UsersManagementPage() {
 
     if (statusFilter !== "all") {
       if (statusFilter === "pending") {
-        result = result.filter((user) => user.status === "pending");
+        result = result.filter(
+          (user) => user.status === "pending" && user.type !== "user",
+        );
       } else if (statusFilter === "active") {
         result = result.filter((user) => user.status === "active");
       } else if (statusFilter === "rejected") {
@@ -309,6 +312,44 @@ export default function UsersManagementPage() {
     }
   };
 
+  const handleDeleteUser = async (target: UserData) => {
+    if (!isSuperAdmin) {
+      toast.error("حذف المستخدمين متاح لمدير النظام الرئيسي فقط");
+      return;
+    }
+    if (target.type === "super_admin") {
+      toast.error("لا يمكن حذف مدير النظام الرئيسي");
+      return;
+    }
+    if (authUser?.id === target.id) {
+      toast.error("لا يمكنك حذف حسابك الشخصي");
+      return;
+    }
+    const ok = window.confirm(
+      `حذف المستخدم نهائياً؟\n${target.first_name} ${target.last_name}\n${target.email}`,
+    );
+    if (!ok) return;
+
+    setProcessingUserId(target.id);
+    try {
+      const response = await api.delete(`/api/admin/users/${target.id}`);
+      if (response.data?.status === "success") {
+        toast.success(response.data.message || "تم حذف المستخدم بنجاح");
+        setUsers((prev) => prev.filter((u) => u.id !== target.id));
+        setFilteredUsers((prev) => prev.filter((u) => u.id !== target.id));
+      } else {
+        toast.error(response.data?.message || "فشل الحذف");
+      }
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "فشل حذف المستخدم";
+      toast.error(msg);
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
   const handleOpenEditFrom = (user: UserData) => {
     setSelectedUser(user);
     setShowEditForm(true);
@@ -334,8 +375,12 @@ export default function UsersManagementPage() {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
+      case "super_admin":
+        return <Crown className="w-4 h-4 text-red-400" />;
       case "admin":
         return <Crown className="w-4 h-4 text-purple-400" />;
+      case "programmer":
+        return <Shield className="w-4 h-4 text-indigo-400" />;
       case "moderator":
         return <Shield className="w-4 h-4 text-orange-400" />;
       case "dealer":
@@ -343,6 +388,21 @@ export default function UsersManagementPage() {
       default:
         return <User className="w-4 h-4 text-gray-400" />;
     }
+  };
+
+  const getRoleLabel = (role: string) => {
+    const map: Record<string, string> = {
+      super_admin: "مدير رئيسي",
+      admin: "مدير",
+      programmer: "مبرمج",
+      moderator: "مشرف",
+      dealer: "تاجر",
+      venue_owner: "صاحب معرض",
+      investor: "مستثمر",
+      user: "مستخدم",
+      employee: "موظف",
+    };
+    return map[role] || role;
   };
 
   const getStatusColor = (status: string) => {
@@ -423,9 +483,20 @@ export default function UsersManagementPage() {
         <div className="bg-card rounded-xl p-6 border border-border shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-muted-foreground text-sm">في انتظار التفعيل</p>
+              <p className="text-muted-foreground text-sm">
+                بانتظار تفعيل إداري
+              </p>
+              <p className="text-xs text-muted-foreground/80 mt-1 leading-snug">
+                لا يشمل المستخدمين العاديين (يُفعّلون بالبريد)
+              </p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {users.filter((u) => u.status === "pending").length}
+                {
+                  users.filter(
+                    (u) =>
+                      u.status === "pending" &&
+                      u.type !== "user",
+                  ).length
+                }
               </p>
             </div>
             <div className="bg-amber-500/10 p-3 rounded-xl">
@@ -472,9 +543,10 @@ export default function UsersManagementPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
+              aria-label="تصفية حالة التفعيل الإداري"
             >
               <option value="all">جميع الحالات</option>
-              <option value="pending">في انتظار التفعيل</option>
+              <option value="pending">بانتظار تفعيل إداري (غير المستخدم العادي)</option>
               <option value="active">مفعل</option>
               <option value="dealer_pending">تجار في انتظار التحقق</option>
             </select>
@@ -483,12 +555,15 @@ export default function UsersManagementPage() {
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="p-2 border border-border rounded-lg bg-background text-foreground text-sm"
+              aria-label="تصفية نوع الحساب"
             >
               <option value="all">جميع الأدوار</option>
               <option value="user">مستخدم</option>
               <option value="dealer">تاجر</option>
               <option value="moderator">مشرف</option>
               <option value="admin">مدير</option>
+              <option value="super_admin">مدير رئيسي</option>
+              <option value="programmer">مبرمج</option>
             </select>
 
             <Button variant="outline" size="sm">
@@ -585,27 +660,23 @@ export default function UsersManagementPage() {
                       <div className="flex items-center">
                         {getRoleIcon(user.type)}
                         <span
-                          className={`text-sm mr-2 ${
-                            user.type === "admin"
-                              ? "text-purple-400"
-                              : user.type === "moderator"
-                                ? "text-orange-400"
-                                : user.type === "dealer"
-                                  ? "text-blue-400"
-                                  : user.type === "venue_owner"
-                                    ? "text-cyan-400"
-                                    : "text-gray-400"
+                          className={`inline-flex items-center gap-1 text-sm mr-2 rounded-full border px-2 py-0.5 ${
+                            user.type === "super_admin"
+                              ? "text-red-300 border-red-500/40 bg-red-500/10"
+                              : user.type === "admin"
+                                ? "text-purple-400 border-purple-500/30 bg-purple-500/10"
+                                : user.type === "programmer"
+                                  ? "text-indigo-300 border-indigo-500/40 bg-indigo-500/10"
+                                  : user.type === "moderator"
+                                    ? "text-orange-400 border-orange-500/30 bg-orange-500/10"
+                                    : user.type === "dealer"
+                                      ? "text-blue-400 border-blue-500/30 bg-blue-500/10"
+                                      : user.type === "venue_owner"
+                                        ? "text-cyan-400 border-cyan-500/30 bg-cyan-500/10"
+                                        : "text-gray-400 border-border bg-muted/40"
                           }`}
                         >
-                          {user.type === "dealer"
-                            ? "تاجر"
-                            : user.type === "admin"
-                              ? "مدير"
-                              : user.type === "moderator"
-                                ? "مشرف"
-                                : user.type === "venue_owner"
-                                  ? "صاحب معرض"
-                                  : "مستخدم"}
+                          {getRoleLabel(user.type)}
                         </span>
                       </div>
                     </td>
@@ -628,11 +699,25 @@ export default function UsersManagementPage() {
                             <XCircle className="w-3 h-3 ml-1" />
                           )}
                           {user.status === "active"
-                            ? "مفعل"
+                            ? "تفعيل إداري: مفعل"
                             : user.status === "pending"
-                              ? "في الانتظار"
-                              : "مرفوض"}
+                              ? "تفعيل إداري: معلّق"
+                              : "تفعيل إداري: مرفوض"}
                         </span>
+
+                        <div className="text-xs mt-1">
+                          {user.email_verified_at ? (
+                            <span className="text-emerald-500 inline-flex items-center gap-1">
+                              <BadgeCheck className="w-3 h-3" />
+                              بريد موثّق
+                            </span>
+                          ) : (
+                            <span className="text-amber-500 inline-flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              بريد غير موثّق
+                            </span>
+                          )}
+                        </div>
 
                         {user.type === "dealer" && (
                           <div>
@@ -739,11 +824,31 @@ export default function UsersManagementPage() {
                             variant="ghost"
                             size="sm"
                             className="px-3"
+                            title="عرض التفاصيل"
                           >
                             <LoadingLink href={`/admin/users/${user.id}`}>
                               <Eye className="w-4 h-4" />
                             </LoadingLink>
                           </Button>
+
+                          {isSuperAdmin ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              title="حذف المستخدم"
+                              aria-label="حذف المستخدم"
+                              disabled={
+                                processingUserId === user.id ||
+                                user.type === "super_admin" ||
+                                authUser?.id === user.id
+                              }
+                              onClick={() => handleDeleteUser(user)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          ) : null}
                         </div>
                       </div>
                     </td>

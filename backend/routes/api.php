@@ -849,6 +849,7 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::get('/', [AdminUserController::class, 'index'])->middleware('can:users.view');
             Route::get('/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId')->middleware('can:users.view_details');
             Route::put('/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId')->middleware('can:users.update');
+            Route::delete('/{userId}', [AdminUserController::class, 'destroy'])->whereNumber('userId');
             Route::post('/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId')->middleware('can:users.update');
             Route::post('/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId')->middleware('can:users.update');
             Route::post('/{userId}/toggle-status', [AdminUserController::class, 'updateStatus'])->whereNumber('userId')->middleware('can:users.update');
