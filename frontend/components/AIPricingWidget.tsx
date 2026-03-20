@@ -51,7 +51,7 @@ export default function AIPricingWidget({ prefill, mode = "auto" }: AIPricingWid
     setResult(null);
     try {
       const res = await fetch(
-        "https://lobster-app-ba3dk.ondigitalocean.app/api/v1/pricing/estimate",
+        "/api/pricing",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -68,8 +68,12 @@ export default function AIPricingWidget({ prefill, mode = "auto" }: AIPricingWid
       if (!res.ok) throw new Error("server_error");
       const data: PricingResult = await res.json();
       setResult(data);
-    } catch {
-      setError("تعذر الحصول على التسعير، حاول مجدداً.");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error && err.message === "Failed to fetch"
+          ? "تعذّر الاتصال بالخادم، تحقق من اتصالك بالإنترنت."
+          : "تعذّر الحصول على التسعير، حاول مجدداً.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
