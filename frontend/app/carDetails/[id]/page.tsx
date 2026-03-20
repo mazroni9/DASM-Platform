@@ -50,6 +50,7 @@ import { usePusher } from "@/contexts/PusherContext";
 import BidForm from "@/components/BidForm";
 import { motion } from "framer-motion";
 import AddToWatchlistButton from "@/components/dealer/AddToWatchlistButton";
+import AIPricingWidget from "@/components/AIPricingWidget";
 
 // ========== أنواع مراحل السوق ==========
 type MarketPhase = "live" | "instant" | "late" | "fixed";
@@ -1063,6 +1064,17 @@ export default function CarDetailPage() {
                   isOwner={isOwner}
                   isLoggedIn={isLoggedIn}
                   onConfirmSale={() => router.push(`/sales/confirm/${carId}`)}
+                />
+
+                <AIPricingWidget
+                  mode="auto"
+                  prefill={{
+                    make: car?.make,
+                    model: car?.model,
+                    year: car?.year,
+                    mileage: car?.odometer,
+                    condition: car?.condition,
+                  }}
                 />
               </div>
             </div>
