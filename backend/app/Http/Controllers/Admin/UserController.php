@@ -366,7 +366,7 @@ class UserController extends Controller
             'total'     => User::count(),
             'active'    => User::where('is_active', true)->count(),
             'inactive'  => User::where('is_active', false)->count(),
-            'pending'   => User::where('status', UserStatus::PENDING)->count(),
+            'pending'   => User::where('status', UserStatus::PENDING)->where('type', '!=', UserRole::USER)->count(),
             'by_type'   => User::select('type', DB::raw('COUNT(*) as count'))
                 ->groupBy('type')
                 ->pluck('count', 'type'),
@@ -448,6 +448,29 @@ class UserController extends Controller
             'data' => [
                 'user' => $user,
             ]
+        ]);
+    }
+
+    /**
+     * Accounts awaiting admin activation (excludes regular "user" accounts — those are not admin-gated).
+     * GET /api/admin/pending-verifications
+     */
+    public function getPendingVerifications(): JsonResponse
+    {
+        $users = User::query()
+            ->where('status', UserStatus::PENDING)
+            ->where('type', '!=', UserRole::USER)
+            ->with([
+                'venueOwner:id,user_id,venue_name,status',
+                'area:id,name,code',
+            ])
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $users,
         ]);
     }
 }

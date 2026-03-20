@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Car;
 use App\Models\User;
+use App\Enums\UserRole;
 use App\Models\Auction;
 use App\Models\Transcation;
 use App\Models\Settlement;
@@ -66,7 +67,8 @@ class AdminController extends Controller
     {
         // User stats
         $totalUsers       = User::count();
-        $pendingUsers     = User::where('status', 'pending')->count();
+        // Pending admin activation: business/dealer accounts only — regular users are not queued for admin approval
+        $pendingUsers     = User::where('status', 'pending')->where('type', '!=', UserRole::USER)->count();
         $activeUsers      = User::where('is_active', true)->count();
         $dealerCount      = User::where('type', 'dealer')->count();
         $regularUserCount = User::where('type', 'user')->count();
