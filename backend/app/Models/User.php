@@ -200,11 +200,13 @@ class User extends Authenticatable implements MustVerifyEmail
     // Mark email as verified
     public function markEmailAsVerified()
     {
+        $activateForLogin = $this->type === UserRole::USER || $this->type === UserRole::PROGRAMMER;
+
         return $this->forceFill([
             'email_verified_at' => now(),
             'email_verification_token' => null,
-            'is_active' => $this->type === UserRole::USER ? true : false,
-            'status' => $this->type === UserRole::USER ? UserStatus::ACTIVE : UserStatus::PENDING,
+            'is_active' => $activateForLogin ? true : false,
+            'status' => $activateForLogin ? UserStatus::ACTIVE : UserStatus::PENDING,
         ])->save();
     }
 
@@ -212,6 +214,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool
     {
         return $this->type === UserRole::ADMIN || $this->type === UserRole::SUPER_ADMIN;
+    }
+
+    public function isProgrammer(): bool
+    {
+        return $this->type === UserRole::PROGRAMMER;
     }
 
     public function isDealer(): bool

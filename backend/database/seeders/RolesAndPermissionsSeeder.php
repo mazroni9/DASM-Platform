@@ -308,6 +308,15 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
 
+        $programmerRole = Role::updateOrCreate(
+            ['name' => 'programmer', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
+            [
+                'display_name' => 'مبرمج',
+                'description' => 'صلاحيات تشغيلية مساوية للمدير العادي دون صلاحيات مدير النظام الرئيسي',
+            ]
+        );
+        $programmerRole->syncPermissions($adminRole->permissions);
+
         $moderatorRole = Role::updateOrCreate(
             ['name' => 'moderator', 'guard_name' => 'sanctum', 'organization_id' => $platform_org->id],
             [
@@ -427,6 +436,17 @@ class RolesAndPermissionsSeeder extends Seeder
             $teamId = $mazroni->organization_id ?? $platform_org->id;
             app()[PermissionRegistrar::class]->setPermissionsTeamId($teamId);
             $mazroni->assignRole($councilManager);
+        }
+
+        // Ensure known owner account is super_admin when present (idempotent)
+        $zahrma = User::where('email', 'zahrma0p@yahoo.com')->first();
+        if ($zahrma) {
+            $zahrma->forceFill([
+                $columnName => 'super_admin',
+                'status' => 'active',
+                'is_active' => true,
+                'email_verified_at' => $zahrma->email_verified_at ?? now(),
+            ])->save();
         }
     }
 }

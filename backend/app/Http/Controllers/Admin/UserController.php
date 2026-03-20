@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserController extends Controller
 {
@@ -172,6 +174,17 @@ class UserController extends Controller
         }
 
         try {
+            if (
+                $request->has('type')
+                && (string) $request->type === UserRole::SUPER_ADMIN->value
+                && $currentUser->type !== UserRole::SUPER_ADMIN
+            ) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'لا يمكن تعيين دور مدير النظام الرئيسي إلا من قبل مدير النظام الرئيسي'
+                ], 403);
+            }
+
             // ✅ Prevent type change for super admin
             if ($user->type === UserRole::SUPER_ADMIN && $request->has('type') && $request->type !== UserRole::SUPER_ADMIN->value) {
                 return response()->json([
@@ -197,6 +210,10 @@ class UserController extends Controller
             }
 
             $user->save();
+
+            if ($user->wasChanged('type')) {
+                $this->syncSpatieRoleForAdminPanelType($user);
+            }
 
             Log::info('User updated by admin', [
                 'user_id'  => $id,
@@ -295,11 +312,16 @@ class UserController extends Controller
     public function destroy($id): JsonResponse
     {
         try {
-            $user = User::findOrFail($id);
-
-            // ✅ Security checks
             /** @var User $currentUser */
             $currentUser = auth()->user();
+            if (!$currentUser || $currentUser->type !== UserRole::SUPER_ADMIN) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'حذف المستخدمين متاح لمدير النظام الرئيسي فقط',
+                ], 403);
+            }
+
+            $user = User::findOrFail($id);
 
             // Cannot delete super admin
             if ($user->type === UserRole::SUPER_ADMIN) {
@@ -472,5 +494,36 @@ class UserController extends Controller
             'status' => 'success',
             'data'   => $users,
         ]);
+    }
+
+    /**
+     * Align Spatie roles when admin-facing type changes (admin / programmer / moderator).
+     */
+    private function syncSpatieRoleForAdminPanelType(User $user): void
+    {
+        $type = $user->type instanceof UserRole ? $user->type : UserRole::tryFrom((string) $user->type);
+        if (!$type) {
+            return;
+        }
+
+        $roleName = match ($type) {
+            UserRole::ADMIN => 'admin',
+            UserRole::PROGRAMMER => 'programmer',
+            UserRole::MODERATOR => 'moderator',
+            default => null,
+        };
+
+        if ($roleName === null) {
+            return;
+        }
+
+        if ($user->organization_id) {
+            app(PermissionRegistrar::class)->setPermissionsTeamId($user->organization_id);
+        }
+
+        $role = Role::findByName($roleName, 'sanctum');
+        if ($role) {
+            $user->syncRoles([$role]);
+        }
     }
 }
