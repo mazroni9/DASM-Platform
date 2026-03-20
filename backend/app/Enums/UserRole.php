@@ -12,6 +12,7 @@ enum UserRole: string
     case DEALER = 'dealer';
     case USER = 'user';
     case EMPLOYEE = 'employee';  // ✅ تمت الإضافة
+    case PROGRAMMER = 'programmer';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum UserRole: string
             self::DEALER => 'Dealer',
             self::USER => 'User',
             self::EMPLOYEE => 'Employee',  // ✅ تمت الإضافة
+            self::PROGRAMMER => 'Programmer',
         };
     }
 
@@ -38,6 +40,7 @@ enum UserRole: string
             self::DEALER => 'تاجر',
             self::USER => 'مستخدم',
             self::EMPLOYEE => 'موظف',  // ✅ تمت الإضافة
+            self::PROGRAMMER => 'مبرمج',
         };
     }
 
@@ -52,6 +55,7 @@ enum UserRole: string
             self::DEALER => 'blue',
             self::USER => 'gray',
             self::EMPLOYEE => 'orange',  // ✅ تمت الإضافة
+            self::PROGRAMMER => 'indigo',
         };
     }
 
@@ -69,7 +73,7 @@ enum UserRole: string
     public function isStaff(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE => true,
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE, self::PROGRAMMER => true,
             default => false,
         };
     }
@@ -77,7 +81,7 @@ enum UserRole: string
     public function canManageAuctions(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::VENUE_OWNER => true,
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::VENUE_OWNER, self::PROGRAMMER => true,
             default => false,
         };
     }
@@ -85,7 +89,7 @@ enum UserRole: string
     public function canManageUsers(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR => true,
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::PROGRAMMER => true,
             default => false,
         };
     }
@@ -93,7 +97,7 @@ enum UserRole: string
     public function canManageVenues(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN, self::ADMIN, self::VENUE_OWNER => true,
+            self::SUPER_ADMIN, self::ADMIN, self::VENUE_OWNER, self::PROGRAMMER => true,
             default => false,
         };
     }
@@ -101,7 +105,7 @@ enum UserRole: string
     public function canAccessInvestments(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN, self::ADMIN, self::INVESTOR => true,
+            self::SUPER_ADMIN, self::ADMIN, self::INVESTOR, self::PROGRAMMER => true,
             default => false,
         };
     }
@@ -112,7 +116,7 @@ enum UserRole: string
     public function canAccessDashboard(): bool
     {
         return match ($this) {
-            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE, self::VENUE_OWNER => true,
+            self::SUPER_ADMIN, self::ADMIN, self::MODERATOR, self::EMPLOYEE, self::VENUE_OWNER, self::PROGRAMMER => true,
             default => false,
         };
     }
@@ -166,6 +170,7 @@ enum UserRole: string
             self::ADMIN,
             self::MODERATOR,
             self::EMPLOYEE,
+            self::PROGRAMMER,
         ];
     }
 

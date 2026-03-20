@@ -20,6 +20,8 @@ export function useAuth() {
   return {
     user,
     isAdmin: user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN,
+    isSuperAdmin: user?.type === UserRole.SUPER_ADMIN,
+    isProgrammer: user?.type === UserRole.PROGRAMMER,
     isModerator: user?.type === UserRole.MODERATOR,
     isDealer: user?.type === UserRole.DEALER,
     isVenueOwner: user?.type === UserRole.VENUE_OWNER,
