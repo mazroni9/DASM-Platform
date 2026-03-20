@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\VenueOwner;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Services\ProgrammerSpatieRoleProvisioner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -515,6 +516,10 @@ class UserController extends Controller
 
         if ($roleName === null) {
             return;
+        }
+
+        if ($type === UserRole::PROGRAMMER) {
+            ProgrammerSpatieRoleProvisioner::ensure();
         }
 
         if ($user->organization_id) {
