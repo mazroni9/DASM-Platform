@@ -61,6 +61,22 @@ function uniqById<T extends { id: unknown }>(arr: T[]) {
   return Array.from(m.values());
 }
 
+/** يظهر مباشرة بعد زر «الكل» حتى لو تغيّر ترتيب قاعدة البيانات */
+const PRIMARY_CATEGORY_SLUG = "thaqafat-al-tajir-al-muhtaref";
+
+function sortCategoriesForDisplay(list: MarketCategory[]): MarketCategory[] {
+  const valid = list.filter((c) => typeof c.slug === "string" && c.slug.trim() !== "");
+  const copy = [...valid];
+  const primaryIdx = copy.findIndex((c) => c.slug === PRIMARY_CATEGORY_SLUG);
+  const primary = primaryIdx >= 0 ? copy.splice(primaryIdx, 1)[0] : null;
+  copy.sort((a, b) => {
+    const so = (a.sort_order ?? 999) - (b.sort_order ?? 999);
+    if (so !== 0) return so;
+    return String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
+  });
+  return primary ? [primary, ...copy] : copy;
+}
+
 function normalizeArticlesPayload<T>(payload: unknown): {
   list: T[];
   total: number;
@@ -141,7 +157,7 @@ export default function MarketCouncilPage() {
         return;
       }
       const list = Array.isArray(payload?.data) ? (payload.data as MarketCategory[]) : [];
-      setCategories(list);
+      setCategories(sortCategoriesForDisplay(list));
     } catch {
       setCategories([]);
     }
@@ -235,6 +251,7 @@ export default function MarketCouncilPage() {
               <span>{loading ? "—" : total} مقالة • {activeCategoryName}</span>
             </div>
             <button
+              type="button"
               onClick={() => setFeaturedOnly((v) => !v)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border transition ${
                 featuredOnly
@@ -254,6 +271,7 @@ export default function MarketCouncilPage() {
 
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             <button
+              type="button"
               onClick={() => setActiveCategory("all")}
               className={`whitespace-nowrap shrink-0 px-4 py-2 rounded-full text-sm font-bold border transition ${
                 activeCategory === "all"
@@ -266,6 +284,7 @@ export default function MarketCouncilPage() {
             {categories.map((c) => (
               <button
                 key={c.id}
+                type="button"
                 onClick={() => setActiveCategory(c.slug)}
                 className={`whitespace-nowrap shrink-0 px-4 py-2 rounded-full text-sm font-bold border transition ${
                   activeCategory === c.slug
@@ -312,7 +331,11 @@ export default function MarketCouncilPage() {
           ) : articles.length === 0 ? (
             <div className="bg-card border border-border rounded-3xl p-10 text-center">
               <p className="text-foreground font-bold text-lg">لا توجد مقالات حالياً</p>
-              <p className="text-foreground/60 text-sm mt-2">جرّب تغيير التصنيف أو إلغاء فلتر المميزة.</p>
+              <p className="text-foreground/60 text-sm mt-2">
+                {activeCategory !== "all"
+                  ? "لا مقالات منشورة في هذا التصنيف بعد — يمكنك العودة إلى «الكل» أو تصنيف آخر."
+                  : "جرّب تغيير التصنيف أو إلغاء فلتر المميزة."}
+              </p>
             </div>
           ) : (
             <>
