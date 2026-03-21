@@ -1,10 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from 'next/link';
 import Image from "next/image";
-import { se } from 'date-fns/locale';
 import LoadingLink from '../LoadingLink';
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Owner {
     id: number;
@@ -57,8 +56,14 @@ const SessionCard: React.FC<SessionCardProps> = ({ session }) => {
                 </div>
             </CardContent>
             <CardFooter className="p-4">
-                <LoadingLink href={`/auctions/live-auctions/${session.id}`} passHref>
-                    <Button className="w-full">ادخل المزاد</Button>
+                <LoadingLink
+                    href={`/auctions/live-auctions/${session.id}`}
+                    className={cn(
+                        buttonVariants({ variant: "default", size: "lg" }),
+                        "w-full min-h-[44px] border border-primary/25 shadow-sm"
+                    )}
+                >
+                    ادخل المزاد
                 </LoadingLink>
             </CardFooter>
         </Card>

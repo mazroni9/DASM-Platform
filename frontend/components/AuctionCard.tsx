@@ -13,6 +13,8 @@
 
 import React from 'react';
 import LoadingLink from "@/components/LoadingLink";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Fuel, KeySquare } from 'lucide-react';
 import Skeleton from '@mui/material/Skeleton';
 import Box from '@mui/material/Box';
@@ -91,7 +93,10 @@ export default function AuctionCard({ car, loading = false }: AuctionCardProps) 
       ) : (
         <LoadingLink
           href={`/carDetails/${car?.id}`}
-          className="mt-auto text-center bg-primary text-white py-2 px-4 rounded hover:bg-primary/90 block text-sm"
+          className={cn(
+            buttonVariants({ variant: "default" }),
+            "mt-auto w-full text-center py-2.5 text-sm min-h-[40px] border border-primary/25 hover:border-primary/45 shadow-sm"
+          )}
         >
           عرض التفاصيل
         </LoadingLink>

@@ -143,14 +143,9 @@ export default function DashboardPage() {
                 <h1 className="text-base md:text-xl font-bold text-foreground truncate">
                   مرحباً بك، <span className="text-primary">{userName}</span>
                 </h1>
-                {locationLine ? (
-                  <p className="mt-0.5 text-[11px] md:text-xs text-muted-foreground/80 truncate">
-                    {locationLine}
-                  </p>
-                ) : null}
               </div>
             </div>
-            <div className="flex flex-wrap gap-1 md:gap-1.5">
+            <div className="flex flex-wrap gap-1 md:gap-1.5 items-center">
               {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer" ? (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
                   الاشتراك: مجاني
@@ -159,6 +154,14 @@ export default function DashboardPage() {
               {memberSinceYear ? (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
                   عضو منذ {memberSinceYear}
+                </span>
+              ) : null}
+              {locationLine ? (
+                <span
+                  className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/50 text-muted-foreground border border-border max-w-full truncate inline-block align-middle"
+                  title={locationLine}
+                >
+                  {locationLine}
                 </span>
               ) : null}
             </div>
