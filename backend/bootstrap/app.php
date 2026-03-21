@@ -55,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Role-based Access Control (Custom)
             'admin'             => \App\Http\Middleware\AdminMiddleware::class,
             'super_admin'       => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'admin_or_super_admin' => \App\Http\Middleware\EnsureAdminOrSuperAdmin::class,
             'approval.queue'    => \App\Http\Middleware\ApprovalQueueAccess::class,
             'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
             'dealer'            => \App\Http\Middleware\DealerMiddleware::class,

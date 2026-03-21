@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ApprovalRequestWorkflowService
 {
@@ -155,63 +156,159 @@ class ApprovalRequestWorkflowService
         return $request;
     }
 
-    public function approve(User $reviewer, ApprovalRequest $request, bool $isSuperAdmin): void
+    /**
+     * @return array{request: ApprovalRequest, idempotent: bool}
+     */
+    public function approve(User $reviewer, ApprovalRequest $request, bool $isPrivilegedReviewer, string $decisionSource = 'dasm_api'): array
     {
-        $this->assertCanDecide($reviewer, $request, $isSuperAdmin);
+        return DB::transaction(function () use ($reviewer, $request, $isPrivilegedReviewer, $decisionSource) {
+            $row = ApprovalRequest::query()->whereKey($request->id)->lockForUpdate()->first();
+            if (! $row) {
+                throw new \RuntimeException('الطلب غير موجود');
+            }
 
-        DB::transaction(function () use ($reviewer, $request) {
-            $request->update([
+            if ($row->status !== ApprovalRequest::STATUS_PENDING) {
+                if ($row->status === ApprovalRequest::STATUS_APPROVED) {
+                    $this->audit->logDecisionIdempotent($row, $reviewer, 'approve', $row->status, $decisionSource, $isPrivilegedReviewer);
+
+                    return [
+                        'request' => $row->fresh(['targetUser', 'reviewedBy']),
+                        'idempotent' => true,
+                    ];
+                }
+
+                $this->audit->logInvalidDecisionAttempt($row, $reviewer, 'approve', $row->status, $decisionSource, $isPrivilegedReviewer);
+
+                throw new ConflictHttpException('الطلب محسوم ولا يمكن اعتماده');
+            }
+
+            $this->assertCanDecide($reviewer, $row, $isPrivilegedReviewer);
+
+            $previousStatus = $row->status;
+
+            $row->update([
                 'status' => ApprovalRequest::STATUS_APPROVED,
                 'reviewed_by_user_id' => $reviewer->id,
                 'reviewed_at' => now(),
             ]);
 
-            if ($request->request_type === ApprovalRequest::TYPE_BUSINESS_ACCOUNT) {
-                $this->applyBusinessAccountApproval($request->targetUser);
-            } elseif ($request->request_type === ApprovalRequest::TYPE_COUNCIL_PERMISSION) {
-                $this->applyCouncilBundlePermissions($request->targetUser, $request->payload ?? []);
+            $row->loadMissing('targetUser');
+
+            if ($row->request_type === ApprovalRequest::TYPE_BUSINESS_ACCOUNT) {
+                $this->applyBusinessAccountApproval($row->targetUser);
+            } elseif ($row->request_type === ApprovalRequest::TYPE_COUNCIL_PERMISSION) {
+                $this->applyCouncilBundlePermissions($row->targetUser, $row->payload ?? []);
             }
 
-            $this->audit->logApproved($request, $reviewer->id);
+            $this->audit->logApproved($row, $reviewer, $previousStatus, $decisionSource, $isPrivilegedReviewer);
 
-            $request->targetUser?->notify(new ApprovalRequestResolvedNotification($request, true));
+            $row->targetUser?->notify(new ApprovalRequestResolvedNotification($row, true));
+
+            return [
+                'request' => $row->fresh(['targetUser', 'reviewedBy']),
+                'idempotent' => false,
+            ];
         });
     }
 
-    public function reject(User $reviewer, ApprovalRequest $request, ?string $notes, bool $isSuperAdmin): void
+    /**
+     * @return array{request: ApprovalRequest, idempotent: bool}
+     */
+    public function reject(User $reviewer, ApprovalRequest $request, ?string $notes, bool $isPrivilegedReviewer, string $decisionSource = 'dasm_api'): array
     {
-        $this->assertCanDecide($reviewer, $request, $isSuperAdmin);
+        return DB::transaction(function () use ($reviewer, $request, $notes, $isPrivilegedReviewer, $decisionSource) {
+            $row = ApprovalRequest::query()->whereKey($request->id)->lockForUpdate()->first();
+            if (! $row) {
+                throw new \RuntimeException('الطلب غير موجود');
+            }
 
-        DB::transaction(function () use ($reviewer, $request, $notes) {
-            $request->update([
+            if ($row->status !== ApprovalRequest::STATUS_PENDING) {
+                if ($row->status === ApprovalRequest::STATUS_REJECTED) {
+                    $this->audit->logDecisionIdempotent($row, $reviewer, 'reject', $row->status, $decisionSource, $isPrivilegedReviewer);
+
+                    return [
+                        'request' => $row->fresh(['targetUser', 'reviewedBy']),
+                        'idempotent' => true,
+                    ];
+                }
+
+                $this->audit->logInvalidDecisionAttempt($row, $reviewer, 'reject', $row->status, $decisionSource, $isPrivilegedReviewer);
+
+                throw new ConflictHttpException('الطلب محسوم ولا يمكن رفضه');
+            }
+
+            $this->assertCanDecide($reviewer, $row, $isPrivilegedReviewer);
+
+            $previousStatus = $row->status;
+
+            $row->update([
                 'status' => ApprovalRequest::STATUS_REJECTED,
                 'reviewed_by_user_id' => $reviewer->id,
                 'reviewed_at' => now(),
                 'notes' => $notes,
             ]);
 
-            if ($request->request_type === ApprovalRequest::TYPE_BUSINESS_ACCOUNT) {
-                $this->applyBusinessAccountRejection($request->targetUser);
+            $row->loadMissing('targetUser');
+
+            if ($row->request_type === ApprovalRequest::TYPE_BUSINESS_ACCOUNT) {
+                $this->applyBusinessAccountRejection($row->targetUser);
             }
 
-            $this->audit->logRejected($request, $reviewer->id, $notes);
+            $this->audit->logRejected($row, $reviewer, $notes, $previousStatus, $decisionSource, $isPrivilegedReviewer);
 
-            $request->targetUser?->notify(new ApprovalRequestResolvedNotification($request, false));
+            $row->targetUser?->notify(new ApprovalRequestResolvedNotification($row, false));
+
+            return [
+                'request' => $row->fresh(['targetUser', 'reviewedBy']),
+                'idempotent' => false,
+            ];
         });
     }
 
-    private function assertCanDecide(User $reviewer, ApprovalRequest $request, bool $isSuperAdmin): void
+    /**
+     * Flags for control-room / BFF UI (بدون استثناءات).
+     *
+     * @return array{can_approve: bool, can_reject: bool, blocked_reason: string|null, status: string}
+     */
+    public function decisionFlagsForViewer(User $reviewer, ApprovalRequest $request, bool $isPrivilegedReviewer): array
+    {
+        if ($request->status !== ApprovalRequest::STATUS_PENDING) {
+            return [
+                'can_approve' => false,
+                'can_reject' => false,
+                'blocked_reason' => 'resolved',
+                'status' => $request->status,
+            ];
+        }
+
+        try {
+            $this->assertCanDecide($reviewer, $request, $isPrivilegedReviewer);
+
+            return [
+                'can_approve' => true,
+                'can_reject' => true,
+                'blocked_reason' => null,
+                'status' => $request->status,
+            ];
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return [
+                'can_approve' => false,
+                'can_reject' => false,
+                'blocked_reason' => $e->getMessage(),
+                'status' => $request->status,
+            ];
+        }
+    }
+
+    private function assertCanDecide(User $reviewer, ApprovalRequest $request, bool $isPrivilegedReviewer): void
     {
         if ($request->status !== ApprovalRequest::STATUS_PENDING) {
             throw new \RuntimeException('Request is not pending');
         }
 
-        if ($isSuperAdmin) {
+        // super_admin أو admin: قرار كامل دون اشتراط عضوية المجموعة
+        if ($isPrivilegedReviewer) {
             return;
-        }
-
-        if (! UserRole::isApprovalGroupEligibleType($reviewer->type)) {
-            throw new \Illuminate\Auth\Access\AuthorizationException('غير مصرح بمراجعة الطلبات');
         }
 
         $m = ApprovalGroupMember::query()
@@ -235,7 +332,11 @@ class ApprovalRequestWorkflowService
             if (! $m->can_approve_council_requests) {
                 throw new \Illuminate\Auth\Access\AuthorizationException('غير مصرح بإجراءات طلبات مجلس السوق');
             }
+
+            return;
         }
+
+        throw new \Illuminate\Auth\Access\AuthorizationException('نوع الطلب غير مدعوم لهذه المراجعة');
     }
 
     private function applyBusinessAccountApproval(User $user): void

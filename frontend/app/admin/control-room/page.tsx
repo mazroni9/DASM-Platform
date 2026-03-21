@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ClipboardList, UserCog } from "lucide-react";
 
 export default function ControlRoomPage() {
-  const { isSuperAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-8 rtl">
@@ -27,7 +27,7 @@ export default function ControlRoomPage() {
               </p>
             </div>
           </LoadingLink>
-          {isSuperAdmin ? (
+          {isAdmin ? (
             <LoadingLink
               href="/admin/control-room/approval-group"
               className="flex items-start gap-3 p-5 rounded-2xl border border-primary/25 bg-primary/5 hover:bg-primary/10 transition"
@@ -38,7 +38,7 @@ export default function ControlRoomPage() {
               <div>
                 <p className="font-bold">مجموعة الموافقات التشغيلية</p>
                 <p className="text-sm text-foreground/60 mt-1">
-                  إدارة الأعضاء والقدرات (مدير النظام الرئيسي فقط).
+                  إدارة الأعضاء والقدرات (مدير النظام أو المدير الرئيسي فقط).
                 </p>
               </div>
             </LoadingLink>
@@ -46,7 +46,7 @@ export default function ControlRoomPage() {
             <div className="flex items-start gap-3 p-5 rounded-2xl border border-dashed border-border bg-muted/20 text-foreground/50">
               <UserCog className="w-6 h-6 shrink-0 mt-0.5" />
               <p className="text-sm">
-                إدارة مجموعة الموافقات متاحة لمدير النظام الرئيسي فقط.
+                إدارة مجموعة الموافقات متاحة لمدير النظام أو المدير الرئيسي فقط.
               </p>
             </div>
           )}
