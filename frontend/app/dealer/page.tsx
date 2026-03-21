@@ -166,11 +166,9 @@ export default function DealerDashboardPage() {
     fetchRecommendations();
   }, [aiEnabled, token, addAiRecommendation, clearAiRecommendations]);
 
-  const displayName =
-    userName ||
-    (user
-      ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-      : "تاجر سيارات");
+  const resolvedName =
+    userName?.trim() ||
+    (user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "");
 
   return (
     <div className="space-y-6">
@@ -184,7 +182,7 @@ export default function DealerDashboardPage() {
           {/* Live Indicator */}
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-foreground">
-              لوحة تاجر السيارات المحترف
+              صفحة التاجر
             </h1>
             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
               <motion.div
@@ -234,9 +232,11 @@ export default function DealerDashboardPage() {
         className="text-center py-6"
       >
         <h2 className="text-2xl font-bold text-foreground mb-3">
-          مرحبا بك تاجرنا الذكي:{" "}
-          <span className="text-primary">{displayName}</span>
+          مرحبًا بك في صفحة التاجر. سوق أوضح، وقرارات أسرع.
         </h2>
+        {resolvedName ? (
+          <p className="text-xl text-primary font-medium">{resolvedName}</p>
+        ) : null}
       </motion.div>
 
       {/* Main Grid Layout */}
@@ -344,7 +344,7 @@ export default function DealerDashboardPage() {
           DASM-e Platform v2.0 | نظام آمن ومشفر | Real-time WebSocket
         </p>
         <p className="text-xs text-foreground/30 mt-1">
-          Pro Dealer Dashboard - Powered by Pusher
+          صفحة التاجر - Powered by Pusher
         </p>
       </motion.div>
     </div>
