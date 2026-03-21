@@ -78,7 +78,7 @@ class SubscriptionPlan extends Model
     {
         $types = [
             'user' => 'مستخدم',
-            'dealer' => 'تاجر',
+            'dealer' => 'تاجر سيارات',
            
         ];
 
@@ -104,7 +104,7 @@ class SubscriptionPlan extends Model
     {
         return [
             'user' => 'مستخدم',
-            'dealer' => 'تاجر',
+            'dealer' => 'تاجر سيارات',
 
         ];
     }
