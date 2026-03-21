@@ -37,8 +37,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import api from "@/lib/axios";
-
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
@@ -51,69 +49,33 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     isProgrammer,
     logout,
     hydrated,
-    token,
   } = useAuth();
   const { can, canAny } = usePermission();
   const router = useLoadingRouter();
 
   const [shellReady, setShellReady] = useState(false);
-  /** Non-staff reviewers: operational approval group only (no general admin shell). */
-  const [controlRoomReviewerAccess, setControlRoomReviewerAccess] = useState(false);
 
+  /** super_admin, admin, moderator, programmer — all /admin/* including control-room */
   const isStaff = isAdmin || isModerator || isProgrammer;
   const isControlRoomPath = pathname?.startsWith("/admin/control-room") ?? false;
 
   useEffect(() => {
     if (!hydrated) return;
-
-    if (!isControlRoomPath) {
-      setControlRoomReviewerAccess(false);
-      setShellReady(true);
-      return;
-    }
-
-    if (isStaff) {
-      setControlRoomReviewerAccess(true);
-      setShellReady(true);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.get("/api/admin/approval-requests/capabilities");
-        const ok = res.data?.data?.can_access_queue === true;
-        if (!cancelled) setControlRoomReviewerAccess(ok);
-      } catch {
-        if (!cancelled) setControlRoomReviewerAccess(false);
-      } finally {
-        if (!cancelled) setShellReady(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, isStaff, isControlRoomPath, token]);
+    setShellReady(true);
+  }, [hydrated]);
 
   useEffect(() => {
     if (!shellReady) return;
-    if (isControlRoomPath) {
-      if (!isStaff && !controlRoomReviewerAccess) {
-        router.replace("/auth/login?returnUrl=/admin/control-room");
-      }
-      return;
-    }
     if (!isStaff) {
-      router.replace("/auth/login?returnUrl=/admin");
+      const returnUrl =
+        pathname && pathname.startsWith("/admin")
+          ? pathname
+          : "/admin";
+      router.replace(
+        `/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`
+      );
     }
-  }, [
-    shellReady,
-    isStaff,
-    isControlRoomPath,
-    controlRoomReviewerAccess,
-    router,
-  ]);
+  }, [shellReady, isStaff, pathname, router]);
 
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
