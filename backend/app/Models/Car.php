@@ -63,6 +63,9 @@ class Car extends Model
         'main_auction_duration',
         'min_price',
         'max_price',
+
+        /** إخفاء من قائمة المالك في لوحة المستخدم دون حذف السجل */
+        'exclude_from_owner_dashboard',
     ];
 
     /**
@@ -77,6 +80,8 @@ class Car extends Model
     protected $casts = [
         'image'           => 'array',
         'images'          => 'array',
+
+        'exclude_from_owner_dashboard' => 'boolean',
 
         'market_category' => CarsMarketsCategory::class,
 

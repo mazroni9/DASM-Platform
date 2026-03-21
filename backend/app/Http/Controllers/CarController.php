@@ -42,6 +42,18 @@ class CarController extends Controller
     }
 
     /**
+     * سيارات ظاهرة في قائمة المالك (تستثني المؤرشفة من لوحة المستخدم فقط).
+     */
+    private function applyOwnerDashboardListingFilter($query)
+    {
+        if (Schema::hasColumn('cars', 'exclude_from_owner_dashboard')) {
+            $query->where('exclude_from_owner_dashboard', false);
+        }
+
+        return $query;
+    }
+
+    /**
      * سيارات المستخدم (محمي)
      */
     public function index(Request $request)
@@ -49,6 +61,7 @@ class CarController extends Controller
         $user = Auth::user();
 
         $query = Car::where('user_id', $user->id);
+        $this->applyOwnerDashboardListingFilter($query);
 
         $query->with('auctions');
 
@@ -152,6 +165,7 @@ class CarController extends Controller
 
         // All users (including dealers) use user_id for ownership
         $query->where('user_id', $user->id);
+        $this->applyOwnerDashboardListingFilter($query);
 
         $cars = $query->paginate(10);
 
@@ -770,6 +784,7 @@ class CarController extends Controller
 
         // All users (including dealers) use user_id for ownership
         $query = Car::where('user_id', $user->id);
+        $this->applyOwnerDashboardListingFilter($query);
 
         $totalCars = $query->count();
 

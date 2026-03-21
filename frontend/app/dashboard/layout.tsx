@@ -89,7 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         description: "نظرة عامة على إحصائياتك",
       },
       {
-        name: "سيارتي",
+        name: "سياراتي",
         href: "/dashboard/mycars",
         icon: Car,
         description: "إدارة سياراتك المعروضة",
