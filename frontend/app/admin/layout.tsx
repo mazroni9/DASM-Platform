@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, type ElementType } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
@@ -32,10 +32,13 @@ import {
   ScrollText,
   Mail,
   MessageSquare,
+  ClipboardList,
+  UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import api from "@/lib/axios";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -43,19 +46,73 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
-  const { isAdmin, isModerator, logout } = useAuth();
+  const {
+    isAdmin,
+    isModerator,
+    isProgrammer,
+    isSuperAdmin,
+    logout,
+    hydrated,
+    token,
+  } = useAuth();
   const { can, canAny } = usePermission();
   const router = useLoadingRouter();
 
+  const [shellReady, setShellReady] = useState(false);
+  const [approvalQueueAccess, setApprovalQueueAccess] = useState(false);
+
+  const isStaff = isAdmin || isModerator || isProgrammer;
+
   useEffect(() => {
-    if (!isAdmin && !isModerator) {
+    if (!hydrated) return;
+
+    if (isStaff) {
+      setApprovalQueueAccess(true);
+      setShellReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get("/api/admin/approval-requests/capabilities");
+        const ok = res.data?.data?.can_access_queue === true;
+        if (!cancelled) setApprovalQueueAccess(ok);
+      } catch {
+        if (!cancelled) setApprovalQueueAccess(false);
+      } finally {
+        if (!cancelled) setShellReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, isStaff, token]);
+
+  useEffect(() => {
+    if (!shellReady) return;
+    const allowed = isStaff || approvalQueueAccess;
+    if (!allowed) {
       router.replace("/auth/login?returnUrl=/admin");
     }
-  }, [isAdmin, isModerator, router]);
+  }, [shellReady, isStaff, approvalQueueAccess, router]);
 
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
     { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
+    {
+      name: "طابور الموافقات",
+      href: "/admin/approval-requests",
+      icon: ClipboardList,
+      operationalQueue: true,
+    },
+    {
+      name: "مجموعة الموافقات التشغيلية",
+      href: "/admin/approval-group",
+      icon: UserCheck,
+      superAdminOnlyNav: true,
+    },
 
     {
       name: "المستخدمين والصلاحيات",
@@ -364,12 +421,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <h3 className="text-sm font-bold mb-3">القائمة الرئيسية</h3>
                 <ul className="space-y-2">
                   {navigation.map((item) => {
+                    const navItem = item as {
+                      operationalQueue?: boolean;
+                      superAdminOnlyNav?: boolean;
+                      permission?: string;
+                      permissions?: string[];
+                      type?: string;
+                      name: string;
+                      href: string;
+                      icon: ElementType;
+                    };
+                    if (navItem.operationalQueue && !isStaff && !approvalQueueAccess) {
+                      return null;
+                    }
+                    if (navItem.superAdminOnlyNav && !isSuperAdmin) {
+                      return null;
+                    }
                     // Check permission
                     if (item.type === "header") {
                       if (item.permissions && !canAny(item.permissions))
                         return null;
-                    } else if ((item as any).permission) {
-                      if (!can((item as any).permission)) return null;
+                    } else if (navItem.permission) {
+                      if (!can(navItem.permission)) return null;
                     }
 
                     const Icon = item.icon as any;

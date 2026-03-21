@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { Button } from "@/components/ui/button";
+import LoadingLink from "@/components/LoadingLink";
 
 const CAR_TYPES = [
   { value: "luxury", label: "سيارة فارهة" },
@@ -68,6 +69,14 @@ export default function ControlRoomPage() {
 
   return (
     <div className="container mx-auto p-6">
+      <div className="mb-4">
+        <LoadingLink
+          href="/admin/control-room/approval-requests"
+          className="text-sm text-primary font-medium hover:underline"
+        >
+          طابور الموافقات التشغيلية (حسابات تجارية وصلاحيات مجلس السوق)
+        </LoadingLink>
+      </div>
       <h1 className="text-2xl font-bold mb-6">غرفة معالجة السيارات الجديدة</h1>
       {loading && <div>جاري التحميل...</div>}
       <Button

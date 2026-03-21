@@ -54,6 +54,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             // Role-based Access Control (Custom)
             'admin'             => \App\Http\Middleware\AdminMiddleware::class,
+            'super_admin'       => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'approval.queue'    => \App\Http\Middleware\ApprovalQueueAccess::class,
             'moderator'         => \App\Http\Middleware\ModeratorMiddleware::class,
             'dealer'            => \App\Http\Middleware\DealerMiddleware::class,
             

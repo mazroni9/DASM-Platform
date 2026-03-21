@@ -78,6 +78,7 @@
 | **التسجيل (Frontend)** | يمر عبر عميل API موحّد (shared axios) وطلبات same-origin إلى `/api/register` — لا مسار تسجيل منفصل بعميل مختلف عن بقية الواجهة. |
 | **المستخدم العادي (`user`)** | لا ينتظر تفعيلًا إداريًا بعد التسجيل ضمن السياسة الحالية؛ ما يزال يحتاج توثيق البريد قبل الدخول حسب التدفق المعتمد. |
 | **أنواع أخرى (مثل dealer / venue_owner / investor)** | تبقى ضمن مسار المراجعة أو التفعيل الإداري حسب النوع والسياسة. |
+| **مجموعة الموافقات التشغيلية (Operational approval group)** | مفهوم منفصل عن Spatie teams/roles: جدول `approval_group_members` (عضوية فريدة لكل مستخدم + أعلام قدرات) و`approval_requests` (طابور عام). إدارة العضوية لـ `super_admin` فقط (`/admin` → مجموعة الموافقات). الطابور في `/admin/approval-requests` و`/admin/control-room/approval-requests`. بعد توثيق البريد لـ dealer / venue_owner / investor يُنشأ طلب `business_account` ويُرسل بريد + إشعار قاعدة بيانات + FCM لكل عضو نشط في المجموعة (دون opt-out). طلبات مجلس السوق: `POST /api/council-studio/access-request` مع حزم writer/editor/publisher/moderator. صفحة `/admin/market-council/permissions` تبقى أداة يدوية للصلاحيات. |
 | **verify-email وإعادة إرسال التحقق** | تعتمد على عميل API موحّد وطلبات same-origin إلى مسارات `/api` — لا اعتماد على استدعاء مباشر من المتصفح بعنوان backend منفصل من صفحة التحقق. |
 | **حذف المستخدمين (لوحة الإدارة)** | محصور على `super_admin` في الواجهة والخادم؛ ممنوع حذف `super_admin` أو حذف الحساب الحالي للمُدير. |
 | **دور `programmer`** | مضاف في النظام ومسارات الإدارة؛ مزامنة Spatie تُضبط عبر migrations + provisioner مخصص — **لا** يُشترط تشغيل `php artisan db:seed --class=RolesAndPermissionsSeeder` كخطوة نشر خاصة بهذه الحزمة. |
@@ -248,4 +249,4 @@ PR #200 أُغلق لأنه أصبح redundant بعد دمج أصل إصلاح i
 
 ---
 
-*آخر تحديث: 2026-03 (بعد PR #211)*
+*آخر تحديث: 2026-03 — إضافة baseline لمجموعة الموافقات التشغيلية والطابور (فرع `feature/approval-group-and-request-alerts`؛ رقم PR يُحدَّث عند الدمج)*

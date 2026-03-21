@@ -65,6 +65,9 @@ use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW
 use App\Http\Controllers\Admin\MarketCouncilController as AdminMarketCouncilController;
 use App\Http\Controllers\Admin\MarketCouncilCommentsController as AdminMarketCouncilCommentsController;
 use App\Http\Controllers\Admin\CouncilPermissionsController;
+use App\Http\Controllers\Admin\ApprovalGroupMemberController;
+use App\Http\Controllers\Admin\ApprovalRequestController;
+use App\Http\Controllers\CouncilAccessRequestController;
 use App\Http\Controllers\Admin\AuctionActivityLogController;
 use App\Http\Controllers\Admin\AuctionTestingAnalyticsController;
 
@@ -791,6 +794,33 @@ Route::middleware('auth:sanctum')
             Route::get('/bids-heatmap', [ExhibitorAnalyticsController::class, 'bidsHeatmap']);
         });
     });
+
+/*
+|--------------------------------------------------------------------------
+| OPERATIONAL APPROVAL GROUP & REQUEST QUEUE (not Spatie teams)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'set.organization', 'super_admin'])
+    ->prefix('admin/approval-group')
+    ->group(function () {
+        Route::get('/', [ApprovalGroupMemberController::class, 'index']);
+        Route::post('/', [ApprovalGroupMemberController::class, 'store']);
+        Route::put('/{id}', [ApprovalGroupMemberController::class, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [ApprovalGroupMemberController::class, 'destroy'])->whereNumber('id');
+    });
+
+Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])
+    ->prefix('admin/approval-requests')
+    ->group(function () {
+        Route::get('/capabilities', [ApprovalRequestController::class, 'capabilities']);
+        Route::get('/', [ApprovalRequestController::class, 'index']);
+        Route::get('/{id}', [ApprovalRequestController::class, 'show'])->whereNumber('id');
+        Route::post('/{id}/approve', [ApprovalRequestController::class, 'approve'])->whereNumber('id');
+        Route::post('/{id}/reject', [ApprovalRequestController::class, 'reject'])->whereNumber('id');
+    });
+
+Route::middleware(['auth:sanctum', 'set.organization'])
+    ->post('/council-studio/access-request', [CouncilAccessRequestController::class, 'store']);
 
 /*
 |--------------------------------------------------------------------------
