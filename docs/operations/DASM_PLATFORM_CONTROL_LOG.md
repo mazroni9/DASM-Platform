@@ -92,6 +92,7 @@
 
 | التاريخ التقريبي | الدفعة | النتيجة |
 |-------------------|--------|---------|
+| 2026-03 | **فرع `feature/dashboard-profile-display-location`** — `display_location` في بروفايل المستخدم + عرض تحت الاسم في الداشبورد | قيد المراجعة/الـ PR: حقل `display_location` = `areas.name` أو عنوان معرض قصير موثوق فقط؛ بدون لاحق دولة hardcoded؛ بدون migration؛ لا geolocation |
 | 2026-03 | **PR #215** — control-room approval workflow + audit log + request alerts | دمج في master: نقل مجموعة الموافقات التشغيلية والطابور إلى `/admin/control-room/approval-group` و`/admin/control-room/approval-requests`؛ حصر الوصول على `super_admin` أو عضو مجموعة نشط بـ `can_review_requests`؛ إضافة `approval_request_logs` و`ApprovalRequestAuditService`؛ إرسال تنبيهات بريد + DB + FCM؛ مزامنة `status` و`is_active` و`approval_status` عند approve/reject للحسابات التجارية |
 | 2026-03 | **PR #214** — dealer label alignment to «تاجر سيارات» | دمج في master: توحيد الاسم المعروض للمسار `dealer` إلى «تاجر سيارات» وما يتصل به في الواجهة، مع الإبقاء على القيمة التقنية `dealer` دون تغيير وتنظيف الصياغات الثقيلة داخل المسار |
 | 2026-03 | **PR #213** — تحديث Control Log فقط | دمج في master: عزل التوثيق عن إصلاح AI pricing / CORS وتحديث مرجع التشغيل |
