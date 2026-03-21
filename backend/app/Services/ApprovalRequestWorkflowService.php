@@ -16,14 +16,15 @@ use App\Notifications\ApprovalRequestResolvedNotification;
 use App\Support\CouncilStudioBundle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 class ApprovalRequestWorkflowService
 {
     public function __construct(
-        private readonly PermissionRegistrar $registrar
+        private readonly PermissionRegistrar $registrar,
+        private readonly ApprovalRequestAuditService $audit
     ) {
     }
 
@@ -43,7 +44,13 @@ class ApprovalRequestWorkflowService
             return;
         }
 
-        Notification::send($members, new ApprovalRequestCreatedNotification($request));
+        $notification = new ApprovalRequestCreatedNotification($request);
+
+        foreach ($members as $member) {
+            $channels = $notification->via($member);
+            $this->audit->logNotificationChannels($request, $member, $channels);
+            $member->notify($notification);
+        }
     }
 
     /**
@@ -89,6 +96,12 @@ class ApprovalRequestWorkflowService
             'payload' => $payload,
         ]);
 
+        $request->refresh();
+        $this->audit->logRequestCreated($request, null, [
+            'source' => 'email_verification',
+            'target_user_id' => $user->id,
+        ]);
+
         $this->notifyActiveGroupMembers($request->fresh(['targetUser']));
 
         return $request;
@@ -126,6 +139,11 @@ class ApprovalRequestWorkflowService
             'payload' => ['bundle' => $bundle, 'permission_names' => $names],
         ]);
 
+        $request->refresh();
+        $this->audit->logRequestCreated($request, $requester->id, [
+            'bundle' => $bundle,
+        ]);
+
         $this->notifyActiveGroupMembers($request->fresh(['targetUser', 'submittedBy']));
 
         return $request;
@@ -148,6 +166,8 @@ class ApprovalRequestWorkflowService
                 $this->applyCouncilBundlePermissions($request->targetUser, $request->payload ?? []);
             }
 
+            $this->audit->logApproved($request, $reviewer->id);
+
             $request->targetUser?->notify(new ApprovalRequestResolvedNotification($request, true));
         });
     }
@@ -167,6 +187,8 @@ class ApprovalRequestWorkflowService
             if ($request->request_type === ApprovalRequest::TYPE_BUSINESS_ACCOUNT) {
                 $this->applyBusinessAccountRejection($request->targetUser);
             }
+
+            $this->audit->logRejected($request, $reviewer->id, $notes);
 
             $request->targetUser?->notify(new ApprovalRequestResolvedNotification($request, false));
         });
@@ -210,6 +232,9 @@ class ApprovalRequestWorkflowService
     {
         $user->is_active = true;
         $user->status = UserStatus::ACTIVE;
+        if (Schema::hasColumn($user->getTable(), 'approval_status')) {
+            $user->approval_status = 'approved';
+        }
         $user->save();
 
         $type = $user->type instanceof UserRole ? $user->type->value : (string) $user->type;
@@ -233,6 +258,9 @@ class ApprovalRequestWorkflowService
     {
         $user->is_active = false;
         $user->status = UserStatus::REJECTED;
+        if (Schema::hasColumn($user->getTable(), 'approval_status')) {
+            $user->approval_status = 'rejected';
+        }
         $user->save();
     }
 

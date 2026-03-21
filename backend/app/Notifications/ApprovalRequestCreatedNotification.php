@@ -43,7 +43,7 @@ class ApprovalRequestCreatedNotification extends Notification implements ShouldQ
             ->subject($title)
             ->greeting('مرحباً ' . ($notifiable->first_name ?? ''))
             ->line($body)
-            ->action('مراجعة الطلبات', url('/admin/approval-requests'))
+            ->action('مراجعة الطلبات', url('/admin/control-room/approval-requests'))
             ->line('تم إنشاء طلب موافقة جديد في النظام.');
     }
 
@@ -67,7 +67,7 @@ class ApprovalRequestCreatedNotification extends Notification implements ShouldQ
                 'webpush' => [
                     'headers' => ['Urgency' => 'high'],
                     'fcm_options' => [
-                        'link' => '/admin/approval-requests',
+                        'link' => '/admin/control-room/approval-requests',
                     ],
                 ],
             ]);

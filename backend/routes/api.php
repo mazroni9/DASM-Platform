@@ -809,11 +809,14 @@ Route::middleware(['auth:sanctum', 'set.organization', 'super_admin'])
         Route::delete('/{id}', [ApprovalGroupMemberController::class, 'destroy'])->whereNumber('id');
     });
 
+Route::middleware(['auth:sanctum', 'set.organization'])
+    ->get('/admin/approval-requests/capabilities', [ApprovalRequestController::class, 'capabilities']);
+
 Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])
     ->prefix('admin/approval-requests')
     ->group(function () {
-        Route::get('/capabilities', [ApprovalRequestController::class, 'capabilities']);
         Route::get('/', [ApprovalRequestController::class, 'index']);
+        Route::get('/{id}/logs', [ApprovalRequestController::class, 'logs'])->whereNumber('id');
         Route::get('/{id}', [ApprovalRequestController::class, 'show'])->whereNumber('id');
         Route::post('/{id}/approve', [ApprovalRequestController::class, 'approve'])->whereNumber('id');
         Route::post('/{id}/reject', [ApprovalRequestController::class, 'reject'])->whereNumber('id');

@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import ApprovalRequestsQueue from "@/components/admin/ApprovalRequestsQueue";
-
-export default function AdminApprovalRequestsPage() {
-  return <ApprovalRequestsQueue />;
+export default function LegacyApprovalRequestsRedirect() {
+  redirect("/admin/control-room/approval-requests");
 }

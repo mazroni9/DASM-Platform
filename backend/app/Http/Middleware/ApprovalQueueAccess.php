@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use App\Models\ApprovalGroupMember;
 use App\Models\User;
 use Closure;
@@ -9,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Allows admin staff OR active operational approval-group reviewers to access approval-queue API routes.
+ * Allows super_admin OR active operational approval-group reviewers (can_review_requests).
  */
 class ApprovalQueueAccess
 {
@@ -22,7 +23,7 @@ class ApprovalQueueAccess
         /** @var User $user */
         $user = auth()->user();
 
-        if ($user->isAdmin() || $user->isModerator() || $user->isProgrammer()) {
+        if ($user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin') {
             return $next($request);
         }
 

@@ -32,8 +32,7 @@ import {
   ScrollText,
   Mail,
   MessageSquare,
-  ClipboardList,
-  UserCheck,
+  LayoutGrid,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
@@ -50,7 +49,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     isAdmin,
     isModerator,
     isProgrammer,
-    isSuperAdmin,
     logout,
     hydrated,
     token,
@@ -59,15 +57,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useLoadingRouter();
 
   const [shellReady, setShellReady] = useState(false);
-  const [approvalQueueAccess, setApprovalQueueAccess] = useState(false);
+  /** Non-staff reviewers: operational approval group only (no general admin shell). */
+  const [controlRoomReviewerAccess, setControlRoomReviewerAccess] = useState(false);
 
   const isStaff = isAdmin || isModerator || isProgrammer;
+  const isControlRoomPath = pathname?.startsWith("/admin/control-room") ?? false;
 
   useEffect(() => {
     if (!hydrated) return;
 
+    if (!isControlRoomPath) {
+      setControlRoomReviewerAccess(false);
+      setShellReady(true);
+      return;
+    }
+
     if (isStaff) {
-      setApprovalQueueAccess(true);
+      setControlRoomReviewerAccess(true);
       setShellReady(true);
       return;
     }
@@ -77,9 +83,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       try {
         const res = await api.get("/api/admin/approval-requests/capabilities");
         const ok = res.data?.data?.can_access_queue === true;
-        if (!cancelled) setApprovalQueueAccess(ok);
+        if (!cancelled) setControlRoomReviewerAccess(ok);
       } catch {
-        if (!cancelled) setApprovalQueueAccess(false);
+        if (!cancelled) setControlRoomReviewerAccess(false);
       } finally {
         if (!cancelled) setShellReady(true);
       }
@@ -88,30 +94,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, isStaff, token]);
+  }, [hydrated, isStaff, isControlRoomPath, token]);
 
   useEffect(() => {
     if (!shellReady) return;
-    const allowed = isStaff || approvalQueueAccess;
-    if (!allowed) {
+    if (isControlRoomPath) {
+      if (!isStaff && !controlRoomReviewerAccess) {
+        router.replace("/auth/login?returnUrl=/admin/control-room");
+      }
+      return;
+    }
+    if (!isStaff) {
       router.replace("/auth/login?returnUrl=/admin");
     }
-  }, [shellReady, isStaff, approvalQueueAccess, router]);
+  }, [
+    shellReady,
+    isStaff,
+    isControlRoomPath,
+    controlRoomReviewerAccess,
+    router,
+  ]);
 
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
     { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
     {
-      name: "طابور الموافقات",
-      href: "/admin/approval-requests",
-      icon: ClipboardList,
-      operationalQueue: true,
-    },
-    {
-      name: "مجموعة الموافقات التشغيلية",
-      href: "/admin/approval-group",
-      icon: UserCheck,
-      superAdminOnlyNav: true,
+      name: "غرفة المعالجة",
+      href: "/admin/control-room",
+      icon: LayoutGrid,
     },
 
     {
@@ -389,6 +399,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     router.replace("/auth/login");
   };
 
+  if (isControlRoomPath) {
+    return (
+      <div
+        className="min-h-screen bg-background text-foreground overflow-x-hidden"
+        dir="rtl"
+      >
+        <div className="w-full max-w-screen-2xl mx-auto px-1 pb-8 pt-4 lg:pt-6">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-background text-foreground overflow-x-hidden"
@@ -422,8 +445,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <ul className="space-y-2">
                   {navigation.map((item) => {
                     const navItem = item as {
-                      operationalQueue?: boolean;
-                      superAdminOnlyNav?: boolean;
                       permission?: string;
                       permissions?: string[];
                       type?: string;
@@ -431,12 +452,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       href: string;
                       icon: ElementType;
                     };
-                    if (navItem.operationalQueue && !isStaff && !approvalQueueAccess) {
-                      return null;
-                    }
-                    if (navItem.superAdminOnlyNav && !isSuperAdmin) {
-                      return null;
-                    }
                     // Check permission
                     if (item.type === "header") {
                       if (item.permissions && !canAny(item.permissions))
