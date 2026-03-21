@@ -155,9 +155,9 @@ class ApprovalRequestWorkflowService
         return $request;
     }
 
-    public function approve(User $reviewer, ApprovalRequest $request, bool $isSuperAdmin): void
+    public function approve(User $reviewer, ApprovalRequest $request, bool $isPrivilegedReviewer): void
     {
-        $this->assertCanDecide($reviewer, $request, $isSuperAdmin);
+        $this->assertCanDecide($reviewer, $request, $isPrivilegedReviewer);
 
         DB::transaction(function () use ($reviewer, $request) {
             $request->update([
@@ -178,9 +178,9 @@ class ApprovalRequestWorkflowService
         });
     }
 
-    public function reject(User $reviewer, ApprovalRequest $request, ?string $notes, bool $isSuperAdmin): void
+    public function reject(User $reviewer, ApprovalRequest $request, ?string $notes, bool $isPrivilegedReviewer): void
     {
-        $this->assertCanDecide($reviewer, $request, $isSuperAdmin);
+        $this->assertCanDecide($reviewer, $request, $isPrivilegedReviewer);
 
         DB::transaction(function () use ($reviewer, $request, $notes) {
             $request->update([
@@ -200,13 +200,14 @@ class ApprovalRequestWorkflowService
         });
     }
 
-    private function assertCanDecide(User $reviewer, ApprovalRequest $request, bool $isSuperAdmin): void
+    private function assertCanDecide(User $reviewer, ApprovalRequest $request, bool $isPrivilegedReviewer): void
     {
         if ($request->status !== ApprovalRequest::STATUS_PENDING) {
             throw new \RuntimeException('Request is not pending');
         }
 
-        if ($isSuperAdmin) {
+        // super_admin أو admin: قرار كامل دون اشتراط صف عضوية المجموعة
+        if ($isPrivilegedReviewer) {
             return;
         }
 
@@ -235,7 +236,11 @@ class ApprovalRequestWorkflowService
             if (! $m->can_approve_council_requests) {
                 throw new \Illuminate\Auth\Access\AuthorizationException('غير مصرح بإجراءات طلبات مجلس السوق');
             }
+
+            return;
         }
+
+        throw new \Illuminate\Auth\Access\AuthorizationException('نوع الطلب غير مدعوم لهذه المراجعة');
     }
 
     private function applyBusinessAccountApproval(User $user): void

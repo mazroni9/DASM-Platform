@@ -11,7 +11,7 @@ export default function ControlRoomLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isSuperAdmin, isAdmin, isModerator, isProgrammer, logout } = useAuth();
+  const { isAdmin, isModerator, isProgrammer, logout } = useAuth();
   const router = useLoadingRouter();
   const isStaff = isAdmin || isModerator || isProgrammer;
 
@@ -47,7 +47,7 @@ export default function ControlRoomLayout({
             <ClipboardList className="w-4 h-4" />
             طابور الموافقات
           </LoadingLink>
-          {isSuperAdmin ? (
+          {isAdmin ? (
             <LoadingLink
               href="/admin/control-room/approval-group"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-primary/30 bg-primary/5 hover:bg-primary/10 transition"

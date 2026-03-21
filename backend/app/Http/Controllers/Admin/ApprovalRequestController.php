@@ -24,7 +24,6 @@ class ApprovalRequestController extends Controller
     public function capabilities(Request $request): JsonResponse
     {
         $user = $request->user();
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
 
         $m = ApprovalGroupMember::query()
             ->where('user_id', $user->id)
@@ -33,15 +32,17 @@ class ApprovalRequestController extends Controller
 
         $staffEligible = UserRole::isApprovalGroupEligibleType($user->type);
 
-        $canAccessQueue = $isSuper || ($staffEligible && $m && $m->can_review_requests);
+        $privileged = $user->isAdmin();
+
+        $canAccessQueue = $privileged || ($staffEligible && $m && $m->can_review_requests);
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'can_manage_group' => $isSuper,
+                'can_manage_group' => $privileged,
                 'can_access_queue' => $canAccessQueue,
-                'can_approve_business' => $isSuper || ($staffEligible && $m && $m->can_approve_business_accounts),
-                'can_approve_council' => $isSuper || ($staffEligible && $m && $m->can_approve_council_requests),
+                'can_approve_business' => $privileged || ($staffEligible && $m && $m->can_approve_business_accounts),
+                'can_approve_council' => $privileged || ($staffEligible && $m && $m->can_approve_council_requests),
             ],
         ]);
     }
@@ -137,10 +138,10 @@ class ApprovalRequestController extends Controller
     {
         $user = $request->user();
         $row = ApprovalRequest::findOrFail($id);
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
+        $privileged = $user->isAdmin();
 
         try {
-            $this->workflow->approve($user, $row, $isSuper);
+            $this->workflow->approve($user, $row, $privileged);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 403);
         } catch (\Throwable $e) {
@@ -164,10 +165,10 @@ class ApprovalRequestController extends Controller
 
         $user = $request->user();
         $row = ApprovalRequest::findOrFail($id);
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
+        $privileged = $user->isAdmin();
 
         try {
-            $this->workflow->reject($user, $row, $request->notes, $isSuper);
+            $this->workflow->reject($user, $row, $request->notes, $privileged);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 403);
         } catch (\Throwable $e) {
@@ -185,8 +186,7 @@ class ApprovalRequestController extends Controller
 
     private function authorizeQueueAccess(User $user): void
     {
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
-        if ($isSuper) {
+        if ($user->isAdmin()) {
             return;
         }
 

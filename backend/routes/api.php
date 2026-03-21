@@ -801,16 +801,20 @@ Route::middleware('auth:sanctum')
 | OPERATIONAL APPROVAL GROUP & REQUEST QUEUE (not Spatie teams)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'set.organization', 'super_admin'])
+// قراءة أعضاء المجموعة: نفس من يصل لطابور الموافقات (BFF / لوحة DASM)
+Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])
+    ->get('/admin/approval-group', [ApprovalGroupMemberController::class, 'index']);
+
+// إدارة العضوية: فقط super_admin + admin (لا مزدوجية مصدر خارج DASM)
+Route::middleware(['auth:sanctum', 'set.organization', 'admin_or_super_admin'])
     ->prefix('admin/approval-group')
     ->group(function () {
-        Route::get('/', [ApprovalGroupMemberController::class, 'index']);
         Route::post('/', [ApprovalGroupMemberController::class, 'store']);
         Route::put('/{id}', [ApprovalGroupMemberController::class, 'update'])->whereNumber('id');
         Route::delete('/{id}', [ApprovalGroupMemberController::class, 'destroy'])->whereNumber('id');
     });
 
-Route::middleware(['auth:sanctum', 'set.organization'])
+Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])
     ->get('/admin/approval-requests/capabilities', [ApprovalRequestController::class, 'capabilities']);
 
 Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])

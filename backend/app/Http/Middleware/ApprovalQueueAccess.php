@@ -28,6 +28,11 @@ class ApprovalQueueAccess
             return $next($request);
         }
 
+        // مدير النظام (وليس المشرف/المبرمج): وصول كامل للطابور دون اشتراط عضوية المجموعة
+        if ($user->isAdmin()) {
+            return $next($request);
+        }
+
         if (! UserRole::isApprovalGroupEligibleType($user->type)) {
             return response()->json([
                 'status' => 'error',

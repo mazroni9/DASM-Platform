@@ -35,7 +35,7 @@ type UserHit = {
 };
 
 export default function ControlRoomApprovalGroupPage() {
-  const { isSuperAdmin, hydrated } = useAuth();
+  const { isAdmin, hydrated } = useAuth();
   const router = useLoadingRouter();
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [q, setQ] = useState("");
@@ -49,12 +49,12 @@ export default function ControlRoomApprovalGroupPage() {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!isSuperAdmin) {
+    if (!isAdmin) {
       router.replace("/admin/control-room");
       return;
     }
     load().catch(() => toast.error("تعذر تحميل المجموعة"));
-  }, [hydrated, isSuperAdmin, load, router]);
+  }, [hydrated, isAdmin, load, router]);
 
   const searchUsers = async () => {
     if (!q.trim()) {
@@ -122,7 +122,7 @@ export default function ControlRoomApprovalGroupPage() {
     }
   };
 
-  if (!hydrated || !isSuperAdmin) {
+  if (!hydrated || !isAdmin) {
     return (
       <div className="p-6 text-sm text-foreground/60">جاري التحقق من الصلاحيات...</div>
     );
@@ -133,8 +133,8 @@ export default function ControlRoomApprovalGroupPage() {
       <div>
         <h1 className="text-2xl font-bold">مجموعة الموافقات التشغيلية</h1>
         <p className="text-sm text-foreground/60 mt-1">
-          إدارة أعضاء مجموعة الموافقات (منفصلة عن أدوار Spatie). متاح لمدير النظام
-          الرئيسي فقط — من غرفة المعالجة. يُضاف هنا فقط مستخدمون من نوع إداري
+          إدارة أعضاء مجموعة الموافقات (منفصلة عن أدوار Spatie). متاح لمدير النظام أو
+          المدير الرئيسي — من غرفة المعالجة. يُضاف هنا فقط مستخدمون من نوع إداري
           (المدير الأعلى، مدير النظام، المشرف، المبرمج).
         </p>
       </div>
