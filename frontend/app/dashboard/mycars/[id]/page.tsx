@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import LoadingLink from "@/components/LoadingLink";
+import { getCarImageUrls } from "@/lib/carImageUrls";
 import { Car as CarType } from "@/types/types";
 import VehicleForm from "@/components/shared/VehicleForm";
 
@@ -203,6 +204,11 @@ export default function CarDetailsPage() {
   // ✅ اعتماد غرفة التحكم: بدل car.auctions?.[0] نستخدم activeAuction
   const controlRoomApproved = Boolean(activeAuction?.control_room_approved);
 
+  const galleryUrls = useMemo(
+    () => (car ? getCarImageUrls(car) : []),
+    [car],
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black flex items-center justify-center">
@@ -360,10 +366,9 @@ export default function CarDetailsPage() {
           </h2>
 
           <div className="space-y-4">
-            {Array.isArray((car as any).images) &&
-            (car as any).images.length > 0 ? (
+            {galleryUrls.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
-                {(car as any).images.map((image: string, index: number) => (
+                {galleryUrls.map((image: string, index: number) => (
                   <div key={index} className="relative group">
                     <img
                       src={image}
@@ -371,8 +376,7 @@ export default function CarDetailsPage() {
                       className="w-full h-64 object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src =
-                          "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
+                        e.currentTarget.style.visibility = "hidden";
                       }}
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl flex items-center justify-center">

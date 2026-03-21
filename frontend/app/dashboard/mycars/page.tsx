@@ -24,6 +24,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 import LoadingLink from "@/components/LoadingLink";
+import { CarThumbnail } from "@/components/dashboard/CarThumbnail";
+import { getCarImageUrls } from "@/lib/carImageUrls";
 import { Car } from "@/types/types";
 
 type LaravelPaginator<T> = {
@@ -443,19 +445,11 @@ export default function MyCarsPage() {
                 <div className="bg-card backdrop-blur-xl border border-border rounded-2xl overflow-hidden hover:border-border/70 hover:shadow-2xl transition-all duration-300 hover:scale-105">
                   {/* Car Image */}
                   <div className="relative h-48 bg-background overflow-hidden">
-                    <img
-                      src={
-                        Array.isArray(car.images) && car.images.length > 0
-                          ? car.images[0]
-                          : "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg"
-                      }
-                      alt={`${car.make ?? ""} ${car.year ?? ""}`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src =
-                          "https://cdn.pixabay.com/photo/2012/05/29/00/43/car-49278_1280.jpg";
-                      }}
+                    <CarThumbnail
+                      src={getCarImageUrls(car)[0]}
+                      alt={`${car.make ?? ""} ${car.model ?? ""} ${car.year ?? ""}`}
+                      className="transition-transform duration-500 group-hover:scale-105"
+                      imgClassName="transition-transform duration-500 group-hover:scale-110"
                     />
 
                     {/* Status Badge */}

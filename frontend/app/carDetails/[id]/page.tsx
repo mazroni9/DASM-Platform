@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import {
   ChevronRight,
@@ -51,6 +51,7 @@ import BidForm from "@/components/BidForm";
 import { motion } from "framer-motion";
 import AddToWatchlistButton from "@/components/dealer/AddToWatchlistButton";
 import AIPricingWidget from "@/components/AIPricingWidget";
+import { getCarImageUrls } from "@/lib/carImageUrls";
 
 // ========== أنواع مراحل السوق ==========
 type MarketPhase = "live" | "instant" | "late" | "fixed";
@@ -434,7 +435,9 @@ const ImageLightbox = ({
       onClick={onClose}
     >
       <button
+        type="button"
         onClick={onClose}
+        aria-label="إغلاق"
         className="absolute top-6 right-6 text-white hover:text-red-400 z-10 bg-white/10 hover:bg-white/20 rounded-full p-2 backdrop-blur-md transition-all duration-300"
       >
         <X className="w-8 h-8" />
@@ -758,9 +761,13 @@ export default function CarDetailPage() {
     };
   }, [isConnected, carId, subscribe, unsubscribe]);
 
-  const images =
-    item?.car?.images?.length > 0 ? item.car.images : ["/placeholder-car.jpg"];
-  const currentImage = images[selectedImageIndex];
+  const carImageUrls = useMemo(
+    () => getCarImageUrls(item?.car),
+    [item?.car],
+  );
+  const images = carImageUrls;
+  const currentImage = images[selectedImageIndex] ?? "";
+  const hasCarPhotos = images.length > 0;
 
   const goToNextImage = () => {
     setSelectedImageIndex((prev) =>
@@ -892,20 +899,29 @@ export default function CarDetailPage() {
               {/* Image Gallery */}
               <div className="space-y-4">
                 <div
-                  className="relative bg-black/5 dark:bg-white/5 rounded-3xl overflow-hidden cursor-zoom-in group border border-border/50 shadow-sm aspect-[16/10]"
-                  onClick={() => setShowImageModal(true)}
+                  className={`relative bg-black/5 dark:bg-white/5 rounded-3xl overflow-hidden group border border-border/50 shadow-sm aspect-[16/10] ${hasCarPhotos ? "cursor-zoom-in" : "cursor-default"}`}
+                  onClick={() => hasCarPhotos && setShowImageModal(true)}
                 >
+                  {hasCarPhotos ? (
                   <img
                     src={currentImage}
                     alt={`${car?.make} ${car?.model}`}
                     className="w-full h-full object-contain"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/placeholder-car.jpg";
+                      (e.target as HTMLImageElement).style.opacity = "0.2";
                     }}
                   />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-muted/40 px-6 text-center text-muted-foreground">
+                      <Car className="h-14 w-14 opacity-30" aria-hidden />
+                      <p className="text-sm font-medium">
+                        لا توجد صور معتمدة لهذه المركبة حاليًا
+                      </p>
+                    </div>
+                  )}
 
                   {/* Overlay Controls */}
+                  {hasCarPhotos && (
                   <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/60 to-transparent flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <span className="bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-lg text-sm font-medium">
                       اضغط للتكبير
@@ -914,11 +930,14 @@ export default function CarDetailPage() {
                       {selectedImageIndex + 1} / {images.length}
                     </div>
                   </div>
+                  )}
 
                   {/* Navigation Arrows */}
-                  {images.length > 1 && (
+                  {hasCarPhotos && images.length > 1 && (
                     <>
                       <button
+                        type="button"
+                        aria-label="الصورة السابقة"
                         onClick={(e) => {
                           e.stopPropagation();
                           goToPreviousImage();
@@ -928,6 +947,8 @@ export default function CarDetailPage() {
                         <ChevronRight className="w-5 h-5 rotate-180" />
                       </button>
                       <button
+                        type="button"
+                        aria-label="الصورة التالية"
                         onClick={(e) => {
                           e.stopPropagation();
                           goToNextImage();
@@ -941,7 +962,7 @@ export default function CarDetailPage() {
                 </div>
 
                 {/* Thumbnails */}
-                {images.length > 1 && (
+                {hasCarPhotos && images.length > 1 && (
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                     {images.map((img: string, idx: number) => (
                       <button
@@ -1046,8 +1067,8 @@ export default function CarDetailPage() {
                   وصف إضافي
                 </h3>
                 <p className="text-foreground/70 leading-relaxed text-right text-base whitespace-pre-line">
-                  {car?.description ||
-                    "سيارة بحالة ممتازة. جميع الصيانات تمت في الوكالة. يوجد خدش بسيط في الصدام الخلفي وتم إصلاحه."}
+                  {(car?.description && String(car.description).trim()) ||
+                    "لا يوجد وصف إضافي متاح حاليًا لهذه المركبة."}
                 </p>
               </div>
             </div>

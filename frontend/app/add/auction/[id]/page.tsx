@@ -111,7 +111,7 @@ export default function AuctionDataEntryForm() {
           className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
           href="/dashboard/mycars"
         >
-          العودة إلى سيارتي
+          العودة إلى سياراتي
         </a>
         <div className="border-b pb-4 mb-6">
           <h1 className="text-2xl font-bold text-gray-800">

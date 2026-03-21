@@ -156,6 +156,9 @@ export interface Car {
   transmission?: string;
   description?: string;
   images?: string[];
+  /** من Laravel (accessor) عند تفعيل append */
+  images_list?: string[];
+  image_url?: string | null;
   user_id?: number;
   created_at: string;
   updated_at: string;
