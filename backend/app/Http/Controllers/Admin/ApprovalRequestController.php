@@ -31,15 +31,17 @@ class ApprovalRequestController extends Controller
             ->where('is_active', true)
             ->first();
 
-        $canAccessQueue = $isSuper || ($m && $m->can_review_requests);
+        $staffEligible = UserRole::isApprovalGroupEligibleType($user->type);
+
+        $canAccessQueue = $isSuper || ($staffEligible && $m && $m->can_review_requests);
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'can_manage_group' => $isSuper,
                 'can_access_queue' => $canAccessQueue,
-                'can_approve_business' => $isSuper || ($m && $m->can_approve_business_accounts),
-                'can_approve_council' => $isSuper || ($m && $m->can_approve_council_requests),
+                'can_approve_business' => $isSuper || ($staffEligible && $m && $m->can_approve_business_accounts),
+                'can_approve_council' => $isSuper || ($staffEligible && $m && $m->can_approve_council_requests),
             ],
         ]);
     }
@@ -186,6 +188,10 @@ class ApprovalRequestController extends Controller
         $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
         if ($isSuper) {
             return;
+        }
+
+        if (! UserRole::isApprovalGroupEligibleType($user->type)) {
+            abort(403, 'غير مصرح بعرض طابور الموافقات');
         }
 
         $m = ApprovalGroupMember::query()

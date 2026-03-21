@@ -175,6 +175,29 @@ enum UserRole: string
     }
 
     /**
+     * Roles allowed in the operational approval group and /admin/control-room queue access
+     * (excludes business accounts and plain users).
+     *
+     * @return list<string>
+     */
+    public static function approvalGroupEligibleValues(): array
+    {
+        return [
+            self::SUPER_ADMIN->value,
+            self::ADMIN->value,
+            self::MODERATOR->value,
+            self::PROGRAMMER->value,
+        ];
+    }
+
+    public static function isApprovalGroupEligibleType(mixed $type): bool
+    {
+        $v = $type instanceof self ? $type->value : (string) $type;
+
+        return in_array($v, self::approvalGroupEligibleValues(), true);
+    }
+
+    /**
      * Get business roles
      */
     public static function businessRoles(): array

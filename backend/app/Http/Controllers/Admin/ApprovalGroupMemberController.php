@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovalGroupMember;
 use App\Models\User;
@@ -36,6 +37,14 @@ class ApprovalGroupMemberController extends Controller
             ], 422);
         }
 
+        $targetUser = User::query()->findOrFail((int) $request->user_id);
+        if (! UserRole::isApprovalGroupEligibleType($targetUser->type)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'يُسمح فقط بإضافة موظفي الإدارة (المدير الأعلى، مدير النظام، المشرف، أو المبرمج) إلى مجموعة الموافقات',
+            ], 422);
+        }
+
         $actor = $request->user();
         $row = ApprovalGroupMember::create([
             'user_id' => (int) $request->user_id,
@@ -65,7 +74,14 @@ class ApprovalGroupMemberController extends Controller
             'can_approve_council_requests' => 'sometimes|boolean',
         ]);
 
-        $row = ApprovalGroupMember::findOrFail($id);
+        $row = ApprovalGroupMember::query()->with('user:id,type')->findOrFail($id);
+        if ($row->user && ! UserRole::isApprovalGroupEligibleType($row->user->type)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'هذه العضوية مرتبطة بمستخدم غير إداري. أزل العضو من المجموعة ثم أضف مستخدماً إدارياً إن لزم.',
+            ], 422);
+        }
+
         $actor = $request->user();
 
         $row->fill($request->only([

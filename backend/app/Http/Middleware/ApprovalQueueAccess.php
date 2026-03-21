@@ -10,7 +10,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Allows super_admin OR active operational approval-group reviewers (can_review_requests).
+ * Allows super_admin OR staff approval-group reviewers (active + can_review_requests).
+ * Non-staff users are denied even if wrongly present in approval_group_members.
  */
 class ApprovalQueueAccess
 {
@@ -25,6 +26,13 @@ class ApprovalQueueAccess
 
         if ($user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin') {
             return $next($request);
+        }
+
+        if (! UserRole::isApprovalGroupEligibleType($user->type)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'غير مصرح بالوصول لطابور الموافقات',
+            ], 403);
         }
 
         $allowed = ApprovalGroupMember::query()

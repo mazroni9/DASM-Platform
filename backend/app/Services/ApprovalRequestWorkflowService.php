@@ -30,9 +30,15 @@ class ApprovalRequestWorkflowService
 
     public function notifyActiveGroupMembers(ApprovalRequest $request): void
     {
-        $members = ApprovalGroupMember::activeMembersQuery()
-            ->with('user')
-            ->get()
+        $q = ApprovalGroupMember::activeMembersQuery()->with('user');
+
+        if ($request->request_type === ApprovalRequest::TYPE_BUSINESS_ACCOUNT) {
+            $q->where('can_approve_business_accounts', true);
+        } elseif ($request->request_type === ApprovalRequest::TYPE_COUNCIL_PERMISSION) {
+            $q->where('can_approve_council_requests', true);
+        }
+
+        $members = $q->get()
             ->pluck('user')
             ->filter(fn (?User $u) => $u && $u->email);
 
@@ -202,6 +208,10 @@ class ApprovalRequestWorkflowService
 
         if ($isSuperAdmin) {
             return;
+        }
+
+        if (! UserRole::isApprovalGroupEligibleType($reviewer->type)) {
+            throw new \Illuminate\Auth\Access\AuthorizationException('غير مصرح بمراجعة الطلبات');
         }
 
         $m = ApprovalGroupMember::query()

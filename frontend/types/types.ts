@@ -9,6 +9,21 @@ export enum UserRole {
   USER = "user",
 }
 
+/** Staff types allowed in operational approval group (matches backend UserRole::approvalGroupEligibleValues). */
+export const APPROVAL_GROUP_ELIGIBLE_ROLES: readonly UserRole[] = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.MODERATOR,
+  UserRole.PROGRAMMER,
+];
+
+export function isApprovalGroupEligibleType(
+  type: string | UserRole | undefined | null
+): boolean {
+  if (type === undefined || type === null || type === "") return false;
+  return (APPROVAL_GROUP_ELIGIBLE_ROLES as readonly string[]).includes(String(type));
+}
+
 export const UserRoleHelpers = {
   getLabel: (role: UserRole): string => {
     switch (role) {
