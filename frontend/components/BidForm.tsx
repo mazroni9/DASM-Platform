@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useSessionLocationBidHint } from "@/hooks/useSessionLocationBidHint";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/axios";
@@ -36,6 +37,7 @@ export default function BidForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const { isLoggedIn, user } = useAuth();
+  const { line: sessionLocLine, prepareForBidSubmit } = useSessionLocationBidHint();
 
   // خيارات المزايدة السريعة
   let BidOptions = [];
@@ -103,11 +105,14 @@ export default function BidForm({
     const client_ts = new Date().toISOString();
 
     try {
+      const loc = await prepareForBidSubmit();
       const response = await api.post("/api/auctions/bid", {
         auction_id,
         user_id: user?.id,
         bid_amount: numericBid,
         client_ts,
+        client_session_id: loc.client_session_id,
+        session_location: loc.session_location,
       });
 
       if (response.data.status === "success") {
@@ -216,6 +221,10 @@ export default function BidForm({
             <span className="text-sm font-bold">{success}</span>
           </div>
         )}
+
+        <p className="text-[11px] text-muted-foreground/80 leading-snug px-0.5">
+          {sessionLocLine}
+        </p>
 
         {/* التحذير الإلزامي */}
         <div className="p-4 bg-amber-50 rounded-xl border border-amber-100/50">

@@ -133,11 +133,9 @@ export default function ClassicCarCard({
           ) : car?.status === "live" ? (
             <LoadingLink
               href={`/carDetails/${car?.id}`}
-              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition"
+              className="flex w-full items-center justify-center rounded-md bg-amber-600 py-2.5 text-sm font-semibold text-white shadow-sm ring-offset-background transition-colors hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 active:bg-amber-800 border border-amber-800/30 min-h-[40px]"
             >
-              <button className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md font-medium transition">
-                عرض التفاصيل
-              </button>
+              عرض التفاصيل
             </LoadingLink>
           ) : (
             <div className="w-full py-2 bg-gray-100 text-gray-700 rounded-md font-medium text-center">

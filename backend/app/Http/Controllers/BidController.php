@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\PlaceBidRequest;
 use App\Http\Requests\StoreBidRequest;
+use App\Services\BidSensitiveContextLogService;
 use App\Http\Resources\UserBidLogResource;
 use App\Notifications\HigherBidNotification;
 use Illuminate\Support\Facades\Notification;
@@ -78,7 +79,7 @@ class BidController extends Controller
      * @param int $auctionId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(StoreBidRequest $request, $auctionId)
+    public function store(StoreBidRequest $request, $auctionId, BidSensitiveContextLogService $sensitiveContextLogService)
     {
         $auction = Auction::find($auctionId);
 
@@ -165,6 +166,9 @@ class BidController extends Controller
 
             DB::commit();
             Cache::flush();
+            if ($request->user()) {
+                $sensitiveContextLogService->recordForBid($request->user(), $request, $auction, $bid);
+            }
             Log::info('BidController::store success', [
                 'bid_id' => $bid->id,
                 'auction_id' => $auctionId,
@@ -401,7 +405,7 @@ class BidController extends Controller
      * @param  \App\Services\BidEventService  $bidEventService
      * @return \Illuminate\Http\JsonResponse
      */
-    public function placeBid(PlaceBidRequest $request, BidEventService $bidEventService)
+    public function placeBid(PlaceBidRequest $request, BidEventService $bidEventService, BidSensitiveContextLogService $sensitiveContextLogService)
     {
         DB::beginTransaction();
         try {
@@ -612,6 +616,8 @@ class BidController extends Controller
             }
 
             $bidEventService->log('bid_placed', $auction, $request, ['bid' => $bid, 'user' => $user]);
+
+            $sensitiveContextLogService->recordForBid($user, $request, $auction, $bid);
 
             // Log successful bid placement
             AuctionLoggingService::logBidSuccess($bid, $auction, $user, $request);
