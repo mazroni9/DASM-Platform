@@ -51,6 +51,7 @@ import BidForm from "@/components/BidForm";
 import { motion } from "framer-motion";
 import AddToWatchlistButton from "@/components/dealer/AddToWatchlistButton";
 import AIPricingWidget from "@/components/AIPricingWidget";
+import MarketGuidanceFromSimilarCars from "@/components/carDetails/MarketGuidanceFromSimilarCars";
 import { getCarImageUrls } from "@/lib/carImageUrls";
 
 // ========== أنواع مراحل السوق ==========
@@ -344,70 +345,6 @@ const MarketCouncilWidget = () => {
               </span>
               </motion.div>
             </LoadingLink>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-// ========== قسم السيارات المشابهة ==========
-const FeaturedCars = ({ cars }: { cars: any[] }) => {
-  if (!cars || cars.length === 0) return null;
-
-  return (
-    <section className="bg-background py-16 mt-8 border-t border-border/40">
-      <div className="container mx-auto px-4 sm:px-6">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-right text-2xl sm:text-3xl font-bold text-foreground mb-10 flex items-center gap-3"
-        >
-          <Car className="w-8 h-8 text-primary" />
-          سيارات مشابهة
-        </motion.h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {cars.map((car, index) => (
-            <motion.div
-              key={car.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 bg-card border border-border/50 hover:border-primary/20"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={car.images?.[0] || "/placeholder-car.jpg"}
-                  alt={`${car.make} ${car.model} ${car.year}`}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <div className="p-5">
-                <h3 className="text-lg font-bold text-foreground mb-3 line-clamp-1 group-hover:text-primary transition-colors">
-                  {car.make} {car.model} {car.year}
-                </h3>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-primary font-bold text-lg bg-primary/5 px-3 py-1 rounded-lg">
-                    <PriceWithIcon
-                      price={car.active_auction?.current_bid || 0}
-                    />
-                  </span>
-                  <span className="text-foreground/60 text-sm flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {car.total_bids || 0} مزايدة
-                  </span>
-                </div>
-                <LoadingLink href={`/carDetails/${car.id}`} className="w-full">
-                  <button className="w-full bg-secondary text-white py-3 rounded-xl font-medium hover:bg-secondary/90 hover:shadow-lg hover:shadow-secondary/20 transition-all duration-300 transform active:scale-[0.98]">
-                    شارك في المزاد
-                  </button>
-                </LoadingLink>
-              </div>
-            </motion.div>
           ))}
         </div>
       </div>
@@ -1101,8 +1038,15 @@ export default function CarDetailPage() {
             </div>
           </div>
 
-          {/* Similar Cars - Outside the grid, full width */}
-          <FeaturedCars cars={item?.similar_cars} />
+          {/* استرشاد سوقي من عينات مشابهة (ليس تقدير AI — يبقى AIPricingWidget منفصلًا في الشريط الجانبي) */}
+          <MarketGuidanceFromSimilarCars
+            subject={{
+              make: car?.make,
+              model: car?.model,
+              year: car?.year,
+            }}
+            similarCars={item?.similar_cars}
+          />
 
           {/* Market Council Widget - Contextual articles for car_detail */}
           <MarketCouncilWidget />

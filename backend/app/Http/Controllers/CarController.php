@@ -479,7 +479,7 @@ class CarController extends Controller
             ->withCount('activeAuctionBids as total_bids')
             ->orderByRaw('model = ? DESC', [$car->model])
             ->orderBy('year', 'DESC')
-            ->limit(4)
+            ->limit(8)
             ->get();
 
         $extraAttributes = [];
