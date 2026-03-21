@@ -762,7 +762,7 @@ export default function CarDetailPage() {
   }, [isConnected, carId, subscribe, unsubscribe]);
 
   const carImageUrls = useMemo(
-    () => getCarImageUrls(item?.car as Record<string, unknown> | undefined),
+    () => getCarImageUrls(item?.car),
     [item?.car],
   );
   const images = carImageUrls;

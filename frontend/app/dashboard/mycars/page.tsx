@@ -446,7 +446,7 @@ export default function MyCarsPage() {
                   {/* Car Image */}
                   <div className="relative h-48 bg-background overflow-hidden">
                     <CarThumbnail
-                      src={getCarImageUrls(car as Record<string, unknown>)[0]}
+                      src={getCarImageUrls(car)[0]}
                       alt={`${car.make ?? ""} ${car.model ?? ""} ${car.year ?? ""}`}
                       className="transition-transform duration-500 group-hover:scale-105"
                       imgClassName="transition-transform duration-500 group-hover:scale-110"

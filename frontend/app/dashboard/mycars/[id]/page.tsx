@@ -205,8 +205,7 @@ export default function CarDetailsPage() {
   const controlRoomApproved = Boolean(activeAuction?.control_room_approved);
 
   const galleryUrls = useMemo(
-    () =>
-      car ? getCarImageUrls(car as unknown as Record<string, unknown>) : [],
+    () => (car ? getCarImageUrls(car) : []),
     [car],
   );
 

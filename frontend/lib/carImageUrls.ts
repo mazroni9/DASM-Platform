@@ -1,12 +1,12 @@
 /**
  * يستخرج روابط صور السيارة من استجابة الـ API (يدعم images_list من Laravel + الحقول القديمة).
  */
-export function getCarImageUrls(
-  car: Record<string, unknown> | null | undefined,
-): string[] {
-  if (!car || typeof car !== "object") return [];
+export function getCarImageUrls(car: unknown): string[] {
+  if (car === null || car === undefined) return [];
+  if (typeof car !== "object") return [];
+  const c = car as Record<string, unknown>;
 
-  const list = car["images_list"];
+  const list = c["images_list"];
   if (Array.isArray(list)) {
     const out = list
       .map((x) => (typeof x === "string" ? x.trim() : ""))
@@ -36,7 +36,7 @@ export function getCarImageUrls(
     if (out.length) return out;
   }
 
-  const single = car["image_url"] ?? car["image"];
+  const single = c["image_url"] ?? c["image"];
   if (typeof single === "string" && single.trim()) return [single.trim()];
 
   return [];
