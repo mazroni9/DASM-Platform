@@ -21,8 +21,8 @@ use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use App\Notifications\VerifyEmailNotification;
-use App\Notifications\BusinessAccountVerifiedNotification;
 use App\Enums\UserRole;
+use App\Services\ApprovalRequestWorkflowService;
 use Illuminate\Database\QueryException;
 
 class AuthController extends Controller
@@ -401,7 +401,8 @@ class AuthController extends Controller
         $user->markEmailAsVerified();
         $user->refresh();
 
-        if (in_array($user->type->value ?? $user->type, ['dealer', 'venue_owner'])) {
+        $bizType = $user->type instanceof UserRole ? $user->type->value : (string) $user->type;
+        if (in_array($bizType, ['dealer', 'venue_owner', 'investor'], true)) {
             $this->notifyAdminsAboutBusinessAccountVerification($user);
         }
 
@@ -965,29 +966,19 @@ class AuthController extends Controller
     }
 
     /**
-     * Notify admins and super_admins about a business account verification
+     * Queue a business-account approval request and notify operational approval-group members.
      */
     private function notifyAdminsAboutBusinessAccountVerification(User $user): void
     {
         try {
-            $admins = User::whereIn('type', [
-                UserRole::ADMIN->value,
-                UserRole::SUPER_ADMIN->value,
-            ])
-                ->where('is_active', true)
-                ->get();
+            app(ApprovalRequestWorkflowService::class)->createBusinessAccountRequestAfterEmailVerification($user);
 
-            foreach ($admins as $admin) {
-                $admin->notify(new BusinessAccountVerifiedNotification($user));
-            }
-
-            Log::info('Admins notified about business account verification', [
+            Log::info('Business account approval request created after email verification', [
                 'user_id' => $user->id,
                 'user_type' => $user->type,
-                'admin_count' => $admins->count(),
             ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to notify admins about business account verification', [
+        } catch (\Throwable $e) {
+            Log::error('Failed to create business account approval request after verification', [
                 'error' => $e->getMessage(),
                 'user_id' => $user->id,
             ]);

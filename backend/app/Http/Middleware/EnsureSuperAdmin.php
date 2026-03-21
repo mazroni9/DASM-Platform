@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,27 +12,13 @@ class EnsureSuperAdmin
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (!$user) {
-            abort(401, 'Unauthenticated');
+        if (! $user || ! ($user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'هذا الإجراء متاح لمدير النظام الرئيسي فقط',
+            ], 403);
         }
 
-        $type = $user->type ?? null;
-
-        $value = '';
-        if ($type instanceof \BackedEnum) {
-            $value = (string)$type->value;
-        } elseif (is_string($type)) {
-            $value = $type;
-        } elseif (is_object($type) && property_exists($type, 'value')) {
-            $value = (string)$type->value;
-        }
-
-        $value = strtolower(trim($value));
-
-        if ($value === 'super_admin') {
-            return $next($request);
-        }
-
-        abort(403, 'Super Admin only');
+        return $next($request);
     }
 }

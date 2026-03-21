@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, type ElementType } from "react";
 import LoadingLink from "@/components/LoadingLink";
 import { usePathname } from "next/navigation";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
@@ -32,10 +32,12 @@ import {
   ScrollText,
   Mail,
   MessageSquare,
+  LayoutGrid,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermission } from "@/hooks/usePermission";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import api from "@/lib/axios";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -43,19 +45,84 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
-  const { isAdmin, isModerator, logout } = useAuth();
+  const {
+    isAdmin,
+    isModerator,
+    isProgrammer,
+    logout,
+    hydrated,
+    token,
+  } = useAuth();
   const { can, canAny } = usePermission();
   const router = useLoadingRouter();
 
+  const [shellReady, setShellReady] = useState(false);
+  /** Non-staff reviewers: operational approval group only (no general admin shell). */
+  const [controlRoomReviewerAccess, setControlRoomReviewerAccess] = useState(false);
+
+  const isStaff = isAdmin || isModerator || isProgrammer;
+  const isControlRoomPath = pathname?.startsWith("/admin/control-room") ?? false;
+
   useEffect(() => {
-    if (!isAdmin && !isModerator) {
+    if (!hydrated) return;
+
+    if (!isControlRoomPath) {
+      setControlRoomReviewerAccess(false);
+      setShellReady(true);
+      return;
+    }
+
+    if (isStaff) {
+      setControlRoomReviewerAccess(true);
+      setShellReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get("/api/admin/approval-requests/capabilities");
+        const ok = res.data?.data?.can_access_queue === true;
+        if (!cancelled) setControlRoomReviewerAccess(ok);
+      } catch {
+        if (!cancelled) setControlRoomReviewerAccess(false);
+      } finally {
+        if (!cancelled) setShellReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, isStaff, isControlRoomPath, token]);
+
+  useEffect(() => {
+    if (!shellReady) return;
+    if (isControlRoomPath) {
+      if (!isStaff && !controlRoomReviewerAccess) {
+        router.replace("/auth/login?returnUrl=/admin/control-room");
+      }
+      return;
+    }
+    if (!isStaff) {
       router.replace("/auth/login?returnUrl=/admin");
     }
-  }, [isAdmin, isModerator, router]);
+  }, [
+    shellReady,
+    isStaff,
+    isControlRoomPath,
+    controlRoomReviewerAccess,
+    router,
+  ]);
 
   const navigation = [
     { name: "الرئيسية", href: "/", icon: Home },
     { name: "لوحة القيادة", href: "/admin", icon: LayoutDashboard },
+    {
+      name: "غرفة المعالجة",
+      href: "/admin/control-room",
+      icon: LayoutGrid,
+    },
 
     {
       name: "المستخدمين والصلاحيات",
@@ -332,6 +399,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     router.replace("/auth/login");
   };
 
+  if (isControlRoomPath) {
+    return (
+      <div
+        className="min-h-screen bg-background text-foreground overflow-x-hidden"
+        dir="rtl"
+      >
+        <div className="w-full max-w-screen-2xl mx-auto px-1 pb-8 pt-4 lg:pt-6">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen bg-background text-foreground overflow-x-hidden"
@@ -364,12 +444,20 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <h3 className="text-sm font-bold mb-3">القائمة الرئيسية</h3>
                 <ul className="space-y-2">
                   {navigation.map((item) => {
+                    const navItem = item as {
+                      permission?: string;
+                      permissions?: string[];
+                      type?: string;
+                      name: string;
+                      href: string;
+                      icon: ElementType;
+                    };
                     // Check permission
                     if (item.type === "header") {
                       if (item.permissions && !canAny(item.permissions))
                         return null;
-                    } else if ((item as any).permission) {
-                      if (!can((item as any).permission)) return null;
+                    } else if (navItem.permission) {
+                      if (!can(navItem.permission)) return null;
                     }
 
                     const Icon = item.icon as any;

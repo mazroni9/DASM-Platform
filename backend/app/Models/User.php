@@ -176,6 +176,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(VenueOwner::class, 'user_id');
     }
 
+    public function investor()
+    {
+        return $this->hasOne(Investor::class, 'user_id');
+    }
+
+    public function approvalGroupMembership()
+    {
+        return $this->hasOne(ApprovalGroupMember::class, 'user_id');
+    }
+
     public function deviceTokens()
     {
         return $this->hasMany(DeviceToken::class);
