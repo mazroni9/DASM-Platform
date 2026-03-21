@@ -396,7 +396,7 @@ export default function UsersManagementPage() {
       admin: "مدير",
       programmer: "مبرمج",
       moderator: "مشرف",
-      dealer: "تاجر",
+      dealer: "تاجر سيارات",
       venue_owner: "صاحب معرض",
       investor: "مستثمر",
       user: "مستخدم",
@@ -548,7 +548,7 @@ export default function UsersManagementPage() {
               <option value="all">جميع الحالات</option>
               <option value="pending">بانتظار تفعيل إداري (غير المستخدم العادي)</option>
               <option value="active">مفعل</option>
-              <option value="dealer_pending">تجار في انتظار التحقق</option>
+              <option value="dealer_pending">تجار سيارات في انتظار التحقق</option>
             </select>
 
             <select
@@ -559,7 +559,7 @@ export default function UsersManagementPage() {
             >
               <option value="all">جميع الأدوار</option>
               <option value="user">مستخدم</option>
-              <option value="dealer">تاجر</option>
+              <option value="dealer">تاجر سيارات</option>
               <option value="moderator">مشرف</option>
               <option value="admin">مدير</option>
               <option value="super_admin">مدير رئيسي</option>
@@ -724,7 +724,7 @@ export default function UsersManagementPage() {
                             {user.is_active ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
                                 <BadgeCheck className="w-3 h-3 ml-1" />
-                                تاجر مُصدّق
+                                تاجر سيارات معتمد
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">

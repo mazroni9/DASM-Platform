@@ -121,7 +121,7 @@ export default function UserMenu() {
       case UserRole.INVESTOR:
         return "مستثمر";
       case "dealer":
-        return "تاجر";
+        return "تاجر سيارات";
       case "user":
         return "مستخدم";
       default:

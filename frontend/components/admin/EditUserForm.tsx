@@ -244,7 +244,7 @@ export default function EditUserForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">مستخدم</SelectItem>
-                    <SelectItem value="dealer">تاجر</SelectItem>
+                    <SelectItem value="dealer">تاجر سيارات</SelectItem>
                     <SelectItem value="moderator">مشرف</SelectItem>
                     <SelectItem value="venue_owner">مالك المعرض</SelectItem>
                     <SelectItem value="investor">مستثمر</SelectItem>

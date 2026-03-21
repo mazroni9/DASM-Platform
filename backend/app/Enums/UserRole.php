@@ -22,7 +22,7 @@ enum UserRole: string
             self::MODERATOR => 'Moderator',
             self::VENUE_OWNER => 'Venue Owner',
             self::INVESTOR => 'Investor',
-            self::DEALER => 'Dealer',
+            self::DEALER => 'Car Trader',
             self::USER => 'User',
             self::EMPLOYEE => 'Employee',  // ✅ تمت الإضافة
             self::PROGRAMMER => 'Programmer',
@@ -37,7 +37,7 @@ enum UserRole: string
             self::MODERATOR => 'مشرف',
             self::VENUE_OWNER => 'مالك المعرض',
             self::INVESTOR => 'مستثمر',
-            self::DEALER => 'تاجر',
+            self::DEALER => 'تاجر سيارات',
             self::USER => 'مستخدم',
             self::EMPLOYEE => 'موظف',  // ✅ تمت الإضافة
             self::PROGRAMMER => 'مبرمج',
