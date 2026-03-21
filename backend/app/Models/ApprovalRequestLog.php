@@ -23,6 +23,12 @@ class ApprovalRequestLog extends Model
 
     public const EVT_REQUEST_REJECTED = 'request_rejected';
 
+    /** قرار مكرر (idempotent) — نفس الحالة النهائية */
+    public const EVT_DECISION_IDEMPOTENT = 'decision_idempotent';
+
+    /** محاولة قرار غير صالحة (طلب محسوم بحالة أخرى) */
+    public const EVT_INVALID_DECISION_ATTEMPT = 'invalid_decision_attempt';
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -801,8 +801,8 @@ Route::middleware('auth:sanctum')
 | OPERATIONAL APPROVAL GROUP & REQUEST QUEUE (not Spatie teams)
 |--------------------------------------------------------------------------
 */
-// قراءة أعضاء المجموعة: نفس من يصل لطابور الموافقات (BFF / لوحة DASM)
-Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])
+// قراءة أعضاء المجموعة: فقط مدير النظام أو المدير الرئيسي (لا عرض للمراجعين التشغيليين)
+Route::middleware(['auth:sanctum', 'set.organization', 'admin_or_super_admin'])
     ->get('/admin/approval-group', [ApprovalGroupMemberController::class, 'index']);
 
 // إدارة العضوية: فقط super_admin + admin (لا مزدوجية مصدر خارج DASM)
