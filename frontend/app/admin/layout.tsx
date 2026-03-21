@@ -183,6 +183,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       permission: "cars.view",
     },
     {
+      name: "إدارة تغذية الحراج المباشر",
+      href: "/admin/live-market-staging",
+      icon: Radio,
+      permission: "cars.view",
+    },
+    {
       name: "المزادات",
       href: "/admin/auctions",
       icon: Car,

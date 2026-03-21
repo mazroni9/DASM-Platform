@@ -54,6 +54,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Admin\CarController as AdminCarController;
+use App\Http\Controllers\Admin\LiveMarketStagingController;
 use App\Http\Controllers\Admin\VenueOwnerController as AdminVenueOwnerController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\YouTubeChannelController;
@@ -945,6 +946,13 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         Route::put('/cars/bulk/approve-reject', [AdminAuctionController::class, 'approveRejectAuctionBulk'])->middleware('can:auctions.approve');
         Route::put('/auctions/bulk/move-to-status', [AdminAuctionController::class, 'moveBetweenAuctionsBulk'])->middleware('can:auctions.manage_status');
 
+        // Live market staging (new-car processing) — explicit contract + legacy aliases
+        Route::prefix('live-market-staging')->group(function () {
+            Route::get('/pending-cars', [LiveMarketStagingController::class, 'pendingCars'])->middleware('can:cars.view');
+            Route::post('/approve-to-instant', [LiveMarketStagingController::class, 'approveToInstant'])->middleware('can:auctions.approve');
+            Route::post('/move-selected-to-live', [LiveMarketStagingController::class, 'moveSelectedToLive'])->middleware('can:auctions.manage_status');
+        });
+
         // ─────────────────────────────────────────────────────────────
         // 8.xx Employees Management
         // ─────────────────────────────────────────────────────────────
@@ -969,6 +977,9 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
         // 8.8 Cars Management
         // ─────────────────────────────────────────────────────────────
         Route::prefix('cars')->group(function () {
+            Route::get('/pending', [LiveMarketStagingController::class, 'pendingCars'])->middleware('can:cars.view');
+            Route::post('/approve', [LiveMarketStagingController::class, 'approveToInstant'])->middleware('can:auctions.approve');
+            Route::post('/move-to-live-market', [LiveMarketStagingController::class, 'moveSelectedToLive'])->middleware('can:auctions.manage_status');
             Route::get('/', [AdminCarController::class, 'index'])->middleware('can:cars.view');
             Route::get('/stats', [AdminCarController::class, 'stats']);
             Route::get('/{id}', [AdminCarController::class, 'show'])->whereNumber('id')->middleware('can:cars.view_details');
