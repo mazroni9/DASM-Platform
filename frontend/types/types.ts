@@ -1,6 +1,7 @@
 export enum UserRole {
   SUPER_ADMIN = "super_admin",
   ADMIN = "admin",
+  PROGRAMMER = "programmer",
   DEALER = "dealer",
   MODERATOR = "moderator",
   VENUE_OWNER = "venue_owner",
@@ -16,7 +17,7 @@ export const UserRoleHelpers = {
       case UserRole.ADMIN:
         return "Administrator";
       case UserRole.DEALER:
-        return "Dealer";
+        return "Car Trader";
       case UserRole.MODERATOR:
         return "Moderator";
       case UserRole.VENUE_OWNER:
@@ -25,6 +26,8 @@ export const UserRoleHelpers = {
         return "Investor";
       case UserRole.USER:
         return "User";
+      case UserRole.PROGRAMMER:
+        return "Programmer";
       default:
         return "Unknown";
     }
@@ -36,8 +39,10 @@ export const UserRoleHelpers = {
         return "مدير النظام الرئيسي";
       case UserRole.ADMIN:
         return "مدير النظام";
+      case UserRole.PROGRAMMER:
+        return "مبرمج";
       case UserRole.DEALER:
-        return "تاجر";
+        return "تاجر سيارات";
       case UserRole.MODERATOR:
         return "مشرف";
       case UserRole.VENUE_OWNER:
@@ -67,6 +72,8 @@ export const UserRoleHelpers = {
         return "yellow";
       case UserRole.USER:
         return "gray";
+      case UserRole.PROGRAMMER:
+        return "indigo";
       default:
         return "gray";
     }
@@ -80,29 +87,37 @@ export const UserRoleHelpers = {
     return [
       UserRole.SUPER_ADMIN,
       UserRole.ADMIN,
+      UserRole.PROGRAMMER,
       UserRole.MODERATOR,
       UserRole.VENUE_OWNER,
     ].includes(role);
   },
 
   canManageUsers: (role: UserRole): boolean => {
-    return [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR].includes(
-      role
-    );
+    return [
+      UserRole.SUPER_ADMIN,
+      UserRole.ADMIN,
+      UserRole.PROGRAMMER,
+      UserRole.MODERATOR,
+    ].includes(role);
   },
 
   canManageVenues: (role: UserRole): boolean => {
     return [
       UserRole.SUPER_ADMIN,
       UserRole.ADMIN,
+      UserRole.PROGRAMMER,
       UserRole.VENUE_OWNER,
     ].includes(role);
   },
 
   canAccessInvestments: (role: UserRole): boolean => {
-    return [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.INVESTOR].includes(
-      role
-    );
+    return [
+      UserRole.SUPER_ADMIN,
+      UserRole.ADMIN,
+      UserRole.PROGRAMMER,
+      UserRole.INVESTOR,
+    ].includes(role);
   },
 
   getAllRoles: (): UserRole[] => {

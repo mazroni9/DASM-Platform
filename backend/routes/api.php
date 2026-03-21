@@ -65,6 +65,9 @@ use App\Http\Controllers\Admin\BlogController as AdminBlogController; // ✅ NEW
 use App\Http\Controllers\Admin\MarketCouncilController as AdminMarketCouncilController;
 use App\Http\Controllers\Admin\MarketCouncilCommentsController as AdminMarketCouncilCommentsController;
 use App\Http\Controllers\Admin\CouncilPermissionsController;
+use App\Http\Controllers\Admin\ApprovalGroupMemberController;
+use App\Http\Controllers\Admin\ApprovalRequestController;
+use App\Http\Controllers\CouncilAccessRequestController;
 use App\Http\Controllers\Admin\AuctionActivityLogController;
 use App\Http\Controllers\Admin\AuctionTestingAnalyticsController;
 
@@ -794,6 +797,36 @@ Route::middleware('auth:sanctum')
 
 /*
 |--------------------------------------------------------------------------
+| OPERATIONAL APPROVAL GROUP & REQUEST QUEUE (not Spatie teams)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'set.organization', 'super_admin'])
+    ->prefix('admin/approval-group')
+    ->group(function () {
+        Route::get('/', [ApprovalGroupMemberController::class, 'index']);
+        Route::post('/', [ApprovalGroupMemberController::class, 'store']);
+        Route::put('/{id}', [ApprovalGroupMemberController::class, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [ApprovalGroupMemberController::class, 'destroy'])->whereNumber('id');
+    });
+
+Route::middleware(['auth:sanctum', 'set.organization'])
+    ->get('/admin/approval-requests/capabilities', [ApprovalRequestController::class, 'capabilities']);
+
+Route::middleware(['auth:sanctum', 'set.organization', 'approval.queue'])
+    ->prefix('admin/approval-requests')
+    ->group(function () {
+        Route::get('/', [ApprovalRequestController::class, 'index']);
+        Route::get('/{id}/logs', [ApprovalRequestController::class, 'logs'])->whereNumber('id');
+        Route::get('/{id}', [ApprovalRequestController::class, 'show'])->whereNumber('id');
+        Route::post('/{id}/approve', [ApprovalRequestController::class, 'approve'])->whereNumber('id');
+        Route::post('/{id}/reject', [ApprovalRequestController::class, 'reject'])->whereNumber('id');
+    });
+
+Route::middleware(['auth:sanctum', 'set.organization'])
+    ->post('/council-studio/access-request', [CouncilAccessRequestController::class, 'store']);
+
+/*
+|--------------------------------------------------------------------------
 | SECTION 8: ADMIN ROUTES
 |--------------------------------------------------------------------------
 */
@@ -849,6 +882,7 @@ Route::middleware(['auth:sanctum', 'set.organization', \App\Http\Middleware\Admi
             Route::get('/', [AdminUserController::class, 'index'])->middleware('can:users.view');
             Route::get('/{userId}', [AdminUserController::class, 'show'])->whereNumber('userId')->middleware('can:users.view_details');
             Route::put('/{userId}', [AdminUserController::class, 'update'])->whereNumber('userId')->middleware('can:users.update');
+            Route::delete('/{userId}', [AdminUserController::class, 'destroy'])->whereNumber('userId');
             Route::post('/{userId}/activate', [AdminUserController::class, 'approveUser'])->whereNumber('userId')->middleware('can:users.update');
             Route::post('/{userId}/reject', [AdminUserController::class, 'rejectUser'])->whereNumber('userId')->middleware('can:users.update');
             Route::post('/{userId}/toggle-status', [AdminUserController::class, 'updateStatus'])->whereNumber('userId')->middleware('can:users.update');

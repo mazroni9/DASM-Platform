@@ -304,7 +304,7 @@ export default function UserDetailPage({}: { params: { id: string } }) {
                   {getRoleIcon(user.type)}
                   <span className="mr-2">
                     {user.type === "dealer"
-                      ? "تاجر"
+                      ? "تاجر سيارات"
                       : user.type === "admin"
                         ? "مدير"
                         : user.type === "moderator"
@@ -436,7 +436,7 @@ export default function UserDetailPage({}: { params: { id: string } }) {
                 ) : (
                   <Shield className="w-4 h-4 ml-2" />
                 )}
-                تصديق التاجر
+                تصديق تاجر السيارات
               </Button>
             )}
           </div>

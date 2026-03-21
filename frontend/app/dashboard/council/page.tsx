@@ -80,6 +80,12 @@ export default function CouncilStudioPage() {
   const canCategories = can("council.category.manage");
 
   const cards: { title: string; href: string; count?: number; icon: React.ElementType; show: boolean }[] = [
+    {
+      title: "طلب صلاحية وصول للاستوديو",
+      href: "/dashboard/council/access-request",
+      icon: Send,
+      show: true,
+    },
     { title: "مقالاتي", href: "/dashboard/council/articles", count: stats.my_articles, icon: FileText, show: canCreate || canEditOwn },
     { title: "بانتظار المراجعة", href: "/dashboard/council/reviews", count: stats.pending_review, icon: Send, show: canReview || canPublish },
     { title: "مقال جديد", href: "/dashboard/council/articles/new", icon: FileText, show: canCreate },

@@ -162,7 +162,7 @@ export default function Page() {
                 <span className="text-foreground text-xs">المستخدم العادي</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">تاجر</span>
+                <span className="text-muted-foreground">تاجر سيارات</span>
                 <span className="text-foreground text-xs">بائع ومشتري</span>
               </div>
               <div className="flex justify-between items-center">

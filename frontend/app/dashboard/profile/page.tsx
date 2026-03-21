@@ -101,7 +101,7 @@ const TABS: Array<{
 
 const getRoleLabel = (role: string) => {
   const map: Record<string, string> = {
-    [UserRole.DEALER]: "تاجر",
+    [UserRole.DEALER]: "تاجر سيارات",
     [UserRole.ADMIN]: "مدير",
     [UserRole.USER]: "مستخدم",
   };

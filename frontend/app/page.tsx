@@ -525,7 +525,7 @@ export default function Page() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F7FAFC] dark:bg-background">
       {/* Hero Section - Arabic-first, honest, focused */}
-      <section className="relative overflow-hidden bg-[#F7FAFC] dark:bg-background">
+      <section className="relative overflow-hidden bg-white dark:bg-background">
         <div className="container mx-auto px-4 sm:px-6 py-14 md:py-18 lg:py-22 relative z-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -543,7 +543,7 @@ export default function Page() {
       </section>
 
       {/* ✅ اختر السوق المتخصص */}
-      <section className="py-8 md:py-12 bg-white dark:bg-background border-y border-slate-200 dark:border-border shadow-sm">
+      <section className="pt-4 md:pt-6 pb-8 md:pb-12 bg-white dark:bg-background border-b border-slate-200 dark:border-border shadow-sm">
         <div className="container mx-auto px-4 sm:px-6">
           <MarketTypeNav />
         </div>

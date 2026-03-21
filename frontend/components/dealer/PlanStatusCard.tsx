@@ -12,7 +12,7 @@ interface PlanStatusCardProps {
 }
 
 export default function PlanStatusCard({
-  planName = "التاجر المحترف",
+  planName = "الخطة الاحترافية",
   planType = "pro",
   expiryYear = 2025,
   autoRenew = true,

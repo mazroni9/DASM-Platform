@@ -25,7 +25,7 @@ type UserWithCouncilPerms = {
 
 const TYPE_LABELS: Record<string, string> = {
   user: "مستخدم",
-  dealer: "تاجر",
+  dealer: "تاجر سيارات",
   admin: "مدير",
   super_admin: "مدير النظام",
   moderator: "مشرف",

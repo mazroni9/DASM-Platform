@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Enums\UserRole;
 
 class AdminUsersController extends Controller
 {
@@ -25,7 +26,7 @@ class AdminUsersController extends Controller
         $stats = [
             'total' => User::count(),
             'active' => User::where('is_active', true)->count(),
-            'pending' => User::where('status', 'pending')->count(),
+            'pending' => User::where('status', 'pending')->where('type', '!=', UserRole::USER)->count(),
             'new_this_week' => User::where('created_at', '>=', now()->subDays(7))->count(),
             'dealers_count' => User::where('type', 'dealer')->count(),
             'regular_users_count' => User::where('type', 'regular')->count(),

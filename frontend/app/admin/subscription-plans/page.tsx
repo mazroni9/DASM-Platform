@@ -42,7 +42,7 @@ export default function Page() {
 
   const userTypes = {
     bidder: "مزايد",
-    dealer: "تاجر",
+    dealer: "تاجر سيارات",
     auctioneer: "مزاد",
     moderator: "منسق",
     admin: "مدير",

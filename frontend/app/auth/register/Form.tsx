@@ -30,7 +30,8 @@ import {
   SelectGroup,
   SelectLabel,
 } from "@/components/ui/select";
-import axios, { AxiosError } from "axios";
+import api from "@/lib/axios";
+import { AxiosError, isAxiosError } from "axios";
 
 // ✅ أضفنا area_label اختيارية لتخزين اسم المنطقة/الدولة للعرض فقط
 const registerSchema = z
@@ -164,8 +165,6 @@ export default function RegisterForm() {
     setError("");
     setSuccess("");
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
-
     try {
       const payload: Record<string, any> = {
         first_name: data.first_name.trim(),
@@ -182,9 +181,8 @@ export default function RegisterForm() {
         area_label: data.area_label || undefined,
       };
 
-      const response = await axios.post(url, payload, {
+      const response = await api.post("/api/register", payload, {
         timeout: 15000,
-        headers: { "Content-Type": "application/json" },
       });
 
       if (response.data.status === "success") {
@@ -197,14 +195,18 @@ export default function RegisterForm() {
       } else {
         setError(response.data.message || "حدث خطأ أثناء التسجيل");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى";
 
-      if (axios.isAxiosError(err)) {
-        const axErr = err as AxiosError<any>;
+      if (isAxiosError(err)) {
+        const axErr = err as AxiosError<{
+          message?: string;
+          errors?: Record<string, string[]>;
+        }>;
         const resp = axErr.response;
+        const status = resp?.status;
 
-        if (resp?.status === 422 && resp.data?.errors) {
+        if (status === 422 && resp?.data?.errors) {
           const errs = resp.data.errors as Record<string, string[]>;
           const errorPriority = [
             "email",
@@ -218,21 +220,58 @@ export default function RegisterForm() {
             "area_id",
           ];
           for (const field of errorPriority) {
-            if (errs[field]?.length > 0) {
+            if (errs[field]?.length) {
               errorMessage = errs[field][0];
               break;
             }
           }
           if (errorMessage === "حدث خطأ أثناء التسجيل، يرجى المحاولة مرة أخرى") {
             const firstField = Object.keys(errs)[0];
-            if (firstField && errs[firstField].length > 0) {
+            if (firstField && errs[firstField]?.length) {
               errorMessage = errs[firstField][0];
             }
           }
-        } else if (resp?.data?.message) {
-          errorMessage = resp.data.message;
-        } else if (axErr.message) {
-          errorMessage = axErr.message;
+        } else if (
+          status === 422 &&
+          typeof resp?.data?.message === "string" &&
+          resp.data.message.trim() !== ""
+        ) {
+          const m = resp.data.message;
+          if (!/^Request failed with status code \d+/i.test(m)) {
+            errorMessage = m;
+          }
+        } else if (status === 404) {
+          errorMessage =
+            "تعذر الوصول إلى خدمة التسجيل حالياً. يرجى المحاولة لاحقاً أو التواصل مع الدعم.";
+        } else if (status !== undefined && status >= 500) {
+          errorMessage =
+            "الخادم غير متاح مؤقتاً. يرجى المحاولة بعد قليل.";
+        } else if (
+          !resp &&
+          (axErr.code === "ERR_NETWORK" || axErr.message === "Network Error")
+        ) {
+          errorMessage =
+            "تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت وحاول مجدداً.";
+        } else if (
+          axErr.code === "ECONNABORTED" ||
+          /timeout/i.test(axErr.message || "")
+        ) {
+          errorMessage = "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.";
+        } else if (
+          status !== undefined &&
+          status >= 400 &&
+          status !== 422
+        ) {
+          errorMessage =
+            "تعذر إكمال التسجيل. يرجى التحقق من البيانات والمحاولة مرة أخرى.";
+        } else if (typeof resp?.data?.message === "string") {
+          const serverMsg = resp.data.message;
+          const looksLikeAxiosNoise =
+            /^Request failed with status code \d+/i.test(serverMsg) ||
+            /^Network Error$/i.test(serverMsg);
+          if (!looksLikeAxiosNoise) {
+            errorMessage = serverMsg;
+          }
         }
       }
 
@@ -541,7 +580,7 @@ export default function RegisterForm() {
                 dir="rtl"
               >
                 <SelectItem value="user">مستخدم</SelectItem>
-                <SelectItem value="dealer">تاجر</SelectItem>
+                <SelectItem value="dealer">تاجر سيارات</SelectItem>
                 <SelectItem value="venue_owner">مالك المعرض</SelectItem>
                 <SelectItem value="investor">مستثمر</SelectItem>
               </SelectContent>
