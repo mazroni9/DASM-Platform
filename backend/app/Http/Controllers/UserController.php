@@ -6,6 +6,7 @@ use App\Enums\OrganizationType;
 use App\Models\Organization;
 use App\Http\Requests\UpdateUserProfileRequest;
 use App\Models\User;
+use App\Support\UserProfileDisplayLocation;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class UserController extends Controller
         }
 
         // تحميل العلاقات
-        $user->load(['venueOwner']);
+        $user->load(['venueOwner', 'area']);
 
         $permissions = $this->safePermissions($user);
 
@@ -50,6 +51,7 @@ class UserController extends Controller
             'updated_at'  => $user->updated_at,
 
             'permissions' => $permissions,
+            'display_location' => UserProfileDisplayLocation::resolve($user),
         ];
 
         if ($user->venueOwner) {
@@ -142,7 +144,7 @@ class UserController extends Controller
                 $this->sendVerificationEmail($user->refresh());
             }
 
-            $user->refresh()->load(['venueOwner']);
+            $user->refresh()->load(['venueOwner', 'area']);
 
             $responseData = [
                 'id' => $user->id,
@@ -156,6 +158,7 @@ class UserController extends Controller
                 'organization_id' => $user->organization_id,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
+                'display_location' => UserProfileDisplayLocation::resolve($user),
             ];
 
             if ($user->venueOwner) {

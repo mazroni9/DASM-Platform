@@ -22,6 +22,10 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/types";
 import LoadingLink from "./LoadingLink";
+import {
+  formatUserFullName,
+  pickUserDisplayLocation,
+} from "@/lib/userDisplay";
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -101,9 +105,12 @@ export default function UserMenu() {
 
   if (!user) return null;
 
+  const headerDisplayName = formatUserFullName(user, { fallbackEmail: true });
+  const headerLocationLine = pickUserDisplayLocation(user);
+
   // Initials + (اختياري) صورة المستخدم إن وُجدت
   const getUserInitials = () => {
-    const name = user.first_name || user.email || "مستخدم";
+    const name = headerDisplayName || user.email || "مستخدم";
     return (name[0] || "م").toUpperCase();
   };
 
@@ -354,7 +361,7 @@ export default function UserMenu() {
           {user?.avatar_url ? (
             <Image
               src={user.avatar_url}
-              alt={user.first_name || user.email || "User avatar"}
+              alt={headerDisplayName || user.email || "User avatar"}
               fill
               className="object-cover"
             />
@@ -413,7 +420,7 @@ export default function UserMenu() {
               {user?.avatar_url ? (
                 <Image
                   src={user.avatar_url}
-                  alt={user.first_name || user.email || "User avatar"}
+                  alt={headerDisplayName || user.email || "User avatar"}
                   fill
                   className="object-cover"
                 />
@@ -424,12 +431,17 @@ export default function UserMenu() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-slate-800 dark:text-foreground truncate">
-                  {user.first_name || user.email || "مستخدم"}
+                  {headerDisplayName}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/15">
                   {roleLabel(role)}
                 </span>
               </div>
+              {headerLocationLine ? (
+                <div className="text-[10px] text-slate-500 dark:text-foreground/55 truncate mt-0.5">
+                  {headerLocationLine}
+                </div>
+              ) : null}
               <div className="text-xs text-slate-600 dark:text-foreground/70 truncate">
                 {user.email}
               </div>

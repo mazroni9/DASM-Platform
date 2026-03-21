@@ -29,6 +29,9 @@ interface User {
   created_at?: string;
   updated_at?: string;
 
+  /** Short label from backend (Area / short venue address); omit when unknown */
+  display_location?: string | null;
+
   [key: string]: any;
 }
 
