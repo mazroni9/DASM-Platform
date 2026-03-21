@@ -17,7 +17,7 @@ export const UserRoleHelpers = {
       case UserRole.ADMIN:
         return "Administrator";
       case UserRole.DEALER:
-        return "Dealer";
+        return "Car Trader";
       case UserRole.MODERATOR:
         return "Moderator";
       case UserRole.VENUE_OWNER:
@@ -42,7 +42,7 @@ export const UserRoleHelpers = {
       case UserRole.PROGRAMMER:
         return "مبرمج";
       case UserRole.DEALER:
-        return "تاجر";
+        return "تاجر سيارات";
       case UserRole.MODERATOR:
         return "مشرف";
       case UserRole.VENUE_OWNER:

@@ -407,7 +407,7 @@ export default function ProfilePage() {
   const getRoleConfig = (role: string) => {
     const roleMap = {
       [UserRole.DEALER]: {
-        name: "تاجر",
+        name: "تاجر سيارات",
         color: "text-purple-400",
         bg: "bg-purple-500/20",
         border: "border-purple-500/30",

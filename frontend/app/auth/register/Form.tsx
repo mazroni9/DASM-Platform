@@ -580,7 +580,7 @@ export default function RegisterForm() {
                 dir="rtl"
               >
                 <SelectItem value="user">مستخدم</SelectItem>
-                <SelectItem value="dealer">تاجر</SelectItem>
+                <SelectItem value="dealer">تاجر سيارات</SelectItem>
                 <SelectItem value="venue_owner">مالك المعرض</SelectItem>
                 <SelectItem value="investor">مستثمر</SelectItem>
               </SelectContent>

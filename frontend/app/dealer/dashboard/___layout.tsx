@@ -124,7 +124,7 @@ export default function DealerDashboardLayout({
           {/* الشريط الجانبي */}
           <aside className="hidden lg:block w-72 flex-shrink-0">
             <div className="sticky top-6 space-y-4">
-              {/* شعار التاجر المحترف */}
+              {/* شعار تاجر السيارات المحترف */}
               <div className="bg-gradient-to-br from-amber-500/20 via-amber-600/10 to-yellow-500/20 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
@@ -132,7 +132,7 @@ export default function DealerDashboardLayout({
                   </div>
                   <div>
                     <h2 className="font-bold text-foreground">
-                      التاجر المحترف
+                      تاجر السيارات المحترف
                     </h2>
                     <p className="text-xs text-amber-400">PRO Dealer</p>
                   </div>

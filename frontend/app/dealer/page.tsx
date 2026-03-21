@@ -170,7 +170,7 @@ export default function DealerDashboardPage() {
     userName ||
     (user
       ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-      : "التاجر");
+      : "تاجر سيارات");
 
   return (
     <div className="space-y-6">
@@ -184,7 +184,7 @@ export default function DealerDashboardPage() {
           {/* Live Indicator */}
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-foreground">
-              لوحة التاجر المحترف
+              لوحة تاجر السيارات المحترف
             </h1>
             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
               <motion.div

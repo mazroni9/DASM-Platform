@@ -46,10 +46,10 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
 
   const tabs = [
     {
-      name: "لوحة التاجر",
+      name: "لوحة تاجر السيارات",
       href: "/dealer/dashboard",
       icon: Crown,
-      description: "لوحة التاجر المحترف",
+      description: "لوحة تاجر السيارات المحترف",
     },
     {
       name: "سياراتي",
@@ -124,7 +124,7 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
       color: "bg-primary hover:bg-primary/90 text-primary-foreground",
     },
     {
-      name: "نشاط التاجر",
+      name: "نشاط تاجر السيارات",
       icon: Activity,
       href: "/dealer/dashboard",
       color: "bg-amber-600 hover:bg-amber-700 text-white",
@@ -149,11 +149,11 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                 <div className="flex items-center gap-2">
                   <Crown className="w-5 h-5 text-amber-500" />
                   <span className="font-bold text-foreground">
-                    التاجر المحترف
+                    تاجر السيارات المحترف
                   </span>
                 </div>
                 <p className="text-xs text-foreground/50 mt-1">
-                  حساب تاجر معتمد
+                  حساب تاجر سيارات معتمد
                 </p>
               </div>
 
