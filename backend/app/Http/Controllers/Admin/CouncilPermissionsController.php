@@ -8,12 +8,21 @@ use App\Models\User;
 use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 class CouncilPermissionsController extends Controller
 {
     private const COUNCIL_PREFIX = 'council.';
+
+    private const COUNCIL_ROLES = [
+        'council_writer',
+        'council_editor',
+        'council_publisher',
+        'council_moderator',
+        'council_manager',
+    ];
 
     /**
      * List council permissions only.
@@ -34,6 +43,10 @@ class CouncilPermissionsController extends Controller
     /**
      * List users with their council permissions.
      * GET /api/admin/market-council/permissions/users
+     *
+     * Query params (optional):
+     * - search: filter by name/email
+     * - include_regular_users: 1/true/yes to include type=user in results (default: false)
      */
     public function users(Request $request): JsonResponse
     {
@@ -46,6 +59,13 @@ class CouncilPermissionsController extends Controller
                     ->orWhere('last_name', 'like', "%{$q}%")
                     ->orWhere('email', 'like', "%{$q}%");
             });
+        }
+
+        $includeRegularUsers = filter_var($request->get('include_regular_users', false), FILTER_VALIDATE_BOOLEAN);
+        $hasSearch = $request->filled('search');
+
+        if (!$hasSearch && !$includeRegularUsers) {
+            $this->applyPrivilegedOnlyFilter($query);
         }
 
         $perPage = min(50, max(1, (int) $request->get('per_page', 20)));
@@ -144,5 +164,48 @@ class CouncilPermissionsController extends Controller
                 'council_permissions' => $councilPerms,
             ],
         ]);
+    }
+
+    /**
+     * Restrict query to privileged users only: non-user types, council roles, or council permissions.
+     */
+    private function applyPrivilegedOnlyFilter($query): void
+    {
+        $tableNames = config('permission.table_names', [
+            'permissions'             => 'permissions',
+            'roles'                   => 'roles',
+            'model_has_permissions'   => 'model_has_permissions',
+            'model_has_roles'         => 'model_has_roles',
+            'role_has_permissions'    => 'role_has_permissions',
+        ]);
+
+        $query->where(function ($q) use ($tableNames) {
+            $q->where('users.type', '!=', 'user')
+                ->orWhereExists(function ($sub) use ($tableNames) {
+                    $sub->select(DB::raw(1))
+                        ->from($tableNames['model_has_roles'])
+                        ->join($tableNames['roles'], "{$tableNames['roles']}.id", '=', "{$tableNames['model_has_roles']}.role_id")
+                        ->whereColumn("{$tableNames['model_has_roles']}.model_id", 'users.id')
+                        ->where("{$tableNames['model_has_roles']}.model_type", User::class)
+                        ->whereIn("{$tableNames['roles']}.name", self::COUNCIL_ROLES);
+                })
+                ->orWhereExists(function ($sub) use ($tableNames) {
+                    $sub->select(DB::raw(1))
+                        ->from($tableNames['model_has_permissions'])
+                        ->join($tableNames['permissions'], "{$tableNames['permissions']}.id", '=', "{$tableNames['model_has_permissions']}.permission_id")
+                        ->whereColumn("{$tableNames['model_has_permissions']}.model_id", 'users.id')
+                        ->where("{$tableNames['model_has_permissions']}.model_type", User::class)
+                        ->where("{$tableNames['permissions']}.name", 'like', self::COUNCIL_PREFIX . '%');
+                })
+                ->orWhereExists(function ($sub) use ($tableNames) {
+                    $sub->select(DB::raw(1))
+                        ->from($tableNames['model_has_roles'])
+                        ->join($tableNames['role_has_permissions'], "{$tableNames['role_has_permissions']}.role_id", '=', "{$tableNames['model_has_roles']}.role_id")
+                        ->join($tableNames['permissions'], "{$tableNames['permissions']}.id", '=', "{$tableNames['role_has_permissions']}.permission_id")
+                        ->whereColumn("{$tableNames['model_has_roles']}.model_id", 'users.id')
+                        ->where("{$tableNames['model_has_roles']}.model_type", User::class)
+                        ->where("{$tableNames['permissions']}.name", 'like', self::COUNCIL_PREFIX . '%');
+                });
+        });
     }
 }

@@ -60,6 +60,7 @@ export default function AdminCouncilPermissionsPage() {
   const [permissionsError, setPermissionsError] = useState(false);
   const [usersError, setUsersError] = useState(false);
   const [search, setSearch] = useState("");
+  const [includeRegularUsers, setIncludeRegularUsers] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [savingUserId, setSavingUserId] = useState<number | null>(null);
@@ -86,8 +87,9 @@ export default function AdminCouncilPermissionsPage() {
       setLoadingUsers(true);
       setUsersError(false);
       try {
-        const params: Record<string, string | number> = { page, per_page: 15 };
+        const params: Record<string, string | number | boolean> = { page, per_page: 15 };
         if (search.trim()) params.search = search.trim();
+        if (includeRegularUsers) params.include_regular_users = true;
         const res = await api.get("/api/admin/market-council/permissions/users", { params });
         const { list, last_page } = normalizePaginated<UserWithCouncilPerms>(res?.data);
         setUsers(list);
@@ -110,7 +112,7 @@ export default function AdminCouncilPermissionsPage() {
         setLoadingUsers(false);
       }
     },
-    [permissions, search]
+    [permissions, search, includeRegularUsers]
   );
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function AdminCouncilPermissionsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, includeRegularUsers]);
 
   const handleSave = async (userId: number) => {
     const ids = userSelections[userId] ?? [];
@@ -149,6 +151,9 @@ export default function AdminCouncilPermissionsPage() {
       setSavingUserId(null);
     }
   };
+
+  const permissionsReady = !loadingPermissions;
+  const hasPermissions = permissions.length > 0;
 
   return (
     <div className="space-y-6 p-2" dir="rtl">
@@ -183,6 +188,23 @@ export default function AdminCouncilPermissionsPage() {
       <p className="text-sm text-muted-foreground">
         حدّد صلاحيات مجلس السوق لكل مستخدم. منح صلاحية مثل &quot;الدخول لاستوديو مجلس السوق&quot; يجعل الاستوديو يظهر في لوحة المستخدم.
       </p>
+
+      {permissionsReady && hasPermissions && (
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
+          <p className="text-xs text-muted-foreground">
+            تعرض الصفحة افتراضيًا <strong>الحسابات المميزة فقط</strong>: الإدارية أو المرتبطة بمجلس السوق (أدوار أو صلاحيات council.*). المستخدمون العاديون يظهرون عند البحث أو بتفعيل الفلتر أدناه.
+          </p>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={includeRegularUsers}
+              onChange={(e) => setIncludeRegularUsers(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span className="text-sm">تضمين المستخدمين العاديين</span>
+          </label>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {loadingPermissions ? (
