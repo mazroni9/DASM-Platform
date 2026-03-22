@@ -319,6 +319,7 @@ export const useAuthStore = create<AuthState>()(
             admin: "/admin",
             super_admin: "/admin",
             moderator: "/admin",
+            programmer: "/admin",
             employee: "/admin",
             venue_owner: "/exhibitor",
             dealer: "/dealer",
@@ -328,11 +329,24 @@ export const useAuthStore = create<AuthState>()(
 
           const redirectTo = roleRedirectMap[userRole] || "/dashboard";
 
+          if (process.env.NODE_ENV !== "production") {
+            const perms = get().user?.permissions ?? loginUser?.permissions;
+            const permissionCount = Array.isArray(perms) ? perms.length : 0;
+            // eslint-disable-next-line no-console
+            console.info("[auth:login:audit]", {
+              userType: userRole,
+              redirectTo,
+              permissionCount,
+            });
+          }
+
           set({ loading: false, initialized: true });
           return { success: true, redirectTo };
         } catch (err: any) {
-          // eslint-disable-next-line no-console
-          console.error("Login error details:", err);
+          if (process.env.NODE_ENV !== "production") {
+            // eslint-disable-next-line no-console
+            console.error("Login error details:", err);
+          }
 
           let errorMessage = "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.";
 
@@ -421,6 +435,7 @@ export const useAuthStore = create<AuthState>()(
             admin: "/admin",
             super_admin: "/admin",
             moderator: "/admin",
+            programmer: "/admin",
             employee: "/admin",
             venue_owner: "/exhibitor",
             dealer: "/dealer",
@@ -429,6 +444,18 @@ export const useAuthStore = create<AuthState>()(
           };
 
           const redirectTo = roleRedirectMap[userRole] || "/dashboard";
+
+          if (process.env.NODE_ENV !== "production") {
+            const perms = get().user?.permissions ?? loginUser?.permissions;
+            const permissionCount = Array.isArray(perms) ? perms.length : 0;
+            // eslint-disable-next-line no-console
+            console.info("[auth:login:audit]", {
+              userType: userRole,
+              redirectTo,
+              permissionCount,
+              via: "verify_otp",
+            });
+          }
 
           set({ loading: false, initialized: true });
           return { success: true, redirectTo };

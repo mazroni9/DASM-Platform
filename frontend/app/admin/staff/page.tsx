@@ -43,6 +43,27 @@ interface StaffData {
   email_verified_at: string | null;
 }
 
+/** Normalizes Laravel paginated or plain-array admin/staff responses. */
+function extractStaffRows(payload: unknown): StaffData[] {
+  if (!payload || typeof payload !== "object") return [];
+  const root = payload as { status?: string; data?: unknown };
+  if (root.status !== "success" || root.data == null) return [];
+  const inner = root.data;
+  if (Array.isArray(inner)) return inner as StaffData[];
+  if (typeof inner === "object" && inner !== null) {
+    const page = inner as { data?: unknown };
+    if (Array.isArray(page.data)) return page.data as StaffData[];
+  }
+  return [];
+}
+
+function extractStaffTotal(payload: unknown): number | null {
+  if (!payload || typeof payload !== "object") return null;
+  const root = payload as { data?: { total?: unknown } };
+  const t = root.data?.total;
+  return typeof t === "number" ? t : null;
+}
+
 // Toggle Switch Component using Material UI
 const ToggleSwitch = ({
   checked,
@@ -80,6 +101,7 @@ export default function StaffPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [staffTotal, setStaffTotal] = useState<number | null>(null);
 
   useEffect(() => {
     fetchStaff();
@@ -93,21 +115,37 @@ export default function StaffPage() {
     try {
       setLoading(true);
       const response = await api.get("/api/admin/staff");
+      const body = response.data;
 
-      if (response.data && response.data.status === "success") {
-        if (response.data.data && response.data.data.data) {
-          setStaff(response.data.data.data);
-          setFilteredStaff(response.data.data.data);
-        } else {
-          setStaff(response.data.data);
-          setFilteredStaff(response.data.data);
+      if (body && body.status === "success") {
+        const rows = extractStaffRows(body);
+        const total = extractStaffTotal(body);
+        setStaff(rows);
+        setFilteredStaff(rows);
+        setStaffTotal(total);
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.info("[admin:staff:audit]", {
+            endpoint: "/api/admin/staff",
+            rowCount: rows.length,
+            totalFromApi: total,
+            statusFilter,
+          });
         }
+      } else {
+        setStaff([]);
+        setFilteredStaff([]);
+        setStaffTotal(null);
       }
     } catch (error) {
-      console.error("Error fetching staff:", error);
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error("Error fetching staff:", error);
+      }
       toast.error("فشل في تحميل بيانات الموظفين");
       setStaff([]);
       setFilteredStaff([]);
+      setStaffTotal(null);
     } finally {
       setLoading(false);
     }
@@ -249,7 +287,7 @@ export default function StaffPage() {
             <div>
               <p className="text-muted-foreground text-sm">إجمالي الموظفين</p>
               <p className="text-2xl font-bold text-foreground mt-1">
-                {staff.length}
+                {staffTotal ?? staff.length}
               </p>
             </div>
             <div className="bg-blue-500/10 p-3 rounded-xl">
@@ -351,7 +389,7 @@ export default function StaffPage() {
               قائمة الموظفين ({filteredStaff.length})
             </h2>
             <div className="text-sm text-muted-foreground">
-              إجمالي {staff.length} موظف
+              إجمالي {staffTotal ?? staff.length} موظف
             </div>
           </div>
         </div>
@@ -410,10 +448,20 @@ export default function StaffPage() {
 
                     {/* Type Column */}
                     <td className="px-6 py-4">
-                      {member.type === "admin" ? (
+                      {member.type === "super_admin" ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                          <Crown className="w-3 h-3 ml-1" />
+                          مدير رئيسي
+                        </span>
+                      ) : member.type === "admin" ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
                           <Crown className="w-3 h-3 ml-1" />
                           مدير
+                        </span>
+                      ) : member.type === "programmer" ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                          <Shield className="w-3 h-3 ml-1" />
+                          مبرمج
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-400 border border-green-500/30">

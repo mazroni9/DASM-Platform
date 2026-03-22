@@ -17,9 +17,15 @@ use Spatie\Permission\Models\Role;
 class StaffController extends Controller
 {
     /**
-     * Staff types allowed
+     * Staff types listed in "إدارة الموظفين" (aligned with admin-shell staff types; excludes plain users).
+     * Previously only admin+moderator, which hid super_admin/programmer accounts that still appear in users list.
      */
-    private const STAFF_TYPES = [UserRole::ADMIN, UserRole::MODERATOR];
+    private const STAFF_TYPES = [
+        UserRole::SUPER_ADMIN,
+        UserRole::ADMIN,
+        UserRole::MODERATOR,
+        UserRole::PROGRAMMER,
+    ];
 
     /**
      * Protected role names
@@ -55,7 +61,7 @@ class StaffController extends Controller
 
             if ($request->filled('type')) {
                 $type = UserRole::tryFrom($request->type);
-                if ($type && in_array($type, self::STAFF_TYPES)) {
+                if ($type && in_array($type, self::STAFF_TYPES, true)) {
                     $query->where('type', $type);
                 }
             }
@@ -195,7 +201,7 @@ class StaffController extends Controller
                 'email'          => 'sometimes|required|email|unique:users,email,' . $id,
                 'phone'          => 'sometimes|required|string|max:15|unique:users,phone,' . $id,
                 'password'       => 'sometimes|nullable|string|min:8|confirmed',
-                'type'           => 'sometimes|required|in:admin,moderator',
+                'type'           => 'sometimes|required|in:admin,moderator,super_admin,programmer',
                 'spatie_role_id' => 'nullable|exists:roles,id',
             ], $this->validationMessages());
 
