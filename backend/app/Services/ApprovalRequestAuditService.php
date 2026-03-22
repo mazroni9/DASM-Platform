@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\ApprovalRequest;
 use App\Models\ApprovalRequestLog;
 use App\Models\User;
@@ -27,6 +28,21 @@ class ApprovalRequestAuditService
             'notes' => $notes,
             'meta' => $meta,
             'created_at' => now(),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>
+     */
+    private function withActorContext(User $actor, array $base, bool $privilegedContext): array
+    {
+        $type = $actor->type instanceof UserRole ? $actor->type->value : (string) $actor->type;
+
+        return array_merge($base, [
+            'actor_id' => $actor->id,
+            'actor_type' => $type,
+            'actor_role_context' => $privilegedContext ? 'admin_or_super_admin' : 'approval_group_member',
         ]);
     }
 
@@ -101,13 +117,95 @@ class ApprovalRequestAuditService
         $this->log($request, ApprovalRequestLog::EVT_REQUEST_VIEWED, $viewerId);
     }
 
-    public function logApproved(ApprovalRequest $request, int $reviewerId): void
-    {
-        $this->log($request, ApprovalRequestLog::EVT_REQUEST_APPROVED, $reviewerId);
+    public function logApproved(
+        ApprovalRequest $request,
+        User $reviewer,
+        string $previousStatus,
+        string $decisionSource,
+        bool $privilegedContext
+    ): void {
+        $this->log(
+            $request,
+            ApprovalRequestLog::EVT_REQUEST_APPROVED,
+            $reviewer->id,
+            null,
+            null,
+            null,
+            $this->withActorContext($reviewer, [
+                'previous_status' => $previousStatus,
+                'new_status' => ApprovalRequest::STATUS_APPROVED,
+                'decision_source' => $decisionSource,
+            ], $privilegedContext)
+        );
     }
 
-    public function logRejected(ApprovalRequest $request, int $reviewerId, ?string $notes = null): void
-    {
-        $this->log($request, ApprovalRequestLog::EVT_REQUEST_REJECTED, $reviewerId, null, null, $notes);
+    public function logRejected(
+        ApprovalRequest $request,
+        User $reviewer,
+        ?string $notes,
+        string $previousStatus,
+        string $decisionSource,
+        bool $privilegedContext
+    ): void {
+        $this->log(
+            $request,
+            ApprovalRequestLog::EVT_REQUEST_REJECTED,
+            $reviewer->id,
+            null,
+            null,
+            $notes,
+            $this->withActorContext($reviewer, [
+                'previous_status' => $previousStatus,
+                'new_status' => ApprovalRequest::STATUS_REJECTED,
+                'decision_source' => $decisionSource,
+            ], $privilegedContext)
+        );
+    }
+
+    public function logDecisionIdempotent(
+        ApprovalRequest $request,
+        User $reviewer,
+        string $attemptedAction,
+        string $currentStatus,
+        string $decisionSource,
+        bool $privilegedContext
+    ): void {
+        $this->log(
+            $request,
+            ApprovalRequestLog::EVT_DECISION_IDEMPOTENT,
+            $reviewer->id,
+            null,
+            null,
+            null,
+            $this->withActorContext($reviewer, [
+                'attempted_action' => $attemptedAction,
+                'current_status' => $currentStatus,
+                'decision_source' => $decisionSource,
+            ], $privilegedContext)
+        );
+    }
+
+    public function logInvalidDecisionAttempt(
+        ApprovalRequest $request,
+        User $reviewer,
+        string $attemptedAction,
+        string $currentStatus,
+        string $decisionSource,
+        bool $privilegedContext,
+        ?string $notes = null
+    ): void {
+        $this->log(
+            $request,
+            ApprovalRequestLog::EVT_INVALID_DECISION_ATTEMPT,
+            $reviewer->id,
+            null,
+            null,
+            $notes,
+            $this->withActorContext($reviewer, [
+                'attempted_action' => $attemptedAction,
+                'current_status' => $currentStatus,
+                'decision_source' => $decisionSource,
+            ], $privilegedContext)
+        );
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovalGroupMember;
 use App\Models\ApprovalRequest;
@@ -12,6 +11,7 @@ use App\Services\ApprovalRequestAuditService;
 use App\Services\ApprovalRequestWorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ApprovalRequestController extends Controller
 {
@@ -24,22 +24,36 @@ class ApprovalRequestController extends Controller
     public function capabilities(Request $request): JsonResponse
     {
         $user = $request->user();
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
 
-        $m = ApprovalGroupMember::query()
+        $memberRow = ApprovalGroupMember::query()
             ->where('user_id', $user->id)
-            ->where('is_active', true)
             ->first();
 
-        $canAccessQueue = $isSuper || ($m && $m->can_review_requests);
+        $isApprovalGroupMember = $memberRow !== null;
+        $approvalMemberActive = $memberRow !== null
+            && $memberRow->is_active
+            && $memberRow->can_review_requests;
+
+        $privileged = $user->isAdmin();
+
+        $canAccessQueue = $privileged || $approvalMemberActive;
+
+        $canApproveBusiness = $privileged
+            || ($approvalMemberActive && $memberRow->can_approve_business_accounts);
+        $canApproveCouncil = $privileged
+            || ($approvalMemberActive && $memberRow->can_approve_council_requests);
 
         return response()->json([
             'status' => 'success',
             'data' => [
-                'can_manage_group' => $isSuper,
                 'can_access_queue' => $canAccessQueue,
-                'can_approve_business' => $isSuper || ($m && $m->can_approve_business_accounts),
-                'can_approve_council' => $isSuper || ($m && $m->can_approve_council_requests),
+                'can_manage_group' => $privileged,
+                'can_approve_business_accounts' => $canApproveBusiness,
+                'can_approve_council_requests' => $canApproveCouncil,
+                'is_approval_group_member' => $isApprovalGroupMember,
+                'approval_member_active' => $approvalMemberActive,
+                'can_approve_business' => $canApproveBusiness,
+                'can_approve_council' => $canApproveCouncil,
             ],
         ]);
     }
@@ -84,24 +98,51 @@ class ApprovalRequestController extends Controller
         $row = ApprovalRequest::query()
             ->with([
                 'targetUser:id,first_name,last_name,email,type,status,is_active',
-                'submittedBy:id,first_name,last_name,email',
-                'reviewedBy:id,first_name,last_name,email',
+                'submittedBy:id,first_name,last_name,email,type',
+                'reviewedBy:id,first_name,last_name,email,type',
             ])
             ->findOrFail($id);
 
         $this->audit->logRequestOpenedIfFirst($row, $user->id);
         $this->audit->logRequestViewed($row, $user->id);
 
-        $data = array_merge($row->toArray(), $this->resolutionFields($row));
-        $data['logs'] = ApprovalRequestLog::query()
+        $privileged = $user->isAdmin();
+        $logCount = ApprovalRequestLog::query()
+            ->where('approval_request_id', $row->id)
+            ->count();
+
+        $logs = ApprovalRequestLog::query()
             ->where('approval_request_id', $row->id)
             ->with([
-                'actor:id,first_name,last_name,email',
-                'recipient:id,first_name,last_name,email',
+                'actor:id,first_name,last_name,email,type',
+                'recipient:id,first_name,last_name,email,type',
             ])
-            ->orderBy('id')
-            ->limit(500)
-            ->get();
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get()
+            ->sortBy('id')
+            ->values();
+
+        $data = array_merge($row->toArray(), $this->resolutionFields($row));
+
+        $data['audit_summary'] = [
+            'log_count' => $logCount,
+            'logs_included' => $logs->count(),
+            'logs_truncated' => $logCount > $logs->count(),
+        ];
+
+        $data['decision'] = $this->workflow->decisionFlagsForViewer($user, $row, $privileged);
+
+        $data['target_user_summary'] = $row->targetUser ? [
+            'id' => $row->targetUser->id,
+            'name' => trim(($row->targetUser->first_name ?? '') . ' ' . ($row->targetUser->last_name ?? '')),
+            'email' => $row->targetUser->email,
+            'type' => $row->targetUser->type instanceof \BackedEnum ? $row->targetUser->type->value : (string) $row->targetUser->type,
+            'is_active' => (bool) $row->targetUser->is_active,
+            'status' => $row->targetUser->status instanceof \BackedEnum ? $row->targetUser->status->value : (string) $row->targetUser->status,
+        ] : null;
+
+        $data['logs'] = $logs;
 
         return response()->json([
             'status' => 'success',
@@ -119,8 +160,8 @@ class ApprovalRequestController extends Controller
         $logs = ApprovalRequestLog::query()
             ->where('approval_request_id', $id)
             ->with([
-                'actor:id,first_name,last_name,email',
-                'recipient:id,first_name,last_name,email',
+                'actor:id,first_name,last_name,email,type',
+                'recipient:id,first_name,last_name,email,type',
             ])
             ->orderBy('id')
             ->get();
@@ -135,21 +176,27 @@ class ApprovalRequestController extends Controller
     {
         $user = $request->user();
         $row = ApprovalRequest::findOrFail($id);
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
+        $privileged = $user->isAdmin();
+        $decisionSource = $this->sanitizeDecisionSource($request);
 
         try {
-            $this->workflow->approve($user, $row, $isSuper);
+            $result = $this->workflow->approve($user, $row, $privileged, $decisionSource);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 403);
+        } catch (ConflictHttpException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 409);
         } catch (\Throwable $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
         }
 
-        $fresh = $row->fresh(['targetUser', 'reviewedBy']);
+        /** @var ApprovalRequest $fresh */
+        $fresh = $result['request'];
+        $idempotent = $result['idempotent'];
 
         return response()->json([
             'status' => 'success',
-            'message' => 'تمت الموافقة',
+            'message' => $idempotent ? 'الطلب معتمد مسبقاً' : 'تمت الموافقة',
+            'idempotent' => $idempotent,
             'data' => array_merge($fresh->toArray(), $this->resolutionFields($fresh)),
         ]);
     }
@@ -162,38 +209,51 @@ class ApprovalRequestController extends Controller
 
         $user = $request->user();
         $row = ApprovalRequest::findOrFail($id);
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
+        $privileged = $user->isAdmin();
+        $decisionSource = $this->sanitizeDecisionSource($request);
 
         try {
-            $this->workflow->reject($user, $row, $request->notes, $isSuper);
+            $result = $this->workflow->reject($user, $row, $request->notes, $privileged, $decisionSource);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 403);
+        } catch (ConflictHttpException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 409);
         } catch (\Throwable $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
         }
 
-        $fresh = $row->fresh(['targetUser', 'reviewedBy']);
+        /** @var ApprovalRequest $fresh */
+        $fresh = $result['request'];
+        $idempotent = $result['idempotent'];
 
         return response()->json([
             'status' => 'success',
-            'message' => 'تم الرفض',
+            'message' => $idempotent ? 'الطلب مرفوض مسبقاً' : 'تم الرفض',
+            'idempotent' => $idempotent,
             'data' => array_merge($fresh->toArray(), $this->resolutionFields($fresh)),
         ]);
     }
 
+    private function sanitizeDecisionSource(Request $request): string
+    {
+        $raw = (string) $request->header('X-Decision-Source', 'dasm_api');
+
+        return preg_match('/^[a-z0-9._-]{1,64}$/i', $raw) ? strtolower($raw) : 'dasm_api';
+    }
+
     private function authorizeQueueAccess(User $user): void
     {
-        $isSuper = $user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin';
-        if ($isSuper) {
+        if ($user->isAdmin()) {
             return;
         }
 
-        $m = ApprovalGroupMember::query()
+        $allowed = ApprovalGroupMember::query()
             ->where('user_id', $user->id)
             ->where('is_active', true)
-            ->first();
+            ->where('can_review_requests', true)
+            ->exists();
 
-        if (! $m || ! $m->can_review_requests) {
+        if (! $allowed) {
             abort(403, 'غير مصرح بعرض طابور الموافقات');
         }
     }

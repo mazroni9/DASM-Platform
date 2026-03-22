@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\UserRole;
 use App\Models\ApprovalGroupMember;
 use App\Models\User;
 use Closure;
@@ -10,7 +9,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Allows super_admin OR active operational approval-group reviewers (can_review_requests).
+ * الوصول للطابور: فقط admin/super_admin (User::isAdmin) أو عضو نشط في approval_group_members
+ * مع can_review_requests. لا يكفي نوع مستخدم (مشرف/مبرمج) دون صف عضوية فعلي.
  */
 class ApprovalQueueAccess
 {
@@ -23,7 +23,7 @@ class ApprovalQueueAccess
         /** @var User $user */
         $user = auth()->user();
 
-        if ($user->type === UserRole::SUPER_ADMIN || $user->type === 'super_admin') {
+        if ($user->isAdmin()) {
             return $next($request);
         }
 

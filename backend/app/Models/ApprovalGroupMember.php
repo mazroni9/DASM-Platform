@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -39,9 +40,18 @@ class ApprovalGroupMember extends Model
         return $this->belongsTo(User::class, 'updated_by_user_id');
     }
 
-    /** @return \Illuminate\Database\Eloquent\Builder<static> */
+    /**
+     * Active reviewers eligible for notifications: staff type + can_review_requests.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
     public static function activeMembersQuery()
     {
-        return static::query()->where('is_active', true)->whereHas('user');
+        $eligible = UserRole::approvalGroupEligibleValues();
+
+        return static::query()
+            ->where('is_active', true)
+            ->where('can_review_requests', true)
+            ->whereHas('user', fn ($q) => $q->whereIn('type', $eligible));
     }
 }

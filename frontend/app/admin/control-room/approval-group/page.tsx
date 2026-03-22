@@ -8,6 +8,7 @@ import { toast } from "react-hot-toast";
 import Switch from "@mui/material/Switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoadingRouter } from "@/hooks/useLoadingRouter";
+import { isApprovalGroupEligibleType } from "@/types/types";
 
 type MemberRow = {
   id: number;
@@ -34,7 +35,7 @@ type UserHit = {
 };
 
 export default function ControlRoomApprovalGroupPage() {
-  const { isSuperAdmin, hydrated } = useAuth();
+  const { isAdmin, hydrated } = useAuth();
   const router = useLoadingRouter();
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [q, setQ] = useState("");
@@ -48,12 +49,12 @@ export default function ControlRoomApprovalGroupPage() {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!isSuperAdmin) {
+    if (!isAdmin) {
       router.replace("/admin/control-room");
       return;
     }
     load().catch(() => toast.error("تعذر تحميل المجموعة"));
-  }, [hydrated, isSuperAdmin, load, router]);
+  }, [hydrated, isAdmin, load, router]);
 
   const searchUsers = async () => {
     if (!q.trim()) {
@@ -65,7 +66,12 @@ export default function ControlRoomApprovalGroupPage() {
         params: { q: q.trim(), per_page: 15 },
       });
       const paginated = res.data?.data;
-      setHits(paginated?.data ?? []);
+      const raw: UserHit[] = paginated?.data ?? [];
+      const eligible = raw.filter((u) => isApprovalGroupEligibleType(u.type));
+      if (raw.length > 0 && eligible.length === 0) {
+        toast.error("لا يوجد ضمن النتائج مستخدم إداري يمكن إضافته للمجموعة");
+      }
+      setHits(eligible);
     } catch {
       toast.error("تعذر البحث عن المستخدمين");
     }
@@ -74,6 +80,11 @@ export default function ControlRoomApprovalGroupPage() {
   const addMember = async () => {
     if (!pickId) {
       toast.error("اختر مستخدماً");
+      return;
+    }
+    const picked = hits.find((u) => u.id === pickId);
+    if (!picked || !isApprovalGroupEligibleType(picked.type)) {
+      toast.error("يُسمح فقط بإضافة موظفي الإدارة (المدير الأعلى، مدير النظام، المشرف، المبرمج)");
       return;
     }
     try {
@@ -111,7 +122,7 @@ export default function ControlRoomApprovalGroupPage() {
     }
   };
 
-  if (!hydrated || !isSuperAdmin) {
+  if (!hydrated || !isAdmin) {
     return (
       <div className="p-6 text-sm text-foreground/60">جاري التحقق من الصلاحيات...</div>
     );
@@ -122,8 +133,9 @@ export default function ControlRoomApprovalGroupPage() {
       <div>
         <h1 className="text-2xl font-bold">مجموعة الموافقات التشغيلية</h1>
         <p className="text-sm text-foreground/60 mt-1">
-          إدارة أعضاء مجموعة الموافقات (منفصلة عن أدوار Spatie). متاح لمدير النظام
-          الرئيسي فقط — من غرفة المعالجة.
+          إدارة أعضاء مجموعة الموافقات (منفصلة عن أدوار Spatie). متاح لمدير النظام أو
+          المدير الرئيسي — من غرفة المعالجة. يُضاف هنا فقط مستخدمون من نوع إداري
+          (المدير الأعلى، مدير النظام، المشرف، المبرمج).
         </p>
       </div>
 

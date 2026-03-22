@@ -16,6 +16,10 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import LoadingLink from "@/components/LoadingLink";
 import AIPricingWidget from "@/components/AIPricingWidget";
+import {
+  formatUserFullName,
+  pickUserDisplayLocation,
+} from "@/lib/userDisplay";
 
 type StatsResponse = {
   purchases_count: number;
@@ -45,14 +49,13 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
 
   const userName = useMemo(() => {
-    const src = profile || user;
-    if (!src) return "مستخدم";
-    const n =
-      `${src.first_name || ""} ${src.last_name || ""}`.trim() ||
-      src.name ||
-      "مستخدم";
-    return n;
+    return formatUserFullName(profile || user, { fallbackEmail: false });
   }, [profile, user]);
+
+  const locationLine = useMemo(
+    () => pickUserDisplayLocation(profile || user),
+    [profile, user]
+  );
 
   const memberSinceYear = useMemo(() => {
     const createdAt = (profile?.created_at || user?.created_at) as string | undefined;
@@ -132,15 +135,17 @@ export default function DashboardPage() {
       >
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 md:gap-2.5 mb-1 md:mb-1.5">
-              <div className="p-1 md:p-1.5 bg-primary/10 text-primary rounded-lg shrink-0">
+            <div className="flex items-start gap-2 md:gap-2.5 mb-1 md:mb-1.5">
+              <div className="p-1 md:p-1.5 bg-primary/10 text-primary rounded-lg shrink-0 mt-0.5">
                 <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </div>
-              <h1 className="text-base md:text-xl font-bold text-foreground truncate">
-                مرحباً بك، <span className="text-primary">{userName}</span>
-              </h1>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base md:text-xl font-bold text-foreground truncate">
+                  مرحباً بك، <span className="text-primary">{userName}</span>
+                </h1>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1 md:gap-1.5">
+            <div className="flex flex-wrap gap-1 md:gap-1.5 items-center">
               {(profile?.type || user?.type) === "user" || (profile?.type || user?.type) === "dealer" ? (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
                   الاشتراك: مجاني
@@ -149,6 +154,14 @@ export default function DashboardPage() {
               {memberSinceYear ? (
                 <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/60 text-muted-foreground border border-border">
                   عضو منذ {memberSinceYear}
+                </span>
+              ) : null}
+              {locationLine ? (
+                <span
+                  className="px-2 py-0.5 text-xs font-medium rounded-md bg-muted/50 text-muted-foreground border border-border max-w-full truncate inline-block align-middle"
+                  title={locationLine}
+                >
+                  {locationLine}
                 </span>
               ) : null}
             </div>

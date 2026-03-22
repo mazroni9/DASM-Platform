@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import LoadingLink from "@/components/LoadingLink";
+import { cn } from "@/lib/utils";
 import {
   Car as CarIcon,
   Search,
@@ -454,7 +455,9 @@ export default function InstantAuctionPage() {
           return (
             <LoadingLink
               href={`/carDetails/${carId}`}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl border border-primary/30"
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-primary/35 bg-primary text-white shadow-md transition-all hover:border-primary/55 hover:bg-primary/90 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-[0.98]"
+              )}
             >
               <Eye className="w-4.5 h-4.5" />
             </LoadingLink>

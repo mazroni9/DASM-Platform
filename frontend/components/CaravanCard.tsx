@@ -103,9 +103,9 @@ export default function CaravanCard({ caravan, loading = false }: CaravanCardPro
         {loading ? (
           <Skeleton variant="rectangular" width="100%" height={48} className="rounded-lg" />
         ) : (
-          <LoadingLink 
+          <LoadingLink
             href={`/carDetails/${caravan?.id}`}
-            className="block w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition text-center"
+            className="flex w-full items-center justify-center rounded-lg border border-emerald-800/35 bg-emerald-700 py-3 text-center text-sm font-semibold text-white shadow-sm ring-offset-background transition-colors hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 active:bg-emerald-900 min-h-[44px]"
           >
             قدم عرضك
           </LoadingLink>

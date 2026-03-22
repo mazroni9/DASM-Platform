@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { PriceWithIcon } from "../ui/priceWithIcon";
 import LoadingLink from "../LoadingLink";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type CarInfo = {
   make?: string;
@@ -119,10 +121,14 @@ const FixedAuctionCard = ({ auction }: { auction: FixedAuction }) => {
         </div>
 
         <div className="mt-4">
-          <LoadingLink href={`/carDetails/${auction.car_id}`}>
-            <button className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors">
-              المزايدة الآن
-            </button>
+          <LoadingLink
+            href={`/carDetails/${auction.car_id}`}
+            className={cn(
+              buttonVariants({ variant: "default", size: "lg" }),
+              "w-full rounded-lg py-3 min-h-[44px] shadow-sm border border-primary/25 hover:border-primary/50 active:scale-[0.99] transition-[transform,colors,border-color]"
+            )}
+          >
+            المزايدة الآن
           </LoadingLink>
         </div>
       </div>
